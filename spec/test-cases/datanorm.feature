@@ -23,6 +23,14 @@ Feature: Data normalization of customer records
       When user requests to export as "datanorm-output.jsonl"
       Then "datanorm-output.jsonl" matches the golden output ignoring "Notes"
 
+    @headless @cli
+    Scenario: Replace Country with normalized CountryName and CountryISO
+      When user requests "Replace Country column with normalized CountryName and CountryISO"
+      Then column "CountryName" exists in the spec
+      And column "CountryISO" exists in the spec
+      And column "Country" is absent from the current rows
+      And every row has a non-null "CountryName" and "CountryISO"
+
   Rule: Surface-specific UX flows
 
     @web
