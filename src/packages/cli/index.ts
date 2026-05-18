@@ -39,38 +39,41 @@ export interface RunCliResult {
   stderr: string;
 }
 
-const HELP_TEXT = `tamedtable — natural-language ETL for CSV files
+export const REPL_PAGE_SIZE = 10;
+export const REPL_COL_PAGE_SIZE = 5;
 
-Usage:
-  tamedtable <input.csv>                          Start the interactive REPL.
-  tamedtable execute <flow> --output <out.jsonl>  Replay a saved .flow against a CSV (no LLM call).
-                                                  --input <csv> overrides flow.source.
-  tamedtable --help, -h                           Show this message.
+const HELP_TEXT = `TamedTable — interactive table editor. Natural-language requests edit the
+spec; results stream in. The table reprints after any state or viewport
+change.
 
-REPL:
-  <natural-language request>   e.g. "normalize country names"
-  :help                        Show this message.
-  :undo                        Pop the last transformation and replay (no LLM call).
-  :save <out.jsonl>            Write current rows to a JSONL file (cwd-relative).
-  :save-flow <out.flow>        Write the current spec as a replayable .flow file.
-  exit                         Leave the REPL (:exit also accepted).
-  Ctrl-C                       Cancel a running request, or exit when idle.
+State / data commands:
+  :load <path>       Load CSV/JSONL as new input. Resets transformations,
+                     viewport, cache.
+  :save <path>       Write current rows to JSONL.
+  :save-flow <path>  Write current spec as a .flow file.
+  :undo              Pop the last applied patch.
+  :redo              Replay the last :undo'd patch.
+  :history           Print the patch journal.
 
-Environment (full table in README.md):
-  ANTHROPIC_API_KEY        required (loaded from .env if missing or empty)
-  TAMEDTABLE_MODEL         default claude-sonnet-4-6   patch turn
-  TAMEDTABLE_CELL_MODEL    default claude-sonnet-4-5   per-cell turn
-  TAMEDTABLE_BATCH_SIZE    default 20                  rows per LLM request
-  TAMEDTABLE_CHUNK_SIZE    default 5                   concurrent requests
-  TAMEDTABLE_RPM           default 40                  per-process rate cap
-  TAMEDTABLE_DEBUG         unset                       print per-turn debug block on failure
+View / navigation:
+  :show [rows|cols start|prev|next|end|{N}]
+                     Move viewport on the named axis, or jump to row/col N.
+                     Bare :show reprints the current viewport.
+  :find {<substring>|/<regex>/}
+                     Case-insensitive search; viewport snaps to the first
+                     match and the reprint wraps it in *asterisks*.
 
-Exit codes (execute mode):
-  0  success                3  CSV / transformation error
-  1  bad invocation         4  output write error
-  2  bad .flow file
+Inspection / session:
+  :schema            Print the current column list.
+  :help              Show this usage screen.
+  :exit              Quit (also: bare "exit").
 
-Docs: README.md, spec/behavior.md.
+Anything not starting with ":" is sent to the spec editor as a natural-
+language request — e.g. "normalize phone numbers", "sort by DOB desc".
+Requests are additive; use :undo to revert the last one.
+
+Ctrl-C: cancel in-flight request, or quit when idle. Requires
+ANTHROPIC_API_KEY in env.
 `;
 
 // ── Pure formatting helpers ────────────────────────────────────────────────
@@ -81,13 +84,73 @@ function stringify(v: unknown): string {
 
 const trunc = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
-export function renderTable(spec: Spec, rows: Row[]): string {
-  const cols = spec.columns.map((c) => c.id);
-  const widths = cols.map((c) => Math.max(c.length, ...rows.map((r) => stringify(r[c]).length)));
-  const fmt = (vals: string[]) => ' ' + vals.map((v, i) => v.padEnd(widths[i]!)).join(' | ');
-  const header = fmt(cols);
-  const body = rows.map((r) => fmt(cols.map((c) => stringify(r[c])))).join('\n');
-  return body.length ? `${header}\n${body}` : header;
+function wrapHighlight(text: string, re: RegExp | undefined): string {
+  if (!re) return text;
+  return text.replace(re, (m) => `*${m}*`);
+}
+
+export function renderTable(
+  spec: Spec,
+  rows: Row[],
+  rowOffset = 0,
+  colOffset = 0,
+  highlight?: RegExp
+): string {
+  const allCols = spec.columns.map((c) => c.id);
+  const totalRows = rows.length;
+  const totalCols = allCols.length;
+  const rStart = Math.max(0, Math.min(rowOffset, Math.max(0, totalRows - 1)));
+  const rEnd = Math.min(totalRows, rStart + REPL_PAGE_SIZE);
+  const cStart = Math.max(0, Math.min(colOffset, Math.max(0, totalCols - 1)));
+  const cEnd = Math.min(totalCols, cStart + REPL_COL_PAGE_SIZE);
+  const visibleRows = rows.slice(rStart, rEnd);
+  const visibleCols = allCols.slice(cStart, cEnd);
+  const rowsBefore = rStart;
+  const rowsAfter = Math.max(0, totalRows - rEnd);
+  const colsBefore = cStart;
+  const colsAfter = Math.max(0, totalCols - cEnd);
+
+  const cellText = (r: Row, c: string) => wrapHighlight(stringify(r[c]), highlight);
+
+  // Header (with optional column markers on edges).
+  const headerCells: string[] = [];
+  if (colsBefore > 0) headerCells.push(`...${colsBefore} more cols.`);
+  for (const c of visibleCols) headerCells.push(c);
+  if (colsAfter > 0) headerCells.push(`...${colsAfter} more cols.`);
+
+  // Compute widths from header + visible body.
+  const widths = headerCells.map((h) => h.length);
+  const bodyCells: string[][] = visibleRows.map((r) => {
+    const cells: string[] = [];
+    if (colsBefore > 0) cells.push('');
+    for (const c of visibleCols) cells.push(cellText(r, c));
+    if (colsAfter > 0) cells.push('');
+    return cells;
+  });
+  for (const row of bodyCells) {
+    for (let i = 0; i < row.length; i++) {
+      if ((row[i] ?? '').length > (widths[i] ?? 0)) widths[i] = (row[i] ?? '').length;
+    }
+  }
+
+  const fmt = (vals: string[]) => ' ' + vals.map((v, i) => v.padEnd(widths[i] ?? 0)).join(' | ');
+
+  const lines: string[] = [];
+  lines.push(fmt(headerCells));
+  if (rowsBefore > 0) {
+    const marker = `...${rowsBefore} more rows.`;
+    const cells: string[] = headerCells.map(() => '');
+    cells[0] = marker;
+    lines.push(fmt(cells));
+  }
+  for (const row of bodyCells) lines.push(fmt(row));
+  if (rowsAfter > 0) {
+    const marker = `...${rowsAfter} more rows.`;
+    const cells: string[] = headerCells.map(() => '');
+    cells[0] = marker;
+    lines.push(fmt(cells));
+  }
+  return lines.join('\n');
 }
 
 function describeTransformation(t: Transformation): string {
@@ -147,10 +210,23 @@ function renderError(err: Error, stdout: NodeJS.WritableStream): void {
 
 // ── CLI runner (REPL printing wrapper around headless) ─────────────────────
 
+interface JournalEntry {
+  request: string;
+  prevSpec: Spec;
+  newSpec: Spec;
+  status: 'committed' | 'undone';
+}
+
 class CliRunnerImpl implements CliRunner {
   private headless: HeadlessRunner;
   private stdout: NodeJS.WritableStream;
   private quiet: boolean;
+  private rowOffset = 0;
+  private colOffset = 0;
+  private journal: JournalEntry[] = [];
+  private redoStack: JournalEntry[] = [];
+  private highlight: RegExp | undefined;
+  private loadedPath = '';
 
   constructor(opts: CliRunnerOptions) {
     this.stdout = opts.stdout ?? process.stdout;
@@ -175,22 +251,164 @@ class CliRunnerImpl implements CliRunner {
     for (const item of items) this.stdout.write(`  • ${formatPlanItem(item)}\n`);
   }
 
-  private printTable(): void {
-    this.stdout.write(renderTable(this.headless.currentSpec(), this.headless.currentRows()) + '\n');
+  printTable(): void {
+    const out = renderTable(this.headless.currentSpec(), this.headless.currentRows(), this.rowOffset, this.colOffset, this.highlight);
+    this.stdout.write(out + '\n');
+    this.highlight = undefined;
   }
 
-  async loadInput(path: string): Promise<void> {
-    await this.headless.loadInput(path);
+  private resetViewport(): void {
+    this.rowOffset = 0;
+    this.colOffset = 0;
+    this.highlight = undefined;
+  }
+
+  async loadInput(p: string): Promise<void> {
+    await this.headless.loadInput(p);
+    this.loadedPath = p;
+    this.journal = [];
+    this.redoStack = [];
+    this.resetViewport();
     if (!this.quiet) this.printTable();
   }
+
   async request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void> {
+    const prevSpec = structuredClone(this.headless.currentSpec());
     await this.headless.request(text, opts);
+    const newSpec = structuredClone(this.headless.currentSpec());
+    this.journal.push({ request: text, prevSpec, newSpec, status: 'committed' });
+    this.redoStack = [];
+    this.resetViewport();
     if (!this.quiet) this.printTable();
   }
+
   async setSpec(spec: Spec): Promise<void> { await this.headless.setSpec(spec); }
   currentRows(): Row[] { return this.headless.currentRows(); }
   currentSpec(): Spec { return this.headless.currentSpec(); }
-  async exportAs(path: string): Promise<void> { await this.headless.exportAs(path); }
+  async exportAs(p: string): Promise<void> { await this.headless.exportAs(p); }
+
+  // ── Slash command internals ──────────────────────────────────────────────
+
+  getStdout(): NodeJS.WritableStream { return this.stdout; }
+  getLoadedPath(): string { return this.loadedPath; }
+  getJournal(): JournalEntry[] { return this.journal; }
+  setHighlight(re: RegExp | undefined): void { this.highlight = re; }
+
+  async undo(): Promise<{ ok: boolean; message?: string }> {
+    // Journal-based undo: revert the last committed user turn.
+    const idx = this.findLastCommittedIndex();
+    if (idx >= 0) {
+      const entry = this.journal[idx]!;
+      await this.headless.setSpec(entry.prevSpec);
+      entry.status = 'undone';
+      this.redoStack.push(entry);
+      this.resetViewport();
+      return { ok: true, message: `undid: ${trunc(entry.request, 80)}` };
+    }
+    // Legacy fall-back: pop the last transformation set via `setSpec` (no turn recorded).
+    const spec = this.headless.currentSpec();
+    if (spec.transformations.length === 0) return { ok: false };
+    const popped = spec.transformations[spec.transformations.length - 1] as Transformation;
+    await this.headless.setSpec({ ...spec, transformations: spec.transformations.slice(0, -1) });
+    this.resetViewport();
+    return { ok: true, message: `undid: ${describeTransformation(popped)}` };
+  }
+
+  async redo(): Promise<{ ok: boolean; message?: string }> {
+    if (this.redoStack.length === 0) return { ok: false };
+    const entry = this.redoStack.pop()!;
+    await this.headless.setSpec(entry.newSpec);
+    entry.status = 'committed';
+    this.resetViewport();
+    return { ok: true, message: `redid: ${trunc(entry.request, 80)}` };
+  }
+
+  private findLastCommittedIndex(): number {
+    for (let i = this.journal.length - 1; i >= 0; i--) {
+      if (this.journal[i]!.status === 'committed') return i;
+    }
+    return -1;
+  }
+
+  // Viewport navigation. Returns true if the call should reprint.
+  showCmd(arg: string): boolean {
+    if (arg === '') { this.highlight = undefined; return true; }
+    const tokens = arg.split(/\s+/);
+    if (tokens.length !== 2) {
+      this.stdout.write(`:show: bad arguments. Try ":show", ":show rows next", or ":show cols 3".\n`);
+      return false;
+    }
+    const [axis, pos] = tokens;
+    if (axis !== 'rows' && axis !== 'cols') {
+      this.stdout.write(`:show: axis must be "rows" or "cols", got "${axis}".\n`);
+      return false;
+    }
+    const total = axis === 'rows' ? this.headless.currentRows().length : this.headless.currentSpec().columns.length;
+    const pageSize = axis === 'rows' ? REPL_PAGE_SIZE : REPL_COL_PAGE_SIZE;
+    let offset = axis === 'rows' ? this.rowOffset : this.colOffset;
+    const lastPage = Math.max(0, Math.floor(Math.max(0, total - 1) / pageSize) * pageSize);
+    if (pos === 'start') offset = 0;
+    else if (pos === 'end') offset = lastPage;
+    else if (pos === 'prev') offset = Math.max(0, offset - pageSize);
+    else if (pos === 'next') offset = Math.min(lastPage, offset + pageSize);
+    else if (pos && /^\d+$/.test(pos)) {
+      const n = Number(pos);
+      if (n < 1) offset = 0;
+      else if (n > total) offset = lastPage;
+      else offset = Math.floor((n - 1) / pageSize) * pageSize;
+    } else {
+      this.stdout.write(`:show: position must be one of: start, prev, next, end, <N>.\n`);
+      return false;
+    }
+    if (axis === 'rows') this.rowOffset = offset; else this.colOffset = offset;
+    this.highlight = undefined;
+    return true;
+  }
+
+  // Find. Returns true if the call should reprint.
+  findCmd(arg: string): { reprint: boolean; messages: string[] } {
+    const messages: string[] = [];
+    if (!arg) { messages.push(':find: missing pattern'); return { reprint: false, messages }; }
+    let re: RegExp;
+    const m = arg.match(/^\/(.+)\/$/);
+    try {
+      re = m ? new RegExp(m[1]!, 'gi') : new RegExp(arg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    } catch (e) {
+      messages.push(`:find: bad regex: ${(e as Error).message}`);
+      return { reprint: false, messages };
+    }
+    const rows = this.headless.currentRows();
+    const cols = this.headless.currentSpec().columns.map((c) => c.id);
+    for (let ri = 0; ri < rows.length; ri++) {
+      for (let ci = 0; ci < cols.length; ci++) {
+        const cell = rows[ri]![cols[ci]!];
+        if (typeof cell !== 'string') continue;
+        if (cell.match(re)) {
+          this.rowOffset = Math.floor(ri / REPL_PAGE_SIZE) * REPL_PAGE_SIZE;
+          if (ci < this.colOffset || ci >= this.colOffset + REPL_COL_PAGE_SIZE) {
+            this.colOffset = Math.floor(ci / REPL_COL_PAGE_SIZE) * REPL_COL_PAGE_SIZE;
+          }
+          this.highlight = re;
+          return { reprint: true, messages };
+        }
+      }
+    }
+    messages.push('no match');
+    return { reprint: false, messages };
+  }
+
+  history(): string[] {
+    return this.journal.map((e, i) => `${i + 1}. ${e.request}  [${e.status}]`);
+  }
+
+  schema(): string[] {
+    return this.headless.currentSpec().columns.map((c) => {
+      const parts = [c.id];
+      if (c.label) parts.push(`label="${c.label}"`);
+      if (c.format) parts.push(`format="${c.format}"`);
+      return parts.join('  ');
+    });
+  }
 }
 
 export function createCliRunner(opts: CliRunnerOptions = {}): CliRunner {
@@ -201,8 +419,6 @@ export function createCliRunner(opts: CliRunnerOptions = {}): CliRunner {
 
 export type SlashCommandAction = 'exit' | 'handled' | 'unhandled';
 
-type SlashHandler = (arg: string, runner: CliRunner, stdout: NodeJS.WritableStream) => Promise<void> | void;
-
 function splitCmd(text: string): { cmd: string; arg: string } {
   const sp = text.indexOf(' ');
   return sp < 0 ? { cmd: text, arg: '' } : { cmd: text.slice(0, sp), arg: text.slice(sp + 1).trim() };
@@ -212,17 +428,62 @@ async function runWithErrorRender(stdout: NodeJS.WritableStream, fn: () => Promi
   try { await fn(); } catch (e) { renderError(e as Error, stdout); }
 }
 
+type SlashHandler = (arg: string, runner: CliRunnerImpl, stdout: NodeJS.WritableStream) => Promise<void> | void;
+
 const SLASH: Record<string, SlashHandler> = {
   ':help'(_arg, _r, stdout) { stdout.write(HELP_TEXT); },
 
+  ':history'(_arg, runner, stdout) {
+    const lines = runner.history();
+    if (lines.length === 0) { stdout.write('(no history)\n'); return; }
+    for (const line of lines) stdout.write(line + '\n');
+  },
+
+  ':schema'(_arg, runner, stdout) {
+    for (const line of runner.schema()) stdout.write(line + '\n');
+  },
+
   async ':undo'(_arg, runner, stdout) {
-    const spec = runner.currentSpec();
-    if (spec.transformations.length === 0) { stdout.write('nothing to undo.\n'); return; }
-    const popped = spec.transformations[spec.transformations.length - 1] as Transformation;
     await runWithErrorRender(stdout, async () => {
-      await runner.setSpec({ ...spec, transformations: spec.transformations.slice(0, -1) });
-      stdout.write(`undid: ${describeTransformation(popped)}\n`);
-      stdout.write(renderTable(runner.currentSpec(), runner.currentRows()) + '\n');
+      const res = await runner.undo();
+      if (!res.ok) { stdout.write('nothing to undo.\n'); return; }
+      if (res.message) stdout.write(res.message + '\n');
+      runner.printTable();
+    });
+  },
+
+  async ':redo'(_arg, runner, stdout) {
+    await runWithErrorRender(stdout, async () => {
+      const res = await runner.redo();
+      if (!res.ok) { stdout.write('nothing to redo.\n'); return; }
+      if (res.message) stdout.write(res.message + '\n');
+      runner.printTable();
+    });
+  },
+
+  ':show'(arg, runner, _stdout) {
+    if (runner.showCmd(arg)) runner.printTable();
+  },
+
+  ':find'(arg, runner, stdout) {
+    const res = runner.findCmd(arg);
+    for (const m of res.messages) stdout.write(m + '\n');
+    if (res.reprint) runner.printTable();
+  },
+
+  async ':load'(arg, runner, stdout) {
+    if (!arg) { stdout.write(':load: missing path\n'); return; }
+    const ext = arg.slice(arg.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.csv' && ext !== '.jsonl') { stdout.write(':load: unknown file type\n'); return; }
+    await runWithErrorRender(stdout, async () => {
+      // Try the literal path first, then a spec/test-cases/ fallback so feature files can name
+      // a fixture by bare filename (matching the `tamedtable execute` resolveFile convention).
+      const resolved = await resolveLoadPath(arg);
+      await runner.loadInput(resolved ?? arg);
+      const rows = runner.currentRows().length;
+      const cols = runner.currentSpec().columns.length;
+      stdout.write(`Loaded ${arg} (${rows} rows, ${cols} cols)\n`);
+      runner.printTable();
     });
   },
 
@@ -249,6 +510,17 @@ const SLASH: Record<string, SlashHandler> = {
   },
 };
 
+async function resolveLoadPath(p: string): Promise<string | undefined> {
+  if (path.isAbsolute(p)) {
+    try { await readFile(p, 'utf8'); return p; } catch { return undefined; }
+  }
+  const candidates = [p, path.join('..', 'spec', 'test-cases', p)];
+  for (const cand of candidates) {
+    try { await readFile(cand, 'utf8'); return cand; } catch {}
+  }
+  return undefined;
+}
+
 /**
  * Handle REPL slash commands and bare-word aliases. Returns:
  *  - `'exit'` for `exit` / `:exit` (caller should break out of the loop).
@@ -265,7 +537,7 @@ export async function handleSlashCommand(
   const { cmd, arg } = splitCmd(text);
   const handler = SLASH[cmd];
   if (!handler) return 'unhandled';
-  await handler(arg, runner, stdout);
+  await handler(arg, runner as CliRunnerImpl, stdout);
   return 'handled';
 }
 
@@ -286,7 +558,7 @@ export async function runCli(argv: string[], opts: CliRunnerOptions = {}): Promi
     (opts.stdout ?? process.stdout).write(HELP_TEXT);
     return { exitCode: 0, stderr: '' };
   }
-  if (argv.length === 0) return fail(1, 'tamedtable: REPL mode requires a CSV path. Try --help for usage.');
+  if (argv.length === 0) return fail(1, 'tamedtable: REPL mode requires a CSV or JSONL path. Try --help for usage.');
   if (argv[0] === 'execute') return runExecute(argv.slice(1), opts, stderr);
   if (argv[0]?.startsWith('-')) return fail(1, `tamedtable: unrecognized option ${argv[0]} (try --help)`);
   return runRepl(argv, opts, stderr);
@@ -358,7 +630,7 @@ async function resolveFile(p: string): Promise<string | undefined> {
 async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[]): Promise<RunCliResult> {
   const stdin = opts.stdin ?? process.stdin;
   const stdout = opts.stdout ?? process.stdout;
-  const runner = createCliRunner({ ...opts, quiet: false, stdout });
+  const runner = createCliRunner({ ...opts, quiet: false, stdout }) as CliRunnerImpl;
   try {
     await runner.loadInput(argv[0]!);
   } catch (e) {
@@ -369,7 +641,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   const rl = readline.createInterface({ input: stdin as NodeJS.ReadableStream, output: stdout as NodeJS.WritableStream, terminal: false });
   const onSigint = () => { activeRequest ? activeRequest.abort() : rl.close(); };
   process.on('SIGINT', onSigint);
-  stdout.write("Commands: :help, :undo, :save, :save-flow, exit. Ctrl-C cancels a running request (or exits when idle).\n");
+  stdout.write('Type :help for commands. Ctrl-C cancels a running request (or exits when idle).\n');
   try {
     stdout.write('> ');
     for await (const line of rl) {

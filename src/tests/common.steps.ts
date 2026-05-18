@@ -96,3 +96,26 @@ Given('duplicates are removed by Email', async function (this: TamedTableWorld) 
 Given('the table is filtered to USA customers', async function (this: TamedTableWorld) {
   await this.ensureRunner().request('Show only customers in the USA');
 });
+
+Then('column {string} exists in the spec', function (this: TamedTableWorld, column: string) {
+  const spec = this.ensureRunner().currentSpec();
+  const ids = spec.columns.map((c) => c.id);
+  assert.ok(ids.includes(column), `expected column "${column}" in spec.columns. Got: ${ids.join(', ')}`);
+});
+
+Then('column {string} is absent from the current rows', function (this: TamedTableWorld, column: string) {
+  const rows = this.ensureRunner().currentRows();
+  const present = rows.some((r) => column in (r as Record<string, unknown>));
+  assert.ok(!present, `expected column "${column}" to be absent from every row`);
+});
+
+Then('every row has a non-null {string} and {string}', function (this: TamedTableWorld, colA: string, colB: string) {
+  const rows = this.ensureRunner().currentRows();
+  assert.ok(rows.length > 0, 'no rows to check');
+  rows.forEach((r, i) => {
+    const a = (r as Record<string, unknown>)[colA];
+    const b = (r as Record<string, unknown>)[colB];
+    assert.ok(a !== null && a !== undefined && a !== '', `row ${i}: ${colA} is empty/null (got ${JSON.stringify(a)})`);
+    assert.ok(b !== null && b !== undefined && b !== '', `row ${i}: ${colB} is empty/null (got ${JSON.stringify(b)})`);
+  });
+});

@@ -6,6 +6,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   loadCsv,
+  loadJsonl,
   validateSpec,
   writeJsonl,
   type Row,
@@ -232,18 +233,25 @@ function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'mutate' 
   });
 }
 
-function renderPrompt(template: string, row: Row): string {
+export function renderPrompt(template: string, row: Row, targetColumns?: string[]): string {
   return template.replace(/\{([^{}]+)\}/g, (_, col) => {
+    if (col === '*') {
+      const exclude = new Set(targetColumns ?? []);
+      const obj: Row = {};
+      for (const k of Object.keys(row)) if (!exclude.has(k)) obj[k] = row[k];
+      return JSON.stringify(obj);
+    }
     const v = row[col];
     return v === null || v === undefined ? '' : String(v);
   });
 }
 
-function validateTemplate(template: string, rows: Row[]): void {
+export function validateTemplate(template: string, rows: Row[]): void {
   if (rows.length === 0) return;
   const sample = rows[0]!;
   for (const m of template.matchAll(/\{([^{}]+)\}/g)) {
     const col = m[1]!;
+    if (col === '*') continue;
     if (!(col in sample)) {
       throw new Error(`LLM template references column "${col}" which is not present in the data. Available columns: ${Object.keys(sample).join(', ')}.`);
     }
@@ -331,11 +339,15 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   async loadInput(path: string): Promise<void> {
-    const { spec, rows, sourcePath } = await loadCsv(path);
-    this.sourceRows = rows;
-    this.sourcePath = sourcePath;
-    this.spec = spec;
-    this.derivedRows = rows.slice();
+    const ext = path.slice(path.lastIndexOf('.')).toLowerCase();
+    let result: { spec: Spec; rows: Row[]; sourcePath: string };
+    if (ext === '.csv') result = await loadCsv(path);
+    else if (ext === '.jsonl') result = await loadJsonl(path);
+    else throw new Error(`Runner: unknown file type: ${path}`);
+    this.sourceRows = result.rows;
+    this.sourcePath = result.sourcePath;
+    this.spec = result.spec;
+    this.derivedRows = result.rows.slice();
     this.cellResultCache.clear();
     this.loaded = true;
   }
@@ -505,6 +517,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const template = t.value.llm;
     const perCellModel = t.value.model;
     validateTemplate(template, rows);
+    const exclude = cols;
     const batchSize = Math.max(1, this.opts.batchSize ?? DEFAULT_BATCH_SIZE);
     const chunkSize = Math.max(1, this.opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
     const out: Row[] = rows.map((r) => ({ ...r }));
@@ -516,7 +529,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       abortIf(signal);
       const group = batches.slice(g, g + chunkSize);
       const groupResults = await Promise.all(
-        group.map((b) => this.evalLlmBatch(template, b.rows, perCellModel, signal))
+        group.map((b) => this.evalLlmBatch(template, b.rows, perCellModel, signal, exclude))
       );
       abortIf(signal);
       for (let gi = 0; gi < group.length; gi++) {
@@ -546,10 +559,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     template: string,
     rows: Row[],
     perCellModel: string | undefined,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    excludeColumns?: string[]
   ): Promise<unknown[]> {
     if (rows.length === 0) return [];
-    const prompts = rows.map((r) => renderPrompt(template, r));
+    const prompts = rows.map((r) => renderPrompt(template, r, excludeColumns));
     const results: unknown[] = new Array(rows.length);
     const pending: { idx: number; prompt: string }[] = [];
     for (let i = 0; i < prompts.length; i++) {

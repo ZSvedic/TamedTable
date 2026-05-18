@@ -1,4 +1,4 @@
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'datanorm,dedupe,filter,cancelation,cli-flags,repl-commands')
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'datanorm,dedupe,filter,cancelation,cli-flags,repl-commands,placeholders')
   .split(',')
   .map((s) => `../spec/test-cases/${s.trim()}.feature`);
 

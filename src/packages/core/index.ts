@@ -115,6 +115,23 @@ export async function readJsonl(path: string): Promise<Row[]> {
   return rows;
 }
 
+export async function loadJsonl(path: string): Promise<{ spec: Spec; rows: Row[]; sourcePath: string }> {
+  const rows = await readJsonl(path);
+  const columns: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    for (const key of Object.keys(row)) {
+      if (!seen.has(key)) { seen.add(key); columns.push(key); }
+    }
+  }
+  const spec: Spec = validateSpec({
+    table: path,
+    columns: columns.map((id) => ({ id })),
+    transformations: [],
+  });
+  return { spec, rows, sourcePath: path };
+}
+
 export function loadEnv(envPath?: string): void {
   const filePath = envPath ?? findEnvFile(process.cwd());
   if (!filePath) return;

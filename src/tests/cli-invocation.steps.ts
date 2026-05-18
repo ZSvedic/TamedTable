@@ -66,3 +66,46 @@ Then('REPL exit code is {int}',       function (this: TamedTableWorld, c: number
 Then('stdout contains {string}',      function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t); });
 Then('stderr contains {string}',      function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stderr', t); });
 Then('REPL stdout contains {string}', function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t, 'REPL'); });
+
+// Slice the LAST contiguous block of table lines from stdout. A table line is any line
+// containing " | " (cell separator from renderTable). The header line may be prefixed by
+// "> " when the readline prompt sat in front of it.
+function lastTableReprint(stdout: string): string {
+  const lines = stdout.split('\n');
+  const isTableLine = (l: string) => / \| /.test(l);
+  let end = lines.length;
+  while (end > 0 && !isTableLine(lines[end - 1] ?? '')) end--;
+  let start = end;
+  while (start > 0 && isTableLine(lines[start - 1] ?? '')) start--;
+  return lines.slice(start, end).join('\n');
+}
+
+Then('the last REPL table reprint contains {string}', function (this: TamedTableWorld, text: string) {
+  const inv = getCapture(this);
+  const last = lastTableReprint(inv.stdout);
+  assert.ok(last.includes(text),
+    `last REPL table reprint missing ${JSON.stringify(text)}. Last reprint was:\n${last}\n\nFull stdout:\n${inv.stdout}`);
+});
+
+Then('the last REPL table reprint does not contain {string}', function (this: TamedTableWorld, text: string) {
+  const inv = getCapture(this);
+  const last = lastTableReprint(inv.stdout);
+  assert.ok(!last.includes(text),
+    `last REPL table reprint unexpectedly contains ${JSON.stringify(text)}. Last reprint was:\n${last}`);
+});
+
+Then('the :history output lists no turns', function (this: TamedTableWorld) {
+  const inv = getCapture(this);
+  assert.ok(inv.stdout.includes('(no history)'),
+    `expected ":history" to print "(no history)" — :show/:find should not enter the journal. Stdout:\n${inv.stdout}`);
+});
+
+Then('column {string} was normalized in the final state', function (this: TamedTableWorld, column: string) {
+  const inv = getCapture(this);
+  const last = lastTableReprint(inv.stdout);
+  // Canonical-name proxy: after Normalize country names, USA → "United States" etc.
+  // Any one of the canonical English country names should appear.
+  const canonical = ['United States', 'United Kingdom', 'Germany', 'France', 'Canada', 'Japan', 'Italy'];
+  const hit = canonical.some((c) => last.includes(c));
+  assert.ok(hit, `expected ${column} to be normalized in the final reprint. Last reprint:\n${last}`);
+});
