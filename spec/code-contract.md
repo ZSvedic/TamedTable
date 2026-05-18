@@ -12,7 +12,7 @@ twin.
 type Expr =
   | { js:  string }                              // arrow function BODY (V1)
   | { sql: string }                              // DuckDB SQL expression (V2)
-  | { llm: string; model?: string };             // prompt template, {Column} placeholders
+  | { llm: string; model?: string };             // prompt template, {Column} + {*} placeholders
 
 type Transformation =
   | { kind: "filter"; pred: Expr }
@@ -154,10 +154,16 @@ function runCli(argv: string[]): Promise<{ exitCode: number; stderr: string }>;
 ```
 
 REPL uses `node:readline/promises`. The ASCII renderer is hand-rolled
-`padEnd` (~30 LOC) and paginates at `REPL_PAGE_SIZE = 10` rows; when rows
-fall outside the current page, the truncated edge renders a single marker
-row `...{N} more rows.` in place of cells. `runCli` returns instead of
-calling `process.exit` so callers can decide what to do with a failure.
+`padEnd` (~30 LOC) and paginates at `REPL_PAGE_SIZE = 10` rows and
+`REPL_COL_PAGE_SIZE = 5` columns; when rows or columns fall outside the
+current viewport, the truncated edge renders `...{N} more rows.` or
+`...{N} more cols.` markers in place of cells. The CLI runner holds the
+viewport cursor `(rowOffset, colOffset)` and the undo/redo journal —
+neither surfaces on the `Runner` interface, since headless callers
+don't need them. The `:help` usage screen is the verbatim fenced block
+in [behavior.md §CLI/REPL](behavior.md#cli), loaded at module init.
+`runCli` returns instead of calling `process.exit` so callers can
+decide what to do with a failure.
 
 `.flow` file shape:
 

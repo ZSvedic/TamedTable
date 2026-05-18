@@ -104,7 +104,14 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
 
 - Renders each row's prompt by substituting `{Column}` placeholders. A
   placeholder that doesn't match any column is an error and feeds back
-  through the recovery loop.
+  through the recovery loop. The special placeholder `{*}` expands to a
+  compact JSON object of the row's columns — excluding the target column
+  when the template is a `mutate` value, all columns included in any other
+  position. Use `{*}` when the cell value alone may be ambiguous and a
+  same-row column could disambiguate (locale-dependent dates, units,
+  addresses). Templates that use `{*}` lose cross-row cache reuse within a
+  table — each row's rendered prompt embeds different sibling values — so
+  reserve it for cases where context actually matters.
 - Packs several rendered prompts into one batch request (default 20 rows per
   batch). The model replies with a JSON array of strings or nulls in input
   order. If the reply isn't a JSON array of the expected length, the
@@ -144,27 +151,61 @@ that re-runs a saved spec against a CSV.
 
 ### REPL
 
-The REPL prints a fresh ASCII table after every event that changes the
-visible table state: a successful natural-language request, `:load`, or
-`:undo`. REPL commands that don't change table state (`:help`, `:save`,
-`:save-flow`, `:exit`) print only their own output. A failed request
-prints the error and does not reprint the table.
+The REPL prints a fresh ASCII table after every event that changes either
+the underlying table state or the viewport: a successful natural-language
+request, `:load`, `:undo`, `:redo`, `:show`, and `:find` when a match is
+found. REPL commands that don't change either (`:help`, `:save`,
+`:save-flow`, `:history`, `:schema`, `:exit`, and `:find` with no match)
+print only their own output. A failed request prints the error and does
+not reprint the table.
 
-Tables paginate at 10 rows per page (the default page size). When rows
-exist outside the current page, the truncated end renders a marker row
-`...{N} more rows.` in place of the cells — at the top when rows are
-hidden above the current page, at the bottom when rows are hidden below.
-No terminal control codes — think `sqlite3` or `jq`, not `vim`. Long LLM
-transformations print a few sample row changes per chunk while they run.
+The REPL holds a viewport cursor `(rowOffset, colOffset)` over the
+rows-and-columns rectangle. Defaults are 10 rows per page and 5 columns
+per page. Both cursors reset to `(0, 0)` after `:load`, a successful NL
+request, `:undo`, or `:redo`. `:show` moves the cursor explicitly;
+`:find` snaps it to the first match. When rows fall outside the current
+page, the truncated edge renders a marker row `...{N} more rows.` —
+above when rows are hidden above the page, below when hidden below.
+Columns hidden to the left or right render a symmetric marker column
+`...{N} more cols.` at the edge. No terminal control codes — think
+`sqlite3` or `jq`, not `vim`. Long LLM transformations print a few
+sample row changes per chunk while they run.
 
 REPL commands use a `:` prefix (chosen over `/` because `/` is intercepted
 by Claude Code and other CLI agents; `:` passes through to the runtime).
 They are handled locally without any LLM round-trip:
 
-- `:help` prints the usage screen inline.
+- `:help` prints the usage screen — the verbatim text below this bullet
+  list — inline.
 - `:undo` pops the last applied patch — reversing every transformation
   and column change the most recent user turn introduced, as a single
-  unit. On an empty history, prints `nothing to undo.`
+  unit — and pushes it onto the redo stack. On an empty history, prints
+  `nothing to undo.`
+- `:redo` replays the last patch popped by `:undo` and removes it from
+  the redo stack. On an empty redo stack, prints `nothing to redo.` Any
+  new NL request clears the redo stack.
+- `:history` prints the patch journal one line per user turn, oldest
+  first: `<index>. <user request>  [committed|undone]`. Does not change
+  state and does not reprint the table.
+- `:schema` prints the current column list (id, optional label, optional
+  format), one column per line. Does not change state and does not
+  reprint the table.
+- `:show [<axis> <pos>]` moves the viewport cursor by one page on the
+  named axis. `<axis>` is `rows` or `cols`; `<pos>` is `start`, `prev`,
+  `next`, `end`, or a positive integer (1-based row or column index;
+  the viewport snaps to the page containing that index). Out-of-range
+  positions clamp to the nearest edge. Bare `:show` simply reprints
+  the current viewport. Never changes spec or rows; not recorded in
+  the undo journal.
+- `:find /<regex>/` or `:find <substring>` searches all string cells
+  (case-insensitive). Slash-delimited input is a regex; anything else
+  is a literal substring. On match, the viewport snaps to the row
+  containing the first match (and the column containing it if it's
+  outside the current column page), and the reprint wraps each matched
+  substring in that view with asterisks (`*USA*`). The highlight clears
+  on the next viewport- or state-changing event. No match prints
+  `no match` and does not reprint. Missing pattern prints
+  `:find: missing pattern`. Not recorded in the undo journal.
 - `:load <path>` reads a CSV or JSONL file as the new input source (file
   type inferred from extension; only `.csv` and `.jsonl` accepted in V1;
   `<path>` is taken literally — a leading `@` is part of the filename,
@@ -182,6 +223,43 @@ They are handled locally without any LLM round-trip:
   own directory). Missing path prints `:save-flow: missing path`; success
   prints `saved flow`.
 - `:exit` and bare `exit` both close the REPL with exit code 0.
+
+The `:help` usage screen, verbatim:
+
+```
+TamedTable — interactive table editor. Natural-language requests edit the
+spec; results stream in. The table reprints after any state or viewport
+change.
+
+State / data commands:
+  :load <path>       Load CSV/JSONL as new input. Resets transformations,
+                     viewport, cache.
+  :save <path>       Write current rows to JSONL.
+  :save-flow <path>  Write current spec as a .flow file.
+  :undo              Pop the last applied patch.
+  :redo              Replay the last :undo'd patch.
+  :history           Print the patch journal.
+
+View / navigation:
+  :show [rows|cols start|prev|next|end|{N}]
+                     Move viewport on the named axis, or jump to row/col N.
+                     Bare :show reprints the current viewport.
+  :find {<substring>|/<regex>/}
+                     Case-insensitive search; viewport snaps to the first
+                     match and the reprint wraps it in *asterisks*.
+
+Inspection / session:
+  :schema            Print the current column list.
+  :help              Show this usage screen.
+  :exit              Quit (also: bare "exit").
+
+Anything not starting with ":" is sent to the spec editor as a natural-
+language request — e.g. "normalize phone numbers", "sort by DOB desc".
+Requests are additive; use :undo to revert the last one.
+
+Ctrl-C: cancel in-flight request, or quit when idle. Requires
+ANTHROPIC_API_KEY in env.
+```
 
 Ctrl-C while a request runs cancels it and rolls back the half-applied
 transformation. Ctrl-C while idle closes the REPL.

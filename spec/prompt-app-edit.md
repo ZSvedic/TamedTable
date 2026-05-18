@@ -22,6 +22,7 @@ Key rules:
 - New requests are additive. Use {op:"add", path:"/transformations/-", value:<Transformation>} to append. Never remove or replace a prior transformation unless the user explicitly says to undo or replace it.
 - Choose {js} only when the rule is purely structural (filter by exact column value, dedupe by key, simple boolean predicates). Choose {llm} for any task that requires semantic understanding (normalize phone/country/date, translate, classify, summarize, infer). The words "normalize", "canonicalize", "translate", "format", "infer", "classify" all signal {llm}. Pick {llm} when unsure.
 - Column targeting: identify the target column from the user request — an explicit column name ("DOB", "Country", "Phone") or a keyword from the few-shots below ("phone numbers" → Phone, "country names" → Country, "date of birth" → DOB). A request that names or describes a column IS a clear target — apply the transformation to it; that is following the request, not "defaulting." Only emit an empty operations array when the request points at no column at all. Never invent a target the request never mentions.
+- Same-row context: use the `{*}` placeholder in an `{llm}` template when the target cell alone may be ambiguous and another column on the same row could disambiguate (locale-dependent date formats, units, currencies, addresses). `{*}` expands per row to a compact JSON object of the row's other columns and is generic across tables — never hardcode a specific sibling column name like `{Country}` unless the user request explicitly names it, because the next table may not have that column. Don't reach for `{*}` when the input alone is unambiguous (phone numbers with explicit country code, dates already in ISO, etc.) — `{*}` defeats per-row cache reuse within a table since each row's rendered prompt embeds different sibling values.
 
 Spec shape (V1):
 {
@@ -44,7 +45,7 @@ Transformation grammar (V1):
 
 Expr is one of:
 - {js: string}            — arrow function BODY (not full "() => ..."); signature (row, index, allRows). Example: "row.Country === 'USA'"
-- {llm: string}            — prompt template with {Column} placeholders. The template is evaluated per row; {Column} is replaced with that row's value. The model's reply (trimmed, lowercased "null" → null) becomes the new cell value. Cell prompts MUST end with explicit format constraints: "Reply with ONLY the result and nothing else. If the input cannot be processed, reply with the literal word: null".
+- {llm: string}            — prompt template with {Column} placeholders. The template is evaluated per row; {Column} is replaced with that row's value. The special placeholder {*} expands to a compact JSON object of the row's other columns (excluding the target column when used inside a mutate value), for templates that need same-row context beyond their primary input. The model's reply (trimmed, lowercased "null" → null) becomes the new cell value. Cell prompts MUST end with explicit format constraints: "Reply with ONLY the result and nothing else. If the input cannot be processed, reply with the literal word: null".
 
 Few-shot:
 1) "Show only customers in the USA"
@@ -54,7 +55,7 @@ Few-shot:
 3) "Normalize country names" — keywords: country, countries, nation, nationality
    add {kind:"mutate", columns:"Country", value:{llm:"Normalize this country name to its canonical English form. Input: '{Country}'. Reply with ONLY the canonical English name and nothing else. Examples: USA→United States, UK→United Kingdom, England→United Kingdom, Deutschland→Germany, The Bahamas→Bahamas. If empty or unrecognizable, reply with the literal word: null"}}
 4) "Normalize DOB formats" — keywords: DOB, dob, date of birth, birthdate, birthday, born
-   add {kind:"mutate", columns:"DOB", value:{llm:"Convert this date of birth to ISO 8601 format YYYY-MM-DD. Input: '{DOB}'. Reply with ONLY the ISO date and nothing else. If the input is empty, 'NA', '-', or otherwise indicates missing data, reply with the literal word: null"}}
+   add {kind:"mutate", columns:"DOB", value:{llm:"Convert this date of birth to ISO 8601 format YYYY-MM-DD. Input: '{DOB}'. Same-row context (use ONLY to disambiguate locale-dependent formats — DD/MM vs MM/DD, German/French month names, two-digit years — never to copy or invent values): {*}. Reply with ONLY the ISO date and nothing else. If the input is empty, 'NA', '-', or otherwise indicates missing data, reply with the literal word: null"}}
 5) "Remove duplicate rows by Email" — keep the FIRST occurrence by Email; drop later duplicates. Use EXACTLY this predicate (it's idiomatic and uses (row, i, rows) signature):
    add {kind:"filter", pred:{js:"rows.findIndex(r => r.Email === row.Email) === i"}}
 
