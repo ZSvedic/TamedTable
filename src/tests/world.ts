@@ -30,6 +30,13 @@ export interface CapturedInvocation {
   stderr: string;
 }
 
+export interface RequestOutcome {
+  ok: boolean;
+  error?: Error;
+  specBefore: Spec;
+  specAfter?: Spec;
+}
+
 export class TamedTableWorld extends CucumberWorld {
   surface?: RunnerKind;
   inputPath?: string;
@@ -38,6 +45,7 @@ export class TamedTableWorld extends CucumberWorld {
   runner?: Runner;
   runnerFactory?: () => Runner;
   lastInvocation?: CapturedInvocation;
+  lastRequestOutcome?: RequestOutcome;
 
   constructor(options: IWorldOptions) {
     super(options);

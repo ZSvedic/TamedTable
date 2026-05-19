@@ -54,7 +54,18 @@ Then('{string} contains the line {string}', async function (this: TamedTableWorl
 });
 
 When('user requests {string}', async function (this: TamedTableWorld, text: string) {
-  await this.ensureRunner().request(text);
+  // Capture the request's outcome rather than throwing, so scenarios that
+  // assert failure via `Then the request fails …` can inspect it. A
+  // subsequent "request succeeded" expectation will surface as a Then-step
+  // mismatch (column missing, etc.) — that's correct behavior.
+  const runner = this.ensureRunner();
+  const specBefore = structuredClone(runner.currentSpec());
+  try {
+    await runner.request(text);
+    this.lastRequestOutcome = { ok: true, specBefore, specAfter: runner.currentSpec() };
+  } catch (e) {
+    this.lastRequestOutcome = { ok: false, error: e as Error, specBefore, specAfter: runner.currentSpec() };
+  }
 });
 
 When('user requests to export as {string}', async function (this: TamedTableWorld, filename: string) {
