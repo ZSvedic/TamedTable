@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "source": "datanorm-input.csv",
+  "spec": {
+    "table": "datanorm-input.csv",
+    "columns": [
+      { "id": "ID" },
+      { "id": "FirstName" },
+      { "id": "LastName" },
+      { "id": "DOB" },
+      { "id": "Country" },
+      { "id": "Phone" }
+    ],
+    "transformations": [
+      {
+        "kind": "join",
+        "with": "join-country-codes.parquet",
+        "on": { "js": "leftRow.Country === rightRow.Country" },
+        "how": "left"
+      }
+    ]
+  }
+}

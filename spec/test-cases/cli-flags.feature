@@ -4,29 +4,39 @@ Feature: CLI invocation flags
   help discovery, no-args usage, unknown-flag rejection.
 
   @cli @offline
-  Scenario: --help prints the usage screen and exits 0
+  Scenario: --help prints the CLI usage screen and exits 0
     When user invokes "tamedtable --help"
     Then exit code is 0
-    And stdout contains "TamedTable"
-    And stdout contains ":help"
-    And stdout contains ":undo"
-    And stdout contains ":redo"
-    And stdout contains ":show"
-    And stdout contains ":find"
-    And stdout contains ":schema"
+    And stdout contains "tamedtable"
+    And stdout contains "execute"
+    And stdout contains "--input"
+    And stdout contains "--output"
+    And stdout contains ":help for commands"
     And stdout contains "ANTHROPIC_API_KEY"
+
+  @cli @offline
+  Scenario: --help does not list REPL slash commands
+    When user invokes "tamedtable --help"
+    Then exit code is 0
+    And stdout does not contain ":undo"
+    And stdout does not contain ":redo"
+    And stdout does not contain ":show"
+    And stdout does not contain ":find"
+    And stdout does not contain ":schema"
 
   @cli @offline
   Scenario: -h is an alias for --help
     When user invokes "tamedtable -h"
     Then exit code is 0
-    And stdout contains "TamedTable"
+    And stdout contains "tamedtable"
+    And stdout contains "execute"
 
   @cli @offline
-  Scenario: bare "help" subcommand also prints usage
+  Scenario: bare "help" subcommand also prints CLI usage
     When user invokes "tamedtable help"
     Then exit code is 0
-    And stdout contains "TamedTable"
+    And stdout contains "tamedtable"
+    And stdout contains "execute"
 
   @cli @offline
   Scenario: No arguments hints at --help

@@ -1,1 +1,88 @@
-# Todo (V2): 7. Format conversion — CSV ↔ JSONL ↔ Excel ↔ Parquet
+# V2: CSV output — JSONL ↔ CSV via :save and tamedtable execute.
+Feature: Tabular format output
+
+  Rule: :save dispatches on extension
+
+    Background:
+      Given "datanorm-input.csv" is loaded
+
+    @cli @offline
+    Scenario: :save writes CSV when the extension is .csv
+      When user enters the REPL with "datanorm-input.csv" and types:
+        """
+        :save ../temp/datanorm-output.csv
+        exit
+        """
+      Then REPL exit code is 0
+      And REPL stdout contains "saved"
+      And "../temp/datanorm-output.csv" exists
+      And the first line of "../temp/datanorm-output.csv" is "ID,FirstName,LastName,DOB,Country,Phone"
+
+    @cli @offline
+    Scenario: :save still writes JSONL when the extension is .jsonl
+      When user enters the REPL with "datanorm-input.csv" and types:
+        """
+        :save ../temp/datanorm-output.jsonl
+        exit
+        """
+      Then REPL exit code is 0
+      And "../temp/datanorm-output.jsonl" exists
+
+    @cli @offline
+    Scenario: :save rejects an unknown output extension
+      When user enters the REPL with "datanorm-input.csv" and types:
+        """
+        :save ../temp/datanorm-output.parquet
+        exit
+        """
+      Then REPL exit code is 0
+      And REPL stdout contains ":save: unknown file type"
+
+  Rule: CSV writer follows RFC 4180
+
+    @headless @cli
+    Scenario: Fields with commas, quotes, or newlines are quoted
+      Given a row with FirstName "O'Hara", LastName "Smith, Jr.", Notes "line1\nline2"
+      When user requests to export as "../temp/quoting.csv"
+      Then "../temp/quoting.csv" contains the line "1,O'Hara,\"Smith, Jr.\",\"line1\nline2\""
+
+    @headless @cli
+    Scenario: Null and undefined render as empty cells
+      Given a row with FirstName "Ada", LastName null
+      When user requests to export as "../temp/nulls.csv"
+      Then "../temp/nulls.csv" contains the line "1,Ada,"
+
+    @headless @cli
+    Scenario: Nested objects serialize as compact JSON inside the cell
+      Given a row with FirstName "Ada" and an "Address" column equal to the object {"city":"London","zip":"E1"}
+      When user requests to export as "../temp/nested.csv"
+      Then "../temp/nested.csv" contains the line "1,Ada,\"{\"\"city\"\":\"\"London\"\",\"\"zip\"\":\"\"E1\"\"}\""
+
+  Rule: Batch execute writes CSV when --output is .csv
+
+    @cli
+    Scenario: Execute saved flow with CSV output
+      Given "datanorm.flow" exists
+      And the golden output is "datanorm-expected.csv"
+      When user runs "tamedtable execute datanorm.flow --input datanorm-input.csv --output ../temp/datanorm-output.csv"
+      Then exit code is 0
+      And "../temp/datanorm-output.csv" matches the golden output
+
+    @cli
+    Scenario: Execute fails clearly when --output extension is unknown
+      Given "datanorm.flow" exists
+      When user runs "tamedtable execute datanorm.flow --input datanorm-input.csv --output ../temp/datanorm-output.xml"
+      Then exit code is 4
+      And stderr contains "unknown file type"
+
+  Rule: Mixed-format round-trip
+
+    @cli
+    Scenario: Load JSONL, save CSV
+      When user enters the REPL with "datanorm-input.jsonl" and types:
+        """
+        :save ../temp/from-jsonl.csv
+        exit
+        """
+      Then REPL exit code is 0
+      And the first line of "../temp/from-jsonl.csv" is "ID,FirstName,LastName,DOB,Country,Phone"

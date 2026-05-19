@@ -1,0 +1,21 @@
+ID,FirstName,LastName,DOB,Country,Phone,Notes
+01,John,D. Doe,1990-01-01,United States,+12005551234,
+02,Jane,Smith,1985-05-15,Canada,+15555678,
+03,Bob,Johnson,1978-09-30,United Kingdom,+445558765,
+04,Alice,Williams,1992-12-10,Australia,+61559432121,
+05,Tom,Brown,1980-03-25,United States,+11005556789,
+06,Emily,Davis,1995-07-20,Canada,,"Local phone number '555-4321' lacks country/area code; cannot be normalized unambiguously to E.164."
+07,Michael,Miller,1988-11-30,United Kingdom,+445551234,
+08,Sarah,Wilson,1990-02-14,Australia,+615559876,
+09,David,Moore,1983-09-05,United States,+13005554321,
+10,Laura,Taylor,,Bahamas,+12425556789,DOB value 'NA' indicates missing data.
+11,Chris,Anderson,1987-08-19,Bahamas,+12425551234,
+12,Boris,Babić,1985-03-10,Croatia,+3855554321,
+13,Anna,Müller,1990-10-10,Germany,+495556789,
+14,Carlos,García,1982-12-01,Spain,+345551234,
+15,Maria,Rossi,1993-11-11,Germany,,"Local phone number '72344321' lacks country/area code; cannot be normalized unambiguously to E.164."
+16,Ahmed,Khan,,United Kingdom,+445554321,DOB is empty.
+17,张,三,1990-01-01,China,+865551234,
+18,李,四,1985-05-15,China,+865555678,
+19,山田,太郎,,Japan,+815551234,DOB value '-' indicates missing data.
+20,فلا,الفلاني,1990-01-01,Saudi Arabia,+9665551234,

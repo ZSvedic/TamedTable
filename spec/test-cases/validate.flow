@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "source": "datanorm-input.csv",
+  "spec": {
+    "table": "datanorm-input.csv",
+    "columns": [
+      { "id": "ID" },
+      { "id": "FirstName" },
+      { "id": "LastName" },
+      { "id": "DOB" },
+      { "id": "Country" },
+      { "id": "Phone" },
+      { "id": "_valid" },
+      { "id": "_validation" }
+    ],
+    "transformations": [
+      {
+        "kind": "validate",
+        "pred": { "js": "row.Phone && row.Phone.length > 0" },
+        "message": { "js": "'Phone is empty'" }
+      }
+    ]
+  }
+}

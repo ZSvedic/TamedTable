@@ -324,8 +324,44 @@ must be `.jsonl`. No LLM call happens on this path.
 
 ### Discovery
 
-- `--help`, `-h`, and bare `help` print a usage screen to stdout. Usage
-  covers the slash commands and the API-key requirement.
+The CLI exposes two help screens. They cover disjoint surface:
+
+- `tamedtable --help` / `-h` / bare `help` print the *CLI usage screen*
+  below — binary invocations only: the bare-input REPL launch, the
+  `execute` batch form with its flags, the discovery flags themselves,
+  and the API-key requirement. It does NOT list the REPL's `:`
+  commands.
+- `:help` inside the REPL prints the *REPL usage screen* above —
+  every `:` command, the natural-language request convention, and the
+  Ctrl-C behavior. It does NOT mention `execute`, `--input`, or
+  `--output`.
+
+A reader who types `--help` is asking "how do I run this binary";
+a reader who types `:help` is asking "what can I type now that I'm
+inside." Keeping the two screens disjoint matches the question each
+one answers.
+
+The CLI usage screen, verbatim:
+
+```
+tamedtable — work tables in your terminal with natural-language requests.
+
+Usage:
+  tamedtable <input>                 Open <input> in the interactive REPL.
+                                     <input> is a .csv or .jsonl file.
+                                     Once inside, type :help for commands.
+  tamedtable execute <flow>          Replay a saved .flow against an input.
+                                     No LLM call; no API key needed.
+    --input  <file>                  Source .csv or .jsonl. Overrides the
+                                     source path recorded in <flow>.
+    --output <file>                  Destination .jsonl. Required.
+  tamedtable --help, -h, help        Show this usage screen.
+
+The REPL needs ANTHROPIC_API_KEY in env.
+```
+
+Other invocations:
+
 - No arguments prints a hint about `--help` and fails.
 - An unknown flag fails with a pointer to `--help`.
 
@@ -359,22 +395,184 @@ prompt must end with: reply with only the result, or the literal word
 
 → [code-contract.md — System prompts](code-contract.md#system-prompts)
 
-## V2 — web
+## V2
 
-V2 ships a web UI that mirrors the CLI's interaction shape (chat sidebar +
-table view) but renders the table in the browser, supports CSV in via an
-Open File dialog, and `.flow` save via a Save File dialog. The behavior
-contract for transformations, undo, and cancellation stays the same — the
-spec-and-patches wire model is what makes that possible. Cell editing,
-scrolling, and column changes are not replicated as terminal interactions
-in V1 — they become spec patches driven by natural language.
-
-V2 also opens additional transformation kinds (`group`, `join`) and a third
-expression shape (`{sql:…}` on top of DuckDB), and additional file formats
-on both ends.
+V2 keeps the V1 spec-and-patches wire model and adds four surfaces on top:
+two new transformation verbs, a SQL expression shape, CSV (and other
+tabular) output, and a browser front-end. The behavior contract for undo,
+cancellation, recovery, and the streaming chunk callback is unchanged —
+each new surface plugs into existing seams rather than replacing them.
 
 V1 ships only the terminal CLI and the headless library. When asked about
-web UX, WoZ should produce a Claude artifact or write a sketch to `temp/`,
-not refuse.
+V2 UX, WoZ produces a Claude artifact or writes a sketch to `temp/`, not
+refuses.
 
-→ [code-contract.md — V2 — web](code-contract.md#v2--web)
+### CSV (and other tabular) output
+
+V1 writes JSONL only. V2 lifts that restriction: `:save <path>` and
+`tamedtable execute --output <path>` both dispatch on extension, the
+same way `:load` already does for input. V2 accepts `.csv` alongside
+`.jsonl`; further formats (`.xlsx`, `.parquet`) land on the same
+dispatch and are out of scope until their own scenarios are written.
+
+CSV output rules: the header row is the spec's column order (using
+`label` when set, otherwise `id`); JSON nulls and JS undefined render
+as an empty cell; non-string scalars stringify with `String(value)`;
+nested objects and arrays serialize as compact JSON inside the cell;
+fields containing commas, quotes, or newlines are wrapped in
+double-quotes with embedded quotes doubled (RFC 4180). The writer
+never invents quoting or escaping beyond what RFC 4180 requires.
+
+Unknown output extensions print `:save: unknown file type` (REPL) or
+exit non-zero with the same line on stderr (batch). Mixed-format flows
+— JSONL in, CSV out — work because the renderer reads the committed
+spec, not the source format.
+
+### `group` transformation
+
+`group` collapses input rows into one output row per distinct
+`by`-value tuple. Shape: `{ kind: "group", by: [<expr|column>...],
+agg: { <outColumn>: <expr> } }`. The by-keys and the aggregate output
+columns *replace* the prior column list — only those columns survive
+into the rows downstream. Aggregate expressions evaluate over the
+group's row slice (an array of rows accessible to the expression as
+the bound name described in code-contract); typical uses are `count`,
+`sum`, `avg`, `min`, `max`, and `{llm:…}` summaries.
+
+Empty input produces zero output rows. A by-expression that throws on
+some row aborts the transformation through the same recovery loop a
+filter or mutate uses. Sort order of output rows is the first-seen
+order of each group's by-tuple in the input.
+
+### `join` transformation
+
+`join` enriches the left (current) table with rows from a second
+source. Shape: `{ kind: "join", with: <path>, on: <expr>, how?:
+"inner" | "left" }`. `with` is a path to a `.csv` or `.jsonl` file,
+resolved relative to the spec's working directory; the right table is
+loaded once at transformation-evaluation time and held for the join.
+`on` is a predicate expression evaluated for each `(leftRow,
+rightRow)` pair; truthy means match. Default `how` is `"left"` — left
+rows survive even without a right match, with right-side columns set
+to `null`. `"inner"` drops left rows that have no match.
+
+When right and left columns collide, the right column is renamed
+`<name>_2` (then `_3`, etc.) so no column silently overwrites
+another. The right file is read with the same dispatch as `:load`
+(unknown extension throws the V1 *"unknown file type"* error). A
+join's right table is *not* re-read on `:undo`/`:redo`; the
+transformation removal reverses the column-shape change and that's
+enough.
+
+### `split` transformation
+
+`split` takes one input column, splits each cell, and writes the parts
+to several output columns. Shape: `{ kind: "split", from: <column>,
+into: [<col1>, <col2>, ...], on: <separator> | <regex> | <Expr> }`.
+`on` is either a literal string (the cell is split on every occurrence),
+a regex (matches define the split points), or a full `Expr` returning
+an array of parts. The number of parts must match `into.length`; cells
+that produce too few parts pad the tail with `null`, cells that produce
+too many concatenate the extras onto the last output column joined by
+a single space.
+
+The input column stays in place unless `drop: true` is set on the
+transformation, in which case `from` is removed after the split. Empty
+input cells produce `null` in every output column.
+
+This is ergonomically what V1 `mutate` with `columns: string[]` and a
+JS array-returning body already does; V2's `split` exists so the LLM
+can patch the structure without writing JS, and so regex/delimiter
+splits don't need an expression at all.
+
+### `validate` transformation
+
+`validate` checks each row against a per-row predicate and optionally
+the dataset against a rate threshold. Shape: `{ kind: "validate",
+pred: <Expr>, message?: <Expr>, threshold?: <number 0..1> }`. The
+predicate is evaluated per row; truthy means "row passes." The
+transformation adds two columns to every row: `_valid` (boolean) and
+`_validation` (the rendered `message` for failing rows, otherwise
+`null`). The column list is otherwise unchanged.
+
+When `threshold` is set, the transformation also computes the failure
+rate over the whole row stream. If `failures / total > threshold`, the
+transformation aborts the whole request through the recovery loop with
+the error `validation failed: <rate>% > <threshold>%`. Without
+`threshold`, validation is purely additive: rows are annotated, never
+dropped — the user follows up with a `filter` if they want to drop the
+bad rows.
+
+The `_valid` and `_validation` columns persist across subsequent
+transformations the way any other column does; a second `validate`
+appended to the same spec overwrites them.
+
+### `pivot` and `unpivot` transformations
+
+`pivot` reshapes long → wide. Shape: `{ kind: "pivot", index:
+[<col>...], on: <col>, values: <col>, agg?: "sum" | "count" | "avg" |
+"min" | "max" | "first" }`. Output rows are keyed by the `index`
+tuple; the distinct values in `on` become new columns, each filled
+with the corresponding `values` cell aggregated by `agg` (default
+`first`). Missing combinations render as `null`. The column list
+shrinks from `index + on + values + everything else` down to `index +
+<one column per distinct on-value>` — non-index, non-on, non-values
+columns are dropped.
+
+`unpivot` reshapes wide → long. Shape: `{ kind: "unpivot", id:
+[<col>...], measures: [<col>...], names_to?: <string>, values_to?:
+<string> }`. Each measure column becomes one output row per input
+row, identified by the column's name. Defaults: `names_to = "name"`,
+`values_to = "value"`. The output column list is `id + [names_to,
+values_to]`.
+
+Both transformations fail fast on a zero-row group (empty input) by
+producing zero output rows.
+
+### `{sql}` expression shape
+
+A third `Expr` variant: `{ sql: "<DuckDB SQL fragment>" }`. The
+runtime evaluates SQL on top of an in-process DuckDB instance, with
+the current table registered as a relation named `t`. A
+`{sql:"…"}` inside a `mutate` value is a scalar subquery returning
+one value per row; inside `filter.pred` it is a boolean predicate;
+inside `sort.by[].key` a scalar sort key; inside `group.agg` an
+aggregate expression. `{sql}` does not appear inside `{llm}` or
+`{js}` and vice versa — each transformation slot takes exactly one
+expression shape.
+
+Parse failures, type mismatches, and runtime SQL errors flow through
+the patch-recovery loop the same as JS expression failures. The
+DuckDB instance is per-process and shared across transformations; it
+is reset whenever the source rows are reloaded.
+
+A running SQL query is one operation, not a stream of chunks, so the
+V1 cancellation sequence ([§ Headless](#headless)) gets one extra
+move: step 1 calls `conn.interrupt()` to ask DuckDB to abort. The
+query rejects with a *"cancelled"* error within the same 2-second
+budget; steps 2–4 (drain, remove the half-applied transformation,
+signal cancelled) run unchanged. If DuckDB has already returned its
+result rows and the runtime is still applying them when the cancel
+arrives, the post-query apply phase is interrupted between rows the
+same way an LLM chunk apply is. Cancelling a SQL transformation
+leaves the DuckDB relation `t` registered and intact — only the
+half-applied spec change reverts.
+
+### Web UI
+
+V2 ships a browser front-end that mirrors the CLI's interaction shape
+— a chat sidebar for natural-language requests and the table view to
+the right of it. CSV input arrives via an Open File dialog; `.flow`
+save uses a Save File dialog. Cell editing, scrolling, column-resize,
+and column-reorder happen through normal browser gestures but
+ultimately produce spec patches — the same shape the LLM produces —
+so undo/redo, history, and replay against the source all work
+unchanged.
+
+The web shell uses the existing `Runner` interface unmodified.
+Streaming chunks fire the same callback; the front-end debounces
+them into table updates. A web session does not share state with a
+CLI session; the file dialog handshake takes the place of `:load`,
+and the in-browser tab IS the session.
+
+→ [code-contract.md — V2](code-contract.md#v2)

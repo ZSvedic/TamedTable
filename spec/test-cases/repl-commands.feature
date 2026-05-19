@@ -6,7 +6,7 @@ Feature: REPL commands
   view/nav (:show, :find), and inspection/session (:schema, :help, :exit).
 
   @cli @offline
-  Scenario: :help echoes the pinned usage screen in-session
+  Scenario: :help echoes the pinned REPL usage screen in-session
     When user enters the REPL with "dedupe-input.csv" and types:
       """
       :help
@@ -20,6 +20,18 @@ Feature: REPL commands
     And REPL stdout contains ":find"
     And REPL stdout contains ":schema"
     And REPL stdout contains "ANTHROPIC_API_KEY"
+
+  @cli @offline
+  Scenario: :help does not mention CLI batch invocations
+    When user enters the REPL with "dedupe-input.csv" and types:
+      """
+      :help
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout does not contain "execute"
+    And REPL stdout does not contain "--input"
+    And REPL stdout does not contain "--output"
 
   @cli @offline
   Scenario: exit closes the REPL with code 0

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "source": "datanorm-input.csv",
+  "spec": {
+    "table": "datanorm-input.csv",
+    "columns": [
+      { "id": "Country" },
+      { "id": "customer_count" }
+    ],
+    "transformations": [
+      {
+        "kind": "group",
+        "by": ["Country"],
+        "agg": {
+          "customer_count": { "js": "rows.length" }
+        }
+      }
+    ]
+  }
+}

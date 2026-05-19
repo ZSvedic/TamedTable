@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "source": "pivot-wide-input.csv",
+  "spec": {
+    "table": "pivot-wide-input.csv",
+    "columns": [
+      { "id": "Region" },
+      { "id": "name" },
+      { "id": "value" }
+    ],
+    "transformations": [
+      {
+        "kind": "unpivot",
+        "id": ["Region"],
+        "measures": ["Q1", "Q2", "Q3", "Q4"]
+      }
+    ]
+  }
+}
