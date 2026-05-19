@@ -45,6 +45,34 @@ export const REPL_FALLBACK_COLS = 5;
 export const REPL_PAGE_SIZE = REPL_FALLBACK_ROWS;
 export const REPL_COL_PAGE_SIZE = REPL_FALLBACK_COLS;
 const REPL_CHROME_LINES = 5;
+// Auto-fit width budget: per-column visual cost = average cell width plus the
+// " | " separator. 16 is a deliberate compromise: at the default 80-col TTY
+// the result equals REPL_FALLBACK_COLS (5), so users see the same view they
+// had before the auto-fit was wired up; wider terminals get proportionally
+// more columns. Users override via :viewport when their data needs a
+// different ratio.
+const REPL_AVG_COL_WIDTH = 16;
+const REPL_INDENT = 1;
+
+/** Build the option object for `readline.createInterface` used by the REPL.
+ *  Exported so tests (and any embedder) can verify terminal-mode wiring
+ *  without standing up the full REPL loop. `terminal: true` enables
+ *  Node's line editor — Up/Down for history, Left/Right for cursor — and
+ *  requires both streams to be real TTYs; non-TTY streams (piped input,
+ *  redirected output, the test harness) keep `terminal: false`. */
+export function replReadlineOptions(
+  stdin: NodeJS.ReadableStream,
+  stdout: NodeJS.WritableStream
+): { input: NodeJS.ReadableStream; output: NodeJS.WritableStream; terminal: boolean; historySize: number } {
+  const inTTY  = Boolean((stdin  as { isTTY?: boolean }).isTTY);
+  const outTTY = Boolean((stdout as { isTTY?: boolean }).isTTY);
+  return {
+    input: stdin,
+    output: stdout,
+    terminal: inTTY && outTTY,
+    historySize: 200,
+  };
+}
 
 const CLI_USAGE_TEXT = `tamedtable — work tables in your terminal with natural-language requests.
 
@@ -307,10 +335,15 @@ class CliRunnerImpl implements CliRunner {
   }
 
   private autoCols(): number {
-    // Greedy fit is left for a future pass — non-TTY (tests, pipes) always uses the fallback.
     const isTTY = Boolean((this.stdout as { isTTY?: boolean }).isTTY);
     if (!isTTY) return REPL_FALLBACK_COLS;
-    return REPL_FALLBACK_COLS;
+    const termCols = (this.stdout as { columns?: number }).columns;
+    if (!termCols || termCols <= 0) return REPL_FALLBACK_COLS;
+    // Estimate columns that fit at REPL_AVG_COL_WIDTH chars each (cell + ` | `
+    // separator). The estimate is intentionally conservative so values longer
+    // than the avg still align; users widen further via `:viewport`.
+    const fit = Math.floor((termCols - REPL_INDENT) / REPL_AVG_COL_WIDTH);
+    return Math.max(REPL_FALLBACK_COLS, fit);
   }
 
   private effectiveRows(): number { return this.pinRows ?? this.autoRows(); }
@@ -787,24 +820,31 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
     return { exitCode: 3, stderr: stderr.join('\n') };
   }
   let activeRequest: AbortController | null = null;
-  const rl = readline.createInterface({ input: stdin as NodeJS.ReadableStream, output: stdout as NodeJS.WritableStream, terminal: false });
+  const rl = readline.createInterface(
+    replReadlineOptions(stdin as NodeJS.ReadableStream, stdout as NodeJS.WritableStream)
+  );
+  // rl.setPrompt + rl.prompt() lets readline manage the "> " glyph the same
+  // way in both terminal-true (interactive line editor) and terminal-false
+  // (test harness / piped stdin) modes — manual stdout.write('> ') competes
+  // with readline's own line-redraw in terminal mode.
+  rl.setPrompt('> ');
   const onSigint = () => { activeRequest ? activeRequest.abort() : rl.close(); };
   process.on('SIGINT', onSigint);
   stdout.write('Type :help for commands. Ctrl-C cancels a running request (or exits when idle).\n');
   try {
-    stdout.write('> ');
+    rl.prompt();
     for await (const line of rl) {
       const text = line.trim();
-      if (!text) { stdout.write('> '); continue; }
+      if (!text) { rl.prompt(); continue; }
       const action = await handleSlashCommand(text, runner, stdout);
       if (action === 'exit') break;
-      if (action === 'handled') { stdout.write('> '); continue; }
+      if (action === 'handled') { rl.prompt(); continue; }
       const ctrl = new AbortController();
       activeRequest = ctrl;
       try { await runner.request(text, { signal: ctrl.signal }); }
       catch (e) { renderError(e as Error, stdout); }
       finally { activeRequest = null; }
-      stdout.write('> ');
+      rl.prompt();
     }
   } finally {
     rl.close();
