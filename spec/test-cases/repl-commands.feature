@@ -325,3 +325,108 @@ Feature: REPL commands
     Then REPL exit code is 0
     And REPL stdout contains "saved flow"
     And "../temp/repl-save-flow-output.flow" exists
+
+  @cli @offline
+  Scenario: bare :viewport prints current page size and source
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains "viewport:"
+    And REPL stdout contains "rows (auto)"
+    And REPL stdout contains "cols (auto)"
+
+  @cli @offline
+  Scenario: :viewport with explicit rows and cols shrinks the page
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport 5 3
+      exit
+      """
+    Then REPL exit code is 0
+    And the last REPL table reprint contains "...15 more rows."
+    And the last REPL table reprint contains "...3 more cols."
+
+  @cli @offline
+  Scenario: :viewport pins only rows when cols is auto
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport 5 auto
+      :viewport
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains "5 rows (manual)"
+    And REPL stdout contains "cols (auto)"
+
+  @cli @offline
+  Scenario: :viewport pins only cols when rows is auto
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport auto 3
+      :viewport
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains "rows (auto)"
+    And REPL stdout contains "3 cols (manual)"
+
+  @cli @offline
+  Scenario: :viewport auto clears prior pins on both axes
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport 5 3
+      :viewport auto
+      :viewport
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains "rows (auto)"
+    And REPL stdout contains "cols (auto)"
+
+  @cli @offline
+  Scenario: :viewport pins survive :load and viewport-cursor resets
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport 5 3
+      :load datanorm-input.csv
+      :viewport
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains "5 rows (manual)"
+    And REPL stdout contains "3 cols (manual)"
+
+  @cli @offline
+  Scenario: :viewport with a non-positive integer prints invalid size
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport 0 3
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains ":viewport: invalid size"
+
+  @cli @offline
+  Scenario: :viewport with malformed args prints usage
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport foo
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains ":viewport: usage:"
+
+  @cli @offline
+  Scenario: :viewport does not enter the patch journal
+    When user enters the REPL with "datanorm-input.csv" and types:
+      """
+      :viewport 5 3
+      :viewport auto
+      :history
+      exit
+      """
+    Then REPL exit code is 0
+    And the :history output lists no turns

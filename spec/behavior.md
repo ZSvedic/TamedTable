@@ -159,17 +159,52 @@ found. REPL commands that don't change either (`:help`, `:save`,
 print only their own output. A failed request prints the error and does
 not reprint the table.
 
+The REPL runs in one of two modes, chosen automatically from whether stdin
+is a TTY:
+
+- **Interactive mode** (stdin is a TTY — the user runs `tamedtable` in a
+  terminal). The line editor is in cooked terminal mode: ↑/↓ cycle
+  through command history within the session, ←/→ move the cursor inside
+  the current line, ⌃A/⌃E jump to line start/end, ⌃U clears the line,
+  ⌃R reverse-searches history. The session's input lines accumulate into
+  an in-memory history that is *not* persisted across REPL invocations
+  in V1.
+- **Batch mode** (stdin is not a TTY — piped from a file or from the
+  Gherkin step harness). The line editor is off: every byte that arrives
+  is interpreted as part of an input line, escape sequences pass through
+  unchanged, no history navigation. Output is byte-identical to what
+  interactive mode produces for the same sequence of committed input
+  lines, so test fixtures and recorded transcripts stay deterministic.
+
+The mode is detected once at REPL start; it never switches mid-session.
+Page-size autodetect (described below) follows the same TTY check on
+stdout — interactive runs auto-fit to the terminal, batch runs use the
+deterministic 10 × 5 fallback.
+
 The REPL holds a viewport cursor `(rowOffset, colOffset)` over the
-rows-and-columns rectangle. Defaults are 10 rows per page and 5 columns
-per page. Both cursors reset to `(0, 0)` after `:load`, a successful NL
-request, `:undo`, or `:redo`. `:show` moves the cursor explicitly;
-`:find` snaps it to the first match. When rows fall outside the current
-page, the truncated edge renders a marker row `...{N} more rows.` —
-above when rows are hidden above the page, below when hidden below.
-Columns hidden to the left or right render a symmetric marker column
-`...{N} more cols.` at the edge. No terminal control codes — think
-`sqlite3` or `jq`, not `vim`. Long LLM transformations print a few
-sample row changes per chunk while they run.
+rows-and-columns rectangle, plus a viewport *page size* `(pageRows,
+pageCols)` that bounds how many rows and columns appear on one page.
+On startup and on every terminal-resize event, the REPL auto-fits the
+page size to the host terminal: `pageRows` fills the visible height
+after reserving a few lines for chrome (header, separator, truncation
+markers, prompt); `pageCols` is the greedy fit, walking columns in
+display order and packing them by rendered width until the next one
+would overflow the terminal width. When the terminal size is
+unavailable — typically when stdout is piped, not a TTY — the page
+size falls back to **10 rows × 5 cols**, keeping non-interactive runs
+deterministic. The user can pin either axis to a manual value with
+`:viewport`; a pinned axis survives terminal resize until cleared with
+`auto`. Both viewport cursors reset to `(0, 0)` after `:load`, a
+successful NL request, `:undo`, or `:redo`; viewport pins do **not**
+reset on those events — they persist until `:viewport auto` or REPL
+exit. `:show` moves the cursor explicitly; `:find` snaps it to the
+first match. When rows fall outside the current page, the truncated
+edge renders a marker row `...{N} more rows.` — above when rows are
+hidden above the page, below when hidden below. Columns hidden to the
+left or right render a symmetric marker column `...{N} more cols.` at
+the edge. No terminal control codes — think `sqlite3` or `jq`, not
+`vim`. Long LLM transformations print a few sample row changes per
+chunk while they run.
 
 REPL commands use a `:` prefix (chosen over `/` because `/` is intercepted
 by Claude Code and other CLI agents; `:` passes through to the runtime).
@@ -197,6 +232,20 @@ They are handled locally without any LLM round-trip:
   positions clamp to the nearest edge. Bare `:show` simply reprints
   the current viewport. Never changes spec or rows; not recorded in
   the undo journal.
+- `:viewport [<rows>|auto] [<cols>|auto]` sets the viewport page size
+  on each axis. Each slot is independent: a positive integer pins that
+  axis to a manual value (sticky across terminal resize and across
+  `:load`/`:undo`/`:redo`/NL requests); the keyword `auto` clears any
+  prior pin on that axis and resumes terminal-derived sizing. A single
+  `auto` argument is shorthand for `auto auto`. With no arguments,
+  prints one line — `viewport: <R> rows (<source>) × <C> cols
+  (<source>)` where each `<source>` is `auto` or `manual` — and does
+  not reprint the table. Any size change reprints the table at the new
+  page size; if the resulting page is smaller than the cursor's
+  position, the cursor clamps to the last valid page on that axis.
+  Non-positive integers print `:viewport: invalid size`; anything else
+  prints `:viewport: usage: :viewport [<rows>|auto] [<cols>|auto]`.
+  Not recorded in the undo journal.
 - `:find /<regex>/` or `:find <substring>` searches all string cells
   (case-insensitive). Slash-delimited input is a regex; anything else
   is a literal substring. On match, the viewport snaps to the row
@@ -244,6 +293,9 @@ View / navigation:
   :show [rows|cols start|prev|next|end|{N}]
                      Move viewport on the named axis, or jump to row/col N.
                      Bare :show reprints the current viewport.
+  :viewport [<R>|auto] [<C>|auto]
+                     Pin viewport page size; auto re-fits to terminal.
+                     Bare :viewport prints current size and source.
   :find {<substring>|/<regex>/}
                      Case-insensitive search; viewport snaps to the first
                      match and the reprint wraps it in *asterisks*.

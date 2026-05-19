@@ -153,13 +153,47 @@ function createCliRunner(options?: CliRunnerOptions): Runner;
 function runCli(argv: string[]): Promise<{ exitCode: number; stderr: string }>;
 ```
 
-REPL uses `node:readline/promises`. The ASCII renderer is hand-rolled
-`padEnd` (~30 LOC) and paginates at `REPL_PAGE_SIZE = 10` rows and
-`REPL_COL_PAGE_SIZE = 5` columns; when rows or columns fall outside the
-current viewport, the truncated edge renders `...{N} more rows.` or
-`...{N} more cols.` markers in place of cells. The CLI runner holds the
-viewport cursor `(rowOffset, colOffset)` and the undo/redo journal —
-neither surfaces on the `Runner` interface, since headless callers
+REPL uses `node:readline/promises`. The readline interface is created
+with `terminal: stdin.isTTY === true` — interactive runs get raw-mode
+line editing (↑/↓ history, ←/→, ⌃A/⌃E, ⌃R, etc.) for free; piped runs
+get a plain line reader with no escape-sequence interpretation, so
+Cucumber-driven input stays byte-deterministic. The flag is never
+hardcoded to `false`; passing an explicit `false` would break
+interactive UX (arrow keys echo as `^[[A`). The CLI does not maintain
+or persist a history file in V1 — readline's in-memory history is
+sufficient for a single session.
+
+The ASCII renderer is hand-rolled `padEnd` (~30 LOC). Page size
+`(pageRows, pageCols)` is recomputed at startup, on every `SIGWINCH`,
+and after `:viewport` from `process.stdout.columns` /
+`process.stdout.rows`:
+
+- `autoRows = max(1, process.stdout.rows - REPL_CHROME_LINES)` where
+  `REPL_CHROME_LINES = 5` (header + separator + bottom truncation
+  marker + prompt + one line of breathing room).
+- `autoCols` is the greedy fit: walk columns in display order summing
+  each column's rendered width (the longer of header label or the
+  widest cell on the current row page, capped by the per-cell `trunc`
+  ellipsis at ~20 chars) plus the inter-column separator, and stop
+  just before exceeding `process.stdout.columns`. Minimum 1.
+
+When `process.stdout.isTTY` is false (piped stdout, no controlling
+terminal — tests, CI, `tamedtable execute`), both autodetect branches
+are skipped and the renderer falls back to
+`REPL_FALLBACK_ROWS = 10` and `REPL_FALLBACK_COLS = 5`. The `/dev/tty`
+ioctl path is **not** used; non-interactive runs must stay byte-
+deterministic so Gherkin tests remain stable.
+
+`:viewport` pins either axis to a manual value held on the CLI runner
+as `(pinRows, pinCols)`. A pinned axis ignores `SIGWINCH` until cleared
+with `auto`. Effective per-axis size is `pin ?? auto ?? fallback`. When
+rows or columns fall outside the current viewport, the truncated edge
+renders `...{N} more rows.` or `...{N} more cols.` markers in place of
+cells.
+
+The CLI runner holds the viewport cursor `(rowOffset, colOffset)`, the
+viewport pins `(pinRows, pinCols)`, and the undo/redo journal — none
+of those surface on the `Runner` interface, since headless callers
 don't need them. The `:help` usage screen is the verbatim fenced block
 in [behavior.md §CLI/REPL](behavior.md#cli), loaded at module init.
 `runCli` returns instead of calling `process.exit` so callers can
