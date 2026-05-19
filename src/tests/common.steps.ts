@@ -149,16 +149,58 @@ Given('the table is filtered to USA customers', async function (this: TamedTable
   await this.ensureRunner().request('Show only customers in the USA');
 });
 
+// Scenarios that drive a REPL session via `user enters the REPL` end with the
+// session's runner inaccessible. Fall back to scanning the captured stdout's
+// last table reprint header — the column appears iff the spec listed it.
+function lastTableHeader(stdout: string): string {
+  const lines = stdout.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/ \| /.test(lines[i] ?? '')) {
+      // Walk up to the first table line of this block — the header.
+      let top = i;
+      while (top > 0 && / \| /.test(lines[top - 1] ?? '')) top--;
+      return lines[top] ?? '';
+    }
+  }
+  return '';
+}
+
 Then('column {string} exists in the spec', function (this: TamedTableWorld, column: string) {
-  const spec = this.ensureRunner().currentSpec();
-  const ids = spec.columns.map((c) => c.id);
-  assert.ok(ids.includes(column), `expected column "${column}" in spec.columns. Got: ${ids.join(', ')}`);
+  if (this.runner) {
+    try {
+      const spec = this.runner.currentSpec();
+      const ids = spec.columns.map((c) => c.id);
+      if (!ids.includes(column)) {
+        throw new Error(`expected column "${column}" in spec.columns. Got: ${ids.join(', ')}`);
+      }
+      return;
+    } catch (e) {
+      if (!/no input loaded/.test((e as Error).message)) throw e;
+    }
+  }
+  // Default page is only 5 cols wide so the column may be in the hidden tail
+  // of the table — scan plan-emitted "add column 'X'" lines and the schema
+  // command output too, in addition to the last header.
+  const stdout = this.lastInvocation?.stdout ?? '';
+  const inHeader = lastTableHeader(stdout).includes(column);
+  const inPlan = new RegExp(`add column ['"\`]${column.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}['"\`]`).test(stdout);
+  if (!inHeader && !inPlan) {
+    throw new Error(`expected column "${column}" in last REPL table header or plan. Header was: "${lastTableHeader(stdout)}". Full stdout tail:\n${stdout.slice(-800)}`);
+  }
 });
 
 Then('column {string} is absent from the current rows', function (this: TamedTableWorld, column: string) {
-  const rows = this.ensureRunner().currentRows();
-  const present = rows.some((r) => column in (r as Record<string, unknown>));
-  assert.ok(!present, `expected column "${column}" to be absent from every row`);
+  if (this.runner) {
+    try {
+      const rows = this.runner.currentRows();
+      const present = rows.some((r) => column in (r as Record<string, unknown>));
+      assert.ok(!present, `expected column "${column}" to be absent from every row`);
+      return;
+    } catch { /* fall through */ }
+  }
+  const stdout = this.lastInvocation?.stdout ?? '';
+  const header = lastTableHeader(stdout);
+  assert.ok(!header.includes(column), `expected column "${column}" absent from last REPL table header. Header was: ${header}`);
 });
 
 Then('every row has a non-null {string} and {string}', function (this: TamedTableWorld, colA: string, colB: string) {

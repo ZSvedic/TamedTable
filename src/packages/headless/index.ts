@@ -1,5 +1,6 @@
 import { generateText, tool, stepCountIs, jsonSchema } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join } from 'node:path';
@@ -543,6 +544,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private cellResultCache = new Map<string, unknown>();
   private loaded = false;
   private busy = false;
+  // DuckDB is initialised lazily on first {sql} use. The relation `t` is
+  // re-registered before each SQL-touching transformation so SQL always sees
+  // the latest committed rows.
+  private duckInstance: DuckDBInstance | undefined;
+  private duckConn: DuckDBConnection | undefined;
 
   constructor(opts: HeadlessRunnerOptions = {}) {
     this.opts = opts;
@@ -590,6 +596,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.spec = result.spec;
     this.derivedRows = result.rows.slice();
     this.cellResultCache.clear();
+    // Reset the DuckDB relation so SQL transformations see the new source.
+    if (this.duckConn) {
+      try { await this.duckConn.run('DROP TABLE IF EXISTS t'); } catch {}
+    }
     this.loaded = true;
   }
 
@@ -648,13 +658,6 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         try {
           const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk);
           abortIf(signal);
-          // Auto-sync spec.columns to the actual output row shape. V2
-          // transformations (group, pivot, split, validate, join, unpivot)
-          // change the column list mechanically; expecting the LLM to emit
-          // perfect /columns patches alongside every transformation is brittle.
-          // Existing LLM-emitted /columns ops still apply first (preserving
-          // their intended order and label/format metadata where rows have
-          // the same column).
           this.spec = syncColumnsToRows(tried.spec, newRows);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
@@ -744,10 +747,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     onChunk: ((u: ChunkUpdate) => void) | undefined
   ): Promise<Row[]> {
     switch (t.kind) {
-      case 'filter':   return applyFilter(rows, t);
+      case 'filter':
+        if ('sql' in t.pred) return this.applyFilterSql(rows, t as typeof t & { pred: { sql: string } });
+        return applyFilter(rows, t);
       case 'select':   return applySelect(rows, t);
       case 'sort':     return applySort(rows, t);
       case 'mutate':
+        if ('sql' in t.value) return this.applyMutateSql(rows, t as typeof t & { value: { sql: string } });
         if ('js' in t.value) return applyMutateJs(rows, t as typeof t & { value: { js: string } });
         return this.applyMutateLlm(rows, t as typeof t & { value: { llm: string; model?: string } }, tIndex, signal, onChunk);
       case 'validate': return applyValidateJs(rows, t);
@@ -802,6 +808,93 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       }
       return out;
     });
+  }
+
+  /** Lazily creates the in-process DuckDB connection. */
+  private async duck(): Promise<DuckDBConnection> {
+    if (this.duckConn) return this.duckConn;
+    const dbPath = process.env.TAMEDTABLE_DUCKDB_PATH ?? ':memory:';
+    const threads = process.env.TAMEDTABLE_DUCKDB_THREADS ?? '4';
+    this.duckInstance = await DuckDBInstance.create(dbPath);
+    this.duckConn = await this.duckInstance.connect();
+    await this.duckConn.run(`SET threads = ${Number(threads) || 4}`);
+    return this.duckConn;
+  }
+
+  /** Registers the current rows as relation `t`. Drops any prior registration
+   *  so {sql} always sees the latest committed rows. */
+  private async registerT(rows: Row[]): Promise<void> {
+    const conn = await this.duck();
+    // DuckDB's `DROP X IF EXISTS y` still errors if y exists as a different
+    // kind (e.g. dropping a VIEW when y is a TABLE). Try both and swallow
+    // the type-mismatch error — only one DROP can succeed but that's fine.
+    try { await conn.run('DROP TABLE IF EXISTS t'); } catch {}
+    try { await conn.run('DROP VIEW IF EXISTS t'); } catch {}
+    if (rows.length === 0) {
+      await conn.run('CREATE TABLE t (dummy INTEGER)');
+      await conn.run('DELETE FROM t');
+      return;
+    }
+    // Discover column names in first-seen insertion order across rows.
+    const cols: string[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) for (const k of Object.keys(row)) if (!seen.has(k)) { seen.add(k); cols.push(k); }
+    // All columns ingest as VARCHAR; SQL fragments cast to numeric/date as
+    // needed. Identifiers are NOT quoted in DDL so DuckDB stores them
+    // case-insensitively, matching the LLM's `lower(Country)` style usage
+    // (quoted identifiers would force exact-case matches and break that).
+    const colDefs = cols.map((c) => `${c} VARCHAR`).join(', ');
+    await conn.run(`CREATE TABLE t (${colDefs})`);
+    const sqlValue = (v: unknown) => {
+      if (v === null || v === undefined) return 'NULL';
+      const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      return `'${s.replace(/'/g, "''")}'`;
+    };
+    // INSERT in batches to keep SQL statement size reasonable.
+    const BATCH = 100;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const slice = rows.slice(i, i + BATCH);
+      const valuesSql = slice.map((row) =>
+        '(' + cols.map((c) => sqlValue(row[c])).join(', ') + ')'
+      ).join(', ');
+      await conn.run(`INSERT INTO t VALUES ${valuesSql}`);
+    }
+  }
+
+  /** Evaluates a {sql} scalar/predicate per row; returns one result per row
+   *  in input order. The SQL fragment is wrapped in SELECT … FROM t. */
+  private async evalSqlScalar(rows: Row[], sqlFragment: string): Promise<unknown[]> {
+    if (rows.length === 0) return [];
+    try {
+      await this.registerT(rows);
+      const conn = await this.duck();
+      const reader = await conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM t`);
+      return reader.getRowObjects().map((r) => (r as { r: unknown }).r);
+    } catch (e) {
+      throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
+    }
+  }
+
+  private async applyMutateSql(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'mutate' }> & { value: { sql: string } }
+  ): Promise<Row[]> {
+    const cols = Array.isArray(t.columns) ? t.columns : [t.columns];
+    const results = await this.evalSqlScalar(rows, t.value.sql);
+    return rows.map((row, i) => {
+      const out: Row = { ...row };
+      const v = results[i];
+      for (const c of cols) out[c] = v ?? null;
+      return out;
+    });
+  }
+
+  private async applyFilterSql(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'filter' }> & { pred: { sql: string } }
+  ): Promise<Row[]> {
+    const results = await this.evalSqlScalar(rows, t.pred.sql);
+    return rows.filter((_, i) => Boolean(results[i]));
   }
 
   private async applyMutateLlm(
