@@ -1,6 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { readJsonl, type Row } from '@tamedtable/core';
 import { runCli } from '@tamedtable/cli';
@@ -28,6 +28,31 @@ Given('{string} exists', async function (this: TamedTableWorld, filename: string
   await access(fixture(filename));
 });
 
+Given(/^"(.+)" exists with join\.with = "(.+)"$/, async function (this: TamedTableWorld, filename: string, joinWith: string) {
+  // Descriptive assertion: just confirm the fixture exists and contains the join.with path.
+  const content = await readFile(fixture(filename), 'utf8');
+  assert.ok(content.includes(joinWith), `${filename} does not reference ${joinWith}`);
+});
+
+Given(/^"(.+)" exists with an Expr of shape \{sql\}$/, async function (this: TamedTableWorld, filename: string) {
+  const content = await readFile(fixture(filename), 'utf8');
+  assert.ok(content.includes('"sql"'), `${filename} does not contain an "sql" expression`);
+});
+
+Then('the first line of {string} is {string}', async function (this: TamedTableWorld, filename: string, expectedFirstLine: string) {
+  const text = await readFile(output(filename), 'utf8');
+  const first = text.split('\n', 1)[0]!;
+  assert.equal(first, expectedFirstLine);
+});
+
+Then('{string} contains the line {string}', async function (this: TamedTableWorld, filename: string, expectedLine: string) {
+  const text = await readFile(output(filename), 'utf8');
+  // Cucumber's {string} captures literal backslash-n; expand it to actual newlines so
+  // the assertion can match a multi-line CSV cell.
+  const needle = expectedLine.replace(/\\n/g, '\n');
+  assert.ok(text.includes(needle), `${filename} missing line:\n${needle}\nFile was:\n${text}`);
+});
+
 When('user requests {string}', async function (this: TamedTableWorld, text: string) {
   await this.ensureRunner().request(text);
 });
@@ -43,10 +68,14 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
   const args = tokens.slice(1).map((tok, i, arr) =>
     i > 0 && arr[i - 1] === '--output' ? output(tok) : tok
   );
-  const result = await runCli(args);
-  if (result.exitCode !== 0) {
-    throw new Error(`tamedtable exited ${result.exitCode}: ${result.stderr}`);
-  }
+  // Capture stdout so later "stdout contains …" steps can assert against it;
+  // do NOT throw on non-zero exit — V1-rejection scenarios assert exit 2.
+  const chunks: string[] = [];
+  const stream = {
+    write: (s: string | Buffer) => { chunks.push(s.toString()); return true; },
+  } as unknown as NodeJS.WritableStream;
+  const result = await runCli(args, { stdout: stream });
+  this.lastInvocation = { exitCode: result.exitCode, stdout: chunks.join(''), stderr: result.stderr };
 });
 
 Then('column {string} matches the golden output', async function (this: TamedTableWorld, column: string) {
@@ -65,6 +94,13 @@ Then('the table matches the golden output', async function (this: TamedTableWorl
 });
 
 Then('{string} matches the golden output', async function (this: TamedTableWorld, filename: string) {
+  // CSV goldens compare as text (RFC 4180 ordering matters); JSONL goldens compare row-by-row.
+  if (this.goldenPath!.endsWith('.csv')) {
+    const golden = await readFile(this.goldenPath!, 'utf8');
+    const actual = await readFile(output(filename), 'utf8');
+    assert.equal(actual.replace(/\r\n/g, '\n').trimEnd(), golden.replace(/\r\n/g, '\n').trimEnd());
+    return;
+  }
   const golden = await readJsonl(this.goldenPath!);
   const actual = await readJsonl(output(filename));
   assert.deepEqual(actual, golden);

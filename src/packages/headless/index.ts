@@ -8,7 +8,7 @@ import {
   loadCsv,
   loadJsonl,
   validateSpec,
-  writeJsonl,
+  writeRows,
   type Row,
   type Spec,
   type Transformation,
@@ -355,10 +355,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   currentRows(): Row[] { this.requireLoaded(); return this.derivedRows; }
   currentSpec(): Spec { this.requireLoaded(); return this.spec; }
 
-  async exportAs(path: string): Promise<void> {
+  async exportAs(filePath: string): Promise<void> {
     this.requireLoaded();
-    if (!path.endsWith('.jsonl')) throw new Error(`exportAs: V1 only supports .jsonl, got ${path}`);
-    await writeJsonl(path, this.derivedRows, this.spec.columns.map((c) => c.id));
+    await writeRows(filePath, this.derivedRows, this.spec.columns.map((c) => c.id));
   }
 
   async setSpec(spec: Spec): Promise<void> {

@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import {
   loadEnv,
   validateSpec,
+  validateV1Spec,
   type Row,
   type Spec,
   type Transformation,
@@ -577,7 +578,9 @@ const SLASH: Record<string, SlashHandler> = {
   },
 
   async ':save'(arg, runner, stdout) {
-    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.jsonl>\n'); return; }
+    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.jsonl|.csv>\n'); return; }
+    const ext = arg.slice(arg.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.jsonl' && ext !== '.csv') { stdout.write(':save: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       await runner.exportAs(arg);
       stdout.write(`saved ${runner.currentRows().length} rows to ${arg}\n`);
@@ -717,11 +720,15 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
   } catch (e) {
     return fail(2, `tamedtable execute: ${flowPath}: invalid JSON: ${(e as Error).message}`);
   }
-  if (flow.version !== 1) return fail(2, `tamedtable execute: ${flowPath}: version must be 1 (got ${flow.version ?? 'undefined'})`);
+  if (flow.version !== 1 && flow.version !== 2) {
+    return fail(2, `tamedtable execute: ${flowPath}: version must be 1 or 2 (got ${flow.version ?? 'undefined'})`);
+  }
 
   let spec: Spec;
   try {
-    spec = validateSpec(flow.spec);
+    // Version 1 flows enforce the legacy schema (V2 features rejected with a
+    // "V2 feature in V1 spec" error). Version 2 flows use the full V2 schema.
+    spec = flow.version === 1 ? validateV1Spec(flow.spec) : validateSpec(flow.spec);
   } catch (e) {
     return fail(2, `tamedtable execute: ${flowPath}: ${(e as Error).message}`);
   }
