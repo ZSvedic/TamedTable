@@ -61,11 +61,20 @@ function assertStreamContains(world: TamedTableWorld, stream: 'stdout' | 'stderr
     `${label}${label ? ' ' : ''}${stream} missing substring ${JSON.stringify(text)}. ${stream} was:\n${haystack}`);
 }
 
-Then('exit code is {int}',            function (this: TamedTableWorld, c: number) { assertExitCode(this, c); });
-Then('REPL exit code is {int}',       function (this: TamedTableWorld, c: number) { assertExitCode(this, c, 'REPL'); });
-Then('stdout contains {string}',      function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t); });
-Then('stderr contains {string}',      function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stderr', t); });
-Then('REPL stdout contains {string}', function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t, 'REPL'); });
+function assertStreamLacks(world: TamedTableWorld, stream: 'stdout' | 'stderr', text: string, label = ''): void {
+  const inv = getCapture(world);
+  const haystack = inv[stream];
+  assert.ok(!haystack.includes(text),
+    `${label}${label ? ' ' : ''}${stream} unexpectedly contains substring ${JSON.stringify(text)}. ${stream} was:\n${haystack}`);
+}
+
+Then('exit code is {int}',                    function (this: TamedTableWorld, c: number) { assertExitCode(this, c); });
+Then('REPL exit code is {int}',               function (this: TamedTableWorld, c: number) { assertExitCode(this, c, 'REPL'); });
+Then('stdout contains {string}',              function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t); });
+Then('stdout does not contain {string}',      function (this: TamedTableWorld, t: string) { assertStreamLacks(this, 'stdout', t); });
+Then('stderr contains {string}',              function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stderr', t); });
+Then('REPL stdout contains {string}',         function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t, 'REPL'); });
+Then('REPL stdout does not contain {string}', function (this: TamedTableWorld, t: string) { assertStreamLacks(this, 'stdout', t, 'REPL'); });
 
 // Slice the LAST contiguous block of table lines from stdout. A table line is any line
 // containing " | " (cell separator from renderTable). The header line may be prefixed by

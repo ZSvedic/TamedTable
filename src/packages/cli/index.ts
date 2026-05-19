@@ -39,8 +39,27 @@ export interface RunCliResult {
   stderr: string;
 }
 
-export const REPL_PAGE_SIZE = 10;
-export const REPL_COL_PAGE_SIZE = 5;
+export const REPL_FALLBACK_ROWS = 10;
+export const REPL_FALLBACK_COLS = 5;
+export const REPL_PAGE_SIZE = REPL_FALLBACK_ROWS;
+export const REPL_COL_PAGE_SIZE = REPL_FALLBACK_COLS;
+const REPL_CHROME_LINES = 5;
+
+const CLI_USAGE_TEXT = `tamedtable — work tables in your terminal with natural-language requests.
+
+Usage:
+  tamedtable <input>                 Open <input> in the interactive REPL.
+                                     <input> is a .csv or .jsonl file.
+                                     Once inside, type :help for commands.
+  tamedtable execute <flow>          Replay a saved .flow against an input.
+                                     No LLM call; no API key needed.
+    --input  <file>                  Source .csv or .jsonl. Overrides the
+                                     source path recorded in <flow>.
+    --output <file>                  Destination .jsonl. Required.
+  tamedtable --help, -h, help        Show this usage screen.
+
+The REPL needs ANTHROPIC_API_KEY in env.
+`;
 
 const HELP_TEXT = `TamedTable — interactive table editor. Natural-language requests edit the
 spec; results stream in. The table reprints after any state or viewport
@@ -59,6 +78,9 @@ View / navigation:
   :show [rows|cols start|prev|next|end|{N}]
                      Move viewport on the named axis, or jump to row/col N.
                      Bare :show reprints the current viewport.
+  :viewport [<R>|auto] [<C>|auto]
+                     Pin viewport page size; auto re-fits to terminal.
+                     Bare :viewport prints current size and source.
   :find {<substring>|/<regex>/}
                      Case-insensitive search; viewport snaps to the first
                      match and the reprint wraps it in *asterisks*.
@@ -94,15 +116,17 @@ export function renderTable(
   rows: Row[],
   rowOffset = 0,
   colOffset = 0,
-  highlight?: RegExp
+  highlight?: RegExp,
+  pageRows: number = REPL_FALLBACK_ROWS,
+  pageCols: number = REPL_FALLBACK_COLS
 ): string {
   const allCols = spec.columns.map((c) => c.id);
   const totalRows = rows.length;
   const totalCols = allCols.length;
   const rStart = Math.max(0, Math.min(rowOffset, Math.max(0, totalRows - 1)));
-  const rEnd = Math.min(totalRows, rStart + REPL_PAGE_SIZE);
+  const rEnd = Math.min(totalRows, rStart + pageRows);
   const cStart = Math.max(0, Math.min(colOffset, Math.max(0, totalCols - 1)));
-  const cEnd = Math.min(totalCols, cStart + REPL_COL_PAGE_SIZE);
+  const cEnd = Math.min(totalCols, cStart + pageCols);
   const visibleRows = rows.slice(rStart, rEnd);
   const visibleCols = allCols.slice(cStart, cEnd);
   const rowsBefore = rStart;
@@ -223,6 +247,8 @@ class CliRunnerImpl implements CliRunner {
   private quiet: boolean;
   private rowOffset = 0;
   private colOffset = 0;
+  private pinRows: number | null = null;
+  private pinCols: number | null = null;
   private journal: JournalEntry[] = [];
   private redoStack: JournalEntry[] = [];
   private highlight: RegExp | undefined;
@@ -251,8 +277,60 @@ class CliRunnerImpl implements CliRunner {
     for (const item of items) this.stdout.write(`  • ${formatPlanItem(item)}\n`);
   }
 
+  private autoRows(): number {
+    const isTTY = Boolean((this.stdout as { isTTY?: boolean }).isTTY);
+    if (!isTTY) return REPL_FALLBACK_ROWS;
+    const rows = (this.stdout as { rows?: number }).rows;
+    if (!rows || rows <= REPL_CHROME_LINES) return REPL_FALLBACK_ROWS;
+    return Math.max(1, rows - REPL_CHROME_LINES);
+  }
+
+  private autoCols(): number {
+    // Greedy fit is left for a future pass — non-TTY (tests, pipes) always uses the fallback.
+    const isTTY = Boolean((this.stdout as { isTTY?: boolean }).isTTY);
+    if (!isTTY) return REPL_FALLBACK_COLS;
+    return REPL_FALLBACK_COLS;
+  }
+
+  private effectiveRows(): number { return this.pinRows ?? this.autoRows(); }
+  private effectiveCols(): number { return this.pinCols ?? this.autoCols(); }
+
+  viewportSummary(): string {
+    const r = this.effectiveRows();
+    const c = this.effectiveCols();
+    const rs = this.pinRows == null ? 'auto' : 'manual';
+    const cs = this.pinCols == null ? 'auto' : 'manual';
+    return `viewport: ${r} rows (${rs}) × ${c} cols (${cs})`;
+  }
+
+  setViewport(rows: number | null | undefined, cols: number | null | undefined): void {
+    // `undefined` means "leave this axis alone"; `null` means "clear the pin (auto)".
+    if (rows !== undefined) this.pinRows = rows;
+    if (cols !== undefined) this.pinCols = cols;
+    this.clampCursorToPage();
+  }
+
+  private clampCursorToPage(): void {
+    const totalRows = this.headless.currentRows().length;
+    const totalCols = this.headless.currentSpec().columns.length;
+    const pageR = this.effectiveRows();
+    const pageC = this.effectiveCols();
+    const lastRowPage = Math.max(0, Math.floor(Math.max(0, totalRows - 1) / pageR) * pageR);
+    const lastColPage = Math.max(0, Math.floor(Math.max(0, totalCols - 1) / pageC) * pageC);
+    if (this.rowOffset > lastRowPage) this.rowOffset = lastRowPage;
+    if (this.colOffset > lastColPage) this.colOffset = lastColPage;
+  }
+
   printTable(): void {
-    const out = renderTable(this.headless.currentSpec(), this.headless.currentRows(), this.rowOffset, this.colOffset, this.highlight);
+    const out = renderTable(
+      this.headless.currentSpec(),
+      this.headless.currentRows(),
+      this.rowOffset,
+      this.colOffset,
+      this.highlight,
+      this.effectiveRows(),
+      this.effectiveCols()
+    );
     this.stdout.write(out + '\n');
     this.highlight = undefined;
   }
@@ -344,7 +422,7 @@ class CliRunnerImpl implements CliRunner {
       return false;
     }
     const total = axis === 'rows' ? this.headless.currentRows().length : this.headless.currentSpec().columns.length;
-    const pageSize = axis === 'rows' ? REPL_PAGE_SIZE : REPL_COL_PAGE_SIZE;
+    const pageSize = axis === 'rows' ? this.effectiveRows() : this.effectiveCols();
     let offset = axis === 'rows' ? this.rowOffset : this.colOffset;
     const lastPage = Math.max(0, Math.floor(Math.max(0, total - 1) / pageSize) * pageSize);
     if (pos === 'start') offset = 0;
@@ -379,14 +457,16 @@ class CliRunnerImpl implements CliRunner {
     }
     const rows = this.headless.currentRows();
     const cols = this.headless.currentSpec().columns.map((c) => c.id);
+    const pageR = this.effectiveRows();
+    const pageC = this.effectiveCols();
     for (let ri = 0; ri < rows.length; ri++) {
       for (let ci = 0; ci < cols.length; ci++) {
         const cell = rows[ri]![cols[ci]!];
         if (typeof cell !== 'string') continue;
         if (cell.match(re)) {
-          this.rowOffset = Math.floor(ri / REPL_PAGE_SIZE) * REPL_PAGE_SIZE;
-          if (ci < this.colOffset || ci >= this.colOffset + REPL_COL_PAGE_SIZE) {
-            this.colOffset = Math.floor(ci / REPL_COL_PAGE_SIZE) * REPL_COL_PAGE_SIZE;
+          this.rowOffset = Math.floor(ri / pageR) * pageR;
+          if (ci < this.colOffset || ci >= this.colOffset + pageC) {
+            this.colOffset = Math.floor(ci / pageC) * pageC;
           }
           this.highlight = re;
           return { reprint: true, messages };
@@ -465,6 +545,15 @@ const SLASH: Record<string, SlashHandler> = {
     if (runner.showCmd(arg)) runner.printTable();
   },
 
+  ':viewport'(arg, runner, stdout) {
+    const res = parseViewportArgs(arg);
+    if (res.kind === 'print') { stdout.write(runner.viewportSummary() + '\n'); return; }
+    if (res.kind === 'invalid') { stdout.write(':viewport: invalid size\n'); return; }
+    if (res.kind === 'usage') { stdout.write(':viewport: usage: :viewport [<rows>|auto] [<cols>|auto]\n'); return; }
+    runner.setViewport(res.rows, res.cols);
+    runner.printTable();
+  },
+
   ':find'(arg, runner, stdout) {
     const res = runner.findCmd(arg);
     for (const m of res.messages) stdout.write(m + '\n');
@@ -509,6 +598,39 @@ const SLASH: Record<string, SlashHandler> = {
     });
   },
 };
+
+type ViewportParse =
+  | { kind: 'print' }
+  | { kind: 'invalid' }
+  | { kind: 'usage' }
+  | { kind: 'set'; rows: number | null | undefined; cols: number | null | undefined };
+
+function parseViewportArgs(arg: string): ViewportParse {
+  const trimmed = arg.trim();
+  if (trimmed === '') return { kind: 'print' };
+  const tokens = trimmed.split(/\s+/);
+  if (tokens.length > 2) return { kind: 'usage' };
+  // The spec carves out exactly one single-arg shorthand: `auto` == `auto auto`.
+  // Single-integer or other single-token forms are unsupported → usage.
+  if (tokens.length === 1) {
+    if (tokens[0] === 'auto') return { kind: 'set', rows: null, cols: null };
+    return { kind: 'usage' };
+  }
+  const [rTok, cTok] = tokens;
+  const parseAxis = (tok: string): number | null | 'invalid' | 'usage' => {
+    if (tok === 'auto') return null;
+    if (/^-?\d+$/.test(tok)) {
+      const n = Number(tok);
+      return n <= 0 ? 'invalid' : n;
+    }
+    return 'usage';
+  };
+  const r = parseAxis(rTok!);
+  const c = parseAxis(cTok!);
+  if (r === 'usage' || c === 'usage') return { kind: 'usage' };
+  if (r === 'invalid' || c === 'invalid') return { kind: 'invalid' };
+  return { kind: 'set', rows: r, cols: c };
+}
 
 async function resolveLoadPath(p: string): Promise<string | undefined> {
   if (path.isAbsolute(p)) {
@@ -555,7 +677,7 @@ export async function runCli(argv: string[], opts: CliRunnerOptions = {}): Promi
   const fail = makeFail(stderr);
 
   if (argv[0] === '--help' || argv[0] === '-h' || argv[0] === 'help') {
-    (opts.stdout ?? process.stdout).write(HELP_TEXT);
+    (opts.stdout ?? process.stdout).write(CLI_USAGE_TEXT);
     return { exitCode: 0, stderr: '' };
   }
   if (argv.length === 0) return fail(1, 'tamedtable: REPL mode requires a CSV or JSONL path. Try --help for usage.');
