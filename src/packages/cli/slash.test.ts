@@ -45,9 +45,10 @@ describe('handleSlashCommand', () => {
     const h = makeHarness();
     expect(await handleSlashCommand(':help', h.runner, h.stream)).toBe('handled');
     const out = h.text();
-    expect(out).toContain('Usage:');
+    expect(out).toContain('TamedTable');
     expect(out).toContain(':help');
     expect(out).toContain(':undo');
+    expect(out).toContain(':redo');
     expect(out).toContain('exit');
   });
 
