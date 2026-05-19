@@ -1,25 +1,55 @@
 import { z } from 'zod';
 import { parse } from 'csv-parse/sync';
+import { stringify } from 'csv-stringify/sync';
 import { readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
 export type Row = Record<string, unknown>;
 
-const V2_KINDS = ['group', 'join'] as const;
+const V2_KINDS = ['group', 'join', 'split', 'validate', 'pivot', 'unpivot'] as const;
 
-export const ExprSchema = z.union([
+// ── V1 schemas (rejects every V2 feature for legacy flow files) ────────────
+
+const V1ExprSchema = z.union([
   z.object({ js: z.string() }).strict(),
   z.object({ llm: z.string(), model: z.string().optional() }).strict(),
   z.object({ sql: z.string() }).strict().superRefine((_, ctx) => {
     ctx.addIssue({ code: 'custom', message: 'V2 feature in V1 spec: Expr.sql' });
   }),
 ]);
-export type Expr = { js: string } | { llm: string; model?: string };
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);
 
-const V1TransformationSchema = z.discriminatedUnion('kind', [
+const V1TransformationCoreSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('filter'), pred: V1ExprSchema }).strict(),
+  z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: V1ExprSchema }).strict(),
+  z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
+  z.object({
+    kind: z.literal('sort'),
+    by: z.array(z.object({ key: z.union([z.string(), V1ExprSchema]), dir: z.enum(['asc', 'desc']) })),
+  }).strict(),
+]);
+
+const V1TransformationSchema = z.preprocess((t) => {
+  const kind = (t as { kind?: unknown } | null | undefined)?.kind;
+  if (typeof kind === 'string' && (V2_KINDS as readonly string[]).includes(kind)) {
+    throw new Error(`V2 feature in V1 spec: kind="${kind}"`);
+  }
+  return t;
+}, V1TransformationCoreSchema);
+
+// ── V2 schemas (permit all V2 features) ───────────────────────────────────
+
+export const ExprSchema: z.ZodTypeAny = z.union([
+  z.object({ js: z.string() }).strict(),
+  z.object({ llm: z.string(), model: z.string().optional() }).strict(),
+  z.object({ sql: z.string() }).strict(),
+]);
+
+const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
+
+const V2TransformationSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('filter'), pred: ExprSchema }).strict(),
   z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema }).strict(),
   z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
@@ -27,20 +57,68 @@ const V1TransformationSchema = z.discriminatedUnion('kind', [
     kind: z.literal('sort'),
     by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) })),
   }).strict(),
+  z.object({
+    kind: z.literal('group'),
+    by: z.array(z.union([z.string(), ExprSchema])).min(1, 'group.by must be non-empty'),
+    agg: z.record(z.string(), ExprSchema),
+  }).strict(),
+  z.object({
+    kind: z.literal('join'),
+    with: z.string().refine((s) => JsonLikeFileExtRe.test(s), {
+      message: 'join.with: unknown file type (must be .csv or .jsonl)',
+    }),
+    on: ExprSchema,
+    how: z.enum(['inner', 'left']).optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('split'),
+    from: z.string(),
+    into: z.array(z.string()).min(1, 'split.into must be non-empty'),
+    on: z.union([z.string(), z.instanceof(RegExp), ExprSchema]),
+    drop: z.boolean().optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('validate'),
+    pred: ExprSchema,
+    message: ExprSchema.optional(),
+    threshold: z.number().min(0).max(1).optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('pivot'),
+    index: z.array(z.string()).min(1, 'pivot.index must be non-empty'),
+    on: z.string(),
+    values: z.string(),
+    agg: z.enum(['sum', 'count', 'avg', 'min', 'max', 'first']).optional(),
+  }).strict().refine((p) => !p.index.includes(p.on), { message: 'pivot.on cannot be in pivot.index' }),
+  z.object({
+    kind: z.literal('unpivot'),
+    id: z.array(z.string()),
+    measures: z.array(z.string()),
+    names_to: z.string().optional(),
+    values_to: z.string().optional(),
+  }).strict(),
 ]);
 
-export const TransformationSchema = z.preprocess((t) => {
-  const kind = (t as { kind?: unknown } | null | undefined)?.kind;
-  if (typeof kind === 'string' && (V2_KINDS as readonly string[]).includes(kind)) {
-    throw new Error(`V2 feature in V1 spec: kind="${kind}"`);
-  }
-  return t;
-}, V1TransformationSchema);
+// Re-export the V2 transformation schema as the default — patches and live specs
+// always validate against V2.
+export const TransformationSchema = V2TransformationSchema;
+
+export type Expr =
+  | { js: string }
+  | { llm: string; model?: string }
+  | { sql: string };
+
 export type Transformation =
   | { kind: 'filter'; pred: Expr }
   | { kind: 'mutate'; columns: string | string[]; value: Expr }
   | { kind: 'select'; columns: string[] }
-  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }> };
+  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }> }
+  | { kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> }
+  | { kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' }
+  | { kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }
+  | { kind: 'validate'; pred: Expr; message?: Expr; threshold?: number }
+  | { kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' }
+  | { kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string };
 
 const ColumnSchema = z.object({
   id: z.string(),
@@ -48,7 +126,7 @@ const ColumnSchema = z.object({
   format: z.string().optional(),
 });
 
-export const SpecSchema = z
+const V1SpecSchema = z
   .object({
     table: z.string().optional(),
     columns: z.array(ColumnSchema),
@@ -61,20 +139,51 @@ export const SpecSchema = z
         aggregates: z.array(z.unknown()).max(0, 'V2 feature in V1 spec: summary.aggregates'),
       })
       .optional(),
-    transformations: z.array(TransformationSchema),
+    transformations: z.array(V1TransformationSchema),
+  })
+  .strict();
+
+export const SpecSchema = z
+  .object({
+    table: z.string().optional(),
+    columns: z.array(ColumnSchema),
+    filter: z.unknown().optional(),
+    sort: z.array(z.unknown()).optional(),
+    page: z.object({ size: z.number(), offset: z.number() }).optional(),
+    summary: z
+      .object({
+        groupBy: z.array(z.unknown()),
+        aggregates: z.array(z.unknown()),
+      })
+      .optional(),
+    transformations: z.array(V2TransformationSchema),
   })
   .strict();
 export type Spec = z.infer<typeof SpecSchema>;
 
+function describeZodError(err: z.ZodError): string {
+  return err.issues
+    .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
+    .join('; ');
+}
+
 export function validateSpec(spec: unknown): Spec {
   const result = SpecSchema.safeParse(spec);
   if (!result.success) {
-    const msg = result.error.issues
-      .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
-      .join('; ');
-    throw new Error(`Spec validation failed: ${msg}`);
+    throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
   }
-  return result.data;
+  return result.data as Spec;
+}
+
+/** Validate a spec under V1 rules — used when loading `version: 1` .flow files.
+ *  Rejects every V2 feature with a "V2 feature in V1 spec" error so legacy
+ *  flows can't smuggle in transformations the V1 runtime never supported. */
+export function validateV1Spec(spec: unknown): Spec {
+  const result = V1SpecSchema.safeParse(spec);
+  if (!result.success) {
+    throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
+  }
+  return result.data as Spec;
 }
 
 async function readText(label: string, path: string): Promise<string> {
@@ -188,4 +297,32 @@ export async function writeJsonl(path: string, rows: Row[], columnOrder?: string
   } catch (e) {
     throw new Error(`writeJsonl: could not write ${path}: ${(e as Error).message}`);
   }
+}
+
+function csvCellString(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+export async function writeCsv(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
+  const records = rows.map((row) =>
+    columnOrder.map((col) => csvCellString(col in row ? row[col] : null))
+  );
+  // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines).
+  const body = stringify(records, { header: true, columns: columnOrder });
+  try {
+    await writeFile(filePath, body, 'utf8');
+  } catch (e) {
+    throw new Error(`writeCsv: could not write ${filePath}: ${(e as Error).message}`);
+  }
+}
+
+/** Dispatch on file extension. .jsonl → writeJsonl, .csv → writeCsv. Any other
+ *  extension throws an "unknown file type" error that callers surface inline. */
+export async function writeRows(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
+  const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+  if (ext === '.jsonl') return writeJsonl(filePath, rows, columnOrder);
+  if (ext === '.csv') return writeCsv(filePath, rows, columnOrder);
+  throw new Error(`unknown file type: ${filePath}`);
 }

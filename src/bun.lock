@@ -30,6 +30,7 @@
       "version": "0.0.0",
       "dependencies": {
         "csv-parse": "^6.2.1",
+        "csv-stringify": "^6.7.0",
         "zod": "^4.4.3",
       },
     },
@@ -38,6 +39,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.74",
+        "@duckdb/node-api": "1.5.2-r.1",
         "@tamedtable/core": "workspace:*",
         "ai": "^6.0.174",
         "fast-json-patch": "^3.1.1",
@@ -84,6 +86,22 @@
     "@cucumber/query": ["@cucumber/query@15.0.1", "", { "dependencies": { "@teppeis/multimaps": "3.0.0", "lodash.sortby": "^4.7.0" }, "peerDependencies": { "@cucumber/messages": "*" } }, "sha512-FMfT3orJblRsOxvU2doECBvQmauizYlj+5JsM8atAKKPbnQTj7v2/OrnuykvQpfZNBf19DYbRq1e832vllRP/g=="],
 
     "@cucumber/tag-expressions": ["@cucumber/tag-expressions@9.1.0", "", {}, "sha512-bvHjcRFZ+J1TqIa9eFNO1wGHqwx4V9ZKV3hYgkuK/VahHx73uiP4rKV3JVrvWSMrwrFvJG6C8aEwnCWSvbyFdQ=="],
+
+    "@duckdb/node-api": ["@duckdb/node-api@1.5.2-r.1", "", { "dependencies": { "@duckdb/node-bindings": "1.5.2-r.1" } }, "sha512-OzBBnS0JGXMoS5mzKNY/Ylr7SshcRQiLFIoxQ4AlePwJ2fNeDL/fbHu/knjxUrXwW1fJBTUgwWftmxDdnZZb3A=="],
+
+    "@duckdb/node-bindings": ["@duckdb/node-bindings@1.5.2-r.1", "", { "optionalDependencies": { "@duckdb/node-bindings-darwin-arm64": "1.5.2-r.1", "@duckdb/node-bindings-darwin-x64": "1.5.2-r.1", "@duckdb/node-bindings-linux-arm64": "1.5.2-r.1", "@duckdb/node-bindings-linux-x64": "1.5.2-r.1", "@duckdb/node-bindings-win32-arm64": "1.5.2-r.1", "@duckdb/node-bindings-win32-x64": "1.5.2-r.1" } }, "sha512-bUg3bLVj70YVku6fKyQJS8ASORl7kM7YFVFznsEB9pWbtazPj+ME2x2FUk0WiTzjJdutjzSSGXF066mB4bGGZA=="],
+
+    "@duckdb/node-bindings-darwin-arm64": ["@duckdb/node-bindings-darwin-arm64@1.5.2-r.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-v35FyKOb8EJCvaiPF7k0gvKiJTXR7PPQDNoWR0Gu+YSX5O9b+DIguzt1348Of3HebHy6ATSMzlUekaVA9YXu+g=="],
+
+    "@duckdb/node-bindings-darwin-x64": ["@duckdb/node-bindings-darwin-x64@1.5.2-r.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-SU9dIJ1BluKkkGxi4UsP4keqkkstB2YDySF9KcYu3EZKIVM3FTv2zc7XO38dXnHOq6+F3WqhWWZvD+XU945p7A=="],
+
+    "@duckdb/node-bindings-linux-arm64": ["@duckdb/node-bindings-linux-arm64@1.5.2-r.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-3Tra9xM3aM3denaER4KhJ6//6PpmPbik9ECBQ+sh9PyKaEgHw/0kAcKnLm5EzWUnXF0qYmZlewvkCrse8KmOYw=="],
+
+    "@duckdb/node-bindings-linux-x64": ["@duckdb/node-bindings-linux-x64@1.5.2-r.1", "", { "os": "linux", "cpu": "x64" }, "sha512-pcQvZRHiIfJ9cq8parkSQczQHEml/IeGfnDCMAbEgD6+jaV9Y9Y5Ph1kP9aR+bm6him1S5ZIEr3kZbihjKnWbA=="],
+
+    "@duckdb/node-bindings-win32-arm64": ["@duckdb/node-bindings-win32-arm64@1.5.2-r.1", "", { "os": "win32", "cpu": "arm64" }, "sha512-Ji8tym+N3LkrhVt0Up3bsacD/kpg4/JXFJQqxswiYvBaNCQOk+D+aiVS0GN5pcqvmnG7V7TpsDRzkLEFaWp1vw=="],
+
+    "@duckdb/node-bindings-win32-x64": ["@duckdb/node-bindings-win32-x64@1.5.2-r.1", "", { "os": "win32", "cpu": "x64" }, "sha512-5XqcqC+4R8ghBEEbnc2a0sqfz1zyPBRb9YcmIWfiuDoCYSYFbKhmHcEyNftZDHcwCoLOHXnUin45jraex4STqQ=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 
@@ -138,6 +156,8 @@
     "commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
 
     "csv-parse": ["csv-parse@6.2.1", "", {}, "sha512-LRLMV+UCyfMokp8Wb411duBf1gaBKJfOfBWU9eHMJ+b+cJYZsNu3AFmjJf3+yPGd59Exz1TsMjaSFyxnYB9+IQ=="],
+
+    "csv-stringify": ["csv-stringify@6.7.0", "", {}, "sha512-UdtziYp5HuTz7e5j8Nvq+a/3HQo+2/aJZ9xntNTpmRRIg/3YYqDVgiS9fvAhtNbnyfbv2ZBe0bqCHqzhE7FqWQ=="],
 
     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
 

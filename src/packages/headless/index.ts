@@ -1,14 +1,16 @@
 import { generateText, tool, stepCountIs, jsonSchema } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   loadCsv,
   loadJsonl,
   validateSpec,
-  writeJsonl,
+  writeRows,
+  type Expr,
   type Row,
   type Spec,
   type Transformation,
@@ -183,6 +185,31 @@ const rateLimiter = (() => {
   };
 })();
 
+/** After replay, align spec.columns with the actual row keys: keep every
+ *  column in spec.columns that still appears in the rows (preserving the
+ *  LLM-chosen order and any label/format), and append new keys the
+ *  transformations introduced in first-seen order. */
+function syncColumnsToRows(spec: Spec, rows: Row[]): Spec {
+  if (rows.length === 0) return spec;
+  const actualKeys: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    for (const k of Object.keys(row)) if (!seen.has(k)) { seen.add(k); actualKeys.push(k); }
+  }
+  const byId = new Map(spec.columns.map((c) => [c.id, c]));
+  const next: Spec['columns'] = [];
+  // First, keep existing columns in their declared order if they still exist.
+  for (const col of spec.columns) {
+    if (seen.has(col.id)) next.push(col);
+  }
+  // Then, append any new keys that aren't already in spec.columns.
+  const declared = new Set(next.map((c) => c.id));
+  for (const k of actualKeys) {
+    if (!declared.has(k)) next.push(byId.get(k) ?? { id: k });
+  }
+  return { ...spec, columns: next };
+}
+
 // ── Pure transformations ────────────────────────────────────────────────────
 
 function applyFilter(rows: Row[], t: Extract<Transformation, { kind: 'filter' }>): Row[] {
@@ -231,6 +258,221 @@ function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'mutate' 
       for (const c of cols) out[c] = (result as Row)[c];
     return out;
   });
+}
+
+// ── V2 transformations ────────────────────────────────────────────────────
+
+function applyValidateJs(rows: Row[], t: Extract<Transformation, { kind: 'validate' }>): Row[] {
+  if (!('js' in t.pred)) throw new Error('validate: LLM predicates not supported');
+  const predFn = compileJs(t.pred.js);
+  const msgFn = t.message && 'js' in t.message ? compileJs(t.message.js) : undefined;
+  const out: Row[] = rows.map((row, i) => {
+    const valid = Boolean(predFn(row, i, rows));
+    const message = valid ? null : msgFn ? msgFn(row, i, rows) : null;
+    return { ...row, _valid: valid, _validation: message };
+  });
+  if (t.threshold !== undefined && rows.length > 0) {
+    const failures = out.filter((r) => r._valid === false).length;
+    const rate = failures / rows.length;
+    if (rate > t.threshold) {
+      throw new Error(
+        `validation failed: ${(rate * 100).toFixed(0)}% > ${(t.threshold * 100).toFixed(0)}%`
+      );
+    }
+  }
+  return out;
+}
+
+function evalKey(rowOrExpr: string | Expr, row: Row, i: number, rows: Row[]): unknown {
+  if (typeof rowOrExpr === 'string') return row[rowOrExpr];
+  if ('js' in rowOrExpr) return compileJs(rowOrExpr.js)(row, i, rows);
+  throw new Error(`group/sort: only string or {js} keys supported (got ${JSON.stringify(rowOrExpr)})`);
+}
+
+type GroupBuckets = { order: string[]; groups: Map<string, { keyTuple: unknown[]; slice: Row[] }> };
+
+function buildGroups(rows: Row[], by: Array<string | Expr>): GroupBuckets {
+  const order: string[] = [];
+  const groups = new Map<string, { keyTuple: unknown[]; slice: Row[] }>();
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    const tuple = by.map((b) => evalKey(b, row, i, rows));
+    const key = JSON.stringify(tuple);
+    let entry = groups.get(key);
+    if (!entry) { entry = { keyTuple: tuple, slice: [] }; groups.set(key, entry); order.push(key); }
+    entry.slice.push(row);
+  }
+  return { order, groups };
+}
+
+function applyGroupJs(rows: Row[], t: Extract<Transformation, { kind: 'group' }>): Row[] {
+  // Build groups in first-seen order so the output preserves input order.
+  const { order, groups } = buildGroups(rows, t.by);
+  const byNames = t.by.map((b, i) => typeof b === 'string' ? b : `key_${i + 1}`);
+  return order.map((key) => {
+    const { keyTuple, slice } = groups.get(key)!;
+    const out: Row = {};
+    byNames.forEach((name, i) => { out[name] = keyTuple[i] ?? null; });
+    for (const [outCol, expr] of Object.entries(t.agg)) {
+      if ('js' in expr) {
+        const fn = new Function('rows', `return (${expr.js.trim()});`) as (slice: Row[]) => unknown;
+        out[outCol] = fn(slice);
+      } else if ('sql' in expr) {
+        throw new Error('group: {sql} aggregates require V2 SQL surface (not yet implemented)');
+      }
+    }
+    return out;
+  });
+}
+
+function applySplit(rows: Row[], t: Extract<Transformation, { kind: 'split' }>): Row[] {
+  // Resolve `on` once: slash-delimited strings like "/, \s*/i" parse as regex;
+  // plain strings stay literal; RegExp instances pass through; {js} Expr that
+  // returns RegExp or string[] runs per row.
+  const slashRe = /^\/(.+)\/([gimsuy]*)$/;
+  let kind: 'lit' | 'regex' | 'js-array';
+  let regex: RegExp | undefined;
+  let lit: string | undefined;
+  let jsFn: ((row: Row, i: number, rows: Row[]) => unknown) | undefined;
+  if (t.on instanceof RegExp) { kind = 'regex'; regex = t.on; }
+  else if (typeof t.on === 'string') {
+    const m = t.on.match(slashRe);
+    if (m) { kind = 'regex'; regex = new RegExp(m[1]!, m[2]); }
+    else { kind = 'lit'; lit = t.on; }
+  } else if ('js' in t.on) { kind = 'js-array'; jsFn = compileJs(t.on.js); }
+  else throw new Error('split: LLM separators not yet implemented');
+
+  const splitOne = (cell: unknown, row: Row, i: number, allRows: Row[]): unknown[] => {
+    if (cell === null || cell === undefined || cell === '') return t.into.map(() => null);
+    const s = String(cell);
+    let parts: unknown[];
+    if (kind === 'regex') parts = s.split(regex!);
+    else if (kind === 'lit') parts = s.split(lit!);
+    else {
+      const result = jsFn!(row, i, allRows);
+      if (!Array.isArray(result)) throw new Error('split: JS expression must return an array of parts');
+      parts = result;
+    }
+    if (parts.length < t.into.length) {
+      return t.into.map((_, idx) => idx < parts.length ? parts[idx]! : null);
+    }
+    if (parts.length > t.into.length) {
+      const head = parts.slice(0, t.into.length - 1);
+      const tail = parts.slice(t.into.length - 1).map(String).join(' ');
+      return [...head, tail];
+    }
+    return parts;
+  };
+  return rows.map((row, i) => {
+    const out: Row = { ...row };
+    const parts = splitOne(row[t.from], row, i, rows);
+    t.into.forEach((col, idx) => { out[col] = parts[idx] ?? null; });
+    if (t.drop) delete out[t.from];
+    return out;
+  });
+}
+
+function aggregateValues(values: unknown[], agg: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first'): unknown {
+  if (agg === 'count') return values.length;
+  if (agg === 'first') return values[0] ?? null;
+  const nums = values.map((v) => Number(v)).filter((n) => Number.isFinite(n));
+  if (nums.length === 0) return null;
+  if (agg === 'sum') return nums.reduce((a, b) => a + b, 0);
+  if (agg === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
+  if (agg === 'min') return Math.min(...nums);
+  if (agg === 'max') return Math.max(...nums);
+  return null;
+}
+
+function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivot' }>): Row[] {
+  const agg = t.agg ?? 'first';
+  // Discover distinct on-values in first-seen order.
+  const onValues: string[] = [];
+  const seenOn = new Set<string>();
+  for (const row of rows) {
+    const v = String(row[t.on] ?? '');
+    if (!seenOn.has(v)) { seenOn.add(v); onValues.push(v); }
+  }
+  // Group rows by index tuple in first-seen order.
+  const indexOrder: string[] = [];
+  const buckets = new Map<string, { tuple: unknown[]; cells: Map<string, unknown[]> }>();
+  for (const row of rows) {
+    const tuple = t.index.map((c) => row[c]);
+    const key = JSON.stringify(tuple);
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      bucket = { tuple, cells: new Map(onValues.map((v) => [v, [] as unknown[]])) };
+      buckets.set(key, bucket);
+      indexOrder.push(key);
+    }
+    const onVal = String(row[t.on] ?? '');
+    bucket.cells.get(onVal)?.push(row[t.values]);
+  }
+  return indexOrder.map((key) => {
+    const { tuple, cells } = buckets.get(key)!;
+    const out: Row = {};
+    t.index.forEach((c, i) => { out[c] = tuple[i] ?? null; });
+    for (const onVal of onValues) {
+      const vals = cells.get(onVal) ?? [];
+      out[onVal] = vals.length === 0 ? null : aggregateValues(vals, agg);
+    }
+    return out;
+  });
+}
+
+function applyUnpivot(rows: Row[], t: Extract<Transformation, { kind: 'unpivot' }>): Row[] {
+  const namesTo = t.names_to ?? 'name';
+  const valuesTo = t.values_to ?? 'value';
+  const out: Row[] = [];
+  for (const row of rows) {
+    for (const measure of t.measures) {
+      const r: Row = {};
+      for (const idCol of t.id) r[idCol] = row[idCol];
+      r[namesTo] = measure;
+      r[valuesTo] = row[measure] ?? null;
+      out.push(r);
+    }
+  }
+  return out;
+}
+
+async function applyJoin(rows: Row[], t: Extract<Transformation, { kind: 'join' }>, baseDir: string): Promise<Row[]> {
+  if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
+  const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
+  // Resolve the right-table path relative to the spec's working directory.
+  const rightPath = isAbsolute(t.with) ? t.with : join(baseDir, t.with);
+  const ext = t.with.slice(t.with.lastIndexOf('.')).toLowerCase();
+  let right: Row[];
+  if (ext === '.csv') right = (await loadCsv(rightPath)).rows;
+  else if (ext === '.jsonl') right = (await loadJsonl(rightPath)).rows;
+  else throw new Error(`unknown file type: ${t.with}`);
+  // Compute right-column names with collision-renaming (Country → Country_2 …).
+  const leftCols = rows.length > 0 ? new Set(Object.keys(rows[0]!)) : new Set<string>();
+  const rightColMap: Record<string, string> = {};
+  if (right.length > 0) {
+    for (const col of Object.keys(right[0]!)) {
+      if (!leftCols.has(col)) { rightColMap[col] = col; continue; }
+      let n = 2;
+      while (leftCols.has(`${col}_${n}`)) n++;
+      rightColMap[col] = `${col}_${n}`;
+    }
+  }
+  const how = t.how ?? 'left';
+  const out: Row[] = [];
+  for (const lrow of rows) {
+    const match = right.find((rrow) => Boolean(fn(lrow, rrow)));
+    if (match) {
+      const merged: Row = { ...lrow };
+      for (const [srcCol, dstCol] of Object.entries(rightColMap)) merged[dstCol] = match[srcCol];
+      out.push(merged);
+    } else if (how === 'left') {
+      const merged: Row = { ...lrow };
+      for (const dstCol of Object.values(rightColMap)) merged[dstCol] = null;
+      out.push(merged);
+    }
+    // inner: drop unmatched
+  }
+  return out;
 }
 
 export function renderPrompt(template: string, row: Row, targetColumns?: string[]): string {
@@ -302,6 +544,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private cellResultCache = new Map<string, unknown>();
   private loaded = false;
   private busy = false;
+  // DuckDB is initialised lazily on first {sql} use. The relation `t` is
+  // re-registered before each SQL-touching transformation so SQL always sees
+  // the latest committed rows.
+  private duckInstance: DuckDBInstance | undefined;
+  private duckConn: DuckDBConnection | undefined;
 
   constructor(opts: HeadlessRunnerOptions = {}) {
     this.opts = opts;
@@ -349,23 +596,26 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.spec = result.spec;
     this.derivedRows = result.rows.slice();
     this.cellResultCache.clear();
+    // Reset the DuckDB relation so SQL transformations see the new source.
+    if (this.duckConn) {
+      try { await this.duckConn.run('DROP TABLE IF EXISTS t'); } catch {}
+    }
     this.loaded = true;
   }
 
   currentRows(): Row[] { this.requireLoaded(); return this.derivedRows; }
   currentSpec(): Spec { this.requireLoaded(); return this.spec; }
 
-  async exportAs(path: string): Promise<void> {
+  async exportAs(filePath: string): Promise<void> {
     this.requireLoaded();
-    if (!path.endsWith('.jsonl')) throw new Error(`exportAs: V1 only supports .jsonl, got ${path}`);
-    await writeJsonl(path, this.derivedRows, this.spec.columns.map((c) => c.id));
+    await writeRows(filePath, this.derivedRows, this.spec.columns.map((c) => c.id));
   }
 
   async setSpec(spec: Spec): Promise<void> {
     const validated = validateSpec(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
     const rows = await this.replay(validated, this.sourceRows, undefined, undefined);
-    this.spec = validated;
+    this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;
   }
@@ -408,7 +658,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         try {
           const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk);
           abortIf(signal);
-          this.spec = tried.spec;
+          this.spec = syncColumnsToRows(tried.spec, newRows);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
           return;
@@ -497,13 +747,154 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     onChunk: ((u: ChunkUpdate) => void) | undefined
   ): Promise<Row[]> {
     switch (t.kind) {
-      case 'filter': return applyFilter(rows, t);
-      case 'select': return applySelect(rows, t);
-      case 'sort':   return applySort(rows, t);
+      case 'filter':
+        if ('sql' in t.pred) return this.applyFilterSql(rows, t as typeof t & { pred: { sql: string } });
+        return applyFilter(rows, t);
+      case 'select':   return applySelect(rows, t);
+      case 'sort':     return applySort(rows, t);
       case 'mutate':
+        if ('sql' in t.value) return this.applyMutateSql(rows, t as typeof t & { value: { sql: string } });
         if ('js' in t.value) return applyMutateJs(rows, t as typeof t & { value: { js: string } });
         return this.applyMutateLlm(rows, t as typeof t & { value: { llm: string; model?: string } }, tIndex, signal, onChunk);
+      case 'validate': return applyValidateJs(rows, t);
+      case 'group':    return this.applyGroup(rows, t, tIndex, signal, onChunk);
+      case 'split':    return applySplit(rows, t);
+      case 'pivot':    return applyPivot(rows, t);
+      case 'unpivot':  return applyUnpivot(rows, t);
+      case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd());
     }
+  }
+
+  private async applyGroup(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'group' }>,
+    _tIndex: number,
+    signal: AbortSignal | undefined,
+    _onChunk: ((u: ChunkUpdate) => void) | undefined
+  ): Promise<Row[]> {
+    const hasLlmAgg = Object.values(t.agg).some((expr) => 'llm' in expr);
+    if (!hasLlmAgg) return applyGroupJs(rows, t);
+
+    const { order, groups } = buildGroups(rows, t.by);
+    const byNames = t.by.map((b, i) => typeof b === 'string' ? b : `key_${i + 1}`);
+    const llmAggCols = Object.entries(t.agg).filter(([, e]) => 'llm' in e) as Array<[string, { llm: string; model?: string }]>;
+
+    // Pre-render one prompt per (group, llm-agg) cell — {*} expands to the
+    // group's compact JSON. Run them through the cell model in one pass so
+    // batch packing and result caching work the same as a mutate LLM column.
+    const renderAgg = (template: string, slice: Row[]): string =>
+      template.replace(/\{\*\}/g, JSON.stringify(slice));
+    const prompts: string[] = [];
+    for (const key of order) {
+      const slice = groups.get(key)!.slice;
+      for (const [, expr] of llmAggCols) prompts.push(renderAgg(expr.llm, slice));
+    }
+    const perCellModel = llmAggCols[0]?.[1].model;
+    const results = await this.callLlmCells(prompts, perCellModel, signal);
+
+    return order.map((key, gi) => {
+      const { keyTuple, slice } = groups.get(key)!;
+      const out: Row = {};
+      byNames.forEach((name, i) => { out[name] = keyTuple[i] ?? null; });
+      let llmIdx = 0;
+      for (const [outCol, expr] of Object.entries(t.agg)) {
+        if ('js' in expr) {
+          const fn = new Function('rows', `return (${expr.js.trim()});`) as (slice: Row[]) => unknown;
+          out[outCol] = fn(slice);
+        } else if ('llm' in expr) {
+          out[outCol] = results[gi * llmAggCols.length + llmIdx];
+          llmIdx++;
+        }
+      }
+      return out;
+    });
+  }
+
+  /** Lazily creates the in-process DuckDB connection. */
+  private async duck(): Promise<DuckDBConnection> {
+    if (this.duckConn) return this.duckConn;
+    const dbPath = process.env.TAMEDTABLE_DUCKDB_PATH ?? ':memory:';
+    const threads = process.env.TAMEDTABLE_DUCKDB_THREADS ?? '4';
+    this.duckInstance = await DuckDBInstance.create(dbPath);
+    this.duckConn = await this.duckInstance.connect();
+    await this.duckConn.run(`SET threads = ${Number(threads) || 4}`);
+    return this.duckConn;
+  }
+
+  /** Registers the current rows as relation `t`. Drops any prior registration
+   *  so {sql} always sees the latest committed rows. */
+  private async registerT(rows: Row[]): Promise<void> {
+    const conn = await this.duck();
+    // DuckDB's `DROP X IF EXISTS y` still errors if y exists as a different
+    // kind (e.g. dropping a VIEW when y is a TABLE). Try both and swallow
+    // the type-mismatch error — only one DROP can succeed but that's fine.
+    try { await conn.run('DROP TABLE IF EXISTS t'); } catch {}
+    try { await conn.run('DROP VIEW IF EXISTS t'); } catch {}
+    if (rows.length === 0) {
+      await conn.run('CREATE TABLE t (dummy INTEGER)');
+      await conn.run('DELETE FROM t');
+      return;
+    }
+    // Discover column names in first-seen insertion order across rows.
+    const cols: string[] = [];
+    const seen = new Set<string>();
+    for (const row of rows) for (const k of Object.keys(row)) if (!seen.has(k)) { seen.add(k); cols.push(k); }
+    // All columns ingest as VARCHAR; SQL fragments cast to numeric/date as
+    // needed. Identifiers are NOT quoted in DDL so DuckDB stores them
+    // case-insensitively, matching the LLM's `lower(Country)` style usage
+    // (quoted identifiers would force exact-case matches and break that).
+    const colDefs = cols.map((c) => `${c} VARCHAR`).join(', ');
+    await conn.run(`CREATE TABLE t (${colDefs})`);
+    const sqlValue = (v: unknown) => {
+      if (v === null || v === undefined) return 'NULL';
+      const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      return `'${s.replace(/'/g, "''")}'`;
+    };
+    // INSERT in batches to keep SQL statement size reasonable.
+    const BATCH = 100;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const slice = rows.slice(i, i + BATCH);
+      const valuesSql = slice.map((row) =>
+        '(' + cols.map((c) => sqlValue(row[c])).join(', ') + ')'
+      ).join(', ');
+      await conn.run(`INSERT INTO t VALUES ${valuesSql}`);
+    }
+  }
+
+  /** Evaluates a {sql} scalar/predicate per row; returns one result per row
+   *  in input order. The SQL fragment is wrapped in SELECT … FROM t. */
+  private async evalSqlScalar(rows: Row[], sqlFragment: string): Promise<unknown[]> {
+    if (rows.length === 0) return [];
+    try {
+      await this.registerT(rows);
+      const conn = await this.duck();
+      const reader = await conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM t`);
+      return reader.getRowObjects().map((r) => (r as { r: unknown }).r);
+    } catch (e) {
+      throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
+    }
+  }
+
+  private async applyMutateSql(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'mutate' }> & { value: { sql: string } }
+  ): Promise<Row[]> {
+    const cols = Array.isArray(t.columns) ? t.columns : [t.columns];
+    const results = await this.evalSqlScalar(rows, t.value.sql);
+    return rows.map((row, i) => {
+      const out: Row = { ...row };
+      const v = results[i];
+      for (const c of cols) out[c] = v ?? null;
+      return out;
+    });
+  }
+
+  private async applyFilterSql(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'filter' }> & { pred: { sql: string } }
+  ): Promise<Row[]> {
+    const results = await this.evalSqlScalar(rows, t.pred.sql);
+    return rows.filter((_, i) => Boolean(results[i]));
   }
 
   private async applyMutateLlm(

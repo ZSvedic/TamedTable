@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import {
   loadEnv,
   validateSpec,
+  validateV1Spec,
   type Row,
   type Spec,
   type Transformation,
@@ -177,20 +178,40 @@ export function renderTable(
   return lines.join('\n');
 }
 
+function describeExpr(e: { js?: string; llm?: string; sql?: string }, n: number): string {
+  if ('js' in e && typeof e.js === 'string') return `JS: ${trunc(e.js, n)}`;
+  if ('sql' in e && typeof e.sql === 'string') return `SQL: ${trunc(e.sql, n)}`;
+  if ('llm' in e && typeof e.llm === 'string') return `LLM: ${trunc(e.llm, n)}`;
+  return '<expr>';
+}
+
 function describeTransformation(t: Transformation): string {
   switch (t.kind) {
     case 'filter':
-      return `filter rows where ${trunc('js' in t.pred ? t.pred.js : '<llm>', 60)}`;
+      return `filter rows where ${describeExpr(t.pred as { js?: string; llm?: string; sql?: string }, 60)}`;
     case 'select':
       return `keep columns: ${t.columns.join(', ')}`;
     case 'sort':
       return `sort by: ${t.by.map((b) => `${typeof b.key === 'string' ? b.key : '<expr>'} ${b.dir}`).join(', ')}`;
     case 'mutate': {
       const cols = Array.isArray(t.columns) ? t.columns.join(', ') : t.columns;
-      return 'js' in t.value
-        ? `set '${cols}' via JS: ${trunc(t.value.js, 60)}`
-        : `set '${cols}' via LLM: ${trunc(t.value.llm, 80)}`;
+      return `set '${cols}' via ${describeExpr(t.value as { js?: string; llm?: string; sql?: string }, 80)}`;
     }
+    case 'group': {
+      const byNames = t.by.map((b) => typeof b === 'string' ? b : '<expr>').join(', ');
+      const aggCols = Object.keys(t.agg).join(', ');
+      return `group by ${byNames}, agg: ${aggCols}`;
+    }
+    case 'join':
+      return `${t.how ?? 'left'} join with ${t.with}`;
+    case 'split':
+      return `split ${t.from} into ${t.into.join(', ')}`;
+    case 'validate':
+      return `validate${t.threshold !== undefined ? ` (threshold ${t.threshold * 100}%)` : ''}`;
+    case 'pivot':
+      return `pivot on ${t.on} (agg=${t.agg ?? 'first'})`;
+    case 'unpivot':
+      return `unpivot measures: ${t.measures.join(', ')}`;
   }
 }
 
@@ -577,7 +598,9 @@ const SLASH: Record<string, SlashHandler> = {
   },
 
   async ':save'(arg, runner, stdout) {
-    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.jsonl>\n'); return; }
+    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.jsonl|.csv>\n'); return; }
+    const ext = arg.slice(arg.lastIndexOf('.')).toLowerCase();
+    if (ext !== '.jsonl' && ext !== '.csv') { stdout.write(':save: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       await runner.exportAs(arg);
       stdout.write(`saved ${runner.currentRows().length} rows to ${arg}\n`);
@@ -717,11 +740,15 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
   } catch (e) {
     return fail(2, `tamedtable execute: ${flowPath}: invalid JSON: ${(e as Error).message}`);
   }
-  if (flow.version !== 1) return fail(2, `tamedtable execute: ${flowPath}: version must be 1 (got ${flow.version ?? 'undefined'})`);
+  if (flow.version !== 1 && flow.version !== 2) {
+    return fail(2, `tamedtable execute: ${flowPath}: version must be 1 or 2 (got ${flow.version ?? 'undefined'})`);
+  }
 
   let spec: Spec;
   try {
-    spec = validateSpec(flow.spec);
+    // Version 1 flows enforce the legacy schema (V2 features rejected with a
+    // "V2 feature in V1 spec" error). Version 2 flows use the full V2 schema.
+    spec = flow.version === 1 ? validateV1Spec(flow.spec) : validateSpec(flow.spec);
   } catch (e) {
     return fail(2, `tamedtable execute: ${flowPath}: ${(e as Error).message}`);
   }

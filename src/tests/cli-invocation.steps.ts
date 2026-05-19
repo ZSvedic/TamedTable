@@ -3,15 +3,7 @@ import { strict as assert } from 'node:assert';
 import { Readable, Writable } from 'node:stream';
 import { join } from 'node:path';
 import { runCli } from '@tamedtable/cli';
-import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
-
-interface InvocationCapture {
-  exitCode: number;
-  stdout: string;
-  stderr: string;
-}
-
-const capture = new WeakMap<TamedTableWorld, InvocationCapture>();
+import { TamedTableWorld, SPEC_TC_DIR, type CapturedInvocation } from './world.ts';
 
 function captureStdout(): { stream: Writable; text: () => string } {
   const chunks: string[] = [];
@@ -19,8 +11,8 @@ function captureStdout(): { stream: Writable; text: () => string } {
   return { stream, text: () => chunks.join('') };
 }
 
-function getCapture(world: TamedTableWorld): InvocationCapture {
-  const c = capture.get(world);
+function getCapture(world: TamedTableWorld): CapturedInvocation {
+  const c = world.lastInvocation;
   if (!c) throw new Error('no prior invocation captured');
   return c;
 }
@@ -28,7 +20,7 @@ function getCapture(world: TamedTableWorld): InvocationCapture {
 async function runAndCapture(world: TamedTableWorld, argv: string[], extra?: { stdin?: Readable }): Promise<void> {
   const out = captureStdout();
   const result = await runCli(argv, { stdout: out.stream, ...(extra?.stdin ? { stdin: extra.stdin } : {}) });
-  capture.set(world, { exitCode: result.exitCode, stdout: out.text(), stderr: result.stderr });
+  world.lastInvocation = { exitCode: result.exitCode, stdout: out.text(), stderr: result.stderr };
 }
 
 function tokenizeCmd(command: string): string[] {

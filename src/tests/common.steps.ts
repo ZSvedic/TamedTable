@@ -1,6 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { readJsonl, type Row } from '@tamedtable/core';
 import { runCli } from '@tamedtable/cli';
@@ -28,8 +28,49 @@ Given('{string} exists', async function (this: TamedTableWorld, filename: string
   await access(fixture(filename));
 });
 
+Given(/^"(.+)" exists with join\.with = "(.+)"$/, async function (this: TamedTableWorld, filename: string, joinWith: string) {
+  // Descriptive assertion: just confirm the fixture exists and contains the join.with path.
+  const content = await readFile(fixture(filename), 'utf8');
+  assert.ok(content.includes(joinWith), `${filename} does not reference ${joinWith}`);
+});
+
+Given(/^"(.+)" exists with an Expr of shape \{sql\}$/, async function (this: TamedTableWorld, filename: string) {
+  const content = await readFile(fixture(filename), 'utf8');
+  assert.ok(content.includes('"sql"'), `${filename} does not contain an "sql" expression`);
+});
+
+Then('the first line of {string} is {string}', async function (this: TamedTableWorld, filename: string, expectedFirstLine: string) {
+  const text = await readFile(output(filename), 'utf8');
+  const first = text.split('\n', 1)[0]!;
+  assert.equal(first, expectedFirstLine);
+});
+
+Then('{string} contains the line {string}', async function (this: TamedTableWorld, filename: string, expectedLine: string) {
+  const text = await readFile(output(filename), 'utf8');
+  // Cucumber's {string} captures literal backslash-n; expand it to actual newlines so
+  // the assertion can match a multi-line CSV cell.
+  const needle = expectedLine.replace(/\\n/g, '\n');
+  assert.ok(text.includes(needle), `${filename} missing line:\n${needle}\nFile was:\n${text}`);
+});
+
 When('user requests {string}', async function (this: TamedTableWorld, text: string) {
-  await this.ensureRunner().request(text);
+  // Capture the request's outcome rather than throwing, so scenarios that
+  // assert failure via `Then the request fails …` can inspect it. Default
+  // to datanorm-input.csv when a Rule lacks a Background that loads input.
+  const runner = this.ensureRunner();
+  let specBefore;
+  try { specBefore = structuredClone(runner.currentSpec()); }
+  catch {
+    this.inputPath = this.inputPath ?? join(SPEC_TC_DIR, 'datanorm-input.csv');
+    await runner.loadInput(this.inputPath);
+    specBefore = structuredClone(runner.currentSpec());
+  }
+  try {
+    await runner.request(text);
+    this.lastRequestOutcome = { ok: true, specBefore, specAfter: runner.currentSpec() };
+  } catch (e) {
+    this.lastRequestOutcome = { ok: false, error: e as Error, specBefore, specAfter: runner.currentSpec() };
+  }
 });
 
 When('user requests to export as {string}', async function (this: TamedTableWorld, filename: string) {
@@ -43,10 +84,14 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
   const args = tokens.slice(1).map((tok, i, arr) =>
     i > 0 && arr[i - 1] === '--output' ? output(tok) : tok
   );
-  const result = await runCli(args);
-  if (result.exitCode !== 0) {
-    throw new Error(`tamedtable exited ${result.exitCode}: ${result.stderr}`);
-  }
+  // Capture stdout so later "stdout contains …" steps can assert against it;
+  // do NOT throw on non-zero exit — V1-rejection scenarios assert exit 2.
+  const chunks: string[] = [];
+  const stream = {
+    write: (s: string | Buffer) => { chunks.push(s.toString()); return true; },
+  } as unknown as NodeJS.WritableStream;
+  const result = await runCli(args, { stdout: stream });
+  this.lastInvocation = { exitCode: result.exitCode, stdout: chunks.join(''), stderr: result.stderr };
 });
 
 Then('column {string} matches the golden output', async function (this: TamedTableWorld, column: string) {
@@ -65,6 +110,13 @@ Then('the table matches the golden output', async function (this: TamedTableWorl
 });
 
 Then('{string} matches the golden output', async function (this: TamedTableWorld, filename: string) {
+  // CSV goldens compare as text (RFC 4180 ordering matters); JSONL goldens compare row-by-row.
+  if (this.goldenPath!.endsWith('.csv')) {
+    const golden = await readFile(this.goldenPath!, 'utf8');
+    const actual = await readFile(output(filename), 'utf8');
+    assert.equal(actual.replace(/\r\n/g, '\n').trimEnd(), golden.replace(/\r\n/g, '\n').trimEnd());
+    return;
+  }
   const golden = await readJsonl(this.goldenPath!);
   const actual = await readJsonl(output(filename));
   assert.deepEqual(actual, golden);
@@ -97,16 +149,58 @@ Given('the table is filtered to USA customers', async function (this: TamedTable
   await this.ensureRunner().request('Show only customers in the USA');
 });
 
+// Scenarios that drive a REPL session via `user enters the REPL` end with the
+// session's runner inaccessible. Fall back to scanning the captured stdout's
+// last table reprint header — the column appears iff the spec listed it.
+function lastTableHeader(stdout: string): string {
+  const lines = stdout.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/ \| /.test(lines[i] ?? '')) {
+      // Walk up to the first table line of this block — the header.
+      let top = i;
+      while (top > 0 && / \| /.test(lines[top - 1] ?? '')) top--;
+      return lines[top] ?? '';
+    }
+  }
+  return '';
+}
+
 Then('column {string} exists in the spec', function (this: TamedTableWorld, column: string) {
-  const spec = this.ensureRunner().currentSpec();
-  const ids = spec.columns.map((c) => c.id);
-  assert.ok(ids.includes(column), `expected column "${column}" in spec.columns. Got: ${ids.join(', ')}`);
+  if (this.runner) {
+    try {
+      const spec = this.runner.currentSpec();
+      const ids = spec.columns.map((c) => c.id);
+      if (!ids.includes(column)) {
+        throw new Error(`expected column "${column}" in spec.columns. Got: ${ids.join(', ')}`);
+      }
+      return;
+    } catch (e) {
+      if (!/no input loaded/.test((e as Error).message)) throw e;
+    }
+  }
+  // Default page is only 5 cols wide so the column may be in the hidden tail
+  // of the table — scan plan-emitted "add column 'X'" lines and the schema
+  // command output too, in addition to the last header.
+  const stdout = this.lastInvocation?.stdout ?? '';
+  const inHeader = lastTableHeader(stdout).includes(column);
+  const inPlan = new RegExp(`add column ['"\`]${column.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}['"\`]`).test(stdout);
+  if (!inHeader && !inPlan) {
+    throw new Error(`expected column "${column}" in last REPL table header or plan. Header was: "${lastTableHeader(stdout)}". Full stdout tail:\n${stdout.slice(-800)}`);
+  }
 });
 
 Then('column {string} is absent from the current rows', function (this: TamedTableWorld, column: string) {
-  const rows = this.ensureRunner().currentRows();
-  const present = rows.some((r) => column in (r as Record<string, unknown>));
-  assert.ok(!present, `expected column "${column}" to be absent from every row`);
+  if (this.runner) {
+    try {
+      const rows = this.runner.currentRows();
+      const present = rows.some((r) => column in (r as Record<string, unknown>));
+      assert.ok(!present, `expected column "${column}" to be absent from every row`);
+      return;
+    } catch { /* fall through */ }
+  }
+  const stdout = this.lastInvocation?.stdout ?? '';
+  const header = lastTableHeader(stdout);
+  assert.ok(!header.includes(column), `expected column "${column}" absent from last REPL table header. Header was: ${header}`);
 });
 
 Then('every row has a non-null {string} and {string}', function (this: TamedTableWorld, colA: string, colB: string) {

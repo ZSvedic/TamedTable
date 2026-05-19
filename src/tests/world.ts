@@ -24,6 +24,19 @@ export interface Runner {
   exportAs(path: string): Promise<void>;
 }
 
+export interface CapturedInvocation {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+}
+
+export interface RequestOutcome {
+  ok: boolean;
+  error?: Error;
+  specBefore: Spec;
+  specAfter?: Spec;
+}
+
 export class TamedTableWorld extends CucumberWorld {
   surface?: RunnerKind;
   inputPath?: string;
@@ -31,6 +44,8 @@ export class TamedTableWorld extends CucumberWorld {
   runnerKind?: RunnerKind;
   runner?: Runner;
   runnerFactory?: () => Runner;
+  lastInvocation?: CapturedInvocation;
+  lastRequestOutcome?: RequestOutcome;
 
   constructor(options: IWorldOptions) {
     super(options);
