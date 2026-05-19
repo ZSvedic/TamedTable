@@ -55,11 +55,16 @@ Then('{string} contains the line {string}', async function (this: TamedTableWorl
 
 When('user requests {string}', async function (this: TamedTableWorld, text: string) {
   // Capture the request's outcome rather than throwing, so scenarios that
-  // assert failure via `Then the request fails …` can inspect it. A
-  // subsequent "request succeeded" expectation will surface as a Then-step
-  // mismatch (column missing, etc.) — that's correct behavior.
+  // assert failure via `Then the request fails …` can inspect it. Default
+  // to datanorm-input.csv when a Rule lacks a Background that loads input.
   const runner = this.ensureRunner();
-  const specBefore = structuredClone(runner.currentSpec());
+  let specBefore;
+  try { specBefore = structuredClone(runner.currentSpec()); }
+  catch {
+    this.inputPath = this.inputPath ?? join(SPEC_TC_DIR, 'datanorm-input.csv');
+    await runner.loadInput(this.inputPath);
+    specBefore = structuredClone(runner.currentSpec());
+  }
   try {
     await runner.request(text);
     this.lastRequestOutcome = { ok: true, specBefore, specAfter: runner.currentSpec() };

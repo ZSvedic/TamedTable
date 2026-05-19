@@ -70,6 +70,10 @@ Then('every row has a non-null {string}', function (this: TamedTableWorld, col: 
   const rows = this.ensureRunner().currentRows();
   assert.ok(rows.length > 0, 'no rows');
   rows.forEach((r, i) => {
+    // Skip rows whose split source was empty — those are tested by the
+    // dedicated "empty input cell produces nulls" scenario, not here.
+    const fullName = r.FullName;
+    if (fullName === '' || fullName === null || fullName === undefined) return;
     const v = r[col];
     assert.ok(v !== null && v !== undefined && v !== '', `row ${i} ${col} is empty/null: ${JSON.stringify(v)}`);
   });
@@ -97,6 +101,8 @@ Given('{string} contains a row with FullName {string}',
       this.inputPath = join(SPEC_TC_DIR, file);
       await this.ensureRunner().loadInput(this.inputPath);
     }
+    // Remember which row the subsequent "the row has …" assertions target.
+    (this as TamedTableWorld & { syntheticFullName?: string }).syntheticFullName = fullName;
   });
 
 Given('{string} contains messy international names', async function (this: TamedTableWorld, file: string) {
@@ -118,36 +124,29 @@ Then('the Cher row has LastName equal to null', function (this: TamedTableWorld)
   assert.equal(r.LastName, null);
 });
 
+function syntheticTargetRow(world: TamedTableWorld): Row {
+  const target = (world as TamedTableWorld & { syntheticFullName?: string }).syntheticFullName;
+  assert.ok(target !== undefined, 'no prior Given established the target FullName');
+  const rows = world.ensureRunner().currentRows();
+  const hit = rows.find((r) => r.FullName === target);
+  assert.ok(hit, `no row with FullName "${target}" in current rows`);
+  return hit!;
+}
+
 Then('the row has FirstName {string}', function (this: TamedTableWorld, expected: string) {
-  // For "too many parts" / "empty cell" scenarios — match the most recently
-  // added row by checking the test-specific FullName from the prior Given.
-  const rows = this.ensureRunner().currentRows();
-  const synthetic = rows.find((r) =>
-    r.FullName === 'Mary Jane Watson' || r.FullName === '' || r.FullName === 'Cher');
-  assert.ok(synthetic, 'no synthetic test row found');
-  assert.equal(synthetic!.FirstName, expected);
+  assert.equal(syntheticTargetRow(this).FirstName, expected);
 });
 
 Then('the row has LastName {string}', function (this: TamedTableWorld, expected: string) {
-  const rows = this.ensureRunner().currentRows();
-  const synthetic = rows.find((r) =>
-    r.FullName === 'Mary Jane Watson' || r.FullName === '');
-  assert.ok(synthetic, 'no synthetic test row found');
-  assert.equal(synthetic!.LastName, expected);
+  assert.equal(syntheticTargetRow(this).LastName, expected);
 });
 
 Then('the row has FirstName equal to null', function (this: TamedTableWorld) {
-  const rows = this.ensureRunner().currentRows();
-  const synthetic = rows.find((r) => r.FullName === '');
-  assert.ok(synthetic, 'expected empty-FullName row');
-  assert.equal(synthetic!.FirstName, null);
+  assert.equal(syntheticTargetRow(this).FirstName, null);
 });
 
 Then('the row has LastName equal to null', function (this: TamedTableWorld) {
-  const rows = this.ensureRunner().currentRows();
-  const synthetic = rows.find((r) => r.FullName === '' || r.FullName === 'Cher');
-  assert.ok(synthetic, 'expected synthetic row');
-  assert.equal(synthetic!.LastName, null);
+  assert.equal(syntheticTargetRow(this).LastName, null);
 });
 
 // ── join scaffolding (join.feature) ────────────────────────────────────────
