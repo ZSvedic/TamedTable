@@ -33,6 +33,7 @@ export interface CliRunner {
   currentRows(): Row[];
   currentSpec(): Spec;
   exportAs(path: string): Promise<void>;
+  viewportSummary(): string;
 }
 
 export interface RunCliResult {
