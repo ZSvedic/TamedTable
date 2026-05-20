@@ -63,7 +63,7 @@ Optional env vars and defaults if you omit them:
 
 ## Run the CLI
 
-Interactive REPL — load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:exit` (or bare `exit`) leaves.
+Interactive REPL — load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:exit` (or bare `exit`) leaves.
 
 ```
 bun src/packages/cli/index.ts spec/test-cases/datanorm-input.csv

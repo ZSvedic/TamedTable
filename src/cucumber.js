@@ -5,7 +5,7 @@ if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,join,pivot,sql,validate')
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,join,pivot,save-py,sort,sql,validate')
   .split(',')
   .map((s) => `../spec/test-cases/${s.trim()}.feature`);
 

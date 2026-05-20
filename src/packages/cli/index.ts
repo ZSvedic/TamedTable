@@ -5,7 +5,6 @@ import * as path from 'node:path';
 import {
   loadEnv,
   validateSpec,
-  validateV1Spec,
   type Row,
   type Spec,
   type Transformation,
@@ -100,6 +99,7 @@ State / data commands:
                      viewport, cache.
   :save <path>       Write current rows to JSONL.
   :save-flow <path>  Write current spec as a .flow file.
+  :save-py <path>    Write current flow as a standalone Python script.
   :undo              Pop the last applied patch.
   :redo              Replay the last :undo'd patch.
   :history           Print the patch journal.
@@ -469,8 +469,9 @@ class CliRunnerImpl implements CliRunner {
   currentRows(): Row[] { return this.headless.currentRows(); }
   currentSpec(): Spec { return this.headless.currentSpec(); }
   async exportAs(p: string): Promise<void> { await this.headless.exportAs(p); }
+  async exportPython(): Promise<string> { return this.headless.exportPython(); }
 
-  // ── Slash command internals ──────────────────────────────────────────────
+  // ── Colon-command internals ──────────────────────────────────────────────
 
   getStdout(): NodeJS.WritableStream { return this.stdout; }
   getLoadedPath(): string { return this.loadedPath; }
@@ -600,9 +601,9 @@ export function createCliRunner(opts: CliRunnerOptions = {}): CliRunner {
   return new CliRunnerImpl(opts);
 }
 
-// ── Slash commands ─────────────────────────────────────────────────────────
+// ── Colon commands ─────────────────────────────────────────────────────────
 
-export type SlashCommandAction = 'exit' | 'handled' | 'unhandled';
+export type ColonCommandAction = 'exit' | 'handled' | 'unhandled';
 
 function splitCmd(text: string): { cmd: string; arg: string } {
   const sp = text.indexOf(' ');
@@ -613,9 +614,9 @@ async function runWithErrorRender(stdout: NodeJS.WritableStream, fn: () => Promi
   try { await fn(); } catch (e) { renderError(e as Error, stdout); }
 }
 
-type SlashHandler = (arg: string, runner: CliRunnerImpl, stdout: NodeJS.WritableStream) => Promise<void> | void;
+type ColonCommandHandler = (arg: string, runner: CliRunnerImpl, stdout: NodeJS.WritableStream) => Promise<void> | void;
 
-const SLASH: Record<string, SlashHandler> = {
+const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
   ':help'(_arg, _r, stdout) { stdout.write(HELP_TEXT); },
 
   ':history'(_arg, runner, stdout) {
@@ -700,11 +701,49 @@ const SLASH: Record<string, SlashHandler> = {
       const absSource = path.resolve(spec.table!);
       const rel = path.relative(flowDir, absSource);
       const source = rel.startsWith('..') ? absSource : rel;
-      await writeFile(arg, JSON.stringify({ version: 1, source, spec }, null, 2) + '\n', 'utf8');
+      await writeFile(arg, JSON.stringify({ version: 2, source, spec }, null, 2) + '\n', 'utf8');
       stdout.write(`saved flow (${spec.transformations.length} transformations) to ${arg}\n`);
     });
   },
+
+  async ':save-py'(arg, runner, stdout) {
+    if (!arg) { stdout.write(':save-py: missing path\n'); return; }
+    if (!arg.toLowerCase().endsWith('.py')) { stdout.write(':save-py: output must be a .py file\n'); return; }
+    // A flow with an {llm} cell can't be reproduced offline, so refuse it
+    // before spending a model call on the translation.
+    if (specHasLlmCell(runner.currentSpec())) {
+      stdout.write(':save-py: flow contains LLM cells; cannot export to Python\n');
+      return;
+    }
+    await runWithErrorRender(stdout, async () => {
+      const script = await runner.exportPython();
+      await writeFile(arg, script, 'utf8');
+      stdout.write(`saved Python script to ${arg}\n`);
+    });
+  },
 };
+
+/** True if any transformation carries an {llm} expression. `:save-py`
+ *  refuses such flows — a live AI cell has no deterministic Python form. */
+function specHasLlmCell(spec: Spec): boolean {
+  const isLlm = (e: unknown): boolean =>
+    typeof e === 'object' && e !== null && !(e instanceof RegExp) && 'llm' in e;
+  for (const t of spec.transformations as Transformation[]) {
+    const exprs: unknown[] = [];
+    switch (t.kind) {
+      case 'filter':                 exprs.push(t.pred); break;
+      case 'validate':               exprs.push(t.pred); if (t.message) exprs.push(t.message); break;
+      case 'mutate':                 exprs.push(t.value); break;
+      case 'sort':                   for (const b of t.by) exprs.push(b.key); break;
+      case 'group':                  exprs.push(...t.by, ...Object.values(t.agg)); break;
+      case 'join':                   exprs.push(t.on); break;
+      case 'split':                  exprs.push(t.on); break;
+      case 'select': case 'pivot': case 'unpivot': break;
+    }
+    if (exprs.some(isLlm)) return true;
+  }
+  return false;
+}
 
 type ViewportParse =
   | { kind: 'print' }
@@ -751,20 +790,20 @@ async function resolveLoadPath(p: string): Promise<string | undefined> {
 }
 
 /**
- * Handle REPL slash commands and bare-word aliases. Returns:
+ * Handle REPL colon commands and bare-word aliases. Returns:
  *  - `'exit'` for `exit` / `:exit` (caller should break out of the loop).
  *  - `'handled'` for any recognized command (caller reprints prompt and continues).
  *  - `'unhandled'` for any other input (caller passes it through to the LLM).
  * Exported so tests can drive it directly without standing up the readline loop.
  */
-export async function handleSlashCommand(
+export async function handleColonCommand(
   text: string,
   runner: CliRunner,
   stdout: NodeJS.WritableStream
-): Promise<SlashCommandAction> {
+): Promise<ColonCommandAction> {
   if (text === 'exit' || text === ':exit') return 'exit';
   const { cmd, arg } = splitCmd(text);
-  const handler = SLASH[cmd];
+  const handler = COLON_COMMANDS[cmd];
   if (!handler) return 'unhandled';
   await handler(arg, runner as CliRunnerImpl, stdout);
   return 'handled';
@@ -830,9 +869,7 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
 
   let spec: Spec;
   try {
-    // Version 1 flows enforce the legacy schema (V2 features rejected with a
-    // "V2 feature in V1 spec" error). Version 2 flows use the full V2 schema.
-    spec = flow.version === 1 ? validateV1Spec(flow.spec) : validateSpec(flow.spec);
+    spec = validateSpec(flow.spec);
   } catch (e) {
     return fail(2, `tamedtable execute: ${flowPath}: ${(e as Error).message}`);
   }
@@ -893,7 +930,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
     for await (const line of rl) {
       const text = line.trim();
       if (!text) { prompt(); continue; }
-      const action = await handleSlashCommand(text, runner, stdout);
+      const action = await handleColonCommand(text, runner, stdout);
       if (action === 'exit') break;
       if (action === 'handled') { prompt(); continue; }
       const ctrl = new AbortController();

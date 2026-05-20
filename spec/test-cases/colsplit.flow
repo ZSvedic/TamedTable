@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "colsplit-fullname-input.csv",
   "spec": {
     "table": "colsplit-fullname-input.csv",

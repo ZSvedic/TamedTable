@@ -71,6 +71,9 @@ export interface HeadlessRunner {
   currentRows(): Row[];
   currentSpec(): Spec;
   exportAs(path: string): Promise<void>;
+  /** V2.5 — one model call: translate the current flow into a standalone
+   *  Python script. Returns the script source. */
+  exportPython(): Promise<string>;
 }
 
 const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'claude-sonnet-4-6';
@@ -109,10 +112,15 @@ function parsePromptSections(md: string): Record<string, string> {
   return sections;
 }
 
-function loadPrompts(): { SYSTEM_PROMPT: string; BATCH_SYSTEM_PROMPT: string; CELL_FORMAT_CONSTRAINT: string } {
+function loadPrompts(): {
+  SYSTEM_PROMPT: string;
+  BATCH_SYSTEM_PROMPT: string;
+  CELL_FORMAT_CONSTRAINT: string;
+  PYTHON_EXPORT_PROMPT: string;
+} {
   const text = readFileSync(PROMPT_FILE, 'utf-8');
   const sections = parsePromptSections(text);
-  const required = ['SYSTEM_PROMPT', 'BATCH_SYSTEM_PROMPT', 'CELL_FORMAT_CONSTRAINT'] as const;
+  const required = ['SYSTEM_PROMPT', 'BATCH_SYSTEM_PROMPT', 'CELL_FORMAT_CONSTRAINT', 'PYTHON_EXPORT_PROMPT'] as const;
   for (const name of required) {
     if (!sections[name]) {
       throw new Error(`spec/prompt-app-edit.md: missing "## ${name}" section`);
@@ -122,10 +130,11 @@ function loadPrompts(): { SYSTEM_PROMPT: string; BATCH_SYSTEM_PROMPT: string; CE
     SYSTEM_PROMPT: sections.SYSTEM_PROMPT!,
     BATCH_SYSTEM_PROMPT: sections.BATCH_SYSTEM_PROMPT!,
     CELL_FORMAT_CONSTRAINT: sections.CELL_FORMAT_CONSTRAINT!,
+    PYTHON_EXPORT_PROMPT: sections.PYTHON_EXPORT_PROMPT!,
   };
 }
 
-const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT } = loadPrompts();
+const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT } = loadPrompts();
 
 const PATCH_INPUT_SCHEMA = jsonSchema<{ operations: unknown[] }>({
   type: 'object',
@@ -231,27 +240,6 @@ function applySelect(rows: Row[], t: Extract<Transformation, { kind: 'select' }>
     for (const col of t.columns) out[col] = col in row ? row[col] : null;
     return out;
   });
-}
-
-function applySort(rows: Row[], t: Extract<Transformation, { kind: 'sort' }>): Row[] {
-  const keys = t.by.map((b) =>
-    typeof b.key === 'string'
-      ? (row: Row) => row[b.key as string]
-      : (compileJs((b.key as { js: string }).js) as (row: Row, i: number, rows: Row[]) => unknown)
-  );
-  const dirs = t.by.map((b) => (b.dir === 'desc' ? -1 : 1));
-  return rows
-    .map((row, i) => ({ row, i }))
-    .sort((a, b) => {
-      for (let k = 0; k < keys.length; k++) {
-        const av = keys[k]!(a.row, a.i, rows) as number | string;
-        const bv = keys[k]!(b.row, b.i, rows) as number | string;
-        if (av < bv) return -dirs[k]!;
-        if (av > bv) return dirs[k]!;
-      }
-      return 0;
-    })
-    .map((x) => x.row);
 }
 
 function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'mutate' }> & { value: { js: string } }): Row[] {
@@ -661,6 +649,30 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     await writeRows(filePath, this.derivedRows, this.spec.columns.map((c) => c.id));
   }
 
+  async exportPython(): Promise<string> {
+    this.requireLoaded();
+    // Same table-path trim as a patch turn: the model sees the basename only.
+    const spec = this.spec;
+    const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
+    const prompt = `Translate this TamedTable flow into a standalone Python 3 script.\n\nSpec:\n${JSON.stringify(llmSpec, null, 2)}`;
+    await rateLimiter.acquire();
+    const result = await generateText({
+      model: this.model(),
+      system: PYTHON_EXPORT_PROMPT,
+      prompt,
+      temperature: 0,
+      maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
+      providerOptions: ANTHROPIC_EPHEMERAL,
+    });
+    let text = (result.text ?? '').trim();
+    // Strip a stray markdown fence if the model wrapped the code in one.
+    if (text.startsWith('```')) {
+      text = text.replace(/^```(?:python)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+    }
+    if (!text) throw new Error('Python export: the model returned no script.');
+    return text.endsWith('\n') ? text : text + '\n';
+  }
+
   async setSpec(spec: Spec): Promise<void> {
     const validated = validateSpec(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
@@ -704,8 +716,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         }
 
         if (onPlan) {
-          const plan = computePlan(this.spec, tried.spec);
-          if (plan.length) onPlan(plan);
+          // The plan printer runs inside this callback. A formatting bug in
+          // it must drop a plan line, never fail an otherwise-good request —
+          // so swallow anything computePlan or the callback throws.
+          try {
+            const plan = computePlan(this.spec, tried.spec);
+            if (plan.length) onPlan(plan);
+          } catch { /* plan display is best-effort */ }
         }
 
         try {
@@ -811,7 +828,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         if ('sql' in t.pred) return this.applyFilterSql(rows, t as typeof t & { pred: { sql: string } });
         return applyFilter(rows, t);
       case 'select':   return applySelect(rows, t);
-      case 'sort':     return applySort(rows, t);
+      case 'sort':     return this.applySortT(rows, t, signal);
       case 'mutate':
         if ('sql' in t.value) return this.applyMutateSql(rows, t as typeof t & { value: { sql: string } });
         if ('js' in t.value) return applyMutateJs(rows, t as typeof t & { value: { js: string } });
@@ -823,6 +840,50 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       case 'unpivot':  return applyUnpivot(rows, t);
       case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd());
     }
+  }
+
+  /** Evaluate one sort key to a per-row value array. A key may be a column
+   *  name or any Expr shape — the same set `mutate.value` accepts. {sql}
+   *  runs through DuckDB, {llm} through the cell model. */
+  private async evalSortKey(
+    rows: Row[],
+    key: string | Expr,
+    signal: AbortSignal | undefined
+  ): Promise<unknown[]> {
+    if (typeof key === 'string') return rows.map((r) => r[key]);
+    if ('js' in key) {
+      const fn = compileJs(key.js);
+      return rows.map((r, i) => fn(r, i, rows));
+    }
+    if ('sql' in key) return this.evalSqlScalar(rows, key.sql);
+    // {llm}: one rendered prompt per row, evaluated through the cell model —
+    // the same batching/caching path a mutate LLM column uses.
+    validateTemplate(key.llm, rows);
+    return this.evalLlmBatch(key.llm, rows, key.model, signal, undefined);
+  }
+
+  /** Sort by one or more keys. Each key is evaluated to a per-row value array
+   *  up front (a {sql}/{llm} key can't be evaluated inside the comparator),
+   *  then rows are ordered by comparing those arrays. */
+  private async applySortT(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'sort' }>,
+    signal: AbortSignal | undefined
+  ): Promise<Row[]> {
+    const keyColumns: unknown[][] = [];
+    for (const b of t.by) keyColumns.push(await this.evalSortKey(rows, b.key, signal));
+    const dirs = t.by.map((b) => (b.dir === 'desc' ? -1 : 1));
+    const indices = rows.map((_, i) => i);
+    indices.sort((ai, bi) => {
+      for (let k = 0; k < keyColumns.length; k++) {
+        const av = keyColumns[k]![ai] as number | string;
+        const bv = keyColumns[k]![bi] as number | string;
+        if (av < bv) return -dirs[k]!;
+        if (av > bv) return dirs[k]!;
+      }
+      return 0;
+    });
+    return indices.map((i) => rows[i]!);
   }
 
   private async applyGroup(

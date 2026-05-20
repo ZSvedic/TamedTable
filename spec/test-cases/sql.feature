@@ -36,7 +36,7 @@ Feature: SQL expressions
 
   Rule: DuckDB state lifecycle
 
-    @headless @cli @offline
+    @headless @cli
     Scenario: SQL sees the latest committed rows after :undo
       When user enters the REPL with "datanorm-input.csv" and types:
         """
@@ -49,7 +49,7 @@ Feature: SQL expressions
       And column "LowerCountry" exists in the spec
       And column "UpperCountry" is absent from the current rows
 
-    @headless @cli @offline
+    @headless @cli
     Scenario: Reloading input resets the DuckDB relation
       When user enters the REPL with "datanorm-input.csv" and types:
         """
@@ -61,15 +61,6 @@ Feature: SQL expressions
       Then REPL exit code is 0
       And column "UpperCity" exists in the spec
       And column "UpperCountry" is absent from the current rows
-
-  Rule: V1 rejects {sql}
-
-    @cli @offline
-    Scenario: A V1 flow that uses {sql} fails validation
-      Given "sql-mutate.flow" exists with an Expr of shape {sql}
-      When user runs "tamedtable execute sql-mutate.flow --input datanorm-input.csv --output ../temp/sql-out.jsonl"
-      Then exit code is 2
-      And stderr contains "V2 feature in V1 spec"
 
   Rule: Cancellation interrupts a running SQL query
 

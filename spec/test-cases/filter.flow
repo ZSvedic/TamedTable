@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "filter-input.csv",
   "spec": {
     "table": "filter-input.csv",

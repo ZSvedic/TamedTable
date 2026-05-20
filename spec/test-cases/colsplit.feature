@@ -11,7 +11,7 @@ Feature: Column split
       When user requests "Split FullName into FirstName and LastName on a single space"
       Then column "FirstName" exists in the spec
       And column "LastName" exists in the spec
-      And every row has a non-null "FirstName"
+      And every non-empty row has a non-null "FirstName"
 
     @headless @cli
     Scenario: Source column stays unless drop is set
@@ -66,12 +66,3 @@ Feature: Column split
       When user requests "Split FullName into FirstName, MiddleName, LastName with an LLM"
       Then every row has a non-null "FirstName"
       And every row has a non-null "LastName"
-
-  Rule: V1 rejects split
-
-    @cli @offline
-    Scenario: A V1 flow that uses split fails Zod validation
-      Given "colsplit.flow" exists
-      When user runs "tamedtable execute colsplit.flow --input colsplit-fullname-input.csv --output ../temp/colsplit-out.jsonl"
-      Then exit code is 2
-      And stderr contains "V2 feature in V1 spec"

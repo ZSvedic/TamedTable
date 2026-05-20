@@ -183,9 +183,9 @@ The REPL prints a fresh ASCII table after every event that changes either
 the underlying table state or the viewport: a successful natural-language
 request, `:load`, `:undo`, `:redo`, `:show`, and `:find` when a match is
 found. REPL commands that don't change either (`:help`, `:save`,
-`:save-flow`, `:history`, `:schema`, `:exit`, and `:find` with no match)
-print only their own output. A failed request prints the error and does
-not reprint the table.
+`:save-flow`, `:save-py`, `:history`, `:schema`, `:exit`, and `:find`
+with no match) print only their own output. A failed request prints the
+error and does not reprint the table.
 
 After every natural-language request the REPL prints a compact debug
 block, on by default and disableable. It is indented, dimmed, every
@@ -333,6 +333,13 @@ They are handled locally without any LLM round-trip:
   (the source path inside the flow is recorded relative to the flow file's
   own directory). Missing path prints `:save-flow: missing path`; success
   prints `saved flow`.
+- `:save-py <path>` writes the current flow as a standalone Python 3
+  script (see [§ V2.5](#v25)). Makes one model call to translate the
+  transformations into Python; refuses a flow that contains any `{llm}`
+  cell. Missing path prints `:save-py: missing path`; a non-`.py`
+  extension prints `:save-py: output must be a .py file`; a flow with an
+  `{llm}` cell prints `:save-py: flow contains LLM cells; cannot export
+  to Python`; success prints `saved Python script`.
 - `:exit` and bare `exit` both close the REPL with exit code 0.
 
 The `:help` usage screen, verbatim:
@@ -347,6 +354,7 @@ State / data commands:
                      viewport, cache.
   :save <path>       Write current rows to JSONL.
   :save-flow <path>  Write current spec as a .flow file.
+  :save-py <path>    Write current flow as a standalone Python script.
   :undo              Pop the last applied patch.
   :redo              Replay the last :undo'd patch.
   :history           Print the patch journal.
@@ -638,3 +646,97 @@ CLI session; the file dialog handshake takes the place of `:load`,
 and the in-browser tab IS the session.
 
 → [code-contract.md — V2](code-contract.md#v2)
+
+## V2.5
+
+V2.5 is a consolidation pass before V3: one spec schema, a handful of
+bug fixes, and one new export command. It changes no wire format and
+adds no transformation verb.
+
+### One spec schema
+
+V1 carried two rule-checkers for the spec — a strict V1 checker that
+rejected every V2 feature and a V2 checker that accepted them. With no
+real V1 documents left to protect, V2.5 deletes the V1 checker. Every
+spec — a freshly loaded table, a patched spec, a replayed `.flow` —
+validates against the one schema. A saved `.flow` records `version: 2`;
+an older `version: 1` flow still loads, validated under the same schema.
+
+### Sorting by a SQL or AI key
+
+A `sort` key may be a column name or any expression — `{js}`, `{sql}`,
+or `{llm}` — exactly like a `mutate` value. V2.5 fixes a bug where
+`sort` evaluated every key as JavaScript: handed a `{sql}` or `{llm}`
+key it tried to run SQL or prompt text as JS and broke or produced
+garbage. A `{sql}` sort key now runs through DuckDB and an `{llm}` key
+through the cell model, one key value per row, the same machinery
+`mutate` already uses.
+
+### A formatter bug never fails a request
+
+The plan printer — the code that renders a transformation as a readable
+line — runs inside a callback. V2.5 wraps that callback so a formatting
+error drops the plan line and the request still commits; a cosmetic
+display bug can no longer surface to the user as "couldn't apply that
+change."
+
+### `:save-py` — export a flow as a standalone Python script
+
+`:save-py <path>` writes the current sequence of transformations as a
+single self-contained Python 3 script. The script carries a
+`#!/usr/bin/env` shebang and PEP 723 inline dependency metadata in its
+top comments, so `./script.py input output` runs directly with `uv`
+resolving dependencies. It reads a `.csv` or `.jsonl` input and writes
+the transformed table to the output path. The script runs
+deterministically — no AI call at run time.
+
+Generating the script makes exactly one AI call: the model translates
+the spec's transformations into Python. Because the exported script
+must be deterministic, `:save-py` refuses any flow containing an
+`{llm}` cell — a live AI cell cannot be reproduced offline. Such a flow
+prints `:save-py: flow contains LLM cells; cannot export to Python` and
+writes nothing. A flow built only from `{js}`, `{sql}`, and the
+structural verbs (`filter`, `sort`, `select`, `group`, `join`, `split`,
+`validate`, `pivot`, `unpivot`) exports cleanly.
+
+`:save-py` is a REPL command: it is not exposed as a `tamedtable`
+subcommand in V2.5. Missing path prints `:save-py: missing path`; a
+non-`.py` extension prints `:save-py: output must be a .py file`.
+
+→ [code-contract.md — V2.5](code-contract.md#v25)
+
+## V3
+
+V3 items need real new machinery and are out of scope for V2.5. They
+are recorded here so the spec tracks the committed roadmap.
+
+- **Stop a running SQL query on Ctrl-C.** The V2 SQL section above
+  describes the target cancellation behavior (`conn.interrupt()`, the
+  2-second budget, draining a lingering query). V3 is when it actually
+  lands: today's cancel path only stops AI calls, not DuckDB work that
+  keeps running after the cancel returns.
+- **Split a column with the AI.** `split` accepts an `{llm}` separator
+  in the grammar but the runtime throws "LLM separators not yet
+  implemented"; the split path is synchronous and cannot make a model
+  call. V3 makes `split` async so an `{llm}` `on` can run.
+- **SQL aggregates inside `group`.** A `{sql}` aggregate in `group.agg`
+  currently throws an explicit guard. V3 runs a real `GROUP BY` per
+  group through DuckDB.
+- **Top-N sort.** `sort` returns every row, ordered; there is no
+  `head`, `limit`, or `take`. V3 adds a `limit` to `sort` (or a
+  separate `take` transformation) so "top 10 by revenue" needs no
+  manual row deletion.
+- **CSV column order via a `:` command.** Today CSV output column
+  order follows the spec's column order. V3 exposes column order
+  through a REPL `:` command — an option on `:save` or a dedicated
+  reorder command — rather than a new spec field.
+
+→ [code-contract.md — V3](code-contract.md#v3)
+
+## V4
+
+- **Web UI.** A browser front-end — a chat sidebar plus the table view
+  on the existing engine. The V2 section above sketches the web shell;
+  V4 is when it ships.
+
+→ [code-contract.md — V4](code-contract.md#v4)

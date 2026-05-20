@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "datanorm-input.csv",
   "spec": {
     "table": "datanorm-input.csv",

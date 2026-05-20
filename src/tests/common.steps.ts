@@ -34,11 +34,6 @@ Given(/^"(.+)" exists with join\.with = "(.+)"$/, async function (this: TamedTab
   assert.ok(content.includes(joinWith), `${filename} does not reference ${joinWith}`);
 });
 
-Given(/^"(.+)" exists with an Expr of shape \{sql\}$/, async function (this: TamedTableWorld, filename: string) {
-  const content = await readFile(fixture(filename), 'utf8');
-  assert.ok(content.includes('"sql"'), `${filename} does not contain an "sql" expression`);
-});
-
 Then('the first line of {string} is {string}', async function (this: TamedTableWorld, filename: string, expectedFirstLine: string) {
   const text = await readFile(output(filename), 'utf8');
   const first = text.split('\n', 1)[0]!;
