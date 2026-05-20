@@ -203,10 +203,11 @@ A cassette file is a JSON object keyed by fingerprint; each value is
 `{ status, statusText, headers, body }`, with `body` the response body
 as text (a JSON payload or an SSE stream, captured verbatim). On replay
 a `Response` is reconstructed from those fields. Cassettes live one per
-feature file at `spec/test-cases/__cassettes__/<feature>.json`, are
-written pretty-printed with keys sorted for reviewable diffs, and are
-committed to git. In `record` mode each new entry is flushed to its
-file as soon as it is captured.
+feature file at `src/tests/__cassettes__/<feature>.json` — committed
+recorded data, not human-reviewed contract, so they sit under `src/`
+rather than `spec/`. They are written pretty-printed with keys sorted
+for reviewable diffs and committed to git. In `record` mode each new
+entry is flushed to its file as soon as it is captured.
 
 `runnerOptsFor` in [`src/tests/world.ts`](../src/tests/world.ts) wires
 this in: for a `@cli` or `@headless` scenario it reads

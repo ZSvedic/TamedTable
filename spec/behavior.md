@@ -166,8 +166,8 @@ service, exactly as before.
 The fingerprint covers the request's method, address, and full body, so
 a changed prompt can never match an old recording: a stale reply is
 impossible; a changed prompt is simply a miss to re-record. Recordings
-are committed next to the test fixtures, so a fresh checkout replays the
-whole suite without a key.
+are committed to git, so a fresh checkout replays the whole suite
+without a key.
 
 → [code-contract.md — Headless](code-contract.md#headless)
 
