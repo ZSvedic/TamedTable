@@ -195,12 +195,17 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 
 | `TAMEDTABLE_CASSETTE` | Behavior |
 |---|---|
-| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save the response, return it. Needs `ANTHROPIC_API_KEY`. |
+| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs `ANTHROPIC_API_KEY`. |
 | `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`. No network, no API key. |
 | unset / any other value | No recorder is installed; every call hits the network — V1 behavior. |
 
 The fingerprint is strict by design: a changed prompt is always a miss,
 never a silent stale hit.
+
+Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
+returned to the SDK unsaved, so its built-in retry reaches the live API
+and the eventual success — not the transient error — is what lands in
+the cassette.
 
 A cassette file is a JSON object keyed by fingerprint; each value is
 `{ status, statusText, headers, body }`, with `body` the response body

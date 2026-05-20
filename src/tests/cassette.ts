@@ -101,8 +101,13 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
 
     const res = await upstream(input, init);
     const entry = toEntry(res, await res.text());
-    cassette[fp] = entry;
-    flush(cassette);
+    // Only cache a success. A retryable error (429, 5xx) is returned unsaved so
+    // the SDK's own retry reaches the live API and the eventual success — not
+    // the transient error — is what lands in the cassette.
+    if (res.status >= 200 && res.status < 300) {
+      cassette[fp] = entry;
+      flush(cassette);
+    }
     return toResponse(entry);
   };
 }
