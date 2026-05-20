@@ -1,4 +1,4 @@
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,colsplit,convert,join,pivot,sql,validate')
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,colsplit,convert,debug,join,pivot,sql,validate')
   .split(',')
   .map((s) => `../spec/test-cases/${s.trim()}.feature`);
 

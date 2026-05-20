@@ -33,6 +33,11 @@ export interface RequestDebugTurn {
 export interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
+  expressions: Array<{ label: string; body: string }>;
+  modelCalls: Array<{ model: string; calls: number }>;
+  inputTokens: number;
+  outputTokens: number;
+  elapsedMs: number;
 }
 
 export type PlanItem =
@@ -54,6 +59,7 @@ export interface HeadlessRunnerOptions {
   rpm?: number;
   onChunk?: (update: ChunkUpdate) => void;
   onPlan?: (items: PlanItem[]) => void;
+  onDebug?: (info: RequestDebugInfo) => void;
   signal?: AbortSignal;
 }
 
@@ -542,6 +548,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private cellModelCache: ReturnType<ReturnType<typeof createAnthropic>> | undefined;
   private providerCache: ReturnType<typeof createAnthropic> | undefined;
   private cellResultCache = new Map<string, unknown>();
+  // Per-request tally of model calls + token usage; reset at the start of
+  // each request() and rolled up into the RequestDebugInfo it emits.
+  private callLog: Array<{ model: string; inputTokens: number; outputTokens: number }> = [];
   private loaded = false;
   private busy = false;
   // DuckDB is initialised lazily on first {sql} use. The relation `t` is
@@ -558,6 +567,41 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   private requireLoaded(): void {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
+  }
+
+  private recordCall(model: string, usage: { inputTokens?: number; outputTokens?: number } | undefined): void {
+    this.callLog.push({
+      model,
+      inputTokens: usage?.inputTokens ?? 0,
+      outputTokens: usage?.outputTokens ?? 0,
+    });
+  }
+
+  private buildDebugInfo(
+    userRequest: string,
+    turns: RequestDebugTurn[],
+    expressions: Array<{ label: string; body: string }>,
+    elapsedMs: number
+  ): RequestDebugInfo {
+    const order: string[] = [];
+    const counts = new Map<string, number>();
+    let inputTokens = 0;
+    let outputTokens = 0;
+    for (const c of this.callLog) {
+      if (!counts.has(c.model)) { counts.set(c.model, 0); order.push(c.model); }
+      counts.set(c.model, counts.get(c.model)! + 1);
+      inputTokens += c.inputTokens;
+      outputTokens += c.outputTokens;
+    }
+    return {
+      userRequest,
+      turns,
+      expressions,
+      modelCalls: order.map((m) => ({ model: m, calls: counts.get(m)! })),
+      inputTokens,
+      outputTokens,
+      elapsedMs,
+    };
   }
 
   private provider(): ReturnType<typeof createAnthropic> {
@@ -631,6 +675,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const onChunk = callOpts.onChunk ?? this.opts.onChunk;
     const onPlan = callOpts.onPlan ?? this.opts.onPlan;
     const turns: RequestDebugTurn[] = [];
+    const startedAt = Date.now();
+    const specBefore = this.spec;
+    this.callLog = [];
     try {
       const budget = this.opts.recoveryBudget ?? 3;
       let lastError: string | undefined;
@@ -661,6 +708,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           this.spec = syncColumnsToRows(tried.spec, newRows);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
+          const expressions = computePlan(specBefore, this.spec)
+            .filter((p): p is Extract<PlanItem, { kind: 'add-transformation' }> => p.kind === 'add-transformation')
+            .flatMap((p) => transformationExpressions(p.transformation));
+          this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt));
           return;
         } catch (e) {
           if (signal?.aborted || isCancelled(e)) throw new Error(CANCELLED);
@@ -670,8 +721,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           prompt = buildPrompt(text, this.spec, `Your previous patch applied but evaluation failed: ${lastError}`);
         }
       }
+      const info = this.buildDebugInfo(text, turns, [], Date.now() - startedAt);
       const err = new Error(`Runner: recovery budget exhausted${lastError ? `; last error: ${lastError}` : ''}`);
-      (err as Error & { debug?: RequestDebugInfo }).debug = { userRequest: text, turns };
+      (err as Error & { debug?: RequestDebugInfo }).debug = info;
+      this.opts.onDebug?.(info);
       throw err;
     } finally {
       this.busy = false;
@@ -701,6 +754,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
+    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage);
     if (!captured) {
       const direct = result.toolCalls?.find((c) => c.toolName === 'apply_spec_patch');
       const ops = (direct?.input as { operations?: unknown[] } | undefined)?.operations;
@@ -984,6 +1038,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
+    this.recordCall(perCellModel ?? this.opts.cellModel ?? DEFAULT_CELL_MODEL, result.usage);
     const parsed = tryParseBatchResponse(result.text ?? '', prompts.length);
     if (parsed) return parsed;
     return Promise.all(prompts.map((p) => this.callLlmCell(p, perCellModel, signal)));
@@ -999,6 +1054,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
+    this.recordCall(perCellModel ?? this.opts.cellModel ?? DEFAULT_CELL_MODEL, result.usage);
     const text = (result.text ?? '').trim();
     return text === '' || text.toLowerCase() === 'null' ? null : text;
   }
@@ -1024,6 +1080,38 @@ export function computePlan(oldSpec: Spec, newSpec: Spec): PlanItem[] {
   for (let i = prefix; i < oldT.length; i++) items.push({ kind: 'remove-transformation', transformation: oldT[i] as Transformation });
   for (let i = prefix; i < newT.length; i++) items.push({ kind: 'add-transformation', transformation: newT[i] as Transformation });
   return items;
+}
+
+function exprToString(e: Expr): string {
+  if ('js' in e) return e.js.trim();
+  if ('sql' in e) return e.sql.trim();
+  return e.llm.trim();
+}
+
+/** @internal — exported for unit tests. The primary expression(s) of a
+ *  transformation, for the CLI debug block. Secondary fields such as a
+ *  validate `message` are intentionally omitted. */
+export function transformationExpressions(t: Transformation): Array<{ label: string; body: string }> {
+  switch (t.kind) {
+    case 'filter':
+    case 'validate':
+      return [{ label: 'pred', body: exprToString(t.pred) }];
+    case 'mutate':
+      return [{ label: 'value', body: exprToString(t.value) }];
+    case 'join':
+      return [{ label: 'on', body: exprToString(t.on) }];
+    case 'sort':
+      return [{ label: 'sort', body: t.by.map((b) => `${typeof b.key === 'string' ? b.key : exprToString(b.key)} ${b.dir}`).join(', ') }];
+    case 'select':
+      return [{ label: 'select', body: t.columns.join(', ') }];
+    case 'group':
+      return Object.entries(t.agg).map(([col, e]) => ({ label: `agg ${col}`, body: exprToString(e) }));
+    case 'split':
+      return [{ label: 'split on', body: t.on instanceof RegExp ? String(t.on) : typeof t.on === 'string' ? t.on : exprToString(t.on) }];
+    case 'pivot':
+    case 'unpivot':
+      return [];
+  }
 }
 
 /** @internal — exported for unit tests. */
