@@ -120,7 +120,7 @@ interface HeadlessRunnerOptions {
   onPlan?: (items: PlanItem[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
   signal?: AbortSignal;
-  fetch?: typeof fetch;
+  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
 
 type PlanItem =
@@ -183,7 +183,10 @@ Headless makes every model HTTP call through `fetch`.
 `createHeadlessRunner` forwards `opts.fetch` into
 `createAnthropic({ apiKey, baseURL, fetch })`, so the SDK routes all
 HTTP through it. When `opts.fetch` is unset the SDK uses the global
-`fetch` and V1 behavior is unchanged.
+`fetch` and V1 behavior is unchanged. `fetch?` is typed as the plain
+`(input, init) => Promise<Response>` call signature a wrapper actually
+implements; the SDK's own `fetch` field is `typeof globalThis.fetch`,
+so the forward casts to bridge the two.
 
 The cucumber suite passes a `fetch`-shaped *cassette recorder* as
 `opts.fetch`. The recorder fingerprints each request — a SHA-256 hex
@@ -213,8 +216,11 @@ entry is flushed to its file as soon as it is captured.
 this in: for a `@cli` or `@headless` scenario it reads
 `TAMEDTABLE_CASSETTE`, and when the value is `record` or `replay` it
 adds a recorder — bound to that scenario's feature-named cassette
-file — to the runner options bag. The recorder is test-only code under
-`src/tests/`; `src/packages/headless` merely forwards `opts.fetch`.
+file — to the runner options bag. In `replay` mode it also sets a
+placeholder `apiKey`, since the runner requires a non-empty key to
+build its provider and the recorder intercepts every call before that
+key would be used. The recorder is test-only code under `src/tests/`;
+`src/packages/headless` merely forwards `opts.fetch`.
 
 ## CLI
 
