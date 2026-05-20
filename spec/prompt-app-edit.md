@@ -1,6 +1,6 @@
 # Prompt — app edit
 
-The three LLM prompts that drive TamedTable. The runtime reads this file at
+The LLM prompts that drive TamedTable. The runtime reads this file at
 module init and splits it on top-level `## ` headers; each section's body
 becomes the exported constant of the same name. Editing this file is the way
 to tune any of these prompts — `src/` does not contain the text directly.
@@ -10,6 +10,8 @@ to tune any of these prompts — `src/` does not contain the text directly.
 - `CELL_FORMAT_CONSTRAINT` — trailing instruction every `{llm:…}` cell prompt
   must end with. Appears verbatim inside `SYSTEM_PROMPT` few-shots; exported
   separately for spec-driven tools.
+- `PYTHON_EXPORT_PROMPT` — sent on the single model call `:save-py` makes to
+  translate a flow into a standalone Python script (V2.5).
 
 ## SYSTEM_PROMPT
 
@@ -69,3 +71,37 @@ You will process several independent micro-tasks. Apply each task's instructions
 ## CELL_FORMAT_CONSTRAINT
 
 Reply with ONLY the result and nothing else. If the input cannot be processed, reply with the literal word: null
+
+## PYTHON_EXPORT_PROMPT
+
+You translate a TamedTable flow into a standalone Python 3 script. The user message contains a JSON spec with `columns` and an ordered list of `transformations`. Reply with ONLY the Python source — no prose, no explanation, no markdown fences.
+
+The script MUST:
+- Begin with the exact shebang line `#!/usr/bin/env -S uv run --script`.
+- Follow the shebang with a PEP 723 inline metadata block listing every third-party package the script imports, e.g.:
+  # /// script
+  # requires-python = ">=3.11"
+  # dependencies = ["duckdb"]
+  # ///
+  List only packages the script actually imports. Prefer the Python standard library (`csv`, `json`, `sys`) and add `duckdb` only when the flow contains a `{sql}` expression.
+- Read two command-line arguments: `sys.argv[1]` is the input path, `sys.argv[2]` is the output path. Print a clear usage message and exit non-zero if either is missing.
+- Dispatch on file extension for both paths: `.csv` and `.jsonl` are supported; any other extension is an error. When loading a `.csv`: read it with `csv.DictReader(f, skipinitialspace=True)` so a quoted field written after a space (e.g. `, "Sep 30, 1978",`) parses as one field; every value is a string; and `.strip()` leading/trailing whitespace from each header name and each cell, so a column named `Country` is keyed `Country`, not ` Country`. JSONL values keep their JSON types.
+- Load the input rows, apply every transformation in `transformations` order, and write the result table to the output path.
+
+Translate each transformation faithfully to Python:
+- `filter {pred}` — keep rows where the predicate is truthy.
+- `mutate {columns, value}` — set the column(s) from the value expression.
+- `select {columns}` — keep only these columns, in this order.
+- `sort {by:[{key, dir}]}` — order by each key, ascending or descending.
+- `group {by, agg}` — one output row per distinct by-tuple; the by-columns plus the agg columns replace the prior column list, in first-seen order.
+- `join {with, on, how}` — left join (default) or inner join against the file named by `with`, resolved relative to the input file's directory; collide-renamed right columns become `<name>_2`.
+- `split {from, into, on, drop}` — split one column's cells into the `into` columns; pad short rows with `None`, join overflow onto the last column.
+- `validate {pred, message, threshold}` — add `_valid` (bool) and `_validation` (message or `None`) columns; with a `threshold`, exit non-zero when the failure rate exceeds it.
+- `pivot` / `unpivot` — long↔wide reshape per the spec fields.
+
+Expression shapes:
+- `{js: "<body>"}` — a JavaScript arrow-function body, signature `(row, i, rows)`. Translate the JavaScript semantics into equivalent Python.
+- `{sql: "<fragment>"}` — a DuckDB SQL fragment over a relation `t` holding the current rows. Run it with the `duckdb` package.
+You will never receive an `{llm}` expression — the caller rejects any flow that contains one.
+
+The script must run deterministically, with no network call and no AI call, as `./script.py input output`.

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "pivot-wide-input.csv",
   "spec": {
     "table": "pivot-wide-input.csv",

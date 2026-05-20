@@ -30,9 +30,11 @@ Feature: Row and dataset validation
         """
         Validate that Phone is non-empty
         Keep only rows where _valid is true
+        :save ../temp/validate-filter-out.jsonl
         exit
         """
       Then REPL exit code is 0
+      And "../temp/validate-filter-out.jsonl" is loaded
       And every remaining row has _valid equal to true
 
   Rule: threshold aborts the whole request
@@ -59,17 +61,10 @@ Feature: Row and dataset validation
         """
         Validate that Phone is non-empty
         Validate that DOB is non-empty
+        :save ../temp/validate-second-out.jsonl
         exit
         """
       Then REPL exit code is 0
+      And "../temp/validate-second-out.jsonl" is loaded
       And rows with empty DOB have _valid equal to false
       And rows with non-empty DOB but empty Phone have _valid equal to true
-
-  Rule: V1 rejects validate
-
-    @cli @offline
-    Scenario: A V1 flow that uses validate fails Zod validation
-      Given "validate.flow" exists
-      When user runs "tamedtable execute validate.flow --input datanorm-input.csv --output ../temp/validate-out.jsonl"
-      Then exit code is 2
-      And stderr contains "V2 feature in V1 spec"

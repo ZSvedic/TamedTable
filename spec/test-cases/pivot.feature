@@ -54,19 +54,3 @@ Feature: Pivot and unpivot
       When user requests "Unpivot Q1, Q2, Q3, Q4 into Quarter and Revenue"
       Then column "Quarter" exists in the spec
       And column "Revenue" exists in the spec
-
-  Rule: V1 rejects pivot and unpivot
-
-    @cli @offline
-    Scenario: A V1 flow that uses pivot fails Zod validation
-      Given "pivot.flow" exists
-      When user runs "tamedtable execute pivot.flow --input pivot-long-input.csv --output ../temp/pivot-out.jsonl"
-      Then exit code is 2
-      And stderr contains "V2 feature in V1 spec"
-
-    @cli @offline
-    Scenario: A V1 flow that uses unpivot fails Zod validation
-      Given "pivot-unpivot.flow" exists
-      When user runs "tamedtable execute pivot-unpivot.flow --input pivot-wide-input.csv --output ../temp/unpivot-out.jsonl"
-      Then exit code is 2
-      And stderr contains "V2 feature in V1 spec"

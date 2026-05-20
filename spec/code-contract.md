@@ -39,19 +39,21 @@ interface Spec {
 }
 ```
 
-A single Zod schema covers the V1 type set and runs at three points:
+A single Zod schema (`validateSpec` / `SpecSchema`) covers the whole type
+set and runs at three points:
 
 1. When `loadCsv` or `loadJsonl` builds the initial spec.
 2. When the `apply_spec_patch` tool merges a patch.
 3. When `runCli execute` loads a `.flow` file.
 
-The schema checks: `kind` is one of the four V1 verbs; `Expr` is one of the
-two V1 shapes; `summary.groupBy` and `summary.aggregates` are empty; nothing
-uses a V2-only feature (a `kind: "group"` or `Expr.sql` gets a clear *"V2
-feature in V1 spec"* error rather than being silently ignored). It does
-*not* check whether a JS body compiles or whether an `{Column}` placeholder
-matches a real column — those errors surface at evaluation time and flow
-through the recovery loop.
+The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
+three shapes; `split.into`, `group.by`, and `pivot.index` are non-empty;
+`validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
+`.jsonl`. It does *not* check whether a JS body compiles or whether an
+`{Column}` placeholder matches a real column — those errors surface at
+evaluation time and flow through the recovery loop. V2.5 removed the
+legacy V1-only schema (see [§ V2.5](#v25)); there is no longer a
+separate "V2 feature in V1 spec" rejection path.
 
 Patches: RFC 6902 via `fast-json-patch`; RFC 7396 merge hand-rolled
 (~20 LOC).
@@ -292,14 +294,16 @@ so callers can decide what to do with a failure.
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "source": "datanorm-input.csv",
-  "spec": { /* V1 Spec — see Data model above */ }
+  "spec": { /* Spec — see Data model above */ }
 }
 ```
 
-A relative `source` is read relative to the `.flow` file's own directory;
-`--input` overrides it. A `version` mismatch exits 2.
+`:save-flow` writes `version: 2`. `execute` accepts a `version` of `1` or
+`2` and validates the spec against the single schema either way; any
+other `version` exits 2. A relative `source` is read relative to the
+`.flow` file's own directory; `--input` overrides it.
 
 Exit codes:
 
@@ -319,10 +323,11 @@ Exit codes:
 
 [`spec/prompt-app-edit.md`](prompt-app-edit.md) is parsed at module load.
 The file is split on top-level `## ` headers; each section becomes a
-module-internal string of the same name. Currently three sections required:
-`SYSTEM_PROMPT`, `BATCH_SYSTEM_PROMPT`, `CELL_FORMAT_CONSTRAINT`. Any
-required section missing throws at load time with a clear error pointing at
-the file.
+module-internal string of the same name. Four sections required:
+`SYSTEM_PROMPT`, `BATCH_SYSTEM_PROMPT`, `CELL_FORMAT_CONSTRAINT`, and
+`PYTHON_EXPORT_PROMPT` (added in V2.5 — the system message for the
+`:save-py` translation call). Any required section missing throws at
+load time with a clear error pointing at the file.
 
 The runtime uses `SYSTEM_PROMPT` as the system message on every patch-turn
 call and `BATCH_SYSTEM_PROMPT` as the system message on every multi-row
@@ -454,3 +459,67 @@ browsers that don't support it.
 Exit codes are CLI-only; web errors surface as toasts inside the
 table view and carry the same error strings the recovery loop
 produces.
+
+## V2.5
+
+→ [behavior.md — V2.5](behavior.md#v25)
+
+### One spec schema
+
+`validateV1Spec` and the `V1*Schema` Zod definitions are removed from
+`@tamedtable/core`. `validateSpec` (over `SpecSchema`) is the only
+validator. `runCli execute` no longer branches on `flow.version`: a
+`version` of `1` or `2` both validate through `validateSpec`. The nine
+`version: 1` test `.flow` fixtures are bumped to `version: 2`.
+
+### Sorting by a SQL or AI key
+
+`applySort` no longer compiles every `sort.by[].key` as JS. A key is
+resolved by `Expr` shape, mirroring `mutate`: a `string` reads the
+column; `{js}` compiles; `{sql}` evaluates one scalar per row through
+the shared DuckDB connection (`SELECT (<fragment>) AS r FROM t`, input
+order preserved); `{llm}` evaluates one cell per row through the cell
+model. Multi-key sorts evaluate each key's per-row values up front,
+then compare. SQL/LLM key evaluation makes `applySort` async; the
+runner already `await`s every transformation.
+
+### A formatter bug never fails a request
+
+The `onPlan` callback dispatch in `Runner.request` is wrapped in
+`try/catch`. `computePlan` and the callback can throw without aborting
+the request — the plan line is dropped, the commit proceeds.
+
+### `:save-py`
+
+```ts
+interface HeadlessRunner {
+  // …
+  exportPython(): Promise<string>;   // V2.5 — one model call, returns the script text
+}
+```
+
+`exportPython` builds a prompt from the current committed spec and
+makes one `generateText` call with `PYTHON_EXPORT_PROMPT` as the system
+message, returning the generated script as a string. It is recorded by
+the cassette recorder like any other model call. The CLI `:save-py`
+handler: validates the `.py` extension and the path; scans
+`currentSpec().transformations` for any `{llm}` `Expr` and refuses if
+one is present; otherwise calls `exportPython` and writes the result.
+`:save-py` is REPL-only — no `tamedtable` subcommand in V2.5.
+
+## V3
+
+→ [behavior.md — V3](behavior.md#v3)
+
+Deferred. No V2.5 type or signature changes. The relevant grammar is
+already in the `Transformation` union (`split.on` accepts an `Expr`;
+`group.agg` accepts a `{sql}` `Expr`); the V3 work is runtime support,
+plus a `sort` `limit` field (or a `take` transformation) and a REPL
+command for CSV column order.
+
+## V4
+
+→ [behavior.md — V4](behavior.md#v4)
+
+Deferred. The web package (`src/packages/web/`) is described in the V2
+section above; V4 is when it ships.

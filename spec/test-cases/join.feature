@@ -41,7 +41,7 @@ Feature: Lookup join
 
   Rule: Right-side input dispatches on extension
 
-    @headless @cli @offline
+    @headless @cli
     Scenario: join.with with .jsonl loads as JSONL
       When user requests "Join with join-country-codes.jsonl on Country to add ISO"
       Then column "ISO" exists in the spec
@@ -65,5 +65,5 @@ Feature: Lookup join
         exit
         """
       Then REPL exit code is 0
-      And REPL stdout does not contain "ISO"
-      And REPL stdout does not contain "Region"
+      And the last REPL table reprint does not contain "ISO"
+      And the last REPL table reprint does not contain "Region"

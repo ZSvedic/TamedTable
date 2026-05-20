@@ -7,39 +7,9 @@ import * as path from 'node:path';
 
 export type Row = Record<string, unknown>;
 
-const V2_KINDS = ['group', 'join', 'split', 'validate', 'pivot', 'unpivot'] as const;
-
-// ── V1 schemas (rejects every V2 feature for legacy flow files) ────────────
-
-const V1ExprSchema = z.union([
-  z.object({ js: z.string() }).strict(),
-  z.object({ llm: z.string(), model: z.string().optional() }).strict(),
-  z.object({ sql: z.string() }).strict().superRefine((_, ctx) => {
-    ctx.addIssue({ code: 'custom', message: 'V2 feature in V1 spec: Expr.sql' });
-  }),
-]);
+// ── Spec schema (one schema for every spec — fresh load, patch, replay) ────
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);
-
-const V1TransformationCoreSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('filter'), pred: V1ExprSchema }).strict(),
-  z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: V1ExprSchema }).strict(),
-  z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
-  z.object({
-    kind: z.literal('sort'),
-    by: z.array(z.object({ key: z.union([z.string(), V1ExprSchema]), dir: z.enum(['asc', 'desc']) })),
-  }).strict(),
-]);
-
-const V1TransformationSchema = z.preprocess((t) => {
-  const kind = (t as { kind?: unknown } | null | undefined)?.kind;
-  if (typeof kind === 'string' && (V2_KINDS as readonly string[]).includes(kind)) {
-    throw new Error(`V2 feature in V1 spec: kind="${kind}"`);
-  }
-  return t;
-}, V1TransformationCoreSchema);
-
-// ── V2 schemas (permit all V2 features) ───────────────────────────────────
 
 export const ExprSchema: z.ZodTypeAny = z.union([
   z.object({ js: z.string() }).strict(),
@@ -126,23 +96,6 @@ const ColumnSchema = z.object({
   format: z.string().optional(),
 });
 
-const V1SpecSchema = z
-  .object({
-    table: z.string().optional(),
-    columns: z.array(ColumnSchema),
-    filter: z.unknown().optional(),
-    sort: z.array(z.unknown()).optional(),
-    page: z.object({ size: z.number(), offset: z.number() }).optional(),
-    summary: z
-      .object({
-        groupBy: z.array(z.unknown()).max(0, 'V2 feature in V1 spec: summary.groupBy'),
-        aggregates: z.array(z.unknown()).max(0, 'V2 feature in V1 spec: summary.aggregates'),
-      })
-      .optional(),
-    transformations: z.array(V1TransformationSchema),
-  })
-  .strict();
-
 export const SpecSchema = z
   .object({
     table: z.string().optional(),
@@ -169,17 +122,6 @@ function describeZodError(err: z.ZodError): string {
 
 export function validateSpec(spec: unknown): Spec {
   const result = SpecSchema.safeParse(spec);
-  if (!result.success) {
-    throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
-  }
-  return result.data as Spec;
-}
-
-/** Validate a spec under V1 rules — used when loading `version: 1` .flow files.
- *  Rejects every V2 feature with a "V2 feature in V1 spec" error so legacy
- *  flows can't smuggle in transformations the V1 runtime never supported. */
-export function validateV1Spec(spec: unknown): Spec {
-  const result = V1SpecSchema.safeParse(spec);
   if (!result.success) {
     throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
   }

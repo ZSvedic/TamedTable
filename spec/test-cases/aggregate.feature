@@ -49,12 +49,3 @@ Feature: Group and aggregate
       Given "aggregate-empty-input.jsonl" is loaded
       When user requests "Group by Country and count rows"
       Then the number of rows is 0
-
-  Rule: V1 still rejects group as a V2 feature
-
-    @cli @offline
-    Scenario: Loading a V1 flow that uses group fails Zod validation
-      Given "aggregate.flow" exists
-      When user runs "tamedtable execute aggregate.flow --input datanorm-input.csv --output ../temp/agg-out.jsonl"
-      Then exit code is 2
-      And stderr contains "V2 feature in V1 spec"

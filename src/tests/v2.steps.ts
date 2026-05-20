@@ -70,8 +70,19 @@ Then('every row has a non-null {string}', function (this: TamedTableWorld, col: 
   const rows = this.ensureRunner().currentRows();
   assert.ok(rows.length > 0, 'no rows');
   rows.forEach((r, i) => {
-    // Skip rows whose split source was empty — those are tested by the
-    // dedicated "empty input cell produces nulls" scenario, not here.
+    const v = r[col];
+    assert.ok(v !== null && v !== undefined && v !== '', `row ${i} ${col} is empty/null: ${JSON.stringify(v)}`);
+  });
+});
+
+// Item 5: a split over a fixture that includes an empty-FullName row can't
+// give every output row a value — the empty cell yields nulls by design
+// (covered by the "empty input cell produces nulls" scenario). This weaker
+// assertion checks only the rows whose split source was non-empty.
+Then('every non-empty row has a non-null {string}', function (this: TamedTableWorld, col: string) {
+  const rows = this.ensureRunner().currentRows();
+  assert.ok(rows.length > 0, 'no rows');
+  rows.forEach((r, i) => {
     const fullName = r.FullName;
     if (fullName === '' || fullName === null || fullName === undefined) return;
     const v = r[col];

@@ -3,10 +3,10 @@ import { Writable } from 'node:stream';
 import { readFile, unlink, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createCliRunner, handleSlashCommand, type CliRunner } from './index.ts';
+import { createCliRunner, handleColonCommand, type CliRunner } from './index.ts';
 import { loadEnv, readJsonl, validateSpec } from '@tamedtable/core';
 
-// This file lives at src/packages/cli/slash.test.ts.
+// This file lives at src/packages/cli/colon.test.ts.
 const REPO_ROOT = join(import.meta.dirname, '../../..');
 const SPEC_TC = join(REPO_ROOT, 'spec/test-cases');
 const TEMP = join(REPO_ROOT, 'temp');
@@ -34,16 +34,16 @@ const tmpPath = (suffix: string) => join(tmpdir(), `tamedtable-${process.pid}-${
 
 beforeAll(() => { loadEnv(); });
 
-describe('handleSlashCommand', () => {
+describe('handleColonCommand', () => {
   it('returns "exit" for the exit alias', async () => {
     const h = makeHarness();
-    expect(await handleSlashCommand('exit', h.runner, h.stream)).toBe('exit');
-    expect(await handleSlashCommand(':exit', h.runner, h.stream)).toBe('exit');
+    expect(await handleColonCommand('exit', h.runner, h.stream)).toBe('exit');
+    expect(await handleColonCommand(':exit', h.runner, h.stream)).toBe('exit');
   });
 
   it('returns "handled" for :help and writes a usage screen', async () => {
     const h = makeHarness();
-    expect(await handleSlashCommand(':help', h.runner, h.stream)).toBe('handled');
+    expect(await handleColonCommand(':help', h.runner, h.stream)).toBe('handled');
     const out = h.text();
     expect(out).toContain('TamedTable');
     expect(out).toContain(':help');
@@ -54,21 +54,21 @@ describe('handleSlashCommand', () => {
 
   it('returns "unhandled" for free-form text (passes through to the LLM path)', async () => {
     const h = makeHarness();
-    expect(await handleSlashCommand('normalize phone numbers', h.runner, h.stream)).toBe('unhandled');
-    expect(await handleSlashCommand('helpme', h.runner, h.stream)).toBe('unhandled');
-    expect(await handleSlashCommand('undo this thing', h.runner, h.stream)).toBe('unhandled');
+    expect(await handleColonCommand('normalize phone numbers', h.runner, h.stream)).toBe('unhandled');
+    expect(await handleColonCommand('helpme', h.runner, h.stream)).toBe('unhandled');
+    expect(await handleColonCommand('undo this thing', h.runner, h.stream)).toBe('unhandled');
   });
 
   it('on :undo with no transformations writes "nothing to undo."', async () => {
     const h = await loadedHarness();
-    expect(await handleSlashCommand(':undo', h.runner, h.stream)).toBe('handled');
+    expect(await handleColonCommand(':undo', h.runner, h.stream)).toBe('handled');
     expect(h.text()).toContain('nothing to undo.');
     expect(h.runner.currentSpec().transformations.length).toBe(0);
   });
 
   it('on :save without a path prints usage', async () => {
     const h = await loadedHarness();
-    expect(await handleSlashCommand(':save', h.runner, h.stream)).toBe('handled');
+    expect(await handleColonCommand(':save', h.runner, h.stream)).toBe('handled');
     expect(h.text()).toContain(':save: missing path');
   });
 
@@ -76,7 +76,7 @@ describe('handleSlashCommand', () => {
     const h = await loadedHarness();
     const out = tmpPath('jsonl');
     try {
-      expect(await handleSlashCommand(`:save ${out}`, h.runner, h.stream)).toBe('handled');
+      expect(await handleColonCommand(`:save ${out}`, h.runner, h.stream)).toBe('handled');
       expect(h.text()).toContain(`saved ${h.runner.currentRows().length} rows to ${out}`);
       await stat(out);
       const written = await readJsonl(out);
@@ -88,13 +88,13 @@ describe('handleSlashCommand', () => {
 
   it('on :save with an unknown file type prints an error', async () => {
     const h = await loadedHarness();
-    expect(await handleSlashCommand(`:save ${tmpPath('txt')}`, h.runner, h.stream)).toBe('handled');
+    expect(await handleColonCommand(`:save ${tmpPath('txt')}`, h.runner, h.stream)).toBe('handled');
     expect(h.text()).toContain(':save: unknown file type');
   });
 
   it('on :save-flow without a path prints usage', async () => {
     const h = await loadedHarness();
-    expect(await handleSlashCommand(':save-flow', h.runner, h.stream)).toBe('handled');
+    expect(await handleColonCommand(':save-flow', h.runner, h.stream)).toBe('handled');
     expect(h.text()).toContain(':save-flow: missing path');
   });
 
@@ -104,10 +104,10 @@ describe('handleSlashCommand', () => {
     await h.runner.setSpec(validateSpec(flowFixture.spec));
     const outFlow = tmpPath('flow');
     try {
-      expect(await handleSlashCommand(`:save-flow ${outFlow}`, h.runner, h.stream)).toBe('handled');
+      expect(await handleColonCommand(`:save-flow ${outFlow}`, h.runner, h.stream)).toBe('handled');
       expect(h.text()).toContain('saved flow');
       const saved = JSON.parse(await readFile(outFlow, 'utf8'));
-      expect(saved.version).toBe(1);
+      expect(saved.version).toBe(2);
       expect(typeof saved.source).toBe('string');
       const resolved = join(tmpdir(), saved.source);
       expect(resolved.endsWith('test-cases/dedupe-input.csv')).toBe(true);
@@ -125,7 +125,7 @@ describe('handleSlashCommand', () => {
     const outFlow = join(TEMP, `repl-save-flow-roundtrip-${process.pid}.flow`);
     const outJsonl = join(TEMP, `repl-save-flow-roundtrip-${process.pid}.jsonl`);
     try {
-      await handleSlashCommand(`:save-flow ${outFlow}`, h.runner, h.stream);
+      await handleColonCommand(`:save-flow ${outFlow}`, h.runner, h.stream);
       const { runCli } = await import('./index.ts');
       const result = await runCli(['execute', outFlow, '--output', outJsonl.split('/').pop()!]);
       expect(result.exitCode).toBe(0);
@@ -146,7 +146,7 @@ describe('handleSlashCommand', () => {
     await h.runner.setSpec(validateSpec(flow.spec));
     const beforeLen = h.runner.currentSpec().transformations.length;
     expect(beforeLen).toBeGreaterThan(0);
-    expect(await handleSlashCommand(':undo', h.runner, h.stream)).toBe('handled');
+    expect(await handleColonCommand(':undo', h.runner, h.stream)).toBe('handled');
     const out = h.text();
     expect(out).toContain('undid:');
     expect(out).toContain('filter rows where');

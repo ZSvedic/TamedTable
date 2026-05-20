@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "dedupe-input.csv",
   "spec": {
     "table": "dedupe-input.csv",
