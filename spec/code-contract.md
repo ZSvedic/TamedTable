@@ -120,6 +120,7 @@ interface HeadlessRunnerOptions {
   onPlan?: (items: PlanItem[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
   signal?: AbortSignal;
+  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
 
 type PlanItem =
@@ -175,6 +176,60 @@ Env vars:
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a per-turn debug block after a failed request. Set to `0`, `false`, or `off` to disable. |
+
+### Recording model calls for tests
+
+Headless makes every model HTTP call through `fetch`.
+`createHeadlessRunner` forwards `opts.fetch` into
+`createAnthropic({ apiKey, baseURL, fetch })`, so the SDK routes all
+HTTP through it. When `opts.fetch` is unset the SDK uses the global
+`fetch` and V1 behavior is unchanged. `fetch?` is typed as the plain
+`(input, init) => Promise<Response>` call signature a wrapper actually
+implements; the SDK's own `fetch` field is `typeof globalThis.fetch`,
+so the forward casts to bridge the two.
+
+The cucumber suite passes a `fetch`-shaped *cassette recorder* as
+`opts.fetch`. The recorder fingerprints each request — a SHA-256 hex
+digest of `method + "\n" + url + "\n" + body` — and looks it up in a
+cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
+
+| `TAMEDTABLE_CASSETTE` | Behavior |
+|---|---|
+| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs `ANTHROPIC_API_KEY`. |
+| `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`. No network, no API key. |
+| unset / any other value | No recorder is installed; every call hits the network — V1 behavior. |
+
+The fingerprint is strict by design: a changed prompt is always a miss,
+never a silent stale hit.
+
+Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
+returned to the SDK unsaved, so its built-in retry reaches the live API
+and the eventual success — not the transient error — is what lands in
+the cassette.
+
+A cassette file is a JSON object keyed by fingerprint; each value is
+`{ status, statusText, headers, body }`, with `body` the response body
+as text (a JSON payload or an SSE stream, captured verbatim). On replay
+a `Response` is reconstructed from those fields. Cassettes live one per
+feature file at `src/tests/__cassettes__/<feature>.json` — committed
+recorded data, not human-reviewed contract, so they sit under `src/`
+rather than `spec/`. They are written pretty-printed with keys sorted
+for reviewable diffs and committed to git. In `record` mode each new
+entry is flushed to its file as soon as it is captured.
+
+`runnerOptsFor` in [`src/tests/world.ts`](../src/tests/world.ts) wires
+this in: for a `@cli` or `@headless` scenario it reads
+`TAMEDTABLE_CASSETTE`, and when the value is `record` or `replay` it
+adds a recorder — bound to that scenario's feature-named cassette
+file — to the runner options bag. That bag also reaches the
+`runCli`-based steps, so REPL- and `execute`-driven scenarios record
+and replay too. In `replay` mode it sets a placeholder `apiKey` (the
+runner needs a non-empty key to build its provider, and the recorder
+intercepts every call before that key would be used), and `cucumber.js`
+lifts `TAMEDTABLE_RPM` — cassette hits touch no network, so the rate
+limiter would only add idle delay. The recorder is test-only code
+under `src/tests/`; `src/packages/headless` merely forwards
+`opts.fetch`.
 
 ## CLI
 

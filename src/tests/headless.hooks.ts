@@ -6,5 +6,6 @@ Before({ tags: '@headless' }, function (this: TamedTableWorld, scenario: ITestCa
   if (this.surface !== 'headless') return;
   this.runnerKind = 'headless';
   const opts = runnerOptsFor(scenario);
+  this.runnerOpts = opts;
   this.runnerFactory = () => createHeadlessRunner(opts);
 });

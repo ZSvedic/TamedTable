@@ -90,7 +90,7 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
   const stream = {
     write: (s: string | Buffer) => { chunks.push(s.toString()); return true; },
   } as unknown as NodeJS.WritableStream;
-  const result = await runCli(args, { stdout: stream });
+  const result = await runCli(args, { stdout: stream, ...this.runnerOpts });
   this.lastInvocation = { exitCode: result.exitCode, stdout: chunks.join(''), stderr: result.stderr };
 });
 
