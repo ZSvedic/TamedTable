@@ -33,6 +33,7 @@ export interface CliRunner {
   currentRows(): Row[];
   currentSpec(): Spec;
   exportAs(path: string): Promise<void>;
+  viewportSummary(): string;
 }
 
 export interface RunCliResult {
@@ -134,6 +135,7 @@ function stringify(v: unknown): string {
 }
 
 const trunc = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
+const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}… (+${s.length - n} chars)` : s);
 
 function wrapHighlight(text: string, re: RegExp | undefined): string {
   if (!re) return text;
@@ -261,25 +263,65 @@ function userFacingMessage(message: string): string {
   return message;
 }
 
+// ── Debug block ────────────────────────────────────────────────────────────
+
+/** The debug block is on by default; TAMEDTABLE_DEBUG=0/false/off disables it. */
+export function debugEnabled(): boolean {
+  const flag = (process.env.TAMEDTABLE_DEBUG ?? '').trim().toLowerCase();
+  return flag !== '0' && flag !== 'false' && flag !== 'off';
+}
+
+/** `claude-sonnet-4-6` → `Sonnet 4.6`; any other id renders verbatim. */
+export function renderModelName(id: string): string {
+  const m = id.match(/^claude-([a-z]+)-(\d+)-(\d+)/);
+  if (!m) return id;
+  return `${m[1]![0]!.toUpperCase()}${m[1]!.slice(1)} ${m[2]}.${m[3]}`;
+}
+
+function formatDebugSummary(info: RequestDebugInfo): string {
+  const grp = (n: number) => n.toLocaleString('en-US');
+  const calls = info.modelCalls.map((m) => `${renderModelName(m.model)} ×${m.calls}`).join(', ');
+  const total = info.inputTokens + info.outputTokens;
+  return `${calls} · ${grp(total)} tokens (${grp(info.inputTokens)} in / ${grp(info.outputTokens)} out) · ${(info.elapsedMs / 1000).toFixed(1)}s`;
+}
+
+/** Content lines of the debug block (no `[debug]` prefix). A request that
+ *  committed shows its executed expressions; one that never committed shows
+ *  the recovery turns. The last line is always the usage summary. */
+export function formatDebugBlock(info: RequestDebugInfo): string[] {
+  const succeeded = info.turns.some((t) => t.outcome === 'committed');
+  const lines: string[] = [];
+  if (succeeded) {
+    for (const e of info.expressions) lines.push(`${e.label}: ${clip(e.body, 200)}`);
+  } else {
+    info.turns.forEach((t, i) => {
+      lines.push(`turn ${i + 1}/${info.turns.length}: ops=${clip(JSON.stringify(t.ops), 200)}`);
+      lines.push(`  → outcome: ${t.outcome || 'unknown'}`);
+      if (t.sentBack) lines.push(`  → sent back: ${trunc(t.sentBack, 120)}`);
+    });
+  }
+  lines.push(formatDebugSummary(info));
+  return lines;
+}
+
+function writeDebugBlock(info: RequestDebugInfo, stdout: NodeJS.WritableStream): void {
+  if (!debugEnabled()) return;
+  const useColor = Boolean((stdout as { isTTY?: boolean }).isTTY);
+  const lines = formatDebugBlock(info);
+  const MAX = 20;
+  const out = lines.length > MAX
+    ? [...lines.slice(0, MAX - 1), `… (+${lines.length - MAX + 1} more lines)`]
+    : lines;
+  for (const line of out) {
+    const text = `    [debug] ${line}`;
+    stdout.write((useColor ? `\x1b[2m${text}\x1b[0m` : text) + '\n');
+  }
+}
+
 function renderError(err: Error, stdout: NodeJS.WritableStream): void {
   stdout.write(`error: ${userFacingMessage(err.message)}\n`);
-  const debugFlag = (process.env.TAMEDTABLE_DEBUG ?? '').trim().toLowerCase();
-  if (debugFlag === '0' || debugFlag === 'false' || debugFlag === 'off') return;
   const dbg = (err as Error & { debug?: RequestDebugInfo }).debug;
-  if (!dbg) return;
-  const useColor = Boolean((stdout as { isTTY?: boolean }).isTTY);
-  const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}… (+${s.length - n} chars)` : s);
-  const lines = [`request: ${JSON.stringify(dbg.userRequest)}`];
-  dbg.turns.forEach((t, i) => {
-    lines.push(`turn ${i + 1}/${dbg.turns.length}: ops=${clip(JSON.stringify(t.ops), 200)}`);
-    lines.push(`  → outcome: ${t.outcome || 'unknown'}`);
-    if (t.sentBack) lines.push(`  → sent back: ${trunc(t.sentBack, 120)}`);
-  });
-  lines.push('(set TAMEDTABLE_DEBUG=0 to hide this block)');
-  const MAX = 20;
-  const out = lines.length > MAX ? [...lines.slice(0, MAX - 1), `… (+${lines.length - MAX + 1} more lines)`] : lines;
-  const wrap = (s: string) => `    [debug] ${s}`;
-  for (const line of out) stdout.write((useColor ? `\x1b[2m${wrap(line)}\x1b[0m` : wrap(line)) + '\n');
+  if (dbg) writeDebugBlock(dbg, stdout);
 }
 
 // ── CLI runner (REPL printing wrapper around headless) ─────────────────────
@@ -311,6 +353,7 @@ class CliRunnerImpl implements CliRunner {
       ...opts,
       onChunk: opts.onChunk ?? ((u) => this.printChunk(u)),
       onPlan: opts.onPlan ?? ((items) => this.printPlan(items)),
+      onDebug: opts.onDebug ?? ((info) => this.printDebug(info)),
     });
   }
 
@@ -325,6 +368,13 @@ class CliRunnerImpl implements CliRunner {
     if (this.quiet || items.length === 0) return;
     this.stdout.write('plan:\n');
     for (const item of items) this.stdout.write(`  • ${formatPlanItem(item)}\n`);
+  }
+
+  private printDebug(info: RequestDebugInfo): void {
+    if (this.quiet) return;
+    // The success-path block prints here, before the table reprint. A failed
+    // request renders via renderError instead, so its error line comes first.
+    if (info.turns.some((t) => t.outcome === 'committed')) writeDebugBlock(info, this.stdout);
   }
 
   private autoRows(): number {
@@ -821,31 +871,37 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
     return { exitCode: 3, stderr: stderr.join('\n') };
   }
   let activeRequest: AbortController | null = null;
-  const rl = readline.createInterface(
-    replReadlineOptions(stdin as NodeJS.ReadableStream, stdout as NodeJS.WritableStream)
-  );
-  // rl.setPrompt + rl.prompt() lets readline manage the "> " glyph the same
-  // way in both terminal-true (interactive line editor) and terminal-false
-  // (test harness / piped stdin) modes — manual stdout.write('> ') competes
-  // with readline's own line-redraw in terminal mode.
+  const rlOpts = replReadlineOptions(stdin as NodeJS.ReadableStream, stdout as NodeJS.WritableStream);
+  const rl = readline.createInterface(rlOpts);
   rl.setPrompt('> ');
+  // The "> " glyph: in terminal mode rl.prompt() lets readline own the
+  // line-redraw (a manual write would fight it). In batch mode the piped
+  // stdin ends at once, so readline closes while the loop is still draining
+  // buffered lines — rl.prompt() then throws ERR_USE_AFTER_CLOSE, and its
+  // redraw is moot anyway — so write the glyph directly.
+  let rlClosed = false;
+  rl.on('close', () => { rlClosed = true; });
+  const prompt = () => {
+    if (rlOpts.terminal) { if (!rlClosed) rl.prompt(); }
+    else stdout.write('> ');
+  };
   const onSigint = () => { activeRequest ? activeRequest.abort() : rl.close(); };
   process.on('SIGINT', onSigint);
   stdout.write('Type :help for commands. Ctrl-C cancels a running request (or exits when idle).\n');
   try {
-    rl.prompt();
+    prompt();
     for await (const line of rl) {
       const text = line.trim();
-      if (!text) { rl.prompt(); continue; }
+      if (!text) { prompt(); continue; }
       const action = await handleSlashCommand(text, runner, stdout);
       if (action === 'exit') break;
-      if (action === 'handled') { rl.prompt(); continue; }
+      if (action === 'handled') { prompt(); continue; }
       const ctrl = new AbortController();
       activeRequest = ctrl;
       try { await runner.request(text, { signal: ctrl.signal }); }
       catch (e) { renderError(e as Error, stdout); }
       finally { activeRequest = null; }
-      rl.prompt();
+      prompt();
     }
   } finally {
     rl.close();

@@ -86,12 +86,10 @@ describe('handleSlashCommand', () => {
     }
   });
 
-  it('on :save with a non-jsonl path surfaces the error', async () => {
+  it('on :save with an unknown file type prints an error', async () => {
     const h = await loadedHarness();
-    const out = tmpPath('csv');
-    expect(await handleSlashCommand(`:save ${out}`, h.runner, h.stream)).toBe('handled');
-    expect(h.text()).toContain('error:');
-    await unlink(out).catch(() => {});
+    expect(await handleSlashCommand(`:save ${tmpPath('txt')}`, h.runner, h.stream)).toBe('handled');
+    expect(h.text()).toContain(':save: unknown file type');
   });
 
   it('on :save-flow without a path prints usage', async () => {
