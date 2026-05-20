@@ -263,7 +263,8 @@ function userFacingMessage(message: string): string {
 
 function renderError(err: Error, stdout: NodeJS.WritableStream): void {
   stdout.write(`error: ${userFacingMessage(err.message)}\n`);
-  if (!process.env.TAMEDTABLE_DEBUG) return;
+  const debugFlag = (process.env.TAMEDTABLE_DEBUG ?? '').trim().toLowerCase();
+  if (debugFlag === '0' || debugFlag === 'false' || debugFlag === 'off') return;
   const dbg = (err as Error & { debug?: RequestDebugInfo }).debug;
   if (!dbg) return;
   const useColor = Boolean((stdout as { isTTY?: boolean }).isTTY);
@@ -274,7 +275,7 @@ function renderError(err: Error, stdout: NodeJS.WritableStream): void {
     lines.push(`  → outcome: ${t.outcome || 'unknown'}`);
     if (t.sentBack) lines.push(`  → sent back: ${trunc(t.sentBack, 120)}`);
   });
-  lines.push('(unset TAMEDTABLE_DEBUG to hide this block)');
+  lines.push('(set TAMEDTABLE_DEBUG=0 to hide this block)');
   const MAX = 20;
   const out = lines.length > MAX ? [...lines.slice(0, MAX - 1), `… (+${lines.length - MAX + 1} more lines)`] : lines;
   const wrap = (s: string) => `    [debug] ${s}`;

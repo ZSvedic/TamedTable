@@ -127,6 +127,13 @@ callback with the rows it just produced. The committed spec and rows don't
 change until the whole transformation finishes — the callback is how
 progress reaches the CLI and the future web shell.
 
+Once per request — on success and on failure — headless reports a debug
+summary: the patch attempt of each recovery turn, the primary
+expression of each transformation a successful request appended, the
+model calls made, the input and output token totals, and the elapsed
+time. The CLI renders this into its debug block; other callers may
+ignore it.
+
 Cancellation is a four-step sequence:
 
 1. Stop sending new chunks, within 2 seconds.
@@ -158,6 +165,40 @@ found. REPL commands that don't change either (`:help`, `:save`,
 `:save-flow`, `:history`, `:schema`, `:exit`, and `:find` with no match)
 print only their own output. A failed request prints the error and does
 not reprint the table.
+
+After every natural-language request the REPL prints a compact debug
+block, on by default and disableable. It is indented, dimmed, every
+line prefixed `[debug]`, and capped at twenty lines. On a successful
+request it prints just before the reprinted table; on a failed request
+just after the error line. `:` commands and `tamedtable execute` make
+no model call and print no debug block.
+
+A successful request's block lists the primary expression of each
+transformation it appended — the predicate of a filter or validate, the
+value of a mutate, and so on — shown exactly as it will be evaluated.
+Secondary fields, such as a validate `message`, are not shown. A failed
+request's block instead lists the patch attempt of each recovery turn
+and the error fed back into the next.
+
+Either way the block's last line summarises the request: the model
+calls it made — each distinct model as `<name> ×<count>`, always in
+that form even for a single call — then the total input and output
+tokens and the wall-clock time. For `validate dob is non-empty`:
+
+```
+    [debug] pred: row.DOB && String(row.DOB).length > 0
+    [debug] Sonnet 4.6 ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
+```
+
+A request that also fills LLM-backed cells calls a second model, so the
+summary names both:
+
+```
+    [debug] Sonnet 4.6 ×1, Sonnet 4.5 ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
+```
+
+The token counts and elapsed time vary from run to run; the rest of the
+block is determined by the spec.
 
 The REPL runs in one of two modes, chosen automatically from whether stdin
 is a TTY:

@@ -92,8 +92,8 @@ appears in). `Runner.loadInput` dispatches on file extension — `.csv` to
 `loadCsv`, `.jsonl` to `loadJsonl`; any other extension throws with a clear
 *"unknown file type"* error that the REPL surfaces inline. `writeJsonl`
 overwrites the file; the parent directory must already exist. The recovery
-budget is 3 turns; running out throws an error carrying a `debug` field
-with the per-turn ops and outcomes.
+budget is 3 turns; running out throws an error carrying a `debug` field —
+a `RequestDebugInfo` (see Headless).
 
 `Runner` is the surface step definitions drive ([common.steps.ts](../src/tests/common.steps.ts));
 the CLI and headless packages both return Runners with the same method
@@ -118,6 +118,7 @@ interface HeadlessRunnerOptions {
   rpm?: number;
   onChunk?: (update: ChunkUpdate) => void;
   onPlan?: (items: PlanItem[]) => void;
+  onDebug?: (info: RequestDebugInfo) => void;
   signal?: AbortSignal;
 }
 
@@ -127,6 +128,22 @@ type PlanItem =
   | { kind: 'reorder-columns'; from: string[]; to: string[] }
   | { kind: 'add-transformation'; transformation: Transformation }
   | { kind: 'remove-transformation'; transformation: Transformation };
+
+interface RequestDebugTurn {
+  ops: unknown[];          // the RFC 6902 patch the model proposed this turn
+  outcome: string;         // 'committed', 'rejected', or `evaluation failed: …`
+  sentBack?: string;       // the error fed into the next turn, if any
+}
+
+interface RequestDebugInfo {
+  userRequest: string;
+  turns: RequestDebugTurn[];
+  expressions: Array<{ label: string; body: string }>;   // success path: primary expr per appended transformation
+  modelCalls: Array<{ model: string; calls: number }>;   // distinct models, first-call order
+  inputTokens: number;
+  outputTokens: number;
+  elapsedMs: number;
+}
 ```
 
 Built on the Vercel AI SDK (`ai` + `@ai-sdk/anthropic`). The
@@ -134,6 +151,17 @@ Built on the Vercel AI SDK (`ai` + `@ai-sdk/anthropic`). The
 6902 operations list. Anthropic prompt caching uses
 `providerOptions.anthropic.cacheControl = { type: 'ephemeral' }` on the
 system-prompt prefix.
+
+`onDebug` fires once per `request` — on success and on failure — just
+before the call settles, carrying a `RequestDebugInfo`. The
+recovery-budget-exhausted error also carries the same struct on its
+`debug` field. `expressions` is populated on a successful request (one
+entry per appended transformation, `label` naming the field — `pred`,
+`value`, …); `turns` carries the failure detail; `modelCalls`,
+`inputTokens`, `outputTokens`, and `elapsedMs` are filled either way. A
+model id shaped `claude-<family>-<major>-<minor>` renders in the debug
+block as `<Family> <major>.<minor>` (so `claude-sonnet-4-6` →
+`Sonnet 4.6`); any other id renders verbatim.
 
 Env vars:
 
@@ -146,7 +174,7 @@ Env vars:
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
-| `TAMEDTABLE_DEBUG` | unset | When set, the REPL prints a per-turn debug block after a failed request. |
+| `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a per-turn debug block after a failed request. Set to `0`, `false`, or `off` to disable. |
 
 ## CLI
 
