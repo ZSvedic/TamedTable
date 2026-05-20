@@ -19,7 +19,7 @@ function getCapture(world: TamedTableWorld): CapturedInvocation {
 
 async function runAndCapture(world: TamedTableWorld, argv: string[], extra?: { stdin?: Readable }): Promise<void> {
   const out = captureStdout();
-  const result = await runCli(argv, { stdout: out.stream, ...(extra?.stdin ? { stdin: extra.stdin } : {}) });
+  const result = await runCli(argv, { stdout: out.stream, ...(extra?.stdin ? { stdin: extra.stdin } : {}), ...world.runnerOpts });
   world.lastInvocation = { exitCode: result.exitCode, stdout: out.text(), stderr: result.stderr };
 }
 

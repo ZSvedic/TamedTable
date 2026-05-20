@@ -61,6 +61,7 @@ export interface HeadlessRunnerOptions {
   onPlan?: (items: PlanItem[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
   signal?: AbortSignal;
+  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
 
 export interface HeadlessRunner {
@@ -616,7 +617,12 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         ? rawBase.replace(/\/$/, '')
         : `${rawBase.replace(/\/$/, '')}/v1`
       : 'https://api.anthropic.com/v1';
-    this.providerCache = createAnthropic({ apiKey, baseURL });
+    const fetchImpl = this.opts.fetch;
+    this.providerCache = createAnthropic({
+      apiKey,
+      baseURL,
+      ...(fetchImpl ? { fetch: fetchImpl as typeof globalThis.fetch } : {}),
+    });
     return this.providerCache;
   }
 

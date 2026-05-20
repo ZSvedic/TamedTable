@@ -216,11 +216,15 @@ entry is flushed to its file as soon as it is captured.
 this in: for a `@cli` or `@headless` scenario it reads
 `TAMEDTABLE_CASSETTE`, and when the value is `record` or `replay` it
 adds a recorder — bound to that scenario's feature-named cassette
-file — to the runner options bag. In `replay` mode it also sets a
-placeholder `apiKey`, since the runner requires a non-empty key to
-build its provider and the recorder intercepts every call before that
-key would be used. The recorder is test-only code under `src/tests/`;
-`src/packages/headless` merely forwards `opts.fetch`.
+file — to the runner options bag. That bag also reaches the
+`runCli`-based steps, so REPL- and `execute`-driven scenarios record
+and replay too. In `replay` mode it sets a placeholder `apiKey` (the
+runner needs a non-empty key to build its provider, and the recorder
+intercepts every call before that key would be used), and `cucumber.js`
+lifts `TAMEDTABLE_RPM` — cassette hits touch no network, so the rate
+limiter would only add idle delay. The recorder is test-only code
+under `src/tests/`; `src/packages/headless` merely forwards
+`opts.fetch`.
 
 ## CLI
 

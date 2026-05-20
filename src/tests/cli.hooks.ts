@@ -6,5 +6,6 @@ Before({ tags: '@cli' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
   if (this.surface !== 'cli') return;
   this.runnerKind = 'cli';
   const opts = runnerOptsFor(scenario);
+  this.runnerOpts = opts;
   this.runnerFactory = () => createCliRunner(opts);
 });
