@@ -75,6 +75,22 @@ Feature: Tabular format output
       Then exit code is 4
       And stderr contains "unknown file type"
 
+  Rule: :reorder sets the output column order
+
+    # V3: the REPL :reorder command exposes CSV/JSONL column order without a
+    # new spec field — named columns move to the front, the rest follow.
+    @cli @offline
+    Scenario: :reorder changes the CSV header order
+      When user enters the REPL with "datanorm-input.csv" and types:
+        """
+        :reorder Country,ID
+        :save ../temp/reordered.csv
+        exit
+        """
+      Then REPL exit code is 0
+      And REPL stdout contains "reordered columns"
+      And the first line of "../temp/reordered.csv" is "Country,ID,FirstName,LastName,DOB,Phone"
+
   Rule: Mixed-format round-trip
 
     @cli

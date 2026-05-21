@@ -181,8 +181,8 @@ that re-runs a saved spec against a CSV.
 
 The REPL prints a fresh ASCII table after every event that changes either
 the underlying table state or the viewport: a successful natural-language
-request, `:load`, `:undo`, `:redo`, `:show`, and `:find` when a match is
-found. REPL commands that don't change either (`:help`, `:save`,
+request, `:load`, `:undo`, `:redo`, `:show`, `:reorder`, and `:find` when
+a match is found. REPL commands that don't change either (`:help`, `:save`,
 `:save-flow`, `:save-py`, `:history`, `:schema`, `:exit`, and `:find`
 with no match) print only their own output. A failed request prints the
 error and does not reprint the table.
@@ -340,6 +340,14 @@ They are handled locally without any LLM round-trip:
   extension prints `:save-py: output must be a .py file`; a flow with an
   `{llm}` cell prints `:save-py: flow contains LLM cells; cannot export
   to Python`; success prints `saved Python script`.
+- `:reorder <cols>` reorders the column list — `<cols>` is a comma- or
+  space-separated list of column names. The named columns move to the
+  front in that order; columns not named keep their relative order
+  after them. The new order drives the table view and the column order
+  of a saved CSV or JSONL file, so column order needs no spec field. A
+  missing list prints `:reorder: missing column list`; an unknown column
+  prints `:reorder: unknown column "<name>"`; success reprints the
+  table. Not recorded in the undo journal.
 - `:exit` and bare `exit` both close the REPL with exit code 0.
 
 The `:help` usage screen, verbatim:
@@ -355,6 +363,8 @@ State / data commands:
   :save <path>       Write current rows to JSONL.
   :save-flow <path>  Write current spec as a .flow file.
   :save-py <path>    Write current flow as a standalone Python script.
+  :reorder <cols>    Reorder columns (comma/space separated); sets the table
+                     view and CSV/JSONL output column order.
   :undo              Pop the last applied patch.
   :redo              Replay the last :undo'd patch.
   :history           Print the patch journal.

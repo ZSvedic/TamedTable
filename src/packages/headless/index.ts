@@ -320,6 +320,31 @@ function applyGroupJs(rows: Row[], t: Extract<Transformation, { kind: 'group' }>
   });
 }
 
+/** Fit a parts array to the target column count: too few pads the tail with
+ *  null; too many concatenates the extras onto the last column. */
+function padParts(parts: unknown[], into: string[]): unknown[] {
+  if (parts.length < into.length) {
+    return into.map((_, idx) => (idx < parts.length ? parts[idx]! : null));
+  }
+  if (parts.length > into.length) {
+    const head = parts.slice(0, into.length - 1);
+    const tail = parts.slice(into.length - 1).map(String).join(' ');
+    return [...head, tail];
+  }
+  return parts;
+}
+
+/** Parse a cell model's split reply into parts: prefers a JSON array, falls
+ *  back to comma- then whitespace-separated tokens. */
+function parseLlmParts(text: string): unknown[] {
+  const trimmed = text.trim();
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) return parsed;
+  } catch { /* not JSON — fall through to delimiter splitting */ }
+  return trimmed.includes(',') ? trimmed.split(',').map((s) => s.trim()) : trimmed.split(/\s+/);
+}
+
 function applySplit(rows: Row[], t: Extract<Transformation, { kind: 'split' }>): Row[] {
   // Resolve `on` once: slash-delimited strings like "/, \s*/i" parse as regex;
   // plain strings stay literal; RegExp instances pass through; {js} Expr that
@@ -348,15 +373,7 @@ function applySplit(rows: Row[], t: Extract<Transformation, { kind: 'split' }>):
       if (!Array.isArray(result)) throw new Error('split: JS expression must return an array of parts');
       parts = result;
     }
-    if (parts.length < t.into.length) {
-      return t.into.map((_, idx) => idx < parts.length ? parts[idx]! : null);
-    }
-    if (parts.length > t.into.length) {
-      const head = parts.slice(0, t.into.length - 1);
-      const tail = parts.slice(t.into.length - 1).map(String).join(' ');
-      return [...head, tail];
-    }
-    return parts;
+    return padParts(parts, t.into);
   };
   return rows.map((row, i) => {
     const out: Row = { ...row };
@@ -825,17 +842,17 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   ): Promise<Row[]> {
     switch (t.kind) {
       case 'filter':
-        if ('sql' in t.pred) return this.applyFilterSql(rows, t as typeof t & { pred: { sql: string } });
+        if ('sql' in t.pred) return this.applyFilterSql(rows, t as typeof t & { pred: { sql: string } }, signal);
         return applyFilter(rows, t);
       case 'select':   return applySelect(rows, t);
       case 'sort':     return this.applySortT(rows, t, signal);
       case 'mutate':
-        if ('sql' in t.value) return this.applyMutateSql(rows, t as typeof t & { value: { sql: string } });
+        if ('sql' in t.value) return this.applyMutateSql(rows, t as typeof t & { value: { sql: string } }, signal);
         if ('js' in t.value) return applyMutateJs(rows, t as typeof t & { value: { js: string } });
         return this.applyMutateLlm(rows, t as typeof t & { value: { llm: string; model?: string } }, tIndex, signal, onChunk);
       case 'validate': return applyValidateJs(rows, t);
       case 'group':    return this.applyGroup(rows, t, tIndex, signal, onChunk);
-      case 'split':    return applySplit(rows, t);
+      case 'split':    return this.applySplitT(rows, t, signal);
       case 'pivot':    return applyPivot(rows, t);
       case 'unpivot':  return applyUnpivot(rows, t);
       case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd());
@@ -855,7 +872,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const fn = compileJs(key.js);
       return rows.map((r, i) => fn(r, i, rows));
     }
-    if ('sql' in key) return this.evalSqlScalar(rows, key.sql);
+    if ('sql' in key) return this.evalSqlScalar(rows, key.sql, signal);
     // {llm}: one rendered prompt per row, evaluated through the cell model —
     // the same batching/caching path a mutate LLM column uses.
     validateTemplate(key.llm, rows);
@@ -883,7 +900,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       }
       return 0;
     });
-    return indices.map((i) => rows[i]!);
+    // V3 top-N: a `limit` keeps only the first N rows after ordering.
+    const ordered = indices.map((i) => rows[i]!);
+    return t.limit !== undefined ? ordered.slice(0, t.limit) : ordered;
   }
 
   private async applyGroup(
@@ -894,39 +913,91 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     _onChunk: ((u: ChunkUpdate) => void) | undefined
   ): Promise<Row[]> {
     const hasLlmAgg = Object.values(t.agg).some((expr) => 'llm' in expr);
-    if (!hasLlmAgg) return applyGroupJs(rows, t);
+    const hasSqlAgg = Object.values(t.agg).some((expr) => 'sql' in expr);
+    if (!hasLlmAgg && !hasSqlAgg) return applyGroupJs(rows, t);
 
     const { order, groups } = buildGroups(rows, t.by);
     const byNames = t.by.map((b, i) => typeof b === 'string' ? b : `key_${i + 1}`);
+
+    // LLM aggregates: pre-render one prompt per (group, llm-agg) cell — {*}
+    // expands to the group's compact JSON — and run them through the cell
+    // model in one pass so batch packing and result caching still apply.
     const llmAggCols = Object.entries(t.agg).filter(([, e]) => 'llm' in e) as Array<[string, { llm: string; model?: string }]>;
-
-    // Pre-render one prompt per (group, llm-agg) cell — {*} expands to the
-    // group's compact JSON. Run them through the cell model in one pass so
-    // batch packing and result caching work the same as a mutate LLM column.
-    const renderAgg = (template: string, slice: Row[]): string =>
-      template.replace(/\{\*\}/g, JSON.stringify(slice));
-    const prompts: string[] = [];
-    for (const key of order) {
-      const slice = groups.get(key)!.slice;
-      for (const [, expr] of llmAggCols) prompts.push(renderAgg(expr.llm, slice));
+    let llmResults: unknown[] = [];
+    if (llmAggCols.length > 0) {
+      const renderAgg = (template: string, slice: Row[]): string =>
+        template.replace(/\{\*\}/g, JSON.stringify(slice));
+      const prompts: string[] = [];
+      for (const key of order) {
+        const slice = groups.get(key)!.slice;
+        for (const [, expr] of llmAggCols) prompts.push(renderAgg(expr.llm, slice));
+      }
+      llmResults = await this.callLlmCells(prompts, llmAggCols[0]?.[1].model, signal);
     }
-    const perCellModel = llmAggCols[0]?.[1].model;
-    const results = await this.callLlmCells(prompts, perCellModel, signal);
 
-    return order.map((key, gi) => {
-      const { keyTuple, slice } = groups.get(key)!;
-      const out: Row = {};
-      byNames.forEach((name, i) => { out[name] = keyTuple[i] ?? null; });
+    // Emit one output row per group. JS aggregates run a compiled function
+    // over the group's slice; {sql} aggregates (V3) run a real GROUP BY-style
+    // query per group through DuckDB with the slice registered as relation `g`.
+    const out: Row[] = [];
+    for (let gi = 0; gi < order.length; gi++) {
+      abortIf(signal);
+      const { keyTuple, slice } = groups.get(order[gi]!)!;
+      const row: Row = {};
+      byNames.forEach((name, i) => { row[name] = keyTuple[i] ?? null; });
       let llmIdx = 0;
       for (const [outCol, expr] of Object.entries(t.agg)) {
         if ('js' in expr) {
-          const fn = new Function('rows', `return (${expr.js.trim()});`) as (slice: Row[]) => unknown;
-          out[outCol] = fn(slice);
-        } else if ('llm' in expr) {
-          out[outCol] = results[gi * llmAggCols.length + llmIdx];
+          const fn = new Function('rows', `return (${expr.js.trim()});`) as (s: Row[]) => unknown;
+          row[outCol] = fn(slice);
+        } else if ('sql' in expr) {
+          row[outCol] = await this.evalSqlAgg(slice, expr.sql, signal);
+        } else {
+          row[outCol] = llmResults[gi * llmAggCols.length + llmIdx];
           llmIdx++;
         }
       }
+      out.push(row);
+    }
+    return out;
+  }
+
+  /** Dispatches a split: an {llm} `on` runs the V3 async path; literal,
+   *  regex, and {js} separators stay on the synchronous path. */
+  private async applySplitT(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'split' }>,
+    signal: AbortSignal | undefined
+  ): Promise<Row[]> {
+    if (typeof t.on === 'object' && !(t.on instanceof RegExp) && 'llm' in t.on) {
+      return this.applySplitLlm(rows, t as typeof t & { on: { llm: string; model?: string } }, signal);
+    }
+    return applySplit(rows, t);
+  }
+
+  /** V3 LLM-backed split: render the {llm} `on` template per row, ask the
+   *  cell model to break the cell into parts, then pad/concat to `into`'s
+   *  arity exactly as a literal or regex split would. */
+  private async applySplitLlm(
+    rows: Row[],
+    t: Extract<Transformation, { kind: 'split' }> & { on: { llm: string; model?: string } },
+    signal: AbortSignal | undefined
+  ): Promise<Row[]> {
+    validateTemplate(t.on.llm, rows);
+    const replies = await Promise.all(
+      rows.map((row) => {
+        const cell = row[t.from];
+        if (cell === null || cell === undefined || cell === '') return Promise.resolve(null);
+        return this.callLlmCell(renderPrompt(t.on.llm, row), t.on.model, signal);
+      })
+    );
+    return rows.map((row, i) => {
+      const out: Row = { ...row };
+      const reply = replies[i];
+      const parts = reply === null || reply === undefined
+        ? t.into.map(() => null)
+        : padParts(parseLlmParts(String(reply)), t.into);
+      t.into.forEach((col, idx) => { out[col] = parts[idx] ?? null; });
+      if (t.drop) delete out[t.from];
       return out;
     });
   }
@@ -942,18 +1013,19 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return this.duckConn;
   }
 
-  /** Registers the current rows as relation `t`. Drops any prior registration
-   *  so {sql} always sees the latest committed rows. */
-  private async registerT(rows: Row[]): Promise<void> {
+  /** Registers `rows` as a DuckDB relation of the given name (`t` for the
+   *  current table, `g` for a group's slice). Drops any prior registration
+   *  so {sql} always sees the latest rows. */
+  private async registerRelation(name: string, rows: Row[]): Promise<void> {
     const conn = await this.duck();
     // DuckDB's `DROP X IF EXISTS y` still errors if y exists as a different
     // kind (e.g. dropping a VIEW when y is a TABLE). Try both and swallow
     // the type-mismatch error — only one DROP can succeed but that's fine.
-    try { await conn.run('DROP TABLE IF EXISTS t'); } catch {}
-    try { await conn.run('DROP VIEW IF EXISTS t'); } catch {}
+    try { await conn.run(`DROP TABLE IF EXISTS ${name}`); } catch {}
+    try { await conn.run(`DROP VIEW IF EXISTS ${name}`); } catch {}
     if (rows.length === 0) {
-      await conn.run('CREATE TABLE t (dummy INTEGER)');
-      await conn.run('DELETE FROM t');
+      await conn.run(`CREATE TABLE ${name} (dummy INTEGER)`);
+      await conn.run(`DELETE FROM ${name}`);
       return;
     }
     // Discover column names in first-seen insertion order across rows.
@@ -965,7 +1037,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     // case-insensitively, matching the LLM's `lower(Country)` style usage
     // (quoted identifiers would force exact-case matches and break that).
     const colDefs = cols.map((c) => `${c} VARCHAR`).join(', ');
-    await conn.run(`CREATE TABLE t (${colDefs})`);
+    await conn.run(`CREATE TABLE ${name} (${colDefs})`);
     const sqlValue = (v: unknown) => {
       if (v === null || v === undefined) return 'NULL';
       const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
@@ -978,30 +1050,72 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const valuesSql = slice.map((row) =>
         '(' + cols.map((c) => sqlValue(row[c])).join(', ') + ')'
       ).join(', ');
-      await conn.run(`INSERT INTO t VALUES ${valuesSql}`);
+      await conn.run(`INSERT INTO ${name} VALUES ${valuesSql}`);
+    }
+  }
+
+  /** Runs a DuckDB query, calling `conn.interrupt()` if the signal aborts
+   *  while the query is in flight (V3 SQL cancellation). An interrupted query
+   *  rejects; this surfaces it as the runner's standard cancelled error so
+   *  the request loop rolls back the half-applied transformation. */
+  private async runInterruptibleSql<T>(run: () => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+    if (!signal) return run();
+    abortIf(signal);
+    const onAbort = () => { try { this.duckConn?.interrupt(); } catch { /* best effort */ } };
+    signal.addEventListener('abort', onAbort, { once: true });
+    try {
+      return await run();
+    } catch (e) {
+      if (signal.aborted) throw new Error(CANCELLED);
+      throw e;
+    } finally {
+      signal.removeEventListener('abort', onAbort);
     }
   }
 
   /** Evaluates a {sql} scalar/predicate per row; returns one result per row
    *  in input order. The SQL fragment is wrapped in SELECT … FROM t. */
-  private async evalSqlScalar(rows: Row[], sqlFragment: string): Promise<unknown[]> {
+  private async evalSqlScalar(rows: Row[], sqlFragment: string, signal?: AbortSignal): Promise<unknown[]> {
     if (rows.length === 0) return [];
     try {
-      await this.registerT(rows);
+      await this.registerRelation('t', rows);
       const conn = await this.duck();
-      const reader = await conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM t`);
+      const reader = await this.runInterruptibleSql(
+        () => conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM t`),
+        signal
+      );
       return reader.getRowObjects().map((r) => (r as { r: unknown }).r);
     } catch (e) {
+      if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
+      throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
+    }
+  }
+
+  /** Evaluates a {sql} aggregate over one group's row slice — the slice is
+   *  registered as relation `g` and the fragment wrapped in SELECT … FROM g. */
+  private async evalSqlAgg(slice: Row[], sqlFragment: string, signal?: AbortSignal): Promise<unknown> {
+    try {
+      await this.registerRelation('g', slice);
+      const conn = await this.duck();
+      const reader = await this.runInterruptibleSql(
+        () => conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM g`),
+        signal
+      );
+      const out = reader.getRowObjects();
+      return out.length > 0 ? (out[0] as { r: unknown }).r : null;
+    } catch (e) {
+      if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
       throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
     }
   }
 
   private async applyMutateSql(
     rows: Row[],
-    t: Extract<Transformation, { kind: 'mutate' }> & { value: { sql: string } }
+    t: Extract<Transformation, { kind: 'mutate' }> & { value: { sql: string } },
+    signal?: AbortSignal
   ): Promise<Row[]> {
     const cols = Array.isArray(t.columns) ? t.columns : [t.columns];
-    const results = await this.evalSqlScalar(rows, t.value.sql);
+    const results = await this.evalSqlScalar(rows, t.value.sql, signal);
     return rows.map((row, i) => {
       const out: Row = { ...row };
       const v = results[i];
@@ -1012,9 +1126,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   private async applyFilterSql(
     rows: Row[],
-    t: Extract<Transformation, { kind: 'filter' }> & { pred: { sql: string } }
+    t: Extract<Transformation, { kind: 'filter' }> & { pred: { sql: string } },
+    signal?: AbortSignal
   ): Promise<Row[]> {
-    const results = await this.evalSqlScalar(rows, t.pred.sql);
+    const results = await this.evalSqlScalar(rows, t.pred.sql, signal);
     return rows.filter((_, i) => Boolean(results[i]));
   }
 

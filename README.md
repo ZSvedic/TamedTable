@@ -2,7 +2,7 @@
 
 A CLI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. The full motivation is in [spec/rationale.md](spec/rationale.md); the wire-protocol idea — keeping per-turn token cost constant regardless of table size — is in [spec/behavior.md](spec/behavior.md#data-model).
 
-V1 ships a terminal CLI and a headless library. A web UI is V2.
+V1 ships a terminal CLI and a headless library. A web UI is V4.
 
 ## Project layout
 
@@ -63,7 +63,7 @@ Optional env vars and defaults if you omit them:
 
 ## Run the CLI
 
-Interactive REPL — load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:exit` (or bare `exit`) leaves.
+Interactive REPL — load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:reorder <cols>` sets the column order for the table view and saved files, `:exit` (or bare `exit`) leaves.
 
 ```
 bun src/packages/cli/index.ts spec/test-cases/datanorm-input.csv
@@ -157,4 +157,4 @@ For V2 web-UI questions WoZ produces a Claude artifact or writes a sketch to `te
 
 - **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario — 7–9 minutes, mostly the 40 RPM throttle waiting out the 50 RPM org ceiling. Re-record only when a prompt changes.
 - **Golden-file fragility on LLM cells.** Some `datanorm` scenarios assert byte equality against a frozen JSONL golden. Sonnet and Haiku produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and the model's own minor revisions can shift the answer over time. Mismatches on LLM-driven cells aren't necessarily regressions — see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
-- **CSV in, JSONL out.** Other formats are V2.
+- **CSV and JSONL only.** Both load and save; other tabular formats (`.xlsx`, `.parquet`) are out of scope until their own scenarios are written.

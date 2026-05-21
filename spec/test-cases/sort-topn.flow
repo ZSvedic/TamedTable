@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "source": "sort-input.csv",
+  "spec": {
+    "table": "sort-input.csv",
+    "columns": [
+      { "id": "ID" },
+      { "id": "Name" },
+      { "id": "Score" }
+    ],
+    "transformations": [
+      {
+        "kind": "sort",
+        "by": [
+          { "key": { "js": "Number(row.Score)" }, "dir": "desc" }
+        ],
+        "limit": 2
+      }
+    ]
+  }
+}

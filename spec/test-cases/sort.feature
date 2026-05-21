@@ -1,5 +1,16 @@
 # V2.5: sort evaluates a {js}, {sql}, or {llm} key — not only a JS one.
+# V3: a sort may carry a `limit` to keep only the top N rows.
 Feature: Sort rows by a key
+
+  Rule: A sort with a limit keeps only the top N rows
+
+    @cli @offline
+    Scenario: Sort by a {js} key, descending, limited to the top 2
+      Given "sort-topn.flow" exists
+      And the golden output is "sort-topn-expected.jsonl"
+      When user runs "tamedtable execute sort-topn.flow --input sort-input.csv --output sort-topn-output.jsonl"
+      Then exit code is 0
+      And "sort-topn-output.jsonl" matches the golden output
 
   Rule: A sort key may be a column name or any Expr shape
 

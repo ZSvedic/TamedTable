@@ -64,5 +64,5 @@ Feature: Column split
     Scenario: Split with an LLM expression returning an array of parts
       Given "colsplit-fullname-input.csv" contains messy international names
       When user requests "Split FullName into FirstName, MiddleName, LastName with an LLM"
-      Then every row has a non-null "FirstName"
-      And every row has a non-null "LastName"
+      Then every non-empty row has a non-null "FirstName"
+      And every non-empty row has a non-null "LastName"

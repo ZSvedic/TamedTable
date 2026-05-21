@@ -100,6 +100,8 @@ State / data commands:
   :save <path>       Write current rows to JSONL.
   :save-flow <path>  Write current spec as a .flow file.
   :save-py <path>    Write current flow as a standalone Python script.
+  :reorder <cols>    Reorder columns (comma/space separated); sets the table
+                     view and CSV/JSONL output column order.
   :undo              Pop the last applied patch.
   :redo              Replay the last :undo'd patch.
   :history           Print the patch journal.
@@ -595,6 +597,26 @@ class CliRunnerImpl implements CliRunner {
       return parts.join('  ');
     });
   }
+
+  // V3: reorder the column list. Named columns move to the front in the given
+  // order; any columns not named keep their relative order after them. The
+  // new order drives both the table view and CSV/JSONL output.
+  async reorderCmd(arg: string): Promise<{ ok: boolean; messages: string[] }> {
+    const wanted = arg.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+    if (wanted.length === 0) {
+      return { ok: false, messages: [':reorder: missing column list. Usage: :reorder <col1,col2,...>'] };
+    }
+    const spec = this.headless.currentSpec();
+    const existing = spec.columns.map((c) => c.id);
+    const unknown = wanted.find((id) => !existing.includes(id));
+    if (unknown) return { ok: false, messages: [`:reorder: unknown column "${unknown}"`] };
+    const named = new Set(wanted);
+    const newOrder = [...wanted, ...existing.filter((id) => !named.has(id))];
+    const byId = new Map(spec.columns.map((c) => [c.id, c]));
+    await this.headless.setSpec({ ...spec, columns: newOrder.map((id) => byId.get(id)!) });
+    this.resetViewport();
+    return { ok: true, messages: [`reordered columns: ${newOrder.join(', ')}`] };
+  }
 }
 
 export function createCliRunner(opts: CliRunnerOptions = {}): CliRunner {
@@ -664,6 +686,14 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
     const res = runner.findCmd(arg);
     for (const m of res.messages) stdout.write(m + '\n');
     if (res.reprint) runner.printTable();
+  },
+
+  async ':reorder'(arg, runner, stdout) {
+    await runWithErrorRender(stdout, async () => {
+      const res = await runner.reorderCmd(arg);
+      for (const m of res.messages) stdout.write(m + '\n');
+      if (res.ok) runner.printTable();
+    });
   },
 
   async ':load'(arg, runner, stdout) {

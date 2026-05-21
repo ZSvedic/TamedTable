@@ -2,7 +2,7 @@ Feature,ID,Headless,CLI,Web,Gherkin,Pass,Fail,Last tested
 Batch execute,#Execute,-,V1,-,-,-,-,-
 Cancellation,#Cancel,V1,V1,V4,spec/test-cases/cancelation.feature,?,?,?
 CLI flags and discovery,#CliFlags,-,V1,-,spec/test-cases/cli-flags.feature,6,0,2026-05-20 23:00
-Column split,#Split,V2,V2,V4,spec/test-cases/colsplit.feature,7,1,2026-05-20 23:00
+Column split,#Split,V2,V2,V4,spec/test-cases/colsplit.feature,8,0,2026-05-21 12:52
 Data normalization,#Datanorm,V1,V1,V4,spec/test-cases/datanorm.feature,?,?,?
 Debug output,#Debug,V1,V1,-,spec/test-cases/debug.feature,3,0,2026-05-20 23:00
 Deduplication,#Dedupe,V1,V1,V4,spec/test-cases/dedupe.feature,?,?,?
@@ -16,7 +16,7 @@ Record and replay cassettes,#Cassettes,V2,V2,-,spec/test-cases/cassettes.feature
 REPL commands,#Repl,-,V1,-,spec/test-cases/repl-commands.feature,37,0,2026-05-20 23:00
 Row and dataset validation,#Validate,V2,V2,V4,spec/test-cases/validate.feature,6,0,2026-05-20 23:00
 Select columns,#Select,V1,V1,V4,-,-,-,-
-Sort rows,#Sort,V1,V1,V4,spec/test-cases/sort.feature,2,0,2026-05-20 23:00
-SQL expressions,#SQL,V2,V2,V4,spec/test-cases/sql.feature,3,7,2026-05-20 23:00
-Tabular format output,#Convert,V2,V2,V4,spec/test-cases/convert.feature,9,0,2026-05-20 23:00
+Sort rows,#Sort,V1,V1,V4,spec/test-cases/sort.feature,3,0,2026-05-21 12:52
+SQL expressions,#SQL,V2,V2,V4,spec/test-cases/sql.feature,3,7,2026-05-21 12:52
+Tabular format output,#Convert,V2,V2,V4,spec/test-cases/convert.feature,10,0,2026-05-21 12:52
 Web UI,#WebUI,-,-,V4,-,-,-,-

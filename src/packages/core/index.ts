@@ -26,6 +26,7 @@ const V2TransformationSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('sort'),
     by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) })),
+    limit: z.number().int().positive().optional(),
   }).strict(),
   z.object({
     kind: z.literal('group'),
@@ -82,7 +83,7 @@ export type Transformation =
   | { kind: 'filter'; pred: Expr }
   | { kind: 'mutate'; columns: string | string[]; value: Expr }
   | { kind: 'select'; columns: string[] }
-  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }> }
+  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }>; limit?: number }
   | { kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> }
   | { kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' }
   | { kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }
