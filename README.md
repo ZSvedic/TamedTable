@@ -95,28 +95,36 @@ Exit codes are documented in [spec/code-contract.md](spec/code-contract.md#cli).
 
 ## Run the tests
 
-All test commands run from `src/`.
+Everything runs from `src/` — `cd src` first. (`src/` is the self-contained
+package: it holds `package.json` and `node_modules`, so `bun` runs there.)
+
+| Command | Runs |
+|---|---|
+| `bun run test` | All tests — the bun unit tests plus the full Cucumber suite. Offline, no API key. |
+| `bun run test:unit` | The bun unit tests only. |
+| `bun run test:record` | Re-records the cassettes (see below) against the live Anthropic API. |
+| `bun run typecheck` | Type-check only — `tsc --noEmit`. |
+
+Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`.
+
+### Cassettes — why the suite is fast and key-free
+
+The Cucumber suite issues real natural-language requests. A live Anthropic call
+per scenario takes 7–9 minutes (rate-limited) and needs an API key, so each model
+response is recorded once to `src/tests/__cassettes__/<feature>.json` and
+**replayed from disk** on every later run. The recordings are committed to git;
+`bun run test` replays them by default — seconds, offline, no key.
+
+Each request is fingerprinted over its full prompt, so changing a prompt never
+matches an old recording: replay fails loudly with `no recording for this
+request` instead of returning a stale answer. When that happens — or when you add
+a scenario — refresh the cassettes and commit the updated files:
 
 ```
-cd src
-bun run test          # both cucumber profiles (headless then cli) over the V1 features
-bun run test:offline  # bun unit tests + the @offline cucumber subset (no LLM, no API key)
+bun run test:record      # needs ANTHROPIC_API_KEY (see Setup above)
 ```
 
-`bun run test` runs `--profile headless` then `--profile cli`; the final exit code is from the `cli` profile. The `@offline` subset (CLI flags + REPL commands) and the bun unit tests need no API key.
-
-Narrower runs, layered on top of any of the above:
-
-```
-bun x cucumber-js --profile headless                          # @headless scenarios only
-bun x cucumber-js --profile cli                               # @cli scenarios only
-bun x cucumber-js --profile cli --name "Drop duplicates"      # match scenario name substring
-bun x cucumber-js ../spec/test-cases/dedupe.feature           # one feature file
-bun x tsc --noEmit && echo "passed"                           # fast type-only check
-bun test                                                      # bun unit tests only
-```
-
-The `headless` profile binds `createHeadlessRunner` from `@tamedtable/headless`; the `cli` profile binds `createCliRunner` / `runCli` from `@tamedtable/cli`. Both cover [datanorm](spec/test-cases/datanorm.feature), [dedupe](spec/test-cases/dedupe.feature), [filter](spec/test-cases/filter.feature), and [cancelation](spec/test-cases/cancelation.feature); the `cli` profile also covers [cli-flags](spec/test-cases/cli-flags.feature) and [repl-commands](spec/test-cases/repl-commands.feature).
+For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
 
 ## Iterate on the spec with WoZ and SCRIBE
 
@@ -145,6 +153,6 @@ For V2 web-UI questions WoZ produces a Claude artifact or writes a sketch to `te
 
 ## Known limitations
 
-- **Per-org rate limit dominates wall-clock.** A full test run is 7–9 minutes; most of that is the 40 RPM throttle waiting out the 50 RPM org ceiling, not LLM latency. Two back-to-back runs risk hitting the cap on retries.
+- **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario — 7–9 minutes, mostly the 40 RPM throttle waiting out the 50 RPM org ceiling. Re-record only when a prompt changes.
 - **Golden-file fragility on LLM cells.** Some `datanorm` scenarios assert byte equality against a frozen JSONL golden. Sonnet and Haiku produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and the model's own minor revisions can shift the answer over time. Mismatches on LLM-driven cells aren't necessarily regressions — see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
 - **CSV in, JSONL out.** Other formats are V2.
