@@ -150,18 +150,18 @@ version, prompt)` triple, not the transformation contract.
 
 A caller can hand headless its own way of making the model's network
 calls; with none supplied, headless talks straight to the service. The
-test suite uses this to **record and replay** model responses: the first
-run saves every response to disk, keyed by a fingerprint of the request,
-and later runs read the saved response back instead of calling the
-service. The suite then finishes in seconds, needs no API key, and never
-waits out the rate limit.
+test suite uses this to **replay recorded model responses**: each
+response is saved to disk once, keyed by a fingerprint of the request,
+then read back on later runs instead of calling the service. The
+recordings are committed, so the suite replays in seconds — no API key,
+no rate-limit wait — and that is how it runs by default.
 
-Recording has two modes. **Record** calls the real service, saves each
-response, and reuses one already saved for an identical request.
-**Replay** serves every response from disk and fails loudly on any
-request it has no recording for — it never silently falls back to the
-network. With recording off — the default — every call goes to the
-service, exactly as before.
+Three settings decide what happens. **Replay**, the default, serves
+every response from disk and fails loudly on any request it has no
+recording for — it never silently falls back to the network. **Record**
+calls the real service and saves each response, refreshing the
+recordings. **Off** ignores the recordings and calls the real service,
+the way every run worked before.
 
 The fingerprint covers the request's method, address, and full body, so
 a changed prompt can never match an old recording: a stale reply is

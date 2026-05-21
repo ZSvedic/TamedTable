@@ -199,10 +199,12 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 |---|---|
 | `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs `ANTHROPIC_API_KEY`. |
 | `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`. No network, no API key. |
-| unset / any other value | No recorder is installed; every call hits the network — V1 behavior. |
+| `off` (or any other value) | No recorder is installed; every call hits the network — a live run. |
 
-The fingerprint is strict by design: a changed prompt is always a miss,
-never a silent stale hit.
+`cucumber.js` defaults `TAMEDTABLE_CASSETTE` to `replay` when it is
+unset, so the suite runs offline unless a command opts into `record`
+or `off`. The fingerprint is strict by design: a changed prompt is
+always a miss, never a silent stale hit.
 
 Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
 returned to the SDK unsaved, so its built-in retry reaches the live API

@@ -6,8 +6,10 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "bun x cucumber-js --profile headless ; bun x cucumber-js --profile cli",
-    "test:offline": "bun test && bun x cucumber-js --profile cli --tags @offline"
+    "test": "bun test && cucumber-js --profile headless && cucumber-js --profile cli",
+    "test:unit": "bun test",
+    "test:record": "TAMEDTABLE_CASSETTE=record cucumber-js --profile headless ; TAMEDTABLE_CASSETTE=record cucumber-js --profile cli",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2",

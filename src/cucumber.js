@@ -1,6 +1,10 @@
+// Cassettes: replay recorded model responses by default — fast, offline, no
+// API key. `bun run test:record` overrides this to refresh them from the live
+// API; TAMEDTABLE_CASSETTE=off forces a live run without cassettes.
+process.env.TAMEDTABLE_CASSETTE ??= 'replay';
+
 // Replay serves every model call from a cassette on disk — no network — so
 // lift the request-rate cap that exists only to respect the live API ceiling.
-// Set here so it lands before the headless module computes its default.
 if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
