@@ -100,8 +100,10 @@ package: it holds `package.json` and `node_modules`, so `bun` runs there.)
 
 | Command | Runs |
 |---|---|
-| `bun run test` | All tests — the bun unit tests plus the full Cucumber suite. Offline, no API key. |
+| `bun run test` | All tests — the bun unit tests plus both Cucumber profiles. Offline, no API key. |
 | `bun run test:unit` | The bun unit tests only. |
+| `bun run test:headless` | The Cucumber `@headless` profile only. |
+| `bun run test:cli` | The Cucumber `@cli` profile only. |
 | `bun run test:record` | Re-records the cassettes (see below) against the live Anthropic API. |
 | `bun run typecheck` | Type-check only — `tsc --noEmit`. |
 

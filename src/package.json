@@ -6,9 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "bun test && cucumber-js --profile headless && cucumber-js --profile cli",
+    "test": "bun run test:unit && bun run test:headless && bun run test:cli",
     "test:unit": "bun test",
-    "test:record": "TAMEDTABLE_CASSETTE=record cucumber-js --profile headless ; TAMEDTABLE_CASSETTE=record cucumber-js --profile cli",
+    "test:headless": "cucumber-js --profile headless",
+    "test:cli": "cucumber-js --profile cli",
+    "test:record": "TAMEDTABLE_CASSETTE=record bun run test:headless ; TAMEDTABLE_CASSETTE=record bun run test:cli",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
