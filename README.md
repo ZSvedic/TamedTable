@@ -41,7 +41,8 @@ TamedTable/                  root holds only README.md, LICENSE, .gitignore
 
 You need [bun](https://bun.sh) and an Anthropic API key.
 
-1. Install dependencies (from `src/`, where `package.json` lives):
+1. Install the project's libraries — a one-time step you repeat only if the
+   dependencies change:
    ```
    cd src && bun install
    ```
@@ -95,17 +96,28 @@ Exit codes are documented in [spec/code-contract.md](spec/code-contract.md#cli).
 
 ## Run the web UI
 
-V4 adds a browser front-end — a chat sidebar for natural-language requests beside a live table view — on the same engine the CLI drives. It lives in the `@tamedtable/web` workspace package.
+V4 adds a browser front-end — a chat sidebar for natural-language requests beside a live table view — on the same engine the CLI drives.
 
-Start the dev server (from `src/packages/web/`):
+Day to day, you need just one command. From the web package's folder:
 
 ```
-cd src/packages/web && bun run dev
+cd src/packages/web
+bun run dev
 ```
 
-Open the printed URL (default `http://localhost:5173`). Click **Settings** and paste your Anthropic API key — the web UI reads the key from a per-tab settings panel, not from `.env`. Then **Open file** to load a CSV or JSONL, type a request in the chat sidebar, and watch cells stream in. Double-click a cell to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`.
+`bun run dev` starts a local server with live reload and prints a URL (default `http://localhost:5173`); open it in your browser. Leave the command running while you use the app — Ctrl-C stops it.
 
-Build the static bundle with `bun run build` (output in `dist/`).
+Here is every `bun` command the web UI uses, and when you need each:
+
+| Command | Run it from | When |
+|---|---|---|
+| `bun install` | `src/` | Once during [Setup](#setup); again only if dependencies change. |
+| `bun run dev` | `src/packages/web/` | Every time you want to use the web UI. |
+| `bun run build` | `src/packages/web/` | Only to deploy — compiles the UI into static files in `dist/` for hosting on any web server. Normal use never needs it. |
+
+Why two directories? `bun install` installs libraries for the whole project at once, so it runs from the project root (`src/`); `bun run dev` and `bun run build` belong to the web package, so they run from that package's folder (`src/packages/web/`).
+
+Once the page loads, click **Settings** and paste your Anthropic API key — the web UI reads the key from a per-tab settings panel, not from `.env`. Then **Open file** to load a CSV or JSONL, type a request in the chat sidebar, and watch cells stream in. Double-click a cell to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`.
 
 There is no server: the web UI calls Anthropic directly from the browser through the same SDK the CLI uses. File input/output uses the File System Access API where the browser supports it, with a download/upload fallback elsewhere.
 

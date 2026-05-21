@@ -7,10 +7,18 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- The reused engine reads a few env vars at init; the browser has no
-         process. An empty stub lets the engine fall back to its defaults. -->
+    <!-- The reused engine and its CSV libraries are authored for Node and
+         expect two globals the browser lacks. Both are installed here, before
+         main.tsx runs. `process` is a small stub — the engine only reads a few
+         env vars at init. `Buffer` must be the real implementation, because
+         csv-parse builds buffers the moment it loads; it comes from the
+         `buffer` polyfill package. -->
     <script>
       window.process = { env: {}, cwd: function () { return '/'; }, platform: 'browser' };
+    </script>
+    <script type="module">
+      import { Buffer } from 'buffer';
+      window.Buffer = Buffer;
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
