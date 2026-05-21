@@ -16,7 +16,7 @@ export const SPEC_TC_DIR = join(REPO_ROOT, 'spec/test-cases');
 export const TEMP_DIR = join(REPO_ROOT, 'temp');
 export const CASSETTE_DIR = join(import.meta.dirname, '__cassettes__');
 
-export type RunnerKind = 'headless' | 'cli';
+export type RunnerKind = 'headless' | 'cli' | 'web';
 
 export interface Runner {
   loadInput(path: string): Promise<void>;
@@ -53,7 +53,7 @@ export class TamedTableWorld extends CucumberWorld {
   constructor(options: IWorldOptions) {
     super(options);
     const surface = (options.parameters as { surface?: unknown } | undefined)?.surface;
-    if (surface === 'headless' || surface === 'cli') {
+    if (surface === 'headless' || surface === 'cli' || surface === 'web') {
       this.surface = surface;
     }
   }
