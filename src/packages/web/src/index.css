@@ -1,0 +1,15 @@
+/* Structural reset only — every color, font, and spacing choice lives in
+   src/theme.ts so the visual design can be swapped in one place. */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}

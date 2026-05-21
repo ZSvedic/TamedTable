@@ -9,7 +9,7 @@ if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,join,pivot,save-py,sort,sql,validate')
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,join,pivot,save-py,sort,sql,validate,web')
   .split(',')
   .map((s) => `../spec/test-cases/${s.trim()}.feature`);
 
@@ -30,4 +30,10 @@ export const cli = {
   ...common,
   tags: '@cli',
   worldParameters: { surface: 'cli' },
+};
+
+export const web = {
+  ...common,
+  tags: '@web',
+  worldParameters: { surface: 'web' },
 };

@@ -2,7 +2,7 @@
 
 A CLI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. The full motivation is in [spec/rationale.md](spec/rationale.md); the wire-protocol idea — keeping per-turn token cost constant regardless of table size — is in [spec/behavior.md](spec/behavior.md#data-model).
 
-V1 ships a terminal CLI and a headless library. A web UI is V4.
+V1 ships a terminal CLI and a headless library; V4 adds a browser UI.
 
 ## Project layout
 
@@ -30,7 +30,7 @@ TamedTable/                  root holds only README.md, LICENSE, .gitignore
 ├── src/                     the implementation — self-contained, deployable unit
 │   ├── package.json, …      build config; run every bun command from here
 │   ├── node_modules/        gitignored
-│   ├── packages/            core / headless / cli — regenerable from spec/
+│   ├── packages/            core / headless / cli / web — regenerable from spec/
 │   └── tests/               cucumber step definitions — regenerable from Gherkin
 └── temp/                    scratch: test outputs, charts, logs — gitignored
 ```
@@ -93,6 +93,22 @@ bun src/packages/cli/index.ts execute spec/test-cases/datanorm.flow \
 
 Exit codes are documented in [spec/code-contract.md](spec/code-contract.md#cli).
 
+## Run the web UI
+
+V4 adds a browser front-end — a chat sidebar for natural-language requests beside a live table view — on the same engine the CLI drives. It lives in the `@tamedtable/web` workspace package.
+
+Start the dev server (from `src/packages/web/`):
+
+```
+cd src/packages/web && bun run dev
+```
+
+Open the printed URL (default `http://localhost:5173`). Click **Settings** and paste your Anthropic API key — the web UI reads the key from a per-tab settings panel, not from `.env`. Then **Open file** to load a CSV or JSONL, type a request in the chat sidebar, and watch cells stream in. Double-click a cell to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`.
+
+Build the static bundle with `bun run build` (output in `dist/`).
+
+There is no server: the web UI calls Anthropic directly from the browser through the same SDK the CLI uses. File input/output uses the File System Access API where the browser supports it, with a download/upload fallback elsewhere.
+
 ## Run the tests
 
 Everything runs from `src/` — `cd src` first. (`src/` is the self-contained
@@ -100,12 +116,13 @@ package: it holds `package.json` and `node_modules`, so `bun` runs there.)
 
 | Command | Runs |
 |---|---|
-| `bun run test` | All tests — the bun unit tests plus both Cucumber profiles. Offline, no API key. |
+| `bun run test` | All tests — the bun unit tests plus all three Cucumber profiles. Offline, no API key. |
 | `bun run test:unit` | The bun unit tests only. |
 | `bun run test:headless` | The Cucumber `@headless` profile only. |
 | `bun run test:cli` | The Cucumber `@cli` profile only. |
+| `bun run test:web` | The Cucumber `@web` profile only. |
 | `bun run test:record` | Re-records the cassettes (see below) against the live Anthropic API. |
-| `bun run typecheck` | Type-check only — `tsc --noEmit`. |
+| `bun run typecheck` | Type-check only — `tsc --noEmit` for the engine packages and the web package. |
 
 Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`.
 
@@ -158,3 +175,4 @@ For V2 web-UI questions WoZ produces a Claude artifact or writes a sketch to `te
 - **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario — 7–9 minutes, mostly the 40 RPM throttle waiting out the 50 RPM org ceiling. Re-record only when a prompt changes.
 - **Golden-file fragility on LLM cells.** Some `datanorm` scenarios assert byte equality against a frozen JSONL golden. Sonnet and Haiku produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and the model's own minor revisions can shift the answer over time. Mismatches on LLM-driven cells aren't necessarily regressions — see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
 - **CSV and JSONL only.** Both load and save; other tabular formats (`.xlsx`, `.parquet`) are out of scope until their own scenarios are written.
+- **No `{sql}` in the web UI.** DuckDB is a native module that cannot run in a browser, so `{sql}` transformations are unavailable in the web front-end; the CLI and headless library support them in full. "Save data" in the web UI writes JSONL only.
