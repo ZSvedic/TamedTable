@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TamedTable</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- The reused engine reads a few env vars at init; the browser has no
+         process. An empty stub lets the engine fall back to its defaults. -->
+    <script>
+      window.process = { env: {}, cwd: function () { return '/'; }, platform: 'browser' };
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

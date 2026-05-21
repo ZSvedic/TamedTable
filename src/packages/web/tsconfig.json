@@ -3,8 +3,9 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
-    "types": ["node", "bun"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "react", "react-dom"],
+    "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
@@ -13,11 +14,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": [
-    "packages/**/*.ts",
-    "tests/**/*.ts"
-  ],
-  "exclude": [
-    "packages/web"
-  ]
+  "include": ["index.ts", "src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }
