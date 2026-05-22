@@ -17,5 +17,3 @@ export type {
   DialogKind,
 } from './src/controller.ts';
 export type { FilePort, PickedFile, SaveOutcome, FetchLike } from './src/ports.ts';
-export { theme } from './src/theme.ts';
-export type { Theme } from './src/theme.ts';

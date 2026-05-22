@@ -1,22 +1,24 @@
 import type { ReactNode } from 'react';
-import { theme } from './theme.ts';
+import { typography } from './theme.ts';
 import type { WebController } from './controller.ts';
+import { ThemeProvider, useTheme } from './useTheme.tsx';
 import { Toolbar } from './components/Toolbar.tsx';
 import { ChatSidebar } from './components/ChatSidebar.tsx';
 import { TableView } from './components/TableView.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { Toasts } from './components/Toasts.tsx';
 
-export function App({ controller }: { controller: WebController }): ReactNode {
+function AppShell({ controller }: { controller: WebController }): ReactNode {
+  const t = useTheme();
   return (
     <div
       style={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        background: theme.color.bg,
-        color: theme.color.text,
-        fontFamily: theme.font.sans,
+        background: t.bg,
+        color: t.ink,
+        fontFamily: typography.ui,
       }}
     >
       <Toolbar controller={controller} />
@@ -27,5 +29,13 @@ export function App({ controller }: { controller: WebController }): ReactNode {
       <SettingsPanel controller={controller} />
       <Toasts controller={controller} />
     </div>
+  );
+}
+
+export function App({ controller }: { controller: WebController }): ReactNode {
+  return (
+    <ThemeProvider>
+      <AppShell controller={controller} />
+    </ThemeProvider>
   );
 }

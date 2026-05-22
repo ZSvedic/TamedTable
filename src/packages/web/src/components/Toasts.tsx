@@ -1,23 +1,26 @@
 import type { ReactNode } from 'react';
-import { theme } from '../theme.ts';
+import { space, typography } from '../theme.ts';
 import type { WebController } from '../controller.ts';
 import { useController } from '../useController.ts';
+import { useTheme } from '../useTheme.tsx';
+import { Icon } from './Icons.tsx';
 
 export function Toasts({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
+  const t = useTheme();
   if (controller.toasts.length === 0) return null;
 
   return (
     <div
       style={{
         position: 'fixed',
-        right: theme.space.lg,
-        bottom: theme.space.lg,
+        right: space.px16,
+        bottom: space.px16,
         display: 'flex',
         flexDirection: 'column',
-        gap: theme.space.sm,
+        gap: space.px8,
         zIndex: 200,
-        maxWidth: '380px',
+        maxWidth: 380,
       }}
     >
       {controller.toasts.map((toast) => {
@@ -25,20 +28,43 @@ export function Toasts({ controller }: { controller: WebController }): ReactNode
         return (
           <div
             key={toast.id}
-            onClick={() => controller.dismissToast(toast.id)}
-            title="Dismiss"
+            className="tt-sheet"
             style={{
-              cursor: 'pointer',
-              padding: `${theme.space.sm} ${theme.space.md}`,
-              borderRadius: theme.radius.md,
-              background: isError ? theme.color.errorBg : theme.color.infoBg,
-              border: `1px solid ${isError ? theme.color.error : theme.color.info}`,
-              color: isError ? theme.color.error : theme.color.info,
-              fontSize: theme.font.size.md,
-              boxShadow: `0 6px 20px ${theme.color.shadow}`,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: space.px10,
+              minWidth: 280,
+              padding: '10px 12px',
+              borderRadius: space.radius,
+              background: t.surface,
+              color: t.ink,
+              border: `1px solid ${isError ? t.err : t.line2}`,
+              borderLeft: `3px solid ${isError ? t.err : t.ok}`,
+              boxShadow: t.shadowLg,
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm,
+              lineHeight: 1.5,
             }}
           >
-            {toast.message}
+            <span style={{ flex: '0 0 auto', marginTop: 1, color: isError ? t.err : t.ok }}>
+              <Icon name={isError ? 'err' : 'ok'} />
+            </span>
+            <div style={{ flex: 1 }}>{toast.message}</div>
+            <button
+              type="button"
+              onClick={() => controller.dismissToast(toast.id)}
+              title="Dismiss"
+              style={{
+                background: 'transparent',
+                border: 0,
+                padding: space.px2,
+                cursor: 'pointer',
+                color: t.ink3,
+                display: 'flex',
+              }}
+            >
+              <Icon name="x" size={12} />
+            </button>
           </div>
         );
       })}

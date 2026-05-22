@@ -2,7 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createWebController } from './controller.ts';
 import { BrowserFilePort } from './browser-fs.ts';
-import { theme } from './theme.ts';
 import { App } from './App.tsx';
 import './index.css';
 
@@ -20,9 +19,6 @@ controller.subscribe(() => {
   if (key) sessionStorage.setItem(KEY_STORAGE, key);
   else sessionStorage.removeItem(KEY_STORAGE);
 });
-
-document.body.style.margin = '0';
-document.body.style.background = theme.color.bg;
 
 const root = document.getElementById('root');
 if (!root) throw new Error('TamedTable: #root element is missing from index.html');

@@ -1,36 +1,75 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { theme } from '../theme.ts';
+import { useState, type CSSProperties, type ReactNode } from 'react';
+import { space, typography } from '../theme.ts';
+import { useTheme } from '../useTheme.tsx';
+
+type Variant = 'ghost' | 'chrome' | 'primary' | 'danger';
 
 interface ButtonProps {
   children: ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-  variant?: 'default' | 'primary' | 'danger';
+  variant?: Variant;
   title?: string;
 }
 
-export function Button({ children, onClick, disabled, variant = 'default', title }: ButtonProps): ReactNode {
-  const background =
-    variant === 'primary'
-      ? theme.color.accent
-      : variant === 'danger'
-        ? theme.color.error
-        : theme.color.surfaceAlt;
-  const style: CSSProperties = {
-    fontFamily: theme.font.sans,
-    fontSize: theme.font.size.md,
-    lineHeight: 1.4,
-    padding: `${theme.space.sm} ${theme.space.md}`,
-    borderRadius: theme.radius.sm,
-    border: `1px solid ${theme.color.border}`,
-    background,
-    color: variant === 'default' ? theme.color.text : theme.color.accentText,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.4 : 1,
+// Primary is Ink (Aubergine) — the Pale Sky accent is reserved for the mark
+// and focus rings, never a button fill.
+export function Button({
+  children,
+  onClick,
+  disabled,
+  variant = 'ghost',
+  title,
+}: ButtonProps): ReactNode {
+  const t = useTheme();
+  const [hover, setHover] = useState(false);
+
+  const base: CSSProperties = {
+    height: 28,
+    padding: '0 10px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: space.px6,
+    border: '1px solid transparent',
+    borderRadius: space.radiusSm,
+    background: 'transparent',
+    color: t.ink2,
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 500,
+    lineHeight: 1,
     whiteSpace: 'nowrap',
+    cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.4 : 1,
+    transition: 'background .12s, color .12s, border-color .12s',
   };
+
+  const variants: Record<Variant, CSSProperties> = {
+    ghost: {},
+    chrome: { color: t.ink, borderColor: t.line },
+    primary: { background: t.ink, color: t.inkOnInk, borderColor: t.ink, fontWeight: 600 },
+    danger: { color: t.err, borderColor: t.line },
+  };
+
+  const hoverFill =
+    !disabled && hover && (variant === 'ghost' || variant === 'chrome')
+      ? { background: t.surface3 }
+      : !disabled && hover && variant === 'primary'
+        ? { background: t.ink2, borderColor: t.ink2 }
+        : !disabled && hover && variant === 'danger'
+          ? { background: t.errSoft }
+          : {};
+
   return (
-    <button type="button" style={style} onClick={onClick} disabled={disabled} title={title}>
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ ...base, ...variants[variant], ...hoverFill }}
+    >
       {children}
     </button>
   );
