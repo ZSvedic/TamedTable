@@ -14,6 +14,7 @@ const shim = (file: string): string => join(here, 'src/shims', file);
 
 export default defineConfig({
   plugins: [react()],
+  base: '/TamedTable/',
   define: {
     // The system-prompt file the engine reads at module init, inlined. The
     // engine's `process` references are satisfied by a stub in index.html.
