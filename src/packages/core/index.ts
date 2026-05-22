@@ -30,7 +30,8 @@ const V2TransformationSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({
     kind: z.literal('group'),
-    by: z.array(z.union([z.string(), ExprSchema])).min(1, 'group.by must be non-empty'),
+    // An empty `by` aggregates the whole table into a single output row.
+    by: z.array(z.union([z.string(), ExprSchema])),
     agg: z.record(z.string(), ExprSchema),
   }).strict(),
   z.object({

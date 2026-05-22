@@ -526,12 +526,16 @@ function buildPrompt(text: string, spec: Spec, errPrefix?: string): string {
 
 type PatchAttempt = { kind: 'ok'; spec: Spec } | { kind: 'err'; message: string };
 
-function applyAndValidate(currentSpec: Spec, ops: unknown[]): PatchAttempt {
+/** @internal — exported for unit tests. Apply an LLM-proposed JSON Patch to
+ *  the spec and validate the result. `validateOperation` is on so a malformed
+ *  op (bad `op`, missing `path`) surfaces as a clear RFC-6902 message the
+ *  recovery loop can feed back — not an opaque internal TypeError. */
+export function applyAndValidate(currentSpec: Spec, ops: unknown[]): PatchAttempt {
   try {
     if (ops.length === 0) {
       return { kind: 'err', message: 'You called apply_spec_patch with an empty operations array. Emit at least one operation that fulfills the user request.' };
     }
-    const patched = jsonpatch.applyPatch(structuredClone(currentSpec), ops as Operation[], false, false).newDocument as unknown;
+    const patched = jsonpatch.applyPatch(structuredClone(currentSpec), ops as Operation[], true, false).newDocument as unknown;
     const validated = validateSpec(patched);
     if (JSON.stringify(validated) === JSON.stringify(currentSpec)) {
       return { kind: 'err', message: 'Your patch applied cleanly but left the spec identical to before. Emit operations that actually modify the spec to fulfill the user request.' };
@@ -1092,10 +1096,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   /** Evaluates a {sql} aggregate over one group's row slice — the slice is
-   *  registered as relation `g` and the fragment wrapped in SELECT … FROM g. */
+   *  registered as relation `g` and the fragment wrapped in SELECT … FROM g.
+   *  The slice is also registered as `t` so an aggregate fragment that
+   *  references the table by name still resolves — natural for an empty-`by`
+   *  group, where the group's slice is the whole table. */
   private async evalSqlAgg(slice: Row[], sqlFragment: string, signal?: AbortSignal): Promise<unknown> {
     try {
       await this.registerRelation('g', slice);
+      await this.registerRelation('t', slice);
       const conn = await this.duck();
       const reader = await this.runInterruptibleSql(
         () => conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM g`),
