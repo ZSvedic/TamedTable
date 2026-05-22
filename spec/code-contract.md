@@ -47,7 +47,8 @@ set and runs at three points:
 3. When `runCli execute` loads a `.flow` file.
 
 The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
-three shapes; `split.into`, `group.by`, and `pivot.index` are non-empty;
+three shapes; `split.into` and `pivot.index` are non-empty (an empty
+`group.by` is allowed — it aggregates the whole table into one row);
 `validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
 `.jsonl`. It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
@@ -378,17 +379,19 @@ interface JoinTransform  { kind: "join";  with: string; on: Expr; how?: "inner" 
 ```
 
 The `by` list accepts either a bare column name (string) or a full
-`Expr` — same shorthand `sort.by[].key` already uses. `agg`
+`Expr` — same shorthand `sort.by[].key` already uses — and may be
+empty, which aggregates the whole table into a single output row. `agg`
 expressions evaluate with the group's row slice bound as `rows` for
-JS (`(rows, key, allGroups) => …`), and as a relation named
-`g` for SQL; LLM aggregates receive the group's compact JSON as
+JS (`(rows, key, allGroups) => …`), and as a relation for SQL — named
+`g`, and also reachable as `t` so a fragment that references the table
+by name resolves; LLM aggregates receive the group's compact JSON as
 `{*}`.
 
 `Runner.loadInput` continues to dispatch on extension; the join's
 right-side path is loaded by the same code path. The V2 Zod schema
-permits these two `kind` values and enforces non-empty `by` for
-`group` and a `.csv`/`.jsonl` extension for `join.with` (other
-extensions error at validation time, not at evaluation).
+permits these two `kind` values and enforces a `.csv`/`.jsonl`
+extension for `join.with` (other extensions error at validation time,
+not at evaluation).
 
 ### `split`, `validate`, `pivot`, `unpivot` transformations
 

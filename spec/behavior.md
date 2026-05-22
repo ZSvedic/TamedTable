@@ -519,6 +519,10 @@ group's row slice (an array of rows accessible to the expression as
 the bound name described in code-contract); typical uses are `count`,
 `sum`, `avg`, `min`, `max`, and `{llm:…}` summaries.
 
+An empty `by` list collapses the whole table into a single output
+row — the natural shape for a grand total, such as summing one column
+across every row.
+
 Empty input produces zero output rows. A by-expression that throws on
 some row aborts the transformation through the same recovery loop a
 filter or mutate uses. Sort order of output rows is the first-seen
