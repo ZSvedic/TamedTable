@@ -655,6 +655,26 @@ them into table updates. A web session does not share state with a
 CLI session; the file dialog handshake takes the place of `:load`,
 and the in-browser tab IS the session.
 
+The table view paginates. Rows display one fixed-size page at a time —
+twenty rows — with a pager that jumps to the first, previous, next,
+last, or a numbered page. Paging is a view concern, like the CLI's
+viewport: it never touches the spec, so it survives requests, undo, and
+redo. Loading a file opens page one; a request that shortens the table
+clamps the current page back into range.
+
+A status footer under the table reports the current selection and what
+the engine is doing. Clicking a cell selects it, and the footer names
+it `R<row> · <column>`. The footer also shows whether the app is idle,
+running a request, or has just saved — a save reads as saved until the
+next edit, request, or load returns it to idle.
+
+The settings panel picks the model. Beside the API key, the user
+chooses which Anthropic model writes each spec patch — a faster,
+cheaper model or a more capable one. Changing the model rebuilds the
+engine and replays the current transformations against the source, so
+the table on screen is preserved and the new model drives the next
+request.
+
 → [code-contract.md — V2](code-contract.md#v2)
 
 ## V2.5
