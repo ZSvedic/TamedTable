@@ -89,3 +89,78 @@ Feature: Web front-end
       When user reorders columns so "Country" comes first
       And user undoes the last change
       Then the first column is "ID"
+
+  Rule: The table view paginates long tables
+
+    Background:
+      Given the TamedTable web app
+      And "paginate-input.csv" is loaded
+
+    @web
+    Scenario: A freshly loaded table opens on the first page
+      Then the table spans 3 pages
+      And the current page is 1
+      And the current page shows 20 rows
+
+    @web
+    Scenario: Moving to the next page shows the following rows
+      When user goes to page 2
+      Then the current page shows 20 rows
+      And the first row on the current page has ID "21"
+
+    @web
+    Scenario: The last page shows only the remaining rows
+      When user goes to page 3
+      Then the current page shows 6 rows
+      And the first row on the current page has ID "41"
+
+    @web
+    Scenario: Paging past the last page clamps to the last page
+      When user goes to page 99
+      Then the current page is 3
+
+  Rule: A status footer reports selection and activity
+
+    Background:
+      Given the TamedTable web app
+      And "datanorm-input.csv" is loaded
+
+    @web
+    Scenario: A freshly loaded table is idle with no cell selected
+      Then the status footer reports "idle"
+      And no cell is selected
+
+    @web
+    Scenario: Selecting a cell reports its location in the footer
+      When user selects the cell at row 3 column "Country"
+      Then the selected cell is row 3 column "Country"
+
+    @web
+    Scenario: Saving data marks the footer as saved
+      When user says "Save data"
+      And user saves as "datanorm-output.jsonl"
+      Then the status footer reports "saved"
+
+    @web
+    Scenario: Editing a cell returns the footer to idle after a save
+      When user says "Save data"
+      And user saves as "datanorm-output.jsonl"
+      And user edits cell at row 1 column "Country" to "United States"
+      Then the status footer reports "idle"
+
+  Rule: The settings panel selects the engine model
+
+    @web
+    Scenario: The web app defaults to the Sonnet model
+      Given the TamedTable web app
+      Then the configured model is "claude-sonnet-4-6"
+
+    @web
+    Scenario: Choosing a model keeps the loaded table intact
+      Given the TamedTable web app
+      And "datanorm-input.csv" is loaded
+      When user edits cell at row 1 column "Country" to "United States"
+      And user selects the model "claude-haiku-4-5"
+      Then the configured model is "claude-haiku-4-5"
+      And cell at row 1 column "Country" shows "United States"
+      And the spec has 1 transformation

@@ -462,6 +462,31 @@ Exit codes are CLI-only; web errors surface as toasts inside the
 table view and carry the same error strings the recovery loop
 produces.
 
+Pagination, cell selection, and the chosen model are `WebController`
+state, not spec fields — the same split the CLI keeps for its viewport.
+`model` joins `WebSettings` and `WebControllerOptions` (default
+`claude-sonnet-4-6`); the `WebController` gains the surface below.
+
+```ts
+// pagination — 20 rows per page; the page index is 1-based and clamps
+// to [1, pageCount()]
+WebController.pageSize: number;          // 20
+WebController.pageRows(): Row[];         // the current page's slice
+WebController.currentPage(): number;
+WebController.pageCount(): number;
+WebController.totalRows(): number;
+WebController.goToPage(page: number): void;
+
+// selection + activity — drive the status footer
+WebController.selection: { row: number; column: string } | null;
+WebController.selectCell(row: number, column: string): void;
+WebController.activityStatus(): 'idle' | 'running' | 'saved';
+
+// model — async: rebuilds the engine with the new model and replays
+// the current spec against the source, preserving the loaded table
+WebController.setModel(model: string): Promise<void>;
+```
+
 ## V2.5
 
 → [behavior.md — V2.5](behavior.md#v25)

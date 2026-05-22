@@ -185,3 +185,62 @@ Then('the first column is {string}', function (this: TamedTableWorld, column: st
 Then('the spec has {int} transformation(s)', function (this: TamedTableWorld, n: number) {
   assert.equal(controller(this).displaySpec().transformations.length, n);
 });
+
+// ── Pagination ─────────────────────────────────────────────────────────────
+
+When('user goes to page {int}', function (this: TamedTableWorld, page: number) {
+  controller(this).goToPage(page);
+});
+
+Then('the table spans {int} page(s)', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).pageCount(), n);
+});
+
+Then('the current page is {int}', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).currentPage(), n);
+});
+
+Then('the current page shows {int} row(s)', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).pageRows().length, n);
+});
+
+Then(
+  'the first row on the current page has ID {string}',
+  function (this: TamedTableWorld, id: string) {
+    assert.equal(controller(this).pageRows()[0]?.ID, id);
+  },
+);
+
+// ── Status footer ──────────────────────────────────────────────────────────
+
+When(
+  'user selects the cell at row {int} column {string}',
+  function (this: TamedTableWorld, row: number, column: string) {
+    controller(this).selectCell(row - 1, column);
+  },
+);
+
+Then(
+  'the selected cell is row {int} column {string}',
+  function (this: TamedTableWorld, row: number, column: string) {
+    assert.deepEqual(controller(this).selection, { row: row - 1, column });
+  },
+);
+
+Then('no cell is selected', function (this: TamedTableWorld) {
+  assert.equal(controller(this).selection, null);
+});
+
+Then('the status footer reports {string}', function (this: TamedTableWorld, status: string) {
+  assert.equal(controller(this).activityStatus(), status);
+});
+
+// ── Model picker ───────────────────────────────────────────────────────────
+
+When('user selects the model {string}', async function (this: TamedTableWorld, model: string) {
+  await controller(this).setModel(model);
+});
+
+Then('the configured model is {string}', function (this: TamedTableWorld, model: string) {
+  assert.equal(controller(this).getSettings().model, model);
+});
