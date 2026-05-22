@@ -1,55 +1,97 @@
 import type { ReactNode } from 'react';
-import { theme } from '../theme.ts';
+import { space, typography } from '../theme.ts';
 import type { WebController } from '../controller.ts';
 import { useController } from '../useController.ts';
+import { useTheme, useThemeControls } from '../useTheme.tsx';
 import { Button } from './Button.tsx';
+import { Lockup } from './Brand.tsx';
+import { Icon } from './Icons.tsx';
 
 export function Toolbar({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
+  const t = useTheme();
+  const { mode, toggle } = useThemeControls();
   const loaded = controller.isLoaded();
   const busy = controller.streaming;
+
+  const spec = controller.displaySpec();
+  const fileName = spec.table ? (spec.table.split('/').pop() ?? spec.table) : null;
+  const rowCount = controller.displayRows().length;
+  const colCount = spec.columns.length;
+
+  const divider = (
+    <span
+      style={{ width: 1, height: 16, background: t.line, margin: `0 ${space.px6}px` }}
+    />
+  );
 
   return (
     <header
       style={{
-        height: theme.layout.headerHeight,
+        height: space.topbarH,
         flex: '0 0 auto',
         display: 'flex',
         alignItems: 'center',
-        gap: theme.space.sm,
-        padding: `0 ${theme.space.lg}`,
-        background: theme.color.surface,
-        borderBottom: `1px solid ${theme.color.border}`,
+        gap: space.px10,
+        padding: `0 ${space.px12}px`,
+        background: t.surface,
+        borderBottom: `1px solid ${t.line}`,
       }}
     >
-      <span
-        style={{
-          fontSize: theme.font.size.xl,
-          fontWeight: 700,
-          color: theme.color.text,
-          marginRight: theme.space.md,
-        }}
-      >
-        TamedTable
-      </span>
+      <Lockup size={typography.size.md} color={t.ink} dark={t.name === 'dark'} />
+
+      {loaded && (
+        <span
+          style={{
+            fontFamily: typography.mono,
+            fontSize: typography.size.sm,
+            color: t.ink3,
+            marginLeft: space.px6,
+            paddingLeft: space.px10,
+            borderLeft: `1px solid ${t.line}`,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {fileName && <>{fileName} <span style={{ color: t.ink4 }}>·</span> </>}
+          {rowCount} rows × {colCount} cols
+        </span>
+      )}
+
+      <div style={{ flex: 1 }} />
+
       <Button onClick={() => void controller.openCsv()} disabled={busy} title="Open a CSV or JSONL file">
+        <Icon name="folder" />
         Open file
       </Button>
       <Button onClick={() => void controller.saveData()} disabled={!loaded || busy} title="Save the current rows">
+        <Icon name="save" />
         Save data
       </Button>
       <Button onClick={() => void controller.saveFlow()} disabled={!loaded || busy} title="Save the flow (.flow)">
         Save flow
       </Button>
-      <div style={{ width: '1px', height: '24px', background: theme.color.border, margin: `0 ${theme.space.xs}` }} />
+
+      {divider}
+
       <Button onClick={() => void controller.undo()} disabled={!controller.canUndo() || busy} title="Undo">
+        <Icon name="undo" />
         Undo
       </Button>
       <Button onClick={() => void controller.redo()} disabled={!controller.canRedo() || busy} title="Redo">
+        <Icon name="redo" />
         Redo
       </Button>
-      <div style={{ flex: 1 }} />
+
+      {divider}
+
+      <Button
+        onClick={toggle}
+        title={mode === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+      >
+        <Icon name={mode === 'dark' ? 'sun' : 'moon'} />
+      </Button>
       <Button onClick={() => controller.openSettings()} title="API key and settings">
+        <Icon name="cog" />
         Settings
       </Button>
     </header>

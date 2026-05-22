@@ -1,5 +1,6 @@
-/* Structural reset only — every color, font, and spacing choice lives in
-   src/theme.ts so the visual design can be swapped in one place. */
+/* Structural reset + brand base. Every color and spacing choice lives in
+   src/theme.ts; this file carries only the reset, the base font, and the
+   few keyframes the components reference by class name. */
 * {
   box-sizing: border-box;
 }
@@ -12,4 +13,45 @@ body,
 
 body {
   margin: 0;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Pulsing dot — shown while a request streams. */
+@keyframes tt-pulse-kf {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.tt-pulse {
+  animation: tt-pulse-kf 1.2s ease-in-out infinite;
+}
+
+/* Slide / fade-in for the settings sheet and toasts. */
+@keyframes tt-sheet-kf {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tt-sheet {
+  animation: tt-sheet-kf 0.14s ease-out;
+}
+
+/* Drag grip in a table header — revealed on hover. */
+.tt-th .tt-grip {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tt-th:hover .tt-grip {
+  opacity: 1;
 }

@@ -1,58 +1,97 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { theme } from '../theme.ts';
+import { space, typography } from '../theme.ts';
+import type { Theme } from '../theme.ts';
 import type { WebController } from '../controller.ts';
 import { useController } from '../useController.ts';
+import { useTheme } from '../useTheme.tsx';
+import { Button } from './Button.tsx';
+import { Icon } from './Icons.tsx';
 
 function cellText(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
-const headerCell: CSSProperties = {
-  position: 'sticky',
-  top: 0,
-  background: theme.color.headerBg,
-  color: theme.color.text,
-  textAlign: 'left',
-  padding: `${theme.space.sm} ${theme.space.md}`,
-  borderBottom: `2px solid ${theme.color.border}`,
-  borderRight: `1px solid ${theme.color.border}`,
-  cursor: 'grab',
-  userSelect: 'none',
-  fontWeight: 600,
-};
-
-const bodyCell: CSSProperties = {
-  padding: `${theme.space.xs} ${theme.space.md}`,
-  borderBottom: `1px solid ${theme.color.border}`,
-  borderRight: `1px solid ${theme.color.border}`,
-  color: theme.color.text,
-  maxWidth: '320px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-};
+function EmptyState({ controller, t }: { controller: WebController; t: Theme }): ReactNode {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: t.surface,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          width: 460,
+          maxWidth: '88%',
+          padding: space.px24,
+          borderRadius: space.radiusLg,
+          border: `1.5px dashed ${t.line2}`,
+          background: t.surface2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: space.px14,
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: space.radius,
+            background: t.accentSoft,
+            color: t.accent,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name="upload" size={22} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
+          <div
+            style={{
+              fontFamily: typography.ui,
+              fontSize: typography.size.lg,
+              fontWeight: 600,
+              color: t.ink,
+            }}
+          >
+            No file loaded
+          </div>
+          <div
+            style={{
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm,
+              lineHeight: 1.5,
+              color: t.ink2,
+            }}
+          >
+            Open a CSV or JSONL file to begin, then describe changes in the chat.
+          </div>
+        </div>
+        <Button variant="primary" onClick={() => void controller.openCsv()}>
+          <Icon name="folder" />
+          Open file…
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export function TableView({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
+  const t = useTheme();
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
   const [draft, setDraft] = useState('');
   const [dragCol, setDragCol] = useState<string | null>(null);
 
   if (!controller.isLoaded()) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: theme.color.textDim,
-          fontSize: theme.font.size.lg,
-        }}
-      >
-        No file loaded — use “Open file” to load a CSV or JSONL.
-      </div>
-    );
+    return <EmptyState controller={controller} t={t} />;
   }
 
   const columns = controller.displaySpec().columns.map((c) => c.id);
@@ -83,44 +122,104 @@ export function TableView({ controller }: { controller: WebController }): ReactN
     void controller.reorderColumns(order);
   };
 
+  const headerCell: CSSProperties = {
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+    background: t.surface2,
+    color: t.ink2,
+    textAlign: 'left',
+    padding: `0 ${space.px10}px`,
+    height: space.headerH,
+    borderBottom: `1px solid ${t.line2}`,
+    borderRight: `1px solid ${t.line}`,
+    userSelect: 'none',
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+  };
+
+  const bodyCell: CSSProperties = {
+    padding: `0 ${space.px10}px`,
+    height: space.rowH,
+    borderBottom: `1px solid ${t.line}`,
+    borderRight: `1px solid ${t.line}`,
+    color: t.ink,
+    maxWidth: 320,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+
   return (
-    <div style={{ flex: 1, overflow: 'auto', background: theme.color.bg }}>
+    <div style={{ flex: 1, overflow: 'auto', background: t.surface, minWidth: 0 }}>
       {controller.streaming && (
         <div
           style={{
-            padding: `${theme.space.xs} ${theme.space.md}`,
-            background: theme.color.streaming,
-            color: theme.color.text,
-            fontSize: theme.font.size.sm,
+            position: 'sticky',
+            top: 0,
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: space.px8,
+            padding: `${space.px6}px ${space.px12}px`,
+            background: t.accentSoft,
+            color: t.ink,
+            fontFamily: typography.ui,
+            fontSize: typography.size.sm,
+            borderBottom: `1px solid ${t.line}`,
           }}
         >
+          <span
+            className="tt-pulse"
+            style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }}
+          />
           Streaming results…
         </div>
       )}
       <table
         style={{
           borderCollapse: 'collapse',
-          fontFamily: theme.font.mono,
-          fontSize: theme.font.size.md,
+          fontFamily: typography.mono,
+          fontSize: typography.size.sm,
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         <thead>
           <tr>
-            <th style={{ ...headerCell, cursor: 'default', color: theme.color.textDim }}>#</th>
+            <th
+              style={{
+                ...headerCell,
+                textAlign: 'right',
+                color: t.ink4,
+                fontFamily: typography.mono,
+                fontWeight: 400,
+              }}
+            >
+              #
+            </th>
             {columns.map((col) => (
               <th
                 key={col}
+                className="tt-th"
                 draggable
                 onDragStart={() => setDragCol(col)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => dropOn(col)}
+                title="Drag to reorder"
                 style={{
                   ...headerCell,
-                  background: dragCol === col ? theme.color.accentDim : theme.color.headerBg,
+                  cursor: 'grab',
+                  background: dragCol === col ? t.accentSoft : t.surface2,
                 }}
-                title="Drag to reorder"
               >
-                {col}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6 }}>
+                  <span className="tt-grip" style={{ color: t.ink4 }}>
+                    <Icon name="grip" size={12} />
+                  </span>
+                  {col}
+                </span>
               </th>
             ))}
           </tr>
@@ -128,17 +227,30 @@ export function TableView({ controller }: { controller: WebController }): ReactN
         <tbody>
           {rows.map((row, ri) => (
             <tr key={ri}>
-              <td style={{ ...bodyCell, color: theme.color.textDim, textAlign: 'right' }}>{ri + 1}</td>
+              <td
+                style={{
+                  ...bodyCell,
+                  color: t.ink4,
+                  textAlign: 'right',
+                  background: t.surface2,
+                }}
+              >
+                {ri + 1}
+              </td>
               {columns.map((col) => {
                 const isEditing = editing?.row === ri && editing.col === col;
                 return (
                   <td
                     key={col}
-                    style={{ ...bodyCell, background: isEditing ? theme.color.cellEdit : undefined }}
                     title="Double-click to edit"
                     onDoubleClick={() => {
                       setEditing({ row: ri, col });
                       setDraft(cellText(row?.[col]));
+                    }}
+                    style={{
+                      ...bodyCell,
+                      padding: isEditing ? 0 : bodyCell.padding,
+                      boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : undefined,
                     }}
                   >
                     {isEditing ? (
@@ -157,13 +269,15 @@ export function TableView({ controller }: { controller: WebController }): ReactN
                         }}
                         style={{
                           width: '100%',
-                          fontFamily: theme.font.mono,
-                          fontSize: theme.font.size.md,
-                          background: theme.color.bg,
-                          color: theme.color.text,
-                          border: `1px solid ${theme.color.accent}`,
-                          borderRadius: theme.radius.sm,
-                          padding: '2px 4px',
+                          boxSizing: 'border-box',
+                          fontFamily: typography.mono,
+                          fontSize: typography.size.sm,
+                          background: t.surface,
+                          color: t.ink,
+                          border: 'none',
+                          outline: 'none',
+                          padding: `0 ${space.px10}px`,
+                          height: space.rowH,
                         }}
                       />
                     ) : (
@@ -177,7 +291,14 @@ export function TableView({ controller }: { controller: WebController }): ReactN
         </tbody>
       </table>
       {rows.length === 0 && (
-        <div style={{ padding: theme.space.lg, color: theme.color.textDim }}>
+        <div
+          style={{
+            padding: space.px16,
+            color: t.ink3,
+            fontFamily: typography.ui,
+            fontSize: typography.size.sm,
+          }}
+        >
           This table has 0 rows.
         </div>
       )}
