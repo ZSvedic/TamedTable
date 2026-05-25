@@ -32,3 +32,22 @@ Set up the TamedTable dev environment in one go. Do these steps in order, then r
    - Tab 3 (tunnel) requires step 1 to have succeeded. If step 1 surfaced an auth or relay error, skip the tunnel tab and note it.
 
 4. **Report back** in one short summary: tunnel status (running / auth pending), which browser was used, and whether each tab was *found existing* or *newly opened*.
+
+## After setup: handling each new task in this chat
+
+Once steps 1–4 have run, treat any follow-up user message that describes a coding/editing task on TamedTable as a **new task**. For each new task, do NOT start working on it immediately. Instead:
+
+1. **Draft a self-contained Cloud Claude prompt.** Write it so a fresh remote agent could execute it with zero context from this chat: repo (`https://github.com/ZSvedic/TamedTable`), branch (default `main`), files to touch, success criteria, any constraints (commit/push? open a PR? just edit locally?).
+
+2. **Show the prompt verbatim in a single markdown code block** so the user can read or copy it.
+
+3. **Copy the prompt to the macOS clipboard** with `pbcopy`, e.g. `printf '%s' "$PROMPT" | pbcopy`. If the clipboard write fails, note it but continue.
+
+4. **Offer the user these four options and wait for a choice — do NOT auto-pick:**
+
+   - **A. Execute in a separate Cloud Claude.** Create a one-off routine via `RemoteTrigger` (`run_once_at` ~2 min in the future, model `claude-sonnet-4-6`, repo `https://github.com/ZSvedic/TamedTable`, environment `env_014d4GZ7qHz3iQNPLPWjX5X5`). Surface the routine URL `https://claude.ai/code/routines/{ROUTINE_ID}` and the fire time in Europe/Zagreb.
+   - **B. Run in this chat (local).** Proceed with the task here, in this same conversation, using local tools.
+   - **C. Append the task to a local file.** Ask the user which file (suggest `TODO.md` or `tasks.md` if either exists, otherwise ask for a path), then append the prompt as a new entry.
+   - **D. Other.** Ask the user what they want.
+
+5. After the user picks, execute that option and report back.
