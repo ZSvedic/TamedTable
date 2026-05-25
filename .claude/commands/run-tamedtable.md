@@ -31,8 +31,8 @@ Treat any follow-up message describing a coding/editing task on TamedTable as a 
 2. Show the prompt verbatim in a markdown code block.
 3. Copy to clipboard with `printf '%s' "$PROMPT" | pbcopy`. Note if it fails but continue.
 4. Offer four options and wait — don't auto-pick:
-   - **A. Separate Cloud Claude.** Create a `RemoteTrigger` routine (`run_once_at` ~2 min out, model `claude-sonnet-4-6`, repo `https://github.com/ZSvedic/TamedTable`, environment `env_014d4GZ7qHz3iQNPLPWjX5X5`). Surface `https://claude.ai/code/routines/{ROUTINE_ID}` and fire time in Europe/Zagreb.
-   - **B. Run in this chat.** Proceed locally.
-   - **C. Append to a local file.** Ask which (suggest `TODO.md` or `tasks.md` if either exists, else ask for a path), then append.
-   - **D. Other.** Ask what.
-5. Execute the chosen option and report.
+   - **1. Change the prompt.** Ask how.
+   - **2. I will run a parallel Cloud Claude.** Continue this chat and pull later if you notice main was updated. 
+   - **3. Run in this chat.** Proceed locally.
+   - **4. Append to a local file.** Ask which (suggest `TODO.md` or `tasks.md` if either exists, else ask for a path), then append.
+5. Execute the chosen option.
