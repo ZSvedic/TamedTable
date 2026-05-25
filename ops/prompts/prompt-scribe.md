@@ -36,7 +36,7 @@ Example:
 ## You may NOT modify
 
 - `src/` — implementation lives there; SCRIBE is spec-only.
-- `ops/phases/` — these are frozen planning records.
+- `ops/journal/` — these are frozen planning records.
 - `spec/test-cases/*.feature` — Gherkin tests, separate workflow.
 
 ## Editing rules
@@ -82,7 +82,7 @@ There is no `./test.sh` for TamedTable specs. Validation is interactive:
 ## Constraints
 
 - Do NOT generate app implementation code.
-- Do NOT touch `src/`, `ops/phases/`, or `spec/test-cases/*.feature`.
+- Do NOT touch `src/`, `ops/journal/`, or `spec/test-cases/*.feature`.
 - Do NOT add files outside `spec/`. (Small helper scripts in `ops/` are OK
   when the HUMAN asks for them.)
 - Every line of your prose response starts with `> ` (markdown blockquote).
