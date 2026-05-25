@@ -60,6 +60,53 @@ Feature: Web front-end
       And user saves as "datanorm-output.jsonl"
       Then the file is delivered as a download
 
+  Rule: A URL is a first-class load source
+
+    @web
+    Scenario: Opening the URL dialog shows it
+      Given the TamedTable web app
+      When user opens the URL dialog
+      Then the URL dialog is shown
+
+    @web
+    Scenario: Closing the URL dialog hides it
+      Given the TamedTable web app
+      And the URL dialog is already open
+      When user closes the URL dialog
+      Then the URL dialog is hidden
+
+    @web
+    Scenario: Loading a CSV from a URL renders the table
+      Given the TamedTable web app
+      And the URL "https://example.com/datanorm-input.csv" serves "datanorm-input.csv"
+      When user loads from URL "https://example.com/datanorm-input.csv"
+      Then table displays the header and at least the first 5 rows
+
+    @web
+    Scenario: Loading a JSONL from a URL renders the table
+      Given the TamedTable web app
+      And the URL "https://example.com/datanorm-input.jsonl" serves "datanorm-input.jsonl"
+      When user loads from URL "https://example.com/datanorm-input.jsonl"
+      Then table displays the header and at least the first 5 rows
+
+    @web
+    Scenario: A non-http URL is rejected with a clear error
+      Given the TamedTable web app
+      When user tries to load URL "ftp://example.com/data.csv"
+      Then loading fails with "http"
+
+    @web
+    Scenario: An invalid URL string is rejected with a clear error
+      Given the TamedTable web app
+      When user tries to load URL "not-a-url"
+      Then loading fails with "valid URL"
+
+    @web
+    Scenario: An empty URL is rejected
+      Given the TamedTable web app
+      When user tries to load URL ""
+      Then loading fails with "Enter a URL"
+
   Rule: Browser gestures produce spec patches
 
     Background:

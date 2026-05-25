@@ -488,7 +488,33 @@ WebController.activityStatus(): 'idle' | 'running' | 'saved';
 // model — async: rebuilds the engine with the new model and replays
 // the current spec against the source, preserving the loaded table
 WebController.setModel(model: string): Promise<void>;
+
+// open sources — local file, remote URL, or a bundled sample (samples
+// are surfaced inside the URL dialog as one-click "fill the URL"
+// entries, not a separate code path)
+WebController.openCsv(): Promise<void>;          // native file picker → load
+WebController.openUrlDialog(): void;             // show Open URL dialog
+WebController.closeUrlDialog(): void;
+WebController.urlDialogOpen: boolean;
+WebController.loadFromUrl(url: string): Promise<void>;  // fetch + load
+
+// helpers exported from the web package
+function detectFormat(pathname: string, contentType: string | null): 'csv' | 'jsonl' | null;
 ```
+
+`loadFromUrl` validates the URL shape (http/https only), `GET`s the
+body, detects the format (path extension first, `Content-Type` as
+fallback), and routes the bytes through the same `loadFromPicked`
+path local files use. Failures throw; the dialog catches and renders
+the message inline and stays open. `WebControllerOptions.fetch`, when
+present, replaces the global `fetch` used here — the same hook the
+engine uses for cassette replay, so URL-load scenarios run offline.
+
+The toolbar's split-button (`SplitButton`) and the empty-state card's
+split-button share one component: the primary action opens the URL
+dialog, the dropdown carries **Open local…**. The two halves render
+inside one rounded shell with a single hover tint and no internal
+divider, so the pair reads as one control.
 
 ## V2.5
 

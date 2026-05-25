@@ -556,9 +556,10 @@ export class WebController {
       throw new Error('Only http:// and https:// URLs are supported.');
     }
 
+    const doFetch = this.opts.fetch ?? fetch;
     let response: Response;
     try {
-      response = await fetch(parsed.toString(), { redirect: 'follow' });
+      response = await doFetch(parsed.toString(), { redirect: 'follow' });
     } catch (e) {
       // A network/CORS failure surfaces as a TypeError with no useful
       // detail in the browser. Rewrite to something the user can act on.
