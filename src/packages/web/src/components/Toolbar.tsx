@@ -4,6 +4,7 @@ import type { WebController } from '../controller.ts';
 import { useController } from '../useController.ts';
 import { useTheme, useThemeControls } from '../useTheme.tsx';
 import { Button } from './Button.tsx';
+import { SplitButton } from './SplitButton.tsx';
 import { Lockup } from './Brand.tsx';
 import { Icon } from './Icons.tsx';
 
@@ -59,10 +60,18 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
 
       <div style={{ flex: 1 }} />
 
-      <Button onClick={() => void controller.openCsv()} disabled={busy} title="Open a CSV or JSONL file">
+      <SplitButton
+        onClick={() => controller.openUrlDialog()}
+        disabled={busy}
+        title="Open a CSV or JSONL file from a URL"
+        caretTitle="More open options"
+        menu={[
+          { label: 'Open local…', onClick: () => void controller.openCsv() },
+        ]}
+      >
         <Icon name="folder" />
-        Open file
-      </Button>
+        Open URL…
+      </SplitButton>
       <Button onClick={() => void controller.saveData()} disabled={!loaded || busy} title="Save the current rows">
         <Icon name="save" />
         Save data
