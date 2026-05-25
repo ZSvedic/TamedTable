@@ -19,4 +19,4 @@ Select columns,#Select,V1,V1,V4,-,-,-,-
 Sort rows,#Sort,V1,V1,V4,spec/test-cases/sort.feature,3,0,2026-05-25 17:31
 SQL expressions,#SQL,V2,V2,V4,spec/test-cases/sql.feature,3,7,2026-05-25 17:31
 Tabular format output,#Convert,V2,V2,V4,spec/test-cases/convert.feature,10,0,2026-05-25 17:31
-Web UI,#WebUI,-,-,V4,spec/test-cases/web.feature,20,0,2026-05-25 17:31
+Web UI,#WebUI,-,-,V4,spec/test-cases/web.feature,27,0,2026-05-25 19:59

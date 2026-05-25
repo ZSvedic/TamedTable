@@ -646,12 +646,34 @@ half-applied spec change reverts.
 
 V2 ships a browser front-end that mirrors the CLI's interaction shape
 — a chat sidebar for natural-language requests and the table view to
-the right of it. CSV input arrives via an Open File dialog; `.flow`
-save uses a Save File dialog. Cell editing, scrolling, column-resize,
-and column-reorder happen through normal browser gestures but
-ultimately produce spec patches — the same shape the LLM produces —
-so undo/redo, history, and replay against the source all work
-unchanged.
+the right of it. Cell editing, scrolling, column-resize, and
+column-reorder happen through normal browser gestures but ultimately
+produce spec patches — the same shape the LLM produces — so undo/redo,
+history, and replay against the source all work unchanged.
+
+A table can be loaded from three sources: a local file, a remote
+`.csv`/`.jsonl` URL, or one of the bundled sample files. The toolbar
+offers one **Open URL or sample…** split-button: the primary click
+opens the URL dialog (which also lists the bundled samples — picking
+one fills the URL field), and the small dropdown reveals **Open
+local…**, which raises the native file picker. The empty-state card
+shown before any file is loaded mirrors that same split-button, so the
+two surfaces stay in sync. The split-button is rendered as a single
+control — one rounded shell, one shared hover tint, no internal
+divider between the label and the dropdown chevron — so it reads as
+one toolbar item rather than two adjacent menu entries. `.flow` save
+uses a Save File dialog as before.
+
+A URL load is a plain `GET` against the entered address; the format is
+detected from the path extension first and from the `Content-Type`
+header as a fallback. Only `http://` and `https://` URLs are accepted;
+`http://` shows a soft "unencrypted" hint but is not refused. Network
+or CORS failures, non-2xx responses, and unrecognized formats surface
+as inline errors inside the dialog, which stays open so the user can
+correct the URL — the dialog does not produce a toast for these.
+Bundled sample files live under the deployed site's `samples/`
+directory; their list is frozen at build time by the Vite config and
+surfaced inside the URL dialog as a one-click "fill the field" list.
 
 The web shell uses the existing `Runner` interface unmodified.
 Streaming chunks fire the same callback; the front-end debounces
