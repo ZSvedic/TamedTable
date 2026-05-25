@@ -12,7 +12,7 @@ Set up the TamedTable dev environment in one go. Do these steps in order, then r
 
    Don't block. After ~5 seconds, tail `/tmp/code-tunnel.log` to confirm it printed the `vscode.dev/tunnel/tamedtable-mac/...` URL. If the log shows `error connecting to relay` or `404`, the tunnel name is in a stale state — recovery: `code tunnel unregister` then re-run with a different `--name`. If first-time GitHub device-login is needed, surface the device code.
 
-2. **Connect to my browser.** Call `list_connected_browsers`. If exactly one local browser is connected, select it. If multiple are connected, ask me which one to use.
+2. **Connect to my browser.** Call `list_connected_browsers`. If exactly one browser is connected, select it. If multiple are connected, ask me which one to use.
 
 3. **Open or reconnect to the three target tabs (idempotent — safe to run from multiple Claude chats).**
 
