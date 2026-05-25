@@ -6,6 +6,7 @@ import { Toolbar } from './components/Toolbar.tsx';
 import { ChatSidebar } from './components/ChatSidebar.tsx';
 import { TableView } from './components/TableView.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
+import { OpenUrlDialog } from './components/OpenUrlDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
 
 function AppShell({ controller }: { controller: WebController }): ReactNode {
@@ -27,6 +28,7 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
         <TableView controller={controller} />
       </div>
       <SettingsPanel controller={controller} />
+      <OpenUrlDialog controller={controller} />
       <Toasts controller={controller} />
     </div>
   );
