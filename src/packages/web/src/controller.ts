@@ -80,6 +80,30 @@ const DEFAULT_WEB_MODEL = 'claude-sonnet-4-6';
  *  the spec — so this lives on the controller, not the spec. */
 const PAGE_SIZE = 20;
 
+/** Detect the file format from a URL path and (optionally) a Content-Type
+ *  header. The path's extension wins; Content-Type only matters when the
+ *  URL has no .csv/.jsonl ending (think query-style download URLs). */
+export function detectFormat(
+  pathname: string,
+  contentType: string | null,
+): 'csv' | 'jsonl' | null {
+  const lower = pathname.toLowerCase();
+  if (lower.endsWith('.csv')) return 'csv';
+  if (lower.endsWith('.jsonl') || lower.endsWith('.ndjson')) return 'jsonl';
+  const ct = contentType?.toLowerCase() ?? '';
+  if (ct.includes('csv')) return 'csv';
+  if (ct.includes('jsonl') || ct.includes('ndjson')) return 'jsonl';
+  return null;
+}
+
+/** Derive a friendly file name from a URL — the last path segment, or a
+ *  fallback `download.<ext>` for URLs that don't expose one. */
+function sampleNameFromUrl(url: URL, format: 'csv' | 'jsonl'): string {
+  const segment = url.pathname.split('/').filter(Boolean).pop() ?? '';
+  if (segment) return segment;
+  return `download.${format}`;
+}
+
 /** Map an engine error string to a sentence a non-technical user can act on. */
 export function userFacingMessage(message: string): string {
   if (message.startsWith('Runner: recovery budget exhausted'))
@@ -134,6 +158,9 @@ export class WebController {
   settings: WebSettings;
   settingsOpen = false;
   dialog: DialogKind = null;
+  /** Whether the Open URL modal dialog is showing. Independent of `dialog`,
+   *  which tracks an in-flight native picker handshake. */
+  urlDialogOpen = false;
   streaming = false;
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
@@ -499,6 +526,59 @@ export class WebController {
       'assistant',
       `Loaded ${picked.name} — ${this.currentRows().length} rows, ${this.currentSpec().columns.length} columns.`,
     );
+  }
+
+  /** Show the Open URL modal dialog. */
+  openUrlDialog(): void {
+    this.urlDialogOpen = true;
+    this.notify();
+  }
+
+  /** Hide the Open URL modal dialog. */
+  closeUrlDialog(): void {
+    this.urlDialogOpen = false;
+    this.notify();
+  }
+
+  /** Fetch a CSV or JSONL from `url` and render it like a local-file open.
+   *  Throws on any failure so the dialog can keep itself open with an
+   *  inline error; success closes the dialog at the caller. */
+  async loadFromUrl(url: string): Promise<void> {
+    const trimmed = url.trim();
+    if (!trimmed) throw new Error('Enter a URL.');
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      throw new Error('That doesn’t look like a valid URL.');
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Only http:// and https:// URLs are supported.');
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(parsed.toString(), { redirect: 'follow' });
+    } catch (e) {
+      // A network/CORS failure surfaces as a TypeError with no useful
+      // detail in the browser. Rewrite to something the user can act on.
+      throw new Error(
+        `Couldn’t fetch ${parsed.hostname} — network error or CORS blocked. (${(e as Error).message})`,
+      );
+    }
+    if (!response.ok) {
+      throw new Error(`Fetch failed: HTTP ${response.status} ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    const format = detectFormat(parsed.pathname, contentType);
+    if (!format) {
+      throw new Error('Could not detect format. URL must end in .csv or .jsonl.');
+    }
+
+    const text = await response.text();
+    const name = sampleNameFromUrl(parsed, format);
+    await this.loadFromPicked({ name, text });
   }
 
   /** Save the current flow (replayable spec) via the Save dialog. */
