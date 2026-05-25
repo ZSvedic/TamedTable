@@ -26,10 +26,14 @@ function samplesPlugin(): Plugin {
     name: 'tamedtable-samples',
     configureServer(server) {
       // Dev: serve the sample files straight from spec/test-cases/ — no
-      // pre-copy step needed when iterating locally.
+      // pre-copy step needed when iterating locally. The base prefix
+      // (e.g. /TamedTable/) is part of the incoming URL because this
+      // middleware runs ahead of Vite's base rewriting.
+      const base = server.config.base.replace(/\/$/, '');
+      const re = new RegExp(`^${base}/samples/([^?#]+)`);
       server.middlewares.use((req, _res, next) => {
         const url = req.url ?? '';
-        const match = url.match(/^\/samples\/([^?#]+)/);
+        const match = url.match(re);
         if (!match || !match[1]) return next();
         const name = match[1];
         if (!sampleFiles.includes(name)) return next();
