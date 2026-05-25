@@ -6,4 +6,5 @@ temp/*
 .DS_Store
 .env
 .env.local
-.claude/
+.claude/settings.local.json
+.claude/cache/
