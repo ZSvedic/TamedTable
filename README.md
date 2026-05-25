@@ -178,7 +178,7 @@ That loads WoZ. Every message you type is independently classified by its first 
 
 Visual: WoZ output appears in fenced code blocks (terminal-shaped — that's the simulated TamedTable output). SCRIBE responses appear as markdown blockquotes (every line prefixed with `> `, mirroring your input prefix).
 
-SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or `spec/prompt-app-edit.md` (prompt tuning). It never touches `src/`, `ops/phases/`, or `spec/test-cases/*.feature`.
+SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or `spec/prompt-app-edit.md` (prompt tuning). It never touches `src/`, `ops/journal/`, or `spec/test-cases/*.feature`.
 
 For V2 web-UI questions WoZ produces a Claude artifact or writes a sketch to `temp/` rather than refusing.
 

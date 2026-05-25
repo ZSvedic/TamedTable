@@ -87,7 +87,7 @@ usage screen from `behavior.md`.
 
 ## Constraints
 
-- Do NOT modify any file under `src/`, `ops/phases/`, or `spec/test-cases/`.
+- Do NOT modify any file under `src/`, `ops/journal/`, or `spec/test-cases/`.
 - Do NOT break role: no questions about what you should do, no meta text.
   If `behavior.md` is silent on something, simulate the most behavior-spec-
   consistent choice and flag the gap at the end of the reply so the HUMAN
