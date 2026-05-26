@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { typography } from './theme.ts';
+import { typography } from './lib/theme.ts';
 import type { WebController } from './controller.ts';
-import { ThemeProvider, useTheme } from './useTheme.tsx';
+import { ThemeProvider, useTheme } from './hooks/useTheme.tsx';
 import { Toolbar } from './components/Toolbar.tsx';
 import { ChatSidebar } from './components/ChatSidebar.tsx';
 import { TableView } from './components/TableView.tsx';

@@ -1,9 +1,9 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
+import { space, typography } from '../lib/theme.ts';
 import type { ChatMessage, WebController } from '../controller.ts';
-import { useController } from '../useController.ts';
-import { useTheme } from '../useTheme.tsx';
-import type { Theme } from '../theme.ts';
+import { useController } from '../hooks/useController.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
+import type { Theme } from '../lib/theme.ts';
 import { Icon } from './Icons.tsx';
 
 function UserBubble({ t, children }: { t: Theme; children: ReactNode }): ReactNode {

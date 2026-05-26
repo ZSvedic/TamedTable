@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { createWebController } from './controller.ts';
-import type { FilePort, PickedFile, SaveOutcome } from './ports.ts';
+import type { FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
 
 const STORAGE_KEY = 'tamedtable.apiKey';
 
