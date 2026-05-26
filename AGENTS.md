@@ -14,14 +14,16 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 
 ## Workflow rule — changing a component
 
-When you change observable behavior of `cli`, `core`, `headless`, or `web`, update in this order:
+When you change observable behavior of `cli`, `core`, `headless`, or `web`, update in this order — spec first, then tests, then implementation:
 
-1. `src/packages/<name>/` — the implementation.
-2. `spec/behavior.md` and `spec/code-contract.md` — the matching section.
-3. `spec/test-cases/*.feature` — if external behavior changed.
-4. `cd src && bun run test`. Must be green before commit.
+1. `spec/behavior.md` and `spec/code-contract.md` — write or update the matching section first.
+2. `spec/test-cases/*.feature` — add or update the Gherkin scenario.
+3. `src/tests/*.steps.ts` — write or update step definitions. Run the suite; the new behavior should be **red** (the implementation hasn't moved yet).
+4. `src/packages/<name>/` — implement until the suite goes **green**.
+5. `cd src && bun run test`. Confirm green before commit.
+6. Open the PR.
 
-Pure refactors that preserve behavior touch only steps 1 and 4.
+Pure refactors that preserve behavior touch only steps 4 and 5 — no spec or Gherkin change.
 
 ## Writing markdown
 
