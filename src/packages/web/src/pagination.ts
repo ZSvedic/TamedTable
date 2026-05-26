@@ -1,6 +1,6 @@
 // Pure pagination helpers — no React, no controller state. The WebController
 // uses clampPage; the Pagination component uses buildPageList. Unit-tested in
-// ../pagination.test.ts.
+// ./pagination.test.ts.
 
 /** Clamp a 1-based page index into [1, pageCount]. */
 export function clampPage(page: number, pageCount: number): number {
