@@ -17,8 +17,8 @@ import {
   type RequestDebugInfo,
 } from '@tamedtable/headless';
 import type { Row, Spec } from '@tamedtable/core';
-import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './ports.ts';
-import { clampPage } from './pagination.ts';
+import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
+import { clampPage } from './lib/pagination.ts';
 
 export interface WebControllerOptions {
   /** File input/output port (browser dialogs, or a test stub). */

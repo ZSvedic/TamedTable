@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createWebController } from './controller.ts';
-import { BrowserFilePort } from './browser-fs.ts';
+import { BrowserFilePort } from './lib/browser-fs.ts';
 import { App } from './App.tsx';
 import './index.css';
 

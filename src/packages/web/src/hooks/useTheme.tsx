@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { darkTheme, lightTheme, type Theme } from './theme.ts';
+import { darkTheme, lightTheme, type Theme } from '../lib/theme.ts';
 
 export type ThemeMode = 'light' | 'dark';
 

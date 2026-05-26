@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
+import { space, typography } from '../lib/theme.ts';
 import type { WebController } from '../controller.ts';
-import { useTheme } from '../useTheme.tsx';
-import { buildPageList } from '../pagination.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
+import { buildPageList } from '../lib/pagination.ts';
 import { Icon } from './Icons.tsx';
 
 export function Pagination({ controller }: { controller: WebController }): ReactNode {

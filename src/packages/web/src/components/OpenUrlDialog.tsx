@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
+import { space, typography } from '../lib/theme.ts';
 import type { WebController } from '../controller.ts';
-import { useController } from '../useController.ts';
-import { useTheme } from '../useTheme.tsx';
+import { useController } from '../hooks/useController.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
 import { Button } from './Button.tsx';
 import { Icon } from './Icons.tsx';
 

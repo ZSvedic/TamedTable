@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
-import { useTheme } from '../useTheme.tsx';
+import { space, typography } from '../lib/theme.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
 import { Icon } from './Icons.tsx';
 
 interface MenuItem {
