@@ -2,7 +2,7 @@
 
 Goal: turn V1 Gherkin into executable **failing** tests. The compile/runtime errors become input for phase-3 (API spec).
 
-Prerequisites: Q1–Q15 in [phase-1-pre-spec.md](phase-1-pre-spec.md) and [conventions.md](../conventions.md).
+Prerequisites: Q1–Q15 in [phase-1-pre-spec.md](2026-05-14-phase-1-pre-spec.md) and [conventions.md](../conventions.md).
 
 ## Backlog
 
