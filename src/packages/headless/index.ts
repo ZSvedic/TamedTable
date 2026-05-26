@@ -169,6 +169,16 @@ function isCancelled(e: unknown): boolean {
   return (e as Error)?.message === CANCELLED;
 }
 
+// DuckDB returns BIGINT columns as JS bigints. Downstream consumers (JSON.stringify
+// in writeJsonl, the cell-update onChunk listener, test assertions) can't handle
+// bigints, so coerce to Number when it fits safely and to a string otherwise.
+function normalizeSqlValue(v: unknown): unknown {
+  if (typeof v !== 'bigint') return v;
+  return v >= BigInt(Number.MIN_SAFE_INTEGER) && v <= BigInt(Number.MAX_SAFE_INTEGER)
+    ? Number(v)
+    : v.toString();
+}
+
 function compileJs(body: string): (row: Row, i: number, rows: Row[]) => unknown {
   const src = body.trim();
   try {
@@ -514,6 +524,17 @@ export function validateTemplate(template: string, rows: Row[]): void {
 
 // ── Prompt builders for the recovery loop ───────────────────────────────────
 
+// Recovery guidance appended to every retry prompt. Generic: it applies to any
+// transformation that can throw at evaluation time, not just SQL date parsing.
+// The goal is to break the LLM out of "try another rigid format" loops by
+// pointing it at the defensive primitives DuckDB and JS already offer.
+const RECOVERY_GUIDANCE = [
+  'The previous attempt errored on real data. Read the error, identify which input the runtime could not handle, and emit a patch that no longer throws on that input.',
+  'Prefer defensive primitives over a second rigid guess: in DuckDB use `try_cast`/`try_strptime(col, [fmt1, fmt2, …])`/`nullif`/`CASE WHEN` so unhandled rows yield NULL instead of aborting the query; in JS guard with `?.` and `??` and check `typeof`/`Array.isArray` before indexing.',
+  'Letting truly unrecoverable rows surface as NULL is fine — the caller can detect or filter them. Only wrap in `COALESCE(expr, <default>)` if the user explicitly asked for a fallback value.',
+  'Do not just retry the same shape with a different literal — the next emission must be measurably more permissive than the one that failed.',
+].join(' ');
+
 function buildPrompt(text: string, spec: Spec, errPrefix?: string): string {
   // The LLM edits transformations/columns/view-ops — never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
@@ -521,7 +542,7 @@ function buildPrompt(text: string, spec: Spec, errPrefix?: string): string {
   const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
   const specJson = JSON.stringify(llmSpec, null, 2);
   if (!errPrefix) return `Current spec:\n${specJson}\n\nUser request: ${text}`;
-  return `${errPrefix}\n\nCurrent spec:\n${specJson}\n\nOriginal user request: ${text}\n\nEmit a corrected patch.`;
+  return `${errPrefix}\n\nCurrent spec:\n${specJson}\n\nOriginal user request: ${text}\n\nEmit a corrected patch.\n\n${RECOVERY_GUIDANCE}`;
 }
 
 type PatchAttempt = { kind: 'ok'; spec: Spec } | { kind: 'err'; message: string };
@@ -1088,7 +1109,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         () => conn.runAndReadAll(`SELECT (${sqlFragment}) AS r FROM t`),
         signal
       );
-      return reader.getRowObjects().map((r) => (r as { r: unknown }).r);
+      return reader.getRowObjects().map((r) => normalizeSqlValue((r as { r: unknown }).r));
     } catch (e) {
       if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
       throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
@@ -1110,7 +1131,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         signal
       );
       const out = reader.getRowObjects();
-      return out.length > 0 ? (out[0] as { r: unknown }).r : null;
+      return out.length > 0 ? normalizeSqlValue((out[0] as { r: unknown }).r) : null;
     } catch (e) {
       if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
       throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
