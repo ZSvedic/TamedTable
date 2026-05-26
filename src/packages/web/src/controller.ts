@@ -72,6 +72,40 @@ interface JournalEntry {
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
 
+/** localStorage key under which the Anthropic API key is persisted client-side
+ *  so the user does not have to re-enter it on every page load. */
+const API_KEY_STORAGE = 'tamedtable.apiKey';
+
+/** Read the stored API key, if any. Returns null in headless/test environments
+ *  with no DOM, or when localStorage access throws (Safari private mode etc.). */
+function readStoredApiKey(): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(API_KEY_STORAGE);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredApiKey(key: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(API_KEY_STORAGE, key);
+  } catch {
+    // Swallow: storage may be unavailable or quota-bound; the in-memory key
+    // still works for this session.
+  }
+}
+
+function removeStoredApiKey(): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.removeItem(API_KEY_STORAGE);
+  } catch {
+    // Swallow as above.
+  }
+}
+
 /** Patch-turn model used when the caller picks none. Matches the engine's
  *  own default so recorded test cassettes keep matching. */
 const DEFAULT_WEB_MODEL = 'claude-sonnet-4-6';
@@ -175,7 +209,8 @@ export class WebController {
     this.opts = opts;
     this.file = opts.file;
     this.workDir = opts.workDir ?? 'tamedtable-web-work';
-    this.settings = { apiKey: opts.apiKey ?? null, model: opts.model ?? DEFAULT_WEB_MODEL };
+    const initialKey = opts.apiKey ?? readStoredApiKey();
+    this.settings = { apiKey: initialKey ?? null, model: opts.model ?? DEFAULT_WEB_MODEL };
   }
 
   // ── Subscription (for React's useSyncExternalStore) ──────────────────────
@@ -456,11 +491,19 @@ export class WebController {
   }
 
   setApiKey(key: string): void {
-    this.settings = { ...this.settings, apiKey: key.trim() === '' ? null : key.trim() };
+    const trimmed = key.trim();
+    if (trimmed === '') {
+      removeStoredApiKey();
+      this.settings = { ...this.settings, apiKey: null };
+    } else {
+      writeStoredApiKey(trimmed);
+      this.settings = { ...this.settings, apiKey: trimmed };
+    }
     this.notify();
   }
 
   clearApiKey(): void {
+    removeStoredApiKey();
     this.settings = { ...this.settings, apiKey: null };
     this.notify();
   }
