@@ -1,6 +1,6 @@
-Read all documents in the project dir, especially [conventions.md](../conventions.md) for conventions and [phase-1-pre-spec.md](../phases/phase-1-pre-spec.md) for the Q1–Q15 decisions that constrain this phase.
+Read all documents in the project dir, especially [conventions.md](../conventions.md) for conventions and [phase-1-pre-spec.md](../journal/2026-05-14-phase-1-pre-spec.md) for the Q1–Q15 decisions that constrain this phase.
 
-Then execute the backlog in [phase-2-tests.md](../phases/phase-2-tests.md) to bring V1 Gherkin scenarios to the TDD red phase.
+Then execute the backlog in [phase-2-tests.md](../journal/2026-05-14-phase-2-tests.md) to bring V1 Gherkin scenarios to the TDD red phase.
 
 Process:
 - Execute backlog items in order (test runner → scaffolding → fixtures → step defs → red verification).

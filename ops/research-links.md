@@ -53,7 +53,7 @@
 ### RowRanger
 - No software product, GitHub repo, or npm package found with this exact name.
 - Adjacent hits — one notable semantic collision:
-  - **Apache Ranger** — does "row-level filtering and column-masking" for Hive/big-data, which is uncomfortably close to what "RowRanger" suggests semantically. Worth flagging as a possible mental-model collision for data engineers: https://cwiki.apache.org/confluence/display/RANGER/Row-level+filtering+and+column-masking+using+Apache+Hive+policies+in+Apache+Hive
+  - **Apache Ranger** — does "row-level filtering and column-masking" for Hive/big-data, which is uncomfortably close to what "RowRanger" suggests semantically. Worth flagging as a possible mental-model collision for data engineers. <!-- link removed: cwiki.apache.org RANGER "Row-level filtering and column-masking using Apache Hive policies in Apache Hive" page is no longer reachable -->
   - Rank Ranger — SEO tool, unrelated: https://www.warebuy.com/product/rank-ranger-software/
   - `ranger` npm package and various `*-ranger` packages exist: https://www.npmjs.com/package/ranger, https://www.npmjs.com/package/react-ranger
 - Pros: punchy, alliterative, Western-frontier personality; short (9 chars); evokes scanning/patrolling rows which fits CSV cleanup well.
