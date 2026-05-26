@@ -2,10 +2,10 @@ name: Link check
 
 on:
   workflow_dispatch:
+  # Always run on PRs so the required-status-check gate can rely on it,
+  # even for PRs that touch no markdown. The lychee cache keeps a no-op
+  # rerun under ~30s.
   pull_request:
-    paths:
-      - '**/*.md'
-      - '.github/workflows/link-check.yml'
   push:
     branches: [main]
     paths:
