@@ -6,7 +6,9 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 
 | Need | Go to |
 |---|---|
-| Behavior, types, env vars, exit codes, prompts | [spec/spec.md](spec/spec.md) |
+| What the user sees, what the system does | [spec/behavior.md](spec/behavior.md) |
+| Types, env vars, exit codes | [spec/code-contract.md](spec/code-contract.md) |
+| LLM prompts (spec-editor + per-cell) | [spec/prompt-app-edit.md](spec/prompt-app-edit.md) |
 | How to run anything (CLI / web / tests) | [README.md](README.md) |
 | Repo layout and tooling rationale | [ops/conventions.md](ops/conventions.md) |
 | How to write any markdown you add | [ops/writing-style.md](ops/writing-style.md) |

@@ -24,7 +24,6 @@ Conventions for everything under `spec/`. Modeled on the PonyPen spec dir and th
 - ASCII diagrams welcome when they earn their keep — lifecycle, data flow, state.
 
 ## Structure
-- `spec.md` is a thin hub: a one-line role description per sub-doc, nothing else.
 - Each sub-doc opens with two sentences — what this thing owns, what it explicitly does not own.
 - The second section is always a worked example, so readers see concrete usage before details. For surfaces with multiple modes (REPL + batch, factory + process entry), show one example per mode.
 - Section headers follow the natural shape of the thing (Lifecycle, Methods, Format), not a fixed template. No "Scope" / "Out of scope" headers if the opener already does that work.
