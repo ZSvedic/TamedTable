@@ -11,12 +11,7 @@ Organized by **lifecycle**, not by file type:
 ```
 TamedTable/                  root holds only README.md, LICENSE, .gitignore
 ├── ops/                     how the project is built; never deployed
-│   ├── prompts/             reusable prompt templates
-│   │   ├── prompt-woz.md       WoZ — interactive behavior simulator
-│   │   ├── prompt-scribe.md    SCRIBE — spec editor (paired with WoZ)
-│   │   └── prompt-*.md         frozen phase-3 / phase-4 templates
-│   ├── phases/              per-phase backlogs + the Q1–Q15 decision record
-│   ├── status-reports/      session-by-session audit trail
+│   ├── prompts/             reusable session starters — see AGENTS.md
 │   ├── repo-tracking/       commit-size script + chart generator
 │   ├── conventions.md       stack, layout & dev-process conventions
 │   └── research-links.md    name origin + library evaluations
