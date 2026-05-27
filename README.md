@@ -154,7 +154,7 @@ For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
 
 ## Iterate on the spec with WoZ and SCRIBE
 
-WoZ (Wizard-of-Oz) and SCRIBE let you iterate TamedTable's behavior interactively without running the implementation. WoZ simulates what TamedTable would do from `spec/behavior.md` + `spec/prompt-app-edit.md` only; when WoZ reveals a gap or surprise, SCRIBE updates the spec.
+WoZ (Wizard-of-Oz) and SCRIBE let you iterate TamedTable's behavior interactively without running the implementation. WoZ simulates what TamedTable would do from `spec/behavior.md` only; when WoZ reveals a gap or surprise, SCRIBE updates the spec.
 
 In a fresh Claude Code session at the repo root:
 
@@ -168,14 +168,11 @@ That loads WoZ. Every message you type is independently classified by its first 
 | Prefix | Persona | Use for |
 |---|---|---|
 | `> <note>` | SCRIBE | Spec edits: `> change the wording of :undo to …`, `> pin the page size at 20`. One-shot — the next message without a `>` prefix returns to WoZ automatically. |
-| `:cmd ...` | WoZ — deterministic | Simulated TamedTable REPL commands: `:help`, `:load file.csv`, `:undo`, `:save out.jsonl`, `:save-flow out.flow`, `:exit`. (The REPL uses `:` instead of `/` because `/` is intercepted by Claude Code and other CLI agents.) |
-| anything else | WoZ — default | NL transformation requests (`normalize phone numbers`, `drop duplicate emails`) emit the JSON Patch the spec-editor LLM would produce per `prompt-app-edit.md`. For `{llm:…}` columns, WoZ appends 3–5 synthesized sample cell values (plausible, not golden) — prefix `patch only:` to suppress. `execute <flow>` / `--flag` invocations reproduce CLI behavior byte-for-byte. |
+| anything else | WoZ | Simulate the app's response from `spec/behavior.md`. |
 
 Visual: WoZ output appears in fenced code blocks (terminal-shaped — that's the simulated TamedTable output). SCRIBE responses appear as markdown blockquotes (every line prefixed with `> `, mirroring your input prefix).
 
-SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or `spec/prompt-app-edit.md` (prompt tuning). It never touches `src/`, `ops/journal/`, or `spec/test-cases/*.feature`.
-
-For V2 web-UI questions WoZ produces a Claude artifact or writes a sketch to `temp/` rather than refusing.
+SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or any LLM prompt files the spec references (prompt tuning). It never touches `src/`, `ops/journal/`, or `spec/test-cases/*.feature`.
 
 ## Known limitations
 
