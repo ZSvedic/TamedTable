@@ -15,10 +15,10 @@ type Expr =
   | { llm: string; model?: string };             // prompt template, {Column} + {*} placeholders
 
 type Transformation =
-  | { kind: "filter";   pred: Expr }
-  | { kind: "mutate";   columns: string | string[]; value: Expr }
-  | { kind: "select";   columns: string[] }
-  | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }> }
+  | { kind: "filter";   pred: Expr }                                             // #FilterRows #Dedupe
+  | { kind: "mutate";   columns: string | string[]; value: Expr }               // #DataNorm
+  | { kind: "select";   columns: string[] }                                     // #ColSelect
+  | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }> } // #SortRows
   | { kind: "group";    by: Array<Expr | string>; agg: Record<string, Expr> }    // V2
   | { kind: "join";     with: string; on: Expr; how?: "inner" | "left" }         // V2
   | { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }  // V2
@@ -119,11 +119,11 @@ interface HeadlessRunnerOptions {
   recoveryBudget?: number;
   maxRetries?: number;
   rpm?: number;
-  onChunk?: (update: ChunkUpdate) => void;
+  onChunk?: (update: ChunkUpdate) => void;     // #LLMCells
   onPlan?: (items: PlanItem[]) => void;
-  onDebug?: (info: RequestDebugInfo) => void;
-  signal?: AbortSignal;
-  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  onDebug?: (info: RequestDebugInfo) => void;  // #DebugOut
+  signal?: AbortSignal;       // #CancelOp
+  fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;  // #Cassettes
 }
 
 type PlanItem =
@@ -180,7 +180,7 @@ Env vars:
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a per-turn debug block after a failed request. Set to `0`, `false`, or `off` to disable. |
 
-### Recording model calls for tests
+### Recording model calls for tests (#Cassettes)
 
 Headless makes every model HTTP call through `fetch`.
 `createHeadlessRunner` forwards `opts.fetch` into
@@ -287,9 +287,9 @@ The CLI runner holds the viewport cursor `(rowOffset, colOffset)`, the
 viewport pins `(pinRows, pinCols)`, and the undo/redo journal — none
 of those surface on the `Runner` interface, since headless callers
 don't need them. The two help screens are the verbatim fenced blocks
-in [behavior.md §CLI/REPL](behavior.md#cli) (`:help`, in-session) and
-[behavior.md §CLI/Discovery](behavior.md#cli) (`--help` / `-h` /
-`help`, binary invocation), both loaded as strings at module init and
+in [behavior.md §CLI/REPL](behavior.md#cli) (`:help`, in-session) <!-- #ReplCmds -->
+and [behavior.md §CLI/Discovery](behavior.md#cli) (`--help` / `-h` /
+`help`, binary invocation), <!-- #CliFlags --> both loaded as strings at module init and
 emitted unchanged. `runCli` returns instead of calling `process.exit`
 so callers can decide what to do with a failure.
 
@@ -303,8 +303,8 @@ so callers can decide what to do with a failure.
 }
 ```
 
-`:save-flow` writes `version: 2`. `execute` accepts a `version` of `1` or
-`2` and validates the spec against the single schema either way; any
+`:save-flow` writes `version: 2`. `execute` <!-- #BatchExec --> accepts a `version` of `1`
+or `2` and validates the spec against the single schema either way; any
 other `version` exits 2. A relative `source` is read relative to the
 `.flow` file's own directory; `--input` overrides it.
 
@@ -351,7 +351,7 @@ type union above (`group`, `join`, `{sql}`) parse against the V2 Zod
 schema; in V1 mode the schema still rejects them with the *"V2 feature
 in V1 spec"* error.
 
-### CSV (and other tabular) output
+### CSV (and other tabular) output (#FormatOut)
 
 `writeCsv` mirrors the `writeJsonl` signature:
 
@@ -371,7 +371,7 @@ quoting, `\n` line endings, and no BOM. Nested values
 throws the *"unknown file type"* error, surfaced inline by the REPL
 and as exit code 4 by `tamedtable execute`.
 
-### `group` and `join` transformations
+### `group` and `join` transformations (#Aggregate #LookupJoin)
 
 ```ts
 interface GroupTransform { kind: "group"; by: Array<Expr | string>; agg: Record<string, Expr>; }
@@ -393,7 +393,7 @@ permits these two `kind` values and enforces a `.csv`/`.jsonl`
 extension for `join.with` (other extensions error at validation time,
 not at evaluation).
 
-### `split`, `validate`, `pivot`, `unpivot` transformations
+### `split`, `validate`, `pivot`, `unpivot` transformations (#ColSplit #Validate #PivotData)
 
 ```ts
 interface SplitTransform    { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean; }
@@ -418,7 +418,7 @@ about this so it picks fresh names when possible.
 `pivot` and `unpivot` evaluate in JS in V2; a `{sql}` companion path
 (via DuckDB's native PIVOT/UNPIVOT) is reserved for a later release.
 
-### `{sql}` expression shape
+### `{sql}` expression shape (#SqlExpr)
 
 ```ts
 type SqlExpr = { sql: string };
@@ -450,7 +450,7 @@ DuckDB relation `t` is not unregistered on cancel.
 | `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. |
 | `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. |
 
-### Web UI
+### Web UI (#WebUI)
 
 The web app is a separate package under `src/packages/web/` (Vite +
 React; no Bun-specific APIs in the renderer code, since it ships as
@@ -545,7 +545,7 @@ The `onPlan` callback dispatch in `Runner.request` is wrapped in
 `try/catch`. `computePlan` and the callback can throw without aborting
 the request — the plan line is dropped, the commit proceeds.
 
-### `:save-py`
+### `:save-py` (#PyExport)
 
 ```ts
 interface HeadlessRunner {

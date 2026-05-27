@@ -1,3 +1,4 @@
+# #LookupJoin
 # V2: join transformation — enrich left rows from a second source.
 Feature: Lookup join
 

@@ -1,3 +1,4 @@
+// #CancelOp
 import { Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { join } from 'node:path';

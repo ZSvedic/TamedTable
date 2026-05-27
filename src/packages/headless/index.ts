@@ -158,6 +158,7 @@ const PATCH_INPUT_SCHEMA = jsonSchema<{ operations: unknown[] }>({
   additionalProperties: false,
 });
 
+// #CancelOp
 const CANCELLED = 'Runner: cancelled';
 const ANTHROPIC_EPHEMERAL = { anthropic: { cacheControl: { type: 'ephemeral' as const } } };
 
@@ -238,12 +239,14 @@ function syncColumnsToRows(spec: Spec, rows: Row[]): Spec {
 
 // ── Pure transformations ────────────────────────────────────────────────────
 
+// #FilterRows #Dedupe
 function applyFilter(rows: Row[], t: Extract<Transformation, { kind: 'filter' }>): Row[] {
   if (!('js' in t.pred)) throw new Error('filter: LLM predicates not supported in V1');
   const fn = compileJs(t.pred.js);
   return rows.filter((row, i) => Boolean(fn(row, i, rows)));
 }
 
+// #ColSelect
 function applySelect(rows: Row[], t: Extract<Transformation, { kind: 'select' }>): Row[] {
   return rows.map((row) => {
     const out: Row = {};
@@ -252,6 +255,7 @@ function applySelect(rows: Row[], t: Extract<Transformation, { kind: 'select' }>
   });
 }
 
+// #DataNorm
 function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'mutate' }> & { value: { js: string } }): Row[] {
   const cols = Array.isArray(t.columns) ? t.columns : [t.columns];
   const fn = compileJs(t.value.js);
@@ -267,6 +271,7 @@ function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'mutate' 
 
 // ── V2 transformations ────────────────────────────────────────────────────
 
+// #Validate
 function applyValidateJs(rows: Row[], t: Extract<Transformation, { kind: 'validate' }>): Row[] {
   if (!('js' in t.pred)) throw new Error('validate: LLM predicates not supported');
   const predFn = compileJs(t.pred.js);
@@ -310,6 +315,7 @@ function buildGroups(rows: Row[], by: Array<string | Expr>): GroupBuckets {
   return { order, groups };
 }
 
+// #Aggregate
 function applyGroupJs(rows: Row[], t: Extract<Transformation, { kind: 'group' }>): Row[] {
   // Build groups in first-seen order so the output preserves input order.
   const { order, groups } = buildGroups(rows, t.by);
@@ -355,6 +361,7 @@ function parseLlmParts(text: string): unknown[] {
   return trimmed.includes(',') ? trimmed.split(',').map((s) => s.trim()) : trimmed.split(/\s+/);
 }
 
+// #ColSplit
 function applySplit(rows: Row[], t: Extract<Transformation, { kind: 'split' }>): Row[] {
   // Resolve `on` once: slash-delimited strings like "/, \s*/i" parse as regex;
   // plain strings stay literal; RegExp instances pass through; {js} Expr that
@@ -406,6 +413,7 @@ function aggregateValues(values: unknown[], agg: 'sum' | 'count' | 'avg' | 'min'
   return null;
 }
 
+// #PivotData
 function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivot' }>): Row[] {
   const agg = t.agg ?? 'first';
   // Discover distinct on-values in first-seen order.
@@ -458,6 +466,7 @@ function applyUnpivot(rows: Row[], t: Extract<Transformation, { kind: 'unpivot' 
   return out;
 }
 
+// #LookupJoin
 async function applyJoin(rows: Row[], t: Extract<Transformation, { kind: 'join' }>, baseDir: string): Promise<Row[]> {
   if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
   const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
@@ -497,6 +506,7 @@ async function applyJoin(rows: Row[], t: Extract<Transformation, { kind: 'join' 
   return out;
 }
 
+// #LLMCells
 export function renderPrompt(template: string, row: Row, targetColumns?: string[]): string {
   return template.replace(/\{([^{}]+)\}/g, (_, col) => {
     if (col === '*') {
@@ -608,6 +618,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     });
   }
 
+  // #DebugOut
   private buildDebugInfo(
     userRequest: string,
     turns: RequestDebugTurn[],
@@ -691,6 +702,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     await writeRows(filePath, this.derivedRows, this.spec.columns.map((c) => c.id));
   }
 
+  // #PyExport
   async exportPython(): Promise<string> {
     this.requireLoaded();
     // Same table-path trim as a patch turn: the model sees the basename only.
@@ -907,6 +919,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   /** Sort by one or more keys. Each key is evaluated to a per-row value array
    *  up front (a {sql}/{llm} key can't be evaluated inside the comparator),
    *  then rows are ordered by comparing those arrays. */
+  // #SortRows
   private async applySortT(
     rows: Row[],
     t: Extract<Transformation, { kind: 'sort' }>,
@@ -1098,6 +1111,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
   }
 
+  // #SqlExpr
   /** Evaluates a {sql} scalar/predicate per row; returns one result per row
    *  in input order. The SQL fragment is wrapped in SELECT … FROM t. */
   private async evalSqlScalar(rows: Row[], sqlFragment: string, signal?: AbortSignal): Promise<unknown[]> {

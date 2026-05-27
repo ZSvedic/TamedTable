@@ -1,3 +1,4 @@
+# #DataNorm
 Feature: Data normalization of customer records
 
   Rule: Apply transformations to a loaded CSV

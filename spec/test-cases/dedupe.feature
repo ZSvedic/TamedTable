@@ -1,3 +1,4 @@
+# #Dedupe
 Feature: Deduplicate customer records
 
   Rule: Drop duplicate rows from a loaded CSV

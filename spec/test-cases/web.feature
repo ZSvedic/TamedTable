@@ -1,3 +1,4 @@
+# #WebUI
 # V4: web front-end — interactions that genuinely differ from the CLI.
 # Every scenario here is offline: file dialogs, the settings panel, and
 # browser gestures (cell edit, column reorder) make no model call. The

@@ -1,3 +1,4 @@
+// #LLMCells
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import type { Row } from '@tamedtable/core';

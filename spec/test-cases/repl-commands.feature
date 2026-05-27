@@ -1,3 +1,4 @@
+# #ReplCmds
 Feature: REPL commands
 
   The commands the REPL handles locally without any LLM round-trip

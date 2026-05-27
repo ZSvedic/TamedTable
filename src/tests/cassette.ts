@@ -1,3 +1,4 @@
+// #Cassettes
 // Record/replay recorder for model API calls — test infrastructure.
 // See spec/code-contract.md § Headless ("Recording model calls for tests").
 

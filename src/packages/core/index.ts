@@ -262,6 +262,7 @@ export async function writeCsv(filePath: string, rows: Row[], columnOrder: strin
   }
 }
 
+// #FormatOut
 /** Dispatch on file extension. .jsonl → writeJsonl, .csv → writeCsv. Any other
  *  extension throws an "unknown file type" error that callers surface inline. */
 export async function writeRows(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {

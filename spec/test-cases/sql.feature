@@ -1,3 +1,4 @@
+# #SqlExpr
 # V2: {sql} expression shape — DuckDB-backed predicates, scalars, aggregates.
 Feature: SQL expressions
 

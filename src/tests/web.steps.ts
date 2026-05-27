@@ -1,3 +1,4 @@
+// #WebUI
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
