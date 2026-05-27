@@ -37,6 +37,22 @@ When you change observable behavior of `cli`, `core`, `headless`, or `web`, upda
 
 Pure refactors that preserve behavior touch only steps 4 and 5 — no spec or Gherkin change.
 
+## Direct commit vs PR
+
+Open a PR when the change:
+
+- Touches code in `src/` or files the test suite covers — let CI verify.
+- Modifies `.github/` workflows, repo rulesets, or other CI/settings.
+- Bundles multiple logical units that must land together.
+
+Commit directly to `main` when the change is:
+
+- Docs-only (no `src/`, no `spec/test-cases/`, no workflows).
+- A single self-contained edit — typo, stale reference, broken link, prompt tweak.
+- Verified locally if any verification is needed.
+
+The test: "does this need CI to verify it?" If yes, PR. If no, commit.
+
 ## Writing markdown
 
 Any `.md` you add or edit follows [ops/writing-style.md](ops/writing-style.md). The same rules apply to this file.
