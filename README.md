@@ -2,8 +2,6 @@
 
 A CLI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. The full motivation is in [spec/rationale.md](spec/rationale.md); the wire-protocol idea — keeping per-turn token cost constant regardless of table size — is in [spec/behavior.md](spec/behavior.md#data-model).
 
-V1 ships a terminal CLI and a headless library; V2 adds a browser UI.
-
 ## Project layout
 
 Organized by **lifecycle**, not by file type:
@@ -91,7 +89,7 @@ Exit codes are documented in [spec/code-contract.md](spec/code-contract.md#cli).
 
 ## Run the web UI
 
-V2 adds a browser front-end — a chat sidebar for natural-language requests beside a live table view — on the same engine the CLI drives.
+A browser front-end runs on the same engine the CLI drives.
 
 Day to day, you need just one command. From the web package's folder:
 
