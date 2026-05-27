@@ -8,16 +8,16 @@ The repo is organized by **lifecycle**, not by file type — see the tree in [..
 - **Edits by the AI to `spec/test-cases/*-expected.jsonl`** (golden files) are spec changes — review them, don't treat them as routine fixture churn.
 
 ## Stack & Tooling
-- **TypeScript everywhere** (CLI, core, future web).
+- **TypeScript everywhere** (CLI, core, web).
 - **Runtime + package manager: bun** — always. All `bun` commands run from `src/` (that's where `package.json` lives). Bun executes TypeScript natively (no separate compile step).
 - **Project layout: monorepo** via bun workspaces. Packages live under `src/packages/`.
 - **Dependency stability**: `minimumReleaseAge = 604800` (7 days) in `src/bunfig.toml`.
 
 ## Phases
-- [phases/phase-1-pre-spec.md](journal/2026-05-14-phase-1-pre-spec.md) — Q1–Q15 architecture decisions (CLI surface, LLM stack, data model, harness, test strategy)
-- [phases/phase-2-tests.md](journal/2026-05-14-phase-2-tests.md) — step-definition backlog (TDD red phase)
-- [phases/phase-3-spec.md](journal/2026-05-14-phase-3-spec.md) — API spec (derived from phase-2)
-- [phases/phase-4-imp-cli.md](journal/2026-05-14-phase-4-imp-cli.md) — CLI implementation plan
+- [2026-05-14-phase-1-pre-spec.md](journal/2026-05-14-phase-1-pre-spec.md) — Q1–Q15 architecture decisions (CLI surface, LLM stack, data model, harness, test strategy)
+- [2026-05-14-phase-2-tests.md](journal/2026-05-14-phase-2-tests.md) — step-definition backlog (TDD red phase)
+- [2026-05-14-phase-3-spec.md](journal/2026-05-14-phase-3-spec.md) — API spec (derived from phase-2)
+- [2026-05-14-phase-4-imp-cli.md](journal/2026-05-14-phase-4-imp-cli.md) — CLI implementation plan
 
 ## Test fixtures
 Under `spec/test-cases/`. Naming:

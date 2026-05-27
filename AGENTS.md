@@ -46,3 +46,4 @@ Any `.md` you add or edit follows [ops/writing-style.md](ops/writing-style.md). 
 - Rewrite entries in `ops/journal/` — they are historical.
 - Add a top-level directory without reading [ops/conventions.md](ops/conventions.md).
 - Restate what's in canonical docs. Link instead.
+- Leave "future", "planned", or "deferred" language in docs after a feature ships — update those references in the same PR that implements the feature.

@@ -125,7 +125,7 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
 While an LLM transformation runs, each completed chunk fires a progress
 callback with the rows it just produced. The committed spec and rows don't
 change until the whole transformation finishes — the callback is how
-progress reaches the CLI and the future web shell.
+progress reaches the CLI and the web UI.
 
 Once per request — on success and on failure — headless reports a debug
 summary: the patch attempt of each recovery turn, the primary
@@ -788,11 +788,3 @@ are recorded here so the spec tracks the committed roadmap.
   reorder command — rather than a new spec field.
 
 → [code-contract.md — V3](code-contract.md#v3)
-
-## V4
-
-- **Web UI.** A browser front-end — a chat sidebar plus the table view
-  on the existing engine. The V2 section above sketches the web shell;
-  V4 is when it ships.
-
-→ [code-contract.md — V4](code-contract.md#v4)

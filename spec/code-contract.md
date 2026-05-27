@@ -572,10 +572,3 @@ already in the `Transformation` union (`split.on` accepts an `Expr`;
 `group.agg` accepts a `{sql}` `Expr`); the V3 work is runtime support,
 plus a `sort` `limit` field (or a `take` transformation) and a REPL
 command for CSV column order.
-
-## V4
-
-→ [behavior.md — V4](behavior.md#v4)
-
-Deferred. The web package (`src/packages/web/`) is described in the V2
-section above; V4 is when it ships.
