@@ -1,5 +1,5 @@
 Feature,ID,Headless,CLI,Web,Gherkin,Pass,Fail,Last tested
-Batch execute,#Execute,-,V1,-,-,-,-,-
+"Batch2\nexecute",#Execute,-,V1,-,-,-,-,-
 Cancellation,#Cancel,V1,V1,V4,spec/test-cases/cancelation.feature,0,3,2026-05-27 16:01
 CLI flags and discovery,#CliFlags,-,V1,-,spec/test-cases/cli-flags.feature,6,0,2026-05-27 16:01
 Column split,#Split,V2,V2,V4,spec/test-cases/colsplit.feature,8,0,2026-05-27 16:01
