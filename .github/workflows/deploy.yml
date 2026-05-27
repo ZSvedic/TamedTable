@@ -2,6 +2,16 @@ name: Deploy web app to GitHub Pages
 on:
   push:
     branches: [main]
+    paths:
+      # Only rebuild when something that affects the web bundle changes.
+      # Doc-only / ops-only commits should not redeploy.
+      - 'src/packages/web/**'
+      - 'src/packages/core/**'
+      - 'src/packages/headless/**'
+      - 'src/package.json'
+      - 'src/bun.lock'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:  # manual rebuild from the Actions tab
 permissions:
   contents: read
   pages: write
