@@ -1,3 +1,4 @@
+# #DebugOut
 # Debug block — the [debug] output the REPL prints after a
 # natural-language request. See spec/behavior.md § CLI/REPL.
 Feature: Debug output

@@ -280,6 +280,7 @@ export function renderModelName(id: string): string {
   return `${m[1]![0]!.toUpperCase()}${m[1]!.slice(1)} ${m[2]}.${m[3]}`;
 }
 
+// #DebugOut
 function formatDebugSummary(info: RequestDebugInfo): string {
   const grp = (n: number) => n.toLocaleString('en-US');
   const calls = info.modelCalls.map((m) => `${renderModelName(m.model)} ×${m.calls}`).join(', ');
@@ -638,6 +639,7 @@ async function runWithErrorRender(stdout: NodeJS.WritableStream, fn: () => Promi
 
 type ColonCommandHandler = (arg: string, runner: CliRunnerImpl, stdout: NodeJS.WritableStream) => Promise<void> | void;
 
+// #ReplCmds
 const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
   ':help'(_arg, _r, stdout) { stdout.write(HELP_TEXT); },
 
@@ -736,6 +738,7 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
     });
   },
 
+  // #PyExport
   async ':save-py'(arg, runner, stdout) {
     if (!arg) { stdout.write(':save-py: missing path\n'); return; }
     if (!arg.toLowerCase().endsWith('.py')) { stdout.write(':save-py: output must be a .py file\n'); return; }
@@ -848,6 +851,7 @@ function makeFail(stderr: string[]) {
   };
 }
 
+// #CliFlags
 export async function runCli(argv: string[], opts: CliRunnerOptions = {}): Promise<RunCliResult> {
   const stderr: string[] = [];
   const fail = makeFail(stderr);
@@ -877,6 +881,7 @@ function parseExecuteFlags(rest: string[]): { flow?: string; input?: string; out
   return out;
 }
 
+// #BatchExec
 async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string[]): Promise<RunCliResult> {
   const fail = makeFail(stderr);
   const flags = parseExecuteFlags(rest);

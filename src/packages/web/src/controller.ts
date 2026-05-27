@@ -1,3 +1,4 @@
+// #WebUI
 // WebController — the framework-agnostic core of the web shell.
 //
 // It mirrors the CLI's relationship to the engine: it wraps a headless

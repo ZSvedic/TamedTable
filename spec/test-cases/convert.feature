@@ -1,3 +1,4 @@
+# #FormatOut
 # V2: CSV output — JSONL ↔ CSV via :save and tamedtable execute.
 Feature: Tabular format output
 

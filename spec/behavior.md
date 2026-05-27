@@ -16,10 +16,10 @@ immutable source rows.
 The spec carries an ordered list of *transformations* that mutate data before
 view ops (filter, sort, page, summary) run. Four transformation kinds in V1:
 
-- **filter** — keep rows where a predicate is truthy.
-- **mutate** — set one or more columns from a value expression.
-- **select** — keep only these columns.
-- **sort** — by one or more keys, ascending or descending.
+- **filter** — keep rows where a predicate is truthy. <!-- #FilterRows -->
+- **mutate** — set one or more columns from a value expression. <!-- #DataNorm -->
+- **select** — keep only these columns. <!-- #ColSelect -->
+- **sort** — by one or more keys, ascending or descending. <!-- #SortRows -->
 
 Each carries an *expression*: either deterministic (a JS arrow-function body,
 signature `(row, index, allRows)`) or LLM-backed (a prompt template with
@@ -100,6 +100,7 @@ mistakes inline and feeds them back through the recovery loop:
 - an empty operations list;
 - a patch that applies cleanly but leaves the spec identical to before.
 
+<!-- #LLMCells -->
 LLM-backed transformations evaluate a prompt template per row. The runtime:
 
 - Renders each row's prompt by substituting `{Column}` placeholders. A
@@ -127,6 +128,7 @@ callback with the rows it just produced. The committed spec and rows don't
 change until the whole transformation finishes — the callback is how
 progress reaches the CLI and the web UI.
 
+<!-- #DebugOut -->
 Once per request — on success and on failure — headless reports a debug
 summary: the patch attempt of each recovery turn, the primary
 expression of each transformation a successful request appended, the
@@ -134,6 +136,7 @@ model calls made, the input and output token totals, and the elapsed
 time. The CLI renders this into its debug block; other callers may
 ignore it.
 
+<!-- #CancelOp -->
 Cancellation is a four-step sequence:
 
 1. Stop sending new chunks, within 2 seconds.
@@ -148,6 +151,7 @@ identical across model versions or providers. Tests that compare LLM-produced
 cells against a frozen golden file are testing one specific `(model,
 version, prompt)` triple, not the transformation contract.
 
+<!-- #Cassettes -->
 A caller can hand headless its own way of making the model's network
 calls; with none supplied, headless talks straight to the service. The
 test suite uses this to **replay recorded model responses**: each
@@ -177,7 +181,7 @@ The CLI is two things on top of headless: an interactive REPL where the user
 types natural-language requests, and a `tamedtable execute <flow>` subcommand
 that re-runs a saved spec against a CSV.
 
-### REPL
+### REPL (#ReplCmds)
 
 The REPL prints a fresh ASCII table after every event that changes either
 the underlying table state or the viewport: a successful natural-language
@@ -396,13 +400,13 @@ ANTHROPIC_API_KEY in env.
 Ctrl-C while a request runs cancels it and rolls back the half-applied
 transformation. Ctrl-C while idle closes the REPL.
 
-### Batch (`execute`)
+### Batch (`execute`) (#BatchExec)
 
 `tamedtable execute <flow>` replays a saved flow against a CSV. `--input`
 overrides the source path recorded in the flow; `--output` is required and
 must be `.jsonl`. No LLM call happens on this path.
 
-### Discovery
+### Discovery (#CliFlags)
 
 The CLI exposes two help screens. They cover disjoint surface:
 
@@ -458,6 +462,7 @@ constraint* every `{llm:…}` cell prompt must end with — live in
 [prompt-app-edit.md](prompt-app-edit.md). That file is the source of truth;
 the runtime loads it at module init.
 
+<!-- #Dedupe -->
 The patch prompt teaches the LLM the additive rule, the choice between
 `{js}` (structural rules) and `{llm}` (semantic understanding), the
 patchable paths (`/transformations/-` for append; `/columns` for add/remove/
@@ -487,7 +492,7 @@ V1 ships only the terminal CLI and the headless library. When asked about
 V2 UX, WoZ produces a Claude artifact or writes a sketch to `temp/`, not
 refuses.
 
-### CSV (and other tabular) output
+### CSV (and other tabular) output (#FormatOut)
 
 V1 writes JSONL only. V2 lifts that restriction: `:save <path>` and
 `tamedtable execute --output <path>` both dispatch on extension, the
@@ -508,7 +513,7 @@ exit non-zero with the same line on stderr (batch). Mixed-format flows
 — JSONL in, CSV out — work because the renderer reads the committed
 spec, not the source format.
 
-### `group` transformation
+### `group` transformation (#Aggregate)
 
 `group` collapses input rows into one output row per distinct
 `by`-value tuple. Shape: `{ kind: "group", by: [<expr|column>...],
@@ -528,7 +533,7 @@ some row aborts the transformation through the same recovery loop a
 filter or mutate uses. Sort order of output rows is the first-seen
 order of each group's by-tuple in the input.
 
-### `join` transformation
+### `join` transformation (#LookupJoin)
 
 `join` enriches the left (current) table with rows from a second
 source. Shape: `{ kind: "join", with: <path>, on: <expr>, how?:
@@ -548,7 +553,7 @@ join's right table is *not* re-read on `:undo`/`:redo`; the
 transformation removal reverses the column-shape change and that's
 enough.
 
-### `split` transformation
+### `split` transformation (#ColSplit)
 
 `split` takes one input column, splits each cell, and writes the parts
 to several output columns. Shape: `{ kind: "split", from: <column>,
@@ -569,7 +574,7 @@ JS array-returning body already does; V2's `split` exists so the LLM
 can patch the structure without writing JS, and so regex/delimiter
 splits don't need an expression at all.
 
-### `validate` transformation
+### `validate` transformation (#Validate)
 
 `validate` checks each row against a per-row predicate and optionally
 the dataset against a rate threshold. Shape: `{ kind: "validate",
@@ -591,7 +596,7 @@ The `_valid` and `_validation` columns persist across subsequent
 transformations the way any other column does; a second `validate`
 appended to the same spec overwrites them.
 
-### `pivot` and `unpivot` transformations
+### `pivot` and `unpivot` transformations (#PivotData)
 
 `pivot` reshapes long → wide. Shape: `{ kind: "pivot", index:
 [<col>...], on: <col>, values: <col>, agg?: "sum" | "count" | "avg" |
@@ -613,7 +618,7 @@ values_to]`.
 Both transformations fail fast on a zero-row group (empty input) by
 producing zero output rows.
 
-### `{sql}` expression shape
+### `{sql}` expression shape (#SqlExpr)
 
 A third `Expr` variant: `{ sql: "<DuckDB SQL fragment>" }`. The
 runtime evaluates SQL on top of an in-process DuckDB instance, with
@@ -642,7 +647,7 @@ same way an LLM chunk apply is. Cancelling a SQL transformation
 leaves the DuckDB relation `t` registered and intact — only the
 half-applied spec change reverts.
 
-### Web UI
+### Web UI (#WebUI)
 
 V2 ships a browser front-end that mirrors the CLI's interaction shape
 — a chat sidebar for natural-language requests and the table view to
@@ -736,7 +741,7 @@ error drops the plan line and the request still commits; a cosmetic
 display bug can no longer surface to the user as "couldn't apply that
 change."
 
-### `:save-py` — export a flow as a standalone Python script
+### `:save-py` — export a flow as a standalone Python script (#PyExport)
 
 `:save-py <path>` writes the current sequence of transformations as a
 single self-contained Python 3 script. The script carries a

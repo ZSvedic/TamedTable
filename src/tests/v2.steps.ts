@@ -1,3 +1,4 @@
+// #FormatOut #Aggregate #LookupJoin #ColSplit #Validate #PivotData #SqlExpr #DebugOut #PyExport
 import { Given, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { writeFile, readFile, mkdir } from 'node:fs/promises';

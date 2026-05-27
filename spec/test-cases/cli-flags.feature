@@ -1,3 +1,4 @@
+# #CliFlags
 Feature: CLI invocation flags
 
   The binary surface that runs before any REPL or LLM call:

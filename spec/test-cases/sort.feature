@@ -1,3 +1,4 @@
+# #SortRows
 # V2.5: sort evaluates a {js}, {sql}, or {llm} key — not only a JS one.
 # V3: a sort may carry a `limit` to keep only the top N rows.
 Feature: Sort rows by a key

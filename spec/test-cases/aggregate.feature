@@ -1,3 +1,4 @@
+# #Aggregate
 # V2: group transformation — collapse rows into one per by-tuple.
 Feature: Group and aggregate
 

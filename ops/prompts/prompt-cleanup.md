@@ -24,3 +24,5 @@ Write `ops/journal/YYYY-MM-DD-status.md` (today's date) with this table:
 The **Updates** column lists the change you made to that file in this pass. `-` if nothing changed.
 
 Skip files in gitignored paths and frozen journal entries.
+
+For each ID in `spec/features.md`, run `grep -rn '#<ID>' . --exclude-dir=node_modules --exclude-dir=.git` and flag any ID whose hits do not match the `✓` columns in the tracker row (orphan tags in columns marked `-`, or columns marked `✓` with no hit).
