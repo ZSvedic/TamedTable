@@ -17,7 +17,6 @@ TamedTable/                  root holds only README.md, LICENSE, .gitignore
 │   ├── conventions.md       stack, layout & dev-process conventions
 │   └── writing-style.md     writing style used for all documents
 ├── spec/                    the contract — human-authored / human-blessed
-│   ├── spec.md              one-line index of every doc below
 │   ├── rationale.md         what TamedTable is and why
 │   ├── behavior.md          what the user sees + what the system does (API-free)
 │   ├── code-contract.md     types, signatures, libraries, env vars, exit codes
