@@ -11,10 +11,11 @@ Organized by **lifecycle**, not by file type:
 ```
 TamedTable/                  root holds only README.md, LICENSE, .gitignore
 ├── ops/                     how the project is built; never deployed
+│   ├── journal/             historic status reports
 │   ├── prompts/             reusable session starters — see AGENTS.md
 │   ├── repo-tracking/       commit-size script + chart generator
 │   ├── conventions.md       stack, layout & dev-process conventions
-│   └── research-links.md    name origin + library evaluations
+│   └── writing-style.md     writing style used for all documents
 ├── spec/                    the contract — human-authored / human-blessed
 │   ├── spec.md              one-line index of every doc below
 │   ├── rationale.md         what TamedTable is and why

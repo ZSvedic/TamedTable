@@ -102,7 +102,7 @@ Questions:
 
 12. Q: Which tabular UI library should be used for the web app?  
 
-    A: **TanStack Table** — already validated in [research-links.md](../research-links.md). Headless React lib with `@tanstack/react-virtual` for million-row virtualization, MIT licensed, no paid tiers, type-safe `ColumnDef[]` aligned with the Q2 TypeScript stack.  
+    A: **TanStack Table** — already validated in [research-links.md](2026-05-01-research-links.md). Headless React lib with `@tanstack/react-virtual` for million-row virtualization, MIT licensed, no paid tiers, type-safe `ColumnDef[]` aligned with the Q2 TypeScript stack.  
     **Compatibility with Q8/Q9/Q10:** spec `columns[]` maps 1:1 to `ColumnDef[]`; patches mutate spec in React state (no imperative API needed); chunk updates trigger per-cell React state changes (virtualizer re-renders only visible affected rows); skeleton state via cell renderers reading row metadata; cancel/revert = state rollback → atomic re-render. All compatible — no design changes needed upstream.  
     Why not alternatives: AG Grid is imperative and gates pivot/range-select behind Enterprise; MUI DataGrid couples to MUI styling and Premium tier; Glide is canvas-based (weaker a11y, harder devtools); plain `<table>` reinvents virtualization.  
     V2 integration cost: ~100-LOC `<DataGrid spec={spec} rows={rows} />` component wiring `useReactTable` + `useVirtualizer` + cell renderers for skeleton/in-flight rendering.
