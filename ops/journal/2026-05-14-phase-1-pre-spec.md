@@ -13,7 +13,7 @@ Questions:
 
     A: stdin/stdout REPL.  
     Cheap tokens, fast iteration, trivial to drive from Gherkin scenarios via piped input.  
-    Cell editing, scrolling, and column changes are not replicated as TUI interactions — they become spec patches driven by natural language, matching the `(spec, row_stream)` wire in [data-model.md](../../spec/data-model.md).  
+    Cell editing, scrolling, and column changes are not replicated as TUI interactions — they become spec patches driven by natural language, matching the `(spec, row_stream)` wire in [data-model.md](../../spec/behavior.md#data-model).  
     The transport is additive: a TTY or web renderer can be layered on the same protocol later.  
     See [Q1 details](#q1--stdinstdout-best-practices).  
     
@@ -41,7 +41,7 @@ Questions:
     A: Gherkin scenarios first, API spec derived from them, code last.  
     TDD/BDD/ATDD all converge on outside-in: capture user-visible behavior before committing to an API surface, because behavior is stable while APIs aren't.  
     `@headless` step definitions naturally become an executable API contract — writing them surfaces design questions concretely, so Gherkin and API spec co-evolve in tight cycles for that tier.  
-    For TamedTable, [data-model.md](../../spec/data-model.md) is the draft API contract; next move is to enumerate top use cases as Gherkin (Q5–Q7) and derive HTTP endpoints from what `@headless` steps need to call.
+    For TamedTable, [data-model.md](../../spec/behavior.md#data-model) is the draft API contract; next move is to enumerate top use cases as Gherkin (Q5–Q7) and derive HTTP endpoints from what `@headless` steps need to call.
 
  5. Q: What is a list of top 10 ETL use cases for individual users?  
     How to create test cases for them?  
@@ -54,7 +54,7 @@ Questions:
 
  6. Q: How many test cases for MVP is needed?  
 
-    A: V1 MVP = 3 use cases (datanorm + dedupe + filter), exercising the three distinct patch mechanisms (column-level cell mutation, row-level deletion, view-filter AST) — no spec extensions needed beyond [data-model.md](../../spec/data-model.md).  
+    A: V1 MVP = 3 use cases (datanorm + dedupe + filter), exercising the three distinct patch mechanisms (column-level cell mutation, row-level deletion, view-filter AST) — no spec extensions needed beyond [data-model.md](../../spec/behavior.md#data-model).  
     V2 MVP = remaining 7 use cases, each requiring a spec extension (schema change, second table, row collapse, format change, multi-output, reshape).  
     Scenario count today: 15 test runs from 5 source scenarios in [datanorm.feature](../../spec/test-cases/datanorm.feature); target ~30 across V1 once dedupe and filter scenarios are written.  
     TDD's take: write scenarios as you build, not upfront — each new scenario should expose a missing capability, not a hypothetical edge.
@@ -69,7 +69,7 @@ Questions:
 
  8. Q: Which data model should be used, that can be reused between headless/CLI/web?  
 
-    A: Adopt [data-model.md](../../spec/data-model.md) Spec + Patches as wire model; extend with `transformations: Transformation[]` — an ordered list replayed from the immutable source.  
+    A: Adopt [data-model.md](../../spec/behavior.md#data-model) Spec + Patches as wire model; extend with `transformations: Transformation[]` — an ordered list replayed from the immutable source.  
     Verbs: `filter` / `mutate` / `select` / `sort` / `group` / `join`, each carrying an `Expr` union — V1: `{ js } | { llm; model? }` (eval'd via `new Function`); V2: adds `{ sql }` evaluated by DuckDB. See Q13.  
     V1 subset: `filter` + `mutate` (both modes) + `select` + `sort` (sql only); `group` and `join` deferred to V2.  
     Runtime: pure verbs evaluate immediately; `{llm: ...}` exprs are chunked, parallel-called, then cached by `(input cells + prompt + model)` — caching itself is V2.  
@@ -78,7 +78,7 @@ Questions:
  9. Q: How will changes be handled by an LLM?  
     JSON Patches, diffs, or search/replace tool?  
 
-    A: RFC 6902 JSON Patch (transformations array ops) + RFC 7396 JSON Merge Patch (shallow view-op edits), already specified in [data-model.md](../../spec/data-model.md); validated via Zod against the Spec + Transformation union from Q8.  
+    A: RFC 6902 JSON Patch (transformations array ops) + RFC 7396 JSON Merge Patch (shallow view-op edits), already specified in [data-model.md](../../spec/behavior.md#data-model); validated via Zod against the Spec + Transformation union from Q8.  
     LLM emits via a single Anthropic tool `apply_spec_patch(operations: JsonPatchOp[])` — atomic application, rollback + error fed to next turn on failure.  
     Why not diff/search-replace: structural ops are schema-validatable, type-safe, location-precise via JSON Pointer, and reversible (`undo = {op:"remove", path:"/transformations/-1"}`); text-based methods are brittle and can match the wrong location.  
     Common shapes: `{op:"add", path:"/transformations/-", value:<Transformation>}` for new ops; `{op:"remove", path:"/transformations/-1"}` for undo; `{op:"move", ...}` for reorder; merge patch for filter/sort/page tweaks.
@@ -120,7 +120,7 @@ Questions:
 14. Q: What is the system prompt design — content and structure cached per turn?  
 
     A: Cacheable prefix ~600 tokens via `cache_control: { type: 'ephemeral' }`, structured as: role + goal (~30) / `apply_spec_patch` tool description auto-generated from Zod schema (~150) / spec-format prose summary with Zod reference for full schema (~100) / transformation grammar + Expr union with V1 JS callback signature `(row, i, rows)` (~150) / 3 few-shot examples — JS filter, LLM mutate, JS dedupe (~150) / error-recovery rule (~20).  
-    Per-turn non-cached slots: current spec (~300) + user message (~30) + last error if any (~50) — total ~1 KB constant per turn, matching [data-model.md:62](../../spec/data-model.md:62).  
+    Per-turn non-cached slots: current spec (~300) + user message (~30) + last error if any (~50) — total ~1 KB constant per turn, matching [data-model.md:62](../../spec/behavior.md#data-model).  
     Cache strategy: the entire ~600-token prefix is one cache breakpoint; only the per-turn slots vary across turns, so first turn pays full ingest and every subsequent turn hits the cache.  
     Few-shot examples cover the three V1 patterns: filter via JS predicate, mutate via LLM prompt, dedupe via JS with `(row, i, rows)` signature — these three shapes generalize across all V1 use cases.
 
@@ -138,7 +138,7 @@ Questions:
 - **Cell editing → describe, not click.** User says `"normalize phone numbers"`; LLM emits a spec patch. Rare point-edits: `set row 12 col Phone "+15551234"` → JSON Patch.
 - **Scrolling → paging commands.** `next` / `page 3` / `show 100` patches `page.offset`/`page.size`; runtime re-queries and reprints.
 - **Sticky header → reprint each turn.** No terminal control codes. Same pattern as `sqlite3`, `psql`, `duckdb`, `jq` REPLs.
-- **Column hide/reorder → spec patch**, already shown in [data-model.md](../../spec/data-model.md).
+- **Column hide/reorder → spec patch**, already shown in [data-model.md](../../spec/behavior.md#data-model).
 - **Output:** default ASCII table (`tabulate`/`rich.table`); `--format=jsonl|csv` for piping.
 
 Reframe: the CLI is a REPL that prints a fresh view per command, not a TUI spreadsheet. Interactions the LLM should absorb (cursor, scroll, in-cell edit) are deliberately not added — if they're needed, that's the signal to escalate to TTY or web, not bolt them onto stdin/stdout.
@@ -163,7 +163,7 @@ Reframe: the CLI is a REPL that prints a fresh view per command, not a TUI sprea
 - vs LangChain JS: heavier and pulls in agent abstractions we don't need.
 - vs hand-rolled `fetch`: reimplements streaming, retries, and tool-use schemas per provider.
 
-**Prompt caching:** Anthropic-native via `cache_control` markers passed through `providerOptions.anthropic`. System prompt + spec schema + tool defs become the cached prefix → per-turn cost stays near the [data-model.md:62](../../spec/data-model.md:62) ~1 KB constant.
+**Prompt caching:** Anthropic-native via `cache_control` markers passed through `providerOptions.anthropic`. System prompt + spec schema + tool defs become the cached prefix → per-turn cost stays near the [data-model.md:62](../../spec/behavior.md#data-model) ~1 KB constant.
 
 **Footprint** (verified via clean `npm install`): 5 direct, 11 total, 25 MB.
 
@@ -185,7 +185,7 @@ Reframe: the CLI is a REPL that prints a fresh view per command, not a TUI sprea
 | 10 | V2 | Sort + top-N | order by column, keep first N or percentile |
 | ✱ | V1 | Cancellation (cross-cutting) | runtime/UX, not an ETL op — covers AbortSignal + revert semantics, see [cancelation.feature](../../spec/test-cases/cancelation.feature) |
 
-**V1 rationale:** the three V1 picks exercise the three distinct patch mechanisms (column-level cell mutation, row-level deletion, spec view-filter AST) without requiring any spec-model extension beyond [data-model.md](../../spec/data-model.md). V2 items each require extending the spec: schema change, second table, row collapse, format change, multi-output, or reshape.
+**V1 rationale:** the three V1 picks exercise the three distinct patch mechanisms (column-level cell mutation, row-level deletion, spec view-filter AST) without requiring any spec-model extension beyond [data-model.md](../../spec/behavior.md#data-model). V2 items each require extending the spec: schema change, second table, row collapse, format change, multi-output, or reshape.
 
 **Out of scope for MVP:** PDF/HTML extraction, web scraping, geocoding, FX conversion (require external APIs or non-tabular input).
 

@@ -244,3 +244,55 @@ When('user selects the model {string}', async function (this: TamedTableWorld, m
 Then('the configured model is {string}', function (this: TamedTableWorld, model: string) {
   assert.equal(controller(this).getSettings().model, model);
 });
+
+// ── URL load ───────────────────────────────────────────────────────────────
+
+When('user opens the URL dialog', function (this: TamedTableWorld) {
+  controller(this).openUrlDialog();
+});
+
+When('user closes the URL dialog', function (this: TamedTableWorld) {
+  controller(this).closeUrlDialog();
+});
+
+Given('the URL dialog is already open', function (this: TamedTableWorld) {
+  controller(this).openUrlDialog();
+});
+
+Then('the URL dialog is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).urlDialogOpen, true);
+});
+
+Then('the URL dialog is hidden', function (this: TamedTableWorld) {
+  assert.equal(controller(this).urlDialogOpen, false);
+});
+
+Given(
+  'the URL {string} serves {string}',
+  async function (this: TamedTableWorld, url: string, fixture: string) {
+    const body = await readFile(join(SPEC_TC_DIR, fixture), 'utf8');
+    ctxOf(this).urlFixtures.set(url, body);
+  },
+);
+
+When('user loads from URL {string}', async function (this: TamedTableWorld, url: string) {
+  await controller(this).loadFromUrl(url);
+});
+
+When('user tries to load URL {string}', async function (this: TamedTableWorld, url: string) {
+  try {
+    await controller(this).loadFromUrl(url);
+    ctxOf(this).lastUrlError = undefined;
+  } catch (e) {
+    ctxOf(this).lastUrlError = e as Error;
+  }
+});
+
+Then('loading fails with {string}', function (this: TamedTableWorld, needle: string) {
+  const err = ctxOf(this).lastUrlError;
+  assert.ok(err, 'expected loadFromUrl to throw, but it succeeded');
+  assert.ok(
+    err.message.includes(needle),
+    `expected error to contain "${needle}", got: ${err.message}`,
+  );
+});

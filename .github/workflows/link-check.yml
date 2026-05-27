@@ -1,0 +1,47 @@
+name: Link check
+
+on:
+  workflow_dispatch:
+  # Always run on PRs so the required-status-check gate can rely on it,
+  # even for PRs that touch no markdown. The lychee cache keeps a no-op
+  # rerun under ~30s.
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - '.github/workflows/link-check.yml'
+  schedule:
+    - cron: '0 9 * * 1'  # weekly Monday 09:00 UTC — catches external link rot
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.sha }}
+          restore-keys: lychee-
+
+      - name: Run lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Accept 403 alongside the 2xx range: many sites (Wikipedia,
+          # Cloudflare-fronted hosts, npmjs, Capterra, …) reject CI
+          # user-agents with 403 even when the page is live. Treating
+          # 403 as "reachable" is broader than per-host excludes and
+          # covers future occurrences without further maintenance.
+          args: >-
+            --cache
+            --max-cache-age 1w
+            --no-progress
+            --accept '200..=204,403'
+            --exclude-path node_modules
+            --exclude-path src/node_modules
+            --exclude-path src/packages/web/node_modules
+            './**/*.md'
+          fail: true

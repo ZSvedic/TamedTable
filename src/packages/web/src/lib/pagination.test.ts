@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { buildPageList, clampPage } from './src/pagination.ts';
+import { buildPageList, clampPage } from './pagination.ts';
 
 describe('clampPage', () => {
   it('keeps an in-range page', () => {

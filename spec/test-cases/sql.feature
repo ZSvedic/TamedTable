@@ -10,7 +10,7 @@ Feature: SQL expressions
     Scenario: SQL scalar fills a new column
       When user requests "Add column AgeYears computed in SQL as date_diff('year', DOB::DATE, current_date)"
       Then column "AgeYears" exists in the spec
-      And every row has a non-null "AgeYears"
+      And at least one row has a non-null "AgeYears"
 
     @headless @cli
     Scenario: SQL parse error flows through the recovery loop

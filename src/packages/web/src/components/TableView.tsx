@@ -1,12 +1,12 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
-import type { Theme } from '../theme.ts';
+import { space, typography } from '../lib/theme.ts';
+import type { Theme } from '../lib/theme.ts';
 import type { WebController } from '../controller.ts';
-import { useController } from '../useController.ts';
-import { useTheme } from '../useTheme.tsx';
-import { Button } from './Button.tsx';
+import { useController } from '../hooks/useController.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
 import { Icon } from './Icons.tsx';
 import { Pagination } from './Pagination.tsx';
+import { SplitButton } from './SplitButton.tsx';
 
 function cellText(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
@@ -72,13 +72,21 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
               color: t.ink2,
             }}
           >
-            Open a CSV or JSONL file to begin, then describe changes in the chat.
+            Open a CSV or JSONL file, paste a URL, or pick a sample to begin —
+            then describe changes in the chat.
           </div>
         </div>
-        <Button variant="primary" onClick={() => void controller.openCsv()}>
+        <SplitButton
+          onClick={() => controller.openUrlDialog()}
+          title="Open from a URL or pick a sample"
+          caretTitle="More open options"
+          menu={[
+            { label: 'Open local…', onClick: () => void controller.openCsv() },
+          ]}
+        >
           <Icon name="folder" />
-          Open file…
-        </Button>
+          Open URL or sample…
+        </SplitButton>
       </div>
     </div>
   );

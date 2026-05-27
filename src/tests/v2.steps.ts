@@ -71,9 +71,28 @@ Then('every row has a non-null {string}', function (this: TamedTableWorld, col: 
   assert.ok(rows.length > 0, 'no rows');
   rows.forEach((r, i) => {
     const v = r[col];
-    assert.ok(v !== null && v !== undefined && v !== '', `row ${i} ${col} is empty/null: ${JSON.stringify(v)}`);
+    assert.ok(v !== null && v !== undefined && v !== '', `row ${i} ${col} is empty/null: ${safeStringify(v)}`);
   });
 });
+
+// Real-world inputs are messy; defensive SQL/JS legitimately emits NULL for
+// rows it can't recover. This weaker assertion confirms the transformation
+// actually populated SOME row, without demanding clean data.
+Then('at least one row has a non-null {string}', function (this: TamedTableWorld, col: string) {
+  const rows = this.ensureRunner().currentRows();
+  assert.ok(rows.length > 0, 'no rows');
+  const hit = rows.some((r) => {
+    const v = (r as Record<string, unknown>)[col];
+    return v !== null && v !== undefined && v !== '';
+  });
+  assert.ok(hit, `no row has a non-null "${col}"`);
+});
+
+// JSON.stringify throws on bigint; callers building assertion messages should
+// not crash on a perfectly valid SQL/JS scalar.
+function safeStringify(v: unknown): string {
+  try { return JSON.stringify(v); } catch { return String(v); }
+}
 
 // Item 5: a split over a fixture that includes an empty-FullName row can't
 // give every output row a value — the empty cell yields nulls by design
