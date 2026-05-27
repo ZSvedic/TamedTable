@@ -1,14 +1,9 @@
-Read all documents in the project dir.
+Read `AGENTS.md`, `README.md`, and all spec documents. Then run this meeting on the specified agenda file.
 
-Then, let's have a meeting to decide on all points in the specified MD meeting document:
-- Each meeting point starts with 1+ questions. 
-- Discussion time for meeting point is limited to 10 min.
-  Enforce that by checking the current time.
-- If a human partner decides to take a break, don't count that in the meeting time.
-- When we decide on a point, append `A: ` after question with the answer/decision.
-- Answers should be concise, not more than 5 sentences. 
-  If more explanation is needed, add that after `## Answer details` section and reference it from `A: ` section.
-- If instructed, you can edit other spec docs. 
-  Don't edit or create other than meeting doc unless instructed.
+Rules:
+- Each agenda point starts with one or more questions.
+- Time-box each point at 10 minutes. Track time. Don't count breaks.
+- Append `A: <decision>` after each question when decided. Keep answers to five sentences or fewer; put longer detail in an `## Answer details` section and reference it from `A:`.
+- Edit spec docs only when the HUMAN explicitly asks. Don't create files other than the meeting doc.
 
-If everything is clear, please confirm.
+Confirm before starting.
