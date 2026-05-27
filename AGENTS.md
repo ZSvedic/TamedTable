@@ -12,6 +12,18 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 | How to write any markdown you add | [ops/writing-style.md](ops/writing-style.md) |
 | Past decisions and status reports | [ops/journal/](ops/journal/) — read, don't rewrite |
 
+## Available prompts
+
+Reusable session starters in `ops/prompts/`:
+
+| Prompt | Use for |
+|---|---|
+| [prompt-cleanup.md](ops/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
+| [prompt-implement.md](ops/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
+| [prompt-meeting.md](ops/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
+| [prompt-scribe.md](ops/prompts/prompt-scribe.md) | SCRIBE — spec-only editor, never touches `src/`. Paired with WoZ. |
+| [prompt-woz.md](ops/prompts/prompt-woz.md) | WoZ — interactive behavior simulator driven by `spec/behavior.md`. |
+
 ## Workflow rule — changing a component
 
 When you change observable behavior of `cli`, `core`, `headless`, or `web`, update in this order — spec first, then tests, then implementation:
