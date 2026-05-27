@@ -16,4 +16,4 @@ export type {
   ChatMessage,
   DialogKind,
 } from './src/controller.ts';
-export type { FilePort, PickedFile, SaveOutcome, FetchLike } from './src/ports.ts';
+export type { FilePort, PickedFile, SaveOutcome, FetchLike } from './src/lib/ports.ts';

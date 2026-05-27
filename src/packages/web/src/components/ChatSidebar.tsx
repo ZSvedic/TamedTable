@@ -1,9 +1,9 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
+import { space, typography } from '../lib/theme.ts';
 import type { ChatMessage, WebController } from '../controller.ts';
-import { useController } from '../useController.ts';
-import { useTheme } from '../useTheme.tsx';
-import type { Theme } from '../theme.ts';
+import { useController } from '../hooks/useController.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
+import type { Theme } from '../lib/theme.ts';
 import { Icon } from './Icons.tsx';
 
 function UserBubble({ t, children }: { t: Theme; children: ReactNode }): ReactNode {
@@ -223,9 +223,10 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
               Load a table to begin.
             </span>
             <br />
-            Click <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open file</em>, then describe
-            a change in plain English — e.g. “normalize phone numbers” or “drop duplicate emails”.
-            Requests are additive; use Undo to revert.
+            Open a local file, paste a URL, or pick a sample with{' '}
+            <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open URL or sample…</em> — then
+            describe a change in plain English, e.g. “normalize phone numbers” or “drop duplicate
+            emails”. Requests are additive; use Undo to revert.
           </p>
         )}
         {controller.messages.map((m) =>

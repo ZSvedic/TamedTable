@@ -17,52 +17,37 @@ import {
   type RequestDebugInfo,
 } from '@tamedtable/headless';
 import type { Row, Spec } from '@tamedtable/core';
-import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './ports.ts';
-import { clampPage } from './pagination.ts';
+import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
+import { clampPage } from './lib/pagination.ts';
+import {
+  readStoredApiKey,
+  writeStoredApiKey,
+  removeStoredApiKey,
+} from './controller-storage.ts';
+import { detectFormat, sampleNameFromUrl } from './controller-format.ts';
+import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
+import type {
+  ActivityStatus,
+  CellRef,
+  ChatMessage,
+  DialogKind,
+  Toast,
+  WebControllerOptions,
+  WebSettings,
+} from './controller-types.ts';
 
-export interface WebControllerOptions {
-  /** File input/output port (browser dialogs, or a test stub). */
-  file: FilePort;
-  /** Custom fetch — the Cucumber cassette recorder in tests; unset in the browser. */
-  fetch?: FetchLike;
-  /** Initial API key (tests inject one; the browser leaves it for the panel). */
-  apiKey?: string;
-  /** Patch-turn model the engine uses; defaults to claude-sonnet-4-6. */
-  model?: string;
-  /** Directory used to materialize picked files for the engine to read. */
-  workDir?: string;
-  batchSize?: number;
-  chunkSize?: number;
-}
-
-export interface Toast {
-  id: number;
-  kind: 'error' | 'info';
-  message: string;
-}
-
-export interface ChatMessage {
-  id: number;
-  role: 'user' | 'assistant';
-  text: string;
-  debug?: RequestDebugInfo;
-}
-
-export interface WebSettings {
-  apiKey: string | null;
-  model: string;
-}
-
-/** A cell coordinate: a 0-based row index and a column id. */
-export interface CellRef {
-  row: number;
-  column: string;
-}
-
-/** What the engine is doing, for the status footer. */
-export type ActivityStatus = 'idle' | 'running' | 'saved';
-
-export type DialogKind = 'open' | 'save-flow' | 'save-data' | null;
+// Public surface re-exports — keep existing imports through this module
+// working without forcing every component to update its import path.
+export { detectFormat, userFacingMessage, summarizeDebug };
+export type {
+  ActivityStatus,
+  CellRef,
+  ChatMessage,
+  DialogKind,
+  Toast,
+  WebControllerOptions,
+  WebSettings,
+};
 
 interface JournalEntry {
   label: string;
@@ -79,49 +64,6 @@ const DEFAULT_WEB_MODEL = 'claude-sonnet-4-6';
 /** Rows shown per table page. Paging is a view concern — it never enters
  *  the spec — so this lives on the controller, not the spec. */
 const PAGE_SIZE = 20;
-
-/** Detect the file format from a URL path and (optionally) a Content-Type
- *  header. The path's extension wins; Content-Type only matters when the
- *  URL has no .csv/.jsonl ending (think query-style download URLs). */
-export function detectFormat(
-  pathname: string,
-  contentType: string | null,
-): 'csv' | 'jsonl' | null {
-  const lower = pathname.toLowerCase();
-  if (lower.endsWith('.csv')) return 'csv';
-  if (lower.endsWith('.jsonl') || lower.endsWith('.ndjson')) return 'jsonl';
-  const ct = contentType?.toLowerCase() ?? '';
-  if (ct.includes('csv')) return 'csv';
-  if (ct.includes('jsonl') || ct.includes('ndjson')) return 'jsonl';
-  return null;
-}
-
-/** Derive a friendly file name from a URL — the last path segment, or a
- *  fallback `download.<ext>` for URLs that don't expose one. */
-function sampleNameFromUrl(url: URL, format: 'csv' | 'jsonl'): string {
-  const segment = url.pathname.split('/').filter(Boolean).pop() ?? '';
-  if (segment) return segment;
-  return `download.${format}`;
-}
-
-/** Map an engine error string to a sentence a non-technical user can act on. */
-export function userFacingMessage(message: string): string {
-  if (message.startsWith('Runner: recovery budget exhausted'))
-    return "Couldn't apply that change after 3 attempts. Try rephrasing or breaking it into smaller steps.";
-  if (message === 'Runner: cancelled') return 'Request cancelled.';
-  if (message === 'Runner: a request is already in progress.')
-    return 'A request is already running.';
-  return message;
-}
-
-/** A one-line-per-expression summary of a committed request, for the chat. */
-export function summarizeDebug(info: RequestDebugInfo): string {
-  const calls = info.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ');
-  const total = info.inputTokens + info.outputTokens;
-  const head = info.expressions.map((e) => `${e.label}: ${e.body}`);
-  const tail = `${calls} · ${total.toLocaleString('en-US')} tokens · ${(info.elapsedMs / 1000).toFixed(1)}s`;
-  return [...head, tail].join('\n');
-}
 
 export class WebController {
   private readonly opts: WebControllerOptions;
@@ -175,7 +117,8 @@ export class WebController {
     this.opts = opts;
     this.file = opts.file;
     this.workDir = opts.workDir ?? 'tamedtable-web-work';
-    this.settings = { apiKey: opts.apiKey ?? null, model: opts.model ?? DEFAULT_WEB_MODEL };
+    const initialKey = opts.apiKey ?? readStoredApiKey();
+    this.settings = { apiKey: initialKey ?? null, model: opts.model ?? DEFAULT_WEB_MODEL };
   }
 
   // ── Subscription (for React's useSyncExternalStore) ──────────────────────
@@ -456,11 +399,19 @@ export class WebController {
   }
 
   setApiKey(key: string): void {
-    this.settings = { ...this.settings, apiKey: key.trim() === '' ? null : key.trim() };
+    const trimmed = key.trim();
+    if (trimmed === '') {
+      removeStoredApiKey();
+      this.settings = { ...this.settings, apiKey: null };
+    } else {
+      writeStoredApiKey(trimmed);
+      this.settings = { ...this.settings, apiKey: trimmed };
+    }
     this.notify();
   }
 
   clearApiKey(): void {
+    removeStoredApiKey();
     this.settings = { ...this.settings, apiKey: null };
     this.notify();
   }
@@ -556,9 +507,10 @@ export class WebController {
       throw new Error('Only http:// and https:// URLs are supported.');
     }
 
+    const doFetch = this.opts.fetch ?? fetch;
     let response: Response;
     try {
-      response = await fetch(parsed.toString(), { redirect: 'follow' });
+      response = await doFetch(parsed.toString(), { redirect: 'follow' });
     } catch (e) {
       // A network/CORS failure surfaces as a TypeError with no useful
       // detail in the browser. Rewrite to something the user can act on.

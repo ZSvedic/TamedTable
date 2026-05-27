@@ -7,10 +7,13 @@
 # ///
 """Helper for commit-sizes.sh — not meant to be run by hand.
 
-Reads temp/commit-sizes.csv and renders temp/commit-sizes.png: a stacked area
-chart of the ops/ spec/ src/ byte sizes with the tracked TOTAL overlaid as a
-line. The gap between the stack top and the TOTAL line is the root files
-(README.md, LICENSE, .gitignore)."""
+Reads temp/commit-sizes.csv and renders temp/commit-sizes.png: two vertically
+stacked subplots.  Chart 1 shows the full commit history with index-number
+x-axis ticks (every 10).  Chart 2 zooms in on the last 20 commits with full
+short-hash + message labels at 45°.  Both charts use a stacked area for
+ops/ spec/ src/ byte sizes and overlay the tracked TOTAL as a line.  The gap
+between the stack top and the TOTAL line is the root files (README.md,
+LICENSE, .gitignore)."""
 
 import os
 import pandas as pd
@@ -28,22 +31,42 @@ def label(row):
     return f'{row["commit"]}  {msg}'
 
 
-labels = df.apply(label, axis=1)
-x = range(len(df))
 kb = lambda col: df[col] / 1024
+recent = df.tail(20).copy()
+recent_labels = recent.apply(label, axis=1)
 
-fig, ax = plt.subplots(figsize=(14, 10))
-ax.stackplot(
-    x, kb("ops"), kb("spec"), kb("src"),
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 14))
+
+# --- Chart 1: full history, index-number x-axis ---
+x_all = range(len(df))
+ax1.stackplot(
+    x_all, kb("ops"), kb("spec"), kb("src"),
     labels=["ops/", "spec/", "src/"], alpha=0.85,
 )
-ax.plot(x, kb("total"), color="black", linewidth=1.5, marker="o", markersize=3, label="TOTAL")
-ax.set_xticks(list(x))
-ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
-ax.set_ylabel("Tracked file size (KB)")
-ax.set_title("Git Project Size by Commit")
-ax.legend(loc="upper left")
-fig.subplots_adjust(bottom=0.45, top=0.96, left=0.07, right=0.98)
+ax1.plot(x_all, kb("total"), color="black", linewidth=1.5, marker="o", markersize=3, label="TOTAL")
+tick_positions = list(range(0, len(df), 10))
+ax1.set_xticks(tick_positions)
+ax1.set_xticklabels(tick_positions)
+ax1.set_ylabel("Tracked file size (KB)")
+ax1.set_title("Git Project Size — All Commits")
+ax1.legend(loc="upper left")
+
+# --- Chart 2: last 20 commits, full labels ---
+x_recent = range(len(recent))
+kb_recent = lambda col: recent[col] / 1024
+ax2.stackplot(
+    x_recent, kb_recent("ops"), kb_recent("spec"), kb_recent("src"),
+    labels=["ops/", "spec/", "src/"], alpha=0.85,
+)
+ax2.plot(x_recent, kb_recent("total"), color="black", linewidth=1.5, marker="o", markersize=3, label="TOTAL")
+ax2.set_xticks(list(x_recent))
+ax2.set_xticklabels(recent_labels, rotation=45, ha="right", fontsize=8)
+ax2.set_ylabel("Tracked file size (KB)")
+ax2.set_title("Git Project Size — Last 20 Commits")
+ax2.legend(loc="upper left")
+
+fig.tight_layout()
+fig.subplots_adjust(bottom=0.18)
 
 OUT_PNG = os.path.join(TEMP, "commit-sizes.png")
 fig.savefig(OUT_PNG, dpi=200)

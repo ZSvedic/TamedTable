@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../theme.ts';
-import { useTheme } from '../useTheme.tsx';
+import { space, typography } from '../lib/theme.ts';
+import { useTheme } from '../hooks/useTheme.tsx';
 import { Icon } from './Icons.tsx';
 
 interface MenuItem {
@@ -24,9 +24,9 @@ interface SplitButtonProps {
 }
 
 // A split / dropdown button: a primary action on the left and a caret on
-// the right that reveals a small menu of secondary actions. Both halves
-// share one outer rounded shell with a divider between them so the pair
-// reads as a single toolbar control.
+// the right that reveals a small menu of secondary actions. The two halves
+// share one rounded shell and a single hover tint, so the pair reads as
+// one unified toolbar control — no internal divider.
 export function SplitButton({
   children,
   onClick,
@@ -37,8 +37,7 @@ export function SplitButton({
 }: SplitButtonProps): ReactNode {
   const t = useTheme();
   const [open, setOpen] = useState(false);
-  const [hoverMain, setHoverMain] = useState(false);
-  const [hoverCaret, setHoverCaret] = useState(false);
+  const [hover, setHover] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Close on click-outside or Escape — the menu is a transient, weightless
@@ -59,6 +58,8 @@ export function SplitButton({
     };
   }, [open]);
 
+  const tinted = !disabled && (hover || open);
+
   const baseHalf: CSSProperties = {
     height: 28,
     display: 'inline-flex',
@@ -74,33 +75,37 @@ export function SplitButton({
     whiteSpace: 'nowrap',
     cursor: disabled ? 'default' : 'pointer',
     opacity: disabled ? 0.4 : 1,
-    transition: 'background .12s, color .12s',
   };
 
   const mainStyle: CSSProperties = {
     ...baseHalf,
-    padding: '0 8px 0 10px',
+    padding: '0 4px 0 10px',
     borderTopLeftRadius: space.radiusSm,
     borderBottomLeftRadius: space.radiusSm,
-    ...(!disabled && hoverMain ? { background: t.surface3 } : {}),
   };
 
   const caretStyle: CSSProperties = {
     ...baseHalf,
-    padding: '0 6px',
+    padding: '0 6px 0 2px',
+    color: t.ink3,
     borderTopRightRadius: space.radiusSm,
     borderBottomRightRadius: space.radiusSm,
-    borderLeft: `1px solid ${t.line}`,
-    ...(!disabled && (hoverCaret || open) ? { background: t.surface3 } : {}),
   };
 
   return (
-    <div ref={rootRef} style={{ position: 'relative', display: 'inline-flex' }}>
+    <div
+      ref={rootRef}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ position: 'relative', display: 'inline-flex' }}
+    >
       <div
         style={{
           display: 'inline-flex',
-          border: `1px solid transparent`,
+          alignItems: 'center',
           borderRadius: space.radiusSm,
+          background: tinted ? t.surface3 : 'transparent',
+          transition: 'background .12s',
         }}
       >
         <button
@@ -108,8 +113,6 @@ export function SplitButton({
           title={title}
           disabled={disabled}
           onClick={onClick}
-          onMouseEnter={() => setHoverMain(true)}
-          onMouseLeave={() => setHoverMain(false)}
           style={mainStyle}
         >
           {children}
@@ -121,8 +124,6 @@ export function SplitButton({
           aria-expanded={open}
           disabled={disabled}
           onClick={() => setOpen((v) => !v)}
-          onMouseEnter={() => setHoverCaret(true)}
-          onMouseLeave={() => setHoverCaret(false)}
           style={caretStyle}
         >
           <Icon name="chevron" size={12} />
