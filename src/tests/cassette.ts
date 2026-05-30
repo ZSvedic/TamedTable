@@ -63,6 +63,7 @@ function toResponse(entry: CassetteEntry): Response {
   });
 }
 
+// #Cassettes
 /** A `fetch`-shaped wrapper that records to / replays from the cassette file. */
 export function cassetteFetch(opts: CassetteOptions): FetchLike {
   const { mode, file } = opts;

@@ -41,3 +41,7 @@ Each row is a logical area of the implementation. The ID links to every file tha
 | Step execution | [#StepExec](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23StepExec&type=code) | Per-step runner: resolve, execute, validate result |
 | Web server | [#WebServer](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebServer&type=code) | HTTP layer, routes, WebSocket handling |
 | Test utilities | [#TestUtils](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TestUtils&type=code) | Shared helpers used only in the test suite |
+| Spec schema | [#SpecSchema](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SpecSchema&type=code) | Zod schema definition and validation for the spec object |
+| Patch apply | [#Patch](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Patch&type=code) | RFC 6902 patch application, idempotence check, and undo/redo journal |
+| DuckDB layer | [#DuckDB](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DuckDB&type=code) | In-process DuckDB setup, relation registration, and SQL evaluation |
+| CSV serialisation | [#CsvSerialize](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CsvSerialize&type=code) | RFC 4180 CSV output, column ordering, and cell stringification |

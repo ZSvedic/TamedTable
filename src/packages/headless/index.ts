@@ -76,6 +76,7 @@ export interface HeadlessRunner {
   exportPython(): Promise<string>;
 }
 
+// #ConfigEnv
 const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'claude-sonnet-4-6';
 const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'claude-sonnet-4-5';
 const DEFAULT_MAX_RETRIES = 6;
@@ -112,6 +113,7 @@ function parsePromptSections(md: string): Record<string, string> {
   return sections;
 }
 
+// #LlmLayer
 function loadPrompts(): {
   SYSTEM_PROMPT: string;
   BATCH_SYSTEM_PROMPT: string;
@@ -189,6 +191,7 @@ function compileJs(body: string): (row: Row, i: number, rows: Row[]) => unknown 
   }
 }
 
+// #ConfigEnv
 const rateLimiter = (() => {
   const timestamps: number[] = [];
   let limit = DEFAULT_RPM;
@@ -561,6 +564,7 @@ type PatchAttempt = { kind: 'ok'; spec: Spec } | { kind: 'err'; message: string 
  *  the spec and validate the result. `validateOperation` is on so a malformed
  *  op (bad `op`, missing `path`) surfaces as a clear RFC-6902 message the
  *  recovery loop can feed back — not an opaque internal TypeError. */
+// #Patch
 export function applyAndValidate(currentSpec: Spec, ops: unknown[]): PatchAttempt {
   try {
     if (ops.length === 0) {
@@ -736,6 +740,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.loaded = true;
   }
 
+  // #MainLoop
   async request(
     text: string,
     callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void } = {}
@@ -808,6 +813,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
   }
 
+  // #LlmLayer
   private async callLlm(prompt: string, signal?: AbortSignal): Promise<unknown[]> {
     let captured: unknown[] | undefined;
     const applySpecPatch = tool({
@@ -870,6 +876,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return rows;
   }
 
+  // #StepExec
   private async applyT(
     rows: Row[],
     t: Transformation,
@@ -1040,6 +1047,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     });
   }
 
+  // #DuckDB
   /** Lazily creates the in-process DuckDB connection. */
   private async duck(): Promise<DuckDBConnection> {
     if (this.duckConn) return this.duckConn;
@@ -1051,6 +1059,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return this.duckConn;
   }
 
+  // #DuckDB
   /** Registers `rows` as a DuckDB relation of the given name (`t` for the
    *  current table, `g` for a group's slice). Drops any prior registration
    *  so {sql} always sees the latest rows. */
@@ -1092,6 +1101,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
   }
 
+  // #DuckDB
   /** Runs a DuckDB query, calling `conn.interrupt()` if the signal aborts
    *  while the query is in flight (V3 SQL cancellation). An interrupted query
    *  rejects; this surfaces it as the runner's standard cancelled error so

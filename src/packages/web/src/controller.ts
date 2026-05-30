@@ -66,6 +66,7 @@ const DEFAULT_WEB_MODEL = 'claude-sonnet-4-6';
  *  the spec — so this lives on the controller, not the spec. */
 const PAGE_SIZE = 20;
 
+// #WebServer
 export class WebController {
   private readonly opts: WebControllerOptions;
   private readonly file: FilePort;
@@ -590,6 +591,7 @@ export class WebController {
 
   // ── Browser gestures → spec patches ──────────────────────────────────────
 
+  // #Patch
   /** A cell edit becomes a `mutate` keyed by row index — an ordinary,
    *  undoable spec patch that replays against the source. */
   async editCell(rowIndex: number, column: string, value: string): Promise<void> {
