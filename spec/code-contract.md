@@ -167,6 +167,7 @@ model id shaped `claude-<family>-<major>-<minor>` renders in the debug
 block as `<Family> <major>.<minor>` (so `claude-sonnet-4-6` →
 `Sonnet 4.6`); any other id renders verbatim.
 
+<!-- #ConfigEnv -->
 Env vars:
 
 | Var | Default | Effect |

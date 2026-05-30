@@ -144,6 +144,7 @@ function wrapHighlight(text: string, re: RegExp | undefined): string {
   return text.replace(re, (m) => `*${m}*`);
 }
 
+// #FormatOut
 export function renderTable(
   spec: Spec,
   rows: Row[],
@@ -321,6 +322,7 @@ function writeDebugBlock(info: RequestDebugInfo, stdout: NodeJS.WritableStream):
   }
 }
 
+// #ErrHandle
 function renderError(err: Error, stdout: NodeJS.WritableStream): void {
   stdout.write(`error: ${userFacingMessage(err.message)}\n`);
   const dbg = (err as Error & { debug?: RequestDebugInfo }).debug;
@@ -843,6 +845,7 @@ export async function handleColonCommand(
 }
 
 // ── Entry point: runCli + subcommands ──────────────────────────────────────
+// #MainLoop
 
 function makeFail(stderr: string[]) {
   return (code: number, msg: string): RunCliResult => {
@@ -866,6 +869,7 @@ export async function runCli(argv: string[], opts: CliRunnerOptions = {}): Promi
   return runRepl(argv, opts, stderr);
 }
 
+// #CliParse
 function parseExecuteFlags(rest: string[]): { flow?: string; input?: string; output?: string; err?: string } {
   if (rest.length === 0) return { err: 'missing <flow> argument' };
   const out: { flow?: string; input?: string; output?: string; err?: string } = { flow: rest[0] };
@@ -932,6 +936,7 @@ async function resolveFile(p: string): Promise<string | undefined> {
   return undefined;
 }
 
+// #MainLoop
 async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[]): Promise<RunCliResult> {
   const stdin = opts.stdin ?? process.stdin;
   const stdout = opts.stdout ?? process.stdout;

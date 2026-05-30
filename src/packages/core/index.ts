@@ -7,6 +7,7 @@ import * as path from 'node:path';
 
 export type Row = Record<string, unknown>;
 
+// #SpecSchema
 // ── Spec schema (one schema for every spec — fresh load, patch, replay) ────
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);
@@ -138,6 +139,7 @@ async function readText(label: string, path: string): Promise<string> {
   }
 }
 
+// #IoFormats
 export async function loadCsv(path: string): Promise<{ spec: Spec; rows: Row[]; sourcePath: string }> {
   const text = await readText('loadCsv', path);
   const records = parse(text, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as Row[];
@@ -249,6 +251,7 @@ function csvCellString(value: unknown): string {
   return String(value);
 }
 
+// #IoFormats #CsvSerialize
 export async function writeCsv(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
   const records = rows.map((row) =>
     columnOrder.map((col) => csvCellString(col in row ? row[col] : null))

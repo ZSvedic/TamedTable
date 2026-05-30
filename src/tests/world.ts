@@ -39,6 +39,7 @@ export interface RequestOutcome {
   specAfter?: Spec;
 }
 
+// #TestUtils
 export class TamedTableWorld extends CucumberWorld {
   surface?: RunnerKind;
   inputPath?: string;
@@ -84,6 +85,7 @@ interface RunnerOpts {
  * land in. When `TAMEDTABLE_CASSETTE` is `record` or `replay`, the model's HTTP
  * calls go through a cassette recorder bound to the scenario's feature file.
  */
+// #TestUtils #Cassettes
 export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
   const tags = scenario.pickle.tags.map((t) => t.name);
   const opts: RunnerOpts = tags.includes('@cancel') ? { batchSize: 2, chunkSize: 1 } : {};
