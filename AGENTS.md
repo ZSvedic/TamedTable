@@ -13,6 +13,11 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 | Repo layout and tooling rationale | [ops/conventions.md](ops/conventions.md) |
 | How to write any markdown you add | [ops/writing-style.md](ops/writing-style.md) |
 | Past decisions and status reports | [ops/journal/](ops/journal/) — read, don't rewrite |
+| Code and feature map | [MAP.md](MAP.md) |
+
+## Code navigation
+
+`MAP.md` lists every user-facing feature and every major code area, each identified by a `#PascalCase` hashtag. Search `#TagName` in GitHub (or your editor) to jump straight to the relevant files. To add a new area: place the tag as a comment in the code, then add a row to `MAP.md`.
 
 ## Available prompts
 
