@@ -6,7 +6,7 @@ Walk every tracked file outside `ops/journal/` and gitignored paths. For each on
 - **Consistent?** Does it agree with every other tracked file? Fix any mismatch.
 - **Simplified?** Can it be removed or shortened? Intentional repetition is fine (the same concept in a spec, a test, and a journal entry). Remove unintentional duplication. Delete files that no longer serve any purpose.
 
-Run the test suite (`cd src && bun run test`) and refresh any test-tracking file (e.g. `spec/features.md`) with the latest pass/fail counts and timestamps. Map test scenarios to rows by tag or filename; do not invent values.
+Run the test suite (`cd src && bun run test`) and refresh any test-tracking file (e.g. `map.md`) with the latest pass/fail counts and timestamps. Map test scenarios to rows by tag or filename; do not invent values.
 
 Then run the link check and fix any broken links:
 
@@ -25,4 +25,4 @@ The **Updates** column lists the change you made to that file in this pass. `-` 
 
 Skip files in gitignored paths and frozen journal entries.
 
-For each ID in `spec/features.md`, run `grep -rn '#<ID>' . --exclude-dir=node_modules --exclude-dir=.git` and flag any ID whose hits do not match the `✓` columns in the tracker row (orphan tags in columns marked `-`, or columns marked `✓` with no hit).
+For each ID in `map.md`, run `grep -rn '#<ID>' . --exclude-dir=node_modules --exclude-dir=.git` and flag any ID whose hits do not match the `✓` columns in the tracker row (orphan tags in columns marked `-`, or columns marked `✓` with no hit).
