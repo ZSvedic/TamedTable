@@ -1,6 +1,6 @@
 # Features
 
-Each row tracks one user-facing feature: where it ships (Hdls, CLI, Web), which Gherkin scenario covers it, and the latest test results. Click an ID to find every place in the repo that references it.
+Each row tracks one user-facing feature: where it ships (Headless, CLI, Web), which Gherkin scenario covers it, and the latest test results. Click an ID to find every place in the repo that references it.
 
 | Feature | ID | Hdls | CLI | Web | Gherkin | Pass | Fail | Last tested |
 |---|---|---|---|---|---|---|---|---|
