@@ -7,7 +7,7 @@ A CLI ETL tool you drive with natural language. Load a CSV, type *"normalize pho
 Organized by **lifecycle**, not by file type:
 
 ```
-TamedTable/                  root holds only README.md, LICENSE, .gitignore
+TamedTable/                  root: README.md, MAP.md (feature + code navigation), LICENSE, .gitignore
 ├── ops/                     how the project is built; never deployed
 │   ├── journal/             historic status reports
 │   ├── prompts/             reusable session starters — see AGENTS.md
