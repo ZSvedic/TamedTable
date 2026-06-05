@@ -61,6 +61,7 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
       <div style={{ flex: 1 }} />
 
       <SplitButton
+        id="tutorial-open-btn"
         onClick={() => controller.openUrlDialog()}
         disabled={busy}
         title="Open a CSV or JSONL file from a URL"
@@ -102,6 +103,9 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
       <Button onClick={() => controller.openSettings()} title="API key and settings">
         <Icon name="cog" />
         Settings
+      </Button>
+      <Button onClick={() => controller.openTutorial()} title="Interactive tutorials — no API key required">
+        Tutorial
       </Button>
     </header>
   );

@@ -4,7 +4,19 @@
 // imports through ./controller.ts keep working.
 
 import type { RequestDebugInfo } from '@tamedtable/headless';
+import type { TourScenario } from '@tamedtable/gherkin-tour';
 import type { FetchLike, FilePort } from './lib/ports.ts';
+
+/** Bundled sources the tutorial panel needs. In the browser these come from
+ *  Vite's import.meta.glob at build time; in tests they are injected directly. */
+export interface TutorialSources {
+  /** All @tutorial-tagged scenarios, parsed from every bundled feature file. */
+  tours: TourScenario[];
+  /** Fixture content keyed by filename, e.g. 'filter-input.csv'. */
+  inputs: Record<string, string>;
+  /** Golden content keyed by filename, e.g. 'filter-expected.jsonl'. */
+  goldens: Record<string, string>;
+}
 
 export interface WebControllerOptions {
   /** File input/output port (browser dialogs, or a test stub). */
@@ -19,6 +31,9 @@ export interface WebControllerOptions {
   workDir?: string;
   batchSize?: number;
   chunkSize?: number;
+  /** Bundled feature + fixture sources for the Tutorial panel. When omitted,
+   *  the Tutorial button is present but shows no scenarios. */
+  tutorialSources?: TutorialSources;
 }
 
 export interface Toast {

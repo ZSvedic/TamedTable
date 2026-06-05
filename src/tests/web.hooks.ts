@@ -1,8 +1,35 @@
 import { Before, type ITestCaseHookParameter } from '@cucumber/cucumber';
 import { join } from 'node:path';
-import { createWebController } from '@tamedtable/web';
-import { TamedTableWorld, runnerOptsFor, TEMP_DIR } from './world.ts';
+import { readFileSync } from 'node:fs';
+import { createWebController, type TutorialSources } from '@tamedtable/web';
+import { parseTours } from '@tamedtable/gherkin-tour';
+import { TamedTableWorld, runnerOptsFor, TEMP_DIR, SPEC_TC_DIR } from './world.ts';
 import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
+
+/** Build TutorialSources by parsing real feature files and reading fixtures. */
+function buildTutorialSources(): TutorialSources {
+  const featureFiles = ['filter.feature', 'aggregate.feature', 'join.feature'];
+  const tours = featureFiles.flatMap((f) => {
+    const src = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
+    return parseTours(src);
+  });
+
+  const inputFiles = ['filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv'];
+  const inputs: Record<string, string> = {};
+  for (const f of inputFiles) {
+    inputs[f] = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
+  }
+
+  const goldenFiles = ['filter-expected.jsonl', 'aggregate-by-country-expected.jsonl'];
+  const goldens: Record<string, string> = {};
+  for (const f of goldenFiles) {
+    goldens[f] = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
+  }
+
+  return { tours, inputs, goldens };
+}
+
+const tutorialSources = buildTutorialSources();
 
 Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHookParameter) {
   if (this.surface !== 'web') return;
@@ -38,6 +65,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,
       workDir: join(TEMP_DIR, 'web'),
+      tutorialSources,
     });
   };
 });

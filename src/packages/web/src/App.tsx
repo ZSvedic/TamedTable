@@ -8,6 +8,7 @@ import { TableView } from './components/TableView.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { OpenUrlDialog } from './components/OpenUrlDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
+import { TutorialPanel } from './components/TutorialPanel.tsx';
 
 function AppShell({ controller }: { controller: WebController }): ReactNode {
   const t = useTheme();
@@ -28,6 +29,7 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
         <TableView controller={controller} />
       </div>
       <SettingsPanel controller={controller} />
+      <TutorialPanel controller={controller} />
       <OpenUrlDialog controller={controller} />
       <Toasts controller={controller} />
     </div>
