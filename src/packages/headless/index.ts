@@ -30,10 +30,16 @@ export interface RequestDebugTurn {
   sentBack?: string;
 }
 
+export interface CellSample {
+  column: string;
+  samples: Array<{ in: unknown; out: unknown }>;
+}
+
 export interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;
+  cellSamples: CellSample[];
   modelCalls: Array<{ model: string; calls: number }>;
   inputTokens: number;
   outputTokens: number;
@@ -596,6 +602,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // Per-request tally of model calls + token usage; reset at the start of
   // each request() and rolled up into the RequestDebugInfo it emits.
   private callLog: Array<{ model: string; inputTokens: number; outputTokens: number }> = [];
+  private cellSampleLog: CellSample[] = [];
   private loaded = false;
   private busy = false;
   // DuckDB is initialised lazily on first {sql} use. The relation `t` is
@@ -643,6 +650,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       userRequest,
       turns,
       expressions,
+      cellSamples: this.cellSampleLog,
       modelCalls: order.map((m) => ({ model: m, calls: counts.get(m)! })),
       inputTokens,
       outputTokens,
@@ -755,6 +763,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const startedAt = Date.now();
     const specBefore = this.spec;
     this.callLog = [];
+    this.cellSampleLog = [];
     try {
       const budget = this.opts.recoveryBudget ?? 3;
       let lastError: string | undefined;
@@ -1222,6 +1231,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
             const before = out[rowIndex]![c];
             out[rowIndex]![c] = value;
             onChunk?.({ transformationIndex: tIndex, rowIndex, column: c, before, after: value });
+            // Collect up to 3 before→after samples per column for debug info.
+            let entry = this.cellSampleLog.find((s) => s.column === c);
+            if (!entry) { entry = { column: c, samples: [] }; this.cellSampleLog.push(entry); }
+            if (entry.samples.length < 3) entry.samples.push({ in: before, out: value });
           }
         }
       }
