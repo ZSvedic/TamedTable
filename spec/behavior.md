@@ -708,6 +708,39 @@ request.
 
 → [code-contract.md — V2](code-contract.md#v2)
 
+## Tutorial mode (#TutorialMode)
+
+Tutorial mode lets a user walk through a `@tutorial`-tagged Gherkin scenario
+interactively without writing code or supplying an API key. It is entirely
+offline and makes no LLM calls.
+
+A **Tutorial** button in the toolbar opens the Tutorial panel. The panel shows
+a dropdown listing every `@tutorial`-tagged scenario drawn from the bundled
+feature files, and a Play button. Picking a scenario from the dropdown and
+clicking Play starts the tour.
+
+While a tour is active, the panel shows the current step number out of the
+total, a step description, and Prev / Next navigation buttons. Driver.js
+highlights the relevant part of the UI and shows a popover for each step.
+Pressing Escape or clicking Cancel exits the tour and resets the panel.
+
+Each step maps to one of four actions:
+
+- **load-file** — the controller loads the matching `-input.*` fixture
+  automatically and highlights the open-file button. No dialog opens.
+- **prefill-chat** — the chat input is filled with the step's request text
+  (not sent). The chat input is highlighted.
+- **show-golden** — the controller loads the matching `-expected.*` file and
+  exposes its rows for side-by-side display. The table view is highlighted.
+- **display** — the table view is highlighted and the step text appears in
+  a Driver.js popover.
+
+Fixtures and golden files are bundled at build time from `spec/test-cases/`
+via Vite's `import.meta.glob`; the Tutorial panel picks the right file by
+matching the `load-file` filename or the feature file's base name for goldens.
+
+→ [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
+
 ## V2.5
 
 V2.5 is a consolidation pass before V3: one spec schema, a handful of

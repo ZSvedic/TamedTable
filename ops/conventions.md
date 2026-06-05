@@ -14,13 +14,27 @@ The repo is organized by **lifecycle**, not by file type — see the tree in [..
 - **Dependency stability**: `minimumReleaseAge = 604800` (7 days) in `src/bunfig.toml`.
 
 
-## Test fixtures
-Under `spec/test-cases/`. Naming:
+## Test fixtures and feature files — two tiers
+
+**App-behavior scenarios** (`spec/test-cases/`): features of the TamedTable
+app tested through its surfaces (CLI, headless, web). Naming:
+
 - `<usecase>-input.<ext>` — source fixture (committed)
 - `<usecase>-expected.<ext>` — golden output (committed)
 - `<usecase>-output.<ext>` — runtime-generated (gitignored)
-- `<usecase>.flow` — saved flow (per Q15)
+- `<usecase>.flow` — saved flow
 - `<usecase>.feature` — Gherkin scenarios
+
+**Library module specs** (`spec/modules/<name>/`): self-contained,
+browser-safe packages with their own public API. Each module owns one
+subdirectory containing its spec MD, feature file, and any fixtures:
+
+- `behavior.md` — what the module does and its worked example
+- `<name>.feature` — Gherkin scenarios (tagged `@headless`)
+- `<name>-input.*` / `<name>-expected.*` — fixtures if needed
+
+`cucumber.js` routes feature names in `MODULE_FEATURES` to
+`spec/modules/<name>/<name>.feature`; all others to `spec/test-cases/`.
 
 ## Specs
 Under `spec/` — style rules in [writing-style.md](writing-style.md).

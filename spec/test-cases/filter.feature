@@ -7,7 +7,7 @@ Feature: Filter customer records
       Given "filter-input.csv" is loaded
       And the golden output is "filter-expected.jsonl"
 
-    @headless @cli @web
+    @headless @cli @web @tutorial
     Scenario: Filter by Country
       When user requests "Show only customers in the USA"
       Then the table matches the golden output
