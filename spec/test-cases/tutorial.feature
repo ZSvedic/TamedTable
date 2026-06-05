@@ -18,6 +18,10 @@ Feature: Tutorial panel
       Then the tutorial list includes "Filter by Country"
       And the tutorial list includes "Count customers per country"
       And the tutorial list includes "Left join enriches each customer with ISO and Region"
+      And the tutorial list includes "Split FullName into FirstName and LastName on a single space"
+      And the tutorial list includes "Drop duplicates by Email"
+      And the tutorial list includes "Pivot long to wide"
+      And the tutorial list includes "Validate required fields"
 
   Rule: Playing a tutorial walks through steps
 

@@ -75,6 +75,7 @@ Each step is classified into a `TourAction` by matching the step text:
 | Pattern | Action |
 |---|---|
 | `Given "X" is loaded` | `{ kind: "load-file", filename: "X" }` |
+| `the lookup table "X" exists` | `{ kind: "load-lookup", filename: "X" }` |
 | `When user requests "Y"` | `{ kind: "prefill-chat", text: "Y" }` |
 | `Then the table matches the golden output` | `{ kind: "show-golden" }` |
 | anything else | `{ kind: "display" }` |

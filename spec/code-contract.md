@@ -573,6 +573,70 @@ handler: validates the `.py` extension and the path; scans
 one is present; otherwise calls `exportPython` and writes the result.
 `:save-py` is REPL-only — no `tamedtable` subcommand in V2.5.
 
+## Tutorial mode
+
+→ [behavior.md — Tutorial mode](behavior.md#tutorial-mode)
+
+### Gherkin Tour parser (`@tamedtable/gherkin-tour`)
+
+```ts
+export type TourAction =
+  | { kind: 'load-file';   filename: string }
+  | { kind: 'load-lookup'; filename: string }  // lookup table; no loadInput call
+  | { kind: 'prefill-chat'; text: string   }
+  | { kind: 'show-golden'                  }
+  | { kind: 'display'                      }
+
+export interface TourStep     { keyword: string; text: string; action: TourAction }
+export interface TourScenario { name: string; steps: TourStep[] }
+
+export function parseTours(source: string): TourScenario[]
+```
+
+`parseTours` accepts a raw `.feature` file string and returns every
+`@tutorial`-tagged scenario with its Background steps prepended. Scenario
+Outlines are skipped.
+
+### TutorialSources (`@tamedtable/web`)
+
+```ts
+export interface TutorialSources {
+  tours:   TourScenario[];
+  inputs:  Record<string, string>;   // filename → raw text (CSV/JSONL)
+  goldens: Record<string, string>;   // filename → raw JSONL
+}
+```
+
+`TutorialSources` is passed to `WebControllerOptions.tutorialSources`. In the
+browser it is assembled from `__TT_TUTORIAL__` (a Vite `define` global) at
+app start. In tests it is built by reading `spec/test-cases/` via `readFileSync`.
+
+```ts
+export interface WebControllerOptions {
+  // ...
+  tutorialSources?: TutorialSources;
+}
+```
+
+### Tutorial controller methods
+
+| Method | Description |
+|---|---|
+| `openTutorial()` | Sets `tutorialOpen = true`. |
+| `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
+| `tutorialScenarioNames(): string[]` | Names of all available tours. |
+| `selectTutorialScenario(name)` | Sets `activeTourIndex` by name; resets step state. |
+| `async playTutorial()` | Resets step state; executes step 0. |
+| `async nextStep()` | Increments step index; executes the new step. |
+| `prevStep()` | Decrements step index; no step execution (display only). |
+| `cancelTutorial()` | Clears `tutorialStepIndex`, `goldenRows`, `tutorialPrefill`; keeps `activeTourIndex`. |
+| `isTutorialActive(): boolean` | True when `tutorialStepIndex !== null`. |
+| `currentTutorialStepNumber(): number \| null` | 1-based step number. |
+| `tutorialStepCount(): number` | Total steps in the active tour. |
+| `selectedTourName(): string` | Name of the currently selected tour. |
+| `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn`, `tutorial-chat-input`, or `tutorial-table-view`. |
+
 ## V3
 
 → [behavior.md — V3](behavior.md#v3)
