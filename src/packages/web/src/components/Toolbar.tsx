@@ -72,21 +72,21 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
         <Icon name="folder" />
         Open URL…
       </SplitButton>
-      <Button onClick={() => void controller.saveData()} disabled={!loaded || busy} title="Save the current rows">
+      <Button onClick={() => void controller.saveData()} disabled={!loaded || busy} title="Save the current rows (:save)">
         <Icon name="save" />
         Save data
       </Button>
-      <Button onClick={() => void controller.saveFlow()} disabled={!loaded || busy} title="Save the flow (.flow)">
+      <Button onClick={() => void controller.saveFlow()} disabled={!loaded || busy} title="Save the flow as a replayable .flow file (:save-flow)">
         Save flow
       </Button>
 
       {divider}
 
-      <Button onClick={() => void controller.undo()} disabled={!controller.canUndo() || busy} title="Undo">
+      <Button onClick={() => void controller.undo()} disabled={!controller.canUndo() || busy} title="Undo (:undo)">
         <Icon name="undo" />
         Undo
       </Button>
-      <Button onClick={() => void controller.redo()} disabled={!controller.canRedo() || busy} title="Redo">
+      <Button onClick={() => void controller.redo()} disabled={!controller.canRedo() || busy} title="Redo (:redo)">
         <Icon name="redo" />
         Redo
       </Button>
