@@ -13,6 +13,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   useController(controller);
   const t = useTheme();
   const driverRef = useRef<ReturnType<typeof driver> | null>(null);
+  // True while our code is programmatically destroying the driver (step change,
+  // cleanup) — prevents onDestroyStarted from firing cancelTutorial().
+  const silentDestroyRef = useRef(false);
 
   const open = controller.tutorialOpen;
   const active = controller.isTutorialActive();
@@ -25,20 +28,28 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 
   // Driver.js spotlight on active step
   useEffect(() => {
-    if (!active) {
+    const silentDestroy = (): void => {
+      silentDestroyRef.current = true;
       driverRef.current?.destroy();
       driverRef.current = null;
+      silentDestroyRef.current = false;
+    };
+
+    if (!active) {
+      silentDestroy();
       return;
     }
     const elementId = controller.currentStepElementId();
     const el = elementId ? document.getElementById(elementId) : null;
     if (!el) return;
 
-    driverRef.current?.destroy();
+    silentDestroy();
     const d = driver({
       animate: false,
       overlayOpacity: 0.25,
-      onDestroyStarted: () => { controller.cancelTutorial(); },
+      // Only fire cancelTutorial when the user dismisses (Escape / overlay click),
+      // not when our code programmatically replaces the driver on step changes.
+      onDestroyStarted: () => { if (!silentDestroyRef.current) controller.cancelTutorial(); },
     });
     driverRef.current = d;
     d.highlight({
@@ -50,7 +61,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
         align: 'start',
       },
     });
-    return () => { d.destroy(); driverRef.current = null; };
+    return () => { silentDestroy(); };
   }, [active, stepNum, stepTotal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null;

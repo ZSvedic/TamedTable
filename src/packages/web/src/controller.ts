@@ -739,7 +739,6 @@ export class WebController {
   }
 
   cancelTutorial(): void {
-    this.activeTourIndex = null;
     this.tutorialStepIndex = null;
     this.goldenRows = null;
     this.tutorialPrefill = null;
