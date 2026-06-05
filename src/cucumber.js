@@ -9,7 +9,7 @@ if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,join,pivot,save-py,sort,sql,validate,web')
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,gherkin-tour,join,pivot,save-py,sort,sql,validate,web')
   .split(',')
   .map((s) => `../spec/test-cases/${s.trim()}.feature`);
 
