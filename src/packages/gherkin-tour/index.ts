@@ -1,5 +1,6 @@
 export type TourAction =
   | { kind: 'load-file';    filename: string }
+  | { kind: 'load-lookup';  filename: string }
   | { kind: 'prefill-chat'; text: string    }
   | { kind: 'show-golden'                   }
   | { kind: 'display'                       }
@@ -12,6 +13,9 @@ export interface TourScenario { name: string; steps: TourStep[] }
 function classify(text: string): TourAction {
   const load = text.match(/^"(.+)" is loaded$/);
   if (load) return { kind: 'load-file', filename: load[1]! };
+
+  const lookup = text.match(/^the lookup table "(.+)" exists/);
+  if (lookup) return { kind: 'load-lookup', filename: lookup[1]! };
 
   const chat = text.match(/^user requests "(.+)"$/);
   if (chat) return { kind: 'prefill-chat', text: chat[1]! };

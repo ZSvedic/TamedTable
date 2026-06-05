@@ -777,7 +777,8 @@ export class WebController {
     const step = this.tutorialSrc.tours[this.activeTourIndex]?.steps[this.tutorialStepIndex];
     if (!step) return null;
     switch (step.action.kind) {
-      case 'load-file': return 'tutorial-open-btn';
+      case 'load-file':
+      case 'load-lookup': return 'tutorial-open-btn';
       case 'prefill-chat': return 'tutorial-chat-input';
       case 'show-golden':
       case 'display': return 'tutorial-table-view';
@@ -796,8 +797,19 @@ export class WebController {
         if (text !== undefined) await this.loadFromText(action.filename, text);
         break;
       }
+      case 'load-lookup': {
+        // Write the lookup file into the in-memory store so the engine can
+        // read it by path when executing the join transformation.
+        const text = this.tutorialSrc.inputs[action.filename];
+        if (text !== undefined) {
+          await mkdir(this.workDir, { recursive: true });
+          await writeFile(join(this.workDir, action.filename), text, 'utf8');
+        }
+        break;
+      }
       case 'prefill-chat':
         this.tutorialPrefill = action.text;
+        if (!this.streaming) void this.sendChat(action.text);
         break;
       case 'show-golden': {
         const goldenFile = this.findTourGolden(tour!);

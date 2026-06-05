@@ -14,9 +14,18 @@ const shim = (file: string): string => join(here, 'src/shims', file);
 
 // Tutorial: inline all @tutorial-tagged feature files plus their fixtures so
 // the browser can build TutorialSources without a network fetch or API key.
-const tutorialFeatureNames = ['filter.feature', 'aggregate.feature', 'join.feature'];
-const tutorialInputNames   = ['filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv'];
-const tutorialGoldenNames  = ['filter-expected.jsonl', 'aggregate-by-country-expected.jsonl'];
+const tutorialFeatureNames = [
+  'filter.feature', 'aggregate.feature', 'join.feature',
+  'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
+];
+const tutorialInputNames = [
+  'filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv',
+  'colsplit-fullname-input.csv', 'dedupe-input.csv',
+  'pivot-long-input.csv', 'pivot-wide-input.csv',
+];
+const tutorialGoldenNames = [
+  'filter-expected.jsonl', 'aggregate-by-country-expected.jsonl', 'dedupe-expected.jsonl',
+];
 
 function readTc(name: string): string {
   return readFileSync(join(here, '../../../spec/test-cases', name), 'utf8');
