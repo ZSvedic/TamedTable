@@ -706,6 +706,33 @@ engine and replays the current transformations against the source, so
 the table on screen is preserved and the new model drives the next
 request.
 
+Toolbar action buttons carry tooltips that name their CLI command
+equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the
+CSV save shows `Save the current rows (:save)`, and the flow save shows
+`Save the flow as a replayable .flow file (:save-flow)`.
+
+A `?` button in the Requests sidebar header opens a discoverability
+popover listing four keyboard and gesture hints: double-click to edit a
+cell, drag a column header to reorder, `:undo` / `:redo` in the chat,
+and `:save` / `:save-flow` to export. Hovering over the button opens the
+popover; moving the cursor away closes it; clicking toggles it.
+
+After a successful request, the assistant chat bubble shows the
+transformed expressions — up to 7 lines with bodies truncated to 240
+characters each; overflow renders as `… and N more`. Model, token, and
+elapsed-time stats are not shown in the bubble; they appear only in the
+expandable detail panel.
+
+Clicking **request detail** below an assistant message expands an
+inline panel with three sections. The **request** section shows the
+user's original text and one summary line: model name(s), call count,
+total token count, and elapsed seconds. The **response** section lists
+each turn with its outcome label (`committed`, `rejected`, or an
+evaluation error) followed by the RFC 6902 patch ops JSON for that
+turn. The **cell samples** section — shown only when at least one
+`{llm}` mutate transformation ran — lists up to 3 before→after pairs
+per column, formatted as `column: "before" → "after"`.
+
 → [code-contract.md — V2](code-contract.md#v2)
 
 ## Tutorial mode (#TutorialMode)

@@ -139,10 +139,16 @@ interface RequestDebugTurn {
   sentBack?: string;       // the error fed into the next turn, if any
 }
 
+interface CellSample {
+  column: string;
+  samples: Array<{ in: unknown; out: unknown }>;   // up to 3 before→after pairs
+}
+
 interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;   // success path: primary expr per appended transformation
+  cellSamples: CellSample[];   // per-column LLM replies for {llm} mutate transformations
   modelCalls: Array<{ model: string; calls: number }>;   // distinct models, first-call order
   inputTokens: number;
   outputTokens: number;
@@ -161,8 +167,11 @@ before the call settles, carrying a `RequestDebugInfo`. The
 recovery-budget-exhausted error also carries the same struct on its
 `debug` field. `expressions` is populated on a successful request (one
 entry per appended transformation, `label` naming the field — `pred`,
-`value`, …); `turns` carries the failure detail; `modelCalls`,
-`inputTokens`, `outputTokens`, and `elapsedMs` are filled either way. A
+`value`, …); `cellSamples` captures up to 3 per-row LLM before→after
+pairs for each column that uses a `{llm}` mutate transformation (empty
+array when no such transformations ran); `turns` carries the failure
+detail; `modelCalls`, `inputTokens`, `outputTokens`, and `elapsedMs`
+are filled either way. A
 model id shaped `claude-<family>-<major>-<minor>` renders in the debug
 block as `<Family> <major>.<minor>` (so `claude-sonnet-4-6` →
 `Sonnet 4.6`); any other id renders verbatim.
