@@ -115,7 +115,14 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
                 overflow: 'hidden',
               }}
             >
-              {message.debug.turns.map((turn, i) => `turn ${i + 1}: ${turn.outcome}`).join('\n')}
+              {[
+                `request: ${message.debug.userRequest}`,
+                '',
+                ...message.debug.turns.flatMap((turn, i) => [
+                  `turn ${i + 1}: ${turn.outcome}`,
+                  JSON.stringify(turn.ops, null, 2),
+                ]),
+              ].join('\n')}
             </pre>
           )}
         </>
