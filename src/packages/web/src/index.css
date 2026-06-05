@@ -47,6 +47,14 @@ body {
   animation: tt-sheet-kf 0.14s ease-out;
 }
 
+/* Driver.js adds .driver-active to <body> and sets pointer-events:none on
+   all descendants. Re-enable pointer events for the Tutorial panel so its
+   Prev / Next / Cancel buttons remain clickable during a spotlight. */
+[data-testid="tutorial-panel"],
+[data-testid="tutorial-panel"] * {
+  pointer-events: auto !important;
+}
+
 /* Drag grip in a table header — revealed on hover. */
 .tt-th .tt-grip {
   opacity: 0;
