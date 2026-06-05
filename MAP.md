@@ -32,6 +32,7 @@ Each row is a logical area of the implementation. The ID links to every file tha
 
 | Area | ID | Description |
 |---|---|---|
+| Gherkin Tour parser | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser; returns `@tutorial` scenarios with typed `TourAction` steps (`src/packages/gherkin-tour/`) |
 | Main loop | [#MainLoop](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23MainLoop&type=code) | Top-level execution flow: parse → plan → execute → output |
 | CLI parsing | [#CliParse](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliParse&type=code) | Argument parsing and flag handling |
 | Config and env | [#ConfigEnv](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ConfigEnv&type=code) | Environment variables and runtime configuration |
