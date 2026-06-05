@@ -196,6 +196,24 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
             {controller.streaming && <> · running</>}
           </span>
         )}
+        <button
+          type="button"
+          title={'Double-click a cell to edit it\nDrag a column header to reorder\nType :undo or :redo in the chat\nType :save or :save-flow to export'}
+          style={{
+            marginLeft: space.px6,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: t.ink3,
+            fontFamily: typography.ui,
+            fontSize: typography.size.xs,
+            fontWeight: 600,
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          ?
+        </button>
       </div>
 
       {/* messages */}
