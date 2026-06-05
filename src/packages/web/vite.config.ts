@@ -12,6 +12,22 @@ const here = dirname(fileURLToPath(import.meta.url));
 const promptText = readFileSync(join(here, '../../../spec/prompt-app-edit.md'), 'utf8');
 const shim = (file: string): string => join(here, 'src/shims', file);
 
+// Tutorial: inline all @tutorial-tagged feature files plus their fixtures so
+// the browser can build TutorialSources without a network fetch or API key.
+const tutorialFeatureNames = ['filter.feature', 'aggregate.feature', 'join.feature'];
+const tutorialInputNames   = ['filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv'];
+const tutorialGoldenNames  = ['filter-expected.jsonl', 'aggregate-by-country-expected.jsonl'];
+
+function readTc(name: string): string {
+  return readFileSync(join(here, '../../../spec/test-cases', name), 'utf8');
+}
+
+const tutorialBundle = {
+  features: Object.fromEntries(tutorialFeatureNames.map((n) => [n, readTc(n)])),
+  inputs:   Object.fromEntries(tutorialInputNames.map((n) => [n, readTc(n)])),
+  goldens:  Object.fromEntries(tutorialGoldenNames.map((n) => [n, readTc(n)])),
+};
+
 // Sample CSV/JSONL files surfaced as quick-picks in the Open URL dialog.
 // We bundle them into the deployed site (under /samples/) rather than
 // linking to raw.githubusercontent.com — same-origin fetch sidesteps any
@@ -81,6 +97,7 @@ export default defineConfig({
     // The list of bundled sample files (filenames only) the Open URL dialog
     // shows as quick-picks. Frozen at build time.
     __TT_SAMPLE_FILES__: JSON.stringify(sampleFiles),
+    __TT_TUTORIAL__: JSON.stringify(tutorialBundle),
   },
   resolve: {
     alias: {
