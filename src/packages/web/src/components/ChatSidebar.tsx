@@ -124,11 +124,19 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
   );
 }
 
+const HELP_LINES = [
+  'Double-click a cell to edit it',
+  'Drag a column header to reorder',
+  'Type :undo or :redo in the chat',
+  'Type :save or :save-flow to export',
+];
+
 export function ChatSidebar({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
   const [draft, setDraft] = useState('');
   const [focused, setFocused] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const send = (): void => {
     const text = draft.trim();
@@ -196,24 +204,67 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
             {controller.streaming && <> · running</>}
           </span>
         )}
-        <button
-          type="button"
-          title={'Double-click a cell to edit it\nDrag a column header to reorder\nType :undo or :redo in the chat\nType :save or :save-flow to export'}
-          style={{
-            marginLeft: space.px6,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            color: t.ink3,
-            fontFamily: typography.ui,
-            fontSize: typography.size.xs,
-            fontWeight: 600,
-            padding: 0,
-            lineHeight: 1,
-          }}
-        >
-          ?
-        </button>
+        <span style={{ position: 'relative', marginLeft: space.px6 }}>
+          <button
+            type="button"
+            onMouseEnter={() => setHelpOpen(true)}
+            onMouseLeave={() => setHelpOpen(false)}
+            onClick={() => setHelpOpen((o) => !o)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: t.ink3,
+              fontFamily: typography.ui,
+              fontSize: typography.size.xs,
+              fontWeight: 600,
+              padding: '2px 4px',
+              lineHeight: 1,
+              textTransform: 'none',
+              letterSpacing: 0,
+              borderRadius: space.radiusSm,
+            }}
+          >
+            ?
+          </button>
+          {helpOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: 4,
+                background: t.surface,
+                border: `1px solid ${t.line}`,
+                borderRadius: space.radius,
+                padding: '8px 10px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                whiteSpace: 'nowrap',
+                zIndex: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                textTransform: 'none',
+                letterSpacing: 0,
+                fontWeight: 400,
+              }}
+            >
+              {HELP_LINES.map((line) => (
+                <span
+                  key={line}
+                  style={{
+                    fontFamily: typography.ui,
+                    fontSize: typography.size.xs,
+                    color: t.ink2,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {line}
+                </span>
+              ))}
+            </div>
+          )}
+        </span>
       </div>
 
       {/* messages */}
