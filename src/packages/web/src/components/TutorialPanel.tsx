@@ -47,8 +47,10 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     const d = driver({
       animate: false,
       overlayOpacity: 0.25,
-      // Only fire cancelTutorial when the user dismisses (Escape / overlay click),
-      // not when our code programmatically replaces the driver on step changes.
+      // Prevent Driver.js from dismissing the tour when the user clicks outside
+      // the highlighted element — the TutorialPanel's own Cancel button handles that.
+      allowClose: false,
+      // Only fire cancelTutorial on Escape, not on programmatic replaces.
       onDestroyStarted: () => { if (!silentDestroyRef.current) controller.cancelTutorial(); },
     });
     driverRef.current = d;
@@ -83,7 +85,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
         background: t.overlay,
         display: 'flex',
         justifyContent: 'flex-end',
-        zIndex: 100,
+        // Must exceed Driver.js's overlay z-index (~100000) so the panel's
+        // buttons remain clickable when a spotlight is active.
+        zIndex: 200000,
       }}
     >
       <div
