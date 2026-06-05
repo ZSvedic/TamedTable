@@ -112,7 +112,8 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
                 borderRadius: space.radiusSm,
                 border: `1px solid ${t.line}`,
                 whiteSpace: 'pre-wrap',
-                overflow: 'hidden',
+                overflow: 'auto',
+                maxHeight: 320,
               }}
             >
               {[
@@ -121,7 +122,7 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
                 '',
                 ...message.debug.turns.flatMap((turn, i) => [
                   `turn ${i + 1}: ${turn.outcome}`,
-                  JSON.stringify(turn.ops, null, 2),
+                  `patch ops: ${JSON.stringify(turn.ops, null, 2)}`,
                 ]),
               ].join('\n')}
             </pre>
