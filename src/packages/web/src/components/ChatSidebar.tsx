@@ -126,6 +126,13 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
                   `turn ${i + 1}: ${turn.outcome}`,
                   JSON.stringify(turn.ops, null, 2),
                 ]),
+                ...(message.debug.cellSamples.length > 0 ? [
+                  '',
+                  '── cell samples (up to 3 per column) ──',
+                  ...message.debug.cellSamples.flatMap((s) =>
+                    s.samples.map((p) => `${s.column}: ${JSON.stringify(p.in)} → ${JSON.stringify(p.out)}`)
+                  ),
+                ] : []),
               ].join('\n')}
             </pre>
           )}
