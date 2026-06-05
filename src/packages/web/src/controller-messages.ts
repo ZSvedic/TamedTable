@@ -15,8 +15,6 @@ export function userFacingMessage(message: string): string {
 
 /** A one-line-per-expression summary of a committed request, for the chat. */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  const calls = info.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ');
-  const total = info.inputTokens + info.outputTokens;
   const MAX_BODY = 120;
   const MAX_LINES = 7;
   const allHead = info.expressions.map((e) => {
@@ -27,6 +25,5 @@ export function summarizeDebug(info: RequestDebugInfo): string {
     allHead.length > MAX_LINES
       ? [...allHead.slice(0, MAX_LINES), `… and ${allHead.length - MAX_LINES} more`]
       : allHead;
-  const tail = `${calls} · ${total.toLocaleString('en-US')} tokens · ${(info.elapsedMs / 1000).toFixed(1)}s`;
-  return [...head, tail].join('\n');
+  return head.join('\n');
 }
