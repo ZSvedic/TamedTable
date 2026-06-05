@@ -9,9 +9,18 @@ if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,gherkin-tour,join,pivot,save-py,sort,sql,validate,web')
+// Standalone library modules live under spec/modules/<name>/<name>.feature;
+// app-behavior scenarios live under spec/test-cases/<name>.feature.
+const MODULE_FEATURES = new Set(['gherkin-tour']);
+
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,gherkin-tour,join,pivot,save-py,sort,sql,tutorial,validate,web')
   .split(',')
-  .map((s) => `../spec/test-cases/${s.trim()}.feature`);
+  .map((s) => {
+    const name = s.trim();
+    return MODULE_FEATURES.has(name)
+      ? `../spec/modules/${name}/${name}.feature`
+      : `../spec/test-cases/${name}.feature`;
+  });
 
 const common = {
   paths: FEATURES,
