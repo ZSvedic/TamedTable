@@ -21,6 +21,8 @@ interface SplitButtonProps {
   title?: string;
   /** Tooltip for the caret half. */
   caretTitle?: string;
+  /** DOM id forwarded to the root wrapper element (e.g. for Driver.js highlights). */
+  id?: string;
 }
 
 // A split / dropdown button: a primary action on the left and a caret on
@@ -34,6 +36,7 @@ export function SplitButton({
   disabled,
   title,
   caretTitle,
+  id,
 }: SplitButtonProps): ReactNode {
   const t = useTheme();
   const [open, setOpen] = useState(false);
@@ -95,6 +98,7 @@ export function SplitButton({
   return (
     <div
       ref={rootRef}
+      id={id}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{ position: 'relative', display: 'inline-flex' }}

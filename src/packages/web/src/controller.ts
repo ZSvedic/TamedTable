@@ -33,6 +33,7 @@ import type {
   ChatMessage,
   DialogKind,
   Toast,
+  TutorialSources,
   WebControllerOptions,
   WebSettings,
 } from './controller-types.ts';
@@ -46,6 +47,7 @@ export type {
   ChatMessage,
   DialogKind,
   Toast,
+  TutorialSources,
   WebControllerOptions,
   WebSettings,
 };
@@ -115,12 +117,24 @@ export class WebController {
   /** The selected cell, or null — drives the status footer. */
   selection: CellRef | null = null;
 
+  // ── Tutorial panel state ─────────────────────────────────────────────────
+  tutorialOpen = false;
+  /** Rows loaded for a show-golden step, or null when not in a golden step. */
+  goldenRows: Row[] | null = null;
+  /** Text pre-filled into the chat input by a prefill-chat step, or null. */
+  tutorialPrefill: string | null = null;
+
+  private readonly tutorialSrc: TutorialSources | null;
+  private activeTourIndex: number | null = null;
+  private tutorialStepIndex: number | null = null;
+
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
     this.file = opts.file;
     this.workDir = opts.workDir ?? 'tamedtable-web-work';
     const initialKey = opts.apiKey ?? readStoredApiKey();
     this.settings = { apiKey: initialKey ?? null, model: opts.model ?? DEFAULT_WEB_MODEL };
+    this.tutorialSrc = opts.tutorialSources ?? null;
   }
 
   // ── Subscription (for React's useSyncExternalStore) ──────────────────────
@@ -663,6 +677,153 @@ export class WebController {
     this.savedLabel = null;
     this.selection = null;
     this.notify();
+  }
+
+  // ── Public file-load helper (also used by tutorial load-file steps) ───────
+
+  async loadFromText(name: string, text: string): Promise<void> {
+    await this.loadFromPicked({ name, text });
+  }
+
+  // ── Tutorial panel ────────────────────────────────────────────────────────
+
+  openTutorial(): void {
+    this.tutorialOpen = true;
+    this.notify();
+  }
+
+  closeTutorial(): void {
+    this.tutorialOpen = false;
+    this.cancelTutorial();
+  }
+
+  tutorialScenarioNames(): string[] {
+    return this.tutorialSrc?.tours.map((t) => t.name) ?? [];
+  }
+
+  selectTutorialScenario(name: string): void {
+    const idx = this.tutorialSrc?.tours.findIndex((t) => t.name === name) ?? -1;
+    this.activeTourIndex = idx >= 0 ? idx : null;
+    this.tutorialStepIndex = null;
+    this.goldenRows = null;
+    this.tutorialPrefill = null;
+    this.notify();
+  }
+
+  async playTutorial(): Promise<void> {
+    if (this.activeTourIndex === null) return;
+    const tour = this.tutorialSrc?.tours[this.activeTourIndex];
+    if (!tour || tour.steps.length === 0) return;
+    this.tutorialStepIndex = 0;
+    this.goldenRows = null;
+    this.tutorialPrefill = null;
+    await this.executeTutorialStep(this.tutorialStepIndex);
+    this.notify();
+  }
+
+  async nextStep(): Promise<void> {
+    if (this.tutorialStepIndex === null || this.activeTourIndex === null) return;
+    const tour = this.tutorialSrc?.tours[this.activeTourIndex];
+    if (!tour) return;
+    if (this.tutorialStepIndex < tour.steps.length - 1) {
+      this.tutorialStepIndex++;
+      await this.executeTutorialStep(this.tutorialStepIndex);
+      this.notify();
+    }
+  }
+
+  prevStep(): void {
+    if (this.tutorialStepIndex === null || this.tutorialStepIndex === 0) return;
+    this.tutorialStepIndex--;
+    this.notify();
+  }
+
+  cancelTutorial(): void {
+    this.activeTourIndex = null;
+    this.tutorialStepIndex = null;
+    this.goldenRows = null;
+    this.tutorialPrefill = null;
+    this.notify();
+  }
+
+  isTutorialActive(): boolean {
+    return this.tutorialStepIndex !== null;
+  }
+
+  currentTutorialStepNumber(): number | null {
+    return this.tutorialStepIndex !== null ? this.tutorialStepIndex + 1 : null;
+  }
+
+  tutorialStepCount(): number {
+    if (this.activeTourIndex === null || !this.tutorialSrc) return 0;
+    return this.tutorialSrc.tours[this.activeTourIndex]?.steps.length ?? 0;
+  }
+
+  /** Name of the currently selected tour, or empty string. */
+  selectedTourName(): string {
+    if (this.activeTourIndex === null || !this.tutorialSrc) return '';
+    return this.tutorialSrc.tours[this.activeTourIndex]?.name ?? '';
+  }
+
+  /** Keyword and text of the current step, or null when no tour is active. */
+  currentStepDetail(): { keyword: string; text: string } | null {
+    if (this.activeTourIndex === null || this.tutorialStepIndex === null || !this.tutorialSrc) return null;
+    const step = this.tutorialSrc.tours[this.activeTourIndex]?.steps[this.tutorialStepIndex];
+    return step ? { keyword: step.keyword, text: step.text } : null;
+  }
+
+  /** Driver.js element id for the current step's UI focus target. */
+  currentStepElementId(): string | null {
+    if (this.activeTourIndex === null || this.tutorialStepIndex === null || !this.tutorialSrc) return null;
+    const step = this.tutorialSrc.tours[this.activeTourIndex]?.steps[this.tutorialStepIndex];
+    if (!step) return null;
+    switch (step.action.kind) {
+      case 'load-file': return 'tutorial-open-btn';
+      case 'prefill-chat': return 'tutorial-chat-input';
+      case 'show-golden':
+      case 'display': return 'tutorial-table-view';
+    }
+  }
+
+  private async executeTutorialStep(index: number): Promise<void> {
+    if (this.activeTourIndex === null || !this.tutorialSrc) return;
+    const tour = this.tutorialSrc.tours[this.activeTourIndex];
+    const step = tour?.steps[index];
+    if (!step) return;
+    const { action } = step;
+    switch (action.kind) {
+      case 'load-file': {
+        const text = this.tutorialSrc.inputs[action.filename];
+        if (text !== undefined) await this.loadFromText(action.filename, text);
+        break;
+      }
+      case 'prefill-chat':
+        this.tutorialPrefill = action.text;
+        break;
+      case 'show-golden': {
+        const goldenFile = this.findTourGolden(tour!);
+        if (goldenFile) {
+          const raw = this.tutorialSrc.goldens[goldenFile];
+          if (raw) {
+            this.goldenRows = raw.trim().split('\n').filter(Boolean)
+              .map((l) => JSON.parse(l) as Row);
+          }
+        }
+        break;
+      }
+      case 'display':
+        break;
+    }
+  }
+
+  // Scan the tour's display steps for 'the golden output is "X"' to find
+  // the golden filename without needing an explicit mapping.
+  private findTourGolden(tour: { steps: Array<{ text: string }> }): string | null {
+    for (const step of tour.steps) {
+      const m = step.text.match(/^the golden output is "(.+)"$/);
+      if (m) return m[1]!;
+    }
+    return null;
   }
 }
 

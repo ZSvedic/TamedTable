@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { space, typography } from '../lib/theme.ts';
 import type { ChatMessage, WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
@@ -146,6 +146,13 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
   const [draft, setDraft] = useState('');
   const [focused, setFocused] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  // When a tutorial prefill-chat step fires, sync it into the draft.
+  useEffect(() => {
+    if (controller.tutorialPrefill !== null) {
+      setDraft(controller.tutorialPrefill);
+    }
+  }, [controller.tutorialPrefill]);
 
   const send = (): void => {
     const text = draft.trim();
@@ -358,6 +365,7 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
           }}
         >
           <textarea
+            id="tutorial-chat-input"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onFocus={() => setFocused(true)}

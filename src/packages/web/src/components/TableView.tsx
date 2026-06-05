@@ -212,6 +212,7 @@ export function TableView({ controller }: { controller: WebController }): ReactN
 
   return (
     <div
+      id="tutorial-table-view"
       style={{
         flex: 1,
         display: 'flex',

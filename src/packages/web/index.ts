@@ -11,6 +11,7 @@ export {
 } from './src/controller.ts';
 export type {
   WebControllerOptions,
+  TutorialSources,
   WebSettings,
   Toast,
   ChatMessage,
