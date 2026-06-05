@@ -26,7 +26,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const selectedTourName = controller.selectedTourName();
   const currentStep = controller.currentStepDetail();
 
-  // Driver.js spotlight on active step
+  // Driver.js spotlight + popover with inline Prev/Next/Cancel buttons.
   useEffect(() => {
     const silentDestroy = (): void => {
       silentDestroyRef.current = true;
@@ -44,16 +44,30 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     if (!el) return;
 
     silentDestroy();
+
+    const isFirst = stepNum === 1;
+    const isLast  = stepNum === stepTotal;
+
     const d = driver({
       animate: false,
       overlayOpacity: 0.25,
-      // Prevent Driver.js overlay from intercepting clicks on the TutorialPanel
-      // buttons — the panel's own Cancel button handles dismissal.
+      // Prevent Driver.js overlay and Escape key from dismissing the tour —
+      // only the explicit close/cancel controls should do that.
       allowClose: false,
-      // Only fire cancelTutorial on Escape, not on programmatic replaces.
+      onNextClick:  () => { void controller.nextStep(); },
+      onPrevClick:  () => { controller.prevStep(); },
+      onCloseClick: () => { controller.cancelTutorial(); },
+      // onDestroyStarted fires only when our silentDestroy() calls driver.destroy()
+      // (programmatic, step-change cleanup). silentDestroyRef suppresses a spurious
+      // cancelTutorial in that path.
       onDestroyStarted: () => { if (!silentDestroyRef.current) controller.cancelTutorial(); },
     });
     driverRef.current = d;
+
+    const disableButtons: string[] = [];
+    if (isFirst) disableButtons.push('previous');
+    if (isLast)  disableButtons.push('next');
+
     d.highlight({
       element: `#${elementId}`,
       popover: {
@@ -61,10 +75,33 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
         description: currentStep ? `${currentStep.keyword} ${currentStep.text}` : '',
         side: 'bottom',
         align: 'start',
+        // highlight() defaults showButtons:[] — override to show our buttons.
+        showButtons: ['next', 'previous', 'close'],
+        nextBtnText: isLast ? 'Finish' : 'Next →',
+        prevBtnText: '← Prev',
+        ...(disableButtons.length > 0 ? { disableButtons } : {}),
       },
     });
     return () => { silentDestroy(); };
   }, [active, stepNum, stepTotal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keyboard navigation while a tour is active.
+  useEffect(() => {
+    if (!active) return;
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        if (stepNum !== stepTotal) void controller.nextStep();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (stepNum !== 1) controller.prevStep();
+      } else if (e.key === 'Escape') {
+        controller.cancelTutorial();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [active, controller, stepNum, stepTotal]);
 
   if (!open) return null;
 
@@ -244,6 +281,22 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                 </div>
               )}
 
+              {/* Keyboard hints */}
+              <div
+                style={{
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.xs,
+                  color: t.ink4,
+                  display: 'flex',
+                  gap: space.px8,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span><kbd style={kbdStyle}>←</kbd> prev</span>
+                <span><kbd style={kbdStyle}>→</kbd> / <kbd style={kbdStyle}>Space</kbd> next</span>
+                <span><kbd style={kbdStyle}>Esc</kbd> cancel</span>
+              </div>
+
               {/* Golden rows comparison */}
               {goldenRows && (
                 <div>
@@ -320,39 +373,17 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
             </div>
           )}
         </div>
-
-        {/* footer */}
-        {active && (
-          <div
-            style={{
-              flex: '0 0 auto',
-              display: 'flex',
-              gap: space.px8,
-              padding: space.px14,
-              borderTop: `1px solid ${t.line}`,
-            }}
-          >
-            <Button
-              variant="chrome"
-              onClick={() => { controller.prevStep(); }}
-              disabled={stepNum === 1}
-            >
-              Prev
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => { void controller.nextStep(); }}
-              disabled={stepNum === stepTotal}
-            >
-              Next
-            </Button>
-            <span style={{ flex: 1 }} />
-            <Button variant="chrome" onClick={() => { controller.cancelTutorial(); }}>
-              Cancel
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
 }
+
+const kbdStyle: React.CSSProperties = {
+  display: 'inline-block',
+  padding: '1px 4px',
+  borderRadius: 3,
+  border: '1px solid currentColor',
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  lineHeight: 1.4,
+};

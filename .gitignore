@@ -8,3 +8,5 @@ temp/*
 .env.local
 .claude/settings.local.json
 .claude/cache/
+src/packages/web/test-results/
+src/packages/web/playwright-report/
