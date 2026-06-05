@@ -53,6 +53,15 @@ Feature: Tutorial panel
       When user cancels the tutorial
       Then the tutorial is not active
 
+    @web
+    Scenario: Play again after cancel restarts at step 1
+      Given the TamedTable web app
+      And the tutorial "Left join enriches each customer with ISO and Region" is selected
+      And user plays the tutorial
+      And user cancels the tutorial
+      When user plays the tutorial
+      Then the tutorial is at step 1
+
   Rule: load-file steps auto-load fixtures
 
     @web
