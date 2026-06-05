@@ -38,5 +38,6 @@ jobs:
             --exclude-path node_modules
             --exclude-path src/node_modules
             --exclude-path src/packages/web/node_modules
+            --exclude-path ops/journal
             './**/*.md'
           fail: true
