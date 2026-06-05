@@ -17,11 +17,16 @@ export function userFacingMessage(message: string): string {
 export function summarizeDebug(info: RequestDebugInfo): string {
   const calls = info.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ');
   const total = info.inputTokens + info.outputTokens;
-  const MAX = 120;
-  const head = info.expressions.map((e) => {
-    const body = e.body.length > MAX ? e.body.slice(0, MAX) + '…' : e.body;
+  const MAX_BODY = 120;
+  const MAX_LINES = 7;
+  const allHead = info.expressions.map((e) => {
+    const body = e.body.length > MAX_BODY ? e.body.slice(0, MAX_BODY) + '…' : e.body;
     return `${e.label}: ${body}`;
   });
+  const head =
+    allHead.length > MAX_LINES
+      ? [...allHead.slice(0, MAX_LINES), `… and ${allHead.length - MAX_LINES} more`]
+      : allHead;
   const tail = `${calls} · ${total.toLocaleString('en-US')} tokens · ${(info.elapsedMs / 1000).toFixed(1)}s`;
   return [...head, tail].join('\n');
 }
