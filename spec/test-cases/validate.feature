@@ -7,7 +7,7 @@ Feature: Row and dataset validation
     Background:
       Given "datanorm-input.csv" is loaded
 
-    @headless @cli @web
+    @headless @cli @web @tutorial
     Scenario: Flag rows with empty Phone
       When user requests "Validate that Phone is non-empty"
       Then column "_valid" exists in the spec

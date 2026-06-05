@@ -7,7 +7,7 @@ Feature: Deduplicate customer records
       Given "dedupe-input.csv" is loaded
       And the golden output is "dedupe-expected.jsonl"
 
-    @headless @cli @web
+    @headless @cli @web @tutorial
     Scenario: Drop duplicates by Email
       When user requests "Remove duplicate rows by Email"
       Then the table matches the golden output
