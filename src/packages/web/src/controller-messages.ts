@@ -15,7 +15,7 @@ export function userFacingMessage(message: string): string {
 
 /** A one-line-per-expression summary of a committed request, for the chat. */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  const MAX_BODY = 120;
+  const MAX_BODY = 240;
   const MAX_LINES = 7;
   const allHead = info.expressions.map((e) => {
     const body = e.body.length > MAX_BODY ? e.body.slice(0, MAX_BODY) + '…' : e.body;

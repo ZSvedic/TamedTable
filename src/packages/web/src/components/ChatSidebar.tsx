@@ -117,12 +117,14 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
               }}
             >
               {[
-                `request: ${message.debug.userRequest}`,
-                `model: ${message.debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ')} · ${(message.debug.inputTokens + message.debug.outputTokens).toLocaleString('en-US')} tokens · ${(message.debug.elapsedMs / 1000).toFixed(1)}s`,
+                '── request ──────────────────────────',
+                message.debug.userRequest,
+                `${message.debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ')} · ${(message.debug.inputTokens + message.debug.outputTokens).toLocaleString('en-US')} tokens · ${(message.debug.elapsedMs / 1000).toFixed(1)}s`,
                 '',
+                '── response ─────────────────────────',
                 ...message.debug.turns.flatMap((turn, i) => [
                   `turn ${i + 1}: ${turn.outcome}`,
-                  `patch ops: ${JSON.stringify(turn.ops, null, 2)}`,
+                  JSON.stringify(turn.ops, null, 2),
                 ]),
               ].join('\n')}
             </pre>
