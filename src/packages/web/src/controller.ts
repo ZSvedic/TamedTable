@@ -168,18 +168,15 @@ export class WebController {
     if (this.opts.fetch) return this.opts.fetch;
     return (input, init) => {
       const headers = new Headers(init?.headers);
-      const apiKey = this.activeApiKey();
+      // Text requests route through Anthropic whatever provider is selected
+      // (Google/OpenAI are voice-only here), so the Anthropic key is the one
+      // we authenticate with. request() guarantees it is present before any
+      // call reaches this wrapper.
+      const apiKey = this.config.anthropicKey;
       if (apiKey) headers.set('x-api-key', apiKey);
       headers.set('anthropic-dangerous-direct-browser-access', 'true');
       return fetch(input, { ...init, headers });
     };
-  }
-
-  /** Pick the API key for the current provider. */
-  private activeApiKey(): string | null {
-    if (this.config.provider === 'gemini') return this.config.geminiKey;
-    if (this.config.provider === 'openai') return this.config.openaiKey;
-    return this.config.anthropicKey;
   }
 
   private ensureHeadless(): HeadlessRunner {
@@ -187,7 +184,7 @@ export class WebController {
       this.headless = createHeadlessRunner({
         // A non-empty key lets the provider build; the real key is injected
         // per-request by makeFetch() (browser) or is irrelevant (cassette).
-        apiKey: this.activeApiKey() ?? PLACEHOLDER_KEY,
+        apiKey: this.config.anthropicKey ?? PLACEHOLDER_KEY,
         model: this.config.model,
         fetch: this.makeFetch(),
         batchSize: this.opts.batchSize,
@@ -221,9 +218,10 @@ export class WebController {
     opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void },
   ): Promise<void> {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
-    if (!this.activeApiKey()) {
-      const providerName = this.config.provider === 'gemini' ? 'Gemini' : this.config.provider === 'openai' ? 'OpenAI' : 'Anthropic';
-      throw new Error(`API key required. Open the Settings panel to add your ${providerName} API key.`);
+    // Text requests only work with Anthropic for now, so an Anthropic key is
+    // required even when Google or OpenAI is the selected (voice) provider.
+    if (!this.config.anthropicKey) {
+      throw new Error('Text requests require an Anthropic API key — open Settings and add one.');
     }
     const runner = this.ensureHeadless();
     const prevSpec = structuredClone(runner.currentSpec());

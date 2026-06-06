@@ -18,6 +18,16 @@ Feature: Web front-end
       And the spec has 0 transformations
 
     @web
+    Scenario: A text request needs an Anthropic key even when Google is selected
+      Given the TamedTable web app
+      And "datanorm-input.csv" is loaded
+      And the provider "gemini" has API key "AIza-example-key"
+      And the API key has not been set
+      When user sends the chat message "Normalize phone numbers"
+      Then a toast shows "Text requests require an Anthropic API key"
+      And the spec has 0 transformations
+
+    @web
     Scenario: Saving an API key in the settings panel configures the engine
       Given the TamedTable web app
       And "datanorm-input.csv" is loaded

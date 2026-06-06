@@ -471,6 +471,13 @@ panel rather than an env var. File-system access uses the File System
 Access API where available, falling back to download/upload for
 browsers that don't support it.
 
+`WebController.request` always sends `config.anthropicKey` as the
+Anthropic `x-api-key` — text requests route through Anthropic whatever
+provider is selected (Google/OpenAI are voice-only here). It rejects
+before any network call when `anthropicKey` is null or empty, surfacing
+the toast `Text requests require an Anthropic API key — open Settings and
+add one.`
+
 Exit codes are CLI-only; web errors surface as toasts inside the
 table view and carry the same error strings the recovery loop
 produces.
