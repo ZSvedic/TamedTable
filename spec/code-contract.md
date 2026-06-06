@@ -618,6 +618,71 @@ function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun o
 via `readStoredConfig` / `writeStoredConfig` / `clearStoredConfig` in
 `controller-storage.ts`.
 
+## Voice input
+
+→ [behavior.md — Voice input](behavior.md#voice-input)
+
+Web-only. Lives in `src/packages/web/src/lib/voice.ts` (#VoiceInput); the
+`MicButton` component and the `WebController` voice methods drive it.
+
+```ts
+interface VoiceContext {
+  filename: string;
+  columns: string[];
+  selectedCell?: { col: string; row: number; value: string };
+}
+
+function buildVoicePrompt(ctx: VoiceContext): string;   // pure, testable
+
+interface VoicePort {
+  startRecording(): Promise<void>;
+  stopRecording(): Promise<Blob>;
+  cancelRecording(): void;
+}
+
+function callGeminiVoice(
+  key: string,
+  model: string,
+  audio: Blob,
+  prompt: string,
+  signal?: AbortSignal,
+  fetchImpl?: FetchLike,   // injected in tests (cassette); defaults to global fetch
+): Promise<string>;
+```
+
+`buildVoicePrompt` renders a deterministic prompt from the context — the
+filename, the column list, and the selected cell when present — instructing the
+model to transcribe the spoken audio into a single natural-language table
+request and reply with only that request text. It makes no network call, so it
+is unit/Gherkin testable.
+
+`callGeminiVoice` is a raw `fetch` against
+`https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent?key=<key>`,
+posting one `contents` entry with the prompt as a text part and the audio as an
+inline base64 part (no new npm dependency, no Gemini SDK). It returns the joined
+text of the first candidate, trimmed. A non-2xx response throws an `Error`
+carrying the status; the caller turns it into a toast. The optional
+`fetchImpl` mirrors the engine's cassette hook (see [§ Headless](#headless)) so
+the Gemini round trip records and replays offline.
+
+`VoicePort` is the recording surface. The browser implementation
+(`browserVoicePort`) wraps `MediaRecorder`; tests inject a stub returning a
+fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
+`browserVoicePort()` in `main.tsx`.
+
+`WebController` adds `voiceStatus: 'idle' | 'recording' | 'sending'` and three
+methods: `startVoice()` begins recording (auto-stopping after 30 s),
+`stopVoice()` ends it, builds a `VoiceContext` from `currentSpec()` and
+`selection`, calls `callGeminiVoice`, and feeds the returned text into the same
+`sendChat` pipeline a typed request uses, and `cancelVoice()` discards the
+recording. The mic button is gated on `provider === 'gemini' && geminiKey`.
+
+Because every text request routes through Anthropic regardless of the selected
+provider, `ensureHeadless` builds the engine with the selected model when it is
+an Anthropic model and with `defaultModel('anthropic')` otherwise — so a voice
+session (provider Google) still issues its follow-up patch call with a valid
+Anthropic model.
+
 ## Tutorial mode
 
 → [behavior.md — Tutorial mode](behavior.md#tutorial-mode)

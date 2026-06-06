@@ -18,3 +18,5 @@ export type {
   DialogKind,
 } from './src/controller.ts';
 export type { FilePort, PickedFile, SaveOutcome, FetchLike } from './src/lib/ports.ts';
+export { buildVoicePrompt, callGeminiVoice } from './src/lib/voice.ts';
+export type { VoiceContext, VoicePort } from './src/lib/voice.ts';

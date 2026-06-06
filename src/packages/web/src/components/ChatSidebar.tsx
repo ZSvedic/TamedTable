@@ -5,6 +5,7 @@ import { useController } from '../hooks/useController.ts';
 import { useTheme } from '../hooks/useTheme.tsx';
 import type { Theme } from '../lib/theme.ts';
 import { Icon } from './Icons.tsx';
+import { MicButton } from './MicButton.tsx';
 
 function UserBubble({ t, children }: { t: Theme; children: ReactNode }): ReactNode {
   return (
@@ -399,6 +400,7 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
               color: t.ink,
             }}
           />
+          <MicButton controller={controller} size={sendBtn} />
           {controller.streaming ? (
             <button
               type="button"

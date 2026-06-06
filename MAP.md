@@ -27,6 +27,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web), wh
 | SQL expressions | [#SqlExpr](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SqlExpr&type=code) | ✓ | ✓ | ✓ | [sql.feature](spec/test-cases/sql.feature) | 4 | 6 | 2026-05-27 16:01 |
 | Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) | 10 | 0 | 2026-05-27 16:01 |
 | Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) | 9 | 0 | 2026-06-05 |
+| Voice input | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) | 6 | 0 | 2026-06-06 |
 | Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 36 | 0 | 2026-06-06 |
 
 ## Code areas

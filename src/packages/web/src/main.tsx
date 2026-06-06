@@ -4,6 +4,7 @@ import { parseTours } from '@tamedtable/gherkin-tour';
 import { createWebController } from './controller.ts';
 import type { TutorialSources, ResolvedConfig } from './controller.ts';
 import { BrowserFilePort } from './lib/browser-fs.ts';
+import { browserVoicePort } from './lib/browser-voice.ts';
 import { App } from './App.tsx';
 import './index.css';
 
@@ -27,6 +28,7 @@ const tutorialSources: TutorialSources = {
 
 const controller = createWebController({
   file: new BrowserFilePort(),
+  voice: browserVoicePort(),
   workDir: '/tamedtable',
   tutorialSources,
 });

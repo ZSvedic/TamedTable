@@ -6,6 +6,7 @@
 import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { TourScenario } from '@tamedtable/gherkin-tour';
 import type { FetchLike, FilePort } from './lib/ports.ts';
+import type { VoicePort } from './lib/voice.ts';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 
 export type { ResolvedConfig };
@@ -26,6 +27,9 @@ export interface WebControllerOptions {
   file: FilePort;
   /** Custom fetch — the Cucumber cassette recorder in tests; unset in the browser. */
   fetch?: FetchLike;
+  /** Microphone recording port. The browser passes browserVoicePort(); tests
+   *  inject a stub returning a fixed Blob. Voice input is disabled when unset. */
+  voice?: VoicePort;
   /** Initial config (tests inject keys; the browser leaves it for the settings panel). */
   config?: Partial<ResolvedConfig>;
   /** Directory used to materialize picked files for the engine to read. */
@@ -61,5 +65,8 @@ export interface CellRef {
 
 /** What the engine is doing, for the status footer. */
 export type ActivityStatus = 'idle' | 'running' | 'saved';
+
+/** Microphone state — drives the MicButton's ring and spinner. */
+export type VoiceStatus = 'idle' | 'recording' | 'sending';
 
 export type DialogKind = 'open' | 'save-flow' | 'save-data' | null;

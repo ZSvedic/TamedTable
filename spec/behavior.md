@@ -766,6 +766,40 @@ per column, formatted as `column: "before" → "after"`.
 
 → [code-contract.md — V2](code-contract.md#v2)
 
+## Voice input (#VoiceInput)
+
+Voice input lets the user speak a request instead of typing it. It is a
+web-only convenience layered on top of the existing chat flow: the spoken
+audio and the current table's context go to Gemini in a single round trip,
+Gemini returns the request as text, and that text drives the ordinary chat
+pipeline — so undo, history, and replay all keep working unchanged. There is
+no separate speech-to-text step; the one Gemini call both hears the audio and
+writes the request.
+
+A microphone button sits in the chat sidebar, next to the send control. It is
+shown only when the selected provider is Google and a Gemini API key is set —
+the one provider/key pair this round trip needs. With any other provider, or
+with Google selected but no key, the button is hidden.
+
+The button is press-and-hold: pressing and holding it starts recording, and a
+red ring animates around it while the microphone is live. Recording stops when
+the user releases the button, and a recording that reaches thirty seconds stops
+on its own. Pressing Escape while recording cancels it — nothing is sent and
+the table is untouched. Releasing sends the audio; the button shows a spinner
+until the round trip returns.
+
+On success the spoken request appears as a user bubble — exactly as if the user
+had typed it — followed by the assistant's response, the same bubble a typed
+request produces. On any failure (microphone, network, or a Gemini error) a
+toast reports it and nothing about the table or the spec changes.
+
+The context handed to Gemini names the loaded file, lists the column names, and
+— when a cell is selected — includes that cell's column, row, and value, so a
+request like "round this column" or "fix this cell" resolves against what the
+user is looking at.
+
+→ [code-contract.md — Voice input](code-contract.md#voice-input)
+
 ## Tutorial mode (#TutorialMode)
 
 Tutorial mode lets a user walk through a `@tutorial`-tagged Gherkin scenario
