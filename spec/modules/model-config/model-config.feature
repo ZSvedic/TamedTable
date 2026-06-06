@@ -101,9 +101,9 @@ Feature: Model config
       Then the result is "claude-sonnet-4-6"
 
     @headless
-    Scenario: defaultModel for gemini returns gemini-2.5-flash
+    Scenario: defaultModel for gemini returns gemini-3.5-flash
       When defaultModel is called with "gemini"
-      Then the result is "gemini-2.5-flash"
+      Then the result is "gemini-3.5-flash"
 
     @headless
     Scenario: defaultModel for openai returns gpt-4o
@@ -138,5 +138,5 @@ Feature: Model config
       Then the model "claude-sonnet-4-6" has voiceInput false
 
     @headless
-    Scenario: gemini-2.5-flash has voiceInput true
-      Then the model "gemini-2.5-flash" has voiceInput true
+    Scenario: gemini-3.5-flash has voiceInput true
+      Then the model "gemini-3.5-flash" has voiceInput true
