@@ -874,7 +874,17 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (ops) captured = ops;
     }
     if (!captured) throw new Error(`LLM did not call apply_spec_patch; returned text: ${result.text?.slice(0, 200) ?? '<empty>'}`);
-    return captured;
+    // Some models (e.g. Gemini) serialise nested JSON objects as strings inside
+    // tool call arguments. Parse any "value" field that is a valid JSON string
+    // so that fast-json-patch receives a proper object, not a double-encoded one.
+    return captured.map((op) => {
+      if (op && typeof op === 'object' && 'value' in op && typeof (op as Record<string, unknown>).value === 'string') {
+        try {
+          return { ...op, value: JSON.parse((op as Record<string, unknown>).value as string) };
+        } catch { /* leave as-is if it isn't valid JSON */ }
+      }
+      return op;
+    });
   }
 
   private async replay(
