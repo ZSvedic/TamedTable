@@ -21,6 +21,7 @@ import type { Row, Spec } from '@tamedtable/core';
 import {
   resolveConfig,
   defaultModel,
+  type Provider,
   type ResolvedConfig,
 } from '@tamedtable/model-config';
 import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
@@ -104,6 +105,9 @@ export class WebController {
   // ── Public observable state (read directly by the React components) ───────
   config: ResolvedConfig;
   settingsOpen = false;
+  /** Which provider card is currently expanded in the settings panel, or null
+   *  when the panel is closed or no card is open. */
+  expandedProvider: Provider | null = null;
   dialog: DialogKind = null;
   /** Whether the Open URL modal dialog is showing. Independent of `dialog`,
    *  which tracks an in-flight native picker handshake. */
@@ -173,9 +177,9 @@ export class WebController {
 
   /** Pick the API key for the current provider. */
   private activeApiKey(): string | null {
-    return this.config.provider === 'gemini'
-      ? this.config.geminiKey
-      : this.config.anthropicKey;
+    if (this.config.provider === 'gemini') return this.config.geminiKey;
+    if (this.config.provider === 'openai') return this.config.openaiKey;
+    return this.config.anthropicKey;
   }
 
   private ensureHeadless(): HeadlessRunner {
@@ -218,7 +222,7 @@ export class WebController {
   ): Promise<void> {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     if (!this.activeApiKey()) {
-      const providerName = this.config.provider === 'gemini' ? 'Gemini' : 'Anthropic';
+      const providerName = this.config.provider === 'gemini' ? 'Gemini' : this.config.provider === 'openai' ? 'OpenAI' : 'Anthropic';
       throw new Error(`API key required. Open the Settings panel to add your ${providerName} API key.`);
     }
     const runner = this.ensureHeadless();
@@ -424,6 +428,21 @@ export class WebController {
 
   closeSettings(): void {
     this.settingsOpen = false;
+    this.notify();
+  }
+
+  /** Toggle an accordion provider card. Expanding a card also selects that
+   *  provider; collapsing the already-open card does not change the provider. */
+  async clickProviderCard(provider: Provider): Promise<void> {
+    if (this.expandedProvider === provider) {
+      // Toggle: collapse without changing provider
+      this.expandedProvider = null;
+    } else {
+      this.expandedProvider = provider;
+      // Selecting a card selects the provider and resets the model to that
+      // provider's default only if the current model doesn't match the provider.
+      await this.setConfig({ provider });
+    }
     this.notify();
   }
 

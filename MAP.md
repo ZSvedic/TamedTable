@@ -16,7 +16,8 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web), wh
 | LLM cell placeholders | [#LLMCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LLMCells&type=code) | ✓ | ✓ | ✓ | [placeholders.feature](spec/test-cases/placeholders.feature) | 6 | 0 | 2026-05-27 16:01 |
 | Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) | 7 | 0 | 2026-05-27 16:01 |
 | Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) | 6 | 0 | 2026-05-27 16:01 |
-| Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/modules/model-config/model-config.feature) | 12 | 0 | 2026-06-06 |
+| Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/modules/model-config/model-config.feature) | 23 | 0 | 2026-06-06 |
+| Settings panel redesign | [#SettingsCards](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SettingsCards&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 9 | 0 | 2026-06-06 |
 | Python export | [#PyExport](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PyExport&type=code) | ✓ | ✓ | - | [save-py.feature](spec/test-cases/save-py.feature) | 4 | 0 | 2026-05-27 16:01 |
 | Record and replay cassettes | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | ✓ | ✓ | - | [cassettes.feature](spec/test-cases/cassettes.feature) | 5 | 0 | 2026-05-27 16:01 |
 | REPL commands | [#ReplCmds](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ReplCmds&type=code) | - | ✓ | - | [repl-commands.feature](spec/test-cases/repl-commands.feature) | 37 | 2 | 2026-05-27 16:01 |
@@ -26,7 +27,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web), wh
 | SQL expressions | [#SqlExpr](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SqlExpr&type=code) | ✓ | ✓ | ✓ | [sql.feature](spec/test-cases/sql.feature) | 4 | 6 | 2026-05-27 16:01 |
 | Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) | 10 | 0 | 2026-05-27 16:01 |
 | Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) | 9 | 0 | 2026-06-05 |
-| Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 27 | 0 | 2026-05-27 16:01 |
+| Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 36 | 0 | 2026-06-06 |
 
 ## Code areas
 

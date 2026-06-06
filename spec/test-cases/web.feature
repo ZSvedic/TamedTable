@@ -212,3 +212,74 @@ Feature: Web front-end
       Then the configured model is "claude-haiku-4-5"
       And cell at row 1 column "Country" shows "United States"
       And the spec has 1 transformation
+
+  Rule: The settings panel shows accordion provider cards
+
+    @web
+    Scenario: Settings panel opens with three provider cards
+      Given the TamedTable web app
+      When user opens the settings panel
+      Then the settings panel shows 3 provider cards
+      And no provider card is expanded
+
+    @web
+    Scenario: Clicking the Google card expands it and selects Google
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "gemini"
+      Then the provider card "gemini" is expanded
+      And the configured provider is "gemini"
+
+    @web
+    Scenario: Clicking the Google card shows the GEMINI_API_KEY env hint
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "gemini"
+      Then the expanded card body shows env hint "GEMINI_API_KEY"
+
+    @web
+    Scenario: Clicking a second card collapses the first
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "gemini"
+      And user clicks the provider card "openai"
+      Then the provider card "openai" is expanded
+      And the provider card "gemini" is collapsed
+
+    @web
+    Scenario: Clicking the OpenAI card shows gpt-4o-audio-preview with voice tag
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "openai"
+      Then the model list contains "gpt-4o-audio-preview" with voice tag true
+      And the model list contains "gpt-4o" with voice tag false
+
+    @web
+    Scenario: Clicking an already-open card collapses it
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "gemini"
+      And user clicks the provider card "gemini"
+      Then no provider card is expanded
+
+    @web
+    Scenario: Clicking the Anthropic card shows the ANTHROPIC_API_KEY env hint
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "anthropic"
+      Then the expanded card body shows env hint "ANTHROPIC_API_KEY"
+      And the configured provider is "anthropic"
+
+    @web
+    Scenario: Clicking the OpenAI card shows the OPENAI_API_KEY env hint
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "openai"
+      Then the expanded card body shows env hint "OPENAI_API_KEY"
+
+    @web
+    Scenario: Settings panel opens with the currently selected provider card expanded
+      Given the TamedTable web app
+      When user selects the provider "openai"
+      And user opens the settings panel
+      Then the provider card "openai" is expanded

@@ -580,14 +580,15 @@ one is present; otherwise calls `exportPython` and writes the result.
 → [spec/modules/model-config/behavior.md](../spec/modules/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini";
+type Provider = "anthropic" | "gemini" | "openai";
 
-interface ModelDef { id: string; name: string; desc: string; provider: Provider; }
+interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; }
 
 interface ResolvedConfig {
   provider: Provider;
   anthropicKey: string | null;
   geminiKey: string | null;
+  openaiKey: string | null;
   model: string;
 }
 
@@ -597,11 +598,11 @@ interface StoragePort {
   clear(): void;
 }
 
-const ALL_MODELS: readonly ModelDef[];
+const ALL_MODELS: readonly ModelDef[];  // all three providers: google, openai, anthropic
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
 function defaultModel(provider: Provider): string;
 function providerFor(modelId: string): Provider;
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL
 ```
 
 `@tamedtable/model-config` has two entry points: the main `index.ts` (no

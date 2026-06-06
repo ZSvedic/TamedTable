@@ -47,10 +47,37 @@ When(
 );
 
 When(
+  'resolveConfig is called with env OPENAI_API_KEY={string}',
+  function (this: TamedTableWorld, key: string) {
+    ctx(this).resolved = resolveConfig({ OPENAI_API_KEY: key }, {});
+  },
+);
+
+When(
   'resolveConfig is called with env ANTHROPIC_API_KEY={string} and GEMINI_API_KEY={string}',
   function (this: TamedTableWorld, anthropicKey: string, geminiKey: string) {
     ctx(this).resolved = resolveConfig(
       { ANTHROPIC_API_KEY: anthropicKey, GEMINI_API_KEY: geminiKey },
+      {},
+    );
+  },
+);
+
+When(
+  'resolveConfig is called with env ANTHROPIC_API_KEY={string} and GEMINI_API_KEY={string} and OPENAI_API_KEY={string}',
+  function (this: TamedTableWorld, anthropicKey: string, geminiKey: string, openaiKey: string) {
+    ctx(this).resolved = resolveConfig(
+      { ANTHROPIC_API_KEY: anthropicKey, GEMINI_API_KEY: geminiKey, OPENAI_API_KEY: openaiKey },
+      {},
+    );
+  },
+);
+
+When(
+  'resolveConfig is called with env ANTHROPIC_API_KEY={string} and OPENAI_API_KEY={string}',
+  function (this: TamedTableWorld, anthropicKey: string, openaiKey: string) {
+    ctx(this).resolved = resolveConfig(
+      { ANTHROPIC_API_KEY: anthropicKey, OPENAI_API_KEY: openaiKey },
       {},
     );
   },
@@ -128,6 +155,20 @@ Then(
   },
 );
 
+Then(
+  'the resolved openaiKey is {string}',
+  function (this: TamedTableWorld, expected: string) {
+    assert.equal(ctx(this).resolved?.openaiKey, expected);
+  },
+);
+
+Then(
+  'the resolved openaiKey is null',
+  function (this: TamedTableWorld) {
+    assert.equal(ctx(this).resolved?.openaiKey, null);
+  },
+);
+
 // ── providerFor steps ────────────────────────────────────────────────────────
 
 When(
@@ -165,5 +206,32 @@ Then(
   function (this: TamedTableWorld, provider: string) {
     const found = ALL_MODELS.some((m) => m.provider === provider);
     assert.ok(found, `No model with provider "${provider}" in ALL_MODELS`);
+  },
+);
+
+Then(
+  'every ALL_MODELS entry has a voiceInput boolean field',
+  function (this: TamedTableWorld) {
+    for (const m of ALL_MODELS) {
+      assert.equal(typeof m.voiceInput, 'boolean', `Model "${m.id}" is missing voiceInput boolean`);
+    }
+  },
+);
+
+Then(
+  'the model {string} has voiceInput true',
+  function (this: TamedTableWorld, modelId: string) {
+    const m = ALL_MODELS.find((m) => m.id === modelId);
+    assert.ok(m, `Model "${modelId}" not found in ALL_MODELS`);
+    assert.equal(m.voiceInput, true, `Expected model "${modelId}" to have voiceInput=true`);
+  },
+);
+
+Then(
+  'the model {string} has voiceInput false',
+  function (this: TamedTableWorld, modelId: string) {
+    const m = ALL_MODELS.find((m) => m.id === modelId);
+    assert.ok(m, `Model "${modelId}" not found in ALL_MODELS`);
+    assert.equal(m.voiceInput, false, `Expected model "${modelId}" to have voiceInput=false`);
   },
 );

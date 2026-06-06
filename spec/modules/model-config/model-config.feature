@@ -11,6 +11,7 @@ Feature: Model config
       And the resolved model is "claude-sonnet-4-6"
       And the resolved anthropicKey is null
       And the resolved geminiKey is null
+      And the resolved openaiKey is null
 
   Rule: resolveConfig picks provider from env
 
@@ -20,6 +21,7 @@ Feature: Model config
       Then the resolved provider is "anthropic"
       And the resolved anthropicKey is "sk-ant-test"
       And the resolved geminiKey is null
+      And the resolved openaiKey is null
 
     @headless
     Scenario: GEMINI_API_KEY in env sets provider and key
@@ -27,6 +29,15 @@ Feature: Model config
       Then the resolved provider is "gemini"
       And the resolved geminiKey is "AIza-test"
       And the resolved anthropicKey is null
+      And the resolved openaiKey is null
+
+    @headless
+    Scenario: OPENAI_API_KEY in env sets provider and key
+      When resolveConfig is called with env OPENAI_API_KEY="sk-openai-test"
+      Then the resolved provider is "openai"
+      And the resolved openaiKey is "sk-openai-test"
+      And the resolved anthropicKey is null
+      And the resolved geminiKey is null
 
     @headless
     Scenario: Both keys in env — Gemini wins
@@ -34,6 +45,18 @@ Feature: Model config
       Then the resolved provider is "gemini"
       And the resolved geminiKey is "AIza-test"
       And the resolved anthropicKey is null
+
+    @headless
+    Scenario: All three keys in env — Gemini wins
+      When resolveConfig is called with env ANTHROPIC_API_KEY="sk-ant-test" and GEMINI_API_KEY="AIza-test" and OPENAI_API_KEY="sk-openai-test"
+      Then the resolved provider is "gemini"
+      And the resolved geminiKey is "AIza-test"
+
+    @headless
+    Scenario: ANTHROPIC_API_KEY and OPENAI_API_KEY in env — OpenAI wins
+      When resolveConfig is called with env ANTHROPIC_API_KEY="sk-ant-test" and OPENAI_API_KEY="sk-openai-test"
+      Then the resolved provider is "openai"
+      And the resolved openaiKey is "sk-openai-test"
 
   Rule: resolveConfig respects stored values
 
@@ -65,6 +88,11 @@ Feature: Model config
       When providerFor is called with "gemini-3-flash"
       Then the result is "gemini"
 
+    @headless
+    Scenario: providerFor returns openai for a gpt-* id
+      When providerFor is called with "gpt-4o-audio-preview"
+      Then the result is "openai"
+
   Rule: defaultModel
 
     @headless
@@ -77,9 +105,38 @@ Feature: Model config
       When defaultModel is called with "gemini"
       Then the result is "gemini-3-flash"
 
+    @headless
+    Scenario: defaultModel for openai returns gpt-4o-audio-preview
+      When defaultModel is called with "openai"
+      Then the result is "gpt-4o-audio-preview"
+
   Rule: ALL_MODELS catalogue
 
     @headless
     Scenario: ALL_MODELS has at least one Anthropic and one Gemini entry
       Then ALL_MODELS contains at least one model with provider "anthropic"
       And ALL_MODELS contains at least one model with provider "gemini"
+
+    @headless
+    Scenario: ALL_MODELS has at least one OpenAI entry
+      Then ALL_MODELS contains at least one model with provider "openai"
+
+    @headless
+    Scenario: ALL_MODELS entries each have a voiceInput boolean
+      Then every ALL_MODELS entry has a voiceInput boolean field
+
+    @headless
+    Scenario: gpt-4o-audio-preview has voiceInput true
+      Then the model "gpt-4o-audio-preview" has voiceInput true
+
+    @headless
+    Scenario: gpt-4o has voiceInput false
+      Then the model "gpt-4o" has voiceInput false
+
+    @headless
+    Scenario: claude-sonnet-4-6 has voiceInput false
+      Then the model "claude-sonnet-4-6" has voiceInput false
+
+    @headless
+    Scenario: gemini-3-flash has voiceInput true
+      Then the model "gemini-3-flash" has voiceInput true

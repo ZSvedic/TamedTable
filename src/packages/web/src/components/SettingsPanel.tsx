@@ -1,3 +1,5 @@
+// #WebUI — Settings panel: three provider accordion cards (Google, OpenAI, Anthropic)
+// with per-model voice tags and live-apply (no Save button).
 import { useState, type ReactNode } from 'react';
 import { space, typography } from '../lib/theme.ts';
 import type { WebController } from '../controller.ts';
@@ -7,107 +9,317 @@ import { Button } from './Button.tsx';
 import { Icon } from './Icons.tsx';
 import { ALL_MODELS, type Provider } from '@tamedtable/model-config';
 
+// ── Provider metadata ──────────────────────────────────────────────────────
+
+interface ProviderMeta {
+  id: Provider;
+  name: string;
+  tagline: string;
+  hasVoice: boolean;
+  envHint: string;
+  keyPlaceholder: string;
+}
+
+const PROVIDERS: ProviderMeta[] = [
+  {
+    id: 'gemini',
+    name: 'Google',
+    tagline: 'Gemini models',
+    hasVoice: true,
+    envHint: 'or set GEMINI_API_KEY in .env',
+    keyPlaceholder: 'AIza…',
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    tagline: 'GPT models',
+    hasVoice: true,
+    envHint: 'or set OPENAI_API_KEY in .env',
+    keyPlaceholder: 'sk-…',
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    tagline: 'Claude models',
+    hasVoice: false,
+    envHint: 'or set ANTHROPIC_API_KEY in .env',
+    keyPlaceholder: 'sk-ant-…',
+  },
+];
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
   const cfg = controller.getConfig();
-  const [provider, setProvider] = useState<Provider>(cfg.provider);
-  const [anthropicKey, setAnthropicKey] = useState(cfg.anthropicKey ?? '');
-  const [geminiKey, setGeminiKey] = useState(cfg.geminiKey ?? '');
-  const [model, setModel] = useState(cfg.model);
-  const [revealAnthropic, setRevealAnthropic] = useState(false);
-  const [revealGemini, setRevealGemini] = useState(false);
+  const expandedProvider = controller.expandedProvider;
+
+  // Local key state — one entry per provider. Initialized from current config.
+  const [keys, setKeys] = useState<Record<Provider, string>>({
+    gemini:    cfg.geminiKey    ?? '',
+    openai:    cfg.openaiKey    ?? '',
+    anthropic: cfg.anthropicKey ?? '',
+  });
+  const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
+    gemini: false, openai: false, anthropic: false,
+  });
+
   if (!controller.settingsOpen) return null;
 
-  const providerModels = ALL_MODELS.filter((m) => m.provider === provider);
+  // ── handlers ───────────────────────────────────────────────────────────
 
-  const save = async (): Promise<void> => {
-    await controller.setConfig({
-      provider,
-      anthropicKey: anthropicKey.trim() || null,
-      geminiKey: geminiKey.trim() || null,
-      model,
-    });
-    controller.closeSettings();
+  const handleCardClick = (p: Provider): void => {
+    void controller.clickProviderCard(p);
   };
 
-  const sectionTitle = (text: string): ReactNode => (
-    <div
+  const handleKeyChange = (p: Provider, value: string): void => {
+    setKeys((prev) => ({ ...prev, [p]: value }));
+    // Live-save the key
+    if (p === 'gemini')    void controller.setConfig({ geminiKey:    value.trim() || null });
+    if (p === 'openai')    void controller.setConfig({ openaiKey:    value.trim() || null });
+    if (p === 'anthropic') void controller.setConfig({ anthropicKey: value.trim() || null });
+  };
+
+  const handleModelSelect = (modelId: string): void => {
+    void controller.setConfig({ model: modelId });
+  };
+
+  const toggleReveal = (p: Provider): void => {
+    setRevealed((prev) => ({ ...prev, [p]: !prev[p] }));
+  };
+
+  // ── sub-renderers ───────────────────────────────────────────────────────
+
+  const voiceBadge = (hasVoice: boolean): ReactNode => (
+    <span
       style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 3,
+        padding: '2px 7px',
+        borderRadius: 12,
         fontFamily: typography.ui,
-        fontSize: typography.size.sm,
-        fontWeight: 600,
-        color: t.ink,
-        marginBottom: space.px4,
+        fontSize: typography.size.xs,
+        fontWeight: 500,
+        background: hasVoice ? t.okSoft : t.surface3,
+        color: hasVoice ? t.ok : t.ink3,
+        flexShrink: 0,
       }}
     >
-      {text}
-    </div>
+      {hasVoice ? '🎙 Voice input' : 'No voice input'}
+    </span>
   );
 
-  const keyField = (
-    label: string,
-    value: string,
-    onChange: (v: string) => void,
-    placeholder: string,
-    reveal: boolean,
-    onReveal: () => void,
-  ): ReactNode => (
-    <div style={{ marginBottom: space.px12 }}>
+  const voiceTag = (voice: boolean): ReactNode => (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: '1px 6px',
+        borderRadius: 10,
+        fontFamily: typography.ui,
+        fontSize: typography.size.xs,
+        background: voice ? t.okSoft : t.surface3,
+        color: voice ? t.ok : t.ink3,
+        flexShrink: 0,
+        marginLeft: space.px8,
+      }}
+    >
+      {voice ? '🎙 voice' : 'no voice'}
+    </span>
+  );
+
+  const radioKnob = (selected: boolean): ReactNode => (
+    <span
+      aria-hidden="true"
+      style={{
+        flex: '0 0 auto',
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        border: `1.5px solid ${selected ? t.accent : t.line2}`,
+        background: selected ? t.accent : 'transparent',
+        boxShadow: selected ? `inset 0 0 0 2.5px ${t.surface}` : 'none',
+      }}
+    />
+  );
+
+  const cardBody = (meta: ProviderMeta): ReactNode => {
+    const providerModels = ALL_MODELS.filter((m) => m.provider === meta.id);
+    return (
       <div
         style={{
-          fontFamily: typography.ui,
-          fontSize: typography.size.xs,
-          color: t.ink3,
-          marginBottom: space.px4,
+          padding: `${space.px8}px ${space.px14}px ${space.px12}px`,
+          borderTop: `1px solid ${t.line}`,
         }}
       >
-        {label}
+        {/* API key field */}
+        <div style={{ marginBottom: space.px4 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: space.px6,
+              border: `1px solid ${t.line2}`,
+              borderRadius: space.radius,
+              padding: '6px 8px',
+              background: t.surface2,
+            }}
+          >
+            <input
+              type={revealed[meta.id] ? 'text' : 'password'}
+              value={keys[meta.id]}
+              onChange={(e) => handleKeyChange(meta.id, e.target.value)}
+              placeholder={meta.keyPlaceholder}
+              style={{
+                flex: 1,
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontFamily: typography.mono,
+                fontSize: typography.size.sm,
+                color: t.ink,
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => toggleReveal(meta.id)}
+              title={revealed[meta.id] ? 'Hide key' : 'Show key'}
+              style={{
+                background: 'transparent',
+                border: 0,
+                padding: space.px2,
+                cursor: 'pointer',
+                color: t.ink3,
+                display: 'flex',
+              }}
+            >
+              <Icon name={revealed[meta.id] ? 'eyeOff' : 'eye'} />
+            </button>
+          </div>
+          {/* Env-var hint */}
+          <div
+            style={{
+              fontFamily: typography.mono,
+              fontSize: typography.size.xs,
+              color: t.ink3,
+              marginTop: space.px4,
+            }}
+          >
+            {meta.envHint}
+          </div>
+        </div>
+
+        {/* Model list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: space.px8 }}>
+          {providerModels.map((m) => {
+            const selected = m.id === cfg.model;
+            return (
+              <label
+                key={m.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: space.px8,
+                  padding: '6px 6px',
+                  borderRadius: space.radiusSm,
+                  cursor: 'pointer',
+                  background: selected ? t.accentSoft : 'transparent',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="tt-model"
+                  checked={selected}
+                  onChange={() => handleModelSelect(m.id)}
+                  style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                />
+                {radioKnob(selected)}
+                <span
+                  style={{
+                    fontFamily: typography.mono,
+                    fontSize: typography.size.sm,
+                    color: t.ink,
+                    flex: 1,
+                  }}
+                >
+                  {m.id}
+                </span>
+                {voiceTag(m.voiceInput)}
+              </label>
+            );
+          })}
+        </div>
       </div>
+    );
+  };
+
+  // ── accordion cards ─────────────────────────────────────────────────────
+
+  const cards = PROVIDERS.map((meta) => {
+    const isSelected  = cfg.provider === meta.id;
+    const isExpanded  = expandedProvider === meta.id;
+
+    return (
       <div
+        key={meta.id}
+        className="pcard"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: space.px6,
-          border: `1px solid ${t.line2}`,
-          borderRadius: space.radius,
-          padding: '6px 8px',
-          background: t.surface2,
+          border: `1px solid ${isExpanded ? t.accent : t.line}`,
+          borderRadius: space.radiusLg,
+          overflow: 'hidden',
+          background: t.surface,
         }}
       >
-        <input
-          type={reveal ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          style={{
-            flex: 1,
-            border: 'none',
-            outline: 'none',
-            background: 'transparent',
-            fontFamily: typography.mono,
-            fontSize: typography.size.sm,
-            color: t.ink,
-          }}
-        />
+        {/* Card header — always visible */}
         <button
           type="button"
-          onClick={onReveal}
-          title={reveal ? 'Hide key' : 'Show key'}
+          onClick={() => handleCardClick(meta.id)}
           style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: space.px10,
+            padding: `${space.px10}px ${space.px12}px`,
             background: 'transparent',
             border: 0,
-            padding: space.px2,
             cursor: 'pointer',
-            color: t.ink3,
-            display: 'flex',
+            textAlign: 'left',
           }}
         >
-          <Icon name={reveal ? 'eyeOff' : 'eye'} />
+          {radioKnob(isSelected)}
+          <span style={{ flex: 1 }}>
+            <span
+              style={{
+                fontFamily: typography.ui,
+                fontSize: typography.size.md,
+                fontWeight: 600,
+                color: t.ink,
+                display: 'block',
+              }}
+            >
+              {meta.name}
+            </span>
+            <span
+              style={{
+                fontFamily: typography.ui,
+                fontSize: typography.size.xs,
+                color: t.ink3,
+              }}
+            >
+              {meta.tagline}
+            </span>
+          </span>
+          {voiceBadge(meta.hasVoice)}
         </button>
+
+        {/* Card body — visible only when expanded */}
+        {isExpanded && cardBody(meta)}
       </div>
-    </div>
-  );
+    );
+  });
 
   return (
     <div
@@ -125,7 +337,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
         className="tt-sheet"
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 380,
+          width: 400,
           maxWidth: '92vw',
           height: '100%',
           background: t.surface,
@@ -174,7 +386,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           </button>
         </div>
 
-        {/* body */}
+        {/* body — scrollable accordion cards */}
         <div
           style={{
             flex: 1,
@@ -182,179 +394,24 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             padding: space.px16,
             display: 'flex',
             flexDirection: 'column',
-            gap: space.px20,
+            gap: space.px8,
           }}
         >
-          {/* Provider selector */}
-          <div>
-            {sectionTitle('Provider')}
-            <div style={{ display: 'flex', gap: space.px8 }}>
-              {(['anthropic', 'gemini'] as Provider[]).map((p) => {
-                const selected = p === provider;
-                return (
-                  <label
-                    key={p}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: space.px6,
-                      padding: '6px 10px',
-                      borderRadius: space.radiusSm,
-                      cursor: 'pointer',
-                      border: `1.5px solid ${selected ? t.accent : t.line2}`,
-                      background: selected ? t.accentSoft : 'transparent',
-                      fontFamily: typography.ui,
-                      fontSize: typography.size.sm,
-                      color: selected ? t.accent : t.ink3,
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="tt-provider"
-                      checked={selected}
-                      onChange={() => {
-                        setProvider(p);
-                        // Reset model to provider default when switching
-                        const firstForProvider = ALL_MODELS.find((m) => m.provider === p);
-                        if (firstForProvider) setModel(firstForProvider.id);
-                      }}
-                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-                    />
-                    {p === 'anthropic' ? 'Anthropic' : 'Gemini'}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* API keys */}
-          <div>
-            {sectionTitle('API keys')}
-            <div
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                lineHeight: 1.55,
-                color: t.ink3,
-                marginBottom: space.px8,
-              }}
-            >
-              Keys are held only in this browser tab. Natural-language requests call
-              the provider directly from the browser.
-            </div>
-            {keyField(
-              'Anthropic API key',
-              anthropicKey,
-              setAnthropicKey,
-              'sk-ant-…',
-              revealAnthropic,
-              () => setRevealAnthropic((r) => !r),
-            )}
-            {keyField(
-              'Gemini API key',
-              geminiKey,
-              setGeminiKey,
-              'AIza…',
-              revealGemini,
-              () => setRevealGemini((r) => !r),
-            )}
-          </div>
-
-          {/* Model */}
-          <div>
-            {sectionTitle('Model')}
-            <div
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                lineHeight: 1.55,
-                color: t.ink3,
-                marginBottom: space.px8,
-              }}
-            >
-              The model that writes each spec patch. Switching it replays the current
-              table against the new model.
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
-              {providerModels.map((m) => {
-                const selected = m.id === model;
-                return (
-                  <label
-                    key={m.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: space.px8,
-                      padding: '7px 8px',
-                      borderRadius: space.radiusSm,
-                      cursor: 'pointer',
-                      background: selected ? t.accentSoft : 'transparent',
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="tt-model"
-                      checked={selected}
-                      onChange={() => setModel(m.id)}
-                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-                    />
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        flex: '0 0 auto',
-                        width: 14,
-                        height: 14,
-                        marginTop: 2,
-                        borderRadius: 7,
-                        border: `1.5px solid ${selected ? t.accent : t.line2}`,
-                        background: selected ? t.accent : 'transparent',
-                        boxShadow: selected ? `inset 0 0 0 2.5px ${t.surface}` : 'none',
-                      }}
-                    />
-                    <span style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <span
-                        style={{
-                          fontFamily: typography.mono,
-                          fontSize: typography.size.sm,
-                          fontWeight: 500,
-                          color: t.ink,
-                        }}
-                      >
-                        {m.name}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: typography.ui,
-                          fontSize: typography.size.xs,
-                          color: t.ink3,
-                        }}
-                      >
-                        {m.desc}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+          {cards}
         </div>
 
-        {/* footer */}
+        {/* footer — Close only (changes are live) */}
         <div
           style={{
             flex: '0 0 auto',
             display: 'flex',
             justifyContent: 'flex-end',
-            gap: space.px8,
             padding: space.px14,
             borderTop: `1px solid ${t.line}`,
           }}
         >
           <Button variant="chrome" onClick={() => controller.closeSettings()}>
             Close
-          </Button>
-          <Button variant="primary" onClick={() => void save()}>
-            Save
           </Button>
         </div>
       </div>
