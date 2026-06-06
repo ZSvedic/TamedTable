@@ -20,8 +20,6 @@ import {
 import type { Row, Spec } from '@tamedtable/core';
 import {
   resolveConfig,
-  defaultModel,
-  providerFor,
   type Provider,
   type ResolvedConfig,
 } from '@tamedtable/model-config';
@@ -175,6 +173,14 @@ export class WebController {
 
   // ── Engine wiring ────────────────────────────────────────────────────────
 
+  /** Returns the API key for the currently-selected provider. */
+  private activeApiKey(): string | undefined {
+    const { provider, anthropicKey, geminiKey, openaiKey } = this.config;
+    if (provider === 'gemini') return geminiKey;
+    if (provider === 'openai') return openaiKey;
+    return anthropicKey;
+  }
+
   /** Build the fetch the engine uses. Tests inject the cassette recorder; the
    *  browser gets a wrapper that injects provider-specific auth headers.
    *  Anthropic requires an extra header for direct browser-to-API calls;
@@ -198,16 +204,11 @@ export class WebController {
   private ensureHeadless(): HeadlessRunner {
     if (!this.headless) {
       this.headless = createHeadlessRunner({
-        // A non-empty key lets the provider build; the real key is injected
-        // per-request by makeFetch() (browser) or is irrelevant (cassette).
-        apiKey: this.config.anthropicKey ?? PLACEHOLDER_KEY,
-        // Text requests always route through Anthropic (Google/OpenAI are
-        // voice-only here), so the engine must run an Anthropic model — even
-        // when the selected model belongs to another provider (e.g. a voice
-        // session on Google). Fall back to the Anthropic default in that case.
-        model: providerFor(this.config.model) === 'anthropic'
-          ? this.config.model
-          : defaultModel('anthropic'),
+        // Pass the active provider's key; a non-empty fallback lets the SDK
+        // initialise even when no key is set yet (the real error surfaces from
+        // the API response, which userFacingMessage then describes clearly).
+        apiKey: this.activeApiKey() ?? PLACEHOLDER_KEY,
+        model: this.config.model,
         fetch: this.makeFetch(),
         batchSize: this.opts.batchSize,
         chunkSize: this.opts.chunkSize,
@@ -240,11 +241,6 @@ export class WebController {
     opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void },
   ): Promise<void> {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
-    // Text requests only work with Anthropic for now, so an Anthropic key is
-    // required even when Google or OpenAI is the selected (voice) provider.
-    if (!this.config.anthropicKey) {
-      throw new Error('Text requests require an Anthropic API key — open Settings and add one.');
-    }
     const runner = this.ensureHeadless();
     const prevSpec = structuredClone(runner.currentSpec());
 
