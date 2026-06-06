@@ -30,8 +30,10 @@ export interface StoragePort {
 
 export const ALL_MODELS: readonly ModelDef[] = [
   // Google (Gemini) — all models support voice input
-  { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',  desc: "Google's fast, balanced model — the Google default.", provider: 'gemini', voiceInput: true  },
-  { id: 'gemini-2.5-pro',        name: 'Gemini 2.5 Pro',    desc: 'Most capable Gemini model.',                          provider: 'gemini', voiceInput: true  },
+  { id: 'gemini-3.5-flash',      name: 'Gemini 3.5 Flash',  desc: "Google's fast, balanced model — the Google default.", provider: 'gemini', voiceInput: true  },
+  { id: 'gemini-3-flash-preview',name: 'Gemini 3 Flash',    desc: 'Gemini 3.0 Flash (preview).',                         provider: 'gemini', voiceInput: true  },
+  { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',  desc: 'Previous-gen fast Gemini model.',                     provider: 'gemini', voiceInput: true  },
+  { id: 'gemini-2.5-pro',        name: 'Gemini 2.5 Pro',    desc: 'Previous-gen most capable Gemini model.',             provider: 'gemini', voiceInput: true  },
   // OpenAI — only the audio model supports voice
   { id: 'gpt-4o',                name: 'GPT-4o',            desc: 'Balanced OpenAI model — the OpenAI default.',         provider: 'openai', voiceInput: false },
   { id: 'gpt-4o-audio-preview',  name: 'GPT-4o Audio',      desc: 'OpenAI audio model for voice input.',                 provider: 'openai', voiceInput: true  },
@@ -46,7 +48,7 @@ export const ALL_MODELS: readonly ModelDef[] = [
 
 /** Default patch-turn model for a given provider. */
 export function defaultModel(provider: Provider): string {
-  if (provider === 'gemini') return 'gemini-2.5-flash';
+  if (provider === 'gemini') return 'gemini-3.5-flash';
   if (provider === 'openai') return 'gpt-4o';
   return 'claude-sonnet-4-6';
 }

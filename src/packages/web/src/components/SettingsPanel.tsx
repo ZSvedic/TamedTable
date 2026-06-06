@@ -40,7 +40,7 @@ const PROVIDERS: ProviderMeta[] = [
   {
     id: 'anthropic',
     name: 'Anthropic',
-    tagline: 'Claude models · required for text requests',
+    tagline: 'Claude models',
     hasVoice: false,
     envHint: 'or set ANTHROPIC_API_KEY in .env',
     keyPlaceholder: 'sk-ant-…',

@@ -8,6 +8,7 @@ on:
       - 'src/packages/web/**'
       - 'src/packages/core/**'
       - 'src/packages/headless/**'
+      - 'src/packages/model-config/**'
       - 'src/package.json'
       - 'src/bun.lock'
       - '.github/workflows/deploy.yml'
