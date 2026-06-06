@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "mockups",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd temp/mockups && exec bunx serve -p 5174 ."],
+      "port": 5174
+    },
+    {
       "name": "web",
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd src/packages/web && exec bun run dev"],
