@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { parseTours } from '@tamedtable/gherkin-tour';
 import { createWebController } from './controller.ts';
-import type { TutorialSources } from './controller.ts';
+import type { TutorialSources, ResolvedConfig } from './controller.ts';
 import { BrowserFilePort } from './lib/browser-fs.ts';
 import { App } from './App.tsx';
 import './index.css';
@@ -13,10 +13,11 @@ declare const __TT_TUTORIAL__: {
   goldens:  Record<string, string>;
 };
 
-// The model preference persists in localStorage. The API key is persisted by
-// the controller itself (also localStorage); leaving it out of opts here lets
-// the controller pick up the stored value on its own.
-const MODEL_STORAGE = 'tamedtable.model';
+// Config is now persisted by the controller itself via controller-storage.ts.
+// We still subscribe to persist the model separately for forward compat with
+// any older stored 'tamedtable.model' entries (the controller ignores that key;
+// this subscription is a no-op that doesn't write anything we need, but it
+// keeps the observer pattern intact for future use).
 
 const tutorialSources: TutorialSources = {
   tours:   Object.values(__TT_TUTORIAL__.features).flatMap((src) => parseTours(src)),
@@ -27,12 +28,12 @@ const tutorialSources: TutorialSources = {
 const controller = createWebController({
   file: new BrowserFilePort(),
   workDir: '/tamedtable',
-  model: localStorage.getItem(MODEL_STORAGE) ?? undefined,
   tutorialSources,
 });
 
+// Keep the page title in sync with activity; nothing else needed here for now.
 controller.subscribe(() => {
-  localStorage.setItem(MODEL_STORAGE, controller.getSettings().model);
+  // Intentionally empty — config is persisted inside the controller.
 });
 
 const root = document.getElementById('root');

@@ -17,6 +17,8 @@ import {
   type PlanItem,
   type RequestDebugInfo,
 } from '@tamedtable/headless';
+import { resolveConfig } from '@tamedtable/model-config';
+import { readConfigFromEnv } from '@tamedtable/model-config/env';
 
 export interface CliRunnerOptions extends HeadlessRunnerOptions {
   stdout?: NodeJS.WritableStream;
@@ -87,7 +89,7 @@ Usage:
     --output <file>                  Destination .jsonl. Required.
   tamedtable --help, -h, help        Show this usage screen.
 
-The REPL needs ANTHROPIC_API_KEY in env.
+The REPL needs ANTHROPIC_API_KEY or GEMINI_API_KEY in env.
 `;
 
 const HELP_TEXT = `TamedTable — interactive table editor. Natural-language requests edit the
@@ -127,7 +129,7 @@ language request — e.g. "normalize phone numbers", "sort by DOB desc".
 Requests are additive; use :undo to revert the last one.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires
-ANTHROPIC_API_KEY in env.
+ANTHROPIC_API_KEY or GEMINI_API_KEY in env.
 `;
 
 // ── Pure formatting helpers ────────────────────────────────────────────────
@@ -919,6 +921,13 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
   const csvPath = abs(csvCandidate);
   const outputPath = abs(flags.output);
 
+  // execute doesn't need an API key (no LLM call), but pass one if available so
+  // the headless provider can build without throwing on a missing key.
+  if (!opts.apiKey) {
+    const cfg = resolveConfig(readConfigFromEnv(), {});
+    const envKey = cfg.provider === 'gemini' ? cfg.geminiKey : cfg.anthropicKey;
+    if (envKey) opts = { ...opts, apiKey: envKey };
+  }
   const runner = createHeadlessRunner(opts);
   try { await runner.loadInput(csvPath); } catch (e) { return fail(3, `tamedtable execute: ${(e as Error).message}`); }
   try { await runner.setSpec(spec); }      catch (e) { return fail(3, `tamedtable execute: ${(e as Error).message}`); }
@@ -940,6 +949,13 @@ async function resolveFile(p: string): Promise<string | undefined> {
 async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[]): Promise<RunCliResult> {
   const stdin = opts.stdin ?? process.stdin;
   const stdout = opts.stdout ?? process.stdout;
+  // Resolve provider/key/model from env; let opts override (tests inject apiKey/model directly).
+  if (!opts.apiKey) {
+    const cfg = resolveConfig(readConfigFromEnv(), {});
+    const envKey = cfg.provider === 'gemini' ? cfg.geminiKey : cfg.anthropicKey;
+    if (envKey) opts = { ...opts, apiKey: envKey };
+    if (!opts.model) opts = { ...opts, model: cfg.model };
+  }
   const runner = createCliRunner({ ...opts, quiet: false, stdout }) as CliRunnerImpl;
   try {
     await runner.loadInput(argv[0]!);

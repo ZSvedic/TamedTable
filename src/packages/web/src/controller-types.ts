@@ -6,6 +6,9 @@
 import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { TourScenario } from '@tamedtable/gherkin-tour';
 import type { FetchLike, FilePort } from './lib/ports.ts';
+import type { ResolvedConfig } from '@tamedtable/model-config';
+
+export type { ResolvedConfig };
 
 /** Bundled sources the tutorial panel needs. In the browser these come from
  *  Vite's import.meta.glob at build time; in tests they are injected directly. */
@@ -23,10 +26,8 @@ export interface WebControllerOptions {
   file: FilePort;
   /** Custom fetch — the Cucumber cassette recorder in tests; unset in the browser. */
   fetch?: FetchLike;
-  /** Initial API key (tests inject one; the browser leaves it for the panel). */
-  apiKey?: string;
-  /** Patch-turn model the engine uses; defaults to claude-sonnet-4-6. */
-  model?: string;
+  /** Initial config (tests inject keys; the browser leaves it for the settings panel). */
+  config?: Partial<ResolvedConfig>;
   /** Directory used to materialize picked files for the engine to read. */
   workDir?: string;
   batchSize?: number;
@@ -49,10 +50,8 @@ export interface ChatMessage {
   debug?: RequestDebugInfo;
 }
 
-export interface WebSettings {
-  apiKey: string | null;
-  model: string;
-}
+/** @deprecated Use ResolvedConfig from @tamedtable/model-config instead. */
+export type WebSettings = ResolvedConfig;
 
 /** A cell coordinate: a 0-based row index and a column id. */
 export interface CellRef {

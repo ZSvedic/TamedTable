@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@tamedtable/core": "workspace:*",
-    "@tamedtable/headless": "workspace:*"
+    "@tamedtable/headless": "workspace:*",
+    "@tamedtable/model-config": "workspace:*"
   }
 }
