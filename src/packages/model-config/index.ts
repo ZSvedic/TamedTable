@@ -30,13 +30,12 @@ export interface StoragePort {
 
 export const ALL_MODELS: readonly ModelDef[] = [
   // Google (Gemini) — all models support voice input
-  { id: 'gemini-3-flash',        name: 'Gemini 3 Flash',    desc: "Google's fast, cheap model — the Google default.", provider: 'gemini', voiceInput: true  },
-  { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',  desc: 'Mid-tier Gemini model.',                           provider: 'gemini', voiceInput: true  },
-  { id: 'gemini-2.5-pro',        name: 'Gemini 2.5 Pro',    desc: 'Most capable Gemini model.',                       provider: 'gemini', voiceInput: true  },
+  { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',  desc: "Google's fast, balanced model — the Google default.", provider: 'gemini', voiceInput: true  },
+  { id: 'gemini-2.5-pro',        name: 'Gemini 2.5 Pro',    desc: 'Most capable Gemini model.',                          provider: 'gemini', voiceInput: true  },
   // OpenAI — only the audio model supports voice
-  { id: 'gpt-4o-audio-preview',  name: 'GPT-4o Audio',      desc: 'OpenAI audio model — the OpenAI default.',         provider: 'openai', voiceInput: true  },
-  { id: 'gpt-4o',                name: 'GPT-4o',            desc: 'Balanced OpenAI model.',                           provider: 'openai', voiceInput: false },
-  { id: 'gpt-4o-mini',           name: 'GPT-4o Mini',       desc: 'Fast and cheap OpenAI model.',                     provider: 'openai', voiceInput: false },
+  { id: 'gpt-4o',                name: 'GPT-4o',            desc: 'Balanced OpenAI model — the OpenAI default.',         provider: 'openai', voiceInput: false },
+  { id: 'gpt-4o-audio-preview',  name: 'GPT-4o Audio',      desc: 'OpenAI audio model for voice input.',                 provider: 'openai', voiceInput: true  },
+  { id: 'gpt-4o-mini',           name: 'GPT-4o Mini',       desc: 'Fast and cheap OpenAI model.',                        provider: 'openai', voiceInput: false },
   // Anthropic — no models support voice input
   { id: 'claude-opus-4-7',       name: 'Opus 4.7',          desc: 'Most capable — best for tricky requests.',         provider: 'anthropic', voiceInput: false },
   { id: 'claude-sonnet-4-6',     name: 'Sonnet 4.6',        desc: 'Balanced — the default.',                          provider: 'anthropic', voiceInput: false },
@@ -47,8 +46,8 @@ export const ALL_MODELS: readonly ModelDef[] = [
 
 /** Default patch-turn model for a given provider. */
 export function defaultModel(provider: Provider): string {
-  if (provider === 'gemini') return 'gemini-3-flash';
-  if (provider === 'openai') return 'gpt-4o-audio-preview';
+  if (provider === 'gemini') return 'gemini-2.5-flash';
+  if (provider === 'openai') return 'gpt-4o';
   return 'claude-sonnet-4-6';
 }
 
