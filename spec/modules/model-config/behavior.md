@@ -119,5 +119,5 @@ and forwards the chosen key to the headless runner. The help text mentions
 ## How the web settings panel uses it
 
 The panel shows three provider accordion cards — Google, OpenAI, Anthropic —
-stacked vertically. See the Web UI section of [spec/behavior.md](../../spec/behavior.md)
+stacked vertically. See the Web UI section of [spec/behavior.md](../../behavior.md)
 for the full interaction design.
