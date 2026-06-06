@@ -5,24 +5,24 @@ Feature: Group and aggregate
   Rule: group with count, sum, and avg aggregates
 
     Background:
-      Given "datanorm-input.csv" is loaded
-      And the golden output is "aggregate-by-country-expected.jsonl"
+      Given load "datanorm-input.csv"
+      And the expected output is "aggregate-by-country-expected.jsonl"
 
     @headless @cli @web @tutorial
     Scenario: Count customers per country
-      When user requests "Count customers per Country"
+      When query "Count customers per Country"
       Then column "Country" exists in the spec
       And column "customer_count" exists in the spec
-      And the table matches the golden output
+      And compare with the expected output
 
     @headless @cli @web
     Scenario: Aggregate produces one row per distinct by-tuple
-      When user requests "Group by Country and count rows"
+      When query "Group by Country and count rows"
       Then the number of rows equals the number of distinct Country values in the source
 
     @headless @cli @web
     Scenario: by-keys and agg columns replace the prior column list
-      When user requests "Group by Country and count rows"
+      When query "Group by Country and count rows"
       Then column "FirstName" is absent from the current rows
       And column "Phone" is absent from the current rows
 
@@ -30,15 +30,15 @@ Feature: Group and aggregate
 
     @headless @cli
     Scenario: Output row order matches first appearance of each group
-      Given "filter-input.csv" is loaded
-      When user requests "Group by Country and count rows"
+      Given load "filter-input.csv"
+      When query "Group by Country and count rows"
       Then the first output Country is the Country of the first input row
 
   Rule: LLM aggregate over a group's row slice
 
     @headless @cli
     Scenario: Summarize each group with an LLM aggregate
-      When user requests "For each Country, write a one-sentence summary of the customers"
+      When query "For each Country, write a one-sentence summary of the customers"
       Then column "Country" exists in the spec
       And column "summary" exists in the spec
       And every row has a non-null "summary"
@@ -47,6 +47,6 @@ Feature: Group and aggregate
 
     @headless @cli
     Scenario: Group on an empty table produces zero rows
-      Given "aggregate-empty-input.jsonl" is loaded
-      When user requests "Group by Country and count rows"
+      Given load "aggregate-empty-input.jsonl"
+      When query "Group by Country and count rows"
       Then the number of rows is 0

@@ -1,26 +1,30 @@
 export type TourAction =
-  | { kind: 'load-file';    filename: string }
-  | { kind: 'load-lookup';  filename: string }
-  | { kind: 'prefill-chat'; text: string    }
-  | { kind: 'show-golden'                   }
-  | { kind: 'display'                       }
+  | { kind: 'load-file';     filename: string }
+  | { kind: 'load-lookup';   filename: string }
+  | { kind: 'prefill-chat';  text: string     }
+  | { kind: 'show-golden'                      }
+  | { kind: 'golden-source'; filename: string }
+  | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
-export interface TourScenario { name: string; steps: TourStep[] }
+export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string }
 
 // ── Step classification ────────────────────────────────────────────────────
 
 function classify(text: string): TourAction {
-  const load = text.match(/^"(.+)" is loaded$/);
+  const load = text.match(/^load "(.+)"$/);
   if (load) return { kind: 'load-file', filename: load[1]! };
 
-  const lookup = text.match(/^the lookup table "(.+)" exists/);
+  const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup) return { kind: 'load-lookup', filename: lookup[1]! };
 
-  const chat = text.match(/^user requests "(.+)"$/);
+  const chat = text.match(/^query "(.+)"$/);
   if (chat) return { kind: 'prefill-chat', text: chat[1]! };
 
-  if (text === 'the table matches the golden output') return { kind: 'show-golden' };
+  const golden = text.match(/^the expected output is "(.+)"$/);
+  if (golden) return { kind: 'golden-source', filename: golden[1]! };
+
+  if (text === 'compare with the expected output') return { kind: 'show-golden' };
 
   return { kind: 'display' };
 }
@@ -52,9 +56,27 @@ export function parseTours(source: string): TourScenario[] {
   let pendingTags: string[] = [];
 
   function flush() {
-    if (hasScenario && scenarioTags.includes('@tutorial')) {
+    if (hasScenario) {
       const bg = inRule ? [...topBg, ...ruleBg] : [...topBg];
-      result.push({ name: scenarioName, steps: [...bg, ...scenarioSteps] });
+      const all = [...bg, ...scenarioSteps];
+
+      // The golden source is data, not a tour step: lift it onto the scenario
+      // and drop it from the visible step list.
+      let golden: string | undefined;
+      for (const s of all) {
+        if (s.action.kind === 'golden-source') { golden = s.action.filename; break; }
+      }
+
+      // Verification / narration steps (anything unclassified) are test
+      // machinery, not tour stops — drop them so a tour reads load → query →
+      // compare. The golden-source step is dropped too (lifted above).
+      const steps = all.filter(
+        (s) => s.action.kind !== 'display' && s.action.kind !== 'golden-source',
+      );
+
+      const scenario: TourScenario = { name: scenarioName, tags: scenarioTags, steps };
+      if (golden !== undefined) scenario.golden = golden;
+      result.push(scenario);
     }
     hasScenario = false;
     scenarioName = '';

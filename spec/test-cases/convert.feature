@@ -5,7 +5,7 @@ Feature: Tabular format output
   Rule: :save dispatches on extension
 
     Background:
-      Given "datanorm-input.csv" is loaded
+      Given load "datanorm-input.csv"
 
     @cli @offline
     Scenario: :save writes CSV when the extension is .csv
@@ -44,19 +44,19 @@ Feature: Tabular format output
     @headless @cli
     Scenario: Fields with commas, quotes, or newlines are quoted
       Given a row with FirstName "O'Hara", LastName "Smith, Jr.", Notes "line1\nline2"
-      When user requests to export as "../temp/quoting.csv"
+      When export as "../temp/quoting.csv"
       Then "../temp/quoting.csv" contains the line "1,O'Hara,\"Smith, Jr.\",\"line1\nline2\""
 
     @headless @cli
     Scenario: Null and undefined render as empty cells
       Given a row with FirstName "Ada", LastName null
-      When user requests to export as "../temp/nulls.csv"
+      When export as "../temp/nulls.csv"
       Then "../temp/nulls.csv" contains the line "1,Ada,"
 
     @headless @cli
     Scenario: Nested objects serialize as compact JSON inside the cell
       Given a row with FirstName "Ada" and an "Address" column equal to the object {"city":"London","zip":"E1"}
-      When user requests to export as "../temp/nested.csv"
+      When export as "../temp/nested.csv"
       Then "../temp/nested.csv" contains the line "1,Ada,\"{\"\"city\"\":\"\"London\"\",\"\"zip\"\":\"\"E1\"\"}\""
 
   Rule: Batch execute writes CSV when --output is .csv
@@ -64,10 +64,10 @@ Feature: Tabular format output
     @cli
     Scenario: Execute saved flow with CSV output
       Given "datanorm.flow" exists
-      And the golden output is "datanorm-expected.csv"
+      And the expected output is "datanorm-expected.csv"
       When user runs "tamedtable execute datanorm.flow --input datanorm-input.csv --output ../temp/datanorm-output.csv"
       Then exit code is 0
-      And "../temp/datanorm-output.csv" matches the golden output
+      And "../temp/datanorm-output.csv" matches the expected output
 
     @cli
     Scenario: Execute fails clearly when --output extension is unknown

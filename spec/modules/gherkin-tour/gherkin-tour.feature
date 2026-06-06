@@ -1,52 +1,54 @@
 # #GherkinTour
-# Zero-dependency parser: reads a .feature string, returns @tutorial scenarios.
-# All fixtures are inline docstrings — no file I/O.
+# Zero-dependency parser: reads a .feature string, returns every scenario with
+# its tags and a tour-ready step list. All fixtures are inline docstrings.
 Feature: Gherkin Tour parser
 
-  Rule: Only @tutorial-tagged scenarios are returned
+  Rule: Every scenario is returned, with its tags
 
     @headless
-    Scenario: Untagged scenario is dropped
+    Scenario: A scenario is returned regardless of tags
       Given a feature string:
         """
         Feature: Demo
           Scenario: Not tagged
-            Given "foo.csv" is loaded
-        """
-      When parseTours is called
-      Then the result is empty
-
-    @headless
-    Scenario: @tutorial scenario is returned
-      Given a feature string:
-        """
-        Feature: Demo
-          @tutorial
-          Scenario: My tour
-            Given "foo.csv" is loaded
+            Given load "foo.csv"
         """
       When parseTours is called
       Then the result has 1 scenario
-      And scenario 1 is named "My tour"
+      And scenario 1 is named "Not tagged"
 
     @headless
-    Scenario: Mixed tags — only @tutorial ones returned
+    Scenario: Tags are captured on the scenario
+      Given a feature string:
+        """
+        Feature: Demo
+          @web @tutorial
+          Scenario: My tour
+            Given load "foo.csv"
+        """
+      When parseTours is called
+      Then scenario 1 is tagged "@tutorial"
+      And scenario 1 is tagged "@web"
+
+    @headless
+    Scenario: Multiple scenarios are all returned
       Given a feature string:
         """
         Feature: Demo
           @other
-          Scenario: Not mine
-            Given "foo.csv" is loaded
+          Scenario: First
+            Given load "foo.csv"
 
           @tutorial
-          Scenario: Mine
-            Given "bar.csv" is loaded
+          Scenario: Second
+            Given load "bar.csv"
         """
       When parseTours is called
-      Then the result has 1 scenario
-      And scenario 1 is named "Mine"
+      Then the result has 2 scenarios
+      And scenario 1 is named "First"
+      And scenario 2 is named "Second"
 
-  Rule: Background steps prepend to every @tutorial scenario
+  Rule: Background steps prepend to every scenario
 
     @headless
     Scenario: Top-level Background steps prepend
@@ -54,15 +56,15 @@ Feature: Gherkin Tour parser
         """
         Feature: Demo
           Background:
-            Given "base.csv" is loaded
+            Given load "base.csv"
 
           @tutorial
           Scenario: With background
-            When user requests "Do something"
+            When query "Do something"
         """
       When parseTours is called
       Then scenario 1 has 2 steps
-      And step 1 of scenario 1 has text '"base.csv" is loaded'
+      And step 1 of scenario 1 has text 'load "base.csv"'
 
     @headless
     Scenario: Rule-scoped Background prepends only to scenarios under that Rule
@@ -71,73 +73,110 @@ Feature: Gherkin Tour parser
         Feature: Demo
           @tutorial
           Scenario: Outside rule
-            When user requests "Top level"
+            When query "Top level"
 
           Rule: Scoped
             Background:
-              Given "scoped.csv" is loaded
+              Given load "scoped.csv"
 
             @tutorial
             Scenario: Inside rule
-              When user requests "Do scoped"
+              When query "Do scoped"
         """
       When parseTours is called
       Then the result has 2 scenarios
       And scenario 1 has 1 step
       And scenario 2 has 2 steps
-      And step 1 of scenario 2 has text '"scoped.csv" is loaded'
+      And step 1 of scenario 2 has text 'load "scoped.csv"'
 
   Rule: Step classification
 
     @headless
-    Scenario: load-file action from Given "X" is loaded
+    Scenario: load-file action from load "X"
       Given a feature string:
         """
         Feature: Demo
           @tutorial
           Scenario: Load step
-            Given "my-data.csv" is loaded
+            Given load "my-data.csv"
         """
       When parseTours is called
       Then step 1 of scenario 1 has action kind "load-file"
       And step 1 of scenario 1 has action filename "my-data.csv"
 
     @headless
-    Scenario: prefill-chat action from When user requests "Y"
+    Scenario: load-lookup action from load the lookup table "X"
+      Given a feature string:
+        """
+        Feature: Demo
+          @tutorial
+          Scenario: Lookup step
+            Given load the lookup table "codes.csv" with columns "A, B"
+        """
+      When parseTours is called
+      Then step 1 of scenario 1 has action kind "load-lookup"
+      And step 1 of scenario 1 has action filename "codes.csv"
+
+    @headless
+    Scenario: prefill-chat action from query "Y"
       Given a feature string:
         """
         Feature: Demo
           @tutorial
           Scenario: Chat step
-            When user requests "Normalize phone numbers"
+            When query "Normalize phone numbers"
         """
       When parseTours is called
       Then step 1 of scenario 1 has action kind "prefill-chat"
       And step 1 of scenario 1 has action text "Normalize phone numbers"
 
     @headless
-    Scenario: show-golden action from Then the table matches the golden output
+    Scenario: show-golden action from compare with the expected output
       Given a feature string:
         """
         Feature: Demo
           @tutorial
           Scenario: Golden step
-            Then the table matches the golden output
+            When query "Do it"
+            Then compare with the expected output
         """
       When parseTours is called
-      Then step 1 of scenario 1 has action kind "show-golden"
+      Then step 2 of scenario 1 has action kind "show-golden"
+
+  Rule: Verification steps are dropped; the golden source is lifted
 
     @headless
-    Scenario: display fallback for unrecognised steps
+    Scenario: Unrecognised (verification) steps are dropped from the tour
       Given a feature string:
         """
         Feature: Demo
           @tutorial
-          Scenario: Unknown step
+          Scenario: With assertions
+            Given load "x.csv"
+            When query "Do it"
             Then something else happens
+            And column "Country" exists in the spec
         """
       When parseTours is called
-      Then step 1 of scenario 1 has action kind "display"
+      Then scenario 1 has 2 steps
+      And step 1 of scenario 1 has action kind "load-file"
+      And step 2 of scenario 1 has action kind "prefill-chat"
+
+    @headless
+    Scenario: the expected output step is lifted onto the scenario, not a step
+      Given a feature string:
+        """
+        Feature: Demo
+          @tutorial
+          Scenario: With golden
+            Given load "x.csv"
+            And the expected output is "x-expected.jsonl"
+            When query "Do it"
+            Then compare with the expected output
+        """
+      When parseTours is called
+      Then scenario 1 has 3 steps
+      And scenario 1 has golden "x-expected.jsonl"
 
   Rule: Comments and Scenario Outlines are ignored
 
@@ -150,7 +189,7 @@ Feature: Gherkin Tour parser
           @tutorial
           Scenario: Commented
             # Another comment
-            Given "x.csv" is loaded
+            Given load "x.csv"
         """
       When parseTours is called
       Then the result has 1 scenario
@@ -163,14 +202,14 @@ Feature: Gherkin Tour parser
         Feature: Demo
           @tutorial
           Scenario Outline: Outline tour
-            Given "<file>" is loaded
+            Given load "<file>"
             Examples:
               | file    |
               | a.csv   |
 
           @tutorial
           Scenario: Regular tour
-            Given "b.csv" is loaded
+            Given load "b.csv"
         """
       When parseTours is called
       Then the result has 1 scenario

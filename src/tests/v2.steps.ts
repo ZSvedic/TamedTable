@@ -123,7 +123,7 @@ Given('{string} contains a row with FullName {string}',
   async function (this: TamedTableWorld, file: string, fullName: string) {
     // Descriptive assertion on the fixture itself; ALSO ensures the file is
     // loaded so subsequent transformations run against it. Rules without a
-    // Background don't inherit the parent rule's `is loaded` step.
+    // Background don't inherit the parent rule's `load` step.
     const text = await readFile(join(SPEC_TC_DIR, file), 'utf8');
     const lines = text.split('\n').filter(Boolean);
     const hit = lines.some((l) => l.split(',', 2)[1] === fullName);
@@ -182,7 +182,7 @@ Then('the row has LastName equal to null', function (this: TamedTableWorld) {
 
 // ── join scaffolding (join.feature) ────────────────────────────────────────
 
-Given('the lookup table {string} exists with columns {string}',
+Given('load the lookup table {string} with columns {string}',
   async function (this: TamedTableWorld, file: string, _cols: string) {
     await readFile(join(SPEC_TC_DIR, file), 'utf8');
   });
@@ -361,13 +361,13 @@ Then('the request commits', function (this: TamedTableWorld) {
 
 Then('the request fails with an error containing {string}', function (this: TamedTableWorld, needle: string) {
   const out = this.lastRequestOutcome;
-  assert.ok(out, 'no prior `user requests` step recorded an outcome');
+  assert.ok(out, 'no prior `query` step recorded an outcome');
   assert.ok(!out!.ok, 'expected failure; request succeeded');
   assert.ok(out!.error!.message.includes(needle), `error "${out!.error!.message}" lacks "${needle}"`);
 });
 
 Then('the spec is unchanged from before the request', function (this: TamedTableWorld) {
   const out = this.lastRequestOutcome;
-  assert.ok(out, 'no prior `user requests` step recorded an outcome');
+  assert.ok(out, 'no prior `query` step recorded an outcome');
   assert.deepEqual(out!.specAfter, out!.specBefore);
 });

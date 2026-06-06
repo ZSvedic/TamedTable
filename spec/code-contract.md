@@ -691,21 +691,25 @@ Anthropic model.
 
 ```ts
 export type TourAction =
-  | { kind: 'load-file';   filename: string }
-  | { kind: 'load-lookup'; filename: string }  // lookup table; no loadInput call
-  | { kind: 'prefill-chat'; text: string   }
-  | { kind: 'show-golden'                  }
-  | { kind: 'display'                      }
+  | { kind: 'load-file';     filename: string }
+  | { kind: 'load-lookup';   filename: string }  // lookup table; no loadInput call
+  | { kind: 'prefill-chat';  text: string     }
+  | { kind: 'show-golden'                      }
+  | { kind: 'golden-source'; filename: string }  // lifted onto scenario.golden
+  | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
-export interface TourScenario { name: string; steps: TourStep[] }
+export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string }
 
 export function parseTours(source: string): TourScenario[]
 ```
 
-`parseTours` accepts a raw `.feature` file string and returns every
-`@tutorial`-tagged scenario with its Background steps prepended. Scenario
-Outlines are skipped.
+`parseTours` accepts a raw `.feature` file string and returns **every**
+scenario (each with its `tags`) and its Background steps prepended; the consumer
+filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
+verification/narration) are dropped from `steps`; a `golden-source` step is
+lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
+holds only `load-file`, `load-lookup`, `prefill-chat`, and `show-golden`.
 
 ### TutorialSources (`@tamedtable/web`)
 
@@ -734,7 +738,8 @@ export interface WebControllerOptions {
 |---|---|
 | `openTutorial()` | Sets `tutorialOpen = true`. |
 | `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
-| `tutorialScenarioNames(): string[]` | Names of all available tours. |
+| `tutorialScenarioNames(): string[]` | Names of `@tutorial` tours (the clickable list). |
+| `devScenarioNames(): string[]` | Names of `@web` non-`@tutorial` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Sets `activeTourIndex` by name; resets step state. |
 | `async playTutorial()` | Resets step state; executes step 0. |
 | `async nextStep()` | Increments step index; executes the new step. |

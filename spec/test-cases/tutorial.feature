@@ -12,16 +12,19 @@ Feature: Tutorial panel
       Then the tutorial panel is shown
 
     @web
-    Scenario: Dropdown lists only @tutorial scenario names
+    Scenario: The clickable list shows only @tutorial scenario names
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the tutorial list includes "Filter by Country"
       And the tutorial list includes "Count customers per country"
       And the tutorial list includes "Left join enriches each customer with ISO and Region"
-      And the tutorial list includes "Split FullName into FirstName and LastName on a single space"
-      And the tutorial list includes "Drop duplicates by Email"
-      And the tutorial list includes "Pivot long to wide"
-      And the tutorial list includes "Validate required fields"
+
+    @web
+    Scenario: The Dev dropdown lists @web non-@tutorial scenarios
+      Given the TamedTable web app
+      When user opens the tutorial panel
+      Then the dev list includes "Aggregate produces one row per distinct by-tuple"
+      And the dev list does not include "Count customers per country"
 
   Rule: Playing a tutorial walks through steps
 

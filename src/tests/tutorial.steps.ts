@@ -55,6 +55,16 @@ Then('the tutorial list includes {string}', function (this: TamedTableWorld, nam
   assert.ok(names.includes(name), `tutorial list should include "${name}"; got: ${JSON.stringify(names)}`);
 });
 
+Then('the dev list includes {string}', function (this: TamedTableWorld, name: string) {
+  const names = controller(this).devScenarioNames();
+  assert.ok(names.includes(name), `dev list should include "${name}"; got: ${JSON.stringify(names)}`);
+});
+
+Then('the dev list does not include {string}', function (this: TamedTableWorld, name: string) {
+  const names = controller(this).devScenarioNames();
+  assert.ok(!names.includes(name), `dev list should not include "${name}"; got: ${JSON.stringify(names)}`);
+});
+
 Then('the tutorial is at step {int}', function (this: TamedTableWorld, n: number) {
   assert.equal(controller(this).currentTutorialStepNumber(), n);
 });

@@ -5,12 +5,12 @@ Feature: Lookup join
   Rule: Left join keeps unmatched left rows with null right columns
 
     Background:
-      Given "datanorm-input.csv" is loaded
-      And the lookup table "join-country-codes.csv" exists with columns "Country, ISO, Region"
+      Given load "datanorm-input.csv"
+      And load the lookup table "join-country-codes.csv" with columns "Country, ISO, Region"
 
     @headless @cli @web @tutorial
     Scenario: Left join enriches each customer with ISO and Region
-      When user requests "Join with join-country-codes.csv on Country to add ISO and Region"
+      When query "Join with join-country-codes.csv on Country to add ISO and Region"
       Then column "ISO" exists in the spec
       And column "Region" exists in the spec
       And every row keeps its original FirstName
@@ -19,7 +19,7 @@ Feature: Lookup join
     Scenario: Unmatched left rows get null right-side columns
       Given the lookup table has no entry for Country "Atlantis"
       And the customer table contains a row with Country "Atlantis"
-      When user requests "Join with join-country-codes.csv on Country to add ISO and Region"
+      When query "Join with join-country-codes.csv on Country to add ISO and Region"
       Then the Atlantis row has ISO equal to null
       And the Atlantis row has Region equal to null
 
@@ -28,7 +28,7 @@ Feature: Lookup join
     @headless @cli
     Scenario: Inner join removes left rows without a match
       Given the customer table contains a row with Country "Atlantis"
-      When user requests "Inner join with join-country-codes.csv on Country"
+      When query "Inner join with join-country-codes.csv on Country"
       Then the current rows contain no row with Country "Atlantis"
 
   Rule: Column name collisions auto-rename right-side columns
@@ -36,7 +36,7 @@ Feature: Lookup join
     @headless @cli
     Scenario: Right column with the same name as a left column is renamed
       Given the lookup table "join-country-codes.csv" has a column "Country"
-      When user requests "Join with join-country-codes.csv on Country to add ISO"
+      When query "Join with join-country-codes.csv on Country to add ISO"
       Then column "Country" exists in the spec
       And column "Country_2" exists in the spec
 
@@ -44,7 +44,7 @@ Feature: Lookup join
 
     @headless @cli
     Scenario: join.with with .jsonl loads as JSONL
-      When user requests "Join with join-country-codes.jsonl on Country to add ISO"
+      When query "Join with join-country-codes.jsonl on Country to add ISO"
       Then column "ISO" exists in the spec
 
     @headless @cli @offline

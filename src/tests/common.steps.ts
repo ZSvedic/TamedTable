@@ -16,12 +16,12 @@ const fixture = (name: string) => (name.includes('/') ? join(SRC_DIR, name) : jo
 // the committed spec/test-cases/ dir. Golden -expected.jsonl files stay fixtures.
 const output = (name: string) => join(TEMP_DIR, basename(name));
 
-Given('{string} is loaded', async function (this: TamedTableWorld, filename: string) {
+Given('load {string}', async function (this: TamedTableWorld, filename: string) {
   this.inputPath = fixture(filename);
   await this.ensureRunner().loadInput(this.inputPath);
 });
 
-Given('the golden output is {string}', function (this: TamedTableWorld, filename: string) {
+Given('the expected output is {string}', function (this: TamedTableWorld, filename: string) {
   this.goldenPath = fixture(filename);
 });
 
@@ -49,7 +49,7 @@ Then('{string} contains the line {string}', async function (this: TamedTableWorl
   assert.ok(text.includes(needle), `${filename} missing line:\n${needle}\nFile was:\n${text}`);
 });
 
-When('user requests {string}', async function (this: TamedTableWorld, text: string) {
+When('query {string}', async function (this: TamedTableWorld, text: string) {
   // Capture the request's outcome rather than throwing, so scenarios that
   // assert failure via `Then the request fails …` can inspect it. Default
   // to datanorm-input.csv when a Rule lacks a Background that loads input.
@@ -69,7 +69,7 @@ When('user requests {string}', async function (this: TamedTableWorld, text: stri
   }
 });
 
-When('user requests to export as {string}', async function (this: TamedTableWorld, filename: string) {
+When('export as {string}', async function (this: TamedTableWorld, filename: string) {
   await this.ensureRunner().exportAs(output(filename));
 });
 
@@ -90,7 +90,7 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
   this.lastInvocation = { exitCode: result.exitCode, stdout: chunks.join(''), stderr: result.stderr };
 });
 
-Then('column {string} matches the golden output', async function (this: TamedTableWorld, column: string) {
+Then('column {string} matches the expected output', async function (this: TamedTableWorld, column: string) {
   const golden = await readJsonl(this.goldenPath!);
   const actual = this.ensureRunner().currentRows();
   assert.equal(actual.length, golden.length, `row count: actual ${actual.length} vs golden ${golden.length}`);
@@ -99,13 +99,13 @@ Then('column {string} matches the golden output', async function (this: TamedTab
   }
 });
 
-Then('the table matches the golden output', async function (this: TamedTableWorld) {
+Then('compare with the expected output', async function (this: TamedTableWorld) {
   const golden = await readJsonl(this.goldenPath!);
   const actual = this.ensureRunner().currentRows();
   assert.deepEqual(actual, golden);
 });
 
-Then('{string} matches the golden output', async function (this: TamedTableWorld, filename: string) {
+Then('{string} matches the expected output', async function (this: TamedTableWorld, filename: string) {
   // CSV goldens compare as text (RFC 4180 ordering matters); JSONL goldens compare row-by-row.
   if (this.goldenPath!.endsWith('.csv')) {
     const golden = await readFile(this.goldenPath!, 'utf8');
@@ -118,7 +118,7 @@ Then('{string} matches the golden output', async function (this: TamedTableWorld
   assert.deepEqual(actual, golden);
 });
 
-Then('{string} matches the golden output ignoring {string}', async function (this: TamedTableWorld, filename: string, ignoreColumn: string) {
+Then('{string} matches the expected output ignoring {string}', async function (this: TamedTableWorld, filename: string, ignoreColumn: string) {
   const golden = await readJsonl(this.goldenPath!);
   const actual = await readJsonl(output(filename));
   const strip = (rows: Row[]) =>

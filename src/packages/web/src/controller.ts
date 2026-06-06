@@ -859,8 +859,19 @@ export class WebController {
     this.cancelTutorial();
   }
 
+  /** Names of `@tutorial` tours — the clickable list in the panel. */
   tutorialScenarioNames(): string[] {
-    return this.tutorialSrc?.tours.map((t) => t.name) ?? [];
+    return (this.tutorialSrc?.tours ?? [])
+      .filter((t) => t.tags.includes('@tutorial'))
+      .map((t) => t.name);
+  }
+
+  /** Names of `@web` scenarios that are not `@tutorial` — the trailing "Dev"
+   *  dropdown for smoke-testing a scenario without opening the .feature file. */
+  devScenarioNames(): string[] {
+    return (this.tutorialSrc?.tours ?? [])
+      .filter((t) => t.tags.includes('@web') && !t.tags.includes('@tutorial'))
+      .map((t) => t.name);
   }
 
   selectTutorialScenario(name: string): void {
@@ -943,6 +954,7 @@ export class WebController {
       case 'load-lookup': return 'tutorial-open-btn';
       case 'prefill-chat': return 'tutorial-chat-input';
       case 'show-golden':
+      case 'golden-source':
       case 'display': return 'tutorial-table-view';
     }
   }
@@ -974,7 +986,9 @@ export class WebController {
         if (!this.streaming) void this.sendChat(action.text);
         break;
       case 'show-golden': {
-        const goldenFile = this.findTourGolden(tour!);
+        // The golden filename is lifted onto the scenario by the parser (from
+        // the `the expected output is "X"` step), so no step scan is needed.
+        const goldenFile = tour?.golden;
         if (goldenFile) {
           const raw = this.tutorialSrc.goldens[goldenFile];
           if (raw) {
@@ -984,19 +998,10 @@ export class WebController {
         }
         break;
       }
+      case 'golden-source':
       case 'display':
         break;
     }
-  }
-
-  // Scan the tour's display steps for 'the golden output is "X"' to find
-  // the golden filename without needing an explicit mapping.
-  private findTourGolden(tour: { steps: Array<{ text: string }> }): string | null {
-    for (const step of tour.steps) {
-      const m = step.text.match(/^the golden output is "(.+)"$/);
-      if (m) return m[1]!;
-    }
-    return null;
   }
 }
 
