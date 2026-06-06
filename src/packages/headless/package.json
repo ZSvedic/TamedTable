@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.74",
+    "@ai-sdk/google": "^3.0.0",
+    "@ai-sdk/openai": "^3.0.0",
     "@duckdb/node-api": "1.5.2-r.1",
     "@tamedtable/core": "workspace:*",
+    "@tamedtable/model-config": "workspace:*",
     "ai": "^6.0.174",
     "fast-json-patch": "^3.1.1"
   }

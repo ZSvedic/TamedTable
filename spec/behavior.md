@@ -737,6 +737,14 @@ the current transformations against the source, so the table on screen is
 preserved and the new model drives the next request. Full detail in
 [spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
 
+When a request fails because the API key is wrong or missing, the web shell
+surfaces a toast with a sentence the user can act on: "Invalid API key. Open
+Settings to update your Gemini key." (or OpenAI / Anthropic). A model-not-found
+error reads "Model not found. The selected model may be unavailable." A network
+or CORS failure reads "Network error. Could not reach the Gemini API." Errors
+that don't match a known pattern pass through as-is so no information is lost.
+The provider name in the message matches whichever provider card is selected.
+
 Toolbar action buttons carry tooltips that name their CLI command
 equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the
 CSV save shows `Save the current rows (:save)`, and the flow save shows

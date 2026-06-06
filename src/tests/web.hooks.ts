@@ -55,6 +55,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
         const ct = url.toLowerCase().endsWith('.jsonl') ? 'application/jsonl' : 'text/csv';
         return Promise.resolve(new Response(body, { status: 200, headers: { 'content-type': ct } }));
       }
+      if (ctx.mockLlmFetch) return ctx.mockLlmFetch(input, init);
       if (innerFetch) return Promise.resolve(innerFetch(input, init));
       return fetch(input as Parameters<typeof fetch>[0], init);
     };
@@ -62,6 +63,8 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       file: port,
       voice: ctx.voicePort,
       fetch: compositeFetch,
+      // Suppress real shell API keys — tests set keys explicitly via steps.
+      env: {},
       config: opts.apiKey ? { anthropicKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,

@@ -32,6 +32,10 @@ export interface WebControllerOptions {
   voice?: VoicePort;
   /** Initial config (tests inject keys; the browser leaves it for the settings panel). */
   config?: Partial<ResolvedConfig>;
+  /** Environment variables used to resolve the initial config. When omitted
+   *  the controller reads from `process.env` (browser/CLI behaviour). Tests
+   *  pass `{}` here so real API keys in the shell do not bleed into scenarios. */
+  env?: Record<string, string | undefined>;
   /** Directory used to materialize picked files for the engine to read. */
   workDir?: string;
   batchSize?: number;

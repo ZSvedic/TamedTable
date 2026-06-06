@@ -293,3 +293,25 @@ Feature: Web front-end
       When user selects the provider "openai"
       And user opens the settings panel
       Then the provider card "openai" is expanded
+
+  Rule: Provider API errors surface descriptive messages
+
+    @web
+    Scenario: A Gemini request with a wrong key shows a descriptive error
+      Given the TamedTable web app
+      And "datanorm-input.csv" is loaded
+      And user clicks the provider card "gemini"
+      And the gemini key is set to "bad-key"
+      And the LLM API returns a 401 unauthorized error
+      When user sends the chat message "norm dob col"
+      Then a toast shows "Invalid API key"
+
+    @web
+    Scenario: An OpenAI request with a wrong key shows a descriptive error
+      Given the TamedTable web app
+      And "datanorm-input.csv" is loaded
+      And user clicks the provider card "openai"
+      And the openai key is set to "bad-key"
+      And the LLM API returns a 401 unauthorized error
+      When user sends the chat message "norm dob col"
+      Then a toast shows "Invalid API key"
