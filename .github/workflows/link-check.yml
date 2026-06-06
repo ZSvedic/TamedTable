@@ -17,8 +17,12 @@ on:
 jobs:
   lychee:
     runs-on: ubuntu-latest
+    # actions/cache has no Node 24 release yet; force it (and any other
+    # bundled Node 20 action) onto Node 24 to clear the deprecation warning.
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Restore lychee cache
         uses: actions/cache@v4
