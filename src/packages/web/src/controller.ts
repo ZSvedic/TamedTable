@@ -404,7 +404,8 @@ export class WebController {
       const debug = this.lastDebug;
       this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
     } catch (e) {
-      this.fail(userFacingMessage(e, this.config.provider));
+      const debug = (e as { debug?: RequestDebugInfo }).debug;
+      this.fail(userFacingMessage(e, this.config.provider), debug);
     }
   }
 
@@ -515,9 +516,9 @@ export class WebController {
     return ctx;
   }
 
-  private fail(message: string): void {
+  private fail(message: string, debug?: RequestDebugInfo): void {
     this.pushToast('error', message);
-    this.pushMessage('assistant', `Error: ${message}`);
+    this.pushMessage('assistant', `Error: ${message}`, debug);
   }
 
   private pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo): void {
