@@ -60,6 +60,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
     };
     return createWebController({
       file: port,
+      voice: ctx.voicePort,
       fetch: compositeFetch,
       config: opts.apiKey ? { anthropicKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,

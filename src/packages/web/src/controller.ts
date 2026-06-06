@@ -21,10 +21,12 @@ import type { Row, Spec } from '@tamedtable/core';
 import {
   resolveConfig,
   defaultModel,
+  providerFor,
   type Provider,
   type ResolvedConfig,
 } from '@tamedtable/model-config';
 import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
+import { buildVoicePrompt, callGeminiVoice, type VoiceContext, type VoicePort } from './lib/voice.ts';
 import { clampPage } from './lib/pagination.ts';
 import {
   readStoredConfig,
@@ -39,6 +41,7 @@ import type {
   DialogKind,
   Toast,
   TutorialSources,
+  VoiceStatus,
   WebControllerOptions,
   WebSettings,
 } from './controller-types.ts';
@@ -54,6 +57,7 @@ export type {
   ResolvedConfig,
   Toast,
   TutorialSources,
+  VoiceStatus,
   WebControllerOptions,
   WebSettings,
 };
@@ -96,6 +100,12 @@ export class WebController {
 
   private activeAbort: AbortController | null = null;
 
+  // Voice input — recording port (browser MediaRecorder or a test stub), the
+  // current mic state, and the 30 s auto-stop timer.
+  private readonly voice: VoicePort | undefined;
+  private voiceAbort: AbortController | null = null;
+  private voiceTimer: ReturnType<typeof setTimeout> | undefined;
+
   // Pagination — 1-based page index over the derived rows, clamped on read.
   private pageNum = 1;
   // Filename of the most recent save, cleared by the next state change;
@@ -121,6 +131,8 @@ export class WebController {
   readonly pageSize = PAGE_SIZE;
   /** The selected cell, or null — drives the status footer. */
   selection: CellRef | null = null;
+  /** Microphone state — drives the MicButton's red ring and spinner. */
+  voiceStatus: VoiceStatus = 'idle';
 
   // ── Tutorial panel state ─────────────────────────────────────────────────
   tutorialOpen = false;
@@ -136,6 +148,7 @@ export class WebController {
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
     this.file = opts.file;
+    this.voice = opts.voice;
     this.workDir = opts.workDir ?? 'tamedtable-web-work';
     // In the browser we avoid importing process.env — guard with typeof check.
     const envVars: Record<string, string | undefined> =
@@ -185,7 +198,13 @@ export class WebController {
         // A non-empty key lets the provider build; the real key is injected
         // per-request by makeFetch() (browser) or is irrelevant (cassette).
         apiKey: this.config.anthropicKey ?? PLACEHOLDER_KEY,
-        model: this.config.model,
+        // Text requests always route through Anthropic (Google/OpenAI are
+        // voice-only here), so the engine must run an Anthropic model — even
+        // when the selected model belongs to another provider (e.g. a voice
+        // session on Google). Fall back to the Anthropic default in that case.
+        model: providerFor(this.config.model) === 'anthropic'
+          ? this.config.model
+          : defaultModel('anthropic'),
         fetch: this.makeFetch(),
         batchSize: this.opts.batchSize,
         chunkSize: this.opts.chunkSize,
@@ -393,6 +412,108 @@ export class WebController {
   /** Cancel the in-flight request, if any. */
   cancelRequest(): void {
     this.activeAbort?.abort();
+  }
+
+  // ── Voice input ────────────────────────────────────────────────────────────
+  // #VoiceInput
+
+  /** True when the mic button should show: Google selected with a Gemini key,
+   *  and a recording port is wired. */
+  voiceAvailable(): boolean {
+    return (
+      this.voice !== undefined &&
+      this.config.provider === 'gemini' &&
+      !!this.config.geminiKey
+    );
+  }
+
+  /** Press-and-hold start: begin recording, auto-stopping after 30 s. */
+  async startVoice(): Promise<void> {
+    if (!this.voice || this.voiceStatus !== 'idle') return;
+    if (!this.voiceAvailable()) return;
+    try {
+      await this.voice.startRecording();
+    } catch (e) {
+      this.pushToast('error', `Could not start recording: ${(e as Error).message}`);
+      return;
+    }
+    this.voiceStatus = 'recording';
+    this.voiceTimer = setTimeout(() => void this.stopVoice(), 30_000);
+    this.notify();
+  }
+
+  /** Release: stop recording, send the audio + context to Gemini, and feed the
+   *  returned request text into the ordinary chat pipeline. */
+  async stopVoice(): Promise<void> {
+    if (!this.voice || this.voiceStatus !== 'recording') return;
+    this.clearVoiceTimer();
+    this.voiceStatus = 'sending';
+    this.voiceAbort = new AbortController();
+    this.notify();
+
+    let text: string;
+    try {
+      const audio = await this.voice.stopRecording();
+      const prompt = buildVoicePrompt(this.buildVoiceContext());
+      text = await callGeminiVoice(
+        this.config.geminiKey!,
+        this.config.model,
+        audio,
+        prompt,
+        this.voiceAbort.signal,
+        this.opts.fetch,
+      );
+    } catch (e) {
+      this.pushToast('error', `Voice input failed: ${(e as Error).message}`);
+      this.voiceStatus = 'idle';
+      this.voiceAbort = null;
+      this.notify();
+      return;
+    }
+
+    this.voiceStatus = 'idle';
+    this.voiceAbort = null;
+    this.notify();
+    await this.sendChat(text);
+  }
+
+  /** Escape: discard the recording without sending anything. */
+  cancelVoice(): void {
+    if (this.voiceStatus === 'idle') return;
+    this.clearVoiceTimer();
+    this.voiceAbort?.abort();
+    this.voiceAbort = null;
+    try {
+      this.voice?.cancelRecording();
+    } catch {
+      // A teardown failure must not strand the UI in a recording state.
+    }
+    this.voiceStatus = 'idle';
+    this.notify();
+  }
+
+  private clearVoiceTimer(): void {
+    if (this.voiceTimer) {
+      clearTimeout(this.voiceTimer);
+      this.voiceTimer = undefined;
+    }
+  }
+
+  /** Snapshot the current table view for the Gemini prompt. */
+  private buildVoiceContext(): VoiceContext {
+    const spec = this.currentSpec();
+    const filename = spec.table ? basename(spec.table) : basename(this.sourcePath) || 'table';
+    const columns = spec.columns.map((c) => c.id);
+    const ctx: VoiceContext = { filename, columns };
+    if (this.selection) {
+      const value = this.displayRows()[this.selection.row]?.[this.selection.column];
+      ctx.selectedCell = {
+        col: this.selection.column,
+        row: this.selection.row,
+        value: value === undefined || value === null ? '' : String(value),
+      };
+    }
+    return ctx;
   }
 
   private fail(message: string): void {
