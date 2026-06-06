@@ -1,5 +1,8 @@
 import { generateText, tool, stepCountIs, jsonSchema } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
+import { providerFor } from '@tamedtable/model-config';
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
@@ -595,9 +598,12 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private sourcePath = '';
   private spec: Spec = { columns: [], transformations: [] };
   private derivedRows: Row[] = [];
-  private modelCache: ReturnType<ReturnType<typeof createAnthropic>> | undefined;
-  private cellModelCache: ReturnType<ReturnType<typeof createAnthropic>> | undefined;
-  private providerCache: ReturnType<typeof createAnthropic> | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private modelCache: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private cellModelCache: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private providerCache: ((modelId: string) => any) | undefined;
   private cellResultCache = new Map<string, unknown>();
   // Per-request tally of model calls + token usage; reset at the start of
   // each request() and rolled up into the RequestDebugInfo it emits.
@@ -658,32 +664,47 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     };
   }
 
-  private provider(): ReturnType<typeof createAnthropic> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private provider(): (modelId: string) => any {
     if (this.providerCache) return this.providerCache;
-    const apiKey = this.opts.apiKey ?? process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-    }
-    const rawBase = this.opts.baseURL ?? process.env.ANTHROPIC_BASE_URL;
-    const baseURL = rawBase
-      ? rawBase.replace(/\/$/, '').endsWith('/v1')
-        ? rawBase.replace(/\/$/, '')
-        : `${rawBase.replace(/\/$/, '')}/v1`
-      : 'https://api.anthropic.com/v1';
+
+    const apiKey = this.opts.apiKey;
     const fetchImpl = this.opts.fetch;
-    this.providerCache = createAnthropic({
-      apiKey,
-      baseURL,
-      ...(fetchImpl ? { fetch: fetchImpl as typeof globalThis.fetch } : {}),
-    });
-    return this.providerCache;
+    const fetchOpt = fetchImpl ? { fetch: fetchImpl as typeof globalThis.fetch } : {};
+    const modelId = this.opts.model ?? DEFAULT_MODEL;
+    const detected = providerFor(modelId);
+
+    if (detected === 'gemini') {
+      const key = apiKey ?? process.env.GEMINI_API_KEY;
+      if (!key) throw new Error('GEMINI_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      this.providerCache = createGoogleGenerativeAI({ apiKey: key, ...fetchOpt });
+    } else if (detected === 'openai') {
+      const key = apiKey ?? process.env.OPENAI_API_KEY;
+      if (!key) throw new Error('OPENAI_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      this.providerCache = createOpenAI({ apiKey: key, ...fetchOpt });
+    } else {
+      // Anthropic (default)
+      const key = apiKey ?? process.env.ANTHROPIC_API_KEY;
+      if (!key) throw new Error('ANTHROPIC_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const rawBase = this.opts.baseURL ?? process.env.ANTHROPIC_BASE_URL;
+      const baseURL = rawBase
+        ? rawBase.replace(/\/$/, '').endsWith('/v1')
+          ? rawBase.replace(/\/$/, '')
+          : `${rawBase.replace(/\/$/, '')}/v1`
+        : 'https://api.anthropic.com/v1';
+      this.providerCache = createAnthropic({ apiKey: key, baseURL, ...fetchOpt });
+    }
+
+    return this.providerCache!;
   }
 
-  private model(): ReturnType<ReturnType<typeof createAnthropic>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private model(): any {
     return (this.modelCache ??= this.provider()(this.opts.model ?? DEFAULT_MODEL));
   }
 
-  private cellModel(perCellModel?: string): ReturnType<ReturnType<typeof createAnthropic>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private cellModel(perCellModel?: string): any {
     if (perCellModel) return this.provider()(perCellModel);
     return (this.cellModelCache ??= this.provider()(this.opts.cellModel ?? DEFAULT_CELL_MODEL));
   }

@@ -22,6 +22,8 @@ export interface WebScenarioCtx {
   readonly urlFixtures: Map<string, string>;
   /** Last error raised by a `loadFromUrl` step that expected failure. */
   lastUrlError?: Error;
+  /** When set, intercepts all non-fixture fetch calls to simulate LLM API errors. */
+  mockLlmFetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
 
 /** Per-World scenario context, shared between the @web hook and step defs. */

@@ -151,8 +151,9 @@ export class WebController {
     this.voice = opts.voice;
     this.workDir = opts.workDir ?? 'tamedtable-web-work';
     // In the browser we avoid importing process.env — guard with typeof check.
+    // Tests pass opts.env = {} to suppress real API keys from the shell.
     const envVars: Record<string, string | undefined> =
-      typeof process !== 'undefined' ? process.env : {};
+      opts.env ?? (typeof process !== 'undefined' ? process.env : {});
     // Precedence: env vars > opts.config > stored config > defaults.
     this.config = resolveConfig(envVars, { ...readStoredConfig(), ...opts.config });
     this.tutorialSrc = opts.tutorialSources ?? null;
@@ -175,19 +176,21 @@ export class WebController {
   // ── Engine wiring ────────────────────────────────────────────────────────
 
   /** Build the fetch the engine uses. Tests inject the cassette recorder; the
-   *  browser gets a wrapper that injects the per-tab API key and the header
-   *  Anthropic requires for direct browser-to-API calls. */
+   *  browser gets a wrapper that injects provider-specific auth headers.
+   *  Anthropic requires an extra header for direct browser-to-API calls;
+   *  Gemini and OpenAI handle auth through the SDK's own mechanisms. */
   private makeFetch(): FetchLike | undefined {
     if (this.opts.fetch) return this.opts.fetch;
     return (input, init) => {
       const headers = new Headers(init?.headers);
-      // Text requests route through Anthropic whatever provider is selected
-      // (Google/OpenAI are voice-only here), so the Anthropic key is the one
-      // we authenticate with. request() guarantees it is present before any
-      // call reaches this wrapper.
-      const apiKey = this.config.anthropicKey;
-      if (apiKey) headers.set('x-api-key', apiKey);
-      headers.set('anthropic-dangerous-direct-browser-access', 'true');
+      const apiKey = this.activeApiKey();
+      const provider = this.config.provider;
+      if (provider === 'anthropic') {
+        if (apiKey) headers.set('x-api-key', apiKey);
+        headers.set('anthropic-dangerous-direct-browser-access', 'true');
+      }
+      // Gemini and OpenAI: the SDK sets auth headers itself from the apiKey
+      // passed to createGoogleGenerativeAI / createOpenAI; no override needed.
       return fetch(input, { ...init, headers });
     };
   }
@@ -405,7 +408,7 @@ export class WebController {
       const debug = this.lastDebug;
       this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
     } catch (e) {
-      this.fail(userFacingMessage((e as Error).message));
+      this.fail(userFacingMessage(e, this.config.provider));
     }
   }
 
@@ -593,7 +596,7 @@ export class WebController {
       } catch (e) {
         this.pushToast(
           'error',
-          `Could not switch model: ${userFacingMessage((e as Error).message)}`,
+          `Could not switch model: ${userFacingMessage(e, this.config.provider)}`,
         );
       }
     } else if (modelChanged) {

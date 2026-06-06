@@ -384,3 +384,29 @@ When('user selects the provider {string}', async function (this: TamedTableWorld
   // both sets the provider and remembers which card was expanded.
   await controller(this).clickProviderCard(provider as ModelProvider);
 });
+
+// ── Provider API error simulation ──────────────────────────────────────────
+
+Given('the gemini key is set to {string}', async function (this: TamedTableWorld, key: string) {
+  await controller(this).setConfig({ geminiKey: key });
+});
+
+Given('the openai key is set to {string}', async function (this: TamedTableWorld, key: string) {
+  await controller(this).setConfig({ openaiKey: key });
+});
+
+Given('the LLM API returns a 401 unauthorized error', function (this: TamedTableWorld) {
+  ctxOf(this).mockLlmFetch = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: 401,
+            message: 'API key not valid. Please pass a valid API key.',
+            status: 'UNAUTHENTICATED',
+          },
+        }),
+        { status: 401, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+});
