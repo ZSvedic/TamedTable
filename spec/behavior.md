@@ -715,6 +715,14 @@ with a microphone icon when the provider supports voice input, or grey "No voice
 input" when it does not. Google and OpenAI show the green badge; Anthropic shows
 grey.
 
+Text requests route through Anthropic regardless of the selected provider — in
+this version Google and OpenAI are wired only for voice input, not text. A
+natural-language chat request therefore needs an Anthropic API key: when none is
+set the request never fires and a toast reads `Text requests require an Anthropic
+API key — open Settings and add one.` So the requirement reads clearly even while
+Google or OpenAI is the selected provider, the Anthropic card's tagline notes it
+is required for text requests.
+
 When a card is open its body shows an API key field with a show/hide toggle, a
 grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
 .env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`

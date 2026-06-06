@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadCsv } from '@tamedtable/core';
 import type { WebController } from '@tamedtable/web';
+import type { ResolvedConfig } from '@tamedtable/model-config';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 import { webScenarios, type WebScenarioCtx } from './web-file-port.ts';
 
@@ -46,6 +47,17 @@ Given('the TamedTable web app without File System Access support', function (thi
 Given('the API key has not been set', function (this: TamedTableWorld) {
   controller(this).clearApiKey();
 });
+
+Given(
+  'the provider {string} has API key {string}',
+  async function (this: TamedTableWorld, provider: string, key: string) {
+    const partial: Partial<ResolvedConfig> = { provider: provider as ModelProvider };
+    if (provider === 'gemini') partial.geminiKey = key;
+    else if (provider === 'openai') partial.openaiKey = key;
+    else partial.anthropicKey = key;
+    await controller(this).setConfig(partial);
+  },
+);
 
 When('user opens the settings panel', function (this: TamedTableWorld) {
   controller(this).openSettings();
