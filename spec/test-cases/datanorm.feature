@@ -4,13 +4,13 @@ Feature: Data normalization of customer records
   Rule: Apply transformations to a loaded CSV
 
     Background:
-      Given "datanorm-input.csv" is loaded
-      And the golden output is "datanorm-expected.jsonl"
+      Given load "datanorm-input.csv"
+      And the expected output is "datanorm-expected.jsonl"
 
     @headless @cli @web
     Scenario Outline: Normalize <column>
-      When user requests "<command>"
-      Then column "<column>" matches the golden output
+      When query "<command>"
+      Then column "<column>" matches the expected output
 
       Examples:
         | column  | command                 |
@@ -21,12 +21,12 @@ Feature: Data normalization of customer records
     @headless @cli @web
     Scenario: Full normalization round-trip
       Given Phone, Country, and DOB are normalized
-      When user requests to export as "datanorm-output.jsonl"
-      Then "datanorm-output.jsonl" matches the golden output ignoring "Notes"
+      When export as "datanorm-output.jsonl"
+      Then "datanorm-output.jsonl" matches the expected output ignoring "Notes"
 
     @headless @cli
     Scenario: Replace Country with normalized CountryName and CountryISO
-      When user requests "Replace Country column with normalized CountryName and CountryISO"
+      When query "Replace Country column with normalized CountryName and CountryISO"
       Then column "CountryName" exists in the spec
       And column "CountryISO" exists in the spec
       And column "Country" is absent from the current rows
@@ -53,6 +53,6 @@ Feature: Data normalization of customer records
     @cli
     Scenario: Execute saved flow from command line
       Given "datanorm.flow" exists
-      And the golden output is "datanorm-expected.jsonl"
+      And the expected output is "datanorm-expected.jsonl"
       When user runs "tamedtable execute datanorm.flow --input datanorm-input.csv --output datanorm-output.jsonl"
-      Then "datanorm-output.jsonl" matches the golden output ignoring "Notes"
+      Then "datanorm-output.jsonl" matches the expected output ignoring "Notes"

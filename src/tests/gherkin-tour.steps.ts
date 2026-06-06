@@ -57,6 +57,15 @@ Then('scenario {int} has {int} step(s)', function (this: TamedTableWorld, n: num
   assert.equal(scenario(this, n).steps.length, count);
 });
 
+Then('scenario {int} is tagged {string}', function (this: TamedTableWorld, n: number, tag: string) {
+  const tags = scenario(this, n).tags;
+  assert.ok(tags.includes(tag), `scenario ${n} tags ${JSON.stringify(tags)} should include "${tag}"`);
+});
+
+Then('scenario {int} has golden {string}', function (this: TamedTableWorld, n: number, filename: string) {
+  assert.equal(scenario(this, n).golden, filename);
+});
+
 Then(
   'step {int} of scenario {int} has text {string}',
   function (this: TamedTableWorld, stepN: number, scenarioN: number, text: string) {

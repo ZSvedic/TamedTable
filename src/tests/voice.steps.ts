@@ -28,7 +28,7 @@ function stubVoicePort(): VoicePort {
 }
 
 Given('a stub microphone that returns recorded audio', function (this: TamedTableWorld) {
-  // Must be set before the controller builds lazily on the next "is loaded".
+  // Must be set before the controller builds lazily on the next "load".
   ctxOf(this).voicePort = stubVoicePort();
 });
 

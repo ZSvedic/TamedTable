@@ -816,19 +816,26 @@ needed for the file-loading and display steps; `prefill-chat` steps do call
 the LLM with the request text auto-submitted.
 
 A **Tutorial** button in the toolbar opens the Tutorial panel. The panel shows
-a dropdown listing every `@tutorial`-tagged scenario drawn from the bundled
-feature files, and a Play button. Picking a scenario from the dropdown and
-clicking Play starts the tour.
+a **clickable list** of every `@tutorial`-tagged scenario drawn from the bundled
+feature files; clicking a row selects it (double-click selects and plays).
+Below the list, a **Dev** dropdown lists every `@web` scenario that is *not*
+`@tutorial`, so a developer can smoke-test any scenario without opening the
+`.feature` file. A Play button starts whichever scenario is selected (it is
+disabled until one is).
 
 While a tour is active, the panel shows the current step number, the step
-keyword and text, and keyboard shortcut hints. Driver.js highlights the
-relevant part of the UI and shows a popover with **← Prev**, **Next →**, and
-a close (**×**) button directly in the popover. The same actions are available
-via keyboard: **←** previous step, **→** or **Space** next step, **Esc**
-cancel. The panel also shows the expected golden output table when a
-`show-golden` step is active.
+rendered as an imperative instruction (the Gherkin keyword is dropped and the
+text is capitalized — e.g. `When query "…"` reads as **Query: "…"**), and
+keyboard shortcut hints. Driver.js highlights the relevant part of the UI and
+shows a popover with **← Prev**, **Next →**, and a close (**×**) button
+directly in the popover. The same actions are available via keyboard: **←**
+previous step, **→** or **Space** next step, **Esc** cancel. The panel also
+shows the expected output table when a `show-golden` step is active.
 
-Each step maps to one of five actions:
+Only the steps that drive the tour are shown; verification steps (`Then column
+"X" exists in the spec`, synthetic preconditions, and other unclassified lines)
+are dropped by the parser, so a tour reads load → query → compare. Each shown
+step maps to one of four actions:
 
 - **load-file** — the controller loads the named fixture into the in-memory
   store and calls `loadInput`, replacing the current dataset. The open-file
@@ -838,16 +845,14 @@ Each step maps to one of five actions:
   No dataset is replaced. The open-file button is highlighted.
 - **prefill-chat** — the chat input is filled with the step's request text and
   `sendChat` is called immediately (auto-submit). The chat input is highlighted.
-- **show-golden** — the controller parses the matching `-expected.*` golden file
-  and exposes its rows in the panel for side-by-side comparison. The table view
-  is highlighted.
-- **display** — the table view is highlighted and the step text appears in the
-  Driver.js popover. No state change.
+- **show-golden** — the controller parses the scenario's golden file and exposes
+  its rows in the panel for side-by-side comparison. The table view is
+  highlighted.
 
 Fixtures and golden files are bundled at build time from `spec/test-cases/`
 by `vite.config.ts`; the tutorial controller resolves lookup files from
-`tutorialSrc.inputs` and golden files via the `the golden output is "X"` step
-text found anywhere in the tour's steps.
+`tutorialSrc.inputs` and the golden file from `scenario.golden`, which the
+parser lifts from the `the expected output is "X"` step.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 

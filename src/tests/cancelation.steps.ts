@@ -33,7 +33,7 @@ async function waitForChunk(ctx: CancelCtx, timeoutMs = 120_000): Promise<void> 
   }
 }
 
-When('user requests {string} via LLM', async function (this: TamedTableWorld, text: string) {
+When('query {string} via LLM', async function (this: TamedTableWorld, text: string) {
   const runner = this.ensureRunner() as unknown as CancellableRunner;
   const abort = new AbortController();
   const chunks: ChunkUpdate[] = [];

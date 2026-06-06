@@ -22,6 +22,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const stepNum = controller.currentTutorialStepNumber();
   const stepTotal = controller.tutorialStepCount();
   const names = controller.tutorialScenarioNames();
+  const devNames = controller.devScenarioNames();
   const goldenRows = controller.goldenRows;
   const selectedTourName = controller.selectedTourName();
   const currentStep = controller.currentStepDetail();
@@ -72,7 +73,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       element: `#${elementId}`,
       popover: {
         title: `Step ${stepNum ?? 1} of ${stepTotal}`,
-        description: currentStep ? `${currentStep.keyword} ${currentStep.text}` : '',
+        description: currentStep ? asInstruction(currentStep.text) : '',
         side: 'bottom',
         align: 'start',
         // highlight() defaults showButtons:[] — override to show our buttons.
@@ -207,32 +208,70 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                   No tutorials available.
                 </div>
               ) : (
-                <select
-                  value={selectedTourName}
-                  onChange={(e) => { controller.selectTutorialScenario(e.target.value); }}
-                  style={{
-                    width: '100%',
-                    padding: '6px 8px',
-                    border: `1px solid ${t.line2}`,
-                    borderRadius: space.radiusSm,
-                    background: t.surface2,
-                    color: t.ink,
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.base,
-                    cursor: 'pointer',
-                    appearance: 'auto',
-                  }}
-                >
-                  {names.map((name) => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
+                <div role="listbox" style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
+                  {names.map((name) => {
+                    const selected = name === selectedTourName;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        onClick={() => { controller.selectTutorialScenario(name); }}
+                        onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                        style={{
+                          textAlign: 'left',
+                          padding: '8px 10px',
+                          border: `1px solid ${selected ? t.accent : t.line2}`,
+                          borderRadius: space.radiusSm,
+                          background: selected ? t.accentSoft : t.surface2,
+                          color: t.ink,
+                          fontFamily: typography.ui,
+                          fontSize: typography.size.base,
+                          fontWeight: selected ? 600 : 400,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
+
+              {/* Dev: any @web scenario, for smoke-testing without opening the .feature file. */}
+              {devNames.length > 0 && (
+                <div style={{ marginTop: space.px16 }}>
+                  <div style={{ ...labelStyle, color: t.ink3 }}>Dev — run any scenario</div>
+                  <select
+                    value={devNames.includes(selectedTourName) ? selectedTourName : ''}
+                    onChange={(e) => { if (e.target.value) controller.selectTutorialScenario(e.target.value); }}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      border: `1px solid ${t.line2}`,
+                      borderRadius: space.radiusSm,
+                      background: t.surface2,
+                      color: t.ink,
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.base,
+                      cursor: 'pointer',
+                      appearance: 'auto',
+                    }}
+                  >
+                    <option value="">Select a scenario…</option>
+                    {devNames.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div style={{ marginTop: space.px12 }}>
                 <Button
                   variant="primary"
                   onClick={() => { void controller.playTutorial(); }}
-                  disabled={names.length === 0}
+                  disabled={selectedTourName === ''}
                 >
                   Play
                 </Button>
@@ -274,10 +313,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                     border: `1px solid ${t.line}`,
                   }}
                 >
-                  <span style={{ color: t.ink3, marginRight: space.px6 }}>
-                    {currentStep.keyword}
-                  </span>
-                  {currentStep.text}
+                  {asInstruction(currentStep.text)}
                 </div>
               )}
 
@@ -376,6 +412,14 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       </div>
     </div>
   );
+}
+
+// Tour steps read as imperative instructions ("load …", "query …", "compare
+// …"). The Gherkin keyword (Given/When/Then) is test-suite structure, not
+// something a learner needs — so the tour drops it and just capitalizes the
+// step text for display.
+function asInstruction(text: string): string {
+  return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const kbdStyle: React.CSSProperties = {
