@@ -394,7 +394,7 @@ language request — e.g. "normalize phone numbers", "sort by DOB desc".
 Requests are additive; use :undo to revert the last one.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires
-ANTHROPIC_API_KEY in env.
+ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
 ```
 
 Ctrl-C while a request runs cancels it and rolls back the half-applied
@@ -441,7 +441,7 @@ Usage:
     --output <file>                  Destination .jsonl. Required.
   tamedtable --help, -h, help        Show this usage screen.
 
-The REPL needs ANTHROPIC_API_KEY or GEMINI_API_KEY in env.
+The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
 ```
 
 Provider and model resolution uses `@tamedtable/model-config`; see
@@ -702,11 +702,32 @@ it `R<row> · <column>`. The footer also shows whether the app is idle,
 running a request, or has just saved — a save reads as saved until the
 next edit, request, or load returns it to idle.
 
-The settings panel lets the user choose a provider (Anthropic or Gemini),
-enter the matching API key, and pick a model. Changing the model rebuilds the
-engine and replays the current transformations against the source, so the
-table on screen is preserved and the new model drives the next request. Full
-detail in [spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
+The settings panel shows three provider accordion cards stacked vertically:
+Google, OpenAI, Anthropic. On open, no card is expanded. Clicking a collapsed
+card expands it and selects that provider; clicking an already-open card
+collapses it without changing the provider. Opening a card collapses any other
+open card. The currently selected provider's card opens by default when the
+panel mounts.
+
+Each card header (always visible, clickable) shows a radio knob, the provider
+name and tagline, and a voice badge on the right edge. The voice badge is green
+with a microphone icon when the provider supports voice input, or grey "No voice
+input" when it does not. Google and OpenAI show the green badge; Anthropic shows
+grey.
+
+When a card is open its body shows an API key field with a show/hide toggle, a
+grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
+.env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`
+respectively), and a list of that provider's models. Each model row has a radio
+knob and a green "🎙 voice" or grey "no voice" tag indicating voice support.
+
+Changes apply immediately — selecting a provider card calls
+`controller.setConfig({ provider })` and selecting a model calls
+`controller.setConfig({ model })`. The footer has only a "Close" button; there
+is no separate "Save" button. Changing the model rebuilds the engine and replays
+the current transformations against the source, so the table on screen is
+preserved and the new model drives the next request. Full detail in
+[spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
 
 Toolbar action buttons carry tooltips that name their CLI command
 equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the

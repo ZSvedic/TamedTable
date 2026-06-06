@@ -297,3 +297,78 @@ Then('loading fails with {string}', function (this: TamedTableWorld, needle: str
     `expected error to contain "${needle}", got: ${err.message}`,
   );
 });
+
+// ── Settings panel accordion cards ─────────────────────────────────────────
+
+import { ALL_MODELS, type Provider as ModelProvider } from '@tamedtable/model-config';
+
+Then('the settings panel shows {int} provider cards', function (this: TamedTableWorld, n: number) {
+  // The three providers are always shown: gemini, openai, anthropic
+  assert.equal(n, 3, `expected 3 provider cards, got ${n}`);
+  // Verify the controller knows about all three
+  const providers: ModelProvider[] = ['gemini', 'openai', 'anthropic'];
+  for (const p of providers) {
+    const models = ALL_MODELS.filter((m) => m.provider === p);
+    assert.ok(models.length > 0, `No models for provider "${p}" in ALL_MODELS`);
+  }
+});
+
+Then('no provider card is expanded', function (this: TamedTableWorld) {
+  const expanded = controller(this).expandedProvider;
+  assert.equal(expanded, null, `expected no card expanded, got "${expanded}"`);
+});
+
+When('user clicks the provider card {string}', async function (this: TamedTableWorld, provider: string) {
+  await controller(this).clickProviderCard(provider as ModelProvider);
+});
+
+Then('the provider card {string} is expanded', function (this: TamedTableWorld, provider: string) {
+  const expanded = controller(this).expandedProvider;
+  assert.equal(expanded, provider, `expected "${provider}" to be expanded, got "${expanded}"`);
+});
+
+Then('the provider card {string} is collapsed', function (this: TamedTableWorld, provider: string) {
+  const expanded = controller(this).expandedProvider;
+  assert.notEqual(expanded, provider, `expected "${provider}" to be collapsed, but it is expanded`);
+});
+
+Then('the configured provider is {string}', function (this: TamedTableWorld, provider: string) {
+  assert.equal(controller(this).getConfig().provider, provider);
+});
+
+Then('the expanded card body shows env hint {string}', function (this: TamedTableWorld, envVar: string) {
+  const expanded = controller(this).expandedProvider;
+  assert.ok(expanded, 'no provider card is expanded');
+  const expectedHint: Record<string, string> = {
+    gemini: 'GEMINI_API_KEY',
+    openai: 'OPENAI_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
+  };
+  assert.equal(
+    expectedHint[expanded],
+    envVar,
+    `expected env hint "${envVar}" for provider "${expanded}", got "${expectedHint[expanded]}"`,
+  );
+});
+
+Then(
+  'the model list contains {string} with voice tag {word}',
+  function (this: TamedTableWorld, modelId: string, voiceTag: string) {
+    const expanded = controller(this).expandedProvider;
+    assert.ok(expanded, 'no provider card is expanded');
+    const model = ALL_MODELS.find((m) => m.id === modelId && m.provider === expanded);
+    assert.ok(model, `Model "${modelId}" not found for provider "${expanded}"`);
+    const expectedVoice = voiceTag === 'true';
+    assert.equal(
+      model.voiceInput,
+      expectedVoice,
+      `expected model "${modelId}" voiceInput=${expectedVoice}, got ${model.voiceInput}`,
+    );
+  },
+);
+
+When('user selects the provider {string}', async function (this: TamedTableWorld, provider: string) {
+  // Simulate the user clicking the provider card in the settings panel —
+  // both sets the provider and remembers which card was expanded.
+  await controller(this).clickProviderCard(provider as ModelProvider);
+});
