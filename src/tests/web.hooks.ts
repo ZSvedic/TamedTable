@@ -61,7 +61,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
     return createWebController({
       file: port,
       fetch: compositeFetch,
-      apiKey: opts.apiKey,
+      config: opts.apiKey ? { anthropicKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,
       workDir: join(TEMP_DIR, 'web'),

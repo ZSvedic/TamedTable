@@ -441,8 +441,11 @@ Usage:
     --output <file>                  Destination .jsonl. Required.
   tamedtable --help, -h, help        Show this usage screen.
 
-The REPL needs ANTHROPIC_API_KEY in env.
+The REPL needs ANTHROPIC_API_KEY or GEMINI_API_KEY in env.
 ```
+
+Provider and model resolution uses `@tamedtable/model-config`; see
+[spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
 
 Other invocations:
 
@@ -699,12 +702,11 @@ it `R<row> · <column>`. The footer also shows whether the app is idle,
 running a request, or has just saved — a save reads as saved until the
 next edit, request, or load returns it to idle.
 
-The settings panel picks the model. Beside the API key, the user
-chooses which Anthropic model writes each spec patch — a faster,
-cheaper model or a more capable one. Changing the model rebuilds the
-engine and replays the current transformations against the source, so
-the table on screen is preserved and the new model drives the next
-request.
+The settings panel lets the user choose a provider (Anthropic or Gemini),
+enter the matching API key, and pick a model. Changing the model rebuilds the
+engine and replays the current transformations against the source, so the
+table on screen is preserved and the new model drives the next request. Full
+detail in [spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
 
 Toolbar action buttons carry tooltips that name their CLI command
 equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the

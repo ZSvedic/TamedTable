@@ -5,26 +5,29 @@ import { useController } from '../hooks/useController.ts';
 import { useTheme } from '../hooks/useTheme.tsx';
 import { Button } from './Button.tsx';
 import { Icon } from './Icons.tsx';
-
-// The patch-turn model choices. Ids match the engine's `claude-<family>-<major>-<minor>`
-// shape so the debug block renders them as "Family major.minor".
-const MODELS: ReadonlyArray<{ id: string; name: string; desc: string }> = [
-  { id: 'claude-opus-4-7', name: 'Opus 4.7', desc: 'Most capable — best for tricky requests.' },
-  { id: 'claude-sonnet-4-6', name: 'Sonnet 4.6', desc: 'Balanced — the default.' },
-  { id: 'claude-haiku-4-5', name: 'Haiku 4.5', desc: 'Fastest and cheapest.' },
-];
+import { ALL_MODELS, type Provider } from '@tamedtable/model-config';
 
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
-  const [key, setKey] = useState(controller.getSettings().apiKey ?? '');
-  const [model, setModel] = useState(controller.getSettings().model);
-  const [reveal, setReveal] = useState(false);
+  const cfg = controller.getConfig();
+  const [provider, setProvider] = useState<Provider>(cfg.provider);
+  const [anthropicKey, setAnthropicKey] = useState(cfg.anthropicKey ?? '');
+  const [geminiKey, setGeminiKey] = useState(cfg.geminiKey ?? '');
+  const [model, setModel] = useState(cfg.model);
+  const [revealAnthropic, setRevealAnthropic] = useState(false);
+  const [revealGemini, setRevealGemini] = useState(false);
   if (!controller.settingsOpen) return null;
 
+  const providerModels = ALL_MODELS.filter((m) => m.provider === provider);
+
   const save = async (): Promise<void> => {
-    controller.setApiKey(key);
-    await controller.setModel(model);
+    await controller.setConfig({
+      provider,
+      anthropicKey: anthropicKey.trim() || null,
+      geminiKey: geminiKey.trim() || null,
+      model,
+    });
     controller.closeSettings();
   };
 
@@ -39,6 +42,70 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
       }}
     >
       {text}
+    </div>
+  );
+
+  const keyField = (
+    label: string,
+    value: string,
+    onChange: (v: string) => void,
+    placeholder: string,
+    reveal: boolean,
+    onReveal: () => void,
+  ): ReactNode => (
+    <div style={{ marginBottom: space.px12 }}>
+      <div
+        style={{
+          fontFamily: typography.ui,
+          fontSize: typography.size.xs,
+          color: t.ink3,
+          marginBottom: space.px4,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: space.px6,
+          border: `1px solid ${t.line2}`,
+          borderRadius: space.radius,
+          padding: '6px 8px',
+          background: t.surface2,
+        }}
+      >
+        <input
+          type={reveal ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            fontFamily: typography.mono,
+            fontSize: typography.size.sm,
+            color: t.ink,
+          }}
+        />
+        <button
+          type="button"
+          onClick={onReveal}
+          title={reveal ? 'Hide key' : 'Show key'}
+          style={{
+            background: 'transparent',
+            border: 0,
+            padding: space.px2,
+            cursor: 'pointer',
+            color: t.ink3,
+            display: 'flex',
+          }}
+        >
+          <Icon name={reveal ? 'eyeOff' : 'eye'} />
+        </button>
+      </div>
     </div>
   );
 
@@ -118,8 +185,51 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             gap: space.px20,
           }}
         >
+          {/* Provider selector */}
           <div>
-            {sectionTitle('Anthropic API key')}
+            {sectionTitle('Provider')}
+            <div style={{ display: 'flex', gap: space.px8 }}>
+              {(['anthropic', 'gemini'] as Provider[]).map((p) => {
+                const selected = p === provider;
+                return (
+                  <label
+                    key={p}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: space.px6,
+                      padding: '6px 10px',
+                      borderRadius: space.radiusSm,
+                      cursor: 'pointer',
+                      border: `1.5px solid ${selected ? t.accent : t.line2}`,
+                      background: selected ? t.accentSoft : 'transparent',
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.sm,
+                      color: selected ? t.accent : t.ink3,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="tt-provider"
+                      checked={selected}
+                      onChange={() => {
+                        setProvider(p);
+                        // Reset model to provider default when switching
+                        const firstForProvider = ALL_MODELS.find((m) => m.provider === p);
+                        if (firstForProvider) setModel(firstForProvider.id);
+                      }}
+                      style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                    />
+                    {p === 'anthropic' ? 'Anthropic' : 'Gemini'}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* API keys */}
+          <div>
+            {sectionTitle('API keys')}
             <div
               style={{
                 fontFamily: typography.ui,
@@ -129,53 +239,28 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
                 marginBottom: space.px8,
               }}
             >
-              Required to send requests. Held only in this browser tab — natural-language
-              requests call Anthropic directly from the browser.
+              Keys are held only in this browser tab. Natural-language requests call
+              the provider directly from the browser.
             </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: space.px6,
-                border: `1px solid ${t.line2}`,
-                borderRadius: space.radius,
-                padding: '6px 8px',
-                background: t.surface2,
-              }}
-            >
-              <input
-                type={reveal ? 'text' : 'password'}
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-ant-…"
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  fontFamily: typography.mono,
-                  fontSize: typography.size.sm,
-                  color: t.ink,
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setReveal((r) => !r)}
-                title={reveal ? 'Hide key' : 'Show key'}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  padding: space.px2,
-                  cursor: 'pointer',
-                  color: t.ink3,
-                  display: 'flex',
-                }}
-              >
-                <Icon name={reveal ? 'eyeOff' : 'eye'} />
-              </button>
-            </div>
+            {keyField(
+              'Anthropic API key',
+              anthropicKey,
+              setAnthropicKey,
+              'sk-ant-…',
+              revealAnthropic,
+              () => setRevealAnthropic((r) => !r),
+            )}
+            {keyField(
+              'Gemini API key',
+              geminiKey,
+              setGeminiKey,
+              'AIza…',
+              revealGemini,
+              () => setRevealGemini((r) => !r),
+            )}
           </div>
 
+          {/* Model */}
           <div>
             {sectionTitle('Model')}
             <div
@@ -187,11 +272,11 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
                 marginBottom: space.px8,
               }}
             >
-              The Anthropic model that writes each spec patch. Switching it replays the
-              current table against the new model.
+              The model that writes each spec patch. Switching it replays the current
+              table against the new model.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
-              {MODELS.map((m) => {
+              {providerModels.map((m) => {
                 const selected = m.id === model;
                 return (
                   <label

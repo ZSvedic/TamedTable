@@ -477,8 +477,10 @@ produces.
 
 Pagination, cell selection, and the chosen model are `WebController`
 state, not spec fields — the same split the CLI keeps for its viewport.
-`model` joins `WebSettings` and `WebControllerOptions` (default
-`claude-sonnet-4-6`); the `WebController` gains the surface below.
+Provider, key, and model config flow through `ResolvedConfig` from
+`@tamedtable/model-config` (see [§ Model config](#model-config));
+`WebSettings` is replaced by `ResolvedConfig`. `WebController` gains the
+surface below.
 
 ```ts
 // pagination — 20 rows per page; the page index is 1-based and clamps
@@ -572,6 +574,41 @@ handler: validates the `.py` extension and the path; scans
 `currentSpec().transformations` for any `{llm}` `Expr` and refuses if
 one is present; otherwise calls `exportPython` and writes the result.
 `:save-py` is REPL-only — no `tamedtable` subcommand in V2.5.
+
+## Model config
+
+→ [spec/modules/model-config/behavior.md](../spec/modules/model-config/behavior.md)
+
+```ts
+type Provider = "anthropic" | "gemini";
+
+interface ModelDef { id: string; name: string; desc: string; provider: Provider; }
+
+interface ResolvedConfig {
+  provider: Provider;
+  anthropicKey: string | null;
+  geminiKey: string | null;
+  model: string;
+}
+
+interface StoragePort {
+  read(): Partial<ResolvedConfig>;
+  write(c: Partial<ResolvedConfig>): void;
+  clear(): void;
+}
+
+const ALL_MODELS: readonly ModelDef[];
+function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
+function defaultModel(provider: Provider): string;
+function providerFor(modelId: string): Provider;
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts
+```
+
+`@tamedtable/model-config` has two entry points: the main `index.ts` (no
+`process` references, runs in any environment) and `env.ts` (reads
+`process.env`; Node/Bun only). `StoragePort` is implemented by the web package
+via `readStoredConfig` / `writeStoredConfig` / `clearStoredConfig` in
+`controller-storage.ts`.
 
 ## Tutorial mode
 

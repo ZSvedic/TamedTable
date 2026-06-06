@@ -56,7 +56,7 @@ When('user saves the API key {string}', function (this: TamedTableWorld, key: st
 });
 
 Then('the configured API key is {string}', function (this: TamedTableWorld, key: string) {
-  assert.equal(controller(this).getSettings().apiKey, key);
+  assert.equal(controller(this).getConfig().anthropicKey, key);
 });
 
 // ── Chat ───────────────────────────────────────────────────────────────────

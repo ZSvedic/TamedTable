@@ -1,35 +1,63 @@
-// API key persistence — the Anthropic API key is stored client-side in
-// localStorage so the user does not have to re-enter it on every page load.
-// All three helpers are no-ops in headless/test environments with no DOM,
-// and swallow exceptions from Safari private mode and quota errors.
+// Config persistence — stored client-side in localStorage as a single JSON
+// blob under 'tamedtable.config'. All three helpers are no-ops in headless/test
+// environments with no DOM, and swallow exceptions from Safari private mode and
+// quota errors.
+//
+// Backward compat: if the old 'tamedtable.apiKey' key exists and the new key
+// doesn't, migrate the old value to { anthropicKey: oldValue } on first read
+// and remove the old key.
 
-const API_KEY_STORAGE = 'tamedtable.apiKey';
+import type { ResolvedConfig } from '@tamedtable/model-config';
 
-/** Read the stored API key, if any. Returns null in headless/test environments
- *  with no DOM, or when localStorage access throws (Safari private mode etc.). */
-export function readStoredApiKey(): string | null {
+const CONFIG_STORAGE = 'tamedtable.config';
+const LEGACY_KEY_STORAGE = 'tamedtable.apiKey';
+
+/** Read the stored config, if any. Returns {} in headless/test environments
+ *  with no DOM, or when localStorage access throws. */
+export function readStoredConfig(): Partial<ResolvedConfig> {
   try {
-    if (typeof localStorage === 'undefined') return null;
-    return localStorage.getItem(API_KEY_STORAGE);
+    if (typeof localStorage === 'undefined') return {};
+
+    const raw = localStorage.getItem(CONFIG_STORAGE);
+    if (raw) {
+      return JSON.parse(raw) as Partial<ResolvedConfig>;
+    }
+
+    // Backward compat: migrate the old single-key entry.
+    const legacy = localStorage.getItem(LEGACY_KEY_STORAGE);
+    if (legacy) {
+      const migrated: Partial<ResolvedConfig> = { anthropicKey: legacy };
+      try {
+        localStorage.setItem(CONFIG_STORAGE, JSON.stringify(migrated));
+        localStorage.removeItem(LEGACY_KEY_STORAGE);
+      } catch {
+        // Swallow: if migration write fails the legacy value still works for
+        // this session; we'll retry on the next read.
+      }
+      return migrated;
+    }
+
+    return {};
   } catch {
-    return null;
+    return {};
   }
 }
 
-export function writeStoredApiKey(key: string): void {
+export function writeStoredConfig(c: Partial<ResolvedConfig>): void {
   try {
     if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(API_KEY_STORAGE, key);
+    localStorage.setItem(CONFIG_STORAGE, JSON.stringify(c));
   } catch {
-    // Swallow: storage may be unavailable or quota-bound; the in-memory key
-    // still works for this session.
+    // Swallow: storage may be unavailable or quota-bound; the in-memory
+    // config still works for this session.
   }
 }
 
-export function removeStoredApiKey(): void {
+export function clearStoredConfig(): void {
   try {
     if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(API_KEY_STORAGE);
+    localStorage.removeItem(CONFIG_STORAGE);
+    localStorage.removeItem(LEGACY_KEY_STORAGE);
   } catch {
     // Swallow as above.
   }

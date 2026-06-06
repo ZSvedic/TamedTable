@@ -18,12 +18,16 @@ import {
   type RequestDebugInfo,
 } from '@tamedtable/headless';
 import type { Row, Spec } from '@tamedtable/core';
+import {
+  resolveConfig,
+  defaultModel,
+  type ResolvedConfig,
+} from '@tamedtable/model-config';
 import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
 import { clampPage } from './lib/pagination.ts';
 import {
-  readStoredApiKey,
-  writeStoredApiKey,
-  removeStoredApiKey,
+  readStoredConfig,
+  writeStoredConfig,
 } from './controller-storage.ts';
 import { detectFormat, sampleNameFromUrl } from './controller-format.ts';
 import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
@@ -46,6 +50,7 @@ export type {
   CellRef,
   ChatMessage,
   DialogKind,
+  ResolvedConfig,
   Toast,
   TutorialSources,
   WebControllerOptions,
@@ -59,10 +64,6 @@ interface JournalEntry {
 }
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
-
-/** Patch-turn model used when the caller picks none. Matches the engine's
- *  own default so recorded test cassettes keep matching. */
-const DEFAULT_WEB_MODEL = 'claude-sonnet-4-6';
 
 /** Rows shown per table page. Paging is a view concern — it never enters
  *  the spec — so this lives on the controller, not the spec. */
@@ -101,7 +102,7 @@ export class WebController {
   private savedLabel: string | null = null;
 
   // ── Public observable state (read directly by the React components) ───────
-  settings: WebSettings;
+  config: ResolvedConfig;
   settingsOpen = false;
   dialog: DialogKind = null;
   /** Whether the Open URL modal dialog is showing. Independent of `dialog`,
@@ -132,8 +133,11 @@ export class WebController {
     this.opts = opts;
     this.file = opts.file;
     this.workDir = opts.workDir ?? 'tamedtable-web-work';
-    const initialKey = opts.apiKey ?? readStoredApiKey();
-    this.settings = { apiKey: initialKey ?? null, model: opts.model ?? DEFAULT_WEB_MODEL };
+    // In the browser we avoid importing process.env — guard with typeof check.
+    const envVars: Record<string, string | undefined> =
+      typeof process !== 'undefined' ? process.env : {};
+    // Precedence: env vars > opts.config > stored config > defaults.
+    this.config = resolveConfig(envVars, { ...readStoredConfig(), ...opts.config });
     this.tutorialSrc = opts.tutorialSources ?? null;
   }
 
@@ -160,10 +164,18 @@ export class WebController {
     if (this.opts.fetch) return this.opts.fetch;
     return (input, init) => {
       const headers = new Headers(init?.headers);
-      if (this.settings.apiKey) headers.set('x-api-key', this.settings.apiKey);
+      const apiKey = this.activeApiKey();
+      if (apiKey) headers.set('x-api-key', apiKey);
       headers.set('anthropic-dangerous-direct-browser-access', 'true');
       return fetch(input, { ...init, headers });
     };
+  }
+
+  /** Pick the API key for the current provider. */
+  private activeApiKey(): string | null {
+    return this.config.provider === 'gemini'
+      ? this.config.geminiKey
+      : this.config.anthropicKey;
   }
 
   private ensureHeadless(): HeadlessRunner {
@@ -171,8 +183,8 @@ export class WebController {
       this.headless = createHeadlessRunner({
         // A non-empty key lets the provider build; the real key is injected
         // per-request by makeFetch() (browser) or is irrelevant (cassette).
-        apiKey: this.opts.apiKey ?? PLACEHOLDER_KEY,
-        model: this.settings.model,
+        apiKey: this.activeApiKey() ?? PLACEHOLDER_KEY,
+        model: this.config.model,
         fetch: this.makeFetch(),
         batchSize: this.opts.batchSize,
         chunkSize: this.opts.chunkSize,
@@ -205,8 +217,9 @@ export class WebController {
     opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void },
   ): Promise<void> {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
-    if (!this.settings.apiKey) {
-      throw new Error('API key required. Open the Settings panel to add your Anthropic API key.');
+    if (!this.activeApiKey()) {
+      const providerName = this.config.provider === 'gemini' ? 'Gemini' : 'Anthropic';
+      throw new Error(`API key required. Open the Settings panel to add your ${providerName} API key.`);
     }
     const runner = this.ensureHeadless();
     const prevSpec = structuredClone(runner.currentSpec());
@@ -414,37 +427,25 @@ export class WebController {
     this.notify();
   }
 
-  setApiKey(key: string): void {
-    const trimmed = key.trim();
-    if (trimmed === '') {
-      removeStoredApiKey();
-      this.settings = { ...this.settings, apiKey: null };
-    } else {
-      writeStoredApiKey(trimmed);
-      this.settings = { ...this.settings, apiKey: trimmed };
-    }
-    this.notify();
+  getConfig(): ResolvedConfig {
+    return this.config;
   }
 
-  clearApiKey(): void {
-    removeStoredApiKey();
-    this.settings = { ...this.settings, apiKey: null };
-    this.notify();
-  }
-
+  /** @deprecated Use getConfig() instead. */
   getSettings(): WebSettings {
-    return this.settings;
+    return this.config;
   }
 
-  /** Pick the patch-turn model. With a file loaded this rebuilds the engine
-   *  with the new model and replays the current spec against the source, so
-   *  the table on screen is preserved; the new model drives the next request. */
-  async setModel(model: string): Promise<void> {
-    const next = model.trim();
-    if (next === '' || next === this.settings.model) return;
-    this.settings = { ...this.settings, model: next };
+  /** Merge partial config, persist to storage, and rebuild the engine if the
+   *  model changed and a file is loaded. */
+  async setConfig(partial: Partial<ResolvedConfig>): Promise<void> {
+    const next = resolveConfig({}, { ...this.config, ...partial });
+    const modelChanged = next.model !== this.config.model;
+    this.config = next;
+    writeStoredConfig(next);
     this.savedLabel = null;
-    if (this.headless && this.loaded) {
+
+    if (modelChanged && this.headless && this.loaded) {
       const spec = structuredClone(this.currentSpec());
       try {
         this.headless = undefined;
@@ -457,11 +458,35 @@ export class WebController {
           `Could not switch model: ${userFacingMessage((e as Error).message)}`,
         );
       }
-    } else {
+    } else if (modelChanged) {
       // No engine built yet — the next ensureHeadless() picks up the model.
       this.headless = undefined;
     }
+
     this.notify();
+  }
+
+  /** @deprecated Use setConfig({ anthropicKey: key }) instead. */
+  setApiKey(key: string): void {
+    const trimmed = key.trim();
+    void this.setConfig({ anthropicKey: trimmed === '' ? null : trimmed });
+  }
+
+  /** @deprecated Use setConfig({ anthropicKey: null }) instead. */
+  clearApiKey(): void {
+    void this.setConfig({ anthropicKey: null });
+  }
+
+  /** @deprecated Use setConfig({ model }) instead. */
+  async setModel(model: string): Promise<void> {
+    const next = model.trim();
+    if (next === '' || next === this.config.model) return;
+    await this.setConfig({ model: next });
+  }
+
+  /** @deprecated Use getConfig().model instead. */
+  get settings(): WebSettings {
+    return this.config;
   }
 
   // ── File dialogs ─────────────────────────────────────────────────────────
