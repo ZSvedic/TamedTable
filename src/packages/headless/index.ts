@@ -703,10 +703,30 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return (this.modelCache ??= this.provider()(this.opts.model ?? DEFAULT_MODEL));
   }
 
+  /** The model-ID string to use for per-cell LLM calls.
+   *  Falls back to DEFAULT_CELL_MODEL only when it belongs to the same
+   *  provider as the main model; otherwise uses the main model ID so we
+   *  never hand a cross-provider ID (e.g. 'claude-sonnet-4-5') to a
+   *  Google or OpenAI API endpoint. */
+  private resolvedCellModelId(perCellModel?: string): string {
+    if (perCellModel) return perCellModel;
+    const mainId = this.opts.model ?? DEFAULT_MODEL;
+    if (this.opts.cellModel) {
+      // Explicit cell model: use it only when same provider; else fall to main.
+      return providerFor(this.opts.cellModel) === providerFor(mainId)
+        ? this.opts.cellModel
+        : mainId;
+    }
+    // Default cell model: same guard — Anthropic default is wrong for Gemini/OpenAI.
+    return providerFor(DEFAULT_CELL_MODEL) === providerFor(mainId)
+      ? DEFAULT_CELL_MODEL
+      : mainId;
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private cellModel(perCellModel?: string): any {
     if (perCellModel) return this.provider()(perCellModel);
-    return (this.cellModelCache ??= this.provider()(this.opts.cellModel ?? DEFAULT_CELL_MODEL));
+    return (this.cellModelCache ??= this.provider()(this.resolvedCellModelId()));
   }
 
   async loadInput(path: string): Promise<void> {
@@ -1276,7 +1296,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   private cacheKey(perCellModel: string | undefined, prompt: string): string {
-    return `${perCellModel ?? this.opts.cellModel ?? DEFAULT_CELL_MODEL} ${prompt}`;
+    return `${this.resolvedCellModelId(perCellModel)} ${prompt}`;
   }
 
   private async evalLlmBatch(
@@ -1317,7 +1337,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
-    this.recordCall(perCellModel ?? this.opts.cellModel ?? DEFAULT_CELL_MODEL, result.usage);
+    this.recordCall(this.resolvedCellModelId(perCellModel), result.usage);
     const parsed = tryParseBatchResponse(result.text ?? '', prompts.length);
     if (parsed) return parsed;
     return Promise.all(prompts.map((p) => this.callLlmCell(p, perCellModel, signal)));
@@ -1333,7 +1353,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
-    this.recordCall(perCellModel ?? this.opts.cellModel ?? DEFAULT_CELL_MODEL, result.usage);
+    this.recordCall(this.resolvedCellModelId(perCellModel), result.usage);
     const text = (result.text ?? '').trim();
     return text === '' || text.toLowerCase() === 'null' ? null : text;
   }
