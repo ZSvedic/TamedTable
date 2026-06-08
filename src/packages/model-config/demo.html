@@ -35,28 +35,6 @@
   <label>stored.model      <input id="storedModel" /></label>
   <pre id="out"></pre>
 
-  <script type="module">
-    import { ALL_MODELS, resolveConfig } from './index.ts';
-
-    const tbody = document.querySelector('#models tbody');
-    tbody.innerHTML = ALL_MODELS.map((m) =>
-      `<tr><td>${m.id}</td><td>${m.name}</td><td>${m.provider}</td><td>${m.voiceInput ? '✓' : ''}</td></tr>`,
-    ).join('');
-
-    const fields = ['GEMINI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'TAMEDTABLE_MODEL'];
-    const out = document.getElementById('out');
-    const val = (id) => document.getElementById(id).value.trim() || undefined;
-
-    function render() {
-      const env = {};
-      for (const f of fields) env[f] = val(f);
-      const stored = {};
-      if (val('storedProvider')) stored.provider = val('storedProvider');
-      if (val('storedModel'))    stored.model = val('storedModel');
-      out.textContent = JSON.stringify(resolveConfig(env, stored), null, 2);
-    }
-    for (const el of document.querySelectorAll('input')) el.addEventListener('input', render);
-    render();
-  </script>
+  <script type="module" src="./demo.ts"></script>
 </body>
 </html>
