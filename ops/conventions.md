@@ -36,6 +36,17 @@ subdirectory containing its spec MD, feature file, and any fixtures:
 `cucumber.js` routes feature names in `MODULE_FEATURES` to
 `spec/modules/<name>/<name>.feature`; all others to `spec/test-cases/`.
 
+**Per-module review aids.** To review one module in isolation,
+`spec/modules/<name>/` carries two symlinks back into `src/` (code must
+stay under `src/` for module resolution; the links give a colocated view):
+
+- `code` → `src/packages/<name>/` — implementation
+- `steps.ts` → `src/tests/<name>.steps.ts` — its step defs
+
+Each module package also ships a `demo.html` (run `bun demo.html`, or
+`bun run demo` from the package dir) — a standalone page that exercises
+the module's public API by hand, no app shell required.
+
 ## Specs
 Under `spec/` — style rules in [writing-style.md](writing-style.md).
 

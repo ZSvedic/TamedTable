@@ -8,5 +8,8 @@
   "exports": {
     ".": "./index.ts",
     "./env": "./env.ts"
+  },
+  "scripts": {
+    "demo": "bun demo.html"
   }
 }
