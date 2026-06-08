@@ -7,5 +7,8 @@
   "types": "index.ts",
   "exports": {
     ".": "./index.ts"
+  },
+  "scripts": {
+    "demo": "bun demo.html"
   }
 }
