@@ -20,32 +20,45 @@ const DEMOS = ['gherkin-tour', 'model-config'] as const;
 
 // Find a Playwright-managed Chromium without hardcoding the build number:
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
-// (`playwright install chromium`), newest build first.
+// (`playwright install chromium`), newest build first. Classic Chromium
+// builds unpack to chrome-linux/, Chrome-for-Testing builds to chrome-linux64/.
 function findChromium(): string | undefined {
   const roots = [
     process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers',
     join(homedir(), '.cache', 'ms-playwright'),
   ];
+  const bins = [join('chrome-linux', 'chrome'), join('chrome-linux64', 'chrome')];
   for (const root of roots) {
     if (!existsSync(root)) continue;
     const builds = readdirSync(root)
       .filter((dir) => /^chromium-\d+$/.test(dir))
       .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]));
     for (const build of builds) {
-      const bin = join(root, build, 'chrome-linux', 'chrome');
-      if (existsSync(bin)) return bin;
+      for (const bin of bins) {
+        const path = join(root, build, bin);
+        if (existsSync(path)) return path;
+      }
     }
   }
   return undefined;
 }
 
 const smoke = process.env.SMOKE === '1';
-const chromePath = smoke ? findChromium() : undefined;
+let chromePath = smoke ? findChromium() : undefined;
 if (smoke && !chromePath) {
-  console.warn(
+  // The playwright package knows where its own `playwright install` puts the
+  // browser, whatever the layout — trust it when the directory scan misses.
+  const { chromium } = await import('playwright');
+  const fallback = chromium.executablePath();
+  if (fallback && existsSync(fallback)) chromePath = fallback;
+}
+if (smoke && !chromePath) {
+  const msg =
     'demo smoke: no Chromium found under $PLAYWRIGHT_BROWSERS_PATH, /opt/pw-browsers, ' +
-      'or ~/.cache/ms-playwright — skipping. Install one with `bunx playwright install chromium`.',
-  );
+    'or ~/.cache/ms-playwright. Install one with `bunx playwright install chromium`.';
+  // A silent skip in CI is a false green — the deploy gate must fail loudly.
+  if (process.env.CI) throw new Error(msg);
+  console.warn(`${msg} Skipping.`);
 }
 const skip = !smoke || !chromePath;
 
