@@ -126,6 +126,7 @@ package: it holds `package.json` and `node_modules`, so `bun` runs there.)
 | `bun run test:headless` | The Cucumber `@headless` profile only. |
 | `bun run test:cli` | The Cucumber `@cli` profile only. |
 | `bun run test:web` | The Cucumber `@web` profile only. |
+| `bun run test:smoke` | The module-demo smoke test: builds each demo with the deploy workflow's flags and drives it in headless Chromium. Needs a Chromium binary (`bunx playwright install chromium`); not part of `bun run test`. |
 | `bun run test:record` | Re-records the cassettes (see below) against the live Anthropic API. |
 | `bun run typecheck` | Type-check only — `tsc --noEmit` for the engine packages and the web package. |
 
