@@ -15,6 +15,15 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 | Past decisions and status reports | [ops/journal/](ops/journal/) — read, don't rewrite |
 | Code and feature map | [MAP.md](MAP.md) |
 
+## Explaining things in chat — KISS
+
+When you answer the user in chat (status updates, failure reports, "why did X happen"), keep it simple:
+
+- Lead with the one-sentence answer. Details only if they change what the user does next.
+- Plain words, no developer jargon. If a mechanism needs explaining, use an everyday analogy ("the run got a guest badge, not the house key").
+- For "what happened" questions, give a numbered timeline — one short line per event.
+- Answer the question asked, then stop. No extra context, no side findings unless asked.
+
 ## Code navigation
 
 `MAP.md` lists every user-facing feature and every major code area, each identified by a `#PascalCase` hashtag. Search `#TagName` in GitHub (or your editor) to jump straight to the relevant files. To add a new area: place the tag as a comment in the code, then add a row to `MAP.md`.
