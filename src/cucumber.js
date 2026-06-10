@@ -24,7 +24,9 @@ const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colspl
 
 const common = {
   paths: FEATURES,
-  import: ['tests/**/*.ts'],
+  // *.test.ts files are bun-test suites (they import 'bun:test', which
+  // cucumber's Node loader can't resolve) — import only the rest.
+  import: ['tests/**/!(*.test).ts'],
 };
 
 export default common;

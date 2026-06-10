@@ -33,6 +33,11 @@ jobs:
           bun build packages/gherkin-tour/demo.html --outdir packages/web/dist/demos/gherkin-tour --public-path=/TamedTable/demos/gherkin-tour/
           bun build packages/model-config/demo.html --outdir packages/web/dist/demos/model-config --public-path=/TamedTable/demos/model-config/
         working-directory: src
+      # Smoke-test the demo bundles in headless Chromium before deploying.
+      - run: bunx playwright install chromium
+        working-directory: src
+      - run: bun run test:smoke
+        working-directory: src
       - uses: actions/upload-pages-artifact@v3
         with: { path: src/packages/web/dist }
   deploy:
