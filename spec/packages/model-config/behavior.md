@@ -38,28 +38,27 @@ When the user switches to Gemini in the settings panel:
   anthropicKey: null,
   geminiKey: "AIza…",
   openaiKey: null,
-  model: "gemini-3-flash"
+  model: "gemini-3.5-flash"
 }
 ```
 
 ## Model catalogue
 
-`ALL_MODELS` is a fixed, ordered list of supported models:
+The catalogue has **one canonical home**:
+[`src/packages/model-config/models.json`](../../../src/packages/model-config/models.json).
+`ALL_MODELS` is that file, imported — code never duplicates the list, and this
+spec intentionally doesn't either (a copy here went stale once already).
 
-| Provider | ID | Name | Description | Voice |
-|---|---|---|---|---|
-| gemini | gemini-3-flash | Gemini 3 Flash | Google's fast, cheap model — the Google default. | ✓ |
-| gemini | gemini-2.5-flash | Gemini 2.5 Flash | Mid-tier Gemini model. | ✓ |
-| gemini | gemini-2.5-pro | Gemini 2.5 Pro | Most capable Gemini model. | ✓ |
-| openai | gpt-4o-audio-preview | GPT-4o Audio | OpenAI audio model — the OpenAI default. | ✓ |
-| openai | gpt-4o | GPT-4o | Balanced OpenAI model. | ✗ |
-| openai | gpt-4o-mini | GPT-4o Mini | Fast and cheap OpenAI model. | ✗ |
-| anthropic | claude-opus-4-7 | Opus 4.7 | Most capable — best for tricky requests. | ✗ |
-| anthropic | claude-sonnet-4-6 | Sonnet 4.6 | Balanced — the default. | ✗ |
-| anthropic | claude-haiku-4-5 | Haiku 4.5 | Fastest and cheapest. | ✗ |
+Each entry carries:
 
-Each model entry has a `voiceInput: boolean` flag indicating whether that
-model accepts voice (audio) input.
+- `id` — the provider's exact API model id (verified against provider docs
+  before any change; never invent or guess an id)
+- `name` — short display name
+- `desc` — one-line description shown in the chooser
+- `provider` — `gemini` | `openai` | `anthropic`
+- `voiceInput` — whether the model accepts audio input
+- `default` — at most one entry per provider; the model `defaultModel`
+  returns for that provider
 
 ## Config resolution
 
@@ -76,11 +75,10 @@ env always wins. The rules:
 
 When multiple provider keys are set in env, gemini wins, then openai, then anthropic.
 
-`defaultModel(provider)` returns:
-
-- `claude-sonnet-4-6` for anthropic
-- `gemini-3-flash` for gemini
-- `gpt-4o-audio-preview` for openai
+`defaultModel(provider)` returns the catalogue entry flagged `default: true`
+for that provider (falling back to the provider's first entry). Currently:
+`claude-sonnet-4-6` for anthropic, `gemini-3.5-flash` for gemini, `gpt-5.5`
+for openai.
 
 `providerFor(modelId)` returns:
 

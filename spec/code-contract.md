@@ -599,7 +599,7 @@ one is present; otherwise calls `exportPython` and writes the result.
 ```ts
 type Provider = "anthropic" | "gemini" | "openai";
 
-interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; }
+interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; default?: boolean; }
 
 interface ResolvedConfig {
   provider: Provider;
@@ -615,7 +615,7 @@ interface StoragePort {
   clear(): void;
 }
 
-const ALL_MODELS: readonly ModelDef[];  // all three providers: google, openai, anthropic
+const ALL_MODELS: readonly ModelDef[];  // imported from models.json — the catalogue's single source
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
 function defaultModel(provider: Provider): string;
 function providerFor(modelId: string): Provider;
