@@ -20,6 +20,7 @@ import {
 } from '@tamedtable/headless';
 import type { Row, Spec } from '@tamedtable/core';
 import {
+  ALL_MODELS,
   resolveConfig,
   type Provider,
   type ResolvedConfig,
@@ -422,14 +423,13 @@ export class WebController {
   // ── Voice input ────────────────────────────────────────────────────────────
   // #VoiceInput
 
-  /** True when the mic button should show: Google selected with a Gemini key,
-   *  and a recording port is wired. */
+  /** True when the mic button should show: the selected model accepts voice
+   *  input (catalogue voiceInput flag), the selected provider has a key, and
+   *  a recording port is wired. */
   voiceAvailable(): boolean {
-    return (
-      this.voice !== undefined &&
-      this.config.provider === 'gemini' &&
-      !!this.config.geminiKey
-    );
+    if (this.voice === undefined) return false;
+    const model = ALL_MODELS.find((m) => m.id === this.config.model);
+    return !!model?.voiceInput && !!this.activeApiKey();
   }
 
   /** Press-and-hold start: begin recording, auto-stopping after 30 s. */

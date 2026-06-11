@@ -7,10 +7,10 @@
 # holding that one Gemini patch response; the rest are offline.
 Feature: Voice input
 
-  Rule: The mic button appears only for Google with a Gemini key
+  Rule: The mic button appears only for voice-capable models with a key
 
     @web
-    Scenario: The mic is hidden when the provider is not Google
+    Scenario: The mic is hidden when the selected model has no voice support
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
       And load "datanorm-input.csv"
@@ -33,6 +33,24 @@ Feature: Voice input
       And load "datanorm-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       Then the mic button is shown
+
+    @web
+    Scenario: The mic is shown for the OpenAI audio model with an OpenAI key
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And load "datanorm-input.csv"
+      And the provider "openai" has API key "sk-example-key"
+      And the selected model is "gpt-audio"
+      Then the mic button is shown
+
+    @web
+    Scenario: The mic is hidden for an OpenAI text model even with a key
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And load "datanorm-input.csv"
+      And the provider "openai" has API key "sk-example-key"
+      And the selected model is "gpt-5.5"
+      Then the mic button is hidden
 
   Rule: Press-and-hold records, release sends
 
