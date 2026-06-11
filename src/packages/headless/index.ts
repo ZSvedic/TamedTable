@@ -19,6 +19,8 @@ import {
   type Transformation,
 } from '@tamedtable/core';
 
+export { SpecJournal, type JournalEntry } from './journal.ts';
+
 export type ChunkUpdate = {
   transformationIndex: number;
   rowIndex: number;
