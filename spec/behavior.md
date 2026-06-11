@@ -779,17 +779,20 @@ per column, formatted as `column: "before" → "after"`.
 Voice input lets the user speak a request instead of typing it. It is a
 web-only convenience over the existing chat flow: the spoken audio rides
 along on the ordinary patch turn. The recorded audio, the current table's
-context, and the spec-editing instructions go to Gemini in the **same single
-call** a typed request makes — the model hears the request and emits the spec
+context, and the spec-editing instructions go to the selected model in the
+**same single call** a typed request makes — the model hears the request and emits the spec
 patch directly. There is no transcription step and no extra round trip, so a
 voice request costs exactly as many model calls as a typed one. That single
 call returns two things: the spec patch and a verbatim transcript of the
 spoken request.
 
 A microphone button sits in the chat sidebar, next to the send control. It is
-shown only when the selected provider is Google and a Gemini API key is set —
-the one provider/key pair this round trip needs. With any other provider, or
-with Google selected but no key, the button is hidden.
+shown whenever the selected model accepts voice input (the catalogue's
+`voiceInput` flag — every Gemini model and OpenAI's audio model) **and** the
+selected provider's API key is set. With a text-only model selected, or with
+no key for the provider, the button is hidden. The recording is converted to
+WAV in the browser before sending, the one audio format every voice-capable
+provider accepts.
 
 The button is press-and-hold: pressing and holding it starts recording, and a
 red ring animates around it while the microphone is live. Recording stops when

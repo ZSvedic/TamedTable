@@ -705,7 +705,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     } else if (detected === 'openai') {
       const key = apiKey ?? process.env.OPENAI_API_KEY;
       if (!key) throw new Error('OPENAI_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      this.providerCache = createOpenAI({ apiKey: key, ...fetchOpt });
+      // Chat Completions, not the SDK's default Responses API: the audio
+      // model (gpt-audio) is served only by Chat Completions, and it is the
+      // endpoint that accepts input_audio file parts for voice requests.
+      const openai = createOpenAI({ apiKey: key, ...fetchOpt });
+      this.providerCache = (modelId: string) => openai.chat(modelId);
     } else {
       // Anthropic (default)
       const key = apiKey ?? process.env.ANTHROPIC_API_KEY;

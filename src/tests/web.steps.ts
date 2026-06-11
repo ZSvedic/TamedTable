@@ -387,6 +387,10 @@ When('user selects the provider {string}', async function (this: TamedTableWorld
 
 // ── Provider API error simulation ──────────────────────────────────────────
 
+Given('the selected model is {string}', async function (this: TamedTableWorld, modelId: string) {
+  await controller(this).setConfig({ model: modelId });
+});
+
 Given('the gemini key is set to {string}', async function (this: TamedTableWorld, key: string) {
   await controller(this).setConfig({ geminiKey: key });
 });

@@ -2,7 +2,12 @@
 // Browser VoicePort backed by MediaRecorder. DOM-bound, so it lives apart from
 // the DOM-free voice.ts (which the Node test build imports through index.ts) and
 // is reached only from main.tsx.
+//
+// stopRecording re-encodes the captured audio (webm/opus or mp4/aac, browser-
+// dependent) to 16 kHz mono PCM16 WAV before resolving — the one format every
+// voice-capable provider accepts (OpenAI's input_audio takes only wav/mp3).
 
+import { blobToWavBytes } from '@tamedtable/model-config/audio-wav';
 import type { VoicePort } from './voice.ts';
 
 export function browserVoicePort(): VoicePort {
@@ -35,9 +40,12 @@ export function browserVoicePort(): VoicePort {
           return;
         }
         rec.onstop = () => {
-          const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+          const recorded = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
           teardown();
-          resolve(blob);
+          blobToWavBytes(recorded).then(
+            (wav) => resolve(new Blob([wav as BlobPart], { type: 'audio/wav' })),
+            reject,
+          );
         };
         rec.stop();
       });

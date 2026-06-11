@@ -1,7 +1,7 @@
 // #VoiceInput
 // Press-and-hold microphone button for the chat sidebar. Visible only when the
-// selected provider is Google and a Gemini key is set. Holding records (a red
-// ring animates), releasing sends, and Escape cancels.
+// selected model accepts voice input and the provider's key is set. Holding
+// records (a red ring animates), releasing sends, and Escape cancels.
 
 import { useEffect, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import type { WebController } from '../controller.ts';

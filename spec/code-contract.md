@@ -703,7 +703,13 @@ methods: `startVoice()` begins recording (auto-stopping after 30 s),
 `🎙 Voice request` placeholder user bubble immediately; when `onTranscript`
 fires it rewrites that bubble (and, on success, the undo-history label) to
 `🎙 <transcript>`. `cancelVoice()` discards the recording. The mic button is
-gated on `provider === 'gemini' && geminiKey`.
+gated on the selected model's `voiceInput` flag plus a key for the selected
+provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
+mono PCM16 WAV before resolving, so the same bytes work for both Gemini
+(`inlineData`) and OpenAI (`input_audio`, which accepts only wav/mp3). The
+engine routes OpenAI models through the Chat Completions API (`.chat(...)` on
+the AI SDK provider) — `gpt-audio` is not served by the Responses API the SDK
+would otherwise default to.
 
 Because every text request routes through Anthropic regardless of the selected
 provider, `ensureHeadless` builds the engine with the selected model when it is
