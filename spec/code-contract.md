@@ -702,7 +702,9 @@ methods: `startVoice()` begins recording (auto-stopping after 30 s),
 `audio` option — one patch turn, no transcription call. It posts a
 `🎙 Voice request` placeholder user bubble immediately; when `onTranscript`
 fires it rewrites that bubble (and, on success, the undo-history label) to
-`🎙 <transcript>`. `cancelVoice()` discards the recording. The mic button is
+`🎙 <transcript>`. Request failures go through the same `fail()` path a
+typed request uses — error toast plus an `Error: Voice input failed: …`
+assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` discards the recording. The mic button is
 gated on the selected model's `voiceInput` flag plus a key for the selected
 provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
 mono PCM16 WAV before resolving, so the same bytes work for both Gemini

@@ -49,6 +49,9 @@ function Demo() {
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const recRef = useRef<ActiveRecording | null>(null);
+  // Serialize release behind press: a quick tap must not fire stopMic before
+  // getUserMedia resolves, or the recording would be left running.
+  const startGate = useRef<Promise<void>>(Promise.resolve());
 
   const hasVoice = ALL_MODELS.some((m) => m.id === resolved.model && m.voiceInput);
 
@@ -65,24 +68,28 @@ function Demo() {
     }
   };
 
-  const toggleMic = async (): Promise<void> => {
-    if (busy) return;
-    if (!recRef.current) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const chunks: Blob[] = [];
-        const rec = new MediaRecorder(stream);
-        rec.ondataavailable = (e: BlobEvent) => {
-          if (e.data.size > 0) chunks.push(e.data);
-        };
-        rec.start();
-        recRef.current = { rec, stream, chunks };
-        setRecording(true);
-      } catch (e) {
-        setResponse(`Error: could not start recording: ${(e as Error).message}`);
-      }
-      return;
+  // Press-and-hold, matching the main app's mic: holding records, releasing
+  // sends. Pointer capture keeps the release event even if it lands outside
+  // the button.
+  const startMic = async (): Promise<void> => {
+    if (busy || recRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks: Blob[] = [];
+      const rec = new MediaRecorder(stream);
+      rec.ondataavailable = (e: BlobEvent) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      rec.start();
+      recRef.current = { rec, stream, chunks };
+      setRecording(true);
+    } catch (e) {
+      setResponse(`Error: could not start recording: ${(e as Error).message}`);
     }
+  };
+
+  const stopMic = async (): Promise<void> => {
+    if (!recRef.current) return;
     const { rec, stream, chunks } = recRef.current;
     const audio = await new Promise<Blob>((resolve) => {
       rec.onstop = () => resolve(new Blob(chunks, { type: rec.mimeType || 'audio/webm' }));
@@ -104,6 +111,16 @@ function Demo() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const cancelMic = (): void => {
+    const active = recRef.current;
+    if (!active) return;
+    active.rec.onstop = null;
+    active.rec.stop();
+    active.stream.getTracks().forEach((t) => t.stop());
+    recRef.current = null;
+    setRecording(false);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -150,9 +167,15 @@ function Demo() {
           <button
             id="tc-mic"
             type="button"
-            onClick={() => void toggleMic()}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.currentTarget.setPointerCapture(e.pointerId);
+              startGate.current = startMic();
+            }}
+            onPointerUp={() => void startGate.current.then(stopMic)}
+            onPointerCancel={() => void startGate.current.then(cancelMic)}
             disabled={busy}
-            title={recording ? 'Stop and send' : 'Record a spoken query'}
+            title={recording ? 'Release to send' : 'Hold to record a spoken query'}
             style={{
               padding: '6px 10px',
               font: 'inherit',
@@ -161,7 +184,7 @@ function Demo() {
               color: recording ? '#fff' : undefined,
             }}
           >
-            {recording ? '■' : '🎙'}
+            {recording ? '●' : '🎙'}
           </button>
         )}
         <button

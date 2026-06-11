@@ -92,4 +92,5 @@ Feature: Voice input
       When user presses and holds the mic button
       And user releases the mic button
       Then a toast shows "Voice input failed"
+      And an assistant bubble shows "Voice input failed"
       And the spec has 0 transformations

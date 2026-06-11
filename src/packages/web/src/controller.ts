@@ -491,7 +491,10 @@ export class WebController {
       const debug = this.lastDebug;
       this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
     } catch (e) {
-      this.pushToast('error', `Voice input failed: ${userFacingMessage(e, this.config.provider)}`);
+      // Same failure surface as a typed request: error toast plus an
+      // assistant message carrying the per-attempt debug info.
+      const debug = (e as { debug?: RequestDebugInfo }).debug;
+      this.fail(`Voice input failed: ${userFacingMessage(e, this.config.provider)}`, debug);
     } finally {
       this.voiceStatus = 'idle';
       this.voiceAbort = null;

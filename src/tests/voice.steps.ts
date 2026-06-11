@@ -80,6 +80,11 @@ Then('no user bubble shows {string}', function (this: TamedTableWorld, text: str
   assert.ok(!found, `unexpected user bubble with text "${text}"`);
 });
 
+Then('an assistant bubble shows {string}', function (this: TamedTableWorld, text: string) {
+  const found = controller(this).messages.some((m) => m.role === 'assistant' && m.text.includes(text));
+  assert.ok(found, `no assistant bubble containing "${text}"`);
+});
+
 Then('an assistant bubble is shown', function (this: TamedTableWorld) {
   const found = controller(this).messages.some((m) => m.role === 'assistant');
   assert.ok(found, 'no assistant bubble present');
