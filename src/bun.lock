@@ -12,6 +12,7 @@
         "@tamedtable/gherkin-tour": "workspace:*",
         "@tamedtable/headless": "workspace:*",
         "@tamedtable/model-config": "workspace:*",
+        "@tamedtable/table-view": "workspace:*",
         "@tamedtable/ui-kit": "workspace:*",
         "@tamedtable/web": "workspace:*",
         "@types/bun": "^1.3.13",
@@ -84,6 +85,21 @@
         "react": "^19.0.0",
       },
     },
+    "packages/table-view": {
+      "name": "@tamedtable/table-view",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tamedtable/ui-kit": "workspace:*",
+      },
+      "devDependencies": {
+        "@cucumber/cucumber": "^12.8.2",
+        "@types/react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+      },
+    },
     "packages/ui-kit": {
       "name": "@tamedtable/ui-kit",
       "version": "0.0.0",
@@ -105,6 +121,7 @@
         "@tamedtable/gherkin-tour": "workspace:*",
         "@tamedtable/headless": "workspace:*",
         "@tamedtable/model-config": "workspace:*",
+        "@tamedtable/table-view": "workspace:*",
         "@tamedtable/ui-kit": "workspace:*",
         "buffer": "^6.0.3",
         "driver.js": "^1.3.1",
@@ -346,6 +363,8 @@
     "@tamedtable/headless": ["@tamedtable/headless@workspace:packages/headless"],
 
     "@tamedtable/model-config": ["@tamedtable/model-config@workspace:packages/model-config"],
+
+    "@tamedtable/table-view": ["@tamedtable/table-view@workspace:packages/table-view"],
 
     "@tamedtable/ui-kit": ["@tamedtable/ui-kit@workspace:packages/ui-kit"],
 

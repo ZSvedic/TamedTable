@@ -21,6 +21,7 @@
     "@tamedtable/gherkin-tour": "workspace:*",
     "@tamedtable/headless": "workspace:*",
     "@tamedtable/model-config": "workspace:*",
+    "@tamedtable/table-view": "workspace:*",
     "@tamedtable/ui-kit": "workspace:*",
     "buffer": "^6.0.3",
     "driver.js": "^1.3.1",

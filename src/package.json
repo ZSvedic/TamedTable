@@ -23,6 +23,7 @@
     "@tamedtable/gherkin-tour": "workspace:*",
     "@tamedtable/headless": "workspace:*",
     "@tamedtable/model-config": "workspace:*",
+    "@tamedtable/table-view": "workspace:*",
     "@tamedtable/ui-kit": "workspace:*",
     "@tamedtable/web": "workspace:*",
     "@types/bun": "^1.3.13",

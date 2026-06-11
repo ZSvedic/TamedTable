@@ -35,7 +35,7 @@ import {
   type SaveOutcome,
 } from '@tamedtable/file-io';
 import { buildVoicePrompt, type VoiceContext, type VoicePort } from './lib/voice.ts';
-import { clampPage } from './lib/pagination.ts';
+import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import {
   readStoredConfig,
   writeStoredConfig,
@@ -351,7 +351,7 @@ export class WebController {
 
   /** Number of pages at the fixed page size; always at least 1. */
   pageCount(): number {
-    return Math.max(1, Math.ceil(this.totalRows() / this.pageSize));
+    return pageCountFor(this.totalRows(), this.pageSize);
   }
 
   /** The current 1-based page, clamped — so a request that shortens the
@@ -362,8 +362,7 @@ export class WebController {
 
   /** The slice of derived rows shown on the current page. */
   pageRows(): Row[] {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.displayRows().slice(start, start + this.pageSize);
+    return pageSlice(this.displayRows(), this.currentPage(), this.pageSize);
   }
 
   /** Jump to a page; out-of-range values clamp to the nearest edge. */
