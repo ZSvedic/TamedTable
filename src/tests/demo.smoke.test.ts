@@ -16,7 +16,7 @@ import type { Browser, Page } from 'playwright';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
-const DEMOS = ['file-io', 'gherkin-tour', 'model-config'] as const;
+const DEMOS = ['file-io', 'gherkin-tour', 'model-config', 'ui-kit'] as const;
 
 // Find a Playwright-managed Chromium without hardcoding the build number:
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
@@ -134,6 +134,16 @@ describe.skipIf(skip)('demo smoke', () => {
     const { page, consoleErrors, failedRequests } = await openDemo('file-io');
     expect((await page.textContent('#fio-fsa'))!).toMatch(/File System Access API: (available|missing)/);
     expect(JSON.parse((await page.textContent('#out'))!).version).toBe(2);
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('ui-kit: renders the primitives and flips theme on toggle', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('ui-kit');
+    expect((await page.textContent('#out'))!).toContain('ready');
+    expect(await page.$$eval('[data-uk-button]', (els) => els.length)).toBeGreaterThanOrEqual(4);
+
+    await page.click('button[title="Toggle light/dark"]');
+    await page.waitForSelector('[data-uk-mode="dark"]');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 

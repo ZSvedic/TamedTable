@@ -1,12 +1,10 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
-import type { Theme } from '../lib/theme.ts';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, Icon, SplitButton } from '@tamedtable/ui-kit/components';
+import type { Theme } from '@tamedtable/ui-kit';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { Icon } from './Icons.tsx';
 import { Pagination } from './Pagination.tsx';
-import { SplitButton } from './SplitButton.tsx';
 
 function cellText(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);

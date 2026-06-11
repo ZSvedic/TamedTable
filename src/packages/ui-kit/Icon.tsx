@@ -1,3 +1,4 @@
+// #UiKit
 // Inline SVG icons — a 16×16 viewBox, 1.5 stroke, currentColor. Ported from
 // the design system (design/claude-design/components.jsx). Use as
 // <Icon name="folder" /> inside any element that sets a text color.
@@ -46,11 +47,15 @@ const PATHS: Record<IconName, string> = {
   mic: 'M8 2.5a2 2 0 0 1 2 2v3.5a2 2 0 0 1-4 0V4.5a2 2 0 0 1 2-2Z M4.5 8a3.5 3.5 0 0 0 7 0 M8 11.5V14 M6 14h4',
 };
 
+/** Every icon name, in catalogue order — the demo's icon grid renders these. */
+export const ICON_NAMES = Object.keys(PATHS) as IconName[];
+
 const FILLED: ReadonlySet<IconName> = new Set<IconName>(['stop']);
 
 export function Icon({ name, size = 14 }: { name: IconName; size?: number }): ReactNode {
   return (
     <svg
+      data-uk-icon={name}
       width={size}
       height={size}
       viewBox="0 0 16 16"

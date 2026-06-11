@@ -17,7 +17,7 @@ Library-package step defs live in the package itself (`src/packages/<name>/*.ste
 
 ## Package UI components
 
-When a library package ships a UI piece, it is a generic React component: props in, callbacks out, no app state, no storage, no imports from the app. `react` is a peer dependency on a separate entry point so the package's main entry stays React-free. Styling comes only from namespaced CSS custom properties (`--mc-*` in model-config) — every variable has a default that looks presentable standalone, and the host app injects its theme by setting the variables on a wrapping element. Theme tokens and app components never leak into the package.
+When a library package ships a UI piece, it is a generic React component: props in, callbacks out, no app state, no storage, no imports from the app. `react` is a peer dependency on a separate entry point so the package's main entry stays React-free. Styling comes only from namespaced CSS custom properties (`--mc-*` in model-config) — every variable has a default that looks presentable standalone, and the host app injects its theme by setting the variables on a wrapping element. Theme tokens and app components never leak into the package. The one exception is `ui-kit`: it *is* the token source — its components read its own exported theme objects through `useTheme()`, and the host sets other packages' CSS variables from those tokens.
 
 ## Demos
 

@@ -4,10 +4,9 @@
 // records (a red ring animates), releasing sends, and Escape cancels.
 
 import { useEffect, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { Icon } from './Icons.tsx';
 
 const RECORD_RED = '#dc2626';
 
