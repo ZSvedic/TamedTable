@@ -807,8 +807,10 @@ placeholder. As soon as the model responds, the placeholder is replaced with
 and the undo-history label for the turn matches. The assistant's response
 follows, the same bubble a typed request produces. If the model omits the
 transcript, the placeholder simply stays. On any failure (microphone,
-network, or a model error) a toast reading "Voice input failed" reports it
-and nothing about the table or the spec changes.
+network, or a model error) a toast reading "Voice input failed" reports it,
+the same error also appears as an assistant message in the chat — carrying
+the same per-attempt debug detail a failed typed request shows — and nothing
+about the table or the spec changes.
 
 The instruction text accompanying the audio names the loaded file, lists the
 column names, and — when a cell is selected — includes that cell's column,

@@ -161,8 +161,9 @@ mounts the real `ModelChooser` over plain React state and shows the
   (`#tc-response`). Send issues one real completion call to the selected
   provider/model straight from the browser using the resolved key, and the
   response text (or the error message) lands in the response field. When the
-  selected model has `voiceInput: true`, a mic button (`#tc-mic`) appears:
-  click to record, click again to stop. The audio itself is the query — it
+  selected model has `voiceInput: true`, a mic button (`#tc-mic`) appears.
+  It is press-and-hold, matching the main app: holding records, releasing
+  sends. The audio itself is the query — it
   goes to the selected model in one round trip with an instruction to reply
   as JSON carrying both a verbatim transcript and the answer. The transcript
   fills the query input (so the user sees what the model heard) and the
