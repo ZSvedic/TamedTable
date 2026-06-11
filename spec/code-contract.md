@@ -654,10 +654,12 @@ The web controller imports these from `@tamedtable/model-config/storage`.
 
 ## Voice input
 
-→ [behavior.md — Voice input](behavior.md#voice-input)
+→ [behavior.md — Voice input](behavior.md#voice-input-voiceinput)
 
-Web-only. Lives in `src/packages/web/src/lib/voice.ts` (#VoiceInput); the
-`MicButton` component and the `WebController` voice methods drive it.
+Web-only. The `VoicePort`, the MediaRecorder→WAV browser implementation, and
+`buildVoicePrompt` live in `@tamedtable/voice-input` (#VoiceInput); the
+`MicButton` component (`@tamedtable/chat-panel`) and the `WebController` voice
+methods drive it.
 
 ```ts
 interface VoiceContext {
@@ -721,7 +723,7 @@ Anthropic model.
 
 ## Tutorial mode
 
-→ [behavior.md — Tutorial mode](behavior.md#tutorial-mode)
+→ [behavior.md — Tutorial mode](behavior.md#tutorial-mode-tutorialmode)
 
 ### Gherkin Tour parser (`@tamedtable/gherkin-tour`)
 

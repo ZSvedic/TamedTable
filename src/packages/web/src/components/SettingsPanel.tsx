@@ -1,5 +1,5 @@
-// #WebUI — Settings panel: the sheet/overlay shell around the generic
-// ModelChooser accordion (from @tamedtable/model-config). The panel binds the
+// #WebUI #SettingsCards — Settings panel: the sheet/overlay shell around the
+// generic ModelChooser accordion provider cards (from @tamedtable/model-config). The panel binds the
 // chooser's props/callbacks to WebController and injects the app theme via
 // the --mc-* CSS custom properties on the wrapping element.
 import { useState, type CSSProperties, type ReactNode } from 'react';
