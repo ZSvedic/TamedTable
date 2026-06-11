@@ -42,6 +42,9 @@
     "packages/gherkin-tour": {
       "name": "@tamedtable/gherkin-tour",
       "version": "0.0.0",
+      "devDependencies": {
+        "@cucumber/cucumber": "^12.8.2",
+      },
     },
     "packages/headless": {
       "name": "@tamedtable/headless",
@@ -60,6 +63,9 @@
     "packages/model-config": {
       "name": "@tamedtable/model-config",
       "version": "0.0.0",
+      "devDependencies": {
+        "@cucumber/cucumber": "^12.8.2",
+      },
     },
     "packages/web": {
       "name": "@tamedtable/web",

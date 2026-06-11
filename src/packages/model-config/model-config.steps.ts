@@ -9,7 +9,6 @@ import {
   type ResolvedConfig,
   type Provider,
 } from '@tamedtable/model-config';
-import { TamedTableWorld } from './world.ts';
 
 interface ModelConfigCtx {
   resolved?: ResolvedConfig;
@@ -17,45 +16,50 @@ interface ModelConfigCtx {
   modelResult?: string;
 }
 
-function ctx(world: TamedTableWorld): ModelConfigCtx {
-  const w = world as TamedTableWorld & { _mcCtx?: ModelConfigCtx };
-  if (!w._mcCtx) w._mcCtx = {};
-  return w._mcCtx;
+// The only shape these steps need from the cucumber World — state hangs off
+// one private property, keeping the package independent of the app harness.
+interface ModelConfigWorld {
+  _mcCtx?: ModelConfigCtx;
+}
+
+function ctx(world: ModelConfigWorld): ModelConfigCtx {
+  if (!world._mcCtx) world._mcCtx = {};
+  return world._mcCtx;
 }
 
 // ── resolveConfig steps ───────────────────────────────────────────────────────
 
 When(
   'resolveConfig is called with empty env and empty stored',
-  function (this: TamedTableWorld) {
+  function (this: ModelConfigWorld) {
     ctx(this).resolved = resolveConfig({}, {});
   },
 );
 
 When(
   'resolveConfig is called with env ANTHROPIC_API_KEY={string}',
-  function (this: TamedTableWorld, key: string) {
+  function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ ANTHROPIC_API_KEY: key }, {});
   },
 );
 
 When(
   'resolveConfig is called with env GEMINI_API_KEY={string}',
-  function (this: TamedTableWorld, key: string) {
+  function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ GEMINI_API_KEY: key }, {});
   },
 );
 
 When(
   'resolveConfig is called with env OPENAI_API_KEY={string}',
-  function (this: TamedTableWorld, key: string) {
+  function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ OPENAI_API_KEY: key }, {});
   },
 );
 
 When(
   'resolveConfig is called with env ANTHROPIC_API_KEY={string} and GEMINI_API_KEY={string}',
-  function (this: TamedTableWorld, anthropicKey: string, geminiKey: string) {
+  function (this: ModelConfigWorld, anthropicKey: string, geminiKey: string) {
     ctx(this).resolved = resolveConfig(
       { ANTHROPIC_API_KEY: anthropicKey, GEMINI_API_KEY: geminiKey },
       {},
@@ -65,7 +69,7 @@ When(
 
 When(
   'resolveConfig is called with env ANTHROPIC_API_KEY={string} and GEMINI_API_KEY={string} and OPENAI_API_KEY={string}',
-  function (this: TamedTableWorld, anthropicKey: string, geminiKey: string, openaiKey: string) {
+  function (this: ModelConfigWorld, anthropicKey: string, geminiKey: string, openaiKey: string) {
     ctx(this).resolved = resolveConfig(
       { ANTHROPIC_API_KEY: anthropicKey, GEMINI_API_KEY: geminiKey, OPENAI_API_KEY: openaiKey },
       {},
@@ -75,7 +79,7 @@ When(
 
 When(
   'resolveConfig is called with env ANTHROPIC_API_KEY={string} and OPENAI_API_KEY={string}',
-  function (this: TamedTableWorld, anthropicKey: string, openaiKey: string) {
+  function (this: ModelConfigWorld, anthropicKey: string, openaiKey: string) {
     ctx(this).resolved = resolveConfig(
       { ANTHROPIC_API_KEY: anthropicKey, OPENAI_API_KEY: openaiKey },
       {},
@@ -85,7 +89,7 @@ When(
 
 When(
   'resolveConfig is called with empty env and stored provider {string} and geminiKey {string}',
-  function (this: TamedTableWorld, provider: string, geminiKey: string) {
+  function (this: ModelConfigWorld, provider: string, geminiKey: string) {
     ctx(this).resolved = resolveConfig({}, {
       provider: provider as Provider,
       geminiKey,
@@ -95,7 +99,7 @@ When(
 
 When(
   'resolveConfig is called with env ANTHROPIC_API_KEY={string} and stored anthropicKey {string}',
-  function (this: TamedTableWorld, envKey: string, storedKey: string) {
+  function (this: ModelConfigWorld, envKey: string, storedKey: string) {
     ctx(this).resolved = resolveConfig(
       { ANTHROPIC_API_KEY: envKey },
       { anthropicKey: storedKey },
@@ -105,7 +109,7 @@ When(
 
 When(
   'resolveConfig is called with env TAMEDTABLE_MODEL={string} and stored model {string}',
-  function (this: TamedTableWorld, envModel: string, storedModel: string) {
+  function (this: ModelConfigWorld, envModel: string, storedModel: string) {
     ctx(this).resolved = resolveConfig(
       { TAMEDTABLE_MODEL: envModel },
       { model: storedModel },
@@ -115,56 +119,56 @@ When(
 
 Then(
   'the resolved provider is {string}',
-  function (this: TamedTableWorld, expected: string) {
+  function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.provider, expected);
   },
 );
 
 Then(
   'the resolved model is {string}',
-  function (this: TamedTableWorld, expected: string) {
+  function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.model, expected);
   },
 );
 
 Then(
   'the resolved anthropicKey is {string}',
-  function (this: TamedTableWorld, expected: string) {
+  function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.anthropicKey, expected);
   },
 );
 
 Then(
   'the resolved anthropicKey is null',
-  function (this: TamedTableWorld) {
+  function (this: ModelConfigWorld) {
     assert.equal(ctx(this).resolved?.anthropicKey, null);
   },
 );
 
 Then(
   'the resolved geminiKey is {string}',
-  function (this: TamedTableWorld, expected: string) {
+  function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.geminiKey, expected);
   },
 );
 
 Then(
   'the resolved geminiKey is null',
-  function (this: TamedTableWorld) {
+  function (this: ModelConfigWorld) {
     assert.equal(ctx(this).resolved?.geminiKey, null);
   },
 );
 
 Then(
   'the resolved openaiKey is {string}',
-  function (this: TamedTableWorld, expected: string) {
+  function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.openaiKey, expected);
   },
 );
 
 Then(
   'the resolved openaiKey is null',
-  function (this: TamedTableWorld) {
+  function (this: ModelConfigWorld) {
     assert.equal(ctx(this).resolved?.openaiKey, null);
   },
 );
@@ -173,7 +177,7 @@ Then(
 
 When(
   'providerFor is called with {string}',
-  function (this: TamedTableWorld, modelId: string) {
+  function (this: ModelConfigWorld, modelId: string) {
     ctx(this).providerResult = providerFor(modelId);
   },
 );
@@ -182,14 +186,14 @@ When(
 
 When(
   'defaultModel is called with {string}',
-  function (this: TamedTableWorld, provider: string) {
+  function (this: ModelConfigWorld, provider: string) {
     ctx(this).modelResult = defaultModel(provider as Provider);
   },
 );
 
 Then(
   'the result is {string}',
-  function (this: TamedTableWorld, expected: string) {
+  function (this: ModelConfigWorld, expected: string) {
     const c = ctx(this);
     if (c.providerResult !== undefined) {
       assert.equal(c.providerResult, expected);
@@ -203,7 +207,7 @@ Then(
 
 Then(
   'ALL_MODELS contains at least one model with provider {string}',
-  function (this: TamedTableWorld, provider: string) {
+  function (this: ModelConfigWorld, provider: string) {
     const found = ALL_MODELS.some((m) => m.provider === provider);
     assert.ok(found, `No model with provider "${provider}" in ALL_MODELS`);
   },
@@ -211,7 +215,7 @@ Then(
 
 Then(
   'every ALL_MODELS entry has a voiceInput boolean field',
-  function (this: TamedTableWorld) {
+  function (this: ModelConfigWorld) {
     for (const m of ALL_MODELS) {
       assert.equal(typeof m.voiceInput, 'boolean', `Model "${m.id}" is missing voiceInput boolean`);
     }
@@ -220,7 +224,7 @@ Then(
 
 Then(
   'the model {string} has voiceInput true',
-  function (this: TamedTableWorld, modelId: string) {
+  function (this: ModelConfigWorld, modelId: string) {
     const m = ALL_MODELS.find((m) => m.id === modelId);
     assert.ok(m, `Model "${modelId}" not found in ALL_MODELS`);
     assert.equal(m.voiceInput, true, `Expected model "${modelId}" to have voiceInput=true`);
@@ -229,7 +233,7 @@ Then(
 
 Then(
   'the model {string} has voiceInput false',
-  function (this: TamedTableWorld, modelId: string) {
+  function (this: ModelConfigWorld, modelId: string) {
     const m = ALL_MODELS.find((m) => m.id === modelId);
     assert.ok(m, `Model "${modelId}" not found in ALL_MODELS`);
     assert.equal(m.voiceInput, false, `Expected model "${modelId}" to have voiceInput=false`);
