@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { typography } from './lib/theme.ts';
+import { typography } from '@tamedtable/ui-kit';
 import type { WebController } from './controller.ts';
-import { ThemeProvider, useTheme } from './hooks/useTheme.tsx';
+import { ThemeProvider, useTheme } from '@tamedtable/ui-kit/components';
 import { Toolbar } from './components/Toolbar.tsx';
 import { ChatSidebar } from './components/ChatSidebar.tsx';
 import { TableView } from './components/TableView.tsx';
@@ -36,9 +36,15 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
   );
 }
 
+// Theme persistence is the app's job — ui-kit's provider owns no storage.
+const MODE_STORAGE = 'tamedtable.theme';
+
 export function App({ controller }: { controller: WebController }): ReactNode {
   return (
-    <ThemeProvider>
+    <ThemeProvider
+      initialMode={localStorage.getItem(MODE_STORAGE) === 'dark' ? 'dark' : 'light'}
+      onModeChange={(mode) => localStorage.setItem(MODE_STORAGE, mode)}
+    >
       <AppShell controller={controller} />
     </ThemeProvider>
   );

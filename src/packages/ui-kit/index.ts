@@ -1,8 +1,10 @@
+// #UiKit
 // Single source of truth for every visual choice — the TamedTable brand
 // system expressed as design tokens. Light and dark theme objects share one
 // shape; components read the active theme through useTheme() and never
 // hard-code a color or pixel value, so the visual design lives in this one
-// module.
+// package. This entry is React-free; the components live in ./components.
+// Spec: spec/packages/ui-kit/behavior.md.
 //
 // Brand system (see design/claude-design/uploads/brand.md):
 //   Ink     · Aubergine  #281C60   replaces black throughout

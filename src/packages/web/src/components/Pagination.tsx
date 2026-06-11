@@ -1,9 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
 import { buildPageList } from '../lib/pagination.ts';
-import { Icon } from './Icons.tsx';
 
 export function Pagination({ controller }: { controller: WebController }): ReactNode {
   const t = useTheme();

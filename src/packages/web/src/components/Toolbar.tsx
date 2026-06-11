@@ -1,12 +1,9 @@
 import type { ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, useThemeControls, Button, SplitButton, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme, useThemeControls } from '../hooks/useTheme.tsx';
-import { Button } from './Button.tsx';
-import { SplitButton } from './SplitButton.tsx';
 import { Lockup } from './Brand.tsx';
-import { Icon } from './Icons.tsx';
 
 export function Toolbar({ controller }: { controller: WebController }): ReactNode {
   useController(controller);

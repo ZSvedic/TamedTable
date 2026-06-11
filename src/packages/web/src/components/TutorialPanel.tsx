@@ -2,12 +2,10 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { space, typography } from '../lib/theme.ts';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { Button } from './Button.tsx';
-import { Icon } from './Icons.tsx';
 
 export function TutorialPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
