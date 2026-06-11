@@ -10,5 +10,8 @@
   },
   "scripts": {
     "demo": "bun demo.html"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.8.2"
   }
 }

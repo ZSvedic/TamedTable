@@ -445,7 +445,7 @@ The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
 ```
 
 Provider and model resolution uses `@tamedtable/model-config`; see
-[spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
+[spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
 
 Other invocations:
 
@@ -735,7 +735,7 @@ Changes apply immediately — selecting a provider card calls
 is no separate "Save" button. Changing the model rebuilds the engine and replays
 the current transformations against the source, so the table on screen is
 preserved and the new model drives the next request. Full detail in
-[spec/modules/model-config/behavior.md](modules/model-config/behavior.md).
+[spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
 
 When a request fails because the API key is wrong or missing, the web shell
 surfaces a toast with a sentence the user can act on: "Invalid API key. Open

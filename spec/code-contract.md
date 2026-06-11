@@ -584,7 +584,7 @@ one is present; otherwise calls `exportPython` and writes the result.
 
 ## Model config
 
-→ [spec/modules/model-config/behavior.md](../spec/modules/model-config/behavior.md)
+→ [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
 type Provider = "anthropic" | "gemini" | "openai";

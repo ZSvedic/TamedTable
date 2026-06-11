@@ -16,7 +16,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web), wh
 | LLM cell placeholders | [#LLMCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LLMCells&type=code) | ✓ | ✓ | ✓ | [placeholders.feature](spec/test-cases/placeholders.feature) | 6 | 0 | 2026-05-27 16:01 |
 | Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) | 7 | 0 | 2026-05-27 16:01 |
 | Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) | 6 | 0 | 2026-05-27 16:01 |
-| Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/modules/model-config/model-config.feature) | 23 | 0 | 2026-06-06 |
+| Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) | 23 | 0 | 2026-06-06 |
 | Settings panel redesign | [#SettingsCards](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SettingsCards&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 9 | 0 | 2026-06-06 |
 | Python export | [#PyExport](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PyExport&type=code) | ✓ | ✓ | - | [save-py.feature](spec/test-cases/save-py.feature) | 4 | 0 | 2026-05-27 16:01 |
 | Record and replay cassettes | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | ✓ | ✓ | - | [cassettes.feature](spec/test-cases/cassettes.feature) | 5 | 0 | 2026-05-27 16:01 |
@@ -36,8 +36,8 @@ Each row is a logical area of the implementation. The ID links to every file tha
 
 | Area | ID | Description |
 |---|---|---|
-| Gherkin Tour parser | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser; returns `@tutorial` scenarios with typed `TourAction` steps (`src/packages/gherkin-tour/`, spec at `spec/modules/gherkin-tour/`) |
-| Model config | [#ModelConfig](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ModelConfig&type=code) | Provider/key/model catalogue and config resolution; zero-dep module (`src/packages/model-config/`, spec at `spec/modules/model-config/`) |
+| Gherkin Tour parser | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser; returns `@tutorial` scenarios with typed `TourAction` steps (`src/packages/gherkin-tour/`, spec at `spec/packages/gherkin-tour/`) |
+| Model config | [#ModelConfig](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ModelConfig&type=code) | Provider/key/model catalogue and config resolution; zero-dep module (`src/packages/model-config/`, spec at `spec/packages/model-config/`) |
 | Main loop | [#MainLoop](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23MainLoop&type=code) | Top-level execution flow: parse → plan → execute → output |
 | CLI parsing | [#CliParse](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliParse&type=code) | Argument parsing and flag handling |
 | Config and env | [#ConfigEnv](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ConfigEnv&type=code) | Environment variables and runtime configuration |

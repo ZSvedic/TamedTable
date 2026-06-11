@@ -9,24 +9,25 @@ if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
-// Standalone library modules live under spec/modules/<name>/<name>.feature;
+// Standalone library packages live under spec/packages/<name>/<name>.feature;
 // app-behavior scenarios live under spec/test-cases/<name>.feature.
-const MODULE_FEATURES = new Set(['gherkin-tour', 'model-config']);
+const PACKAGE_FEATURES = new Set(['gherkin-tour', 'model-config']);
 
 const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,gherkin-tour,join,model-config,pivot,save-py,sort,sql,tutorial,validate,voice,web')
   .split(',')
   .map((s) => {
     const name = s.trim();
-    return MODULE_FEATURES.has(name)
-      ? `../spec/modules/${name}/${name}.feature`
+    return PACKAGE_FEATURES.has(name)
+      ? `../spec/packages/${name}/${name}.feature`
       : `../spec/test-cases/${name}.feature`;
   });
 
 const common = {
   paths: FEATURES,
   // *.test.ts files are bun-test suites (they import 'bun:test', which
-  // cucumber's Node loader can't resolve) — import only the rest.
-  import: ['tests/**/!(*.test).ts'],
+  // cucumber's Node loader can't resolve) — import only the rest. Library
+  // packages carry their own step defs next to the code they test.
+  import: ['tests/**/!(*.test).ts', 'packages/**/*.steps.ts'],
 };
 
 export default common;
