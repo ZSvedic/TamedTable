@@ -71,7 +71,7 @@ function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<
 
 interface Runner {
   loadInput(path: string): Promise<void>;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio }): Promise<void>;
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   setSpec(spec: Spec): Promise<void>;
   currentRows(): Row[];
   currentSpec(): Spec;
@@ -88,7 +88,12 @@ type ChunkUpdate = {
 
 /** Spoken audio riding along on the patch turn (web voice input). When set,
  *  every patch-turn call in the request sends the audio as a file part next
- *  to the prompt text; `text` carries the instructions and table context. */
+ *  to the prompt text; `text` carries the instructions and table context.
+ *  When audio is attached the apply_spec_patch tool schema gains an optional
+ *  `transcript` argument the model fills with a verbatim transcript of the
+ *  audio (text requests keep the plain schema, so their request bodies and
+ *  recorded cassettes are unchanged); when present, the request's
+ *  `onTranscript` callback fires with it (first turn that carries one wins). */
 type RequestAudio = { data: Uint8Array; mediaType: string };
 ```
 
@@ -682,7 +687,8 @@ ordinary `Runner.request` (see [§ Core / runner](#core--runner)); the engine
 attaches it as a file part on the patch-turn model call. The request flows
 through the engine's normal `fetch` hook, so the cassette recorder covers it
 with no extra wiring. The user bubble and the undo-history label for a voice
-turn are the literal string `🎙 Voice request`.
+turn start as the placeholder `🎙 Voice request` and are replaced by
+`🎙 <transcript>` when the model returns one.
 
 `VoicePort` is the recording surface. The browser implementation
 (`browserVoicePort`) wraps `MediaRecorder`; tests inject a stub returning a
@@ -693,9 +699,11 @@ fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
 methods: `startVoice()` begins recording (auto-stopping after 30 s),
 `stopVoice()` ends it, builds a `VoiceContext` from `currentSpec()` and
 `selection`, and runs the ordinary `request` with the recorded bytes as the
-`audio` option — one patch turn, no transcription call — posting the same
-user/assistant bubbles a typed request produces; `cancelVoice()` discards the
-recording. The mic button is gated on `provider === 'gemini' && geminiKey`.
+`audio` option — one patch turn, no transcription call. It posts a
+`🎙 Voice request` placeholder user bubble immediately; when `onTranscript`
+fires it rewrites that bubble (and, on success, the undo-history label) to
+`🎙 <transcript>`. `cancelVoice()` discards the recording. The mic button is
+gated on `provider === 'gemini' && geminiKey`.
 
 Because every text request routes through Anthropic regardless of the selected
 provider, `ensureHeadless` builds the engine with the selected model when it is

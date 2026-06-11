@@ -33,6 +33,8 @@ export function buildVoicePrompt(ctx: VoiceContext): string {
   const lines = [
     "The user's request is spoken in the attached audio clip. Listen to it",
     'and carry out that request directly — there is no written request text.',
+    'Also set the `transcript` argument of apply_spec_patch to a verbatim',
+    'transcript of the audio.',
     '',
     'Current table context:',
     `- File: ${ctx.filename}`,

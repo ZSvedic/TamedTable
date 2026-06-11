@@ -782,9 +782,9 @@ along on the ordinary patch turn. The recorded audio, the current table's
 context, and the spec-editing instructions go to Gemini in the **same single
 call** a typed request makes — the model hears the request and emits the spec
 patch directly. There is no transcription step and no extra round trip, so a
-voice request costs exactly as many model calls as a typed one. Undo and
-history keep working because they journal the resulting spec change, not the
-request text.
+voice request costs exactly as many model calls as a typed one. That single
+call returns two things: the spec patch and a verbatim transcript of the
+spoken request.
 
 A microphone button sits in the chat sidebar, next to the send control. It is
 shown only when the selected provider is Google and a Gemini API key is set —
@@ -798,12 +798,14 @@ on its own. Pressing Escape while recording cancels it — nothing is sent and
 the table is untouched. Releasing sends the audio; the button shows a spinner
 until the round trip returns.
 
-Releasing the button posts a user bubble reading "🎙 Voice request" (no
-transcript exists — the audio goes straight into the patch turn), followed by
-the assistant's response, the same bubble a typed request produces. The undo
-history labels the turn the same way. On any failure (microphone, network, or
-a model error) a toast reading "Voice input failed" reports it and nothing
-about the table or the spec changes.
+Releasing the button posts a user bubble reading "🎙 Voice request" as a
+placeholder. As soon as the model responds, the placeholder is replaced with
+"🎙 " followed by the transcript — so the user sees what the model heard —
+and the undo-history label for the turn matches. The assistant's response
+follows, the same bubble a typed request produces. If the model omits the
+transcript, the placeholder simply stays. On any failure (microphone,
+network, or a model error) a toast reading "Voice input failed" reports it
+and nothing about the table or the spec changes.
 
 The instruction text accompanying the audio names the loaded file, lists the
 column names, and — when a cell is selected — includes that cell's column,
