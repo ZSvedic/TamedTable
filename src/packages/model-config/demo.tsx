@@ -94,8 +94,11 @@ function Demo() {
     setBusy(true);
     setResponse('…');
     try {
-      // One round trip: the audio is the query; the answer lands below.
-      setResponse(await sendVoicePrompt(resolved, audio));
+      // One round trip: the audio is the query; the same call returns what
+      // the model heard (→ query input) and its answer (→ response field).
+      const reply = await sendVoicePrompt(resolved, audio);
+      if (reply.transcript) setQuery(reply.transcript);
+      setResponse(reply.answer);
     } catch (e) {
       setResponse(`Error: ${(e as Error).message}`);
     } finally {
