@@ -8,7 +8,7 @@
 // voice-capable provider accepts (OpenAI's input_audio takes only wav/mp3).
 
 import { blobToWavBytes } from '@tamedtable/model-config/audio-wav';
-import type { VoicePort } from './voice.ts';
+import type { VoicePort } from './index.ts';
 
 export function browserVoicePort(): VoicePort {
   let recorder: MediaRecorder | null = null;

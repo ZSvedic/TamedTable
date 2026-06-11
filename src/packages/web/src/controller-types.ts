@@ -6,7 +6,7 @@
 import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { TourScenario } from '@tamedtable/gherkin-tour';
 import type { FetchLike, FilePort } from '@tamedtable/file-io';
-import type { VoicePort } from './lib/voice.ts';
+import type { VoicePort } from '@tamedtable/voice-input';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 
 export type { ResolvedConfig };

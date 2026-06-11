@@ -18,20 +18,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Pulsing dot — shown while a request streams. */
-@keyframes tt-pulse-kf {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-.tt-pulse {
-  animation: tt-pulse-kf 1.2s ease-in-out infinite;
-}
-
 /* Slide / fade-in for the settings sheet and toasts. */
 @keyframes tt-sheet-kf {
   from {
@@ -47,32 +33,6 @@ body {
   animation: tt-sheet-kf 0.14s ease-out;
 }
 
-/* Recording mic — a pulsing red ring while the microphone is live. */
-@keyframes tt-rec-kf {
-  0% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55);
-  }
-  70% {
-    box-shadow: 0 0 0 7px rgba(220, 38, 38, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-  }
-}
-.tt-rec-ring {
-  animation: tt-rec-kf 1.1s ease-out infinite;
-}
-
-/* Spinner — shown while the voice round trip is in flight. */
-@keyframes tt-spin-kf {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.tt-spin {
-  animation: tt-spin-kf 0.7s linear infinite;
-}
-
 /* Driver.js adds .driver-active to <body> and sets pointer-events:none on
    all descendants. Re-enable pointer events for the Tutorial panel so its
    Prev / Next / Cancel buttons remain clickable during a spotlight. */
@@ -81,11 +41,3 @@ body {
   pointer-events: auto !important;
 }
 
-/* Drag grip in a table header — revealed on hover. */
-.tt-th .tt-grip {
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.tt-th:hover .tt-grip {
-  opacity: 1;
-}

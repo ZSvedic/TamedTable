@@ -1,0 +1,21 @@
+{
+  "name": "@tamedtable/voice-input",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./browser-voice": "./browser-voice.ts"
+  },
+  "scripts": {
+    "demo": "bun demo.html"
+  },
+  "dependencies": {
+    "@tamedtable/model-config": "workspace:*"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.8.2"
+  }
+}

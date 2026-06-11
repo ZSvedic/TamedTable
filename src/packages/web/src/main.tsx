@@ -4,7 +4,7 @@ import { parseTours } from '@tamedtable/gherkin-tour';
 import { createWebController } from './controller.ts';
 import type { TutorialSources, ResolvedConfig } from './controller.ts';
 import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
-import { browserVoicePort } from './lib/browser-voice.ts';
+import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
 import { App } from './App.tsx';
 import './index.css';
 
