@@ -117,6 +117,21 @@
         "react": "^19.0.0",
       },
     },
+    "packages/toolbar": {
+      "name": "@tamedtable/toolbar",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tamedtable/ui-kit": "workspace:*",
+      },
+      "devDependencies": {
+        "@cucumber/cucumber": "^12.8.2",
+        "@types/react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+      },
+    },
     "packages/ui-kit": {
       "name": "@tamedtable/ui-kit",
       "version": "0.0.0",
@@ -150,6 +165,7 @@
         "@tamedtable/headless": "workspace:*",
         "@tamedtable/model-config": "workspace:*",
         "@tamedtable/table-view": "workspace:*",
+        "@tamedtable/toolbar": "workspace:*",
         "@tamedtable/ui-kit": "workspace:*",
         "@tamedtable/voice-input": "workspace:*",
         "buffer": "^6.0.3",
@@ -396,6 +412,8 @@
     "@tamedtable/model-config": ["@tamedtable/model-config@workspace:packages/model-config"],
 
     "@tamedtable/table-view": ["@tamedtable/table-view@workspace:packages/table-view"],
+
+    "@tamedtable/toolbar": ["@tamedtable/toolbar@workspace:packages/toolbar"],
 
     "@tamedtable/ui-kit": ["@tamedtable/ui-kit@workspace:packages/ui-kit"],
 
