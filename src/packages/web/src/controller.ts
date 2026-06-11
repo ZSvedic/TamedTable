@@ -34,7 +34,7 @@ import {
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
-import { buildVoicePrompt, type VoiceContext, type VoicePort } from './lib/voice.ts';
+import { buildVoicePrompt, type VoiceContext, type VoicePort } from '@tamedtable/voice-input';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import {
   readStoredConfig,

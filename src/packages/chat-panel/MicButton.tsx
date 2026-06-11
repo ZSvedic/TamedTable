@@ -1,20 +1,48 @@
-// #VoiceInput
-// Press-and-hold microphone button for the chat sidebar. Visible only when the
-// selected model accepts voice input and the provider's key is set. Holding
-// records (a red ring animates), releasing sends, and Escape cancels.
+// #ChatPanel
+// Press-and-hold microphone button for the chat input row. Holding records
+// (a red ring animates), releasing sends, and Escape or pointer-cancel
+// cancels. Whether the button appears at all is the host's call. The ring
+// and spinner animations ship inside the component.
 
 import { useEffect, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
-import { useTheme, Icon } from '@tamedtable/ui-kit/components';
-import type { WebController } from '../controller.ts';
-import { useController } from '../hooks/useController.ts';
+import { useTheme } from '@tamedtable/ui-kit/components';
+import { Icon } from '@tamedtable/ui-kit/components';
+import type { VoiceButtonStatus } from './index.ts';
 
 const RECORD_RED = '#dc2626';
 
-export function MicButton({ controller, size }: { controller: WebController; size: CSSProperties }): ReactNode {
-  useController(controller);
-  const t = useTheme();
+const MIC_CSS =
+  '@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }' +
+  ' 70% { box-shadow: 0 0 0 7px rgba(220, 38, 38, 0); }' +
+  ' 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }' +
+  ' .cp-rec-ring { animation: cp-rec-kf 1.1s ease-out infinite; }' +
+  ' @keyframes cp-spin-kf { to { transform: rotate(360deg); } }' +
+  ' .cp-spin { animation: cp-spin-kf 0.7s linear infinite; }';
 
-  const status = controller.voiceStatus;
+const DEFAULT_SIZE: CSSProperties = {
+  height: 30,
+  width: 30,
+  flex: '0 0 auto',
+  borderRadius: 4,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+export function MicButton({
+  status,
+  onStart,
+  onStop,
+  onCancel,
+  size = DEFAULT_SIZE,
+}: {
+  status: VoiceButtonStatus;
+  onStart: () => void;
+  onStop: () => void;
+  onCancel: () => void;
+  size?: CSSProperties;
+}): ReactNode {
+  const t = useTheme();
   const recording = status === 'recording';
   const sending = status === 'sending';
 
@@ -24,24 +52,26 @@ export function MicButton({ controller, size }: { controller: WebController; siz
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        controller.cancelVoice();
+        onCancel();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [recording, controller]);
-
-  if (!controller.voiceAvailable()) return null;
+  }, [recording, onCancel]);
 
   const press = (e: PointerEvent<HTMLButtonElement>): void => {
     if (sending) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    void controller.startVoice();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Synthetic pointer events (tests) have no active pointer to capture.
+    }
+    onStart();
   };
 
   const release = (): void => {
-    if (recording) void controller.stopVoice();
+    if (recording) onStop();
   };
 
   const title = recording
@@ -53,10 +83,10 @@ export function MicButton({ controller, size }: { controller: WebController; siz
   return (
     <button
       type="button"
-      className={recording ? 'tt-rec-ring' : undefined}
+      className={recording ? 'cp-rec-ring' : undefined}
       onPointerDown={press}
       onPointerUp={release}
-      onPointerCancel={() => controller.cancelVoice()}
+      onPointerCancel={onCancel}
       disabled={sending}
       title={title}
       aria-label={title}
@@ -70,9 +100,10 @@ export function MicButton({ controller, size }: { controller: WebController; siz
         touchAction: 'none',
       }}
     >
+      <style>{MIC_CSS}</style>
       {sending ? (
         <span
-          className="tt-spin"
+          className="cp-spin"
           style={{
             width: 14,
             height: 14,

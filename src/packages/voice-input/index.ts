@@ -1,5 +1,5 @@
 // #VoiceInput
-// Voice input for the web UI: build the instruction text that accompanies the
+// Voice input: build the instruction text that accompanies the
 // spoken audio, and record audio in the browser.
 //
 // There is no transcription step and no separate voice network call: the

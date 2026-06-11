@@ -16,7 +16,7 @@ import type { Browser, Page } from 'playwright';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
-const DEMOS = ['file-io', 'gherkin-tour', 'model-config', 'table-view', 'ui-kit'] as const;
+const DEMOS = ['chat-panel', 'file-io', 'gherkin-tour', 'model-config', 'table-view', 'ui-kit', 'voice-input'] as const;
 
 // Find a Playwright-managed Chromium without hardcoding the build number:
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
@@ -130,6 +130,22 @@ async function expectClean(page: Page, consoleErrors: string[], failedRequests: 
 }
 
 describe.skipIf(skip)('demo smoke', () => {
+  it('chat-panel: sends a message and echoes the assistant reply', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('chat-panel');
+    await page.fill('#demo-chat-input', 'smoke test');
+    await page.press('#demo-chat-input', 'Enter');
+    await page.waitForSelector('[data-cp-message="assistant"]');
+    expect((await page.textContent('[data-cp-message="assistant"]'))!).toContain('Did: smoke test');
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('voice-input: renders the sample prompt and the recording controls', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('voice-input');
+    expect((await page.textContent('#out'))!).toContain('spoken in the attached audio clip');
+    expect((await page.textContent('#vi-state'))!).toBe('idle');
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
   it('file-io: reports the dialog capability and renders the serializeFlow sample', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('file-io');
     expect((await page.textContent('#fio-fsa'))!).toMatch(/File System Access API: (available|missing)/);

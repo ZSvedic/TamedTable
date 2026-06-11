@@ -36,11 +36,13 @@ Each row is a logical area of the implementation. The ID links to every file tha
 
 | Area | ID | Description |
 |---|---|---|
+| Chat panel | [#ChatPanel](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ChatPanel&type=code) | Chat sidebar with request detail, send/stop input row, and the press-and-hold `MicButton` (`src/packages/chat-panel/`, spec at `spec/packages/chat-panel/`) |
 | File IO | [#FileIO](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FileIO&type=code) | Browser file open/save dialogs (`FilePort`), format detection, URL fetch, `.flow` serialization (`src/packages/file-io/`, spec at `spec/packages/file-io/`) |
 | Gherkin Tour parser | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser; returns `@tutorial` scenarios with typed `TourAction` steps (`src/packages/gherkin-tour/`, spec at `spec/packages/gherkin-tour/`) |
 | Model config | [#ModelConfig](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ModelConfig&type=code) | Provider/key/model catalogue, config resolution, and the `ModelChooser` React component (`src/packages/model-config/`, spec at `spec/packages/model-config/`) |
 | Table view | [#TableView](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TableView&type=code) | Paged table grid with selection, inline edit, column drag-reorder, and the pure pagination model (`src/packages/table-view/`, spec at `spec/packages/table-view/`) |
 | UI kit | [#UiKit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23UiKit&type=code) | Brand design tokens plus the primitive React components — `Button`, `Icon`, `SplitButton`, `Toasts`, `ThemeProvider` (`src/packages/ui-kit/`, spec at `spec/packages/ui-kit/`) |
+| Voice recording | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | `VoicePort`, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt` (`src/packages/voice-input/`, spec at `spec/packages/voice-input/`) |
 | Main loop | [#MainLoop](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23MainLoop&type=code) | Top-level execution flow: parse → plan → execute → output |
 | CLI parsing | [#CliParse](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliParse&type=code) | Argument parsing and flag handling |
 | Config and env | [#ConfigEnv](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ConfigEnv&type=code) | Environment variables and runtime configuration |
