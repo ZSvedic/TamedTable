@@ -627,11 +627,20 @@ interface ModelChooserProps {
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
 
-`@tamedtable/model-config` has three entry points: the main `index.ts` (no
+`@tamedtable/model-config` has four entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads
-`process.env`; Node/Bun only), and `ModelChooser.tsx` (React; browser only).
-`StoragePort` is implemented by the web package via `readStoredConfig` /
-`writeStoredConfig` / `clearStoredConfig` in `controller-storage.ts`.
+`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only), and
+`storage.ts` (the localStorage `StoragePort` implementation — browser only,
+but a safe no-op anywhere without localStorage):
+
+```ts
+// storage.ts entry point — implements StoragePort over localStorage
+function readStoredConfig(): Partial<ResolvedConfig>;
+function writeStoredConfig(c: Partial<ResolvedConfig>): void;
+function clearStoredConfig(): void;
+```
+
+The web controller imports these from `@tamedtable/model-config/storage`.
 
 ## Voice input
 

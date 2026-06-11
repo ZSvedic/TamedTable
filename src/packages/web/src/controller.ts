@@ -29,7 +29,7 @@ import { clampPage } from './lib/pagination.ts';
 import {
   readStoredConfig,
   writeStoredConfig,
-} from './controller-storage.ts';
+} from '@tamedtable/model-config/storage';
 import { detectFormat, sampleNameFromUrl } from './controller-format.ts';
 import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
 import type {

@@ -4,9 +4,10 @@ The `@tamedtable/model-config` module owns provider selection, API key
 storage, the model catalogue, and the model chooser UI for every surface
 that calls an LLM. The main entry has zero runtime dependencies and runs in
 any JavaScript environment — browser, Node, or Bun; the `ModelChooser` React
-component ships as a separate entry point. Storage integration (localStorage
-in the browser, nothing in the CLI) is injected through a `StoragePort`
-interface; the module only defines that interface.
+component ships as a separate entry point. Storage integration is injected
+through a `StoragePort` interface; the module defines the interface and ships
+the browser localStorage implementation as a separate `storage.ts` entry
+point (the CLI uses no storage).
 
 ## Worked example
 
@@ -97,10 +98,15 @@ write(c: Partial<ResolvedConfig>) → void
 clear()  → void
 ```
 
-The web package implements `StoragePort` with localStorage, persisting config
-as a single JSON blob under the key `tamedtable.config`. On first read, if the
-old `tamedtable.apiKey` key is present and the new key is absent, the old value
-migrates to `{ anthropicKey: oldValue }` and the old key is removed.
+The module's `storage.ts` entry point implements `StoragePort` with
+localStorage as `readStoredConfig` / `writeStoredConfig` / `clearStoredConfig`,
+persisting config as a single JSON blob under the key `tamedtable.config`. On
+first read, if the old `tamedtable.apiKey` key is present and the new key is
+absent, the old value migrates to `{ anthropicKey: oldValue }` and the old key
+is removed. All three helpers are no-ops in environments without localStorage
+and swallow storage exceptions. The web app and the demo page share this
+implementation, so keys entered in one are visible in the other (both are
+served from the same origin).
 
 ## Reading from env
 
@@ -140,6 +146,27 @@ the props to `WebController` (clicking a card expands it and selects the
 provider; collapsing changes nothing — see the Web UI section of
 [spec/behavior.md](../../behavior.md)). On the demo page, plain React state
 plays that role and `resolveConfig` renders the resulting config live.
+
+## Demo page
+
+The demo (`demo.html` + `demo.tsx`, deployed under `/demos/model-config/`)
+mounts the real `ModelChooser` over plain React state and shows the
+`resolveConfig` result live. Two behaviors beyond the chooser itself:
+
+- **Shared persistence.** On load the demo seeds its state from
+  `readStoredConfig()` and writes every change back with
+  `writeStoredConfig(resolved)` — the same localStorage blob the main app
+  uses, so keys and model choice carry over between the app and the demo in
+  both directions.
+- **Test call.** Below the resolved config sits a dev test harness: a query
+  input (`#tc-input`), a Send button (`#tc-send`), and a response field
+  (`#tc-response`). Send issues one real completion call to the selected
+  provider/model straight from the browser using the resolved key, and the
+  response text (or the error message) lands in the response field. When the
+  selected model has `voiceInput: true`, a mic button (`#tc-mic`) appears:
+  click to record, click again to stop; the audio goes to the selected model
+  for transcription and the transcript fills the query input. The button is
+  absent for models without voice support.
 
 Styling comes only from `--mc-*` CSS custom properties, each with a default
 that gives a presentable light look standalone. The host injects its theme by
