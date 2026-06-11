@@ -8,6 +8,7 @@ Organized by **lifecycle**, not by file type:
 
 ```
 TamedTable/                  root: README.md, MAP.md (feature + code navigation), LICENSE, .gitignore
+├── design/                  frozen design prototype — brand tokens, mockups, logo/icon assets
 ├── ops/                     how the project is built; never deployed
 │   ├── journal/             historic status reports
 │   ├── prompts/             reusable session starters — see AGENTS.md

@@ -60,7 +60,7 @@ export type {
  *  spec — so this lives on the controller, not the spec. */
 const PAGE_SIZE = 20;
 
-// #WebServer
+// #WebShell
 export class WebController implements ControllerHost {
   readonly opts: WebControllerOptions;
   readonly file: FilePort;
