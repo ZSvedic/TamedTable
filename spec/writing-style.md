@@ -1,6 +1,6 @@
-# Spec writing style
+# Writing style
 
-Conventions for everything under `spec/`. Modeled on the PonyPen spec dir and the in-project [rationale.md](../spec/rationale.md).
+Conventions for every markdown file in this repo — specs, READMEs, ops docs, prompts. Modeled on the PonyPen spec dir and the in-project [rationale.md](rationale.md).
 
 ## Write like you speak
 - Active voice. *"The runner replays transformations,"* not *"transformations are replayed by the runner."*
@@ -24,7 +24,7 @@ Conventions for everything under `spec/`. Modeled on the PonyPen spec dir and th
 - ASCII diagrams welcome when they earn their keep — lifecycle, data flow, state.
 
 ## Structure
-- Each sub-doc opens with two sentences — what this thing owns, what it explicitly does not own.
+- Each doc opens with two sentences — what this thing owns, what it explicitly does not own.
 - The second section is always a worked example, so readers see concrete usage before details. For surfaces with multiple modes (REPL + batch, factory + process entry), show one example per mode.
 - Section headers follow the natural shape of the thing (Lifecycle, Methods, Format), not a fixed template. No "Scope" / "Out of scope" headers if the opener already does that work.
 
@@ -33,7 +33,7 @@ Conventions for everything under `spec/`. Modeled on the PonyPen spec dir and th
 - Errors and edge cases live inline at the section they apply to, not in a per-doc "Errors" heading.
 
 ## Size
-- 40–80 lines per sub-doc. The cap is information density.
+- 40–80 lines per doc. The cap is information density.
 
 ## Test before publishing
 - Would a reader who hasn't seen the other docs understand what *this* doc is for from the first paragraph?

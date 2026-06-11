@@ -10,8 +10,10 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 | Types, env vars, exit codes | [spec/code-contract.md](spec/code-contract.md) |
 | LLM prompts (spec-editor + per-cell) | [spec/prompt-app-edit.md](spec/prompt-app-edit.md) |
 | How to run anything (CLI / web / tests) | [README.md](README.md) |
-| Repo layout and tooling rationale | [ops/conventions.md](ops/conventions.md) |
-| How to write any markdown you add | [ops/writing-style.md](ops/writing-style.md) |
+| Repo layout and tooling rationale | [README.md](README.md#project-layout) tree + [Layout, stack & process](#layout-stack--process) below |
+| Spec index, test-fixture naming | [spec/README.md](spec/README.md) |
+| Package specs: layout, step-def ownership, UI rules, demos | [spec/packages/README.md](spec/packages/README.md) |
+| How to write any markdown you add | [spec/writing-style.md](spec/writing-style.md) |
 | Past decisions and status reports | [ops/journal/](ops/journal/) — read, don't rewrite |
 | Code and feature map | [MAP.md](MAP.md) |
 
@@ -39,6 +41,23 @@ Reusable session starters in `ops/prompts/`:
 | [prompt-meeting.md](ops/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
 | [prompt-scribe.md](ops/prompts/prompt-scribe.md) | SCRIBE — spec-only editor, never touches `src/`. Paired with WoZ. |
 | [prompt-woz.md](ops/prompts/prompt-woz.md) | WoZ — interactive behavior simulator driven by `spec/behavior.md`. |
+
+## Layout, stack & process
+
+The repo is organized by **lifecycle**, not by file type — see the tree in [README.md](README.md#project-layout). Why the boundaries fall where they do:
+
+- **`src/` holds the JS config** because `package.json` is coupled to the code it builds, and Node module resolution walks *up* — so anything importing dependencies (app code *and* step defs) must live under the dir that holds `node_modules/`. That makes `src/` a single deployable unit you can copy and run.
+- **`.feature` files live in `spec/`; app step defs in `src/tests/`, package step defs in the package** — the same spec/implementation split as `spec/behavior.md` + `spec/code-contract.md` ↔ `src/packages/`. Step defs read fixtures from `spec/test-cases/` by plain file path (data reads, unlike imports, cross directories freely).
+- **`src/` root files are permanent** (`package.json`, `bun.lock`, `bunfig.toml`, `tsconfig.json`, `cucumber.js`) — not regenerable from `spec/`, not deletable. Only `src/`'s *subdirs* (`packages/`, `tests/`) are regenerable.
+
+Stack:
+
+- **TypeScript everywhere** (CLI, core, web).
+- **Runtime + package manager: bun** — always. All `bun` commands run from `src/` (that's where `package.json` lives). Bun executes TypeScript natively (no separate compile step).
+- **Monorepo** via bun workspaces; packages live under `src/packages/`.
+- **Dependency stability**: `minimumReleaseAge = 604800` (7 days) in `src/bunfig.toml`.
+
+Process: outside-in TDD — Gherkin → step definitions → API spec → implementation → unit tests as edges surface. Don't pre-write tests for hypothetical edges.
 
 ## Workflow rule — changing a component
 
@@ -71,11 +90,11 @@ The test: "does this need CI to verify it?" If yes, PR. If no, commit.
 
 ## Writing markdown
 
-Any `.md` you add or edit follows [ops/writing-style.md](ops/writing-style.md). The same rules apply to this file.
+Any `.md` you add or edit follows [spec/writing-style.md](spec/writing-style.md). The same rules apply to this file.
 
 ## Don't
 
 - Rewrite entries in `ops/journal/` — they are historical.
-- Add a top-level directory without reading [ops/conventions.md](ops/conventions.md).
+- Add a top-level directory without reading [Layout, stack & process](#layout-stack--process).
 - Restate what's in canonical docs. Link instead.
 - Leave "future", "planned", or "deferred" language in docs after a feature ships — update those references in the same PR that implements the feature.
