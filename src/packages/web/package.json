@@ -23,6 +23,7 @@
     "@tamedtable/headless": "workspace:*",
     "@tamedtable/model-config": "workspace:*",
     "@tamedtable/table-view": "workspace:*",
+    "@tamedtable/toolbar": "workspace:*",
     "@tamedtable/voice-input": "workspace:*",
     "@tamedtable/ui-kit": "workspace:*",
     "buffer": "^6.0.3",

@@ -16,7 +16,7 @@ import type { Browser, Page } from 'playwright';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
-const DEMOS = ['chat-panel', 'file-io', 'gherkin-tour', 'model-config', 'table-view', 'ui-kit', 'voice-input'] as const;
+const DEMOS = ['chat-panel', 'file-io', 'gherkin-tour', 'model-config', 'table-view', 'toolbar', 'ui-kit', 'voice-input'] as const;
 
 // Find a Playwright-managed Chromium without hardcoding the build number:
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
@@ -161,6 +161,18 @@ describe.skipIf(skip)('demo smoke', () => {
     await page.waitForFunction(
       `(document.querySelector('[data-tv-range]')?.textContent ?? '').includes('11–20')`,
     );
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('toolbar: fires a button callback and opens the URL dialog', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('toolbar');
+    await page.click('[data-tb-toolbar] button:has-text("Save data")');
+    await page.waitForFunction(
+      `(document.querySelector('#out')?.textContent ?? '').includes('save data')`,
+    );
+
+    await page.click('[data-tb-toolbar] button:has-text("Open URL")');
+    await page.waitForSelector('[data-tb-dialog]');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
