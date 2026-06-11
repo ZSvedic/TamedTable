@@ -7,7 +7,7 @@
 // Spec: spec/packages/model-config/behavior.md § Demo page.
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ALL_MODELS, resolveConfig, type Provider } from './index.ts';
+import { ALL_MODELS, defaultModel, resolveConfig, type Provider } from './index.ts';
 import { ModelChooser } from './ModelChooser.tsx';
 import { readStoredConfig, writeStoredConfig } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
@@ -21,7 +21,7 @@ interface ActiveRecording {
 function Demo() {
   const stored = useRef(readStoredConfig()).current;
   const [provider, setProvider] = useState<Provider>(stored.provider ?? 'anthropic');
-  const [model, setModel] = useState(stored.model ?? 'claude-sonnet-4-6');
+  const [model, setModel] = useState(stored.model ?? defaultModel(stored.provider ?? 'anthropic'));
   const [keys, setKeys] = useState<Record<Provider, string>>({
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',

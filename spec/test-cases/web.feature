@@ -257,12 +257,12 @@ Feature: Web front-end
       And the provider card "gemini" is collapsed
 
     @web
-    Scenario: Clicking the OpenAI card shows gpt-4o-audio-preview with voice tag
+    Scenario: Clicking the OpenAI card shows gpt-audio with voice tag
       Given the TamedTable web app
       When user opens the settings panel
       And user clicks the provider card "openai"
-      Then the model list contains "gpt-4o-audio-preview" with voice tag true
-      And the model list contains "gpt-4o" with voice tag false
+      Then the model list contains "gpt-audio" with voice tag true
+      And the model list contains "gpt-5.5" with voice tag false
 
     @web
     Scenario: Clicking an already-open card collapses it

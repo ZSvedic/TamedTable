@@ -73,7 +73,7 @@ Feature: Model config
 
     @headless
     Scenario: TAMEDTABLE_MODEL in env overrides stored model
-      When resolveConfig is called with env TAMEDTABLE_MODEL="claude-haiku-4-5" and stored model "claude-opus-4-7"
+      When resolveConfig is called with env TAMEDTABLE_MODEL="claude-haiku-4-5" and stored model "claude-opus-4-8"
       Then the resolved model is "claude-haiku-4-5"
 
   Rule: providerFor
@@ -85,12 +85,12 @@ Feature: Model config
 
     @headless
     Scenario: providerFor returns gemini for a gemini-* id
-      When providerFor is called with "gemini-3-flash"
+      When providerFor is called with "gemini-3.5-flash"
       Then the result is "gemini"
 
     @headless
     Scenario: providerFor returns openai for a gpt-* id
-      When providerFor is called with "gpt-4o-audio-preview"
+      When providerFor is called with "gpt-audio"
       Then the result is "openai"
 
   Rule: defaultModel
@@ -106,9 +106,9 @@ Feature: Model config
       Then the result is "gemini-3.5-flash"
 
     @headless
-    Scenario: defaultModel for openai returns gpt-4o
+    Scenario: defaultModel for openai returns gpt-5.5
       When defaultModel is called with "openai"
-      Then the result is "gpt-4o"
+      Then the result is "gpt-5.5"
 
   Rule: ALL_MODELS catalogue
 
@@ -126,12 +126,12 @@ Feature: Model config
       Then every ALL_MODELS entry has a voiceInput boolean field
 
     @headless
-    Scenario: gpt-4o-audio-preview has voiceInput true
-      Then the model "gpt-4o-audio-preview" has voiceInput true
+    Scenario: gpt-audio has voiceInput true
+      Then the model "gpt-audio" has voiceInput true
 
     @headless
-    Scenario: gpt-4o has voiceInput false
-      Then the model "gpt-4o" has voiceInput false
+    Scenario: gpt-5.5 has voiceInput false
+      Then the model "gpt-5.5" has voiceInput false
 
     @headless
     Scenario: claude-sonnet-4-6 has voiceInput false
@@ -165,8 +165,8 @@ Feature: Model config
     Scenario: Picking a model updates the resolved config
       Given the model-config demo page
       When the user clicks the "Google" provider card
-      And the user picks the model "gemini-2.5-pro"
-      Then the demo shows resolved model "gemini-2.5-pro"
+      And the user picks the model "gemini-3.1-pro-preview"
+      Then the demo shows resolved model "gemini-3.1-pro-preview"
 
     @web
     Scenario: A typed API key stays masked until the eye toggle reveals it

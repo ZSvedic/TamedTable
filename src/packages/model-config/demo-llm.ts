@@ -137,7 +137,7 @@ export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise
 
 /** One round trip with the spoken query as the request: audio + instructions
  *  in, a verbatim transcript and the model's answer out. Only valid for
- *  models with voiceInput: true (Gemini models and gpt-4o-audio-preview). */
+ *  models with voiceInput: true (Gemini models and gpt-audio). */
 export async function sendVoicePrompt(cfg: ResolvedConfig, audio: Blob): Promise<VoiceReply> {
   const key = keyFor(cfg);
   // Both providers accept base64 WAV; MediaRecorder output (webm/opus or
