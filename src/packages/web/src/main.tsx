@@ -14,7 +14,8 @@ declare const __TT_TUTORIAL__: {
   goldens:  Record<string, string>;
 };
 
-// Config is now persisted by the controller itself via controller-storage.ts.
+// Config is now persisted by the controller itself via
+// @tamedtable/model-config/storage.
 // We still subscribe to persist the model separately for forward compat with
 // any older stored 'tamedtable.model' entries (the controller ignores that key;
 // this subscription is a no-op that doesn't write anything we need, but it

@@ -152,4 +152,34 @@ describe.skipIf(skip)('demo smoke', () => {
     expect(JSON.parse((await page.textContent('#out'))!).geminiKey).toBe('smoke-test-key');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
+
+  it('model-config: persists config to localStorage and restores it on reload', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('model-config');
+    await page.click('[data-mc-card="gemini"]');
+    await page.fill('[data-mc-key="gemini"]', 'persisted-key');
+    await page.waitForFunction(
+      `(() => { try { return JSON.parse(localStorage.getItem('tamedtable.config') ?? '{}').geminiKey === 'persisted-key'; } catch { return false; } })()`,
+    );
+
+    await page.reload();
+    await page.waitForFunction(`(document.querySelector('#out')?.textContent ?? '').trim().length > 0`);
+    const resolved = JSON.parse((await page.textContent('#out'))!);
+    expect(resolved.provider).toBe('gemini');
+    expect(resolved.geminiKey).toBe('persisted-key');
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('model-config: shows the test-call harness, mic only for voice models', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('model-config');
+    // Anthropic default model: no voice support, so no mic.
+    expect(await page.isVisible('#tc-input')).toBe(true);
+    expect(await page.isVisible('#tc-send')).toBe(true);
+    expect(await page.isVisible('#tc-response')).toBe(true);
+    expect(await page.locator('#tc-mic').count()).toBe(0);
+
+    // Switching to a Gemini model (voiceInput: true) shows the mic.
+    await page.click('[data-mc-card="gemini"]');
+    await page.waitForSelector('#tc-mic');
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
 });

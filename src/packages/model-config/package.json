@@ -8,6 +8,7 @@
   "exports": {
     ".": "./index.ts",
     "./env": "./env.ts",
+    "./storage": "./storage.ts",
     "./ModelChooser": "./ModelChooser.tsx"
   },
   "scripts": {

@@ -1,22 +1,36 @@
-// Config persistence — stored client-side in localStorage as a single JSON
-// blob under 'tamedtable.config'. All three helpers are no-ops in headless/test
-// environments with no DOM, and swallow exceptions from Safari private mode and
-// quota errors.
+// #ModelConfig — browser localStorage entry point.
+// StoragePort implementation: config persisted as a single JSON blob under
+// 'tamedtable.config'. All three helpers are no-ops in environments with no
+// localStorage (Node, headless tests), and swallow exceptions from Safari
+// private mode and quota errors. Shared by the web app and the demo page.
 //
 // Backward compat: if the old 'tamedtable.apiKey' key exists and the new key
 // doesn't, migrate the old value to { anthropicKey: oldValue } on first read
 // and remove the old key.
 
-import type { ResolvedConfig } from '@tamedtable/model-config';
+import type { ResolvedConfig } from './index.ts';
 
 const CONFIG_STORAGE = 'tamedtable.config';
 const LEGACY_KEY_STORAGE = 'tamedtable.apiKey';
 
-/** Read the stored config, if any. Returns {} in headless/test environments
- *  with no DOM, or when localStorage access throws. */
+// Minimal localStorage surface, looked up via globalThis: this file is part
+// of the Node typecheck, which has no DOM lib.
+interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+function store(): StorageLike | undefined {
+  return (globalThis as { localStorage?: StorageLike }).localStorage;
+}
+
+/** Read the stored config, if any. Returns {} in environments with no
+ *  localStorage, or when localStorage access throws. */
 export function readStoredConfig(): Partial<ResolvedConfig> {
   try {
-    if (typeof localStorage === 'undefined') return {};
+    const localStorage = store();
+    if (localStorage === undefined) return {};
 
     const raw = localStorage.getItem(CONFIG_STORAGE);
     if (raw) {
@@ -45,7 +59,8 @@ export function readStoredConfig(): Partial<ResolvedConfig> {
 
 export function writeStoredConfig(c: Partial<ResolvedConfig>): void {
   try {
-    if (typeof localStorage === 'undefined') return;
+    const localStorage = store();
+    if (localStorage === undefined) return;
     localStorage.setItem(CONFIG_STORAGE, JSON.stringify(c));
   } catch {
     // Swallow: storage may be unavailable or quota-bound; the in-memory
@@ -55,7 +70,8 @@ export function writeStoredConfig(c: Partial<ResolvedConfig>): void {
 
 export function clearStoredConfig(): void {
   try {
-    if (typeof localStorage === 'undefined') return;
+    const localStorage = store();
+    if (localStorage === undefined) return;
     localStorage.removeItem(CONFIG_STORAGE);
     localStorage.removeItem(LEGACY_KEY_STORAGE);
   } catch {
