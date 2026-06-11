@@ -19,6 +19,7 @@
     "@cucumber/cucumber": "^12.8.2",
     "@tamedtable/cli": "workspace:*",
     "@tamedtable/core": "workspace:*",
+    "@tamedtable/file-io": "workspace:*",
     "@tamedtable/gherkin-tour": "workspace:*",
     "@tamedtable/headless": "workspace:*",
     "@tamedtable/model-config": "workspace:*",

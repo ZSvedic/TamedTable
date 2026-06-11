@@ -24,7 +24,7 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 ├── src/                     the implementation — self-contained, deployable unit
 │   ├── package.json, …      build config; run every bun command from here
 │   ├── node_modules/        gitignored
-│   ├── packages/            core / headless / cli / web — regenerable from spec/
+│   ├── packages/            app (core/headless/cli/web) + library packages — regenerable from spec/
 │   └── tests/               app step definitions — regenerable from Gherkin
 └── temp/                    scratch: test outputs, charts, logs — gitignored
 ```

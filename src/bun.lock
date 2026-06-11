@@ -8,6 +8,7 @@
         "@cucumber/cucumber": "^12.8.2",
         "@tamedtable/cli": "workspace:*",
         "@tamedtable/core": "workspace:*",
+        "@tamedtable/file-io": "workspace:*",
         "@tamedtable/gherkin-tour": "workspace:*",
         "@tamedtable/headless": "workspace:*",
         "@tamedtable/model-config": "workspace:*",
@@ -37,6 +38,16 @@
         "csv-parse": "^6.2.1",
         "csv-stringify": "^6.7.0",
         "zod": "^4.4.3",
+      },
+    },
+    "packages/file-io": {
+      "name": "@tamedtable/file-io",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tamedtable/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@cucumber/cucumber": "^12.8.2",
       },
     },
     "packages/gherkin-tour": {
@@ -77,6 +88,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@tamedtable/core": "workspace:*",
+        "@tamedtable/file-io": "workspace:*",
         "@tamedtable/gherkin-tour": "workspace:*",
         "@tamedtable/headless": "workspace:*",
         "@tamedtable/model-config": "workspace:*",
@@ -312,6 +324,8 @@
     "@tamedtable/cli": ["@tamedtable/cli@workspace:packages/cli"],
 
     "@tamedtable/core": ["@tamedtable/core@workspace:packages/core"],
+
+    "@tamedtable/file-io": ["@tamedtable/file-io@workspace:packages/file-io"],
 
     "@tamedtable/gherkin-tour": ["@tamedtable/gherkin-tour@workspace:packages/gherkin-tour"],
 

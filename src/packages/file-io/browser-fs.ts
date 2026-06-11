@@ -1,8 +1,10 @@
+/// <reference lib="dom" />
+// #FileIO
 // Browser implementation of FilePort. Uses the File System Access API where
 // the browser supports it, and falls back to a hidden <input type=file> for
 // Open and a download anchor for Save where it does not.
 
-import type { FilePort, PickedFile, SaveOutcome } from './ports.ts';
+import type { FilePort, PickedFile, SaveOutcome } from './index.ts';
 
 interface FsAccessWindow {
   showOpenFilePicker?: (opts: unknown) => Promise<Array<{ getFile(): Promise<File> }>>;
