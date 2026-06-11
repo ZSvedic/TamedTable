@@ -11,6 +11,8 @@ Each subdirectory here specs one library package — a self-contained, browser-s
 
 `cucumber.js` routes feature names in `PACKAGE_FEATURES` to `spec/packages/<name>/<name>.feature`; all others to `spec/test-cases/`.
 
+There is no per-package `code-contract.md`: a library's public API *is* its observable behavior, so signatures and behavior live together in `behavior.md` — the behavior/contract split is app-level only, where the two serve different readers.
+
 ## Step defs follow ownership
 
 Library-package step defs live in the package itself (`src/packages/<name>/*.steps.ts`) and never import the app harness — only `@cucumber/cucumber` plus, for `@web` scenarios that drive the package demo page, `playwright`. The `packages/**/*.steps.ts` import glob in `cucumber.js` picks them up, so each package's code, steps, and demo sit in one directory. Each package's `README.md` here links across to that directory; GitHub renders the relative paths as clickable navigation. (App-behavior step defs live in `src/tests/` instead — see [../README.md](../README.md).)
