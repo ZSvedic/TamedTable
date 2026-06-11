@@ -194,7 +194,7 @@ Env vars:
 | `ANTHROPIC_API_KEY` | — | Required. May also be passed via `opts.apiKey`. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. |
-| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Model that fills in per-row LLM cells. |
+| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Model that fills in per-row LLM cells when the main model is Anthropic. Cross-provider mains fall back to a per-provider **text** default — `gemini-3.5-flash` (Google), `gpt-5.4-mini` (OpenAI) — never the main model itself, because an audio-only main like `gpt-audio` rejects text-only cell calls. |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |

@@ -31,10 +31,42 @@ function UserBubble({ t, children }: { t: Theme; children: ReactNode }): ReactNo
   );
 }
 
+/** Render the request-detail panel's full text — also what the copy icon
+ *  puts on the clipboard. */
+function debugDetailText(debug: NonNullable<ChatMessage['debug']>): string {
+  return [
+    '── request ──────────────────────────',
+    debug.userRequest,
+    `${debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ')} · ${(debug.inputTokens + debug.outputTokens).toLocaleString('en-US')} tokens · ${(debug.elapsedMs / 1000).toFixed(1)}s`,
+    '',
+    '── response ─────────────────────────',
+    ...debug.turns.flatMap((turn, i) => [
+      `turn ${i + 1}: ${turn.outcome}`,
+      JSON.stringify(turn.ops, null, 2),
+    ]),
+    ...(debug.cellSamples.length > 0 ? [
+      '',
+      '── cell samples (up to 3 per column) ──',
+      ...debug.cellSamples.flatMap((s) =>
+        s.samples.map((p) => `${s.column}: ${JSON.stringify(p.in)} → ${JSON.stringify(p.out)}`)
+      ),
+    ] : []),
+  ].join('\n');
+}
+
 function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): ReactNode {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const isError = message.text.startsWith('Error:');
   const body = isError ? message.text.replace(/^Error:\s*/, '') : message.text;
+
+  const copyDetail = (): void => {
+    if (!message.debug) return;
+    void navigator.clipboard?.writeText(debugDetailText(message.debug)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -70,36 +102,62 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
 
       {message.debug && (
         <>
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
+          <div
             style={{
               marginTop: space.px4,
               marginLeft: space.px14,
               alignSelf: 'flex-start',
-              background: 'transparent',
-              border: 0,
-              padding: 0,
-              cursor: 'pointer',
-              color: t.ink3,
-              fontFamily: typography.ui,
-              fontSize: typography.size.xs,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: space.px4,
+              gap: space.px8,
             }}
           >
-            <span
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
               style={{
+                background: 'transparent',
+                border: 0,
+                padding: 0,
+                cursor: 'pointer',
+                color: t.ink3,
+                fontFamily: typography.ui,
+                fontSize: typography.size.xs,
                 display: 'inline-flex',
-                transition: 'transform .15s',
-                transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+                alignItems: 'center',
+                gap: space.px4,
               }}
             >
-              <Icon name="chevron" size={12} />
-            </span>
-            request detail
-          </button>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  transition: 'transform .15s',
+                  transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+                }}
+              >
+                <Icon name="chevron" size={12} />
+              </span>
+              request detail
+            </button>
+            <button
+              type="button"
+              onClick={copyDetail}
+              title={copied ? 'Copied' : 'Copy request detail'}
+              aria-label={copied ? 'Copied' : 'Copy request detail'}
+              data-testid="copy-debug"
+              style={{
+                background: 'transparent',
+                border: 0,
+                padding: 0,
+                cursor: 'pointer',
+                color: copied ? t.ok : t.ink3,
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              <Icon name="copy" size={12} />
+            </button>
+          </div>
           {open && (
             <pre
               style={{
@@ -117,24 +175,7 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatMessage }): R
                 maxHeight: 320,
               }}
             >
-              {[
-                '── request ──────────────────────────',
-                message.debug.userRequest,
-                `${message.debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(', ')} · ${(message.debug.inputTokens + message.debug.outputTokens).toLocaleString('en-US')} tokens · ${(message.debug.elapsedMs / 1000).toFixed(1)}s`,
-                '',
-                '── response ─────────────────────────',
-                ...message.debug.turns.flatMap((turn, i) => [
-                  `turn ${i + 1}: ${turn.outcome}`,
-                  JSON.stringify(turn.ops, null, 2),
-                ]),
-                ...(message.debug.cellSamples.length > 0 ? [
-                  '',
-                  '── cell samples (up to 3 per column) ──',
-                  ...message.debug.cellSamples.flatMap((s) =>
-                    s.samples.map((p) => `${s.column}: ${JSON.stringify(p.in)} → ${JSON.stringify(p.out)}`)
-                  ),
-                ] : []),
-              ].join('\n')}
+              {debugDetailText(message.debug)}
             </pre>
           )}
         </>
