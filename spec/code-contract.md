@@ -71,7 +71,7 @@ function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<
 
 interface Runner {
   loadInput(path: string): Promise<void>;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio }): Promise<void>;
   setSpec(spec: Spec): Promise<void>;
   currentRows(): Row[];
   currentSpec(): Spec;
@@ -85,6 +85,11 @@ type ChunkUpdate = {
   before: unknown;
   after: unknown;
 };
+
+/** Spoken audio riding along on the patch turn (web voice input). When set,
+ *  every patch-turn call in the request sends the audio as a file part next
+ *  to the prompt text; `text` carries the instructions and table context. */
+type RequestAudio = { data: Uint8Array; mediaType: string };
 ```
 
 CSV parsing uses `csv-parse` with `trim: true` (unquoted leading/trailing
@@ -663,31 +668,21 @@ interface VoicePort {
   stopRecording(): Promise<Blob>;
   cancelRecording(): void;
 }
-
-function callGeminiVoice(
-  key: string,
-  model: string,
-  audio: Blob,
-  prompt: string,
-  signal?: AbortSignal,
-  fetchImpl?: FetchLike,   // injected in tests (cassette); defaults to global fetch
-): Promise<string>;
 ```
 
-`buildVoicePrompt` renders a deterministic prompt from the context — the
-filename, the column list, and the selected cell when present — instructing the
-model to transcribe the spoken audio into a single natural-language table
-request and reply with only that request text. It makes no network call, so it
-is unit/Gherkin testable.
+`buildVoicePrompt` renders the deterministic instruction text that accompanies
+the audio on the patch turn — it says the request is spoken in the attached
+audio and adds the table context: the filename, the column list, and the
+selected cell when present. It makes no network call, so it is unit/Gherkin
+testable.
 
-`callGeminiVoice` is a raw `fetch` against
-`https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent?key=<key>`,
-posting one `contents` entry with the prompt as a text part and the audio as an
-inline base64 part (no new npm dependency, no Gemini SDK). It returns the joined
-text of the first candidate, trimmed. A non-2xx response throws an `Error`
-carrying the status; the caller turns it into a toast. The optional
-`fetchImpl` mirrors the engine's cassette hook (see [§ Headless](#headless)) so
-the Gemini round trip records and replays offline.
+There is no separate voice network call. `WebController.stopVoice` converts
+the recorded `Blob` to bytes and passes it as the `audio` option of the
+ordinary `Runner.request` (see [§ Core / runner](#core--runner)); the engine
+attaches it as a file part on the patch-turn model call. The request flows
+through the engine's normal `fetch` hook, so the cassette recorder covers it
+with no extra wiring. The user bubble and the undo-history label for a voice
+turn are the literal string `🎙 Voice request`.
 
 `VoicePort` is the recording surface. The browser implementation
 (`browserVoicePort`) wraps `MediaRecorder`; tests inject a stub returning a
@@ -697,8 +692,9 @@ fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
 `WebController` adds `voiceStatus: 'idle' | 'recording' | 'sending'` and three
 methods: `startVoice()` begins recording (auto-stopping after 30 s),
 `stopVoice()` ends it, builds a `VoiceContext` from `currentSpec()` and
-`selection`, calls `callGeminiVoice`, and feeds the returned text into the same
-`sendChat` pipeline a typed request uses, and `cancelVoice()` discards the
+`selection`, and runs the ordinary `request` with the recorded bytes as the
+`audio` option — one patch turn, no transcription call — posting the same
+user/assistant bubbles a typed request produces; `cancelVoice()` discards the
 recording. The mic button is gated on `provider === 'gemini' && geminiKey`.
 
 Because every text request routes through Anthropic regardless of the selected
