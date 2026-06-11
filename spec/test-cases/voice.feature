@@ -1,8 +1,9 @@
 # #VoiceInput
-# Voice input — a web-only mic button that sends spoken audio + table context
-# to Gemini in one round trip and feeds the returned request text into the
-# ordinary chat pipeline. The firing scenario replays a cassette holding the
-# Gemini response and the follow-up Anthropic patch call; the rest are offline.
+# Voice input — a web-only mic button. The recorded audio rides along on the
+# ordinary patch turn: one Gemini call carries the audio, the table context,
+# and the spec-editing instructions, and returns the spec patch directly — no
+# transcription step. The firing scenario replays a cassette holding that one
+# Gemini patch response; the rest are offline.
 Feature: Voice input
 
   Rule: The mic button appears only for Google with a Gemini key
@@ -42,8 +43,9 @@ Feature: Voice input
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
-      Then a user bubble shows "validate dob is non-empty"
+      Then a user bubble shows "🎙 Voice request"
       And an assistant bubble is shown
+      And the spec has 1 transformation
       And the mic status is "idle"
 
     @web
@@ -58,15 +60,15 @@ Feature: Voice input
       And no chat message is shown
       And the spec has 0 transformations
 
-  Rule: A Gemini error surfaces a toast and changes nothing
+  Rule: A model error surfaces a toast and changes nothing
 
     @web
-    Scenario: A Gemini API error shows a toast
+    Scenario: A model API error shows a toast
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
       And load "datanorm-input.csv"
       And the provider "gemini" has API key "bad-key"
-      And the Gemini voice endpoint returns an error
+      And the Gemini endpoint returns an error
       When user presses and holds the mic button
       And user releases the mic button
       Then a toast shows "Voice input failed"

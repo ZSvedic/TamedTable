@@ -164,9 +164,11 @@ mounts the real `ModelChooser` over plain React state and shows the
   provider/model straight from the browser using the resolved key, and the
   response text (or the error message) lands in the response field. When the
   selected model has `voiceInput: true`, a mic button (`#tc-mic`) appears:
-  click to record, click again to stop; the audio goes to the selected model
-  for transcription and the transcript fills the query input. The button is
-  absent for models without voice support.
+  click to record, click again to stop. The audio itself is the query — it
+  goes to the selected model together with an answer-the-spoken-request
+  instruction in one round trip, and the model's answer lands in the response
+  field. No transcription step. The button is absent for models without voice
+  support.
 
 Styling comes only from `--mc-*` CSS custom properties, each with a default
 that gives a presentable light look standalone. The host injects its theme by

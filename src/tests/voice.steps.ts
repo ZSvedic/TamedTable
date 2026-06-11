@@ -32,9 +32,18 @@ Given('a stub microphone that returns recorded audio', function (this: TamedTabl
   ctxOf(this).voicePort = stubVoicePort();
 });
 
-Given('the Gemini voice endpoint returns an error', function () {
-  // No-op marker: the scenario uses a key whose Gemini request has no cassette
-  // entry, so the replay miss throws and the controller turns it into a toast.
+Given('the Gemini endpoint returns an error', function (this: TamedTableWorld) {
+  // 401 (not retried by the SDK) so the patch turn fails immediately and the
+  // controller turns it into the "Voice input failed" toast.
+  ctxOf(this).mockLlmFetch = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          error: { code: 401, message: 'API key not valid.', status: 'UNAUTHENTICATED' },
+        }),
+        { status: 401, headers: { 'content-type': 'application/json' } },
+      ),
+    );
 });
 
 When('user presses and holds the mic button', async function (this: TamedTableWorld) {

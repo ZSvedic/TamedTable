@@ -15,6 +15,7 @@ import {
   createHeadlessRunner,
   type ChunkUpdate,
   type HeadlessRunner,
+  type RequestAudio,
   type RequestDebugInfo,
 } from '@tamedtable/headless';
 import type { Row, Spec } from '@tamedtable/core';
@@ -24,7 +25,7 @@ import {
   type ResolvedConfig,
 } from '@tamedtable/model-config';
 import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
-import { buildVoicePrompt, callGeminiVoice, type VoiceContext, type VoicePort } from './lib/voice.ts';
+import { buildVoicePrompt, type VoiceContext, type VoicePort } from './lib/voice.ts';
 import { clampPage } from './lib/pagination.ts';
 import {
   readStoredConfig,
@@ -67,6 +68,9 @@ interface JournalEntry {
 }
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
+
+/** Chat-bubble and history label for a voice turn — no transcript exists. */
+const VOICE_REQUEST_LABEL = '\u{1F399} Voice request';
 
 /** Rows shown per table page. Paging is a view concern — it never enters
  *  the spec — so this lives on the controller, not the spec. */
@@ -238,7 +242,7 @@ export class WebController {
 
   async request(
     text: string,
-    opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void },
+    opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; label?: string },
   ): Promise<void> {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const runner = this.ensureHeadless();
@@ -260,9 +264,9 @@ export class WebController {
     };
 
     try {
-      await runner.request(text, { signal, onChunk });
+      await runner.request(text, { signal, onChunk, audio: opts?.audio });
       this.journal.push({
-        label: text,
+        label: opts?.label ?? text,
         prevSpec,
         nextSpec: structuredClone(runner.currentSpec()),
       });
@@ -442,8 +446,8 @@ export class WebController {
     this.notify();
   }
 
-  /** Release: stop recording, send the audio + context to Gemini, and feed the
-   *  returned request text into the ordinary chat pipeline. */
+  /** Release: stop recording and run the ordinary patch turn with the audio
+   *  riding along as a file part — one model call, no transcription step. */
   async stopVoice(): Promise<void> {
     if (!this.voice || this.voiceStatus !== 'recording') return;
     this.clearVoiceTimer();
@@ -451,18 +455,13 @@ export class WebController {
     this.voiceAbort = new AbortController();
     this.notify();
 
-    let text: string;
+    let audio: RequestAudio;
     try {
-      const audio = await this.voice.stopRecording();
-      const prompt = buildVoicePrompt(this.buildVoiceContext());
-      text = await callGeminiVoice(
-        this.config.geminiKey!,
-        this.config.model,
-        audio,
-        prompt,
-        this.voiceAbort.signal,
-        this.opts.fetch,
-      );
+      const blob = await this.voice.stopRecording();
+      audio = {
+        data: new Uint8Array(await blob.arrayBuffer()),
+        mediaType: blob.type || 'audio/webm',
+      };
     } catch (e) {
       this.pushToast('error', `Voice input failed: ${(e as Error).message}`);
       this.voiceStatus = 'idle';
@@ -471,10 +470,22 @@ export class WebController {
       return;
     }
 
-    this.voiceStatus = 'idle';
-    this.voiceAbort = null;
-    this.notify();
-    await this.sendChat(text);
+    this.pushMessage('user', VOICE_REQUEST_LABEL);
+    try {
+      await this.request(buildVoicePrompt(this.buildVoiceContext()), {
+        signal: this.voiceAbort.signal,
+        audio,
+        label: VOICE_REQUEST_LABEL,
+      });
+      const debug = this.lastDebug;
+      this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
+    } catch (e) {
+      this.pushToast('error', `Voice input failed: ${userFacingMessage(e, this.config.provider)}`);
+    } finally {
+      this.voiceStatus = 'idle';
+      this.voiceAbort = null;
+      this.notify();
+    }
   }
 
   /** Escape: discard the recording without sending anything. */
@@ -499,7 +510,7 @@ export class WebController {
     }
   }
 
-  /** Snapshot the current table view for the Gemini prompt. */
+  /** Snapshot the current table view for the voice instruction text. */
   private buildVoiceContext(): VoiceContext {
     const spec = this.currentSpec();
     const filename = spec.table ? basename(spec.table) : basename(this.sourcePath) || 'table';

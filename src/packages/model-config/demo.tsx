@@ -10,7 +10,7 @@ import { createRoot } from 'react-dom/client';
 import { ALL_MODELS, resolveConfig, type Provider } from './index.ts';
 import { ModelChooser } from './ModelChooser.tsx';
 import { readStoredConfig, writeStoredConfig } from './storage.ts';
-import { sendTestPrompt, transcribeAudio } from './demo-llm.ts';
+import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
 
 interface ActiveRecording {
   rec: MediaRecorder;
@@ -92,8 +92,10 @@ function Demo() {
     recRef.current = null;
     setRecording(false);
     setBusy(true);
+    setResponse('…');
     try {
-      setQuery(await transcribeAudio(resolved, audio));
+      // One round trip: the audio is the query; the answer lands below.
+      setResponse(await sendVoicePrompt(resolved, audio));
     } catch (e) {
       setResponse(`Error: ${(e as Error).message}`);
     } finally {
@@ -137,7 +139,7 @@ function Demo() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void send(); }}
-          placeholder={hasVoice ? 'Type a query or dictate it…' : 'Type a query…'}
+          placeholder={hasVoice ? 'Type a query, or use the mic to speak one…' : 'Type a query…'}
           disabled={busy}
           style={{ flex: 1, padding: '6px 8px', font: 'inherit' }}
         />
@@ -147,7 +149,7 @@ function Demo() {
             type="button"
             onClick={() => void toggleMic()}
             disabled={busy}
-            title={recording ? 'Stop and transcribe' : 'Record a query'}
+            title={recording ? 'Stop and send' : 'Record a spoken query'}
             style={{
               padding: '6px 10px',
               font: 'inherit',

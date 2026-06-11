@@ -777,12 +777,14 @@ per column, formatted as `column: "before" → "after"`.
 ## Voice input (#VoiceInput)
 
 Voice input lets the user speak a request instead of typing it. It is a
-web-only convenience layered on top of the existing chat flow: the spoken
-audio and the current table's context go to Gemini in a single round trip,
-Gemini returns the request as text, and that text drives the ordinary chat
-pipeline — so undo, history, and replay all keep working unchanged. There is
-no separate speech-to-text step; the one Gemini call both hears the audio and
-writes the request.
+web-only convenience over the existing chat flow: the spoken audio rides
+along on the ordinary patch turn. The recorded audio, the current table's
+context, and the spec-editing instructions go to Gemini in the **same single
+call** a typed request makes — the model hears the request and emits the spec
+patch directly. There is no transcription step and no extra round trip, so a
+voice request costs exactly as many model calls as a typed one. Undo and
+history keep working because they journal the resulting spec change, not the
+request text.
 
 A microphone button sits in the chat sidebar, next to the send control. It is
 shown only when the selected provider is Google and a Gemini API key is set —
@@ -796,15 +798,17 @@ on its own. Pressing Escape while recording cancels it — nothing is sent and
 the table is untouched. Releasing sends the audio; the button shows a spinner
 until the round trip returns.
 
-On success the spoken request appears as a user bubble — exactly as if the user
-had typed it — followed by the assistant's response, the same bubble a typed
-request produces. On any failure (microphone, network, or a Gemini error) a
-toast reports it and nothing about the table or the spec changes.
+Releasing the button posts a user bubble reading "🎙 Voice request" (no
+transcript exists — the audio goes straight into the patch turn), followed by
+the assistant's response, the same bubble a typed request produces. The undo
+history labels the turn the same way. On any failure (microphone, network, or
+a model error) a toast reading "Voice input failed" reports it and nothing
+about the table or the spec changes.
 
-The context handed to Gemini names the loaded file, lists the column names, and
-— when a cell is selected — includes that cell's column, row, and value, so a
-request like "round this column" or "fix this cell" resolves against what the
-user is looking at.
+The instruction text accompanying the audio names the loaded file, lists the
+column names, and — when a cell is selected — includes that cell's column,
+row, and value, so a request like "round this column" or "fix this cell"
+resolves against what the user is looking at.
 
 → [code-contract.md — Voice input](code-contract.md#voice-input)
 

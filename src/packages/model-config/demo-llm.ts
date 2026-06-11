@@ -1,6 +1,6 @@
 // #ModelConfig demo-only LLM calls — used by demo.tsx, not exported from the
-// package. One real completion call and one audio→text transcription call per
-// provider, issued straight from the browser with raw fetch (no SDK). The
+// package. One text completion call and one spoken-query call per provider,
+// issued straight from the browser with raw fetch (no SDK). The
 // Anthropic call needs the `anthropic-dangerous-direct-browser-access` header;
 // that is acceptable here because the key is the user's own, entered locally.
 
@@ -20,9 +20,9 @@ declare const OfflineAudioContext: new (
   sampleRate: number,
 ) => { decodeAudioData(buf: ArrayBuffer): Promise<DecodedAudio> };
 
-const TRANSCRIBE_PROMPT =
-  'Transcribe the attached audio. Reply with only the transcript text — ' +
-  'no preamble, no quotes, no explanation.';
+const VOICE_PROMPT =
+  "The user's query is spoken in the attached audio. Answer it directly — " +
+  'reply with only the answer, no preamble about the audio.';
 
 function keyFor(cfg: ResolvedConfig): string {
   const key =
@@ -110,22 +110,23 @@ export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise
   return callAnthropic(key, cfg.model, text);
 }
 
-/** Audio → transcript via the resolved model. Only valid for models with
- *  voiceInput: true (Gemini models and gpt-4o-audio-preview). */
-export async function transcribeAudio(cfg: ResolvedConfig, audio: Blob): Promise<string> {
+/** One round trip with the spoken query as the request: audio + instructions
+ *  in, the model's answer out. Only valid for models with voiceInput: true
+ *  (Gemini models and gpt-4o-audio-preview). */
+export async function sendVoicePrompt(cfg: ResolvedConfig, audio: Blob): Promise<string> {
   const key = keyFor(cfg);
   // Both providers accept base64 WAV; MediaRecorder output (webm/opus or
   // mp4/aac) is re-encoded so one format works everywhere.
   const wav = toBase64(await blobToWavBytes(audio));
   if (cfg.provider === 'gemini') {
     return callGemini(key, cfg.model, [
-      { text: TRANSCRIBE_PROMPT },
+      { text: VOICE_PROMPT },
       { inline_data: { mime_type: 'audio/wav', data: wav } },
     ]);
   }
   if (cfg.provider === 'openai') {
     return callOpenAI(key, cfg.model, [
-      { type: 'text', text: TRANSCRIBE_PROMPT },
+      { type: 'text', text: VOICE_PROMPT },
       { type: 'input_audio', input_audio: { data: wav, format: 'wav' } },
     ], true);
   }

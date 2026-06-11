@@ -73,9 +73,14 @@ export interface HeadlessRunnerOptions {
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
 
+/** Spoken audio riding along on the patch turn (web voice input). When set,
+ *  every patch-turn call in the request sends the audio as a file part next
+ *  to the prompt text; `text` carries the instructions and table context. */
+export type RequestAudio = { data: Uint8Array; mediaType: string };
+
 export interface HeadlessRunner {
   loadInput(path: string): Promise<void>;
-  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
+  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio }): Promise<void>;
   setSpec(spec: Spec): Promise<void>;
   currentRows(): Row[];
   currentSpec(): Spec;
@@ -792,7 +797,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #MainLoop
   async request(
     text: string,
-    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void } = {}
+    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void; audio?: RequestAudio } = {}
   ): Promise<void> {
     this.requireLoaded();
     if (this.busy) throw new Error('Runner: a request is already in progress.');
@@ -811,7 +816,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       let prompt = buildPrompt(text, this.spec);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
-        const ops = await this.callLlm(prompt, signal);
+        const ops = await this.callLlm(prompt, signal, callOpts.audio);
         const turn: RequestDebugTurn = { ops, outcome: '' };
         turns.push(turn);
 
@@ -864,7 +869,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   // #LlmLayer
-  private async callLlm(prompt: string, signal?: AbortSignal): Promise<unknown[]> {
+  private async callLlm(prompt: string, signal?: AbortSignal, audio?: RequestAudio): Promise<unknown[]> {
     let captured: unknown[] | undefined;
     const applySpecPatch = tool({
       description: 'Apply RFC 6902 JSON Patch operations to the current spec.',
@@ -875,10 +880,23 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       },
     });
     await rateLimiter.acquire(signal);
+    // With audio (web voice input) the user message is multimodal: the prompt
+    // text plus the spoken request as a file part — still one model call.
+    const userContent = audio
+      ? {
+          messages: [{
+            role: 'user' as const,
+            content: [
+              { type: 'text' as const, text: prompt },
+              { type: 'file' as const, data: audio.data, mediaType: audio.mediaType },
+            ],
+          }],
+        }
+      : { prompt };
     const result = await generateText({
       model: this.model(),
       system: SYSTEM_PROMPT,
-      prompt,
+      ...userContent,
       tools: { apply_spec_patch: applySpecPatch },
       toolChoice: { type: 'tool', toolName: 'apply_spec_patch' },
       stopWhen: stepCountIs(1),
