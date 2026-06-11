@@ -16,7 +16,7 @@ import type { Browser, Page } from 'playwright';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
-const DEMOS = ['gherkin-tour', 'model-config'] as const;
+const DEMOS = ['file-io', 'gherkin-tour', 'model-config', 'table-view', 'ui-kit'] as const;
 
 // Find a Playwright-managed Chromium without hardcoding the build number:
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
@@ -130,6 +130,34 @@ async function expectClean(page: Page, consoleErrors: string[], failedRequests: 
 }
 
 describe.skipIf(skip)('demo smoke', () => {
+  it('file-io: reports the dialog capability and renders the serializeFlow sample', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('file-io');
+    expect((await page.textContent('#fio-fsa'))!).toMatch(/File System Access API: (available|missing)/);
+    expect(JSON.parse((await page.textContent('#out'))!).version).toBe(2);
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('table-view: renders the grid and pages forward', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('table-view');
+    expect((await page.textContent('[data-tv-range]'))!).toContain('1–10 of 95 rows');
+
+    await page.click('[data-tv-next]');
+    await page.waitForFunction(
+      `(document.querySelector('[data-tv-range]')?.textContent ?? '').includes('11–20')`,
+    );
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('ui-kit: renders the primitives and flips theme on toggle', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('ui-kit');
+    expect((await page.textContent('#out'))!).toContain('ready');
+    expect(await page.$$eval('[data-uk-button]', (els) => els.length)).toBeGreaterThanOrEqual(4);
+
+    await page.click('button[title="Toggle light/dark"]');
+    await page.waitForSelector('[data-uk-mode="dark"]');
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
   it('gherkin-tour: renders the sample tour and re-parses on edit', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('gherkin-tour');
     const tours = JSON.parse((await page.textContent('#out'))!);

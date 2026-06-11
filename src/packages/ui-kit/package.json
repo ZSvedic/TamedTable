@@ -1,0 +1,23 @@
+{
+  "name": "@tamedtable/ui-kit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./components": "./components.tsx"
+  },
+  "scripts": {
+    "demo": "bun demo.html"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.8.2",
+    "@types/react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

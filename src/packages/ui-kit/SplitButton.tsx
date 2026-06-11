@@ -1,7 +1,8 @@
+// #UiKit
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { Icon } from './Icons.tsx';
+import { space, typography } from './index.ts';
+import { useTheme } from './ThemeProvider.tsx';
+import { Icon } from './Icon.tsx';
 
 interface MenuItem {
   label: string;
@@ -114,6 +115,7 @@ export function SplitButton({
       >
         <button
           type="button"
+          data-uk-split-main=""
           title={title}
           disabled={disabled}
           onClick={onClick}
@@ -123,6 +125,7 @@ export function SplitButton({
         </button>
         <button
           type="button"
+          data-uk-split-caret=""
           title={caretTitle}
           aria-haspopup="menu"
           aria-expanded={open}
@@ -185,6 +188,7 @@ function MenuItemButton({
     <button
       type="button"
       role="menuitem"
+      data-uk-menu-item={label}
       disabled={disabled}
       onClick={onClick}
       onMouseEnter={() => setHover(true)}

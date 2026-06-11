@@ -14,7 +14,7 @@
 //   reverse (dark UI) — ink cells go white, no icon bg, no grid lines
 
 import type { CSSProperties, ReactNode } from 'react';
-import { brand, typography } from '../lib/theme.ts';
+import { brand, typography } from '@tamedtable/ui-kit';
 
 type Mode = 'crisp' | 'grid' | 'reverse';
 

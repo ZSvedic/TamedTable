@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { Button } from './Button.tsx';
-import { Icon } from './Icons.tsx';
 
 // Sample files bundled into the deployed site by vite.config.ts. Frozen at
 // build time; surfaced here as one-click quick-picks.

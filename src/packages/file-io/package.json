@@ -1,0 +1,21 @@
+{
+  "name": "@tamedtable/file-io",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./browser-fs": "./browser-fs.ts"
+  },
+  "scripts": {
+    "demo": "bun demo.html"
+  },
+  "dependencies": {
+    "@tamedtable/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.8.2"
+  }
+}

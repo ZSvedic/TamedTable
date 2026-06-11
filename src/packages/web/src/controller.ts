@@ -25,14 +25,21 @@ import {
   type Provider,
   type ResolvedConfig,
 } from '@tamedtable/model-config';
-import type { FetchLike, FilePort, PickedFile, SaveOutcome } from './lib/ports.ts';
+import {
+  detectFormat,
+  fetchTable,
+  serializeFlow,
+  type FetchLike,
+  type FilePort,
+  type PickedFile,
+  type SaveOutcome,
+} from '@tamedtable/file-io';
 import { buildVoicePrompt, type VoiceContext, type VoicePort } from './lib/voice.ts';
-import { clampPage } from './lib/pagination.ts';
+import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import {
   readStoredConfig,
   writeStoredConfig,
 } from '@tamedtable/model-config/storage';
-import { detectFormat, sampleNameFromUrl } from './controller-format.ts';
 import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
 import type {
   ActivityStatus,
@@ -344,7 +351,7 @@ export class WebController {
 
   /** Number of pages at the fixed page size; always at least 1. */
   pageCount(): number {
-    return Math.max(1, Math.ceil(this.totalRows() / this.pageSize));
+    return pageCountFor(this.totalRows(), this.pageSize);
   }
 
   /** The current 1-based page, clamped — so a request that shortens the
@@ -355,8 +362,7 @@ export class WebController {
 
   /** The slice of derived rows shown on the current page. */
   pageRows(): Row[] {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.displayRows().slice(start, start + this.pageSize);
+    return pageSlice(this.displayRows(), this.currentPage(), this.pageSize);
   }
 
   /** Jump to a page; out-of-range values clamp to the nearest edge. */
@@ -706,41 +712,7 @@ export class WebController {
    *  Throws on any failure so the dialog can keep itself open with an
    *  inline error; success closes the dialog at the caller. */
   async loadFromUrl(url: string): Promise<void> {
-    const trimmed = url.trim();
-    if (!trimmed) throw new Error('Enter a URL.');
-    let parsed: URL;
-    try {
-      parsed = new URL(trimmed);
-    } catch {
-      throw new Error('That doesn’t look like a valid URL.');
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      throw new Error('Only http:// and https:// URLs are supported.');
-    }
-
-    const doFetch = this.opts.fetch ?? fetch;
-    let response: Response;
-    try {
-      response = await doFetch(parsed.toString(), { redirect: 'follow' });
-    } catch (e) {
-      // A network/CORS failure surfaces as a TypeError with no useful
-      // detail in the browser. Rewrite to something the user can act on.
-      throw new Error(
-        `Couldn’t fetch ${parsed.hostname} — network error or CORS blocked. (${(e as Error).message})`,
-      );
-    }
-    if (!response.ok) {
-      throw new Error(`Fetch failed: HTTP ${response.status} ${response.statusText}`);
-    }
-
-    const contentType = response.headers.get('content-type');
-    const format = detectFormat(parsed.pathname, contentType);
-    if (!format) {
-      throw new Error('Could not detect format. URL must end in .csv or .jsonl.');
-    }
-
-    const text = await response.text();
-    const name = sampleNameFromUrl(parsed, format);
+    const { name, text } = await fetchTable(url, this.opts.fetch);
     await this.loadFromPicked({ name, text });
   }
 
@@ -753,9 +725,7 @@ export class WebController {
     this.dialog = 'save-flow';
     this.notify();
     try {
-      const spec = this.currentSpec();
-      const source = spec.table ? basename(spec.table) : 'input.csv';
-      const flow = JSON.stringify({ version: 2, source, spec }, null, 2) + '\n';
+      const flow = serializeFlow(this.currentSpec());
       this.reportSave(await this.file.pickSave('flow.flow', ['.flow'], flow));
     } catch (e) {
       this.pushToast('error', `Could not save flow: ${(e as Error).message}`);

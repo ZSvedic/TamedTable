@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { parseTours } from '@tamedtable/gherkin-tour';
 import { createWebController } from './controller.ts';
 import type { TutorialSources, ResolvedConfig } from './controller.ts';
-import { BrowserFilePort } from './lib/browser-fs.ts';
+import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
 import { browserVoicePort } from './lib/browser-voice.ts';
 import { App } from './App.tsx';
 import './index.css';

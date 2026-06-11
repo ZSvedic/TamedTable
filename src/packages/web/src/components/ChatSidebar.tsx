@@ -1,10 +1,8 @@
 import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
+import { space, typography, type Theme } from '@tamedtable/ui-kit';
+import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { ChatMessage, WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import type { Theme } from '../lib/theme.ts';
-import { Icon } from './Icons.tsx';
 import { MicButton } from './MicButton.tsx';
 
 function UserBubble({ t, children }: { t: Theme; children: ReactNode }): ReactNode {

@@ -3,12 +3,10 @@
 // chooser's props/callbacks to WebController and injects the app theme via
 // the --mc-* CSS custom properties on the wrapping element.
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { Button } from './Button.tsx';
-import { Icon } from './Icons.tsx';
 import { ALL_MODELS, type Provider } from '@tamedtable/model-config';
 import { ModelChooser } from '@tamedtable/model-config/ModelChooser';
 

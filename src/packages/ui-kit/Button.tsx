@@ -1,6 +1,7 @@
+// #UiKit
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
+import { space, typography } from './index.ts';
+import { useTheme } from './ThemeProvider.tsx';
 
 type Variant = 'ghost' | 'chrome' | 'primary' | 'danger';
 
@@ -63,6 +64,7 @@ export function Button({
   return (
     <button
       type="button"
+      data-uk-button={variant}
       title={title}
       disabled={disabled}
       onClick={onClick}

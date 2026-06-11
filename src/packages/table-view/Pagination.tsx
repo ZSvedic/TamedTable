@@ -1,15 +1,22 @@
+// #TableView
+// Pager — prev/next chevrons around the buildPageList number window. Pure
+// props in, callbacks out; the host owns the current page.
 import type { CSSProperties, ReactNode } from 'react';
-import { space, typography } from '../lib/theme.ts';
-import type { WebController } from '../controller.ts';
-import { useTheme } from '../hooks/useTheme.tsx';
-import { buildPageList } from '../lib/pagination.ts';
-import { Icon } from './Icons.tsx';
+import { space, typography } from '@tamedtable/ui-kit';
+import { useTheme, Icon } from '@tamedtable/ui-kit/components';
+import { buildPageList } from './index.ts';
 
-export function Pagination({ controller }: { controller: WebController }): ReactNode {
+export function Pagination({
+  page,
+  pageCount,
+  onPageChange,
+}: {
+  page: number;
+  pageCount: number;
+  onPageChange: (page: number) => void;
+}): ReactNode {
   const t = useTheme();
-  const current = controller.currentPage();
-  const total = controller.pageCount();
-  const pages = buildPageList(current, total);
+  const pages = buildPageList(page, pageCount);
 
   const cell: CSSProperties = {
     height: 24,
@@ -27,14 +34,16 @@ export function Pagination({ controller }: { controller: WebController }): React
   };
 
   const nav = (dir: 'prev' | 'next'): ReactNode => {
-    const disabled = dir === 'prev' ? current <= 1 : current >= total;
-    const target = dir === 'prev' ? current - 1 : current + 1;
+    const disabled = dir === 'prev' ? page <= 1 : page >= pageCount;
+    const target = dir === 'prev' ? page - 1 : page + 1;
     return (
       <button
         type="button"
+        data-tv-prev={dir === 'prev' ? '' : undefined}
+        data-tv-next={dir === 'next' ? '' : undefined}
         title={dir === 'prev' ? 'Previous page' : 'Next page'}
         disabled={disabled}
-        onClick={() => controller.goToPage(target)}
+        onClick={() => onPageChange(target)}
         style={{
           ...cell,
           color: disabled ? t.ink4 : t.ink2,
@@ -65,15 +74,16 @@ export function Pagination({ controller }: { controller: WebController }): React
           <button
             key={p}
             type="button"
-            onClick={() => controller.goToPage(p)}
-            aria-current={p === current ? 'page' : undefined}
+            data-tv-page={p}
+            onClick={() => onPageChange(p)}
+            aria-current={p === page ? 'page' : undefined}
             style={{
               ...cell,
               cursor: 'pointer',
-              color: p === current ? t.ink : t.ink2,
-              fontWeight: p === current ? 600 : 500,
-              borderColor: p === current ? t.line2 : 'transparent',
-              background: p === current ? t.surface : 'transparent',
+              color: p === page ? t.ink : t.ink2,
+              fontWeight: p === page ? 600 : 500,
+              borderColor: p === page ? t.line2 : 'transparent',
+              background: p === page ? t.surface : 'transparent',
             }}
           >
             {p}
