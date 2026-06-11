@@ -612,11 +612,26 @@ function providerFor(modelId: string): Provider;
 function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL
 ```
 
-`@tamedtable/model-config` has two entry points: the main `index.ts` (no
-`process` references, runs in any environment) and `env.ts` (reads
-`process.env`; Node/Bun only). `StoragePort` is implemented by the web package
-via `readStoredConfig` / `writeStoredConfig` / `clearStoredConfig` in
-`controller-storage.ts`.
+```ts
+// ModelChooser.tsx entry point — react is a peer dependency
+interface ModelChooserProps {
+  models: readonly ModelDef[];
+  provider: Provider;
+  model: string;
+  keys: Record<Provider, string>;
+  expandedProvider: Provider | null;
+  onProviderClick(p: Provider): void;
+  onKeyChange(p: Provider, value: string): void;
+  onModelSelect(modelId: string): void;
+}
+function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
+```
+
+`@tamedtable/model-config` has three entry points: the main `index.ts` (no
+`process` references, runs in any environment), `env.ts` (reads
+`process.env`; Node/Bun only), and `ModelChooser.tsx` (React; browser only).
+`StoragePort` is implemented by the web package via `readStoredConfig` /
+`writeStoredConfig` / `clearStoredConfig` in `controller-storage.ts`.
 
 ## Voice input
 

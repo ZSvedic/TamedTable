@@ -31,7 +31,7 @@ browser-safe packages with their own public API, mirroring
 spec MD, feature file, and any fixtures:
 
 - `behavior.md` — what the package does and its worked example
-- `<name>.feature` — Gherkin scenarios (tagged `@headless`)
+- `<name>.feature` — Gherkin scenarios (`@headless` for pure-API scenarios, `@web` for scenarios driven through the demo page in a browser)
 - `<name>-input.*` / `<name>-expected.*` — fixtures if needed
 
 `cucumber.js` routes feature names in `PACKAGE_FEATURES` to
@@ -39,11 +39,25 @@ spec MD, feature file, and any fixtures:
 
 **Step defs follow ownership.** App-behavior step defs live in `src/tests/`
 and share the app harness (`world.ts`). Library-package step defs live in
-the package itself (`src/packages/<name>/<name>.steps.ts`), depend only on
-`@cucumber/cucumber`, and are picked up by the `packages/**/*.steps.ts`
-import glob in `cucumber.js` — so each package's code, steps, and demo sit
-in one directory. `spec/packages/<name>/README.md` links across to that
+the package itself (`src/packages/<name>/*.steps.ts`), never import the app
+harness (`@cucumber/cucumber` plus, for `@web` scenarios that drive the
+package demo page, `playwright`), and are picked up by the
+`packages/**/*.steps.ts` import glob in `cucumber.js` — so each package's
+code, steps, and demo sit in one directory. `spec/packages/<name>/README.md` links across to that
 directory; GitHub renders the relative paths as clickable navigation.
+
+## Package UI components
+
+When a library package ships a UI piece, it is a generic React component:
+props in, callbacks out, no app state, no storage, no imports from the app.
+`react` is a peer dependency on a separate entry point so the package's main
+entry stays React-free. Styling comes only from namespaced CSS custom
+properties (`--mc-*` in model-config) — every variable has a default that
+looks presentable standalone, and the host app injects its theme by setting
+the variables on a wrapping element. Theme tokens and app components never
+leak into the package.
+
+## Library package demos
 
 Each library package also ships a `demo.html` — a standalone page that
 exercises the public API by hand, no app shell required. Run it locally

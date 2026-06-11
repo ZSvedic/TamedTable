@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- #ModelConfig demo — manual, isolated test of the catalogue + resolveConfig.
+<!-- #ModelConfig demo — the real ModelChooser component over local React
+     state, with the resolveConfig result shown live.
      Run: bun packages/model-config/demo.html
      (env.ts is Node-only and intentionally not used here.) -->
 <html lang="en">
@@ -7,34 +8,16 @@
   <meta charset="utf-8" />
   <title>model-config demo</title>
   <style>
-    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 30rem; }
     h1 { font-size: 1.2rem; }
     h2 { font-size: 1rem; margin-top: 1.5rem; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: .25rem .5rem; text-align: left; }
-    label { display: block; margin: .25rem 0; }
-    input { width: 18rem; }
-    pre { padding: .5rem; background: #f4f4f4; }
+    pre { padding: .5rem; background: #f4f4f4; overflow-x: auto; }
   </style>
 </head>
 <body>
-  <h1>model-config — catalogue &amp; resolveConfig</h1>
-
-  <h2>ALL_MODELS</h2>
-  <table id="models"><thead><tr>
-    <th>id</th><th>name</th><th>provider</th><th>voice</th>
-  </tr></thead><tbody></tbody></table>
-
-  <h2>resolveConfig(env, stored)</h2>
-  <p>Type into the env / stored fields; the resolved config updates live.</p>
-  <label>GEMINI_API_KEY    <input id="GEMINI_API_KEY" /></label>
-  <label>OPENAI_API_KEY    <input id="OPENAI_API_KEY" /></label>
-  <label>ANTHROPIC_API_KEY <input id="ANTHROPIC_API_KEY" /></label>
-  <label>TAMEDTABLE_MODEL  <input id="TAMEDTABLE_MODEL" /></label>
-  <label>stored.provider   <input id="storedProvider" placeholder="anthropic|gemini|openai" /></label>
-  <label>stored.model      <input id="storedModel" /></label>
-  <pre id="out"></pre>
-
-  <script type="module" src="./demo.ts"></script>
+  <h1>model-config — ModelChooser &amp; resolveConfig</h1>
+  <p>Expand a provider, type a key, pick a model; the resolved config updates live.</p>
+  <div id="root"></div>
+  <script type="module" src="./demo.tsx"></script>
 </body>
 </html>

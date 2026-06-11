@@ -1,11 +1,12 @@
 # Model config
 
 The `@tamedtable/model-config` module owns provider selection, API key
-storage, and model catalogue for every surface that calls an LLM. It has
-zero runtime dependencies and runs in any JavaScript environment — browser,
-Node, or Bun. Storage integration (localStorage in the browser, nothing in
-the CLI) is injected through a `StoragePort` interface; the module only
-defines that interface.
+storage, the model catalogue, and the model chooser UI for every surface
+that calls an LLM. The main entry has zero runtime dependencies and runs in
+any JavaScript environment — browser, Node, or Bun; the `ModelChooser` React
+component ships as a separate entry point. Storage integration (localStorage
+in the browser, nothing in the CLI) is injected through a `StoragePort`
+interface; the module only defines that interface.
 
 ## Worked example
 
@@ -116,8 +117,37 @@ picks `anthropicKey`, `geminiKey`, or `openaiKey` based on `config.provider`
 and forwards the chosen key to the headless runner. The help text mentions
 `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, and `OPENAI_API_KEY`.
 
-## How the web settings panel uses it
+## Model chooser component
 
-The panel shows three provider accordion cards — Google, OpenAI, Anthropic —
-stacked vertically. See the Web UI section of [spec/behavior.md](../../behavior.md)
-for the full interaction design.
+`ModelChooser` is the provider accordion UI: three cards — Google, OpenAI,
+Anthropic — each with an API-key field (masked, with an eye toggle to reveal
+it) and that provider's models as a radio list. It lives in its own entry
+point (`@tamedtable/model-config/ModelChooser`) so the main entry stays
+React-free; `react` is a peer dependency.
+
+The component is pure — props in, callbacks out — and holds no state except
+the per-provider reveal toggle. It never touches storage or the network:
+
+- `models` — the catalogue to render (usually `ALL_MODELS`)
+- `provider`, `model`, `keys` — the current selection and per-provider keys
+- `expandedProvider` — which card shows its body, or null
+- `onProviderClick(p)` — a card header was clicked
+- `onKeyChange(p, value)` — the user typed in a key field
+- `onModelSelect(modelId)` — the user picked a model
+
+The host owns all state and semantics. In the web app, `SettingsPanel` binds
+the props to `WebController` (clicking a card expands it and selects the
+provider; collapsing changes nothing — see the Web UI section of
+[spec/behavior.md](../../behavior.md)). On the demo page, plain React state
+plays that role and `resolveConfig` renders the resulting config live.
+
+Styling comes only from `--mc-*` CSS custom properties, each with a default
+that gives a presentable light look standalone. The host injects its theme by
+setting the variables on any wrapping element: `--mc-ink`, `--mc-ink3`,
+`--mc-surface`, `--mc-surface2`, `--mc-surface3`, `--mc-line`, `--mc-line2`,
+`--mc-accent`, `--mc-accent-soft`, `--mc-ok`, `--mc-ok-soft`, `--mc-font-ui`,
+`--mc-font-mono`, `--mc-radius`, `--mc-radius-sm`, `--mc-radius-lg`.
+
+For tests, each interactive element carries a stable data attribute:
+`data-mc-card`, `data-mc-key`, `data-mc-reveal` (all keyed by provider id),
+and `data-mc-model` (keyed by model id).
