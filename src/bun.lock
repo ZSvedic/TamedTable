@@ -65,6 +65,11 @@
       "version": "0.0.0",
       "devDependencies": {
         "@cucumber/cucumber": "^12.8.2",
+        "@types/react": "^19.0.0",
+        "react-dom": "^19.0.0",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
       },
     },
     "packages/web": {

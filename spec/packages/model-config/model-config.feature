@@ -140,3 +140,40 @@ Feature: Model config
     @headless
     Scenario: gemini-3.5-flash has voiceInput true
       Then the model "gemini-3.5-flash" has voiceInput true
+
+  Rule: ModelChooser component
+
+    The provider accordion is a pure React component, mounted on the package
+    demo page over local state; these scenarios drive that page in a browser.
+
+    @web
+    Scenario: Clicking a provider card expands it and selects the provider
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      Then the "gemini" card shows its API-key field and model list
+      And the demo shows resolved provider "gemini"
+
+    @web
+    Scenario: Clicking the expanded card collapses it without changing the provider
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      And the user clicks the "Google" provider card
+      Then no card shows an API-key field
+      And the demo shows resolved provider "gemini"
+
+    @web
+    Scenario: Picking a model updates the resolved config
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      And the user picks the model "gemini-2.5-pro"
+      Then the demo shows resolved model "gemini-2.5-pro"
+
+    @web
+    Scenario: A typed API key stays masked until the eye toggle reveals it
+      Given the model-config demo page
+      When the user clicks the "Anthropic" provider card
+      And the user types "sk-ant-demo" into the "anthropic" key field
+      Then the "anthropic" key field hides its value
+      And the demo shows resolved anthropicKey "sk-ant-demo"
+      When the user clicks the "anthropic" key reveal toggle
+      Then the "anthropic" key field shows "sk-ant-demo"

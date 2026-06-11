@@ -140,11 +140,12 @@ describe.skipIf(skip)('demo smoke', () => {
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
-  it('model-config: renders the resolved config and flips provider on key input', async () => {
+  it('model-config: renders the chooser and flips provider on card click', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
     expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('anthropic');
 
-    await page.fill('#GEMINI_API_KEY', 'smoke-test-key');
+    await page.click('[data-mc-card="gemini"]');
+    await page.fill('[data-mc-key="gemini"]', 'smoke-test-key');
     await page.waitForFunction(
       `(() => { try { return JSON.parse(document.querySelector('#out').textContent).provider === 'gemini'; } catch { return false; } })()`,
     );
