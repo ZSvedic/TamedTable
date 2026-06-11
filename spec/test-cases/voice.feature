@@ -2,8 +2,9 @@
 # Voice input — a web-only mic button. The recorded audio rides along on the
 # ordinary patch turn: one Gemini call carries the audio, the table context,
 # and the spec-editing instructions, and returns the spec patch directly — no
-# transcription step. The firing scenario replays a cassette holding that one
-# Gemini patch response; the rest are offline.
+# transcription step. The same call also returns a verbatim transcript, which
+# replaces the placeholder user bubble. The firing scenario replays a cassette
+# holding that one Gemini patch response; the rest are offline.
 Feature: Voice input
 
   Rule: The mic button appears only for Google with a Gemini key
@@ -43,7 +44,8 @@ Feature: Voice input
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
-      Then a user bubble shows "🎙 Voice request"
+      Then a user bubble shows "🎙 validate dob is non-empty"
+      And no user bubble shows "🎙 Voice request"
       And an assistant bubble is shown
       And the spec has 1 transformation
       And the mic status is "idle"

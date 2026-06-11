@@ -1,10 +1,10 @@
 {
-  "1b9b43a47be9ea2ccd354b921e769e062c708158425b80caae6e103613c914f6": {
+  "af7229228657fce41632c2e4694b4d348299e6cd4ae8a8bceb39c9d67f92f09f": {
     "status": 200,
     "statusText": "OK",
     "headers": {
       "content-type": "application/json; charset=UTF-8"
     },
-    "body": "{\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\": {\"name\": \"apply_spec_patch\", \"args\": {\"operations\": [{\"op\": \"add\", \"path\": \"/columns/-\", \"value\": {\"id\": \"_valid\"}}, {\"op\": \"add\", \"path\": \"/columns/-\", \"value\": {\"id\": \"_validation\"}}, {\"op\": \"add\", \"path\": \"/transformations/-\", \"value\": {\"kind\": \"validate\", \"pred\": {\"js\": \"row.DOB && String(row.DOB).trim().length > 0\"}, \"message\": {\"js\": \"'DOB is empty'\"}}}]}}}], \"role\": \"model\"}, \"finishReason\": \"STOP\", \"index\": 0}], \"usageMetadata\": {\"promptTokenCount\": 905, \"candidatesTokenCount\": 118, \"totalTokenCount\": 1023}, \"modelVersion\": \"gemini-3.5-flash\"}"
+    "body": "{\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\": {\"name\": \"apply_spec_patch\", \"args\": {\"transcript\": \"validate dob is non-empty\", \"operations\": [{\"op\": \"add\", \"path\": \"/columns/-\", \"value\": {\"id\": \"_valid\"}}, {\"op\": \"add\", \"path\": \"/columns/-\", \"value\": {\"id\": \"_validation\"}}, {\"op\": \"add\", \"path\": \"/transformations/-\", \"value\": {\"kind\": \"validate\", \"pred\": {\"js\": \"row.DOB && String(row.DOB).trim().length > 0\"}, \"message\": {\"js\": \"'DOB is empty'\"}}}]}}}], \"role\": \"model\"}, \"finishReason\": \"STOP\", \"index\": 0}], \"usageMetadata\": {\"promptTokenCount\": 928, \"candidatesTokenCount\": 131, \"totalTokenCount\": 1059}, \"modelVersion\": \"gemini-3.5-flash\"}"
   }
 }

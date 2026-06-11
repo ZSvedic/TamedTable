@@ -69,7 +69,8 @@ interface JournalEntry {
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
 
-/** Chat-bubble and history label for a voice turn — no transcript exists. */
+/** Placeholder chat-bubble/history label for a voice turn, replaced by
+ *  `\u{1F399} <transcript>` once the model returns the transcript. */
 const VOICE_REQUEST_LABEL = '\u{1F399} Voice request';
 
 /** Rows shown per table page. Paging is a view concern — it never enters
@@ -242,7 +243,7 @@ export class WebController {
 
   async request(
     text: string,
-    opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; label?: string },
+    opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; label?: string; onTranscript?: (text: string) => void },
   ): Promise<void> {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const runner = this.ensureHeadless();
@@ -264,7 +265,7 @@ export class WebController {
     };
 
     try {
-      await runner.request(text, { signal, onChunk, audio: opts?.audio });
+      await runner.request(text, { signal, onChunk, audio: opts?.audio, onTranscript: opts?.onTranscript });
       this.journal.push({
         label: opts?.label ?? text,
         prevSpec,
@@ -470,13 +471,23 @@ export class WebController {
       return;
     }
 
-    this.pushMessage('user', VOICE_REQUEST_LABEL);
+    // Placeholder bubble; the same model call that patches the spec also
+    // returns a transcript, which replaces it the moment the call lands.
+    const bubbleId = this.pushMessage('user', VOICE_REQUEST_LABEL);
+    let heard: string | undefined;
     try {
       await this.request(buildVoicePrompt(this.buildVoiceContext()), {
         signal: this.voiceAbort.signal,
         audio,
         label: VOICE_REQUEST_LABEL,
+        onTranscript: (t) => {
+          heard = `\u{1F399} ${t}`;
+          this.updateMessage(bubbleId, heard);
+        },
       });
+      if (heard && this.journal.length > 0) {
+        this.journal[this.journal.length - 1]!.label = heard;
+      }
       const debug = this.lastDebug;
       this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
     } catch (e) {
@@ -532,8 +543,15 @@ export class WebController {
     this.pushMessage('assistant', `Error: ${message}`, debug);
   }
 
-  private pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo): void {
+  private pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo): number {
     this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug }];
+    this.notify();
+    return this.messageSeq;
+  }
+
+  /** Rewrite the text of an existing chat message (voice transcript swap). */
+  private updateMessage(id: number, text: string): void {
+    this.messages = this.messages.map((m) => (m.id === id ? { ...m, text } : m));
     this.notify();
   }
 

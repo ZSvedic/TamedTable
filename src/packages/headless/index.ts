@@ -80,7 +80,7 @@ export type RequestAudio = { data: Uint8Array; mediaType: string };
 
 export interface HeadlessRunner {
   loadInput(path: string): Promise<void>;
-  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio }): Promise<void>;
+  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   setSpec(spec: Spec): Promise<void>;
   currentRows(): Row[];
   currentSpec(): Spec;
@@ -152,23 +152,42 @@ function loadPrompts(): {
 
 const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT } = loadPrompts();
 
-const PATCH_INPUT_SCHEMA = jsonSchema<{ operations: unknown[] }>({
+const PATCH_OPERATIONS_PROPERTY = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      op: { type: 'string', enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
+      path: { type: 'string' },
+      from: { type: 'string' },
+      value: {},
+    },
+    required: ['op', 'path'],
+    additionalProperties: false,
+  },
+} as const;
+
+const PATCH_INPUT_SCHEMA = jsonSchema<{ operations: unknown[]; transcript?: string }>({
   type: 'object',
   properties: {
-    operations: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          op: { type: 'string', enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
-          path: { type: 'string' },
-          from: { type: 'string' },
-          value: {},
-        },
-        required: ['op', 'path'],
-        additionalProperties: false,
-      },
+    operations: PATCH_OPERATIONS_PROPERTY,
+  },
+  required: ['operations'],
+  additionalProperties: false,
+});
+
+// Used only when the request carries spoken audio (web voice input): the
+// extra argument returns a verbatim transcript of the clip in the same call,
+// surfaced to the UI via onTranscript. Text requests keep the plain schema so
+// their request bodies — and the recorded test cassettes — stay unchanged.
+const PATCH_INPUT_SCHEMA_WITH_TRANSCRIPT = jsonSchema<{ operations: unknown[]; transcript?: string }>({
+  type: 'object',
+  properties: {
+    transcript: {
+      type: 'string',
+      description: "Verbatim transcript of the user's spoken request in the attached audio clip.",
     },
+    operations: PATCH_OPERATIONS_PROPERTY,
   },
   required: ['operations'],
   additionalProperties: false,
@@ -797,7 +816,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #MainLoop
   async request(
     text: string,
-    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void; audio?: RequestAudio } = {}
+    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
   ): Promise<void> {
     this.requireLoaded();
     if (this.busy) throw new Error('Runner: a request is already in progress.');
@@ -813,10 +832,16 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     try {
       const budget = this.opts.recoveryBudget ?? 3;
       let lastError: string | undefined;
+      let transcriptSent = false;
       let prompt = buildPrompt(text, this.spec);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
-        const ops = await this.callLlm(prompt, signal, callOpts.audio);
+        const llmTurn = await this.callLlm(prompt, signal, callOpts.audio);
+        const ops = llmTurn.ops;
+        if (llmTurn.transcript && !transcriptSent) {
+          transcriptSent = true;
+          callOpts.onTranscript?.(llmTurn.transcript);
+        }
         const turn: RequestDebugTurn = { ops, outcome: '' };
         turns.push(turn);
 
@@ -869,13 +894,19 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   // #LlmLayer
-  private async callLlm(prompt: string, signal?: AbortSignal, audio?: RequestAudio): Promise<unknown[]> {
+  private async callLlm(
+    prompt: string,
+    signal?: AbortSignal,
+    audio?: RequestAudio,
+  ): Promise<{ ops: unknown[]; transcript?: string }> {
     let captured: unknown[] | undefined;
+    let transcript: string | undefined;
     const applySpecPatch = tool({
       description: 'Apply RFC 6902 JSON Patch operations to the current spec.',
-      inputSchema: PATCH_INPUT_SCHEMA,
-      execute: async ({ operations }: { operations: unknown[] }) => {
+      inputSchema: audio ? PATCH_INPUT_SCHEMA_WITH_TRANSCRIPT : PATCH_INPUT_SCHEMA,
+      execute: async ({ operations, transcript: heard }: { operations: unknown[]; transcript?: string }) => {
         captured = operations;
+        transcript = heard;
         return { ok: true };
       },
     });
@@ -908,14 +939,17 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage);
     if (!captured) {
       const direct = result.toolCalls?.find((c) => c.toolName === 'apply_spec_patch');
-      const ops = (direct?.input as { operations?: unknown[] } | undefined)?.operations;
-      if (ops) captured = ops;
+      const input = direct?.input as { operations?: unknown[]; transcript?: string } | undefined;
+      if (input?.operations) {
+        captured = input.operations;
+        transcript = input.transcript;
+      }
     }
     if (!captured) throw new Error(`LLM did not call apply_spec_patch; returned text: ${result.text?.slice(0, 200) ?? '<empty>'}`);
     // Some models (e.g. Gemini) serialise nested JSON objects as strings inside
     // tool call arguments. Parse any "value" field that is a valid JSON string
     // so that fast-json-patch receives a proper object, not a double-encoded one.
-    return captured.map((op) => {
+    const ops = captured.map((op) => {
       if (op && typeof op === 'object' && 'value' in op && typeof (op as Record<string, unknown>).value === 'string') {
         try {
           return { ...op, value: JSON.parse((op as Record<string, unknown>).value as string) };
@@ -923,6 +957,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       }
       return op;
     });
+    return { ops, transcript: transcript?.trim() || undefined };
   }
 
   private async replay(
