@@ -93,6 +93,26 @@ export interface HeadlessRunner {
 // #ConfigEnv
 const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'claude-sonnet-4-6';
 const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'claude-sonnet-4-5';
+
+// Per-provider fallbacks for per-row cell calls when the configured cell
+// model belongs to a different provider than the main model. Cell calls are
+// text-only, so they must never go to the main model blindly — an audio-only
+// main like gpt-audio rejects requests without audio in or out.
+const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = {
+  anthropic: DEFAULT_CELL_MODEL,
+  gemini: 'gemini-3.5-flash',
+  openai: 'gpt-5.4-mini',
+};
+
+/** @internal — exported for unit tests. Pick the model for per-cell LLM
+ *  calls: the explicit cell model when it shares the main model's provider,
+ *  else that provider's text-capable fallback. */
+export function resolveCellModelId(mainId: string, explicitCellModel?: string): string {
+  const mainProvider = providerFor(mainId);
+  const preferred = explicitCellModel ?? DEFAULT_CELL_MODEL;
+  if (providerFor(preferred) === mainProvider) return preferred;
+  return PROVIDER_CELL_FALLBACKS[mainProvider];
+}
 const DEFAULT_MAX_RETRIES = 6;
 const DEFAULT_RPM = Number(process.env.TAMEDTABLE_RPM ?? 40);
 const DEFAULT_CHUNK_SIZE = Number(process.env.TAMEDTABLE_CHUNK_SIZE ?? 5);
@@ -731,24 +751,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return (this.modelCache ??= this.provider()(this.opts.model ?? DEFAULT_MODEL));
   }
 
-  /** The model-ID string to use for per-cell LLM calls.
-   *  Falls back to DEFAULT_CELL_MODEL only when it belongs to the same
-   *  provider as the main model; otherwise uses the main model ID so we
-   *  never hand a cross-provider ID (e.g. 'claude-sonnet-4-5') to a
-   *  Google or OpenAI API endpoint. */
+  /** The model-ID string to use for per-cell LLM calls. */
   private resolvedCellModelId(perCellModel?: string): string {
     if (perCellModel) return perCellModel;
-    const mainId = this.opts.model ?? DEFAULT_MODEL;
-    if (this.opts.cellModel) {
-      // Explicit cell model: use it only when same provider; else fall to main.
-      return providerFor(this.opts.cellModel) === providerFor(mainId)
-        ? this.opts.cellModel
-        : mainId;
-    }
-    // Default cell model: same guard — Anthropic default is wrong for Gemini/OpenAI.
-    return providerFor(DEFAULT_CELL_MODEL) === providerFor(mainId)
-      ? DEFAULT_CELL_MODEL
-      : mainId;
+    return resolveCellModelId(this.opts.model ?? DEFAULT_MODEL, this.opts.cellModel);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

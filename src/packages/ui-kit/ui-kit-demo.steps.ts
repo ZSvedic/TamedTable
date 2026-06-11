@@ -127,11 +127,11 @@ Then('the demo log shows {string}', async function (this: DemoWorld, expected: s
   }
 });
 
-Then('the demo renders all 18 icon names', async function (this: DemoWorld) {
+Then('the demo renders all 19 icon names', async function (this: DemoWorld) {
   const distinct = await page(this).evaluate(
     `new Set([...document.querySelectorAll('[data-uk-icon]')].map((el) => el.getAttribute('data-uk-icon'))).size`,
   );
-  assert.equal(distinct, 18);
+  assert.equal(distinct, 19);
 });
 
 When('the user clicks the theme toggle', async function (this: DemoWorld) {

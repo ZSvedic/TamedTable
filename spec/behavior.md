@@ -763,7 +763,9 @@ elapsed-time stats are not shown in the bubble; they appear only in the
 expandable detail panel.
 
 Clicking **request detail** below an assistant message expands an
-inline panel with three sections. The **request** section shows the
+inline panel with three sections. A small copy icon to the right of the
+toggle copies the panel's full text to the clipboard (it turns green
+briefly to confirm). The **request** section shows the
 user's original text and one summary line: model name(s), call count,
 total token count, and elapsed seconds. The **response** section lists
 each turn with its outcome label (`committed`, `rejected`, or an
