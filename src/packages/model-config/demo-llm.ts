@@ -21,8 +21,33 @@ declare const OfflineAudioContext: new (
 ) => { decodeAudioData(buf: ArrayBuffer): Promise<DecodedAudio> };
 
 const VOICE_PROMPT =
-  "The user's query is spoken in the attached audio. Answer it directly — " +
-  'reply with only the answer, no preamble about the audio.';
+  "The user's query is spoken in the attached audio. Reply with ONLY a JSON " +
+  'object — no markdown fences, no other text — of the shape ' +
+  '{"transcript": "<verbatim transcript of the audio>", ' +
+  '"answer": "<your answer to the query>"}.';
+
+export interface VoiceReply {
+  /** Verbatim transcript of the spoken query; empty when the model's reply
+   *  could not be parsed as JSON. */
+  transcript: string;
+  answer: string;
+}
+
+/** Parse the model's JSON reply; a stray fence is tolerated. A reply that
+ *  isn't valid JSON degrades to { transcript: '', answer: <raw text> }. */
+function parseVoiceReply(raw: string): VoiceReply {
+  const text = raw.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  try {
+    const parsed = JSON.parse(text) as { transcript?: unknown; answer?: unknown };
+    if (typeof parsed.answer === 'string') {
+      return {
+        transcript: typeof parsed.transcript === 'string' ? parsed.transcript : '',
+        answer: parsed.answer,
+      };
+    }
+  } catch { /* fall through to the raw-text fallback */ }
+  return { transcript: '', answer: raw };
+}
 
 function keyFor(cfg: ResolvedConfig): string {
   const key =
@@ -111,26 +136,28 @@ export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise
 }
 
 /** One round trip with the spoken query as the request: audio + instructions
- *  in, the model's answer out. Only valid for models with voiceInput: true
- *  (Gemini models and gpt-4o-audio-preview). */
-export async function sendVoicePrompt(cfg: ResolvedConfig, audio: Blob): Promise<string> {
+ *  in, a verbatim transcript and the model's answer out. Only valid for
+ *  models with voiceInput: true (Gemini models and gpt-4o-audio-preview). */
+export async function sendVoicePrompt(cfg: ResolvedConfig, audio: Blob): Promise<VoiceReply> {
   const key = keyFor(cfg);
   // Both providers accept base64 WAV; MediaRecorder output (webm/opus or
   // mp4/aac) is re-encoded so one format works everywhere.
   const wav = toBase64(await blobToWavBytes(audio));
+  let raw: string;
   if (cfg.provider === 'gemini') {
-    return callGemini(key, cfg.model, [
+    raw = await callGemini(key, cfg.model, [
       { text: VOICE_PROMPT },
       { inline_data: { mime_type: 'audio/wav', data: wav } },
     ]);
-  }
-  if (cfg.provider === 'openai') {
-    return callOpenAI(key, cfg.model, [
+  } else if (cfg.provider === 'openai') {
+    raw = await callOpenAI(key, cfg.model, [
       { type: 'text', text: VOICE_PROMPT },
       { type: 'input_audio', input_audio: { data: wav, format: 'wav' } },
     ], true);
+  } else {
+    throw new Error(`${cfg.provider} models do not support voice input.`);
   }
-  throw new Error(`${cfg.provider} models do not support voice input.`);
+  return parseVoiceReply(raw);
 }
 
 // ── Audio re-encoding: recorded blob → 16 kHz mono PCM16 WAV ────────────────
