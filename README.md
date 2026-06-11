@@ -11,15 +11,15 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 ├── ops/                     how the project is built; never deployed
 │   ├── journal/             historic status reports
 │   ├── prompts/             reusable session starters — see AGENTS.md
-│   ├── repo-tracking/       commit-size script + chart generator
-│   ├── conventions.md       stack, layout & dev-process conventions
-│   └── writing-style.md     writing style used for all documents
+│   └── repo-tracking/       commit-size script + chart generator
 ├── spec/                    the contract — human-authored / human-blessed
+│   ├── README.md            spec index + test-fixture naming
 │   ├── rationale.md         what TamedTable is and why
 │   ├── behavior.md          what the user sees + what the system does (API-free)
 │   ├── code-contract.md     types, signatures, libraries, env vars, exit codes
 │   ├── prompt-app-edit.md   the three LLM prompts (imported by the runtime at init)
-│   ├── packages/            per-package specs — mirrors src/packages/
+│   ├── writing-style.md     writing style for every markdown file in the repo
+│   ├── packages/            per-package specs — mirrors src/packages/; rules in its README.md
 │   └── test-cases/          Gherkin features + -input/-expected/.flow fixtures
 ├── src/                     the implementation — self-contained, deployable unit
 │   ├── package.json, …      build config; run every bun command from here

@@ -30,7 +30,7 @@ Example:
 - Keep `behavior.md` API-free. Types, method names, and env-var names belong in `code-contract.md`. If a behavior change implies an API change, edit both files in the same turn.
 - After every `behavior.md` edit, check whether the matching `code-contract.md` section needs updating. Walk the diff: did anything gain or lose a type, a field, an env var, or an exit code?
 - Ensure the spec is internally consistent. If a new requirement conflicts with an old one, remove or update the old one.
-- Follow the voice in `ops/writing-style.md`: active voice, short sentences, picture before details.
+- Follow the voice in `spec/writing-style.md`: active voice, short sentences, picture before details.
 
 ## Validation
 
