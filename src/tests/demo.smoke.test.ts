@@ -16,7 +16,7 @@ import type { Browser, Page } from 'playwright';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
-const DEMOS = ['gherkin-tour', 'model-config'] as const;
+const DEMOS = ['file-io', 'gherkin-tour', 'model-config'] as const;
 
 // Find a Playwright-managed Chromium without hardcoding the build number:
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
@@ -130,6 +130,13 @@ async function expectClean(page: Page, consoleErrors: string[], failedRequests: 
 }
 
 describe.skipIf(skip)('demo smoke', () => {
+  it('file-io: reports the dialog capability and renders the serializeFlow sample', async () => {
+    const { page, consoleErrors, failedRequests } = await openDemo('file-io');
+    expect((await page.textContent('#fio-fsa'))!).toMatch(/File System Access API: (available|missing)/);
+    expect(JSON.parse((await page.textContent('#out'))!).version).toBe(2);
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
   it('gherkin-tour: renders the sample tour and re-parses on edit', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('gherkin-tour');
     const tours = JSON.parse((await page.textContent('#out'))!);

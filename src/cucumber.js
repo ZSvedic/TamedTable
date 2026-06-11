@@ -11,9 +11,9 @@ if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
 
 // Standalone library packages live under spec/packages/<name>/<name>.feature;
 // app-behavior scenarios live under spec/test-cases/<name>.feature.
-const PACKAGE_FEATURES = new Set(['gherkin-tour', 'model-config']);
+const PACKAGE_FEATURES = new Set(['file-io', 'gherkin-tour', 'model-config']);
 
-const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,gherkin-tour,join,model-config,pivot,save-py,sort,sql,tutorial,validate,voice,web')
+const FEATURES = (process.env.TAMEDTABLE_FEATURES ?? 'aggregate,cassettes,colsplit,convert,debug,file-io,gherkin-tour,join,model-config,pivot,save-py,sort,sql,tutorial,validate,voice,web')
   .split(',')
   .map((s) => {
     const name = s.trim();
