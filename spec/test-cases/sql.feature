@@ -13,7 +13,7 @@ Feature: SQL expressions
       Then column "AgeYears" exists in the spec
       And at least one row has a non-null "AgeYears"
 
-    @headless @cli
+    @headless @cli @scripted
     Scenario: SQL parse error flows through the recovery loop
       Given a request that introduces an invalid SQL fragment
       When the spec patch is applied
@@ -65,39 +65,45 @@ Feature: SQL expressions
 
   Rule: Cancellation interrupts a running SQL query
 
-    @headless @cli @cancel
+    These scenarios run against the 1 821-row performance fixture so the
+    aggregate is reliably still executing when the cancel lands. The
+    `via SQL` request path is scripted — the patch turn is answered locally
+    with a canned aggregate over the fixture — so the SQL that reaches
+    DuckDB is deterministic where a live model would not be.
+
+    @headless @cli @cancel @scripted
     Scenario: Ctrl-C interrupts a long-running SQL aggregate
-      Given load "datanorm-input.csv"
-      When query "Compute a slow SQL aggregate over Country" via SQL
+      Given load "performance-liked-videos.csv"
+      When query "Compute a slow SQL aggregate over channel" via SQL
       And user cancels the operation while the SQL query is in flight
       Then processing stops within 2 seconds
       And the spec contains no transformation for that aggregate
       And the table shows pre-transformation values for every row
 
-    @headless @cli @cancel
+    @headless @cli @cancel @scripted
     Scenario: Cancellation leaves the DuckDB relation intact for the next request
-      Given load "datanorm-input.csv"
-      When query "Compute a slow SQL aggregate over Country" via SQL
+      Given load "performance-liked-videos.csv"
+      When query "Compute a slow SQL aggregate over channel" via SQL
       And user cancels the operation while the SQL query is in flight
-      And query "Add column UpperCountry computed in SQL as upper(Country)"
+      And query "Add column UpperChannel computed in SQL as upper(channel)"
       Then the second request commits successfully
-      And column "UpperCountry" exists in the spec
+      And column "UpperChannel" exists in the spec
 
-    @headless @cli @cancel
+    @headless @cli @cancel @scripted
     Scenario: Cancellation does not affect previously-applied SQL transformations
-      Given load "datanorm-input.csv"
-      And the column "UpperCountry" has been added via SQL
-      When query "Compute a slow SQL aggregate over Country" via SQL
+      Given load "performance-liked-videos.csv"
+      And the column "UpperChannel" has been added via SQL
+      When query "Compute a slow SQL aggregate over channel" via SQL
       And user cancels the operation while the SQL query is in flight
-      Then column "UpperCountry" still shows uppercased values
+      Then column "UpperChannel" still shows uppercased values
       And the spec contains no transformation for the cancelled aggregate
 
-    @headless @cli @cancel
+    @headless @cli @cancel @scripted
     Scenario: A SQL query that ignores interrupt drains within the next request
-      Given load "datanorm-input.csv"
-      And the SQL query is contrived to ignore conn.interrupt() for 5 seconds
+      Given load "performance-liked-videos.csv"
+      And the SQL query is contrived to ignore conn.interrupt()
       When query "Compute the slow SQL aggregate" via SQL
       And user cancels the operation while the SQL query is in flight
       Then the cancel signal returns within 2 seconds
-      And a second request started immediately throws "request already running"
+      And a second request started immediately throws "a request is already in progress"
       And the second request succeeds after the lingering query drains

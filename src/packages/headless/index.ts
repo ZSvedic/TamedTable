@@ -240,6 +240,11 @@ export function decodeOpValues(ops: unknown[]): unknown[] {
 
 // #CancelOp
 const CANCELLED = 'Runner: cancelled';
+// SQL cancel give-up: if `conn.interrupt()` hasn't taken effect this long
+// after the abort, signal cancelled anyway (inside the 2-second cancel budget,
+// spec/code-contract.md § {sql}) and let the query drain in the background —
+// `lingeringSql` blocks the next request until it settles.
+const SQL_CANCEL_GIVE_UP_MS = 1500;
 const ANTHROPIC_EPHEMERAL = { anthropic: { cacheControl: { type: 'ephemeral' as const } } };
 
 function abortIf(signal: AbortSignal | undefined): void {
@@ -692,6 +697,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // the latest committed rows.
   private duckInstance: DuckDBInstance | undefined;
   private duckConn: DuckDBConnection | undefined;
+  // A cancelled SQL query that ignored `conn.interrupt()` — still executing
+  // after the give-up window. Set until it settles; blocks the next request.
+  private lingeringSql: Promise<unknown> | undefined;
 
   constructor(opts: HeadlessRunnerOptions = {}) {
     this.opts = opts;
@@ -860,7 +868,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
   ): Promise<void> {
     this.requireLoaded();
-    if (this.busy) throw new Error('Runner: a request is already in progress.');
+    if (this.busy || this.lingeringSql) throw new Error('Runner: a request is already in progress.');
     this.busy = true;
     const signal = callOpts.signal ?? this.opts.signal;
     const onChunk = callOpts.onChunk ?? this.opts.onChunk;
@@ -1248,14 +1256,33 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   /** Runs a DuckDB query, calling `conn.interrupt()` if the signal aborts
    *  while the query is in flight (SQL cancellation). An interrupted query
    *  rejects; this surfaces it as the runner's standard cancelled error so
-   *  the request loop rolls back the half-applied transformation. */
+   *  the request loop rolls back the half-applied transformation. If the
+   *  query ignores the interrupt, give up after `SQL_CANCEL_GIVE_UP_MS`:
+   *  signal cancelled anyway and park the still-running query on
+   *  `lingeringSql`, which `request()` checks so the next request waits for
+   *  the drain rather than racing a half-dead query. */
   private async runInterruptibleSql<T>(run: () => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
     if (!signal) return run();
     abortIf(signal);
     const onAbort = () => { try { this.duckConn?.interrupt(); } catch { /* best effort */ } };
     signal.addEventListener('abort', onAbort, { once: true });
+    const pending = run();
+    let giveUpTimer: ReturnType<typeof setTimeout> | undefined;
     try {
-      return await run();
+      return await new Promise<T>((resolve, reject) => {
+        const giveUp = () => {
+          giveUpTimer = setTimeout(() => {
+            this.lingeringSql = pending.catch(() => { /* drain only */ }).finally(() => { this.lingeringSql = undefined; });
+            reject(new Error(CANCELLED));
+          }, SQL_CANCEL_GIVE_UP_MS);
+        };
+        if (signal.aborted) giveUp();
+        else signal.addEventListener('abort', giveUp, { once: true });
+        pending.then(resolve, reject).finally(() => {
+          clearTimeout(giveUpTimer);
+          signal.removeEventListener('abort', giveUp);
+        });
+      });
     } catch (e) {
       if (signal.aborted) throw new Error(CANCELLED);
       throw e;

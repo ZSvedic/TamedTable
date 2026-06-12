@@ -10,11 +10,13 @@ const DEFAULT_INPUT = join(SPEC_TC_DIR, 'datanorm-input.csv');
 
 setDefaultTimeout(600_000);
 
-type CancellableRunner = {
+// Shared with sql.steps.ts — the SQL-cancellation scenarios reuse the same
+// in-flight context and the Then-assertions below.
+export type CancellableRunner = {
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
 };
 
-interface CancelCtx {
+export interface CancelCtx {
   abort: AbortController;
   promise: Promise<unknown>;
   chunks: ChunkUpdate[];
@@ -22,7 +24,7 @@ interface CancelCtx {
   cancelLatencyMs?: number;
 }
 
-const cancelCtx = new WeakMap<TamedTableWorld, CancelCtx>();
+export const cancelCtx = new WeakMap<TamedTableWorld, CancelCtx>();
 
 async function waitForChunk(ctx: CancelCtx, timeoutMs = 120_000): Promise<void> {
   const start = Date.now();
@@ -67,7 +69,7 @@ When('user cancels the operation after at least one chunk has completed', async 
 
 Then('processing stops within 2 seconds', function (this: TamedTableWorld) {
   const ctx = cancelCtx.get(this);
-  if (!ctx) throw new Error('no LLM request in flight');
+  if (!ctx) throw new Error('no request in flight');
   assert.ok(
     typeof ctx.cancelLatencyMs === 'number' && ctx.cancelLatencyMs < 2000,
     `cancellation took ${ctx.cancelLatencyMs ?? '?'}ms (must be < 2000ms)`
@@ -90,7 +92,7 @@ Then('the table shows pre-transformation values for every row', async function (
   const current = this.ensureRunner().currentRows();
   assert.equal(current.length, source.length);
   for (let i = 0; i < source.length; i++) {
-    assert.equal(current[i]?.Country, source[i]?.Country, `row ${i} Country: cancelled run leaked transformed value`);
+    assert.deepEqual(current[i], source[i], `row ${i}: cancelled run leaked a transformed value`);
   }
 });
 
