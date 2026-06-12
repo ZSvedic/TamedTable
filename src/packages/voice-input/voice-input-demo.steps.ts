@@ -130,10 +130,18 @@ Then('the demo prompt mentions {string}', async function (this: DemoWorld, expec
   assert.ok(text.includes(expected), `#out does not mention "${expected}": ${text}`);
 });
 
-When('the user starts recording', async function (this: DemoWorld) {
+When('the user starts recording', { timeout: 30_000 }, async function (this: DemoWorld) {
   const p = page(this);
   await p.click('#vi-start');
-  await p.waitForFunction(`document.querySelector('#vi-state')?.textContent === 'recording'`);
+  // Reaching the 'recording' state means getUserMedia resolved and the
+  // MediaRecorder started — slow to spin up the first time under a full-suite
+  // load, so allow more than the 10s page default (matches the stop/result
+  // steps below). The work succeeds; it is just not instant on a busy machine.
+  await p.waitForFunction(
+    `document.querySelector('#vi-state')?.textContent === 'recording'`,
+    undefined,
+    { timeout: 20_000 },
+  );
   // Give the fake device a beat to produce audio before a stop step.
   await p.waitForTimeout(300);
 });
