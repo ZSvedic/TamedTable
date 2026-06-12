@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { applyAndValidate, patchOperationsProperty, decodeOpValues } from './index.ts';
+import { applyAndValidate, patchOperationsProperty, decodeOpValues, parseLlmParts } from './index.ts';
 import type { Spec } from '@tamedtable/core';
 
 const baseSpec: Spec = { table: 't.csv', columns: [{ id: 'A' }], transformations: [] };
@@ -32,19 +32,12 @@ describe('applyAndValidate', () => {
 
 // Gemini's function-calling layer turns an untyped `value: {}` into a bare
 // `{ type: "object" }` with no guidance, and the model then emits garbage
-// (e.g. `"value": 3`) — so Gemini gets a string-typed `value` carrying
-// JSON-encoded content, decoded by decodeOpValues. Anthropic/OpenAI keep the
-// untyped field so their recorded cassette fingerprints stay valid.
+// (e.g. `"value": 3`) — so `value` is a string-typed field carrying
+// JSON-encoded content, decoded by decodeOpValues. The schema is identical
+// for every provider; no per-model special cases.
 describe('patchOperationsProperty', () => {
-  it('keeps `value` untyped for anthropic and openai (request bodies unchanged)', () => {
-    for (const provider of ['anthropic', 'openai'] as const) {
-      const value = patchOperationsProperty(provider).items.properties.value;
-      expect(value).toEqual({});
-    }
-  });
-
-  it('types `value` as a JSON-encoded string for gemini', () => {
-    const value = patchOperationsProperty('gemini').items.properties.value;
+  it('types `value` as a JSON-encoded string, never an untyped field', () => {
+    const value = patchOperationsProperty().items.properties.value;
     expect(value.type).toBe('string');
     expect(value.description).toContain('JSON');
   });
@@ -69,5 +62,19 @@ describe('decodeOpValues', () => {
       { op: 'remove', path: '/transformations/0' },
     ];
     expect(decodeOpValues(input)).toEqual(input);
+  });
+});
+
+describe('parseLlmParts', () => {
+  it('parses a bare JSON array', () => {
+    expect(parseLlmParts('["Ada", null, "Lovelace"]')).toEqual(['Ada', null, 'Lovelace']);
+  });
+
+  it('strips a markdown fence around the JSON array', () => {
+    expect(parseLlmParts('```json\n["Charles", null, "Babbage"]\n```')).toEqual(['Charles', null, 'Babbage']);
+  });
+
+  it('falls back to comma splitting for non-JSON text', () => {
+    expect(parseLlmParts('Ada, Lovelace')).toEqual(['Ada', 'Lovelace']);
   });
 });

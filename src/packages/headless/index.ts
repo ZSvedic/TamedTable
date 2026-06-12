@@ -2,7 +2,7 @@ import { generateText, tool, stepCountIs, jsonSchema } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { providerFor, type Provider } from '@tamedtable/model-config';
+import { providerFor } from '@tamedtable/model-config';
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
@@ -175,21 +175,12 @@ function loadPrompts(): {
 const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT } = loadPrompts();
 
 /** @internal — exported for unit tests. The JSON-Schema for the `operations`
- *  argument of apply_spec_patch, per provider. Anthropic and OpenAI accept an
- *  untyped `value` field, and keeping it untyped keeps their request bodies —
- *  and the recorded test cassettes — unchanged. Gemini's function-calling
- *  layer converts an untyped `value` to a bare `{ type: "object" }` with no
- *  shape, and the model then emits garbage values (e.g. `"value": 3`), so for
- *  Gemini `value` is a string carrying JSON-encoded content, decoded back by
- *  decodeOpValues. */
-export function patchOperationsProperty(provider: Provider) {
-  const value = provider === 'gemini'
-    ? {
-        type: 'string',
-        description:
-          'The value used by add/replace/test operations, encoded as a JSON string — e.g. "{\\"kind\\":\\"filter\\",\\"pred\\":{\\"js\\":\\"true\\"}}" for an object, or "\\"text\\"" for a string.',
-      }
-    : {};
+ *  argument of apply_spec_patch — identical for every provider. `value` is a
+ *  string carrying JSON-encoded content, decoded back by decodeOpValues. It
+ *  is never left untyped: Gemini's function-calling layer converts an untyped
+ *  `value` to a bare `{ type: "object" }` with no shape, and the model then
+ *  emits garbage values (e.g. `"value": 3`). */
+export function patchOperationsProperty() {
   return {
     type: 'array',
     items: {
@@ -198,7 +189,11 @@ export function patchOperationsProperty(provider: Provider) {
         op: { type: 'string', enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
         path: { type: 'string' },
         from: { type: 'string' },
-        value,
+        value: {
+          type: 'string',
+          description:
+            'The value used by add/replace/test operations, encoded as a JSON string — e.g. "{\\"kind\\":\\"filter\\",\\"pred\\":{\\"js\\":\\"true\\"}}" for an object, or "\\"text\\"" for a string.',
+        },
       },
       required: ['op', 'path'],
       additionalProperties: false,
@@ -208,10 +203,8 @@ export function patchOperationsProperty(provider: Provider) {
 
 // The `transcript` argument is used only when the request carries spoken audio
 // (web voice input): it returns a verbatim transcript of the clip in the same
-// call, surfaced to the UI via onTranscript. Text requests keep the plain
-// schema so their request bodies — and the recorded test cassettes — stay
-// unchanged.
-function patchInputSchema(provider: Provider, withTranscript: boolean) {
+// call, surfaced to the UI via onTranscript.
+function patchInputSchema(withTranscript: boolean) {
   return jsonSchema<{ operations: unknown[]; transcript?: string }>({
     type: 'object',
     properties: {
@@ -223,7 +216,7 @@ function patchInputSchema(provider: Provider, withTranscript: boolean) {
             },
           }
         : {}),
-      operations: patchOperationsProperty(provider),
+      operations: patchOperationsProperty(),
     },
     required: ['operations'],
     additionalProperties: false,
@@ -231,10 +224,9 @@ function patchInputSchema(provider: Provider, withTranscript: boolean) {
 }
 
 /** @internal — exported for unit tests. Decode each op's `value` when it
- *  arrives as a JSON string: the Gemini patch schema asks for exactly that
- *  encoding, and some models string-encode nested objects on their own. A
- *  string that isn't valid JSON (a plain literal like a column name) is left
- *  as-is, so fast-json-patch always receives the real value. */
+ *  arrives as a JSON string: the patch schema asks for exactly that encoding.
+ *  A string that isn't valid JSON (a plain literal like a column name) is
+ *  left as-is, so fast-json-patch always receives the real value. */
 export function decodeOpValues(ops: unknown[]): unknown[] {
   return ops.map((op) => {
     if (op && typeof op === 'object' && 'value' in op && typeof (op as Record<string, unknown>).value === 'string') {
@@ -439,10 +431,15 @@ function padParts(parts: unknown[], into: string[]): unknown[] {
   return parts;
 }
 
-/** Parse a cell model's split reply into parts: prefers a JSON array, falls
- *  back to comma- then whitespace-separated tokens. */
-function parseLlmParts(text: string): unknown[] {
-  const trimmed = text.trim();
+/** @internal — exported for unit tests. Parse a cell model's split reply into
+ *  parts: prefers a JSON array (with any markdown fence stripped — models
+ *  sometimes wrap the array in ```json despite the "reply with ONLY"
+ *  instruction), falls back to comma- then whitespace-separated tokens. */
+export function parseLlmParts(text: string): unknown[] {
+  let trimmed = text.trim();
+  if (trimmed.startsWith('```')) {
+    trimmed = trimmed.replace(/^```\w*\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  }
   try {
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed)) return parsed;
@@ -945,7 +942,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     let transcript: string | undefined;
     const applySpecPatch = tool({
       description: 'Apply RFC 6902 JSON Patch operations to the current spec.',
-      inputSchema: patchInputSchema(providerFor(this.opts.model ?? DEFAULT_MODEL), Boolean(audio)),
+      inputSchema: patchInputSchema(Boolean(audio)),
       execute: async ({ operations, transcript: heard }: { operations: unknown[]; transcript?: string }) => {
         captured = operations;
         transcript = heard;

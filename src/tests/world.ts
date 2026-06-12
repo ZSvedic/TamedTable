@@ -94,12 +94,15 @@ export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
   if (mode === 'record' || mode === 'replay') {
     const feature = basename(scenario.pickle.uri, '.feature');
     opts.fetch = cassetteFetch({ mode, file: join(CASSETTE_DIR, `${feature}.json`) });
-    if (mode === 'replay') {
-      // The runner needs a non-empty key to build its provider; the recorder
-      // serves every call from disk, so a placeholder is enough. (cucumber.js
-      // lifts TAMEDTABLE_RPM for replay so the rate limiter adds no delay.)
-      opts.apiKey = process.env.ANTHROPIC_API_KEY ?? 'cassette-replay-placeholder';
-    }
+    // Pin the key in BOTH modes so record and replay resolve the same provider
+    // and model. With no injected key, REPL scenarios resolve the provider from
+    // process.env — and the CLI's .env auto-load (core loadEnv walks up to the
+    // repo root) can flip a record run to whichever provider tops the env
+    // precedence, producing cassettes replay can never match. Replay serves
+    // every call from disk, so a placeholder is enough there; record needs the
+    // real ANTHROPIC_API_KEY. (cucumber.js lifts TAMEDTABLE_RPM for replay so
+    // the rate limiter adds no delay.)
+    opts.apiKey = process.env.ANTHROPIC_API_KEY ?? 'cassette-replay-placeholder';
   }
   return opts;
 }
