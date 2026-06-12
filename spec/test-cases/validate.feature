@@ -1,5 +1,5 @@
 # #Validate
-# V2: validate transformation — flag rows, optionally reject the file.
+# validate transformation — flag rows, optionally reject the file.
 Feature: Row and dataset validation
 
   Rule: validate annotates each row with _valid and _validation

@@ -1,5 +1,5 @@
 # #SqlExpr
-# V2: {sql} expression shape — DuckDB-backed predicates, scalars, aggregates.
+# {sql} expression shape — DuckDB-backed predicates, scalars, aggregates.
 Feature: SQL expressions
 
   Rule: {sql} as a scalar in mutate

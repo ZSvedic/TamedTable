@@ -10,21 +10,21 @@ twin.
 
 ```ts
 type Expr =
-  | { js:  string }                              // arrow function BODY (V1)
-  | { sql: string }                              // DuckDB SQL expression (V2)
+  | { js:  string }                              // arrow function BODY
+  | { sql: string }                              // DuckDB SQL expression
   | { llm: string; model?: string };             // prompt template, {Column} + {*} placeholders
 
 type Transformation =
   | { kind: "filter";   pred: Expr }                                             // #FilterRows #Dedupe
   | { kind: "mutate";   columns: string | string[]; value: Expr }               // #DataNorm
   | { kind: "select";   columns: string[] }                                     // #ColSelect
-  | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }> } // #SortRows
-  | { kind: "group";    by: Array<Expr | string>; agg: Record<string, Expr> }    // V2
-  | { kind: "join";     with: string; on: Expr; how?: "inner" | "left" }         // V2
-  | { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }  // V2
-  | { kind: "validate"; pred: Expr; message?: Expr; threshold?: number }         // V2
-  | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // V2
-  | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // V2
+  | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }>; limit?: number } // #SortRows
+  | { kind: "group";    by: Array<Expr | string>; agg: Record<string, Expr> }    // #Aggregate
+  | { kind: "join";     with: string; on: Expr; how?: "inner" | "left" }         // #LookupJoin
+  | { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }  // #ColSplit
+  | { kind: "validate"; pred: Expr; message?: Expr; threshold?: number }         // #Validate
+  | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // #PivotData
+  | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // #PivotData
 
 type Row = Record<string, unknown>;
 
@@ -35,7 +35,7 @@ interface Spec {
   filter?: unknown;
   sort?: unknown;
   page?: { size?: number; offset?: number };
-  summary?: { groupBy: unknown[]; aggregates: unknown[] };  // V1: both must be []
+  summary?: { groupBy: unknown[]; aggregates: unknown[] };  // both must be []
 }
 ```
 
@@ -52,9 +52,8 @@ three shapes; `split.into` and `pivot.index` are non-empty (an empty
 `validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
 `.jsonl`. It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
-evaluation time and flow through the recovery loop. V2.5 removed the
-legacy V1-only schema (see [§ V2.5](#v25)); there is no longer a
-separate "V2 feature in V1 spec" rejection path.
+evaluation time and flow through the recovery loop. A single schema
+validates every spec; there is no separate legacy rejection path.
 
 Patches: RFC 6902 via `fast-json-patch`; RFC 7396 merge hand-rolled
 (~20 LOC).
@@ -206,7 +205,7 @@ Headless makes every model HTTP call through `fetch`.
 `createHeadlessRunner` forwards `opts.fetch` into
 `createAnthropic({ apiKey, baseURL, fetch })`, so the SDK routes all
 HTTP through it. When `opts.fetch` is unset the SDK uses the global
-`fetch` and V1 behavior is unchanged. `fetch?` is typed as the plain
+`fetch` and behavior is unchanged. `fetch?` is typed as the plain
 `(input, init) => Promise<Response>` call signature a wrapper actually
 implements; the SDK's own `fetch` field is `typeof globalThis.fetch`,
 so the forward casts to bridge the two.
@@ -272,7 +271,7 @@ get a plain line reader with no escape-sequence interpretation, so
 Cucumber-driven input stays byte-deterministic. The flag is never
 hardcoded to `false`; passing an explicit `false` would break
 interactive UX (arrow keys echo as `^[[A`). The CLI does not maintain
-or persist a history file in V1 — readline's in-memory history is
+or persist a history file — readline's in-memory history is
 sufficient for a single session.
 
 The ASCII renderer is hand-rolled `padEnd` (~30 LOC). Page size
@@ -348,8 +347,8 @@ Exit codes:
 The file is split on top-level `## ` headers; each section becomes a
 module-internal string of the same name. Four sections required:
 `SYSTEM_PROMPT`, `BATCH_SYSTEM_PROMPT`, `CELL_FORMAT_CONSTRAINT`, and
-`PYTHON_EXPORT_PROMPT` (added in V2.5 — the system message for the
-`:save-py` translation call). Any required section missing throws at
+`PYTHON_EXPORT_PROMPT` (the system message for the `:save-py` translation
+call). Any required section missing throws at
 load time with a clear error pointing at the file.
 
 The runtime uses `SYSTEM_PROMPT` as the system message on every patch-turn
@@ -361,15 +360,13 @@ a substring inside `SYSTEM_PROMPT`'s few-shots.
 Editing `prompt-app-edit.md` is the way to tune any of these. `src/` does
 not contain the prompt text directly.
 
-## V2
+## Extended transformations, SQL, and the web UI
 
-→ [behavior.md — V2](behavior.md#v2)
+→ [behavior.md — Extended transformations, SQL, and the web UI](behavior.md#extended-transformations-sql-and-the-web-ui)
 
-The wire model is unchanged from V1: `(spec, row_stream)` to the
-renderer; the spec is the contract. V2 shapes already reserved in the
-type union above (`group`, `join`, `{sql}`) parse against the V2 Zod
-schema; in V1 mode the schema still rejects them with the *"V2 feature
-in V1 spec"* error.
+The wire model is the same `(spec, row_stream)` throughout: the spec is
+the contract. The `group`, `join`, and `{sql}` shapes in the type union
+above parse against the single Zod schema like every other shape.
 
 ### CSV (and other tabular) output (#FormatOut)
 
@@ -380,9 +377,9 @@ function writeCsv(path: string, rows: Row[], columnOrder: string[]): Promise<voi
 ```
 
 `columnOrder` is required for CSV (the header row needs it); for
-JSONL it stays optional, matching V1. The writer uses
+JSONL it stays optional. The writer uses
 `csv-stringify/sync` from the `csv` package (already pulled in
-transitively by `csv-parse` in V1) with `header: true`, RFC 4180
+transitively by `csv-parse`) with `header: true`, RFC 4180
 quoting, `\n` line endings, and no BOM. Nested values
 (`typeof === 'object' && !== null`) round-trip through `JSON.stringify`.
 
@@ -408,7 +405,7 @@ by name resolves; LLM aggregates receive the group's compact JSON as
 `{*}`.
 
 `Runner.loadInput` continues to dispatch on extension; the join's
-right-side path is loaded by the same code path. The V2 Zod schema
+right-side path is loaded by the same code path. The Zod schema
 permits these two `kind` values and enforces a `.csv`/`.jsonl`
 extension for `join.with` (other extensions error at validation time,
 not at evaluation).
@@ -422,7 +419,7 @@ interface PivotTransform    { kind: "pivot";    index: string[]; on: string; val
 interface UnpivotTransform  { kind: "unpivot"; id: string[]; measures: string[]; names_to?: string; values_to?: string; }
 ```
 
-The V2 Zod schema permits these four `kind` values. Schema-level
+The Zod schema permits these four `kind` values. Schema-level
 checks: `split.into` non-empty; `pivot.index` non-empty; `pivot.on`
 not in `pivot.index`; `validate.threshold` in `[0, 1]` when present.
 Runtime-evaluation errors (predicate throws, regex doesn't compile,
@@ -432,10 +429,10 @@ the recovery loop as plain strings.
 `validate` adds two reserved column names: `_valid` (boolean) and
 `_validation` (string | null). A spec that already has a user column
 named `_valid` or `_validation` and then appends a `validate`
-transformation overwrites them — the V2 patch prompt warns the LLM
+transformation overwrites them — the patch prompt warns the LLM
 about this so it picks fresh names when possible.
 
-`pivot` and `unpivot` evaluate in JS in V2; a `{sql}` companion path
+`pivot` and `unpivot` evaluate in JS; a `{sql}` companion path
 (via DuckDB's native PIVOT/UNPIVOT) is reserved for a later release.
 
 ### `{sql}` expression shape (#SqlExpr)
@@ -444,7 +441,7 @@ about this so it picks fresh names when possible.
 type SqlExpr = { sql: string };
 ```
 
-V2 brings DuckDB in-process via `@duckdb/node-api`. Module init creates
+DuckDB runs in-process via `@duckdb/node-api`. Module init creates
 a single `Database` and `Connection`, registered as the table-level
 process state alongside the runner. The current rows are registered as
 a relation `t` (`conn.register('t', rows)`) before each
@@ -475,7 +472,7 @@ DuckDB relation `t` is not unregistered on cancel.
 The web app is a separate package under `src/packages/web/` (Vite +
 React; no Bun-specific APIs in the renderer code, since it ships as
 static assets). It imports `@tamedtable/headless` directly — no HTTP
-layer in V2; the model call goes from the browser to Anthropic
+layer; the model call goes from the browser to Anthropic
 through the same SDK, with the API key read from a per-tab settings
 panel rather than an env var. File-system access uses the File System
 Access API where available, falling back to download/upload for
@@ -546,28 +543,27 @@ dialog, the dropdown carries **Open local…**. The two halves render
 inside one rounded shell with a single hover tint and no internal
 divider, so the pair reads as one control.
 
-## V2.5
+## One schema, richer sort keys, and Python export
 
-→ [behavior.md — V2.5](behavior.md#v25)
+→ [behavior.md — One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)
 
 ### One spec schema
 
-`validateV1Spec` and the `V1*Schema` Zod definitions are removed from
-`@tamedtable/core`. `validateSpec` (over `SpecSchema`) is the only
-validator. `runCli execute` no longer branches on `flow.version`: a
-`version` of `1` or `2` both validate through `validateSpec`. The nine
-`version: 1` test `.flow` fixtures are bumped to `version: 2`.
+`validateSpec` (over `SpecSchema`) is the only spec validator.
+`runCli execute` does not branch on `flow.version`: a `version` of `1`
+or `2` both validate through `validateSpec`.
 
 ### Sorting by a SQL or AI key
 
-`applySort` no longer compiles every `sort.by[].key` as JS. A key is
-resolved by `Expr` shape, mirroring `mutate`: a `string` reads the
-column; `{js}` compiles; `{sql}` evaluates one scalar per row through
-the shared DuckDB connection (`SELECT (<fragment>) AS r FROM t`, input
-order preserved); `{llm}` evaluates one cell per row through the cell
-model. Multi-key sorts evaluate each key's per-row values up front,
-then compare. SQL/LLM key evaluation makes `applySort` async; the
-runner already `await`s every transformation.
+`applySort` resolves each `sort.by[].key` by `Expr` shape, mirroring
+`mutate`: a `string` reads the column; `{js}` compiles; `{sql}` evaluates
+one scalar per row through the shared DuckDB connection
+(`SELECT (<fragment>) AS r FROM t`, input order preserved); `{llm}`
+evaluates one cell per row through the cell model. Multi-key sorts
+evaluate each key's per-row values up front, then compare. SQL/LLM key
+evaluation makes `applySort` async; the runner already `await`s every
+transformation. When `sort.limit` is set, the ordered rows are sliced to
+the first N.
 
 ### A formatter bug never fails a request
 
@@ -575,12 +571,12 @@ The `onPlan` callback dispatch in `Runner.request` is wrapped in
 `try/catch`. `computePlan` and the callback can throw without aborting
 the request — the plan line is dropped, the commit proceeds.
 
-### `:save-py` (#PyExport)
+### Export a flow as a Python script (#PyExport)
 
 ```ts
 interface HeadlessRunner {
   // …
-  exportPython(): Promise<string>;   // V2.5 — one model call, returns the script text
+  exportPython(): Promise<string>;   // one model call, returns the script text
 }
 ```
 
@@ -591,7 +587,7 @@ the cassette recorder like any other model call. The CLI `:save-py`
 handler: validates the `.py` extension and the path; scans
 `currentSpec().transformations` for any `{llm}` `Expr` and refuses if
 one is present; otherwise calls `exportPython` and writes the result.
-`:save-py` is REPL-only — no `tamedtable` subcommand in V2.5.
+`:save-py` is REPL-only — no `tamedtable` subcommand.
 
 ## Model config
 
@@ -794,13 +790,3 @@ export interface WebControllerOptions {
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
 | `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn`, `tutorial-chat-input`, or `tutorial-table-view`. |
-
-## V3
-
-→ [behavior.md — V3](behavior.md#v3)
-
-Deferred. No V2.5 type or signature changes. The relevant grammar is
-already in the `Transformation` union (`split.on` accepts an `Expr`;
-`group.agg` accepts a `{sql}` `Expr`); the V3 work is runtime support,
-plus a `sort` `limit` field (or a `take` transformation) and a REPL
-command for CSV column order.

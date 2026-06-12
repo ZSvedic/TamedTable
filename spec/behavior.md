@@ -14,7 +14,8 @@ edits — that the runtime applies, validates, and replays against the
 immutable source rows.
 
 The spec carries an ordered list of *transformations* that mutate data before
-view ops (filter, sort, page, summary) run. Four transformation kinds in V1:
+view ops (filter, sort, page, summary) run. Four core transformation kinds
+cover the row-and-column basics:
 
 - **filter** — keep rows where a predicate is truthy. <!-- #FilterRows -->
 - **mutate** — set one or more columns from a value expression. <!-- #DataNorm -->
@@ -233,8 +234,7 @@ is a TTY:
   through command history within the session, ←/→ move the cursor inside
   the current line, ⌃A/⌃E jump to line start/end, ⌃U clears the line,
   ⌃R reverse-searches history. The session's input lines accumulate into
-  an in-memory history that is *not* persisted across REPL invocations
-  in V1.
+  an in-memory history that is *not* persisted across REPL invocations.
 - **Batch mode** (stdin is not a TTY — piped from a file or from the
   Gherkin step harness). The line editor is off: every byte that arrives
   is interpreted as part of an input line, escape sequences pass through
@@ -322,7 +322,7 @@ They are handled locally without any LLM round-trip:
   `no match` and does not reprint. Missing pattern prints
   `:find: missing pattern`. Not recorded in the undo journal.
 - `:load <path>` reads a CSV or JSONL file as the new input source (file
-  type inferred from extension; only `.csv` and `.jsonl` accepted in V1;
+  type inferred from extension; only `.csv` and `.jsonl` accepted;
   `<path>` is taken literally — a leading `@` is part of the filename,
   not a Claude-Code-style file reference). Resets transformations,
   filter/sort, and cached LLM cell results just like loading at startup.
@@ -330,15 +330,17 @@ They are handled locally without any LLM round-trip:
   `:load: unknown file type`; success prints
   `Loaded <path> (N rows, M cols)` (no column names) followed by the
   table.
-- `:save <path>` writes current rows to a JSONL file (path resolved relative
-  to the working directory; only `.jsonl` accepted in V1). Missing path
-  prints `:save: missing path`; success prints a `saved` confirmation.
+- `:save <path>` writes the current rows, dispatching on extension —
+  `.jsonl` or `.csv` (path resolved relative to the working directory).
+  Missing path prints `:save: missing path`; an unknown extension prints
+  `:save: unknown file type`; success prints a `saved` confirmation.
 - `:save-flow <path>` writes the current spec as a replayable JSON document
   (the source path inside the flow is recorded relative to the flow file's
   own directory). Missing path prints `:save-flow: missing path`; success
   prints `saved flow`.
 - `:save-py <path>` writes the current flow as a standalone Python 3
-  script (see [§ V2.5](#v25)). Makes one model call to translate the
+  script (see [§ Export a flow as a Python script](#export-a-flow-as-a-python-script-pyexport)).
+  Makes one model call to translate the
   transformations into Python; refuses a flow that contains any `{llm}`
   cell. Missing path prints `:save-py: missing path`; a non-`.py`
   extension prints `:save-py: output must be a .py file`; a flow with an
@@ -483,24 +485,20 @@ prompt must end with: reply with only the result, or the literal word
 
 → [code-contract.md — System prompts](code-contract.md#system-prompts)
 
-## V2
+## Extended transformations, SQL, and the web UI
 
-V2 keeps the V1 spec-and-patches wire model and adds four surfaces on top:
-two new transformation verbs, a SQL expression shape, CSV (and other
-tabular) output, and a browser front-end. The behavior contract for undo,
-cancellation, recovery, and the streaming chunk callback is unchanged —
-each new surface plugs into existing seams rather than replacing them.
-
-V1 ships only the terminal CLI and the headless library. When asked about
-V2 UX, WoZ produces a Claude artifact or writes a sketch to `temp/`, not
-refuses.
+Beyond the four core verbs and the terminal CLI, the spec carries six more
+transformation verbs (`group`, `join`, `split`, `validate`, `pivot`,
+`unpivot`), a SQL expression shape, tabular (CSV) output, and a browser
+front-end. The behavior contract for undo, cancellation, recovery, and the
+streaming chunk callback is unchanged — each surface plugs into existing
+seams rather than replacing them.
 
 ### CSV (and other tabular) output (#FormatOut)
 
-V1 writes JSONL only. V2 lifts that restriction: `:save <path>` and
-`tamedtable execute --output <path>` both dispatch on extension, the
-same way `:load` already does for input. V2 accepts `.csv` alongside
-`.jsonl`; further formats (`.xlsx`, `.parquet`) land on the same
+`:save <path>` and `tamedtable execute --output <path>` both dispatch on
+extension, the same way `:load` already does for input, accepting `.csv`
+alongside `.jsonl`; further formats (`.xlsx`, `.parquet`) land on the same
 dispatch and are out of scope until their own scenarios are written.
 
 CSV output rules: the header row is the spec's column order (using
@@ -551,7 +549,7 @@ to `null`. `"inner"` drops left rows that have no match.
 When right and left columns collide, the right column is renamed
 `<name>_2` (then `_3`, etc.) so no column silently overwrites
 another. The right file is read with the same dispatch as `:load`
-(unknown extension throws the V1 *"unknown file type"* error). A
+(unknown extension throws the *"unknown file type"* error). A
 join's right table is *not* re-read on `:undo`/`:redo`; the
 transformation removal reverses the column-shape change and that's
 enough.
@@ -572,10 +570,11 @@ The input column stays in place unless `drop: true` is set on the
 transformation, in which case `from` is removed after the split. Empty
 input cells produce `null` in every output column.
 
-This is ergonomically what V1 `mutate` with `columns: string[]` and a
-JS array-returning body already does; V2's `split` exists so the LLM
-can patch the structure without writing JS, and so regex/delimiter
-splits don't need an expression at all.
+This is ergonomically what a `mutate` with `columns: string[]` and a
+JS array-returning body already does; `split` exists so the LLM can patch
+the structure without writing JS, and so regex/delimiter splits don't need
+an expression at all. An `{llm}` `on` is also allowed — the cell model is
+asked to break each cell into the parts.
 
 ### `validate` transformation (#Validate)
 
@@ -639,7 +638,7 @@ DuckDB instance is per-process and shared across transformations; it
 is reset whenever the source rows are reloaded.
 
 A running SQL query is one operation, not a stream of chunks, so the
-V1 cancellation sequence ([§ Headless](#headless)) gets one extra
+cancellation sequence ([§ Headless](#headless)) gets one extra
 move: step 1 calls `conn.interrupt()` to ask DuckDB to abort. The
 query rejects with a *"cancelled"* error within the same 2-second
 budget; steps 2–4 (drain, remove the half-applied transformation,
@@ -652,7 +651,7 @@ half-applied spec change reverts.
 
 ### Web UI (#WebUI)
 
-V2 ships a browser front-end that mirrors the CLI's interaction shape
+The browser front-end mirrors the CLI's interaction shape
 — a chat sidebar for natural-language requests and the table view to
 the right of it. Cell editing, scrolling, column-resize, and
 column-reorder happen through normal browser gestures but ultimately
@@ -715,8 +714,8 @@ with a microphone icon when the provider supports voice input, or grey "No voice
 input" when it does not. Google shows the green badge; OpenAI and Anthropic show
 grey.
 
-Text requests route through Anthropic regardless of the selected provider — in
-this version Google is wired only for voice input, not text, and OpenAI is not
+Text requests route through Anthropic regardless of the selected provider —
+here Google is wired only for voice input, not text, and OpenAI is not
 wired for chat at all (its key can still be entered for use elsewhere). A
 natural-language chat request therefore needs an Anthropic API key: when none is
 set the request never fires and a toast reads `Text requests require an Anthropic
@@ -779,7 +778,7 @@ turn. The **cell samples** section — shown only when at least one
 `{llm}` mutate transformation ran — lists up to 3 before→after pairs
 per column, formatted as `column: "before" → "after"`.
 
-→ [code-contract.md — V2](code-contract.md#v2)
+→ [code-contract.md — Extended transformations, SQL, and the web UI](code-contract.md#extended-transformations-sql-and-the-web-ui)
 
 ## Voice input (#VoiceInput)
 
@@ -874,40 +873,36 @@ parser lifts from the `the expected output is "X"` step.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 
-## V2.5
+## One schema, richer sort keys, and Python export
 
-V2.5 is a consolidation pass before V3: one spec schema, a handful of
-bug fixes, and one new export command. It changes no wire format and
-adds no transformation verb.
+A consolidation pass: one spec schema, a couple of bug fixes, and one new
+export command. It changes no wire format and adds no transformation verb.
 
 ### One spec schema
 
-V1 carried two rule-checkers for the spec — a strict V1 checker that
-rejected every V2 feature and a V2 checker that accepted them. With no
-real V1 documents left to protect, V2.5 deletes the V1 checker. Every
-spec — a freshly loaded table, a patched spec, a replayed `.flow` —
-validates against the one schema. A saved `.flow` records `version: 2`;
-an older `version: 1` flow still loads, validated under the same schema.
+Every spec — a freshly loaded table, a patched spec, a replayed `.flow` —
+validates against one schema. A saved `.flow` records `version: 2`; an
+older `version: 1` flow still loads, validated under the same schema.
 
 ### Sorting by a SQL or AI key
 
 A `sort` key may be a column name or any expression — `{js}`, `{sql}`,
-or `{llm}` — exactly like a `mutate` value. V2.5 fixes a bug where
-`sort` evaluated every key as JavaScript: handed a `{sql}` or `{llm}`
-key it tried to run SQL or prompt text as JS and broke or produced
-garbage. A `{sql}` sort key now runs through DuckDB and an `{llm}` key
-through the cell model, one key value per row, the same machinery
-`mutate` already uses.
+or `{llm}` — exactly like a `mutate` value. A `{sql}` sort key runs
+through DuckDB and an `{llm}` key through the cell model, one key value
+per row, the same machinery `mutate` already uses.
+
+A `sort` may also carry a `limit`: a positive integer that keeps only the
+first N rows after ordering, so "top 10 by revenue" needs no manual row
+deletion.
 
 ### A formatter bug never fails a request
 
 The plan printer — the code that renders a transformation as a readable
-line — runs inside a callback. V2.5 wraps that callback so a formatting
-error drops the plan line and the request still commits; a cosmetic
-display bug can no longer surface to the user as "couldn't apply that
-change."
+line — runs inside a callback wrapped so a formatting error drops the plan
+line and the request still commits; a cosmetic display bug can no longer
+surface to the user as "couldn't apply that change."
 
-### `:save-py` — export a flow as a standalone Python script (#PyExport)
+### Export a flow as a Python script (#PyExport)
 
 `:save-py <path>` writes the current sequence of transformations as a
 single self-contained Python 3 script. The script carries a
@@ -927,35 +922,7 @@ structural verbs (`filter`, `sort`, `select`, `group`, `join`, `split`,
 `validate`, `pivot`, `unpivot`) exports cleanly.
 
 `:save-py` is a REPL command: it is not exposed as a `tamedtable`
-subcommand in V2.5. Missing path prints `:save-py: missing path`; a
+subcommand. Missing path prints `:save-py: missing path`; a
 non-`.py` extension prints `:save-py: output must be a .py file`.
 
-→ [code-contract.md — V2.5](code-contract.md#v25)
-
-## V3
-
-V3 items need real new machinery and are out of scope for V2.5. They
-are recorded here so the spec tracks the committed roadmap.
-
-- **Stop a running SQL query on Ctrl-C.** The V2 SQL section above
-  describes the target cancellation behavior (`conn.interrupt()`, the
-  2-second budget, draining a lingering query). V3 is when it actually
-  lands: today's cancel path only stops AI calls, not DuckDB work that
-  keeps running after the cancel returns.
-- **Split a column with the AI.** `split` accepts an `{llm}` separator
-  in the grammar but the runtime throws "LLM separators not yet
-  implemented"; the split path is synchronous and cannot make a model
-  call. V3 makes `split` async so an `{llm}` `on` can run.
-- **SQL aggregates inside `group`.** A `{sql}` aggregate in `group.agg`
-  currently throws an explicit guard. V3 runs a real `GROUP BY` per
-  group through DuckDB.
-- **Top-N sort.** `sort` returns every row, ordered; there is no
-  `head`, `limit`, or `take`. V3 adds a `limit` to `sort` (or a
-  separate `take` transformation) so "top 10 by revenue" needs no
-  manual row deletion.
-- **CSV column order via a `:` command.** Today CSV output column
-  order follows the spec's column order. V3 exposes column order
-  through a REPL `:` command — an option on `:save` or a dedicated
-  reorder command — rather than a new spec field.
-
-→ [code-contract.md — V3](code-contract.md#v3)
+→ [code-contract.md — One schema, richer sort keys, and Python export](code-contract.md#one-schema-richer-sort-keys-and-python-export)

@@ -603,7 +603,7 @@ class CliRunnerImpl implements CliRunner {
     });
   }
 
-  // V3: reorder the column list. Named columns move to the front in the given
+  // reorder the column list. Named columns move to the front in the given
   // order; any columns not named keep their relative order after them. The
   // new order drives both the table view and CSV/JSONL output.
   async reorderCmd(arg: string): Promise<{ ok: boolean; messages: string[] }> {

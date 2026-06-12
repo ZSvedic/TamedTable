@@ -1,5 +1,5 @@
 # #LookupJoin
-# V2: join transformation — enrich left rows from a second source.
+# join transformation — enrich left rows from a second source.
 Feature: Lookup join
 
   Rule: Left join keeps unmatched left rows with null right columns

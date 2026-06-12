@@ -1,5 +1,5 @@
 # #FormatOut
-# V2: CSV output — JSONL ↔ CSV via :save and tamedtable execute.
+# CSV output — JSONL ↔ CSV via :save and tamedtable execute.
 Feature: Tabular format output
 
   Rule: :save dispatches on extension
@@ -78,7 +78,7 @@ Feature: Tabular format output
 
   Rule: :reorder sets the output column order
 
-    # V3: the REPL :reorder command exposes CSV/JSONL column order without a
+    # The REPL :reorder command exposes CSV/JSONL column order without a
     # new spec field — named columns move to the front, the rest follow.
     @cli @offline
     Scenario: :reorder changes the CSV header order

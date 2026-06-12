@@ -20,7 +20,7 @@ export const ExprSchema: z.ZodTypeAny = z.union([
 
 const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
 
-const V2TransformationSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
+const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('filter'), pred: ExprSchema }).strict(),
   z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema }).strict(),
   z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
@@ -72,9 +72,9 @@ const V2TransformationSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   }).strict(),
 ]);
 
-// Re-export the V2 transformation schema as the default — patches and live specs
-// always validate against V2.
-export const TransformationSchema = V2TransformationSchema;
+// Re-export the transformation union as the default — patches and live specs
+// always validate against this single schema.
+export const TransformationSchema = TransformationUnionSchema;
 
 export type Expr =
   | { js: string }
@@ -112,7 +112,7 @@ export const SpecSchema = z
         aggregates: z.array(z.unknown()),
       })
       .optional(),
-    transformations: z.array(V2TransformationSchema),
+    transformations: z.array(TransformationUnionSchema),
   })
   .strict();
 export type Spec = z.infer<typeof SpecSchema>;

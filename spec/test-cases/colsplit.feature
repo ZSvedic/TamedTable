@@ -1,5 +1,5 @@
 # #ColSplit
-# V2: split transformation — declarative 1 → N column splitting.
+# split transformation — declarative 1 → N column splitting.
 Feature: Column split
 
   Rule: Split by literal separator

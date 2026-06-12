@@ -2,7 +2,7 @@ Read `AGENTS.md` and `README.md` first. Find the most recent `ops/journal/YYYY-M
 
 Walk every tracked file outside `ops/journal/` and gitignored paths. For each one:
 
-- **Outdated?** Compare against the current state of the repo — what shipped, which files and directories exist, which version a feature lives in. Update any stale reference, regardless of file format (`.md`, `.csv`, `.txt`, anything).
+- **Outdated?** Compare against the current state of the repo — what shipped, which files and directories exist. Update any stale reference, regardless of file format (`.md`, `.csv`, `.txt`, anything).
 - **Consistent?** Does it agree with every other tracked file? Fix any mismatch. The library-package mirror must stay complete: every library package under `src/packages/` has a matching `spec/packages/<name>/` (and no spec dir is an orphan), and each package `README.md` link table (spec, scenarios, code, demo) resolves. The app packages (`core`, `headless`, `cli`, `web`) are specced at app level, not in `spec/packages/`.
 - **Simplified?** Can it be removed or shortened? Intentional repetition is fine (the same concept in a spec, a test, and a journal entry). Remove unintentional duplication. Delete files that no longer serve any purpose.
 
