@@ -23,7 +23,10 @@ Inside any child, `useTheme()` returns the active `Theme` object and
 
 ## Tokens (main entry, React-free)
 
-The main entry exports the brand system as plain objects — no React:
+The token *values* live in one neutral data file, `tokens.json`, so both this
+package and the standalone design base (`design/claude-design/`) read the same
+numbers without a second hand-maintained copy. The main entry types and names
+them, exporting the brand system as plain objects — no React:
 
 - `brand` — the brand-literal hex constants (Aubergine ink `#281C60`, Pale Sky
   accent `#96BED7`, Silver line, white, Mist ground, Linen)

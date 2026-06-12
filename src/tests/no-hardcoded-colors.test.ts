@@ -1,0 +1,53 @@
+// #UiKit
+// Design-token guard. Enforces the spec rule "components read the active theme
+// through useTheme() and never hard-code a color" (spec/packages/ui-kit/
+// behavior.md § Tokens): every color must come from the shared tokens in
+// ui-kit or a host-injected CSS custom property. This scans shipping component
+// source for raw color literals and fails on any new one, so the design system
+// stays the single source of truth and the design base can't silently drift.
+import { $ } from 'bun';
+import { describe, expect, it } from 'bun:test';
+
+// A raw color literal: hex, rgb()/rgba(), oklch(), or hsl()/hsla().
+const COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(|\bhsla?\(/;
+
+// var(--…, fallback) is legitimate theming — the fallback default for an
+// injected custom property. Blank those out before scanning a line.
+const stripVarFallbacks = (line: string): string => line.replace(/var\([^)]*\)/g, 'var()');
+
+// Files allowed to carry raw colors:
+//   ui-kit/**            — the token home; colors are *defined* here
+//   *.test.ts/.steps.ts  — test code, not shipped UI
+//   **/demo*             — standalone dev harnesses, not the product
+//   model-config/ModelChooser.tsx — the documented `--mc-*` injection adapter
+//     (behavior.md § Tokens): its hex are fallback defaults for host-set vars
+const isExempt = (path: string): boolean =>
+  path.includes('/ui-kit/') ||
+  path.endsWith('.test.ts') ||
+  path.endsWith('.steps.ts') ||
+  /\/demo[^/]*$/.test(path) ||
+  path.endsWith('/model-config/ModelChooser.tsx');
+
+describe('design-token guard', () => {
+  it('no shipping component hard-codes a color', async () => {
+    // Tracked files only — node_modules is gitignored, so this skips it.
+    const files = (await $`git ls-files packages`.text())
+      .split('\n')
+      .filter((p) => /\.(ts|tsx)$/.test(p) && !isExempt(`/${p}`));
+
+    const offenders: string[] = [];
+    for (const rel of files) {
+      const text = await Bun.file(rel).text();
+      text.split('\n').forEach((line, i) => {
+        if (COLOR.test(stripVarFallbacks(line))) {
+          offenders.push(`${rel}:${i + 1}  ${line.trim()}`);
+        }
+      });
+    }
+
+    expect(
+      offenders,
+      `Raw color literals found — use a ui-kit token or a var(--…) custom property:\n${offenders.join('\n')}\n`,
+    ).toEqual([]);
+  });
+});

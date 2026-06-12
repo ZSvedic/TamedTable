@@ -9,12 +9,12 @@ import { useTheme } from '@tamedtable/ui-kit/components';
 import { Icon } from '@tamedtable/ui-kit/components';
 import type { VoiceButtonStatus } from './index.ts';
 
-const RECORD_RED = '#dc2626';
-
-const MIC_CSS =
-  '@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }' +
-  ' 70% { box-shadow: 0 0 0 7px rgba(220, 38, 38, 0); }' +
-  ' 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }' +
+// The pulsing record ring is built from the theme's `rec` token so the red
+// lives in one place (ui-kit) — color-mix fades the same token to transparent.
+const micCss = (rec: string): string =>
+  `@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 55%, transparent); }` +
+  ` 70% { box-shadow: 0 0 0 7px color-mix(in srgb, ${rec} 0%, transparent); }` +
+  ` 100% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 0%, transparent); } }` +
   ' .cp-rec-ring { animation: cp-rec-kf 1.1s ease-out infinite; }' +
   ' @keyframes cp-spin-kf { to { transform: rotate(360deg); } }' +
   ' .cp-spin { animation: cp-spin-kf 0.7s linear infinite; }';
@@ -93,14 +93,14 @@ export function MicButton({
       data-testid="mic-button"
       style={{
         ...size,
-        border: `1px solid ${recording ? RECORD_RED : t.line2}`,
-        background: recording ? RECORD_RED : 'transparent',
-        color: recording ? '#fff' : sending ? t.ink3 : t.ink2,
+        border: `1px solid ${recording ? t.rec : t.line2}`,
+        background: recording ? t.rec : 'transparent',
+        color: recording ? t.onRec : sending ? t.ink3 : t.ink2,
         cursor: sending ? 'default' : 'pointer',
         touchAction: 'none',
       }}
     >
-      <style>{MIC_CSS}</style>
+      <style>{micCss(t.rec)}</style>
       {sending ? (
         <span
           className="cp-spin"
