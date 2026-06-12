@@ -23,10 +23,13 @@ Inside any child, `useTheme()` returns the active `Theme` object and
 
 ## Tokens (main entry, React-free)
 
-The token *values* live in one neutral data file, `tokens.json`, so both this
-package and the standalone design base (`design/claude-design/`) read the same
-numbers without a second hand-maintained copy. The main entry types and names
-them, exporting the brand system as plain objects — no React:
+The canonical token *values* live in the design base,
+`design/claude-design/tokens.json`, so they survive a full `src/`
+regeneration. `packages/ui-kit/tokens.json` is a generated copy (run
+`bun run sync:tokens` after editing the master) that this package imports, so
+`src/` stays a self-contained deployable unit. The guard test fails CI if the
+copy drifts from the master. The main entry types and names the tokens,
+exporting the brand system as plain objects — no React:
 
 - `brand` — the brand-literal hex constants (Aubergine ink `#281C60`, Pale Sky
   accent `#96BED7`, Silver line, white, Mist ground, Linen)

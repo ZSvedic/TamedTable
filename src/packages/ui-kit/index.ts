@@ -1,12 +1,13 @@
 // #UiKit
 // Single source of truth for every visual choice — the TamedTable brand
-// system expressed as design tokens. The token *values* live in one neutral
-// data file, ./tokens.json, so both this package and the standalone design
-// base (design/claude-design/) can read the same numbers without a second
-// hand-maintained copy. This module gives them types and names; components
-// read the active theme through useTheme() and never hard-code a color or
-// pixel value, so the visual design lives in this one package. This entry is
-// React-free; the components live in ./components.
+// system expressed as design tokens. The canonical token *values* live in the
+// design base, design/claude-design/tokens.json, so they survive a full src/
+// regeneration; ./tokens.json here is a generated copy (run `bun run
+// sync:tokens` from src/ after editing the master) that this package imports
+// so src/ stays a self-contained deployable unit. This module gives the tokens
+// types and names; components read the active theme through useTheme() and
+// never hard-code a color or pixel value, so the visual design lives in this
+// one package. This entry is React-free; the components live in ./components.
 // Spec: spec/packages/ui-kit/behavior.md.
 //
 // Brand system (see design/claude-design/uploads/brand.md):
