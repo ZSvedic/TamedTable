@@ -81,16 +81,11 @@ async function callGemini(key: string, model: string, parts: unknown[]): Promise
   return text;
 }
 
-async function callOpenAI(key: string, model: string, content: unknown, audio: boolean): Promise<string> {
+async function callOpenAI(key: string, model: string, content: unknown): Promise<string> {
   const data = (await post(
     'https://api.openai.com/v1/chat/completions',
     { authorization: `Bearer ${key}` },
-    {
-      model,
-      messages: [{ role: 'user', content }],
-      // `modalities` is only accepted by audio-capable models.
-      ...(audio ? { modalities: ['text'] } : {}),
-    },
+    { model, messages: [{ role: 'user', content }] },
   )) as OpenAIResponse;
   const text = (data.choices?.[0]?.message?.content ?? '').trim();
   if (!text) throw new Error('OpenAI returned no text.');
@@ -118,32 +113,25 @@ async function callAnthropic(key: string, model: string, text: string): Promise<
 export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise<string> {
   const key = keyFor(cfg);
   if (cfg.provider === 'gemini') return callGemini(key, cfg.model, [{ text }]);
-  if (cfg.provider === 'openai') return callOpenAI(key, cfg.model, text, false);
+  if (cfg.provider === 'openai') return callOpenAI(key, cfg.model, text);
   return callAnthropic(key, cfg.model, text);
 }
 
 /** One round trip with the spoken query as the request: audio + instructions
  *  in, a verbatim transcript and the model's answer out. Only valid for
- *  models with voiceInput: true (Gemini models and gpt-audio). */
+ *  models with voiceInput: true (Gemini models). */
 export async function sendVoicePrompt(cfg: ResolvedConfig, audio: Blob): Promise<VoiceReply> {
   const key = keyFor(cfg);
-  // Both providers accept base64 WAV; MediaRecorder output (webm/opus or
-  // mp4/aac) is re-encoded so one format works everywhere.
+  // Gemini accepts base64 WAV; MediaRecorder output (webm/opus or mp4/aac) is
+  // re-encoded so the format is consistent.
   const wav = toBase64(await blobToWavBytes(audio));
-  let raw: string;
-  if (cfg.provider === 'gemini') {
-    raw = await callGemini(key, cfg.model, [
-      { text: VOICE_PROMPT },
-      { inline_data: { mime_type: 'audio/wav', data: wav } },
-    ]);
-  } else if (cfg.provider === 'openai') {
-    raw = await callOpenAI(key, cfg.model, [
-      { type: 'text', text: VOICE_PROMPT },
-      { type: 'input_audio', input_audio: { data: wav, format: 'wav' } },
-    ], true);
-  } else {
+  if (cfg.provider !== 'gemini') {
     throw new Error(`${cfg.provider} models do not support voice input.`);
   }
+  const raw = await callGemini(key, cfg.model, [
+    { text: VOICE_PROMPT },
+    { inline_data: { mime_type: 'audio/wav', data: wav } },
+  ]);
   return parseVoiceReply(raw);
 }
 

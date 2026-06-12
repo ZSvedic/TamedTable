@@ -35,16 +35,7 @@ Feature: Voice input
       Then the mic button is shown
 
     @web
-    Scenario: The mic is shown for the OpenAI audio model with an OpenAI key
-      Given the TamedTable web app
-      And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
-      And the provider "openai" has API key "sk-example-key"
-      And the selected model is "gpt-audio"
-      Then the mic button is shown
-
-    @web
-    Scenario: The mic is hidden for an OpenAI text model even with a key
+    Scenario: The mic is hidden for an OpenAI model even with a key
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
       And load "datanorm-input.csv"

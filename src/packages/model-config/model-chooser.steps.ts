@@ -130,8 +130,12 @@ When(
   },
 );
 
-When('the user picks the model {string}', async function (this: DemoWorld, modelId: string) {
-  await page(this).click(`[data-mc-model="${modelId}"]`);
+When('the user picks the primary model {string}', async function (this: DemoWorld, modelId: string) {
+  await page(this).click(`[data-mc-primary="${modelId}"]`);
+});
+
+When('the user picks the secondary model {string}', async function (this: DemoWorld, modelId: string) {
+  await page(this).click(`[data-mc-secondary="${modelId}"]`);
 });
 
 When(
@@ -191,6 +195,13 @@ Then(
   'the demo shows resolved model {string}',
   async function (this: DemoWorld, expected: string) {
     await expectResolved(page(this), 'model', expected);
+  },
+);
+
+Then(
+  'the demo shows resolved cellModel {string}',
+  async function (this: DemoWorld, expected: string) {
+    await expectResolved(page(this), 'cellModel', expected);
   },
 );
 

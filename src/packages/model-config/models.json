@@ -1,12 +1,12 @@
 [
-  { "id": "gemini-3.5-flash",      "name": "Gemini 3.5 Flash", "desc": "Google's fast, capable model — the Google default.", "provider": "gemini",    "voiceInput": true,  "default": true },
+  { "id": "gemini-3.5-flash",      "name": "Gemini 3.5 Flash", "desc": "Google's fast, capable model — the Google default.", "provider": "gemini",    "voiceInput": true,  "default": true, "secondaryDefault": true },
   { "id": "gemini-3.1-pro-preview","name": "Gemini 3.1 Pro",   "desc": "Most capable Gemini model (preview).",               "provider": "gemini",    "voiceInput": true  },
 
   { "id": "gpt-5.5",               "name": "GPT-5.5",          "desc": "OpenAI's flagship model — the OpenAI default.",      "provider": "openai",    "voiceInput": false, "default": true },
-  { "id": "gpt-5.4-mini",          "name": "GPT-5.4 Mini",     "desc": "Fast and cheap OpenAI model.",                       "provider": "openai",    "voiceInput": false },
-  { "id": "gpt-audio",             "name": "GPT Audio",        "desc": "OpenAI audio model for voice input.",                "provider": "openai",    "voiceInput": true  },
+  { "id": "gpt-5.4-mini",          "name": "GPT-5.4 Mini",     "desc": "Fast and cheap OpenAI model.",                       "provider": "openai",    "voiceInput": false, "secondaryDefault": true },
 
   { "id": "claude-opus-4-8",       "name": "Opus 4.8",         "desc": "Most capable — best for tricky requests.",           "provider": "anthropic", "voiceInput": false },
   { "id": "claude-sonnet-4-6",     "name": "Sonnet 4.6",       "desc": "Balanced — the default.",                            "provider": "anthropic", "voiceInput": false, "default": true },
+  { "id": "claude-sonnet-4-5",     "name": "Sonnet 4.5",       "desc": "Previous Sonnet — terse and reliable for per-row cells.", "provider": "anthropic", "voiceInput": false, "secondaryDefault": true },
   { "id": "claude-haiku-4-5",      "name": "Haiku 4.5",        "desc": "Fastest and cheapest.",                              "provider": "anthropic", "voiceInput": false }
 ]

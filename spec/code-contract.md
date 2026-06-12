@@ -194,7 +194,7 @@ Env vars:
 | `ANTHROPIC_API_KEY` | — | Required. May also be passed via `opts.apiKey`. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. |
-| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Model that fills in per-row LLM cells when the main model is Anthropic. Cross-provider mains fall back to a per-provider **text** default — `gemini-3.5-flash` (Google), `gpt-5.4-mini` (OpenAI) — never the main model itself, because an audio-only main like `gpt-audio` rejects text-only cell calls. |
+| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `claude-sonnet-4-5` (Anthropic), `gemini-3.5-flash` (Google), `gpt-5.4-mini` (OpenAI). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
@@ -483,7 +483,8 @@ browsers that don't support it.
 
 `WebController.request` always sends `config.anthropicKey` as the
 Anthropic `x-api-key` — text requests route through Anthropic whatever
-provider is selected (Google/OpenAI are voice-only here). It rejects
+provider is selected (Google is voice-only here; OpenAI is not wired for
+chat). It rejects
 before any network call when `anthropicKey` is null or empty, surfacing
 the toast `Text requests require an Anthropic API key — open Settings and
 add one.`
@@ -599,14 +600,15 @@ one is present; otherwise calls `exportPython` and writes the result.
 ```ts
 type Provider = "anthropic" | "gemini" | "openai";
 
-interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; default?: boolean; }
+interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; default?: boolean; secondaryDefault?: boolean; }
 
 interface ResolvedConfig {
   provider: Provider;
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
-  model: string;
+  model: string;      // primary — writes the spec patch (and carries voice)
+  cellModel: string;  // secondary — fills per-row cells; always same-provider as model
 }
 
 interface StoragePort {
@@ -617,22 +619,26 @@ interface StoragePort {
 
 const ALL_MODELS: readonly ModelDef[];  // imported from models.json — the catalogue's single source
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
-function defaultModel(provider: Provider): string;
+function defaultModel(provider: Provider): string;      // primary (patch-turn) default
+function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function providerFor(modelId: string): Provider;
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
 
 ```ts
 // ModelChooser.tsx entry point — react is a peer dependency
+type ModelRole = "primary" | "secondary";
+
 interface ModelChooserProps {
   models: readonly ModelDef[];
   provider: Provider;
-  model: string;
+  primaryModel: string;
+  secondaryModel: string;
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
   onProviderClick(p: Provider): void;
   onKeyChange(p: Provider, value: string): void;
-  onModelSelect(modelId: string): void;
+  onSelectModel(role: ModelRole, modelId: string): void;
 }
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
@@ -709,11 +715,10 @@ typed request uses — error toast plus an `Error: Voice input failed: …`
 assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` discards the recording. The mic button is
 gated on the selected model's `voiceInput` flag plus a key for the selected
 provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
-mono PCM16 WAV before resolving, so the same bytes work for both Gemini
-(`inlineData`) and OpenAI (`input_audio`, which accepts only wav/mp3). The
-engine routes OpenAI models through the Chat Completions API (`.chat(...)` on
-the AI SDK provider) — `gpt-audio` is not served by the Responses API the SDK
-would otherwise default to.
+mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`) —
+the only provider wired for voice. The engine routes OpenAI models through the
+Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
+compatibility.
 
 Because every text request routes through Anthropic regardless of the selected
 provider, `ensureHeadless` builds the engine with the selected model when it is

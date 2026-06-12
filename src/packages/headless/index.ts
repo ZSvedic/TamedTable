@@ -98,8 +98,8 @@ const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'claude-sonnet-4
 
 // Per-provider fallbacks for per-row cell calls when the configured cell
 // model belongs to a different provider than the main model. Cell calls are
-// text-only, so they must never go to the main model blindly — an audio-only
-// main like gpt-audio rejects requests without audio in or out.
+// text-only and must share the main model's provider, so a cross-provider cell
+// model is coerced to that provider's text default rather than used blindly.
 const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = {
   anthropic: DEFAULT_CELL_MODEL,
   gemini: 'gemini-3.5-flash',
@@ -727,9 +727,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     } else if (detected === 'openai') {
       const key = apiKey ?? process.env.OPENAI_API_KEY;
       if (!key) throw new Error('OPENAI_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      // Chat Completions, not the SDK's default Responses API: the audio
-      // model (gpt-audio) is served only by Chat Completions, and it is the
-      // endpoint that accepts input_audio file parts for voice requests.
+      // Chat Completions, not the SDK's default Responses API: it is the
+      // broadly-compatible endpoint for the GPT models in the catalogue.
       const openai = createOpenAI({ apiKey: key, ...fetchOpt });
       this.providerCache = (modelId: string) => openai.chat(modelId);
     } else {
