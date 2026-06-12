@@ -50,4 +50,14 @@ describe('design-token guard', () => {
       `Raw color literals found — use a ui-kit token or a var(--…) custom property:\n${offenders.join('\n')}\n`,
     ).toEqual([]);
   });
+
+  // The canonical token values live in the design base (design/claude-design/
+  // tokens.json) so they survive a full src/ regeneration; ui-kit ships a
+  // generated copy it can import as a self-contained package. They must match —
+  // run `bun run sync:tokens` after editing the master.
+  it('ui-kit tokens.json is an exact copy of the design-base master', async () => {
+    const master = await Bun.file('../design/claude-design/tokens.json').text();
+    const copy = await Bun.file('packages/ui-kit/tokens.json').text();
+    expect(copy, 'ui-kit/tokens.json is stale — run `bun run sync:tokens`').toBe(master);
+  });
 });
