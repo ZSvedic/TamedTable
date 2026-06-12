@@ -7,5 +7,6 @@
 
   { "id": "claude-opus-4-8",       "name": "Opus 4.8",         "desc": "Most capable — best for tricky requests.",           "provider": "anthropic", "voiceInput": false },
   { "id": "claude-sonnet-4-6",     "name": "Sonnet 4.6",       "desc": "Balanced — the default.",                            "provider": "anthropic", "voiceInput": false, "default": true },
-  { "id": "claude-haiku-4-5",      "name": "Haiku 4.5",        "desc": "Fastest and cheapest.",                              "provider": "anthropic", "voiceInput": false, "secondaryDefault": true }
+  { "id": "claude-sonnet-4-5",     "name": "Sonnet 4.5",       "desc": "Previous Sonnet — terse and reliable for per-row cells.", "provider": "anthropic", "voiceInput": false, "secondaryDefault": true },
+  { "id": "claude-haiku-4-5",      "name": "Haiku 4.5",        "desc": "Fastest and cheapest.",                              "provider": "anthropic", "voiceInput": false }
 ]

@@ -26,7 +26,8 @@ stored preferences:
   anthropicKey: "sk-ant-…",
   geminiKey: null,
   openaiKey: null,
-  model: "claude-sonnet-4-6"
+  model: "claude-sonnet-4-6",
+  cellModel: "claude-sonnet-4-5"
 }
 ```
 
@@ -38,7 +39,8 @@ When the user switches to Gemini in the settings panel:
   anthropicKey: null,
   geminiKey: "AIza…",
   openaiKey: null,
-  model: "gemini-3.5-flash"
+  model: "gemini-3.5-flash",
+  cellModel: "gemini-3.5-flash"
 }
 ```
 
@@ -57,8 +59,10 @@ Each entry carries:
 - `desc` — one-line description shown in the chooser
 - `provider` — `gemini` | `openai` | `anthropic`
 - `voiceInput` — whether the model accepts audio input
-- `default` — at most one entry per provider; the model `defaultModel`
-  returns for that provider
+- `default` — at most one entry per provider; the **primary** model
+  `defaultModel` returns for that provider
+- `secondaryDefault` — at most one entry per provider; the **secondary**
+  (per-row cell) model `defaultCellModel` returns for that provider
 
 ## Config resolution
 
@@ -69,9 +73,11 @@ env always wins. The rules:
 2. Else if `OPENAI_API_KEY` is set in env → provider is openai, openaiKey is that value.
 3. Else if `ANTHROPIC_API_KEY` is set in env → provider is anthropic, anthropicKey is that value.
 4. Else use `stored.provider`, falling back to "anthropic".
-5. `TAMEDTABLE_MODEL` in env overrides model from stored.
+5. `TAMEDTABLE_MODEL` in env overrides the primary model from stored.
 6. Keys not present in env keep their stored values (or null).
-7. The final model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`.
+7. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`.
+8. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`.
+9. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't, replace it with `defaultCellModel(provider)`.
 
 When multiple provider keys are set in env, gemini wins, then openai, then anthropic.
 
@@ -79,6 +85,11 @@ When multiple provider keys are set in env, gemini wins, then openai, then anthr
 for that provider (falling back to the provider's first entry). Currently:
 `claude-sonnet-4-6` for anthropic, `gemini-3.5-flash` for gemini, `gpt-5.5`
 for openai.
+
+`defaultCellModel(provider)` returns the catalogue entry flagged
+`secondaryDefault: true` for that provider (falling back to that provider's
+primary default). Currently: `claude-sonnet-4-5` for anthropic,
+`gemini-3.5-flash` for gemini, `gpt-5.4-mini` for openai.
 
 `providerFor(modelId)` returns:
 
@@ -109,8 +120,9 @@ served from the same origin).
 ## Reading from env
 
 `readConfigFromEnv()` reads `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, and `TAMEDTABLE_MODEL` from `process.env` and returns them
-as a plain Record suitable for passing as `resolveConfig`'s first argument. It
+`OPENAI_API_KEY`, `TAMEDTABLE_MODEL`, and `TAMEDTABLE_CELL_MODEL` from
+`process.env` and returns them as a plain Record suitable for passing as
+`resolveConfig`'s first argument. It
 is in a separate `env.ts` export so environments without `process` (browser
 code) never import it. Call it only on Node/Bun surfaces.
 
@@ -125,19 +137,26 @@ and forwards the chosen key to the headless runner. The help text mentions
 
 `ModelChooser` is the provider accordion UI: three cards — Google, OpenAI,
 Anthropic — each with an API-key field (masked, with an eye toggle to reveal
-it) and that provider's models as a radio list. It lives in its own entry
-point (`@tamedtable/model-config/ModelChooser`) so the main entry stays
-React-free; `react` is a peer dependency.
+it) and that provider's models as a **two-column primary/secondary radio
+matrix**. The Primary column picks the patch-turn model (and the one that
+carries voice input); the Secondary column picks the per-row cell model. Both
+are same-provider. A single generic explainer of the two roles sits above the
+cards (not repeated per card). A per-model `🎙 voice` tag shows only on
+voice-capable models. It lives in its own entry point
+(`@tamedtable/model-config/ModelChooser`) so the main entry stays React-free;
+`react` is a peer dependency.
 
 The component is pure — props in, callbacks out — and holds no state except
 the per-provider reveal toggle. It never touches storage or the network:
 
 - `models` — the catalogue to render (usually `ALL_MODELS`)
-- `provider`, `model`, `keys` — the current selection and per-provider keys
+- `provider`, `keys` — the current provider and per-provider keys
+- `primaryModel`, `secondaryModel` — the two selected model ids
 - `expandedProvider` — which card shows its body, or null
 - `onProviderClick(p)` — a card header was clicked
 - `onKeyChange(p, value)` — the user typed in a key field
-- `onModelSelect(modelId)` — the user picked a model
+- `onSelectModel(role, modelId)` — the user picked a model for a role
+  (`"primary"` or `"secondary"`)
 
 The host owns all state and semantics. In the web app, `SettingsPanel` binds
 the props to `WebController` (clicking a card expands it and selects the
@@ -181,4 +200,6 @@ setting the variables on any wrapping element: `--mc-ink`, `--mc-ink3`,
 
 For tests, each interactive element carries a stable data attribute:
 `data-mc-card`, `data-mc-key`, `data-mc-reveal` (all keyed by provider id),
-and `data-mc-model` (keyed by model id).
+`data-mc-model` (the matrix row, keyed by model id), and the two role radios
+`data-mc-primary` / `data-mc-secondary` (each keyed by model id, plus
+`data-mc-role`).

@@ -4,6 +4,7 @@ import { strict as assert } from 'node:assert';
 import {
   resolveConfig,
   defaultModel,
+  defaultCellModel,
   providerFor,
   ALL_MODELS,
   type ResolvedConfig,
@@ -117,6 +118,26 @@ When(
   },
 );
 
+When(
+  'resolveConfig is called with env TAMEDTABLE_CELL_MODEL={string} and stored cellModel {string}',
+  function (this: ModelConfigWorld, envCellModel: string, storedCellModel: string) {
+    ctx(this).resolved = resolveConfig(
+      { TAMEDTABLE_CELL_MODEL: envCellModel },
+      { cellModel: storedCellModel },
+    );
+  },
+);
+
+When(
+  'resolveConfig is called with stored provider {string} and cellModel {string}',
+  function (this: ModelConfigWorld, provider: string, cellModel: string) {
+    ctx(this).resolved = resolveConfig({}, {
+      provider: provider as Provider,
+      cellModel,
+    });
+  },
+);
+
 Then(
   'the resolved provider is {string}',
   function (this: ModelConfigWorld, expected: string) {
@@ -128,6 +149,13 @@ Then(
   'the resolved model is {string}',
   function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.model, expected);
+  },
+);
+
+Then(
+  'the resolved cellModel is {string}',
+  function (this: ModelConfigWorld, expected: string) {
+    assert.equal(ctx(this).resolved?.cellModel, expected);
   },
 );
 
@@ -188,6 +216,13 @@ When(
   'defaultModel is called with {string}',
   function (this: ModelConfigWorld, provider: string) {
     ctx(this).modelResult = defaultModel(provider as Provider);
+  },
+);
+
+When(
+  'defaultCellModel is called with {string}',
+  function (this: ModelConfigWorld, provider: string) {
+    ctx(this).modelResult = defaultCellModel(provider as Provider);
   },
 );
 

@@ -12,8 +12,12 @@ export interface ModelDef {
   desc: string;
   provider: Provider;
   voiceInput: boolean;
-  /** At most one entry per provider — the model defaultModel() returns. */
+  /** At most one entry per provider — the model defaultModel() returns as the
+   *  primary (patch-turn) default. */
   default?: boolean;
+  /** At most one entry per provider — the model defaultCellModel() returns as
+   *  the secondary (per-row cell) default. */
+  secondaryDefault?: boolean;
 }
 
 export interface ResolvedConfig {
@@ -21,7 +25,10 @@ export interface ResolvedConfig {
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
+  /** Primary model: writes the spec patch each turn (and carries voice input). */
   model: string;
+  /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
+  cellModel: string;
 }
 
 export interface StoragePort {
@@ -38,11 +45,19 @@ export const ALL_MODELS: readonly ModelDef[] = catalogue as ModelDef[];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-/** Default patch-turn model for a given provider: the catalogue entry flagged
- *  `default: true`, falling back to the provider's first entry. */
+/** Default patch-turn (primary) model for a given provider: the catalogue
+ *  entry flagged `default: true`, falling back to the provider's first entry. */
 export function defaultModel(provider: Provider): string {
   const entries = ALL_MODELS.filter((m) => m.provider === provider);
   return (entries.find((m) => m.default) ?? entries[0]!).id;
+}
+
+/** Default per-row cell (secondary) model for a given provider: the catalogue
+ *  entry flagged `secondaryDefault: true`, falling back to that provider's
+ *  primary default. Always same-provider — cell calls never cross providers. */
+export function defaultCellModel(provider: Provider): string {
+  const entries = ALL_MODELS.filter((m) => m.provider === provider);
+  return (entries.find((m) => m.secondaryDefault) ?? entries.find((m) => m.default) ?? entries[0]!).id;
 }
 
 /** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids. */
@@ -63,6 +78,8 @@ export function providerFor(modelId: string): Provider {
  *   4. stored.provider (fallback: "anthropic")
  *   5. TAMEDTABLE_MODEL in env overrides stored model
  *   6. Final model must belong to resolved provider; if not, use defaultModel
+ *   7. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
+ *      model must also belong to the provider, else use defaultCellModel
  */
 export function resolveConfig(
   env: Record<string, string | undefined>,
@@ -90,7 +107,7 @@ export function resolveConfig(
     provider = stored.provider ?? 'anthropic';
   }
 
-  // Model: env wins, then stored, then provider default
+  // Primary model: env wins, then stored, then provider default
   let model = env['TAMEDTABLE_MODEL'] ?? stored.model ?? defaultModel(provider);
 
   // Guard: model must belong to resolved provider
@@ -98,5 +115,13 @@ export function resolveConfig(
     model = defaultModel(provider);
   }
 
-  return { provider, anthropicKey, geminiKey, openaiKey, model };
+  // Secondary (cell) model: env wins, then stored, then provider cell default.
+  // Same-provider invariant — a stored cell model from another provider is
+  // coerced to this provider's cell default.
+  let cellModel = env['TAMEDTABLE_CELL_MODEL'] ?? stored.cellModel ?? defaultCellModel(provider);
+  if (providerFor(cellModel) !== provider) {
+    cellModel = defaultCellModel(provider);
+  }
+
+  return { provider, anthropicKey, geminiKey, openaiKey, model, cellModel };
 }

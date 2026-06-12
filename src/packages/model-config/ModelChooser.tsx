@@ -1,23 +1,32 @@
 // #ModelConfig #ProviderSelect
 // ModelChooser — the provider accordion: one card per provider with a masked
-// API-key input (eye toggle to reveal) and that provider's models as a radio
-// list. Pure component: props in, callbacks out; the host owns all state
-// except the per-provider reveal toggles. Styled only via --mc-* CSS custom
-// properties, each with a presentable light default, so it renders standalone
-// and the host injects its theme by setting the variables on a wrapper.
+// API-key input (eye toggle to reveal) and that provider's models as a
+// two-column primary/secondary radio matrix. The Primary radio picks the
+// patch-turn model (and carries voice input); the Secondary radio picks the
+// per-row cell model. Both are same-provider. A single generic explainer sits
+// above the cards. Pure component: props in, callbacks out; the host owns all
+// state except the per-provider reveal toggles. Styled only via --mc-* CSS
+// custom properties, each with a presentable light default, so it renders
+// standalone and the host injects its theme by setting the variables on a
+// wrapper.
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import { useState, type ReactNode } from 'react';
 import type { ModelDef, Provider } from './index.ts';
 
+export type ModelRole = 'primary' | 'secondary';
+
 export interface ModelChooserProps {
   models: readonly ModelDef[];
   provider: Provider;
-  model: string;
+  /** Primary (patch-turn) model id. */
+  primaryModel: string;
+  /** Secondary (per-row cell) model id. */
+  secondaryModel: string;
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
   onProviderClick: (p: Provider) => void;
   onKeyChange: (p: Provider, value: string) => void;
-  onModelSelect: (modelId: string) => void;
+  onSelectModel: (role: ModelRole, modelId: string) => void;
 }
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
@@ -105,12 +114,13 @@ const eyeIcon = (open: boolean): ReactNode => (
 export function ModelChooser({
   models,
   provider,
-  model,
+  primaryModel,
+  secondaryModel,
   keys,
   expandedProvider,
   onProviderClick,
   onKeyChange,
-  onModelSelect,
+  onSelectModel,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
     gemini: false, openai: false, anthropic: false,
@@ -142,25 +152,28 @@ export function ModelChooser({
     </span>
   );
 
-  const voiceTag = (voice: boolean): ReactNode => (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 2,
-        padding: '1px 6px',
-        borderRadius: 10,
-        fontFamily: fontUi,
-        fontSize: 11.5,
-        background: voice ? okSoft : surface3,
-        color: voice ? ok : ink3,
-        flexShrink: 0,
-        marginLeft: 8,
-      }}
-    >
-      {voice ? '🎙 voice' : 'no voice'}
-    </span>
-  );
+  // Per-model tag: shown only for voice-capable models. Non-voice models carry
+  // no tag (so OpenAI's text-only GPT models show none at all).
+  const voiceTag = (voice: boolean): ReactNode =>
+    voice ? (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 2,
+          padding: '1px 6px',
+          borderRadius: 10,
+          fontFamily: fontUi,
+          fontSize: 11.5,
+          background: okSoft,
+          color: ok,
+          flexShrink: 0,
+          marginLeft: 8,
+        }}
+      >
+        🎙 voice
+      </span>
+    ) : null;
 
   const radioKnob = (selected: boolean): ReactNode => (
     <span
@@ -175,6 +188,47 @@ export function ModelChooser({
         boxShadow: selected ? `inset 0 0 0 2.5px ${surface}` : 'none',
       }}
     />
+  );
+
+  const ROLE_COL = 64;
+
+  const roleHead = (label: string): ReactNode => (
+    <span
+      style={{
+        width: ROLE_COL,
+        textAlign: 'center',
+        fontFamily: fontUi,
+        fontSize: 10.5,
+        fontWeight: 600,
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
+        color: ink3,
+      }}
+    >
+      {label}
+    </span>
+  );
+
+  const roleCell = (role: ModelRole, modelId: string, selected: boolean): ReactNode => (
+    <button
+      type="button"
+      data-mc-role={role}
+      {...{ [`data-mc-${role}`]: modelId }}
+      aria-pressed={selected}
+      title={`Use ${modelId} as the ${role} model`}
+      onClick={() => onSelectModel(role, modelId)}
+      style={{
+        width: ROLE_COL,
+        display: 'flex',
+        justifyContent: 'center',
+        background: 'transparent',
+        border: 0,
+        padding: 0,
+        cursor: 'pointer',
+      }}
+    >
+      {radioKnob(selected)}
+    </button>
   );
 
   const cardBody = (meta: ProviderMeta): ReactNode => {
@@ -233,39 +287,41 @@ export function ModelChooser({
           </div>
         </div>
 
-        {/* Model list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
-          {providerModels.map((m) => {
-            const selected = m.id === model;
-            return (
-              <label
-                key={m.id}
-                data-mc-model={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 6px',
-                  borderRadius: radiusSm,
-                  cursor: 'pointer',
-                  background: selected ? accentSoft : 'transparent',
-                }}
-              >
-                <input
-                  type="radio"
-                  name="mc-model"
-                  checked={selected}
-                  onChange={() => onModelSelect(m.id)}
-                  style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-                />
-                {radioKnob(selected)}
-                <span style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1 }}>
-                  {m.id}
-                </span>
-                {voiceTag(m.voiceInput)}
-              </label>
-            );
-          })}
+        {/* Model matrix: a Primary and a Secondary radio column per model. */}
+        <div style={{ marginTop: 8 }}>
+          {/* Column headers */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px 4px' }}>
+            {roleHead('Primary')}
+            {roleHead('Secondary')}
+            <span style={{ flex: 1 }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {providerModels.map((m) => {
+              const isPrimary = m.id === primaryModel;
+              const isSecondary = m.id === secondaryModel;
+              return (
+                <div
+                  key={m.id}
+                  data-mc-model={m.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '7px 6px',
+                    borderRadius: radiusSm,
+                    background: isPrimary ? accentSoft : 'transparent',
+                  }}
+                >
+                  {roleCell('primary', m.id, isPrimary)}
+                  {roleCell('secondary', m.id, isSecondary)}
+                  <span style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1 }}>
+                    {m.id}
+                  </span>
+                  {voiceTag(m.voiceInput)}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -275,6 +331,21 @@ export function ModelChooser({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Generic role explainer — once, above the provider cards. */}
+      <p
+        style={{
+          margin: 0,
+          fontFamily: fontUi,
+          fontSize: 11.5,
+          lineHeight: 1.45,
+          color: ink3,
+        }}
+      >
+        <b style={{ color: ink }}>Primary</b> writes the spec patch each turn and
+        handles voice input. <b style={{ color: ink }}>Secondary</b> fills per-row
+        AI cells — pick a cheaper model there for bulk work. Both use the selected
+        provider.
+      </p>
       {PROVIDERS.map((meta) => {
         const isSelected = provider === meta.id;
         const isExpanded = expandedProvider === meta.id;

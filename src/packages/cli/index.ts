@@ -955,6 +955,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
     const envKey = cfg.provider === 'gemini' ? cfg.geminiKey : cfg.anthropicKey;
     if (envKey) opts = { ...opts, apiKey: envKey };
     if (!opts.model) opts = { ...opts, model: cfg.model };
+    if (!opts.cellModel) opts = { ...opts, cellModel: cfg.cellModel };
   }
   const runner = createCliRunner({ ...opts, quiet: false, stdout }) as CliRunnerImpl;
   try {

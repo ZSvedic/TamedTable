@@ -712,11 +712,12 @@ panel mounts.
 Each card header (always visible, clickable) shows a radio knob, the provider
 name and tagline, and a voice badge on the right edge. The voice badge is green
 with a microphone icon when the provider supports voice input, or grey "No voice
-input" when it does not. Google and OpenAI show the green badge; Anthropic shows
+input" when it does not. Google shows the green badge; OpenAI and Anthropic show
 grey.
 
 Text requests route through Anthropic regardless of the selected provider — in
-this version Google and OpenAI are wired only for voice input, not text. A
+this version Google is wired only for voice input, not text, and OpenAI is not
+wired for chat at all (its key can still be entered for use elsewhere). A
 natural-language chat request therefore needs an Anthropic API key: when none is
 set the request never fires and a toast reads `Text requests require an Anthropic
 API key — open Settings and add one.` So the requirement reads clearly even while
@@ -726,13 +727,17 @@ is required for text requests.
 When a card is open its body shows an API key field with a show/hide toggle, a
 grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
 .env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`
-respectively), and a list of that provider's models. Each model row has a radio
-knob and a green "🎙 voice" or grey "no voice" tag indicating voice support.
+respectively), and that provider's models as a two-column primary/secondary
+radio matrix: the **Primary** column picks the patch-turn model (and the one
+that carries voice input), the **Secondary** column picks the per-row cell
+model. A single generic explainer of the two roles sits above the cards. A model
+row carries a green "🎙 voice" tag only when it supports voice.
 
 Changes apply immediately — selecting a provider card calls
-`controller.setConfig({ provider })` and selecting a model calls
-`controller.setConfig({ model })`. The footer has only a "Close" button; there
-is no separate "Save" button. Changing the model rebuilds the engine and replays
+`controller.setConfig({ provider })`, and picking a Primary or Secondary model
+calls `controller.setConfig({ model })` or `controller.setConfig({ cellModel })`
+respectively. The footer has only a "Close" button; there
+is no separate "Save" button. Changing a model rebuilds the engine and replays
 the current transformations against the source, so the table on screen is
 preserved and the new model drives the next request. Full detail in
 [spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
@@ -790,7 +795,7 @@ spoken request.
 
 A microphone button sits in the chat sidebar, next to the send control. It is
 shown whenever the selected model accepts voice input (the catalogue's
-`voiceInput` flag — every Gemini model and OpenAI's audio model) **and** the
+`voiceInput` flag — every Gemini model) **and** the
 selected provider's API key is set. With a text-only model selected, or with
 no key for the provider, the button is hidden. The recording is converted to
 WAV in the browser before sending, the one audio format every voice-capable

@@ -7,7 +7,7 @@
 // Spec: spec/packages/model-config/behavior.md § Demo page.
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ALL_MODELS, defaultModel, resolveConfig, type Provider } from './index.ts';
+import { ALL_MODELS, defaultModel, defaultCellModel, resolveConfig, type Provider } from './index.ts';
 import { ModelChooser } from './ModelChooser.tsx';
 import { readStoredConfig, writeStoredConfig } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
@@ -22,6 +22,7 @@ function Demo() {
   const stored = useRef(readStoredConfig()).current;
   const [provider, setProvider] = useState<Provider>(stored.provider ?? 'anthropic');
   const [model, setModel] = useState(stored.model ?? defaultModel(stored.provider ?? 'anthropic'));
+  const [cellModel, setCellModel] = useState(stored.cellModel ?? defaultCellModel(stored.provider ?? 'anthropic'));
   const [keys, setKeys] = useState<Record<Provider, string>>({
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',
@@ -32,6 +33,7 @@ function Demo() {
   const resolved = resolveConfig({}, {
     provider,
     model,
+    cellModel,
     geminiKey: keys.gemini || null,
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
@@ -40,7 +42,7 @@ function Demo() {
   // Persist every change to the blob the main app reads (and vice versa).
   useEffect(() => {
     writeStoredConfig(resolved);
-  }, [resolved.provider, resolved.model, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey]);
+  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey]);
 
   // ── Test call state ───────────────────────────────────────────────────────
 
@@ -131,7 +133,8 @@ function Demo() {
       <ModelChooser
         models={ALL_MODELS}
         provider={resolved.provider}
-        model={resolved.model}
+        primaryModel={resolved.model}
+        secondaryModel={resolved.cellModel}
         keys={keys}
         expandedProvider={expanded}
         onProviderClick={(p) => {
@@ -146,7 +149,7 @@ function Demo() {
           }
         }}
         onKeyChange={(p, value) => setKeys((prev) => ({ ...prev, [p]: value }))}
-        onModelSelect={(id) => setModel(id)}
+        onSelectModel={(role, id) => (role === 'primary' ? setModel(id) : setCellModel(id))}
       />
 
       <h2>resolveConfig({'{}'}, stored)</h2>

@@ -76,6 +76,23 @@ Feature: Model config
       When resolveConfig is called with env TAMEDTABLE_MODEL="claude-haiku-4-5" and stored model "claude-opus-4-8"
       Then the resolved model is "claude-haiku-4-5"
 
+  Rule: resolveConfig resolves the secondary (cell) model
+
+    @headless
+    Scenario: Empty config yields the provider's cell default
+      When resolveConfig is called with empty env and empty stored
+      Then the resolved cellModel is "claude-sonnet-4-5"
+
+    @headless
+    Scenario: TAMEDTABLE_CELL_MODEL in env overrides stored cellModel
+      When resolveConfig is called with env TAMEDTABLE_CELL_MODEL="claude-haiku-4-5" and stored cellModel "claude-sonnet-4-6"
+      Then the resolved cellModel is "claude-haiku-4-5"
+
+    @headless
+    Scenario: A cross-provider stored cellModel is coerced to the provider cell default
+      When resolveConfig is called with stored provider "openai" and cellModel "claude-haiku-4-5"
+      Then the resolved cellModel is "gpt-5.4-mini"
+
   Rule: providerFor
 
     @headless
@@ -90,7 +107,7 @@ Feature: Model config
 
     @headless
     Scenario: providerFor returns openai for a gpt-* id
-      When providerFor is called with "gpt-audio"
+      When providerFor is called with "gpt-5.4-mini"
       Then the result is "openai"
 
   Rule: defaultModel
@@ -110,6 +127,18 @@ Feature: Model config
       When defaultModel is called with "openai"
       Then the result is "gpt-5.5"
 
+  Rule: defaultCellModel
+
+    @headless
+    Scenario: defaultCellModel for anthropic returns claude-sonnet-4-5
+      When defaultCellModel is called with "anthropic"
+      Then the result is "claude-sonnet-4-5"
+
+    @headless
+    Scenario: defaultCellModel for openai returns gpt-5.4-mini
+      When defaultCellModel is called with "openai"
+      Then the result is "gpt-5.4-mini"
+
   Rule: ALL_MODELS catalogue
 
     @headless
@@ -124,10 +153,6 @@ Feature: Model config
     @headless
     Scenario: ALL_MODELS entries each have a voiceInput boolean
       Then every ALL_MODELS entry has a voiceInput boolean field
-
-    @headless
-    Scenario: gpt-audio has voiceInput true
-      Then the model "gpt-audio" has voiceInput true
 
     @headless
     Scenario: gpt-5.5 has voiceInput false
@@ -162,11 +187,18 @@ Feature: Model config
       And the demo shows resolved provider "gemini"
 
     @web
-    Scenario: Picking a model updates the resolved config
+    Scenario: Picking a primary model updates the resolved config
       Given the model-config demo page
       When the user clicks the "Google" provider card
-      And the user picks the model "gemini-3.1-pro-preview"
+      And the user picks the primary model "gemini-3.1-pro-preview"
       Then the demo shows resolved model "gemini-3.1-pro-preview"
+
+    @web
+    Scenario: Picking a secondary model updates the resolved cell model
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      And the user picks the secondary model "gemini-3.1-pro-preview"
+      Then the demo shows resolved cellModel "gemini-3.1-pro-preview"
 
     @web
     Scenario: A typed API key stays masked until the eye toggle reveals it

@@ -51,7 +51,7 @@ Optional env vars and defaults if you omit them:
 | Var | Default | What it does |
 |---|---|---|
 | `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. |
-| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Model that fills in per-row LLM cells. Override with `claude-haiku-4-5` for cheaper/faster runs at some cost in per-cell fidelity. |
+| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Secondary model that fills in per-row LLM cells. Override with `claude-haiku-4-5` for cheaper/faster runs at some cost in per-cell fidelity. Must share the primary model's provider. |
 | `TAMEDTABLE_RPM` | `40` | Per-process request-per-minute cap. The Anthropic org-wide ceiling is 50. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests that fire concurrently. Orthogonal to batch size — total parallel rows = batch × chunk. |

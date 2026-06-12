@@ -122,12 +122,17 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           <ModelChooser
             models={ALL_MODELS}
             provider={cfg.provider}
-            model={cfg.model}
+            primaryModel={cfg.model}
+            secondaryModel={cfg.cellModel}
             keys={keys}
             expandedProvider={controller.expandedProvider}
             onProviderClick={(p) => void controller.clickProviderCard(p)}
             onKeyChange={handleKeyChange}
-            onModelSelect={(modelId) => void controller.setConfig({ model: modelId })}
+            onSelectModel={(role, modelId) =>
+              void controller.setConfig(
+                role === 'primary' ? { model: modelId } : { cellModel: modelId },
+              )
+            }
           />
         </div>
 

@@ -59,6 +59,7 @@ export class EngineManager {
         // the API response, which userFacingMessage then describes clearly).
         apiKey: this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY,
         model: this.host.config.model,
+        cellModel: this.host.config.cellModel,
         fetch: this.makeFetch(),
         batchSize: this.host.opts.batchSize,
         chunkSize: this.host.opts.chunkSize,

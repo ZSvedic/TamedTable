@@ -51,7 +51,8 @@ export class ConfigManager {
    *  model changed and a file is loaded. */
   async setConfig(partial: Partial<ResolvedConfig>): Promise<void> {
     const next = resolveConfig({}, { ...this.host.config, ...partial });
-    const modelChanged = next.model !== this.host.config.model;
+    const modelChanged =
+      next.model !== this.host.config.model || next.cellModel !== this.host.config.cellModel;
     this.host.config = next;
     writeStoredConfig(next);
     this.host.savedLabel = null;
