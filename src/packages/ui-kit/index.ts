@@ -17,7 +17,7 @@
 //   White   · #FFFFFF              icon empty cells, panel surface
 //   Ground  · Mist       #ECF0F7   cool page background
 
-import tokens from './tokens.json';
+import tokens from './tokens.json' with { type: 'json' };
 
 /** Brand-literal hex constants — used verbatim by the pixel mark. */
 export const brand = tokens.brand;
