@@ -81,7 +81,7 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
     i > 0 && arr[i - 1] === '--output' ? output(tok) : tok
   );
   // Capture stdout so later "stdout contains …" steps can assert against it;
-  // do NOT throw on non-zero exit — V1-rejection scenarios assert exit 2.
+  // do NOT throw on non-zero exit — rejection scenarios assert exit 2.
   const chunks: string[] = [];
   const stream = {
     write: (s: string | Buffer) => { chunks.push(s.toString()); return true; },

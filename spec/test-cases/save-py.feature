@@ -1,5 +1,5 @@
 # #PyExport
-# V2.5: :save-py — export the current flow as a standalone Python script.
+# :save-py — export the current flow as a standalone Python script.
 Feature: Export a flow as a Python script
 
   Rule: :save-py writes a runnable Python script for a deterministic flow

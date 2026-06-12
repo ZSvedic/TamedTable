@@ -11,7 +11,7 @@ to tune any of these prompts — `src/` does not contain the text directly.
   must end with. Appears verbatim inside `SYSTEM_PROMPT` few-shots; exported
   separately for spec-driven tools.
 - `PYTHON_EXPORT_PROMPT` — sent on the single model call `:save-py` makes to
-  translate a flow into a standalone Python script (V2.5).
+  translate a flow into a standalone Python script.
 
 ## SYSTEM_PROMPT
 

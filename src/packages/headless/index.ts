@@ -87,7 +87,7 @@ export interface HeadlessRunner {
   currentRows(): Row[];
   currentSpec(): Spec;
   exportAs(path: string): Promise<void>;
-  /** V2.5 — one model call: translate the current flow into a standalone
+  /** One model call: translate the current flow into a standalone
    *  Python script. Returns the script source. */
   exportPython(): Promise<string>;
 }
@@ -299,7 +299,7 @@ function syncColumnsToRows(spec: Spec, rows: Row[]): Spec {
 
 // #FilterRows #Dedupe
 function applyFilter(rows: Row[], t: Extract<Transformation, { kind: 'filter' }>): Row[] {
-  if (!('js' in t.pred)) throw new Error('filter: LLM predicates not supported in V1');
+  if (!('js' in t.pred)) throw new Error('filter: LLM predicates not supported');
   const fn = compileJs(t.pred.js);
   return rows.filter((row, i) => Boolean(fn(row, i, rows)));
 }
@@ -327,7 +327,7 @@ function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'mutate' 
   });
 }
 
-// ── V2 transformations ────────────────────────────────────────────────────
+// ── Aggregate, reshape, lookup & validation transformations ─────────────────
 
 // #Validate
 function applyValidateJs(rows: Row[], t: Extract<Transformation, { kind: 'validate' }>): Row[] {
@@ -387,7 +387,9 @@ function applyGroupJs(rows: Row[], t: Extract<Transformation, { kind: 'group' }>
         const fn = new Function('rows', `return (${expr.js.trim()});`) as (slice: Row[]) => unknown;
         out[outCol] = fn(slice);
       } else if ('sql' in expr) {
-        throw new Error('group: {sql} aggregates require V2 SQL surface (not yet implemented)');
+        // Unreachable: a {sql} aggregate routes through applyGroup's async path,
+        // not this JS-only path. Kept as a defensive guard.
+        throw new Error('group: {sql} aggregate must run on the async path');
       }
     }
     return out;
@@ -1069,7 +1071,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       }
       return 0;
     });
-    // V3 top-N: a `limit` keeps only the first N rows after ordering.
+    // top-N: a `limit` keeps only the first N rows after ordering.
     const ordered = indices.map((i) => rows[i]!);
     return t.limit !== undefined ? ordered.slice(0, t.limit) : ordered;
   }
@@ -1105,7 +1107,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
 
     // Emit one output row per group. JS aggregates run a compiled function
-    // over the group's slice; {sql} aggregates (V3) run a real GROUP BY-style
+    // over the group's slice; {sql} aggregates run a real GROUP BY-style
     // query per group through DuckDB with the slice registered as relation `g`.
     const out: Row[] = [];
     for (let gi = 0; gi < order.length; gi++) {
@@ -1130,7 +1132,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return out;
   }
 
-  /** Dispatches a split: an {llm} `on` runs the V3 async path; literal,
+  /** Dispatches a split: an {llm} `on` runs the async path; literal,
    *  regex, and {js} separators stay on the synchronous path. */
   private async applySplitT(
     rows: Row[],
@@ -1143,7 +1145,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return applySplit(rows, t);
   }
 
-  /** V3 LLM-backed split: render the {llm} `on` template per row, ask the
+  /** LLM-backed split: render the {llm} `on` template per row, ask the
    *  cell model to break the cell into parts, then pad/concat to `into`'s
    *  arity exactly as a literal or regex split would. */
   private async applySplitLlm(
@@ -1227,7 +1229,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   // #DuckDB
   /** Runs a DuckDB query, calling `conn.interrupt()` if the signal aborts
-   *  while the query is in flight (V3 SQL cancellation). An interrupted query
+   *  while the query is in flight (SQL cancellation). An interrupted query
    *  rejects; this surfaces it as the runner's standard cancelled error so
    *  the request loop rolls back the half-applied transformation. */
   private async runInterruptibleSql<T>(run: () => Promise<T>, signal: AbortSignal | undefined): Promise<T> {
