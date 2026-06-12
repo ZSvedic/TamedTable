@@ -12,6 +12,8 @@ The human-authored contract for TamedTable: what the system does, the types it e
 | [packages/](packages/README.md) | Per-package specs — layout rules in its README |
 | [test-cases/](test-cases/) | Gherkin features + fixtures, named as below |
 
+The structural rule: library packages (self-contained, demo-able) get per-package specs under [packages/](packages/README.md); app surfaces (`cli`, `headless`, `web`) share [behavior.md](behavior.md) + [test-cases/](test-cases/) because one scenario must prove all three surfaces.
+
 ## Test-case fixtures and naming
 
 App-behavior scenarios in [test-cases/](test-cases/) test the TamedTable app through its surfaces (CLI, headless, web). Files per use case:
