@@ -19,7 +19,7 @@ const PKG_DIR = import.meta.dirname;
 // Same scan as tests/demo.smoke.test.ts: a Playwright-managed Chromium under
 // $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright,
 // newest build first, whatever the build number.
-function findChromium(): string | undefined {
+function findChromium(chromium: { executablePath(): string }): string | undefined {
   const roots = [
     process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers',
     join(homedir(), '.cache', 'ms-playwright'),
@@ -37,6 +37,12 @@ function findChromium(): string | undefined {
       }
     }
   }
+  // macOS/Windows: the scan above only knows the Linux layout and cache dir,
+  // so fall back to Playwright's own resolved path, correct for the host platform.
+  try {
+    const fallback = chromium.executablePath();
+    if (fallback && existsSync(fallback)) return fallback;
+  } catch { /* Playwright cannot resolve a path — fall through to undefined */ }
   return undefined;
 }
 
@@ -53,7 +59,7 @@ async function startSession(): Promise<DemoSession> {
   const dist = await mkdtemp(join(tmpdir(), 'cp-demo-'));
   await promisify(execFile)('bun', ['build', 'demo.html', '--outdir', dist], { cwd: PKG_DIR });
   const { chromium } = await import('playwright');
-  const executablePath = findChromium();
+  const executablePath = findChromium(chromium);
   if (!executablePath) {
     throw new Error(
       'chat-panel steps: no Chromium found under $PLAYWRIGHT_BROWSERS_PATH, ' +
