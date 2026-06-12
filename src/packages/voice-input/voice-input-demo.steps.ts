@@ -1,4 +1,4 @@
-// #VoiceInput
+// #VoicePort
 // Step defs for the @web voice-input scenarios. They drive the package's demo
 // page in headless Chromium launched with a FAKE microphone
 // (--use-fake-device-for-media-stream), so the record → stop → WAV round trip

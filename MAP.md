@@ -1,38 +1,38 @@
 # Features
 
-Each row tracks one user-facing feature: where it ships (Headless, CLI, Web), which Gherkin scenario covers it, and the latest test results. Click an ID to find every place in the repo that references it.
+Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and which Gherkin scenario covers it. Click an ID to find every place in the repo that references it.
 
-| Feature | ID | Hdls | CLI | Web | Gherkin | Pass | Fail | Last tested |
-|---|---|---|---|---|---|---|---|---|
-| Batch execute | [#BatchExec](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BatchExec&type=code) | - | ✓ | - | - | - | - | - |
-| Cancellation | [#CancelOp](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CancelOp&type=code) | ✓ | ✓ | ✓ | [cancelation.feature](spec/test-cases/cancelation.feature) | 0 | 3 | 2026-06-11 |
-| CLI flags and discovery | [#CliFlags](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliFlags&type=code) | - | ✓ | - | [cli-flags.feature](spec/test-cases/cli-flags.feature) | 6 | 0 | 2026-06-11 |
-| Column split | [#ColSplit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ColSplit&type=code) | ✓ | ✓ | ✓ | [colsplit.feature](spec/test-cases/colsplit.feature) | 8 | 0 | 2026-06-11 |
-| Data normalization | [#DataNorm](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DataNorm&type=code) | ✓ | ✓ | ✓ | [datanorm.feature](spec/test-cases/datanorm.feature) | 1 | 5 | 2026-06-11 |
-| Debug output | [#DebugOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DebugOut&type=code) | ✓ | ✓ | - | [debug.feature](spec/test-cases/debug.feature) | 3 | 0 | 2026-06-11 |
-| Deduplication | [#Dedupe](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Dedupe&type=code) | ✓ | ✓ | ✓ | [dedupe.feature](spec/test-cases/dedupe.feature) | 1 | 2 | 2026-06-11 |
-| Filter rows | [#FilterRows](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FilterRows&type=code) | ✓ | ✓ | ✓ | [filter.feature](spec/test-cases/filter.feature) | 1 | 2 | 2026-06-11 |
-| Group and aggregate | [#Aggregate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Aggregate&type=code) | ✓ | ✓ | ✓ | [aggregate.feature](spec/test-cases/aggregate.feature) | 6 | 0 | 2026-06-11 |
-| LLM cell placeholders | [#LLMCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LLMCells&type=code) | ✓ | ✓ | ✓ | [placeholders.feature](spec/test-cases/placeholders.feature) | 6 | 0 | 2026-06-11 |
-| Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) | 7 | 0 | 2026-06-11 |
-| Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) | 6 | 0 | 2026-06-11 |
-| Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) | 23 | 0 | 2026-06-11 |
-| Settings panel redesign | [#SettingsCards](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SettingsCards&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 9 | 0 | 2026-06-11 |
-| Python export | [#PyExport](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PyExport&type=code) | ✓ | ✓ | - | [save-py.feature](spec/test-cases/save-py.feature) | 4 | 0 | 2026-06-11 |
-| Record and replay cassettes | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | ✓ | ✓ | - | [cassettes.feature](spec/test-cases/cassettes.feature) | 5 | 0 | 2026-06-11 |
-| REPL commands | [#ReplCmds](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ReplCmds&type=code) | - | ✓ | - | [repl-commands.feature](spec/test-cases/repl-commands.feature) | 37 | 2 | 2026-06-11 |
-| Row and dataset validation | [#Validate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Validate&type=code) | ✓ | ✓ | ✓ | [validate.feature](spec/test-cases/validate.feature) | 6 | 0 | 2026-06-11 |
-| Select columns | [#ColSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ColSelect&type=code) | ✓ | ✓ | ✓ | - | - | - | - |
-| Sort rows | [#SortRows](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SortRows&type=code) | ✓ | ✓ | ✓ | [sort.feature](spec/test-cases/sort.feature) | 3 | 0 | 2026-06-11 |
-| SQL expressions | [#SqlExpr](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SqlExpr&type=code) | ✓ | ✓ | ✓ | [sql.feature](spec/test-cases/sql.feature) | 4 | 6 | 2026-06-11 |
-| Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) | 10 | 0 | 2026-06-11 |
-| Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) | 10 | 0 | 2026-06-11 |
-| Voice input | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) | 8 | 0 | 2026-06-11 |
-| Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) | 28 | 2 | 2026-06-11 |
+| Feature | ID | Hdls | CLI | Web | Gherkin |
+|---|---|---|---|---|---|
+| Batch execute | [#BatchExec](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BatchExec&type=code) | - | ✓ | - | - |
+| Cancellation | [#CancelOp](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CancelOp&type=code) | ✓ | ✓ | ✓ | [cancelation.feature](spec/test-cases/cancelation.feature) |
+| CLI flags and discovery | [#CliFlags](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliFlags&type=code) | - | ✓ | - | [cli-flags.feature](spec/test-cases/cli-flags.feature) |
+| Column split | [#ColSplit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ColSplit&type=code) | ✓ | ✓ | ✓ | [colsplit.feature](spec/test-cases/colsplit.feature) |
+| Data normalization | [#DataNorm](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DataNorm&type=code) | ✓ | ✓ | ✓ | [datanorm.feature](spec/test-cases/datanorm.feature) |
+| Debug output | [#DebugOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DebugOut&type=code) | ✓ | ✓ | - | [debug.feature](spec/test-cases/debug.feature) |
+| Deduplication | [#Dedupe](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Dedupe&type=code) | ✓ | ✓ | ✓ | [dedupe.feature](spec/test-cases/dedupe.feature) |
+| Filter rows | [#FilterRows](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FilterRows&type=code) | ✓ | ✓ | ✓ | [filter.feature](spec/test-cases/filter.feature) |
+| Group and aggregate | [#Aggregate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Aggregate&type=code) | ✓ | ✓ | ✓ | [aggregate.feature](spec/test-cases/aggregate.feature) |
+| LLM cell placeholders | [#LLMCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LLMCells&type=code) | ✓ | ✓ | ✓ | [placeholders.feature](spec/test-cases/placeholders.feature) |
+| Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) |
+| Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) |
+| Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) |
+| Settings panel | [#SettingsCards](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SettingsCards&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
+| Python export | [#PyExport](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PyExport&type=code) | ✓ | ✓ | - | [save-py.feature](spec/test-cases/save-py.feature) |
+| Record and replay cassettes | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | ✓ | ✓ | - | [cassettes.feature](spec/test-cases/cassettes.feature) |
+| REPL commands | [#ReplCmds](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ReplCmds&type=code) | - | ✓ | - | [repl-commands.feature](spec/test-cases/repl-commands.feature) |
+| Row and dataset validation | [#Validate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Validate&type=code) | ✓ | ✓ | ✓ | [validate.feature](spec/test-cases/validate.feature) |
+| Select columns | [#ColSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ColSelect&type=code) | ✓ | ✓ | ✓ | - |
+| Sort rows | [#SortRows](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SortRows&type=code) | ✓ | ✓ | ✓ | [sort.feature](spec/test-cases/sort.feature) |
+| SQL expressions | [#SqlExpr](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SqlExpr&type=code) | ✓ | ✓ | ✓ | [sql.feature](spec/test-cases/sql.feature) |
+| Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) |
+| Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) |
+| Voice input | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) |
+| Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
 
-## Code areas
+## Library packages
 
-Each row is a logical area of the implementation. The ID links to every file that references it.
+Each row is a self-contained library package with its own spec under `spec/packages/<name>/` — see [spec/packages/README.md](spec/packages/README.md) for the layout rules. The ID links to every file that references it.
 
 | Area | ID | Description |
 |---|---|---|
@@ -43,7 +43,14 @@ Each row is a logical area of the implementation. The ID links to every file tha
 | Table view | [#TableView](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TableView&type=code) | Paged table grid with selection, inline edit, column drag-reorder, and the pure pagination model (`src/packages/table-view/`, spec at `spec/packages/table-view/`) |
 | Toolbar | [#Toolbar](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Toolbar&type=code) | Top bar (brand lockup, file readout, action buttons) and the Open-from-URL dialog with sample quick-picks (`src/packages/toolbar/`, spec at `spec/packages/toolbar/`) |
 | UI kit | [#UiKit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23UiKit&type=code) | Brand design tokens plus the primitive React components — `Button`, `Icon`, `SplitButton`, `Toasts`, `ThemeProvider` (`src/packages/ui-kit/`, spec at `spec/packages/ui-kit/`) |
-| Voice recording | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | `VoicePort`, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt` (`src/packages/voice-input/`, spec at `spec/packages/voice-input/`) |
+| Voice recording | [#VoicePort](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoicePort&type=code) | `VoicePort`, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt` (`src/packages/voice-input/`, spec at `spec/packages/voice-input/`) |
+
+## App code areas
+
+Each row is a logical area of the app implementation (core, headless, CLI, web). The ID links to every file that references it.
+
+| Area | ID | Description |
+|---|---|---|
 | Main loop | [#MainLoop](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23MainLoop&type=code) | Top-level execution flow: parse → plan → execute → output |
 | CLI parsing | [#CliParse](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliParse&type=code) | Argument parsing and flag handling |
 | Config and env | [#ConfigEnv](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ConfigEnv&type=code) | Environment variables and runtime configuration |

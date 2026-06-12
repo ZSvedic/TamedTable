@@ -1,4 +1,4 @@
-// #VoiceInput demo logic — referenced by demo.html as an external module so
+// #VoicePort demo logic — referenced by demo.html as an external module so
 // `bun build` bundles it. Renders buildVoicePrompt for a sample context into
 // #out (the demo smoke test's ready signal) and drives a real
 // browserVoicePort() through the Start / Stop / Cancel buttons.

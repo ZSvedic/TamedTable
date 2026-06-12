@@ -1,4 +1,4 @@
-// #VoiceInput
+// #VoicePort
 // Browser VoicePort backed by MediaRecorder. DOM-bound, so it lives apart from
 // the DOM-free voice.ts (which the Node test build imports through index.ts) and
 // is reached only from main.tsx.

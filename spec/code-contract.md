@@ -663,7 +663,7 @@ The web controller imports these from `@tamedtable/model-config/storage`.
 → [behavior.md — Voice input](behavior.md#voice-input-voiceinput)
 
 Web-only. The `VoicePort`, the MediaRecorder→WAV browser implementation, and
-`buildVoicePrompt` live in `@tamedtable/voice-input` (#VoiceInput); the
+`buildVoicePrompt` live in `@tamedtable/voice-input` (#VoicePort); the
 `MicButton` component (`@tamedtable/chat-panel`) and the `WebController` voice
 methods drive it.
 
