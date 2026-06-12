@@ -13,7 +13,7 @@
     "test:web": "cucumber-js --profile web",
     "test:smoke": "SMOKE=1 bun test tests/demo.smoke.test.ts",
     "test:record": "TAMEDTABLE_CASSETTE=record bun run test:headless ; TAMEDTABLE_CASSETTE=record bun run test:cli",
-    "sync:tokens": "cp ../design/claude-design/tokens.json packages/ui-kit/tokens.json",
+    "sync:tokens": "bun run packages/ui-kit/sync-tokens.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p packages/web/tsconfig.json"
   },
   "devDependencies": {

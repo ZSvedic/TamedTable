@@ -25,10 +25,10 @@ Inside any child, `useTheme()` returns the active `Theme` object and
 
 The canonical token *values* live in the design base,
 `design/claude-design/tokens.json`, so they survive a full `src/`
-regeneration. `packages/ui-kit/tokens.json` is a generated copy (run
-`bun run sync:tokens` after editing the master) that this package imports, so
-`src/` stays a self-contained deployable unit. The guard test fails CI if the
-copy drifts from the master. The main entry types and names the tokens,
+regeneration. `bun run sync:tokens` regenerates two copies from it:
+`packages/ui-kit/tokens.json` (which this package imports, so `src/` stays a
+self-contained deployable unit) and `design/claude-design/tokens.jsx` (the
+design canvas globals). The guard test fails CI if either copy drifts. The main entry types and names the tokens,
 exporting the brand system as plain objects — no React:
 
 - `brand` — the brand-literal hex constants (Aubergine ink `#281C60`, Pale Sky
