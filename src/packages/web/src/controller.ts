@@ -199,6 +199,14 @@ export class WebController implements ControllerHost {
       this.fail('Open a CSV or JSONL file before sending a request.');
       return;
     }
+    // Text requests route through Anthropic whatever provider is selected
+    // (Google is voice-only here; OpenAI is not wired for chat), so a missing
+    // Anthropic key fails fast — before any network call — leaving the table
+    // untouched. See spec/behavior.md § Web UI / settings.
+    if (!this.config.anthropicKey?.trim()) {
+      this.fail('Text requests require an Anthropic API key — open Settings and add one.');
+      return;
+    }
     try {
       await this.engine.request(trimmed);
       const debug = this.lastDebug;
