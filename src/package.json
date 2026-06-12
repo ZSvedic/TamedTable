@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "setup": "bun install && bunx playwright install chromium",
     "test": "bun run test:unit && bun run test:headless && bun run test:cli && bun run test:web",
     "test:unit": "bun test",
     "test:headless": "cucumber-js --profile headless",
