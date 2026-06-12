@@ -520,7 +520,7 @@ function DCSection({ id, title, subtitle, children, gap = 48 }) {
   // the title sits tight against its own row at every zoom.
   return (
     <div data-dc-section={sid}
-    style={{ marginBottom: 'calc(80px * var(--dc-inv-zoom, 1))', position: 'relative', height: "700px" }}>
+    style={{ marginBottom: 'calc(80px * var(--dc-inv-zoom, 1))', position: 'relative' }}>
       <div style={{ padding: '0 60px' }}>
         <div className="dc-sectionhead" style={{ paddingBottom: 36 }}>
           <DCEditable tag="div" value={sec.title ?? title}
@@ -529,7 +529,7 @@ function DCSection({ id, title, subtitle, children, gap = 48 }) {
           {subtitle && <div style={{ fontSize: 16, color: DC.subtitle }}>{subtitle}</div>}
         </div>
       </div>
-      <div style={{ display: 'flex', gap, padding: '0 60px', alignItems: 'flex-start', width: 'max-content', height: "0px" }}>
+      <div style={{ display: 'flex', gap, padding: '0 60px', alignItems: 'flex-start', width: 'max-content' }}>
         {order.map((k) =>
         <DCArtboardFrame key={k} sectionId={sid} artboard={byId[k]} order={order}
         label={(sec.labels || {})[k] ?? byId[k].props.label}
@@ -792,7 +792,7 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
         </div>
       </div>
       <div ref={cardRef} className="dc-card"
-      style={{ ...{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06)', overflow: 'hidden', width, height, background: '#fff', ...style }, height: "500px" }}>
+      style={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06)', overflow: 'hidden', width, height, background: '#fff', ...style }}>
         {children || <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 13, fontFamily: DC.font }}>{id}</div>}
       </div>
     </div>);
