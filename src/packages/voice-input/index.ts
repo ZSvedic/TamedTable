@@ -1,4 +1,4 @@
-// #VoiceInput
+// #VoicePort
 // Voice input: build the instruction text that accompanies the
 // spoken audio, and record audio in the browser.
 //

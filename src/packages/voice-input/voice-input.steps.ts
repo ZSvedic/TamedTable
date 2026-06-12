@@ -1,4 +1,4 @@
-// #VoiceInput
+// #VoicePort
 // Step defs for the @headless voice-input scenarios — pure prompt assembly,
 // no browser. The package's own steps live next to the code (see
 // spec/packages/README.md); they import nothing from the app harness.
