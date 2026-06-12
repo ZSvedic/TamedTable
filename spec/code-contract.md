@@ -217,7 +217,7 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 
 | `TAMEDTABLE_CASSETTE` | Behavior |
 |---|---|
-| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs `ANTHROPIC_API_KEY`. |
+| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs the real key of the provider being recorded (`ANTHROPIC_API_KEY`; for `@web` scenarios the provider-key step also accepts `GEMINI_API_KEY` / `OPENAI_API_KEY` from the environment). |
 | `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`. No network, no API key. |
 | `off` (or any other value) | No recorder is installed; every call hits the network — a live run. |
 

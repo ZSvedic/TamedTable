@@ -1,8 +1,10 @@
 // #VoiceInput
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { WebController, VoicePort } from '@tamedtable/web';
-import { TamedTableWorld } from './world.ts';
+import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 import { webScenarios } from './web-file-port.ts';
 
 function controller(world: TamedTableWorld): WebController {
@@ -15,21 +17,41 @@ function ctxOf(world: TamedTableWorld) {
   return ctx;
 }
 
-// A deterministic mic: fixed audio bytes so the Gemini request fingerprints
-// identically on every run, which is what lets the cassette replay it.
-const FIXED_AUDIO = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81]);
+// A deterministic mic: it plays a committed audio fixture (a real clip), so
+// the Gemini request fingerprints identically on every run, which is what
+// lets the cassette replay it.
+const AUDIO_TYPES: Record<string, string> = {
+  m4a: 'audio/mp4',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  webm: 'audio/webm',
+};
 
-function stubVoicePort(): VoicePort {
+function fixtureAudio(clip: string): Blob {
+  const path = join(SPEC_TC_DIR, clip);
+  if (!existsSync(path)) throw new Error(`voice steps: no audio fixture at ${path}`);
+  const type = AUDIO_TYPES[clip.split('.').pop() ?? ''];
+  if (!type) throw new Error(`voice steps: unsupported audio extension on ${clip}`);
+  return new Blob([readFileSync(path)], { type });
+}
+
+function stubVoicePort(clip: string): VoicePort {
   return {
     startRecording: () => Promise.resolve(),
-    stopRecording: () => Promise.resolve(new Blob([FIXED_AUDIO], { type: 'audio/webm' })),
+    stopRecording: () => Promise.resolve(fixtureAudio(clip)),
     cancelRecording: () => {},
   };
 }
 
-Given('a stub microphone that returns recorded audio', function (this: TamedTableWorld) {
+Given('a stub microphone that plays {string}', function (this: TamedTableWorld, clip: string) {
   // Must be set before the controller builds lazily on the next "load".
-  ctxOf(this).voicePort = stubVoicePort();
+  ctxOf(this).voicePort = stubVoicePort(clip);
+});
+
+Given('a stub microphone that returns recorded audio', function (this: TamedTableWorld) {
+  // Scenarios that never fire a request (visibility, cancel, error) don't
+  // care what the clip says — any committed fixture works.
+  ctxOf(this).voicePort = stubVoicePort('voice-validate-dob.m4a');
 });
 
 Given('the Gemini endpoint returns an error', function (this: TamedTableWorld) {

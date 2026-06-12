@@ -174,46 +174,69 @@ function loadPrompts(): {
 
 const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT } = loadPrompts();
 
-const PATCH_OPERATIONS_PROPERTY = {
-  type: 'array',
-  items: {
+/** @internal — exported for unit tests. The JSON-Schema for the `operations`
+ *  argument of apply_spec_patch — identical for every provider. `value` is a
+ *  string carrying JSON-encoded content, decoded back by decodeOpValues. It
+ *  is never left untyped: Gemini's function-calling layer converts an untyped
+ *  `value` to a bare `{ type: "object" }` with no shape, and the model then
+ *  emits garbage values (e.g. `"value": 3`). */
+export function patchOperationsProperty() {
+  return {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        op: { type: 'string', enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
+        path: { type: 'string' },
+        from: { type: 'string' },
+        value: {
+          type: 'string',
+          description:
+            'The value used by add/replace/test operations, encoded as a JSON string — e.g. "{\\"kind\\":\\"filter\\",\\"pred\\":{\\"js\\":\\"true\\"}}" for an object, or "\\"text\\"" for a string.',
+        },
+      },
+      required: ['op', 'path'],
+      additionalProperties: false,
+    },
+  };
+}
+
+// The `transcript` argument is used only when the request carries spoken audio
+// (web voice input): it returns a verbatim transcript of the clip in the same
+// call, surfaced to the UI via onTranscript.
+function patchInputSchema(withTranscript: boolean) {
+  return jsonSchema<{ operations: unknown[]; transcript?: string }>({
     type: 'object',
     properties: {
-      op: { type: 'string', enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
-      path: { type: 'string' },
-      from: { type: 'string' },
-      value: {},
+      ...(withTranscript
+        ? {
+            transcript: {
+              type: 'string',
+              description: "Verbatim transcript of the user's spoken request in the attached audio clip.",
+            },
+          }
+        : {}),
+      operations: patchOperationsProperty(),
     },
-    required: ['op', 'path'],
+    required: ['operations'],
     additionalProperties: false,
-  },
-} as const;
+  });
+}
 
-const PATCH_INPUT_SCHEMA = jsonSchema<{ operations: unknown[]; transcript?: string }>({
-  type: 'object',
-  properties: {
-    operations: PATCH_OPERATIONS_PROPERTY,
-  },
-  required: ['operations'],
-  additionalProperties: false,
-});
-
-// Used only when the request carries spoken audio (web voice input): the
-// extra argument returns a verbatim transcript of the clip in the same call,
-// surfaced to the UI via onTranscript. Text requests keep the plain schema so
-// their request bodies — and the recorded test cassettes — stay unchanged.
-const PATCH_INPUT_SCHEMA_WITH_TRANSCRIPT = jsonSchema<{ operations: unknown[]; transcript?: string }>({
-  type: 'object',
-  properties: {
-    transcript: {
-      type: 'string',
-      description: "Verbatim transcript of the user's spoken request in the attached audio clip.",
-    },
-    operations: PATCH_OPERATIONS_PROPERTY,
-  },
-  required: ['operations'],
-  additionalProperties: false,
-});
+/** @internal — exported for unit tests. Decode each op's `value` when it
+ *  arrives as a JSON string: the patch schema asks for exactly that encoding.
+ *  A string that isn't valid JSON (a plain literal like a column name) is
+ *  left as-is, so fast-json-patch always receives the real value. */
+export function decodeOpValues(ops: unknown[]): unknown[] {
+  return ops.map((op) => {
+    if (op && typeof op === 'object' && 'value' in op && typeof (op as Record<string, unknown>).value === 'string') {
+      try {
+        return { ...op, value: JSON.parse((op as Record<string, unknown>).value as string) };
+      } catch { /* leave as-is if it isn't valid JSON */ }
+    }
+    return op;
+  });
+}
 
 // #CancelOp
 const CANCELLED = 'Runner: cancelled';
@@ -410,10 +433,15 @@ function padParts(parts: unknown[], into: string[]): unknown[] {
   return parts;
 }
 
-/** Parse a cell model's split reply into parts: prefers a JSON array, falls
- *  back to comma- then whitespace-separated tokens. */
-function parseLlmParts(text: string): unknown[] {
-  const trimmed = text.trim();
+/** @internal — exported for unit tests. Parse a cell model's split reply into
+ *  parts: prefers a JSON array (with any markdown fence stripped — models
+ *  sometimes wrap the array in ```json despite the "reply with ONLY"
+ *  instruction), falls back to comma- then whitespace-separated tokens. */
+export function parseLlmParts(text: string): unknown[] {
+  let trimmed = text.trim();
+  if (trimmed.startsWith('```')) {
+    trimmed = trimmed.replace(/^```\w*\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  }
   try {
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed)) return parsed;
@@ -916,7 +944,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     let transcript: string | undefined;
     const applySpecPatch = tool({
       description: 'Apply RFC 6902 JSON Patch operations to the current spec.',
-      inputSchema: audio ? PATCH_INPUT_SCHEMA_WITH_TRANSCRIPT : PATCH_INPUT_SCHEMA,
+      inputSchema: patchInputSchema(Boolean(audio)),
       execute: async ({ operations, transcript: heard }: { operations: unknown[]; transcript?: string }) => {
         captured = operations;
         transcript = heard;
@@ -959,18 +987,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       }
     }
     if (!captured) throw new Error(`LLM did not call apply_spec_patch; returned text: ${result.text?.slice(0, 200) ?? '<empty>'}`);
-    // Some models (e.g. Gemini) serialise nested JSON objects as strings inside
-    // tool call arguments. Parse any "value" field that is a valid JSON string
-    // so that fast-json-patch receives a proper object, not a double-encoded one.
-    const ops = captured.map((op) => {
-      if (op && typeof op === 'object' && 'value' in op && typeof (op as Record<string, unknown>).value === 'string') {
-        try {
-          return { ...op, value: JSON.parse((op as Record<string, unknown>).value as string) };
-        } catch { /* leave as-is if it isn't valid JSON */ }
-      }
-      return op;
-    });
-    return { ops, transcript: transcript?.trim() || undefined };
+    return { ops: decodeOpValues(captured), transcript: transcript?.trim() || undefined };
   }
 
   private async replay(

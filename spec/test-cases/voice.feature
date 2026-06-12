@@ -3,8 +3,9 @@
 # ordinary patch turn: one Gemini call carries the audio, the table context,
 # and the spec-editing instructions, and returns the spec patch directly — no
 # transcription step. The same call also returns a verbatim transcript, which
-# replaces the placeholder user bubble. The firing scenario replays a cassette
-# holding that one Gemini patch response; the rest are offline.
+# replaces the placeholder user bubble. The stub microphone plays committed
+# voice-*.m4a clips (real recordings); each firing scenario replays a cassette
+# holding that one Gemini patch response. The rest are offline.
 Feature: Voice input
 
   Rule: The mic button appears only for voice-capable models with a key
@@ -48,13 +49,26 @@ Feature: Voice input
     @web
     Scenario: Holding then releasing the mic produces a user bubble and an assistant reply
       Given the TamedTable web app
-      And a stub microphone that returns recorded audio
+      And a stub microphone that plays "voice-validate-dob.m4a"
       And load "datanorm-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
-      Then a user bubble shows "🎙 validate dob is non-empty"
+      Then a user bubble shows "🎙 validate DOB is not empty"
       And no user bubble shows "🎙 Voice request"
+      And an assistant bubble is shown
+      And the spec has 1 transformation
+      And the mic status is "idle"
+
+    @web
+    Scenario: A spoken "normalize DOB column" request applies a transformation
+      Given the TamedTable web app
+      And a stub microphone that plays "voice-normalize-dob.m4a"
+      And load "datanorm-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      When user presses and holds the mic button
+      And user releases the mic button
+      Then a user bubble shows "🎙 normalize DOB column"
       And an assistant bubble is shown
       And the spec has 1 transformation
       And the mic status is "idle"
