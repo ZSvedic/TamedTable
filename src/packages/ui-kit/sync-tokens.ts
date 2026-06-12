@@ -1,8 +1,8 @@
 // #UiKit
-// Token sync. design/claude-design/tokens.json is the canonical source of
+// Token sync. design/tokens.json is the canonical source of
 // truth; this regenerates the two derived copies so neither can drift:
-//   - packages/ui-kit/tokens.json        the app's importable copy (byte copy)
-//   - design/claude-design/tokens.jsx    the in-browser design-canvas globals
+//   - packages/ui-kit/tokens.json            the app's importable copy (byte copy)
+//   - design/claude-design-app/tokens.jsx    the in-browser design-canvas globals
 // Run from src/: `bun run sync:tokens`. The guard test fails CI if either copy
 // is stale. renderTokensJsx is exported so the guard can recompute it.
 
@@ -13,9 +13,9 @@ export interface Tokens {
   themes: { light: Record<string, unknown>; dark: Record<string, unknown> };
 }
 
-const MASTER = '../design/claude-design/tokens.json';
+const MASTER = '../design/tokens.json';
 const UIKIT_COPY = 'packages/ui-kit/tokens.json';
-const CANVAS_JSX = '../design/claude-design/tokens.jsx';
+const CANVAS_JSX = '../design/claude-design-app/tokens.jsx';
 
 /**
  * The TT_* globals the Babel canvas (index.html / Prototype.html) loads,
@@ -32,7 +32,7 @@ export function renderTokensJsx(tokens: Tokens): string {
   };
   const lit = (o: unknown): string => JSON.stringify(o, null, 2);
   return `// GENERATED from tokens.json by \`bun run sync:tokens\` — do not edit by hand.
-// design/claude-design/tokens.json is the canonical source of truth.
+// design/tokens.json is the canonical source of truth.
 const TT_BRAND = ${lit(brand)};
 const TT_LIGHT = ${lit(themes.light)};
 const TT_DARK = ${lit(themes.dark)};

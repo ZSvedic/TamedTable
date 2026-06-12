@@ -1,6 +1,6 @@
 // #Toolbar
 // TamedTable brand mark + wordmark + lockup. Ported from the design system
-// (design/claude-design/brand.jsx). The toolbar is its only consumer, so it
+// (design/claude-design-app/brand.jsx). The toolbar is its only consumer, so it
 // lives here rather than in ui-kit.
 //
 // The mark is a 9 × 5 pixel grid:

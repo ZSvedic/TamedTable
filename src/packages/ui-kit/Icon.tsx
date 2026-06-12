@@ -1,6 +1,6 @@
 // #UiKit
 // Inline SVG icons — a 16×16 viewBox, 1.5 stroke, currentColor. Ported from
-// the design system (design/claude-design/components.jsx). Use as
+// the design system (design/claude-design-app/components.jsx). Use as
 // <Icon name="folder" /> inside any element that sets a text color.
 
 import type { ReactNode } from 'react';

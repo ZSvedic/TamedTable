@@ -1,5 +1,5 @@
 // GENERATED from tokens.json by `bun run sync:tokens` — do not edit by hand.
-// design/claude-design/tokens.json is the canonical source of truth.
+// design/tokens.json is the canonical source of truth.
 const TT_BRAND = {
   "ink": "#281C60",
   "accent": "#96BED7",
