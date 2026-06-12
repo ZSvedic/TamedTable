@@ -339,7 +339,7 @@ export function ChatPanel({
                   border: `1px solid ${t.line}`,
                   borderRadius: space.radius,
                   padding: '8px 10px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                  boxShadow: t.shadow,
                   whiteSpace: 'nowrap',
                   zIndex: 100,
                   display: 'flex',
