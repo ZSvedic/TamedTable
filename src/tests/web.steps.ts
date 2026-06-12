@@ -52,9 +52,13 @@ Given(
   'the provider {string} has API key {string}',
   async function (this: TamedTableWorld, provider: string, key: string) {
     const partial: Partial<ResolvedConfig> = { provider: provider as ModelProvider };
-    if (provider === 'gemini') partial.geminiKey = key;
-    else if (provider === 'openai') partial.openaiKey = key;
-    else partial.anthropicKey = key;
+    // In record mode the request must reach the live API, so a real key from
+    // the environment replaces the scenario's placeholder. The key travels in
+    // a header, not the fingerprinted body, so replay still matches.
+    const recording = process.env.TAMEDTABLE_CASSETTE === 'record';
+    if (provider === 'gemini') partial.geminiKey = (recording && process.env.GEMINI_API_KEY) || key;
+    else if (provider === 'openai') partial.openaiKey = (recording && process.env.OPENAI_API_KEY) || key;
+    else partial.anthropicKey = (recording && process.env.ANTHROPIC_API_KEY) || key;
     await controller(this).setConfig(partial);
   },
 );
