@@ -43,6 +43,7 @@ Every row links to the scenario that proves it works:
 
 | What you can do | In your words | See it |
 |---|---|---|
+| Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
 | Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [datanorm.feature](../spec/test-cases/datanorm.feature) |
 | Drop duplicate rows | *"remove duplicate emails"* | [dedupe.feature](../spec/test-cases/dedupe.feature) |
 | Keep only the rows you care about | *"keep customers in the USA"* | [filter.feature](../spec/test-cases/filter.feature) |
@@ -58,9 +59,10 @@ Every row links to the scenario that proves it works:
 | Save the recipe and replay it later | `:save-flow tidy.flow` | [repl-commands.feature](../spec/test-cases/repl-commands.feature) |
 | Hand it off as a Python script | `:save-py tidy.py` | [save-py.feature](../spec/test-cases/save-py.feature) |
 | Take back any change | `:undo` / `:redo` | [repl-commands.feature](../spec/test-cases/repl-commands.feature) |
-| Stop a slow run and get your data back | Ctrl-C | [cancelation.feature](../spec/test-cases/cancelation.feature) |
-| Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
-| Find your feet with a guided tour | open the Tutorial panel | [tutorial.feature](../spec/test-cases/tutorial.feature) |
 | Work in a browser or on the command line | same engine, your choice | [web.feature](../spec/test-cases/web.feature) |
 
-Worth saying up front: the web app can't run SQL steps and saves JSONL only (the command line does the full set), and `.xlsx`/`.parquet` aren't supported yet.
+## Files it reads and writes
+
+TamedTable loads and saves **CSV** and **JSONL** — the two formats data teams already pass around. Open a file from your computer or from a URL, work on it, then save the cleaned rows back out.
+
+Worth saying up front: the web app saves JSONL only and can't run SQL steps (the command line does the full set), and `.xlsx`/`.parquet` aren't supported yet.
