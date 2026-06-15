@@ -1,24 +1,15 @@
 # Marketing
 
-Outward-facing copy for TamedTable: the tagline, who it's for, and the features worth leading with. Visuals live in [design/brand/brand.md](../design/brand/brand.md); product details live in [spec/](../spec/).
+Outward-facing copy for TamedTable: the tagline, who it's for, and what it does for you. Visuals live in [design/brand/brand.md](../design/brand/brand.md); product details live in [spec/](../spec/).
 
 ## Taglines
 
-The one we're going with:
-
 > **Talk to your data.**
 
-More to pick from:
+Alternates:
 
-1. ETL for people, not programmers.
-2. Spreadsheets for the rest of us.
-3. A data cleaner for everyone.
-4. Clean your tables by saying so.
-5. Ask. Watch. Done.
-6. Your words do the data work.
-7. No code. Just ask.
-8. Say it, see it, save it.
-9. The data tool you talk to.
+- Say it, see it, save it.
+- The data tool you talk to.
 
 ## Who it's for
 
@@ -41,28 +32,35 @@ You see your data on screen and say what to do. It makes the change, shows you e
 
 ## Why it's different
 
-- **You keep the steps, not a pile of code.** Save them, run them again tomorrow, even export them as a Python script.
-- **Big tables don't cost more.** The price per request stays the same whether you have a hundred rows or a million.
+- **You keep the steps, not a pile of code.** Save them, run them again tomorrow, even turn them into a Python script.
+- **Asking stays cheap.** Describing a change costs the same whether your table has a hundred rows or a million, and replaying saved steps costs nothing at all.
 - **Nothing is hidden.** You see exactly what changed, row by row, so you can trust it.
 - **It's open source.** No lock-in, no proprietary format.
 
-## Features
+## What you can do with it
 
-Lead with these three:
+Every row links to the scenario that proves it works:
 
-- **Just say what you want** — *"normalize phone numbers,"* *"drop duplicate emails."* No formulas, no code.
-- **Reusable steps** — every change is saved as a recipe you can replay on new data with no AI call, or export to Python.
-- **Flat cost** — the bill per request doesn't grow with the table.
-
-The rest:
-
-| Feature | What you get |
-|---|---|
-| Web app and command line | Click to try it, script it to ship it — same engine. |
-| Row-by-row changes | Watch every cell change as it happens. |
-| Undo and history | Take back any change. |
-| Save data or save the steps | Write out clean data, or keep the recipe for later. |
-| Runs offline once saved | Replay a recipe with no AI call — fast and repeatable. |
-| CSV and JSONL | The formats data teams already pass around. |
+| What you can do | In your words | See it |
+|---|---|---|
+| Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [datanorm.feature](../spec/test-cases/datanorm.feature) |
+| Drop duplicate rows | *"remove duplicate emails"* | [dedupe.feature](../spec/test-cases/dedupe.feature) |
+| Keep only the rows you care about | *"keep customers in the USA"* | [filter.feature](../spec/test-cases/filter.feature) |
+| Sort, or keep just the top few | *"sort by revenue, top 10"* | [sort.feature](../spec/test-cases/sort.feature) |
+| Total things up by group | *"total sales per region"* | [aggregate.feature](../spec/test-cases/aggregate.feature) |
+| Split one column into several | *"split full name into first and last"* | [colsplit.feature](../spec/test-cases/colsplit.feature) |
+| Combine two tables | *"add each order's customer name"* | [join.feature](../spec/test-cases/join.feature) |
+| Reshape between tall and wide | *"pivot months into columns"* | [pivot.feature](../spec/test-cases/pivot.feature) |
+| Flag the bad rows | *"mark rows with a missing email"* | [validate.feature](../spec/test-cases/validate.feature) |
+| Drop to SQL when you want it exact | *"set total = price * qty"* | [sql.feature](../spec/test-cases/sql.feature) |
+| Point at other columns in a request | *"fill city from the address column"* | [placeholders.feature](../spec/test-cases/placeholders.feature) |
+| Save your cleaned data | `:save clean.csv` | [convert.feature](../spec/test-cases/convert.feature) |
+| Save the recipe and replay it later | `:save-flow tidy.flow` | [repl-commands.feature](../spec/test-cases/repl-commands.feature) |
+| Hand it off as a Python script | `:save-py tidy.py` | [save-py.feature](../spec/test-cases/save-py.feature) |
+| Take back any change | `:undo` / `:redo` | [repl-commands.feature](../spec/test-cases/repl-commands.feature) |
+| Stop a slow run and get your data back | Ctrl-C | [cancelation.feature](../spec/test-cases/cancelation.feature) |
+| Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
+| Find your feet with a guided tour | open the Tutorial panel | [tutorial.feature](../spec/test-cases/tutorial.feature) |
+| Work in a browser or on the command line | same engine, your choice | [web.feature](../spec/test-cases/web.feature) |
 
 Worth saying up front: the web app can't run SQL steps and saves JSONL only (the command line does the full set), and `.xlsx`/`.parquet` aren't supported yet.
