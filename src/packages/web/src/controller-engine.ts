@@ -11,6 +11,7 @@ import {
   type RequestAudio,
 } from '@tamedtable/headless';
 import type { Row, Spec } from '@tamedtable/core';
+import { defaultModel, defaultCellModel } from '@tamedtable/model-config';
 import type { FetchLike } from '@tamedtable/file-io';
 import type { ControllerHost } from './controller-context.ts';
 
@@ -18,6 +19,9 @@ const PLACEHOLDER_KEY = 'tamedtable-web';
 
 export class EngineManager {
   private headless: HeadlessRunner | undefined;
+  /** Whether the cached engine was built for tutorial replay, so a mode change
+   *  forces a rebuild with the right model + fetch. */
+  private builtForReplay = false;
 
   // Streaming overlay: chunk updates painted onto the displayed table while a
   // long LLM transformation runs (the engine commits only when it finishes).
@@ -31,13 +35,19 @@ export class EngineManager {
     this.host = host;
   }
 
-  /** Build the fetch the engine uses. Tests inject the cassette recorder; the
-   *  browser gets a wrapper that injects provider-specific auth headers.
-   *  Anthropic requires an extra header for direct browser-to-API calls;
-   *  Gemini and OpenAI handle auth through the SDK's own mechanisms. */
-  private makeFetch(): FetchLike | undefined {
-    if (this.host.opts.fetch) return this.host.opts.fetch;
+  /** Build the fetch the engine uses. While a tutorial plays, every model call
+   *  replays from the tour's cassette (key-free). Otherwise: tests inject the
+   *  cassette recorder; the browser gets a wrapper that injects provider auth
+   *  headers (Anthropic needs an extra header for direct browser-to-API calls;
+   *  Gemini and OpenAI handle auth through the SDK's own mechanisms). The check
+   *  is per-call so it tracks replay mode without rebuilding the wrapper. */
+  private makeFetch(): FetchLike {
     return (input, init) => {
+      if (this.host.tutorial.isReplaying()) {
+        return this.host.tutorial.replayFetch(input, init);
+      }
+      const injected = this.host.opts.fetch;
+      if (injected) return injected(input, init);
       const headers = new Headers(init?.headers);
       const apiKey = this.host.settingsMgr.activeApiKey();
       const provider = this.host.config.provider;
@@ -45,29 +55,31 @@ export class EngineManager {
         if (apiKey) headers.set('x-api-key', apiKey);
         headers.set('anthropic-dangerous-direct-browser-access', 'true');
       }
-      // Gemini and OpenAI: the SDK sets auth headers itself from the apiKey
-      // passed to createGoogleGenerativeAI / createOpenAI; no override needed.
       return fetch(input, { ...init, headers });
     };
   }
 
   ensureHeadless(): HeadlessRunner {
-    if (!this.headless) {
-      this.headless = createHeadlessRunner({
-        // Pass the active provider's key; a non-empty fallback lets the SDK
-        // initialise even when no key is set yet (the real error surfaces from
-        // the API response, which userFacingMessage then describes clearly).
-        apiKey: this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY,
-        model: this.host.config.model,
-        cellModel: this.host.config.cellModel,
-        fetch: this.makeFetch(),
-        batchSize: this.host.opts.batchSize,
-        chunkSize: this.host.opts.chunkSize,
-        onDebug: (info) => {
-          this.host.lastDebug = info;
-        },
-      });
-    }
+    const replaying = this.host.tutorial.isReplaying();
+    if (this.headless && this.builtForReplay === replaying) return this.headless;
+    this.headless = createHeadlessRunner({
+      // Tutorial replay pins the recording config — model `claude-sonnet-4-6`
+      // with the default cell model — so the request matches the taped one; a
+      // placeholder key is enough because the cassette intercepts every call.
+      // Otherwise pass the active provider's key (a non-empty fallback lets the
+      // SDK initialise even with no key — the real error then surfaces from the
+      // API response, which userFacingMessage describes clearly).
+      apiKey: replaying ? PLACEHOLDER_KEY : (this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY),
+      model: replaying ? defaultModel('anthropic') : this.host.config.model,
+      cellModel: replaying ? defaultCellModel('anthropic') : this.host.config.cellModel,
+      fetch: this.makeFetch(),
+      batchSize: this.host.opts.batchSize,
+      chunkSize: this.host.opts.chunkSize,
+      onDebug: (info) => {
+        this.host.lastDebug = info;
+      },
+    });
+    this.builtForReplay = replaying;
     return this.headless;
   }
 

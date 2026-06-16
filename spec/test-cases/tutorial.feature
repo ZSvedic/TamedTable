@@ -88,6 +88,17 @@ Feature: Tutorial panel
       When user advances to the last tutorial step
       Then the golden rows are available
 
+  Rule: A tutorial plays its LLM steps from a cassette with no API key
+
+    @web
+    Scenario: A prefill-chat step replays from the tour's cassette, key-free
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      When user plays the whole tutorial
+      Then the spec has 1 transformation
+      And no toast is shown
+
   Rule: A deep link opens, selects, and plays a named tour
 
     @web

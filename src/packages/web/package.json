@@ -16,6 +16,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@tamedtable/cassette": "workspace:*",
     "@tamedtable/chat-panel": "workspace:*",
     "@tamedtable/core": "workspace:*",
     "@tamedtable/file-io": "workspace:*",

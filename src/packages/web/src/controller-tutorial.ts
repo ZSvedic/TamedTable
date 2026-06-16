@@ -1,23 +1,45 @@
 // #TutorialMode
-// Tutorial-panel state: the parsed tours, the active tour/step cursors, and the
-// per-step side effects (load a file, prefill the chat, surface a golden). The
-// panel-open flag, golden rows, and chat prefill are observable on the host;
-// the cursors and source tours are this manager's private state.
+// Tutorial-panel state: a lightweight manifest of @tutorial/@web scenarios, the
+// active tour/step cursors, and the per-step side effects (load a file, prefill
+// the chat, surface a golden). Everything heavy — the `.feature` source, the
+// input/golden fixtures, and the recorded cassette — loads lazily through the
+// host's TutorialSources, so the JS bundle carries only the manifest.
+//
+// A playing tour also flips the engine into key-free *replay* mode: LLM-driven
+// steps (`prefill-chat`) are served from the tour's recorded cassette fetched
+// same-origin, so a visitor with no API key can run a full tour. See
+// spec/code-contract.md § Tutorial mode.
 import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { Row } from '@tamedtable/core';
+import { parseTours, type TourScenario } from '@tamedtable/gherkin-tour';
+import { replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
-import type { TutorialSources } from './controller-types.ts';
+import type { TutorialManifestEntry, TutorialSources } from './controller-types.ts';
 
 export class TutorialManager {
   private readonly tutorialSrc: TutorialSources | null;
-  private activeTourIndex: number | null = null;
+  /** The manifest entry the user has selected (not yet loaded/played). */
+  private selected: TutorialManifestEntry | null = null;
+  /** The fully parsed + loaded tour, set once playback starts. While non-null
+   *  the engine runs in key-free replay mode against this tour's cassette. */
+  private activeTour: TourScenario | null = null;
   private tutorialStepIndex: number | null = null;
+  /** The in-flight prefill-chat request, exposed via `settle()` for tests. */
+  private pending: Promise<void> | null = null;
+
+  // Parsed feature files + loaded cassettes, cached so a re-play fetches once.
+  private readonly featureCache = new Map<string, TourScenario[]>();
+  private readonly cassetteCache = new Map<string, Cassette>();
 
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
     this.tutorialSrc = host.opts.tutorialSources ?? null;
+  }
+
+  private get manifest(): TutorialManifestEntry[] {
+    return this.tutorialSrc?.manifest ?? [];
   }
 
   openTutorial(): void {
@@ -32,22 +54,20 @@ export class TutorialManager {
 
   /** Names of `@tutorial` tours — the clickable list in the panel. */
   tutorialScenarioNames(): string[] {
-    return (this.tutorialSrc?.tours ?? [])
-      .filter((t) => t.tags.includes('@tutorial'))
-      .map((t) => t.name);
+    return this.manifest.filter((t) => t.tags.includes('@tutorial')).map((t) => t.name);
   }
 
   /** Names of `@web` scenarios that are not `@tutorial` — the trailing "Dev"
    *  dropdown for smoke-testing a scenario without opening the .feature file. */
   devScenarioNames(): string[] {
-    return (this.tutorialSrc?.tours ?? [])
+    return this.manifest
       .filter((t) => t.tags.includes('@web') && !t.tags.includes('@tutorial'))
       .map((t) => t.name);
   }
 
   selectTutorialScenario(name: string): void {
-    const idx = this.tutorialSrc?.tours.findIndex((t) => t.name === name) ?? -1;
-    this.activeTourIndex = idx >= 0 ? idx : null;
+    this.selected = this.manifest.find((t) => t.name === name) ?? null;
+    this.activeTour = null;
     this.tutorialStepIndex = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
@@ -61,12 +81,11 @@ export class TutorialManager {
    *  name) pair disambiguates when two files share a scenario name. */
   async openTutorialFromLink(feature: string | null, scenario: string | null): Promise<boolean> {
     if (!feature || !scenario) return false;
-    const idx = this.tutorialSrc?.tours.findIndex(
-      (t) => t.feature === feature && t.name === scenario,
-    ) ?? -1;
-    if (idx < 0) return false;
+    const entry = this.manifest.find((t) => t.feature === feature && t.name === scenario);
+    if (!entry) return false;
     this.openTutorial();
-    this.activeTourIndex = idx;
+    this.selected = entry;
+    this.activeTour = null;
     this.tutorialStepIndex = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
@@ -75,21 +94,23 @@ export class TutorialManager {
   }
 
   async playTutorial(): Promise<void> {
-    if (this.activeTourIndex === null) return;
-    const tour = this.tutorialSrc?.tours[this.activeTourIndex];
+    if (!this.selected || !this.tutorialSrc) return;
+    const tour = await this.loadTour(this.selected);
     if (!tour || tour.steps.length === 0) return;
+    this.activeTour = tour;
+    // Entering replay mode: rebuild the engine pinned to the recording config so
+    // the request the tour issues fingerprints identically to what was taped.
+    this.host.engine.reset();
     this.tutorialStepIndex = 0;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
-    await this.executeTutorialStep(this.tutorialStepIndex);
+    await this.executeTutorialStep(0);
     this.host.notify();
   }
 
   async nextStep(): Promise<void> {
-    if (this.tutorialStepIndex === null || this.activeTourIndex === null) return;
-    const tour = this.tutorialSrc?.tours[this.activeTourIndex];
-    if (!tour) return;
-    if (this.tutorialStepIndex < tour.steps.length - 1) {
+    if (this.tutorialStepIndex === null || !this.activeTour) return;
+    if (this.tutorialStepIndex < this.activeTour.steps.length - 1) {
       this.tutorialStepIndex++;
       await this.executeTutorialStep(this.tutorialStepIndex);
       this.host.notify();
@@ -103,9 +124,19 @@ export class TutorialManager {
   }
 
   cancelTutorial(): void {
+    const wasReplaying = this.activeTour !== null;
     this.tutorialStepIndex = null;
+    this.activeTour = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
+    // Leaving replay mode: the tour owned the engine (pinned config, replaced
+    // dataset), so drop it and return to the empty state. Browsing the panel
+    // without ever playing leaves the user's own table untouched.
+    if (wasReplaying) {
+      this.host.engine.reset();
+      this.host.loaded = false;
+      this.host.sourcePath = '';
+    }
     this.host.notify();
   }
 
@@ -113,32 +144,62 @@ export class TutorialManager {
     return this.tutorialStepIndex !== null;
   }
 
-  currentTutorialStepNumber(): number | null {
-    return this.tutorialStepIndex !== null ? this.tutorialStepIndex + 1 : null;
+  /** True while a tour is playing — the engine pins the recording config and
+   *  routes model calls through the tour's cassette. */
+  isReplaying(): boolean {
+    return this.activeTour !== null;
+  }
+
+  /** Feature base name (e.g. `validate`) of the cassette to replay, or null. */
+  replayCassetteName(): string | null {
+    return this.activeTour ? basename(this.activeTour.feature ?? '', '.feature') : null;
+  }
+
+  /** Replay one model call from the active tour's cassette. Fetched (and
+   *  parsed) once, then cached. A miss throws so the failure surfaces as a
+   *  toast rather than hanging. */
+  async replayFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+    const name = this.replayCassetteName();
+    if (!name || !this.tutorialSrc) throw new Error('tutorial replay: no active tour');
+    let tape = this.cassetteCache.get(name);
+    if (!tape) {
+      const text = await this.tutorialSrc.loadCassette(name);
+      tape = JSON.parse(text) as Cassette;
+      this.cassetteCache.set(name, tape);
+    }
+    const replay: FetchLike = replayFetch(tape);
+    return replay(input, init);
+  }
+
+  /** Await the in-flight prefill-chat request, if any (used by tests). */
+  async settle(): Promise<void> {
+    await this.pending;
   }
 
   tutorialStepCount(): number {
-    if (this.activeTourIndex === null || !this.tutorialSrc) return 0;
-    return this.tutorialSrc.tours[this.activeTourIndex]?.steps.length ?? 0;
+    return this.activeTour?.steps.length ?? 0;
   }
 
   /** Name of the currently selected tour, or empty string. */
   selectedTourName(): string {
-    if (this.activeTourIndex === null || !this.tutorialSrc) return '';
-    return this.tutorialSrc.tours[this.activeTourIndex]?.name ?? '';
+    return this.selected?.name ?? '';
   }
 
   /** Keyword and text of the current step, or null when no tour is active. */
+  currentTutorialStepNumber(): number | null {
+    return this.tutorialStepIndex !== null ? this.tutorialStepIndex + 1 : null;
+  }
+
   currentStepDetail(): { keyword: string; text: string } | null {
-    if (this.activeTourIndex === null || this.tutorialStepIndex === null || !this.tutorialSrc) return null;
-    const step = this.tutorialSrc.tours[this.activeTourIndex]?.steps[this.tutorialStepIndex];
+    if (this.tutorialStepIndex === null || !this.activeTour) return null;
+    const step = this.activeTour.steps[this.tutorialStepIndex];
     return step ? { keyword: step.keyword, text: step.text } : null;
   }
 
   /** Driver.js element id for the current step's UI focus target. */
   currentStepElementId(): string | null {
-    if (this.activeTourIndex === null || this.tutorialStepIndex === null || !this.tutorialSrc) return null;
-    const step = this.tutorialSrc.tours[this.activeTourIndex]?.steps[this.tutorialStepIndex];
+    if (this.tutorialStepIndex === null || !this.activeTour) return null;
+    const step = this.activeTour.steps[this.tutorialStepIndex];
     if (!step) return null;
     switch (step.action.kind) {
       case 'load-file':
@@ -150,22 +211,44 @@ export class TutorialManager {
     }
   }
 
+  /** Fetch + parse a manifest entry's feature, returning its matching tour. */
+  private async loadTour(entry: TutorialManifestEntry): Promise<TourScenario | null> {
+    let tours = this.featureCache.get(entry.feature);
+    if (!tours) {
+      const src = await this.tutorialSrc!.loadFeature(entry.feature);
+      // Stamp each tour with its source filename so a deep link matches on
+      // (feature, name) — parseTours sees only the source string.
+      tours = parseTours(src).map((t) => ({ ...t, feature: entry.feature }));
+      this.featureCache.set(entry.feature, tours);
+    }
+    return tours.find((t) => t.name === entry.name) ?? null;
+  }
+
+  /** Fetch a fixture's text, surfacing a fetch failure as a toast. */
+  private async loadFixture(filename: string): Promise<string | undefined> {
+    try {
+      return await this.tutorialSrc!.loadFixture(filename);
+    } catch (e) {
+      this.host.pushToast('error', `Could not load tutorial fixture "${filename}": ${(e as Error).message}`);
+      return undefined;
+    }
+  }
+
   private async executeTutorialStep(index: number): Promise<void> {
-    if (this.activeTourIndex === null || !this.tutorialSrc) return;
-    const tour = this.tutorialSrc.tours[this.activeTourIndex];
+    const tour = this.activeTour;
     const step = tour?.steps[index];
-    if (!step) return;
+    if (!tour || !step) return;
     const { action } = step;
     switch (action.kind) {
       case 'load-file': {
-        const text = this.tutorialSrc.inputs[action.filename];
+        const text = await this.loadFixture(action.filename);
         if (text !== undefined) await this.host.files.loadFromText(action.filename, text);
         break;
       }
       case 'load-lookup': {
         // Write the lookup file into the in-memory store so the engine can
         // read it by path when executing the join transformation.
-        const text = this.tutorialSrc.inputs[action.filename];
+        const text = await this.loadFixture(action.filename);
         if (text !== undefined) {
           await mkdir(this.host.workDir, { recursive: true });
           await writeFile(join(this.host.workDir, action.filename), text, 'utf8');
@@ -174,14 +257,16 @@ export class TutorialManager {
       }
       case 'prefill-chat':
         this.host.tutorialPrefill = action.text;
-        if (!this.host.streaming) void this.host.sendChat(action.text);
+        // Auto-submit, but don't block the tour on the round trip; the request
+        // replays from the cassette. `settle()` lets tests await it.
+        if (!this.host.streaming) this.pending = this.host.sendChat(action.text);
         break;
       case 'show-golden': {
         // The golden filename is lifted onto the scenario by the parser (from
         // the `the expected output is "X"` step), so no step scan is needed.
-        const goldenFile = tour?.golden;
+        const goldenFile = tour.golden;
         if (goldenFile) {
-          const raw = this.tutorialSrc.goldens[goldenFile];
+          const raw = await this.loadFixture(goldenFile);
           if (raw) {
             this.host.goldenRows = raw.trim().split('\n').filter(Boolean)
               .map((l) => JSON.parse(l) as Row);

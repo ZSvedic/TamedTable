@@ -24,6 +24,17 @@ When('user plays the tutorial', async function (this: TamedTableWorld) {
   await controller(this).playTutorial();
 });
 
+When('user plays the whole tutorial', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  await c.playTutorial();
+  const total = c.tutorialStepCount();
+  while ((c.currentTutorialStepNumber() ?? 0) < total) {
+    await c.nextStep();
+  }
+  // Await the auto-submitted prefill-chat request (replayed from the cassette).
+  await c.tutorialSettle();
+});
+
 When('user advances to the next tutorial step', async function (this: TamedTableWorld) {
   await controller(this).nextStep();
 });

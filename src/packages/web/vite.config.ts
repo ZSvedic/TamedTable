@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { readFileSync, readdirSync, copyFileSync, mkdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { parseTours } from '@tamedtable/gherkin-tour';
 
 // The engine (@tamedtable/headless) is authored for Bun/Node. It is reused
 // here unmodified; Vite bridges the gap to the browser by aliasing the few
@@ -12,92 +13,85 @@ const here = dirname(fileURLToPath(import.meta.url));
 const promptText = readFileSync(join(here, '../../../spec/prompt-app-edit.md'), 'utf8');
 const shim = (file: string): string => join(here, 'src/shims', file);
 
-// Tutorial: inline all @tutorial-tagged feature files plus their fixtures so
-// the browser can build TutorialSources without a network fetch or API key.
+const specTcDir = join(here, '../../../spec/test-cases');
+const cassetteDir = join(here, '../../tests/__cassettes__');
+
+// Tutorial: the @tutorial/@web feature files. We ship only a lightweight
+// MANIFEST (scenario name + tags + source file) in the JS bundle; the heavy
+// assets — feature source, input/golden fixtures, and recorded cassettes —
+// load lazily, fetched same-origin from /tutorials/, /samples/, and
+// /cassettes/. That keeps page load small and lets a key-free visitor play a
+// full tour by replaying the tour's cassette.
 const tutorialFeatureNames = [
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
 ];
-const tutorialInputNames = [
-  'filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv',
-  'colsplit-fullname-input.csv', 'dedupe-input.csv',
-  'pivot-long-input.csv', 'pivot-wide-input.csv',
-];
-const tutorialGoldenNames = [
-  'filter-expected.jsonl', 'aggregate-by-country-expected.jsonl', 'dedupe-expected.jsonl',
-];
 
-function readTc(name: string): string {
-  return readFileSync(join(here, '../../../spec/test-cases', name), 'utf8');
-}
+const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {
+  const src = readFileSync(join(specTcDir, feature), 'utf8');
+  return parseTours(src)
+    .filter((t) => t.tags.includes('@web'))
+    .map((t) => ({ name: t.name, feature, tags: t.tags }));
+});
 
-const tutorialBundle = {
-  features: Object.fromEntries(tutorialFeatureNames.map((n) => [n, readTc(n)])),
-  inputs:   Object.fromEntries(tutorialInputNames.map((n) => [n, readTc(n)])),
-  goldens:  Object.fromEntries(tutorialGoldenNames.map((n) => [n, readTc(n)])),
-};
-
-// Sample CSV/JSONL files surfaced as quick-picks in the Open URL dialog.
-// We bundle them into the deployed site (under /samples/) rather than
-// linking to raw.githubusercontent.com — same-origin fetch sidesteps any
-// CORS quirks on GitHub Pages and keeps the demo working offline in dev.
-const samplesDir = join(here, '../../../spec/test-cases');
-const sampleFiles = readdirSync(samplesDir)
+// Static assets served same-origin: the sample CSV/JSONL files (also the
+// tutorial inputs + goldens), the tutorial feature files, and the recorded
+// cassettes. Each is copied into dist/ at build and served from its source dir
+// by a dev middleware — same pattern, three directories.
+const sampleFiles = readdirSync(specTcDir)
   .filter((name) => name.endsWith('.csv') || name.endsWith('.jsonl'))
   .sort();
+const cassetteFiles = readdirSync(cassetteDir).filter((name) => name.endsWith('.json')).sort();
 
-function samplesPlugin(): Plugin {
+function contentTypeFor(name: string): string {
+  if (name.endsWith('.csv')) return 'text/csv; charset=utf-8';
+  if (name.endsWith('.jsonl')) return 'application/x-ndjson; charset=utf-8';
+  if (name.endsWith('.json')) return 'application/json; charset=utf-8';
+  return 'text/plain; charset=utf-8';  // .feature
+}
+
+/** Serve `files` from `srcDir` under `/<route>/…` — dev middleware + a build
+ *  copy into dist/<route>/. The base prefix (e.g. /TamedTable/) is part of the
+ *  incoming dev URL because this middleware runs ahead of Vite's base rewrite. */
+function staticDirPlugin(route: string, srcDir: string, files: string[]): Plugin {
   return {
-    name: 'tamedtable-samples',
+    name: `tamedtable-${route}`,
     configureServer(server) {
-      // Dev: serve the sample files straight from spec/test-cases/ — no
-      // pre-copy step needed when iterating locally. The base prefix
-      // (e.g. /TamedTable/) is part of the incoming URL because this
-      // middleware runs ahead of Vite's base rewriting.
       const base = server.config.base.replace(/\/$/, '');
-      const re = new RegExp(`^${base}/samples/([^?#]+)`);
+      const re = new RegExp(`^${base}/${route}/([^?#]+)`);
       server.middlewares.use((req, _res, next) => {
-        const url = req.url ?? '';
-        const match = url.match(re);
-        if (!match || !match[1]) return next();
-        const name = match[1];
-        if (!sampleFiles.includes(name)) return next();
-        const path = join(samplesDir, name);
+        const match = (req.url ?? '').match(re);
+        const name = match?.[1];
+        if (!name || !files.includes(name)) return next();
+        const path = join(srcDir, name);
         try {
-          const stat = statSync(path);
-          if (!stat.isFile()) return next();
+          if (!statSync(path).isFile()) return next();
         } catch {
           return next();
         }
-        // Hand the file to Vite's static handler by rewriting the URL onto
-        // a path it knows how to serve. Simpler: read + send directly.
-        const _res2 = _res as unknown as {
+        const res = _res as unknown as {
           setHeader: (k: string, v: string) => void;
           end: (data: Buffer | string) => void;
         };
-        const data = readFileSync(path);
-        _res2.setHeader(
-          'Content-Type',
-          name.endsWith('.csv') ? 'text/csv; charset=utf-8' : 'application/x-ndjson; charset=utf-8',
-        );
-        _res2.end(data);
+        res.setHeader('Content-Type', contentTypeFor(name));
+        res.end(readFileSync(path));
       });
     },
     closeBundle() {
-      // Build: copy the sample files into the output's samples/ folder.
-      // Vite's default outDir is dist/ relative to the package; we anchor
-      // off `here` so the path resolves the same regardless of cwd.
-      const outDir = join(here, 'dist', 'samples');
+      const outDir = join(here, 'dist', route);
       mkdirSync(outDir, { recursive: true });
-      for (const name of sampleFiles) {
-        copyFileSync(join(samplesDir, name), join(outDir, name));
-      }
+      for (const name of files) copyFileSync(join(srcDir, name), join(outDir, name));
     },
   };
 }
 
 export default defineConfig({
-  plugins: [react(), samplesPlugin()],
+  plugins: [
+    react(),
+    staticDirPlugin('samples', specTcDir, sampleFiles),
+    staticDirPlugin('tutorials', specTcDir, tutorialFeatureNames),
+    staticDirPlugin('cassettes', cassetteDir, cassetteFiles),
+  ],
   base: '/TamedTable/',
   define: {
     // The system-prompt file the engine reads at module init, inlined. The
@@ -106,7 +100,9 @@ export default defineConfig({
     // The list of bundled sample files (filenames only) the Open URL dialog
     // shows as quick-picks. Frozen at build time.
     __TT_SAMPLE_FILES__: JSON.stringify(sampleFiles),
-    __TT_TUTORIAL__: JSON.stringify(tutorialBundle),
+    // Lightweight tutorial scenario index — names + tags + source file. The
+    // feature source, fixtures, goldens, and cassettes load lazily.
+    __TT_TUTORIAL_MANIFEST__: JSON.stringify(tutorialManifest),
   },
   resolve: {
     alias: {

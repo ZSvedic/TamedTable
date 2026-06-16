@@ -751,24 +751,38 @@ lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
 holds only `load-file`, `load-lookup`, `prefill-chat`, and `show-golden`.
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
-consumer that assembles `TutorialSources` from many files stamps each tour with
-its source filename (`main.tsx` from the `__TT_TUTORIAL__.features` keys in the
-browser, the test harness from the file it read), so a deep link can match a
-tour on `(feature, name)`.
+consumer that assembles tours stamps each one with its source filename
+(`TutorialManager.loadTour`, after fetching the `.feature`), so a deep link can
+match a tour on `(feature, name)`.
 
 ### TutorialSources (`@tamedtable/web`)
 
 ```ts
+export interface TutorialManifestEntry {
+  name: string;      // scenario name (clickable list / Dev dropdown)
+  feature: string;   // source .feature file name — disambiguates a deep link
+  tags: string[];    // e.g. ['@web', '@tutorial']
+}
+
 export interface TutorialSources {
-  tours:   TourScenario[];
-  inputs:  Record<string, string>;   // filename → raw text (CSV/JSONL)
-  goldens: Record<string, string>;   // filename → raw JSONL
+  manifest: TutorialManifestEntry[];
+  loadFeature(name: string): Promise<string>;     // raw .feature text
+  loadFixture(name: string): Promise<string>;     // raw CSV/JSONL (input or golden)
+  loadCassette(feature: string): Promise<string>; // raw cassette JSON, feature base name
 }
 ```
 
-`TutorialSources` is passed to `WebControllerOptions.tutorialSources`. In the
-browser it is assembled from `__TT_TUTORIAL__` (a Vite `define` global) at
-app start. In tests it is built by reading `spec/test-cases/` via `readFileSync`.
+Only the lightweight `manifest` ships in the JS bundle; the feature source,
+fixtures, goldens, and cassettes load lazily through the three loaders. In the
+browser (`main.tsx`) the loaders `fetch` same-origin under
+`import.meta.env.BASE_URL` — `tutorials/<name>`, `samples/<name>`,
+`cassettes/<feature>.json` — directories the Vite `staticDirPlugin` copies into
+`dist/` at build and serves via dev middleware (features and fixtures from
+`spec/test-cases/`, cassettes from `src/tests/__cassettes__/`). In tests the
+loaders read the same files with `readFileSync`. The `manifest` is frozen at
+build time by `vite.config.ts` (parsing each `@tutorial`/`@web` feature into
+`{ name, feature, tags }`) and exposed as the `__TT_TUTORIAL_MANIFEST__` define
+global.
 
 ```ts
 export interface WebControllerOptions {
@@ -776,6 +790,25 @@ export interface WebControllerOptions {
   tutorialSources?: TutorialSources;
 }
 ```
+
+### Key-free cassette replay
+
+The fingerprint, on-tape entry shape, and replay lookup live in
+`@tamedtable/cassette` (no Node imports — it loads in the browser; the hash goes
+through Web Crypto, so its hex digest matches the `node:crypto` digest the
+Cucumber recorder produced). `src/tests/cassette.ts` adds the Node-fs
+record/replay file layer on top; the web shell imports `replayFetch` directly.
+
+While `TutorialManager.isReplaying()` is true, `EngineManager.makeFetch` routes
+every model call through `TutorialManager.replayFetch`, which loads the tour's
+cassette (`loadCassette(feature)`, cached) and serves the recorded response or
+throws on a miss. `ensureHeadless` pins the recording configuration during
+replay — model `claude-sonnet-4-6`, the default cell model, a placeholder key —
+so the request fingerprints identically to the taped one; the engine is rebuilt
+when replay mode flips. `sendChat` skips its Anthropic-key guard while replaying.
+Because the patch turn embeds only `basename(spec.table)` and pins the default
+model, a tour replays the cassette a `@headless`/`@cli`/`@web` run of the same
+scenario already recorded — no separate tutorial recording is needed.
 
 ### Tutorial controller methods
 
@@ -785,11 +818,12 @@ export interface WebControllerOptions {
 | `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
 | `tutorialScenarioNames(): string[]` | Names of `@tutorial` tours (the clickable list). |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tutorial` scenarios (the Dev dropdown). |
-| `selectTutorialScenario(name)` | Sets `activeTourIndex` by name; resets step state. |
-| `async playTutorial()` | Resets step state; executes step 0. |
+| `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
+| `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, executes step 0. |
+| `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
 | `async nextStep()` | Increments step index; executes the new step. |
 | `prevStep()` | Decrements step index; no step execution (display only). |
-| `cancelTutorial()` | Clears `tutorialStepIndex`, `goldenRows`, `tutorialPrefill`; keeps `activeTourIndex`. |
+| `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
 | `isTutorialActive(): boolean` | True when `tutorialStepIndex !== null`. |
 | `currentTutorialStepNumber(): number \| null` | 1-based step number. |
 | `tutorialStepCount(): number` | Total steps in the active tour. |

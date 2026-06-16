@@ -12,6 +12,7 @@ export {
 export type {
   WebControllerOptions,
   TutorialSources,
+  TutorialManifestEntry,
   WebSettings,
   Toast,
   ChatMessage,

@@ -3,32 +3,32 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { createWebController, type TutorialSources } from '@tamedtable/web';
 import { parseTours } from '@tamedtable/gherkin-tour';
-import { TamedTableWorld, runnerOptsFor, TEMP_DIR, SPEC_TC_DIR } from './world.ts';
+import { TamedTableWorld, runnerOptsFor, TEMP_DIR, SPEC_TC_DIR, CASSETTE_DIR } from './world.ts';
 import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
 
-/** Build TutorialSources by parsing real feature files and reading fixtures. */
+// The same @tutorial/@web feature files the deployed bundle indexes. Tests read
+// the manifest, feature source, fixtures, and cassettes straight from disk —
+// the lazy loaders the browser fetches same-origin.
+const TUTORIAL_FEATURES = [
+  'filter.feature', 'aggregate.feature', 'join.feature',
+  'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
+];
+
+/** Build TutorialSources from disk: a lightweight manifest plus on-demand
+ *  loaders, mirroring the browser's same-origin fetch. */
 function buildTutorialSources(): TutorialSources {
-  const featureFiles = ['filter.feature', 'aggregate.feature', 'join.feature'];
-  const tours = featureFiles.flatMap((f) => {
-    const src = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
-    // Stamp each tour with its source filename so a deep link can match on
-    // (feature, name) — parseTours sees only the source string, not the file.
-    return parseTours(src).map((t) => ({ ...t, feature: f }));
+  const manifest = TUTORIAL_FEATURES.flatMap((feature) => {
+    const src = readFileSync(join(SPEC_TC_DIR, feature), 'utf8');
+    return parseTours(src)
+      .filter((t) => t.tags.includes('@web'))
+      .map((t) => ({ name: t.name, feature, tags: t.tags }));
   });
-
-  const inputFiles = ['filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv'];
-  const inputs: Record<string, string> = {};
-  for (const f of inputFiles) {
-    inputs[f] = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
-  }
-
-  const goldenFiles = ['filter-expected.jsonl', 'aggregate-by-country-expected.jsonl'];
-  const goldens: Record<string, string> = {};
-  for (const f of goldenFiles) {
-    goldens[f] = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
-  }
-
-  return { tours, inputs, goldens };
+  return {
+    manifest,
+    loadFeature: (name) => Promise.resolve(readFileSync(join(SPEC_TC_DIR, name), 'utf8')),
+    loadFixture: (name) => Promise.resolve(readFileSync(join(SPEC_TC_DIR, name), 'utf8')),
+    loadCassette: (feature) => Promise.resolve(readFileSync(join(CASSETTE_DIR, `${feature}.json`), 'utf8')),
+  };
 }
 
 const tutorialSources = buildTutorialSources();

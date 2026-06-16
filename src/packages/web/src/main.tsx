@@ -1,34 +1,30 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { parseTours } from '@tamedtable/gherkin-tour';
 import { createWebController } from './controller.ts';
-import type { TutorialSources, ResolvedConfig } from './controller.ts';
+import type { TutorialSources, TutorialManifestEntry } from './controller.ts';
 import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
 import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
 import { App } from './App.tsx';
 import './index.css';
 
-declare const __TT_TUTORIAL__: {
-  features: Record<string, string>;
-  inputs:   Record<string, string>;
-  goldens:  Record<string, string>;
-};
+// Lightweight tutorial scenario index, frozen into the bundle by vite.config.
+// Everything heavy loads lazily, fetched same-origin under the deployed base.
+declare const __TT_TUTORIAL_MANIFEST__: TutorialManifestEntry[];
 
-// Config is now persisted by the controller itself via
-// @tamedtable/model-config/storage.
-// We still subscribe to persist the model separately for forward compat with
-// any older stored 'tamedtable.model' entries (the controller ignores that key;
-// this subscription is a no-op that doesn't write anything we need, but it
-// keeps the observer pattern intact for future use).
+const base = import.meta.env.BASE_URL; // e.g. '/TamedTable/'
+async function fetchText(url: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`fetch ${url} → ${res.status} ${res.statusText}`);
+  return res.text();
+}
 
 const tutorialSources: TutorialSources = {
-  // Stamp each tour with its source filename (the map key) so a deep link can
-  // match on (feature, name) — parseTours sees only the source string.
-  tours:   Object.entries(__TT_TUTORIAL__.features).flatMap(
-    ([feature, src]) => parseTours(src).map((t) => ({ ...t, feature })),
-  ),
-  inputs:  __TT_TUTORIAL__.inputs,
-  goldens: __TT_TUTORIAL__.goldens,
+  manifest: __TT_TUTORIAL_MANIFEST__,
+  // Feature source, fixtures, and cassettes are served same-origin by the
+  // staticDirPlugin copies in vite.config (dev + build).
+  loadFeature: (name) => fetchText(`${base}tutorials/${name}`),
+  loadFixture: (name) => fetchText(`${base}samples/${name}`),
+  loadCassette: (feature) => fetchText(`${base}cassettes/${feature}.json`),
 };
 
 const controller = createWebController({
