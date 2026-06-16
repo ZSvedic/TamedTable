@@ -14,8 +14,8 @@ export class ConfigManager {
     this.host = host;
   }
 
-  /** Returns the API key for the currently-selected provider. */
-  activeApiKey(): string | undefined {
+  /** Returns the API key for the currently-selected provider, or null. */
+  activeApiKey(): string | null {
     const { provider, anthropicKey, geminiKey, openaiKey } = this.host.config;
     if (provider === 'gemini') return geminiKey;
     if (provider === 'openai') return openaiKey;

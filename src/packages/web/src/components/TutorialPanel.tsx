@@ -1,6 +1,6 @@
 // #TutorialMode
 import { useEffect, useRef, type ReactNode } from 'react';
-import { driver } from 'driver.js';
+import { driver, type AllowedButtons } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
@@ -63,7 +63,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     });
     driverRef.current = d;
 
-    const disableButtons: string[] = [];
+    const disableButtons: AllowedButtons[] = [];
     if (isFirst) disableButtons.push('previous');
     if (isLast)  disableButtons.push('next');
 
