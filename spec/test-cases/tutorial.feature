@@ -87,3 +87,26 @@ Feature: Tutorial panel
       And user plays the tutorial
       When user advances to the last tutorial step
       Then the golden rows are available
+
+  Rule: A deep link opens, selects, and plays a named tour
+
+    @web
+    Scenario: A valid feature and scenario autoplays from step 1
+      Given the TamedTable web app
+      When user opens a deep link to feature "filter.feature" scenario "Filter by Country"
+      Then the tutorial panel is shown
+      And the tutorial is at step 1
+
+    @web
+    Scenario: An unknown scenario leaves the panel closed
+      Given the TamedTable web app
+      When user opens a deep link to feature "filter.feature" scenario "No Such Scenario"
+      Then the tutorial panel is not shown
+      And the tutorial is not active
+
+    @web
+    Scenario: A missing scenario param leaves the panel closed
+      Given the TamedTable web app
+      When user opens a deep link to feature "filter.feature" scenario ""
+      Then the tutorial panel is not shown
+      And the tutorial is not active

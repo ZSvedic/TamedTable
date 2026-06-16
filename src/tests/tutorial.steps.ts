@@ -44,10 +44,21 @@ When('user advances to the last tutorial step', async function (this: TamedTable
   }
 });
 
+When(
+  'user opens a deep link to feature {string} scenario {string}',
+  async function (this: TamedTableWorld, feature: string, scenario: string) {
+    await controller(this).openTutorialFromLink(feature, scenario);
+  },
+);
+
 // ── Then ───────────────────────────────────────────────────────────────────
 
 Then('the tutorial panel is shown', function (this: TamedTableWorld) {
   assert.equal(controller(this).tutorialOpen, true, 'tutorial panel should be open');
+});
+
+Then('the tutorial panel is not shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).tutorialOpen, false, 'tutorial panel should be closed');
 });
 
 Then('the tutorial list includes {string}', function (this: TamedTableWorld, name: string) {

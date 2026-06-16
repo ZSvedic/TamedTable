@@ -316,6 +316,10 @@ export class WebController implements ControllerHost {
   tutorialScenarioNames(): string[] { return this.tutorial.tutorialScenarioNames(); }
   devScenarioNames(): string[] { return this.tutorial.devScenarioNames(); }
   selectTutorialScenario(name: string): void { this.tutorial.selectTutorialScenario(name); }
+  /** Deep link: open, select by (feature, scenario), and play from step 1. */
+  openTutorialFromLink(feature: string | null, scenario: string | null): Promise<boolean> {
+    return this.tutorial.openTutorialFromLink(feature, scenario);
+  }
   playTutorial(): Promise<void> { return this.tutorial.playTutorial(); }
   nextStep(): Promise<void> { return this.tutorial.nextStep(); }
   prevStep(): void { this.tutorial.prevStep(); }
