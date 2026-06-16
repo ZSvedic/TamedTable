@@ -25,7 +25,7 @@ Three cleanups before it ships, so it renders offline and matches the brand:
 
 No customer logos — TamedTable is open source. Use an honest band instead:
 
-> Open source · runs on your own API key · works in the browser or on the command line
+> Open source · try the live demos with no key · runs on your own API key · works in the browser or on the command line
 
 ## Demo
 
@@ -45,7 +45,7 @@ One line in. Every row changed in front of you.
 
 Three columns:
 
-- **Transform** — Normalize, dedupe, filter, join, pivot, and more — by typing what you want.
+- **Transform** — Normalize, dedupe, filter, join, pivot, and more — by typing (or speaking) what you want, in your own language.
 - **Reuse** — Every change saves as steps you replay on new data, or export as a Python script.
 - **Trust** — You see every row change. Nothing is hidden, and it's fully open source.
 

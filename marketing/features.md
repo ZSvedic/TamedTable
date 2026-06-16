@@ -14,6 +14,7 @@ Show, don't tell — every capability is the actual phrase you'd type.
 Say what you want; TamedTable makes the change and shows every row.
 
 - **Clean messy fields** — *"normalize the phone numbers"* fixes phones, emails, and casing in one pass.
+- Ask in your own language — *"normaliza los números de teléfono"* works as well as the English.
 - Drop duplicates — *"remove duplicate emails"*
 - Keep the rows you want — *"keep customers in the USA"*
 - Sort or take the top few — *"sort by revenue, top 10"*

@@ -28,22 +28,28 @@ You can *describe* the change you want long before you can *write* it.
 
 ## What TamedTable does
 
-You see your data on screen and say what to do. It makes the change, shows you every row before and after, and saves the steps so you can run them again later — on new data, with no AI call. Use it as a web app you click or a command you script; both run on the same engine.
+You see your data on screen and say what to do — in plain language, English or
+your own. It makes the change, shows you every row before and after, and saves
+the steps so you can run them again later — on new data, with no AI call. Use it
+as a web app you click or a command you script; both run on the same engine.
 
 ## Why it's different
 
 - **You keep the steps, not a pile of code.** Save them, run them again tomorrow, even turn them into a Python script.
 - **Asking stays cheap.** Describing a change costs the same whether your table has a hundred rows or a million, and replaying saved steps costs nothing at all.
 - **Nothing is hidden.** You see exactly what changed, row by row, so you can trust it.
+- **It speaks your language.** Ask in English, Spanish, German, French, Croatian, Chinese — by voice or text. It understands the request, not just keywords.
 - **It's open source.** No lock-in, no proprietary format.
 
 ## What you can do with it
 
-Every row links to the scenario that proves it works — "play it" runs the live demo:
+Every row links to the scenario that proves it works — "play it" replays a
+recorded run right in the browser, with **no API key and no signup**:
 
 | What you can do | In your words | See it |
 |---|---|---|
 | Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
+| Ask in your own language | *"normaliza los números de teléfono"* | [multilingual.feature](../spec/test-cases/multilingual.feature) |
 | Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [datanorm.feature](../spec/test-cases/datanorm.feature) |
 | Drop duplicate rows | *"remove duplicate emails"* | [play it](https://zsvedic.github.io/TamedTable/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email) |
 | Keep only the rows you care about | *"keep customers in the USA"* | [play it](https://zsvedic.github.io/TamedTable/?feature=filter.feature&scenario=Filter+by+Country) |
