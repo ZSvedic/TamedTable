@@ -7,9 +7,9 @@
   <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="12.5" fill="#281C60">split full name into first and last</text>
   <g>
     <!-- header: full_name | first | last -->
-    <rect x="18" y="72" width="324" height="30" rx="6" fill="#281C60"/>
+    <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
     <text x="30" y="91" font-size="11.5" font-weight="600" fill="#FFFFFF">full_name</text>
-    <line x1="150" y1="72" x2="150" y2="206" stroke="#FFFFFF" stroke-opacity="0.18"/>
+    <line x1="150" y1="72" x2="150" y2="200" stroke="#FFFFFF" stroke-opacity="0.18"/>
     <text x="162" y="91" font-size="11.5" font-weight="600" fill="#96BED7">first</text>
     <text x="252" y="91" font-size="11.5" font-weight="600" fill="#96BED7">last</text>
     <g font-size="12" font-family="JetBrains Mono, ui-monospace, monospace">
@@ -26,12 +26,12 @@
       <text x="252" y="156" fill="#281C60">Patel</text>
 
       <rect x="18" y="168" width="324" height="32" fill="#FFFFFF"/>
-      <rect x="150" y="168" width="192" height="32" fill="#E7F1F8"/>
+      <path d="M150 168 h192 v26 a6 6 0 0 1 -6 6 h-186 Z" fill="#E7F1F8"/>
       <text x="30" y="188" fill="#9A8FB8">Lena Ruiz</text>
       <text x="162" y="188" fill="#281C60">Lena</text>
       <text x="252" y="188" fill="#281C60">Ruiz</text>
     </g>
-    <rect x="150" y="72" width="192" height="128" fill="none" stroke="#96BED7"/>
+    <path d="M150 72 h186 a6 6 0 0 1 6 6 v116 a6 6 0 0 1 -6 6 h-186 Z" fill="none" stroke="#96BED7"/>
     <rect x="18" y="72" width="324" height="128" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
 </svg>
