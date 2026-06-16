@@ -7,7 +7,10 @@ export type TourAction =
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
-export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string }
+// `feature` (the source file name) is not set by parseTours — it sees only the
+// source string. The consumer assembling tours from many files stamps it, so a
+// deep link can match one tour by (feature, name).
+export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string; feature?: string }
 
 // ── Step classification ────────────────────────────────────────────────────
 

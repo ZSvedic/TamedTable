@@ -11,7 +11,9 @@ function buildTutorialSources(): TutorialSources {
   const featureFiles = ['filter.feature', 'aggregate.feature', 'join.feature'];
   const tours = featureFiles.flatMap((f) => {
     const src = readFileSync(join(SPEC_TC_DIR, f), 'utf8');
-    return parseTours(src);
+    // Stamp each tour with its source filename so a deep link can match on
+    // (feature, name) — parseTours sees only the source string, not the file.
+    return parseTours(src).map((t) => ({ ...t, feature: f }));
   });
 
   const inputFiles = ['filter-input.csv', 'datanorm-input.csv', 'join-country-codes.csv'];

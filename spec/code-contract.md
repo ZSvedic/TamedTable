@@ -738,7 +738,7 @@ export type TourAction =
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
-export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string }
+export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string; feature?: string }
 
 export function parseTours(source: string): TourScenario[]
 ```
@@ -749,6 +749,12 @@ filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
 holds only `load-file`, `load-lookup`, `prefill-chat`, and `show-golden`.
+
+`feature` is **not** set by `parseTours` — it sees only the source string. The
+consumer that assembles `TutorialSources` from many files stamps each tour with
+its source filename (`main.tsx` from the `__TT_TUTORIAL__.features` keys in the
+browser, the test harness from the file it read), so a deep link can match a
+tour on `(feature, name)`.
 
 ### TutorialSources (`@tamedtable/web`)
 
@@ -790,3 +796,8 @@ export interface WebControllerOptions {
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
 | `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn`, `tutorial-chat-input`, or `tutorial-table-view`. |
+| `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: opens the panel, selects that tour, plays from step 1, returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
+
+`main.tsx` calls `openTutorialFromLink` once at app start, passing
+`new URLSearchParams(window.location.search).get('feature' / 'scenario')`
+(each `string | null`). The URL is read in `main.tsx`, not the controller.

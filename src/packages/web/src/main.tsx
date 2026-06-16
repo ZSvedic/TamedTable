@@ -22,7 +22,11 @@ declare const __TT_TUTORIAL__: {
 // keeps the observer pattern intact for future use).
 
 const tutorialSources: TutorialSources = {
-  tours:   Object.values(__TT_TUTORIAL__.features).flatMap((src) => parseTours(src)),
+  // Stamp each tour with its source filename (the map key) so a deep link can
+  // match on (feature, name) — parseTours sees only the source string.
+  tours:   Object.entries(__TT_TUTORIAL__.features).flatMap(
+    ([feature, src]) => parseTours(src).map((t) => ({ ...t, feature })),
+  ),
   inputs:  __TT_TUTORIAL__.inputs,
   goldens: __TT_TUTORIAL__.goldens,
 };
@@ -38,6 +42,12 @@ const controller = createWebController({
 controller.subscribe(() => {
   // Intentionally empty — config is persisted inside the controller.
 });
+
+// Deep link: ?feature=<file>&scenario=<name> opens the named tour and plays it.
+// Reading the URL belongs here (alongside the app build data), not the
+// controller. Unmatched/missing params boot normally — the controller no-ops.
+const params = new URLSearchParams(window.location.search);
+void controller.openTutorialFromLink(params.get('feature'), params.get('scenario'));
 
 const root = document.getElementById('root');
 if (!root) throw new Error('TamedTable: #root element is missing from index.html');

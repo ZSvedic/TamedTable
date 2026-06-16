@@ -45,14 +45,14 @@ Every row links to the scenario that proves it works:
 |---|---|---|
 | Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
 | Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [datanorm.feature](../spec/test-cases/datanorm.feature) |
-| Drop duplicate rows | *"remove duplicate emails"* | [dedupe.feature](../spec/test-cases/dedupe.feature) |
-| Keep only the rows you care about | *"keep customers in the USA"* | [filter.feature](../spec/test-cases/filter.feature) |
+| Drop duplicate rows | *"remove duplicate emails"* | [play it](https://zsvedic.github.io/TamedTable/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email) |
+| Keep only the rows you care about | *"keep customers in the USA"* | [play it](https://zsvedic.github.io/TamedTable/?feature=filter.feature&scenario=Filter+by+Country) |
 | Sort, or keep just the top few | *"sort by revenue, top 10"* | [sort.feature](../spec/test-cases/sort.feature) |
-| Total things up by group | *"total sales per region"* | [aggregate.feature](../spec/test-cases/aggregate.feature) |
-| Split one column into several | *"split full name into first and last"* | [colsplit.feature](../spec/test-cases/colsplit.feature) |
-| Combine two tables | *"add each order's customer name"* | [join.feature](../spec/test-cases/join.feature) |
-| Reshape between tall and wide | *"pivot months into columns"* | [pivot.feature](../spec/test-cases/pivot.feature) |
-| Flag the bad rows | *"mark rows with a missing email"* | [validate.feature](../spec/test-cases/validate.feature) |
+| Total things up by group | *"total sales per region"* | [play it](https://zsvedic.github.io/TamedTable/?feature=aggregate.feature&scenario=Count+customers+per+country) |
+| Split one column into several | *"split full name into first and last"* | [play it](https://zsvedic.github.io/TamedTable/?feature=colsplit.feature&scenario=Split+FullName+into+FirstName+and+LastName+on+space) |
+| Combine two tables | *"add each order's customer name"* | [play it](https://zsvedic.github.io/TamedTable/?feature=join.feature&scenario=Left+join+enriches+each+customer+with+ISO+and+Region) |
+| Reshape between tall and wide | *"pivot months into columns"* | [play it](https://zsvedic.github.io/TamedTable/?feature=pivot.feature&scenario=One+column+per+distinct+on-value%2C+default+agg+first) |
+| Flag the bad rows | *"mark rows with a missing email"* | [play it](https://zsvedic.github.io/TamedTable/?feature=validate.feature&scenario=Flag+rows+with+empty+Phone) |
 | Drop to SQL when you want it exact | *"set total = price * qty"* | [sql.feature](../spec/test-cases/sql.feature) |
 | Point at other columns in a request | *"fill city from the address column"* | [placeholders.feature](../spec/test-cases/placeholders.feature) |
 | Save your cleaned data | `:save clean.csv` | [convert.feature](../spec/test-cases/convert.feature) |

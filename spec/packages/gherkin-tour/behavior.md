@@ -50,6 +50,12 @@ Note what is *absent* from `steps`: the `the expected output is "X"` line (lifte
 onto `golden`) and the `column "Country" exists in the spec` line (a verification
 step, dropped). `Background` steps prepend to every scenario in scope.
 
+A `TourScenario` also carries an optional `feature` field — the source file name
+the scenario came from. `parseTours` does **not** set it (it sees only the
+source string); the consumer that assembles tours from many files stamps each
+scenario with its filename, so a deep link can identify one tour by
+`(feature, name)` even when two files share a scenario name.
+
 ## Parsing rules
 
 The parser reads line by line; no third-party Gherkin library is used.

@@ -54,6 +54,26 @@ export class TutorialManager {
     this.host.notify();
   }
 
+  /** Deep link: open, select by (feature, scenario), and play from step 1.
+   *  Returns true when a tour matched; otherwise leaves the panel closed and
+   *  returns false. A missing/empty arg or an unknown file/scenario never
+   *  opens the panel — a deep link must not block a normal visit. The (feature,
+   *  name) pair disambiguates when two files share a scenario name. */
+  async openTutorialFromLink(feature: string | null, scenario: string | null): Promise<boolean> {
+    if (!feature || !scenario) return false;
+    const idx = this.tutorialSrc?.tours.findIndex(
+      (t) => t.feature === feature && t.name === scenario,
+    ) ?? -1;
+    if (idx < 0) return false;
+    this.openTutorial();
+    this.activeTourIndex = idx;
+    this.tutorialStepIndex = null;
+    this.host.goldenRows = null;
+    this.host.tutorialPrefill = null;
+    await this.playTutorial();
+    return true;
+  }
+
   async playTutorial(): Promise<void> {
     if (this.activeTourIndex === null) return;
     const tour = this.tutorialSrc?.tours[this.activeTourIndex];

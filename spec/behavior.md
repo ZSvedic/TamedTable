@@ -871,6 +871,24 @@ by `vite.config.ts`; the tutorial controller resolves lookup files from
 `tutorialSrc.inputs` and the golden file from `scenario.golden`, which the
 parser lifts from the `the expected output is "X"` step.
 
+### Deep links into a tutorial
+
+A link can open the app straight into one tour and play it. On load the app
+reads two query parameters:
+
+- `feature` — the Gherkin file name the scenario lives in (e.g. `filter.feature`).
+- `scenario` — the scenario name, URL-encoded.
+
+Both together name one tour; the file disambiguates when two files share a
+scenario name, so matching on the scenario name alone is not enough. When both
+resolve to a real tour the app opens the Tutorial panel, selects that tour, and
+plays it from step 1. A missing parameter, an unknown file, or an unknown
+scenario boots the app normally — panel closed, no error toast; a deep link
+never crashes or blocks a normal visit.
+
+Production links use the deployed base, e.g.
+`https://zsvedic.github.io/TamedTable/?feature=filter.feature&scenario=Filter+by+Country`.
+
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 
 ## One schema, richer sort keys, and Python export
