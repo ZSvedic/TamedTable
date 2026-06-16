@@ -1,8 +1,18 @@
 # Homepage copy
 
-The words for the landing page, section by section, for whoever designs the page next. It owns the copy and the order of sections; it does not own layout or visuals. Build the page on [Start Bootstrap "Landing Page"](https://startbootstrap.com/template/landing-page) (MIT, semantic HTML/CSS), styled with the [brand tokens](../design/brand/brand.md); [website-wireframe.html](website-wireframe.html) shows the intended section order. Everything here comes from the [marketing brief](marketing-brief.md).
+The words for the landing page, section by section, for whoever designs the page next. It owns the copy and the order of sections; it does not own layout or visuals — those come from the chosen template and the [brand tokens](../design/brand/brand.md). Everything here comes from the [marketing brief](marketing-brief.md).
 
 Style follows [testdome.com](https://www.testdome.com): confident one-line headlines, terse benefit copy, and every feature block paired with an illustration of that exact screen. Show the work, don't describe it.
+
+## The base template
+
+Build the page on **SaaSify** — a pure HTML/CSS/vanilla-JS SaaS landing template, no framework, no build step: <https://github.com/prantomollick/saas-landing-page-template>. MIT licensed (no attribution required). It already has the section shape we want — hero, features grid, testimonials, pricing, CTA, footer.
+
+Three cleanups before it ships, so it renders offline and matches the brand:
+
+- **Drop the CDN dependencies.** Self-host the font (it pulls Poppins from Google Fonts) — use the brand fonts (Outfit, Inter, JetBrains Mono) instead — and replace the Font Awesome CDN with a few inline SVG icons.
+- **Replace the placeholder images.** It ships stock Unsplash/Pravatar images loaded from the network; swap in real product shots (or the mark from [design/brand/](../design/brand/)).
+- **Restyle with the brand tokens.** Recolor to Aubergine / Pale Sky / Linen from [design/tokens.json](../design/tokens.json); the template's CSS uses custom properties, so this is a variables pass, not a rewrite.
 
 ## Hero
 
