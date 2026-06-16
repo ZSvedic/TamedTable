@@ -19,12 +19,14 @@
     <text x="90" y="147" font-family="JetBrains Mono, ui-monospace, monospace" fill="#281C60">c-3</text>
     <rect x="18" y="86" width="120" height="68" fill="none" stroke="#DCDCDC"/>
   </g>
-  <!-- link / join glyph -->
-  <g stroke="#96BED7" stroke-width="2" fill="none">
-    <path d="M142 120 q14 0 14 -12"/>
-    <path d="M142 142 q14 0 14 12"/>
+  <!-- join connector: two keys converge at a node, then fan out to the matched table -->
+  <g stroke="#96BED7" stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M138 121 C 149 121, 152 132, 157 132"/>
+    <path d="M138 143 C 149 143, 152 132, 157 132"/>
+    <path d="M157 132 C 162 132, 165 121, 176 121"/>
+    <path d="M157 132 C 162 132, 165 143, 176 143"/>
   </g>
-  <text x="146" y="110" font-size="16" fill="#96BED7">⋈</text>
+  <circle cx="157" cy="132" r="4.5" fill="#96BED7" stroke="#FFFFFF" stroke-width="1.5"/>
   <!-- right table: customers, name column joined in -->
   <g font-size="11">
     <text x="176" y="80" font-size="10.5" fill="#6A6280">customers → joined</text>

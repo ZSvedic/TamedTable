@@ -14,13 +14,13 @@
     <g font-size="12" font-family="JetBrains Mono, ui-monospace, monospace">
       <rect x="18" y="104" width="324" height="30" fill="#E7F1F8"/>
       <rect x="18" y="104" width="4" height="30" fill="#96BED7"/>
-      <text x="32" y="123" font-family="Inter" fill="#281C60">West</text>
+      <text x="32" y="123" font-family="Inter, ui-sans-serif, system-ui, sans-serif" fill="#281C60">West</text>
       <text x="200" y="123" fill="#281C60">$ 48,200</text>
       <rect x="18" y="134" width="324" height="30" fill="#FFFFFF"/>
-      <text x="32" y="153" font-family="Inter" fill="#281C60">North</text>
+      <text x="32" y="153" font-family="Inter, ui-sans-serif, system-ui, sans-serif" fill="#281C60">North</text>
       <text x="200" y="153" fill="#281C60">$ 31,940</text>
       <rect x="18" y="164" width="324" height="30" fill="#F6F2EB"/>
-      <text x="32" y="183" font-family="Inter" fill="#281C60">South</text>
+      <text x="32" y="183" font-family="Inter, ui-sans-serif, system-ui, sans-serif" fill="#281C60">South</text>
       <text x="200" y="183" fill="#281C60">$ 22,510</text>
       <rect x="18" y="194" width="324" height="14" fill="#FFFFFF"/>
     </g>
