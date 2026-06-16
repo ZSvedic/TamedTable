@@ -1,36 +1,18 @@
 ---
-description: Start the TamedTable dev environment — code tunnel + three MCP browser tabs (GitHub repo, live site, VSCode tunnel)
+description: Start the TamedTable dev environment — two MCP browser tabs (GitHub repo, live site)
 ---
 
 Set up the TamedTable dev environment, then report status:
 
-1. **Resolve the per-machine tunnel name and repo path.** Run:
+1. **Connect to my browser.** Call `list_connected_browsers`. If one is connected, select it; if multiple, ask which.
 
-   ```
-   TUNNEL_NAME=tamedtable-$(hostname -s | tr '[:upper:]' '[:lower:]')
-   REPO_ROOT=$(git rev-parse --show-toplevel)
-   ```
-
-   Use `$TUNNEL_NAME` and `$REPO_ROOT` in the steps below.
-
-2. **Start the VSCode tunnel.** If `pgrep -f "code tunnel"` shows nothing, run:
-
-   ```
-   nohup code tunnel --name "$TUNNEL_NAME" --accept-server-license-terms > /tmp/code-tunnel.log 2>&1 &
-   ```
-
-   After ~5s, tail `/tmp/code-tunnel.log` and confirm it printed a `vscode.dev/tunnel/$TUNNEL_NAME/...` URL. If you see `error connecting to relay` or `404`, recover with `code tunnel unregister` then re-run with a different `--name`. Surface any GitHub device-login code.
-
-3. **Connect to my browser.** Call `list_connected_browsers`. If one is connected, select it; if multiple, ask which.
-
-4. **Open three tabs in a fresh MCP tab group.** Call `tabs_context_mcp` with `createIfEmpty: true`, use the empty tab it returns for the first URL, then `tabs_create_mcp` for the other two:
+2. **Open two tabs in a fresh MCP tab group.** Call `tabs_context_mcp` with `createIfEmpty: true`, use the empty tab it returns for the first URL, then `tabs_create_mcp` for the second:
    - https://github.com/ZSvedic/TamedTable
    - https://zsvedic.github.io/TamedTable/
-   - `https://vscode.dev/tunnel/$TUNNEL_NAME$REPO_ROOT` (substitute the values from step 1)
 
-   Don't try to reuse tabs from prior chats — Claude in Chrome only sees tabs inside the current MCP group, so reattaching isn't reliable. If step 2 failed, skip the third tab and note it.
+   Don't try to reuse tabs from prior chats — Claude in Chrome only sees tabs inside the current MCP group, so reattaching isn't reliable.
 
-5. **Report**: tunnel status, browser used, tabs opened.
+3. **Report**: browser used, tabs opened.
 
 ## After setup: routing each new task
 
