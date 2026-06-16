@@ -1,6 +1,6 @@
 # Marketing brief
 
-The source of truth for TamedTable's message: the tagline, who it's for, and what it does for you. Everything else in this dir — [homepage.md](homepage.md), [features.md](features.md) — derives from this. Visuals live in [design/brand/brand.md](../design/brand/brand.md); product details live in [spec/](../spec/).
+The source of truth for TamedTable's message: the tagline, who it's for, and what it does for you. Everything else in this dir — [homepage.md](homepage.md), [features.md](features.md) — derives from this, and the landing page is built on the [SaaSify template](https://github.com/prantomollick/saas-landing-page-template). Visuals live in [design/brand/brand.md](../design/brand/brand.md); product details live in [spec/](../spec/).
 
 ## Taglines
 
@@ -39,30 +39,25 @@ You see your data on screen and say what to do. It makes the change, shows you e
 
 ## What you can do with it
 
-Every row links to the scenario that proves it works:
+Every row links to the scenario that proves it works — "play it" runs the live demo:
 
 | What you can do | In your words | See it |
 |---|---|---|
 | Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
 | Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [datanorm.feature](../spec/test-cases/datanorm.feature) |
-| Drop duplicate rows | *"remove duplicate emails"* | [dedupe.feature](../spec/test-cases/dedupe.feature) |
-| Keep only the rows you care about | *"keep customers in the USA"* | [filter.feature](../spec/test-cases/filter.feature) |
+| Drop duplicate rows | *"remove duplicate emails"* | [play it](https://zsvedic.github.io/TamedTable/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email) |
+| Keep only the rows you care about | *"keep customers in the USA"* | [play it](https://zsvedic.github.io/TamedTable/?feature=filter.feature&scenario=Filter+by+Country) |
 | Sort, or keep just the top few | *"sort by revenue, top 10"* | [sort.feature](../spec/test-cases/sort.feature) |
-| Total things up by group | *"total sales per region"* | [aggregate.feature](../spec/test-cases/aggregate.feature) |
-| Split one column into several | *"split full name into first and last"* | [colsplit.feature](../spec/test-cases/colsplit.feature) |
-| Combine two tables | *"add each order's customer name"* | [join.feature](../spec/test-cases/join.feature) |
-| Reshape between tall and wide | *"pivot months into columns"* | [pivot.feature](../spec/test-cases/pivot.feature) |
-| Flag the bad rows | *"mark rows with a missing email"* | [validate.feature](../spec/test-cases/validate.feature) |
+| Total things up by group | *"total sales per region"* | [play it](https://zsvedic.github.io/TamedTable/?feature=aggregate.feature&scenario=Count+customers+per+country) |
+| Split one column into several | *"split full name into first and last"* | [play it](https://zsvedic.github.io/TamedTable/?feature=colsplit.feature&scenario=Split+FullName+into+FirstName+and+LastName+on+space) |
+| Combine two tables | *"add each order's customer name"* | [play it](https://zsvedic.github.io/TamedTable/?feature=join.feature&scenario=Left+join+enriches+each+customer+with+ISO+and+Region) |
+| Reshape between tall and wide | *"pivot months into columns"* | [play it](https://zsvedic.github.io/TamedTable/?feature=pivot.feature&scenario=One+column+per+distinct+on-value%2C+default+agg+first) |
+| Flag the bad rows | *"mark rows with a missing email"* | [play it](https://zsvedic.github.io/TamedTable/?feature=validate.feature&scenario=Flag+rows+with+empty+Phone) |
 | Drop to SQL when you want it exact | *"set total = price * qty"* | [sql.feature](../spec/test-cases/sql.feature) |
 | Point at other columns in a request | *"fill city from the address column"* | [placeholders.feature](../spec/test-cases/placeholders.feature) |
-| Save your cleaned data | `:save clean.csv` | [convert.feature](../spec/test-cases/convert.feature) |
+| Open a CSV or JSONL | open a file or paste a URL | [web.feature](../spec/test-cases/web.feature) |
+| Save your cleaned data as CSV or JSONL | `:save clean.csv` | [convert.feature](../spec/test-cases/convert.feature) |
 | Save the recipe and replay it later | `:save-flow tidy.flow` | [repl-commands.feature](../spec/test-cases/repl-commands.feature) |
 | Hand it off as a Python script | `:save-py tidy.py` | [save-py.feature](../spec/test-cases/save-py.feature) |
 | Take back any change | `:undo` / `:redo` | [repl-commands.feature](../spec/test-cases/repl-commands.feature) |
 | Work in a browser or on the command line | same engine, your choice | [web.feature](../spec/test-cases/web.feature) |
-
-## Files it reads and writes
-
-TamedTable loads and saves **CSV** and **JSONL** — the two formats data teams already pass around. Open a file from your computer or from a URL, work on it, then save the cleaned rows back out.
-
-Worth saying up front: the web app saves JSONL only and can't run SQL steps (the command line does the full set), and `.xlsx`/`.parquet` aren't supported yet.
