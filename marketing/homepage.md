@@ -1,6 +1,6 @@
 # Homepage copy
 
-The words for the landing page, section by section, for whoever designs the page next. It owns the copy and the order of sections; it does not own layout or visuals (see [website-template.html](website-template.html) and [design/brand/brand.md](../design/brand/brand.md)). Everything here comes from the [marketing brief](marketing-brief.md).
+The words for the landing page, section by section, for whoever designs the page next. It owns the copy and the order of sections; it does not own layout or visuals. Build the page on [Start Bootstrap "Landing Page"](https://startbootstrap.com/template/landing-page) (MIT, semantic HTML/CSS), styled with the [brand tokens](../design/brand/brand.md); [website-wireframe.html](website-wireframe.html) shows the intended section order. Everything here comes from the [marketing brief](marketing-brief.md).
 
 Style follows [testdome.com](https://www.testdome.com): confident one-line headlines, terse benefit copy, and every feature block paired with an illustration of that exact screen. Show the work, don't describe it.
 
