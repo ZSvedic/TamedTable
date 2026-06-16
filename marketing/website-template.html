@@ -1,0 +1,142 @@
+<!doctype html>
+<!--
+  TamedTable landing page — semantic skeleton for the designer.
+  Copy goes in from marketing/homepage.md; colors and fonts from design/tokens.json
+  and design/brand/brand.md. No framework, no build step — plain HTML + CSS.
+  Replace the {{ ... }} slots and swap the inline SVG logo for the real mark.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TamedTable — Talk to your data</title>
+  <meta name="description" content="Load a spreadsheet, say what you want, and watch it happen. No formulas, no code.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #281C60;        /* headings, body text */
+      --accent: #96BED7;     /* highlights, focus */
+      --line: #DCDCDC;       /* grid lines, borders */
+      --ground: #F6F2EB;     /* page background */
+      --white: #FFFFFF;
+      --brand-font: "Outfit", system-ui, sans-serif;
+      --ui-font: "Inter", system-ui, sans-serif;
+      --mono-font: "JetBrains Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--ground); color: var(--ink);
+      font-family: var(--ui-font); line-height: 1.55;
+    }
+    h1, h2, .wordmark { font-family: var(--brand-font); font-variant-caps: small-caps; }
+    a { color: var(--ink); }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Header */
+    header { border-bottom: 1px solid var(--line); background: var(--white); }
+    header nav { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; }
+    .wordmark { display: flex; align-items: center; gap: 0.4rem; font-size: 1.25rem; }
+    nav ul { display: flex; gap: 1.5rem; list-style: none; margin: 0; padding: 0; }
+
+    /* Buttons */
+    .btn { display: inline-block; padding: 0.6rem 1.1rem; border-radius: 4px; text-decoration: none; font-weight: 600; }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-ghost { border: 1px solid var(--line); }
+
+    /* Sections */
+    section { padding: 4rem 0; }
+    section + section { border-top: 1px solid var(--line); }
+    .hero h1 { font-size: 2.75rem; margin: 0 0 0.5rem; }
+    .lede { font-size: 1.25rem; max-width: 34ch; }
+    .actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+    /* Show-the-work terminal block */
+    pre.demo {
+      font-family: var(--mono-font); background: var(--white); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem;
+      overflow-x: auto; font-size: 0.9rem;
+    }
+    pre.demo .accent { color: var(--ink); background: var(--accent); padding: 0 0.2em; border-radius: 2px; }
+
+    /* Steps + feature grid */
+    ol.steps { padding-left: 1.2rem; }
+    ol.steps li { margin-bottom: 0.75rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+    .grid article { background: var(--white); border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem; }
+    .grid h3 { margin-top: 0; }
+
+    footer { border-top: 1px solid var(--line); background: var(--white); padding: 2rem 0; font-size: 0.9rem; }
+    footer .row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="wrap">
+      <!-- Swap for the real mark from design/brand/ (icon-square-crisp.svg) -->
+      <span class="wordmark"><svg width="22" height="22" aria-hidden="true"><rect width="22" height="22" fill="#281C60"/></svg> TamedTable</span>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="https://github.com/ZSvedic/TamedTable">GitHub</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <h1>Talk to your data.</h1>
+      <p class="lede">Load a spreadsheet, say what you want, and watch it happen. No formulas, no code.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#">Try it now</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+    </section>
+
+    <!-- Show-don't-tell: a real run, straight from homepage.md -->
+    <section class="wrap">
+      <h2>One line in, every row changed</h2>
+<pre class="demo">&gt; normalize the phone numbers
+
+ Email              Phone                       Country
+ alice@example.com  <span class="accent">+15551234567</span>    ← was 555-123-4567   usa
+ bob@example.com    <span class="accent">+15559876543</span>    ← was (555) 987-6543  usa</pre>
+    </section>
+
+    <section id="how" class="wrap">
+      <h2>How it works</h2>
+      <ol class="steps">
+        <li><strong>Open your data.</strong> A CSV or JSONL from your computer or a URL.</li>
+        <li><strong>Say what you want.</strong> {{ example requests from homepage.md }}</li>
+        <li><strong>Keep the result.</strong> Save the data, or save the steps and replay them later — no AI call.</li>
+      </ol>
+    </section>
+
+    <section id="features" class="wrap">
+      <h2>What you can do</h2>
+      <div class="grid">
+        <article><h3>{{ feature }}</h3><p>{{ the words you'd type — pull rows from features.md }}</p></article>
+        <article><h3>{{ feature }}</h3><p>{{ … }}</p></article>
+        <article><h3>{{ feature }}</h3><p>{{ … }}</p></article>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <h2>Try it in two minutes</h2>
+      <p>Open source. Runs on your own API key.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#">Open the web app</a>
+        <a class="btn btn-ghost" href="https://github.com/ZSvedic/TamedTable">View on GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap row">
+      <span class="wordmark">TamedTable</span>
+      <span>Say it, see it, save it.</span>
+      <span>Open source · <a href="https://github.com/ZSvedic/TamedTable">GitHub</a></span>
+    </div>
+  </footer>
+</body>
+</html>
