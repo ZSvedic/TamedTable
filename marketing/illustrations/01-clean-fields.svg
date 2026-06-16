@@ -14,17 +14,17 @@
     <!-- rows -->
     <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="12" fill="#281C60">
       <rect x="18" y="104" width="324" height="34" fill="#FFFFFF"/>
-      <text x="32" y="125" font-family="Inter">Mara K.</text>
+      <text x="32" y="125" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Mara K.</text>
       <rect x="160" y="109" width="170" height="24" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
       <text x="170" y="125">+1 415-555-0101</text>
 
       <rect x="18" y="138" width="324" height="34" fill="#F6F2EB"/>
-      <text x="32" y="159" font-family="Inter">Dev P.</text>
+      <text x="32" y="159" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Dev P.</text>
       <rect x="160" y="143" width="170" height="24" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
       <text x="170" y="159">+1 312-555-0148</text>
 
       <rect x="18" y="172" width="324" height="34" fill="#FFFFFF"/>
-      <text x="32" y="193" font-family="Inter">Lena R.</text>
+      <text x="32" y="193" font-family="Inter, ui-sans-serif, system-ui, sans-serif">Lena R.</text>
       <rect x="160" y="177" width="170" height="24" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
       <text x="170" y="193">+1 206-555-0190</text>
     </g>
