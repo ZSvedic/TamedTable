@@ -2,18 +2,24 @@
 
 The words for the landing page, section by section, for whoever designs the page next. It owns the copy and the order of sections; it does not own layout or visuals (see [website-template.html](website-template.html) and [design/brand/brand.md](../design/brand/brand.md)). Everything here comes from the [marketing brief](marketing-brief.md).
 
-Style: straightforward, KISS, show-don't-tell. Lead with a real request and a real before/after, not adjectives.
+Style follows [testdome.com](https://www.testdome.com): confident one-line headlines, terse benefit copy, and every feature block paired with an illustration of that exact screen. Show the work, don't describe it.
 
 ## Hero
 
 > # Talk to your data.
 > Load a spreadsheet, say what you want, and watch it happen. No formulas, no code.
 >
-> `[ Try it now ]`  `[ See how it works ]`
+> `[ Try it now ]`
 
-## Show it
+## Trust line
 
-A real run, not a promise. Use this as the hero image or the first thing under it:
+No customer logos — TamedTable is open source. Use an honest band instead:
+
+> Open source · runs on your own API key · works in the browser or on the command line
+
+## Demo
+
+A 60-second screencast, captioned **TamedTable in 60 seconds**. Until that exists, show this real run as the hero image:
 
 ```
 > normalize the phone numbers
@@ -23,29 +29,40 @@ A real run, not a promise. Use this as the hero image or the first thing under i
  bob@example.com    +15559876543    usa     ← was (555) 987-6543
 ```
 
-You typed one line. Every row changed in front of you.
+One line in. Every row changed in front of you.
+
+## Every common data job, in plain English
+
+Three columns:
+
+- **Transform** — Normalize, dedupe, filter, join, pivot, and more — by typing what you want.
+- **Reuse** — Every change saves as steps you replay on new data, or export as a Python script.
+- **Trust** — You see every row change. Nothing is hidden, and it's fully open source.
+
+## Feature highlights
+
+Two or three blocks, each a benefit headline + a lead feature + an illustration. The full tour lives on the [features page](features.md).
+
+**Clean messy data by asking.** Type *"normalize the phone numbers"* or *"remove duplicate emails"* and watch the rows update.
+*Illustration: the table mid-change, before/after badges on the edited cells.*
+
+**Keep the recipe, not the code.** Save your steps to one small file and replay them next week on new data — no AI call.
+*Illustration: a saved `.flow` file replaying against a fresh CSV.*
+
+## Enjoy the benefits
+
+Three columns:
+
+- **No more throwaway scripts.** Describe the change once; keep the recipe forever.
+- **Costs stay flat.** One request costs the same on a hundred rows or a million.
+- **Trust every change.** Watch each row update, and undo anything.
 
 ## How it works
 
-Three steps:
-
-1. **Open your data.** A CSV or JSONL from your computer or a URL.
-2. **Say what you want.** *"Remove duplicate emails."* *"Keep customers in the USA."* *"Total sales per region."*
-3. **Keep the result.** Save the clean data, or save the steps and run them again next week — on new data, with no AI call.
-
-## Why it's different
-
-- **You keep the steps, not a pile of code.** Run them again tomorrow, or export them as a Python script.
-- **Asking stays cheap.** One request costs the same on a hundred rows or a million. Replaying saved steps costs nothing.
-- **Nothing is hidden.** You see every row change, so you can trust it.
-- **Open source.** No lock-in, no proprietary format.
-
-## Who it's for
-
-Two columns:
-
-- **Engineers and analysts** — Stop writing one-off cleanup scripts. Read the steps, trust the result, hand it to your team.
-- **Ops, finance, and research** — Clean your spreadsheets by saying what you want. No Python to learn.
+1. **Open** a CSV or JSONL — from your computer or a URL.
+2. **Say** what you want, in plain English.
+3. **Watch** every row change, and undo anything.
+4. **Keep** the data or the steps — replay later with no AI call.
 
 ## Call to action
 
