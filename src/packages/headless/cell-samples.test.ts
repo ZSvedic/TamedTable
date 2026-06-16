@@ -47,7 +47,7 @@ function cellReplyBody(text: string): string {
 /** Returns a mock fetch: spec-patch on the first call, single-cell value on all
  *  subsequent calls (per-row path — the SDK falls back to per-row when the
  *  batch response isn't a JSON array matching the prompt count). */
-function mockFetch(): typeof globalThis.fetch {
+function mockFetch(): (input: string | URL | Request, init?: RequestInit) => Promise<Response> {
   return async (_input, init) => {
     const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as Record<string, unknown>) : {};
     const isSpecPatch = Array.isArray(body.tools);
