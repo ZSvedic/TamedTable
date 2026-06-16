@@ -83,7 +83,7 @@ Then('the fetch stub logged the model API call', function (this: TamedTableWorld
 
 // ── Rule: replay serves recorded responses; misses fail loud ────────────────
 
-Given('a cassette holding a recorded response for one request', function (this: TamedTableWorld) {
+Given('a cassette holding a recorded response for one request', async function (this: TamedTableWorld) {
   const s = st(this);
   s.cassetteFile = freshCassettePath();
   s.recordedReq = sampleRequest('normalize phone numbers');
@@ -93,7 +93,7 @@ Given('a cassette holding a recorded response for one request', function (this: 
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ recorded: true }),
   };
-  const fp = fingerprint(s.recordedReq.method, s.recordedReq.url, s.recordedReq.body);
+  const fp = await fingerprint(s.recordedReq.method, s.recordedReq.url, s.recordedReq.body);
   writeFileSync(s.cassetteFile, JSON.stringify({ [fp]: s.recordedEntry }, null, 2));
   // The upstream must never be consulted in replay mode; this sentinel proves it.
   s.sentinelHit = false;

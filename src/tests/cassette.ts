@@ -1,24 +1,27 @@
 // #Cassettes
-// Record/replay recorder for model API calls — test infrastructure.
+// Record/replay recorder for model API calls — test infrastructure. The
+// fingerprint, entry shape, and replay lookup live in @tamedtable/cassette so
+// the browser web shell can replay the same recordings; this file keeps the
+// Node-only file layer (read/write the cassette JSON on disk, record on a miss).
 // See spec/code-contract.md § Headless ("Recording model calls for tests").
 
-import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import {
+  entryFromResponse,
+  fingerprint,
+  requestBody,
+  requestUrl,
+  responseFromEntry,
+  type Cassette,
+  type CassetteEntry,
+  type FetchLike,
+} from '@tamedtable/cassette';
 
-// The plain call signature a custom fetch wrapper actually implements. The
-// SDK's own fetch field is typed `typeof globalThis.fetch` (which also carries
-// `preconnect`); the headless runner bridges the two when it forwards.
-export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+export { fingerprint };
+export type { CassetteEntry, FetchLike };
 
 export type CassetteMode = 'record' | 'replay';
-
-export interface CassetteEntry {
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  body: string;
-}
 
 export interface CassetteOptions {
   mode: CassetteMode;
@@ -26,61 +29,24 @@ export interface CassetteOptions {
   upstream?: FetchLike;
 }
 
-// `fetch` already decoded the upstream response and the saved body is plain
-// text, so these transfer headers would misdescribe the reconstructed body.
-const DROP_HEADERS = new Set(['content-encoding', 'content-length']);
-
-/** SHA-256 hex digest of `method + "\n" + url + "\n" + body`. */
-export function fingerprint(method: string, url: string, body: string): string {
-  return createHash('sha256').update(`${method}\n${url}\n${body}`).digest('hex');
-}
-
-function requestUrl(input: string | URL | Request): string {
-  if (typeof input === 'string') return input;
-  if (input instanceof URL) return input.href;
-  return input.url;
-}
-
-function requestBody(init?: RequestInit): string {
-  const body = init?.body;
-  if (body == null) return '';
-  return typeof body === 'string' ? body : String(body);
-}
-
-function toEntry(res: Response, body: string): CassetteEntry {
-  const headers: Record<string, string> = {};
-  for (const [k, v] of res.headers.entries()) {
-    if (!DROP_HEADERS.has(k.toLowerCase())) headers[k] = v;
-  }
-  return { status: res.status, statusText: res.statusText, headers, body };
-}
-
-function toResponse(entry: CassetteEntry): Response {
-  return new Response(entry.body, {
-    status: entry.status,
-    statusText: entry.statusText,
-    headers: entry.headers,
-  });
-}
-
 // #Cassettes
 /** A `fetch`-shaped wrapper that records to / replays from the cassette file. */
 export function cassetteFetch(opts: CassetteOptions): FetchLike {
   const { mode, file } = opts;
   const upstream: FetchLike = opts.upstream ?? globalThis.fetch;
-  let tape: Record<string, CassetteEntry> | undefined;
+  let tape: Cassette | undefined;
 
-  const load = (): Record<string, CassetteEntry> => {
+  const load = (): Cassette => {
     if (!tape) {
       tape = existsSync(file)
-        ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, CassetteEntry>)
+        ? (JSON.parse(readFileSync(file, 'utf8')) as Cassette)
         : {};
     }
     return tape;
   };
 
   // Keys sorted so re-recording produces reviewable diffs.
-  const flush = (cassette: Record<string, CassetteEntry>): void => {
+  const flush = (cassette: Cassette): void => {
     mkdirSync(dirname(file), { recursive: true });
     const sorted = Object.fromEntries(
       Object.entries(cassette).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
@@ -91,18 +57,18 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
   return async (input, init) => {
     const method = (init?.method ?? 'GET').toUpperCase();
     const url = requestUrl(input);
-    const fp = fingerprint(method, url, requestBody(init));
+    const fp = await fingerprint(method, url, requestBody(init));
 
     const cassette = load();
     const hit = cassette[fp];
-    if (hit) return toResponse(hit);
+    if (hit) return responseFromEntry(hit);
 
     if (mode === 'replay') {
       throw new Error(`no recording for this request: ${fp} (${method} ${url})`);
     }
 
     const res = await upstream(input, init);
-    const entry = toEntry(res, await res.text());
+    const entry = entryFromResponse(res, await res.text());
     // Only cache a success. A retryable error (429, 5xx) is returned unsaved so
     // the SDK's own retry reaches the live API and the eventual success — not
     // the transient error — is what lands in the cassette.
@@ -110,6 +76,6 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
       cassette[fp] = entry;
       flush(cassette);
     }
-    return toResponse(entry);
+    return responseFromEntry(entry);
   };
 }

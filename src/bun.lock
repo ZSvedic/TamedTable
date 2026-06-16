@@ -7,6 +7,7 @@
       "devDependencies": {
         "@cucumber/cucumber": "^12.8.2",
         "@duckdb/node-api": "1.5.2-r.1",
+        "@tamedtable/cassette": "workspace:*",
         "@tamedtable/chat-panel": "workspace:*",
         "@tamedtable/cli": "workspace:*",
         "@tamedtable/core": "workspace:*",
@@ -23,6 +24,10 @@
         "playwright": "^1.60.0",
         "typescript": "^6.0.3",
       },
+    },
+    "packages/cassette": {
+      "name": "@tamedtable/cassette",
+      "version": "0.0.0",
     },
     "packages/chat-panel": {
       "name": "@tamedtable/chat-panel",
@@ -159,6 +164,7 @@
       "name": "@tamedtable/web",
       "version": "0.0.0",
       "dependencies": {
+        "@tamedtable/cassette": "workspace:*",
         "@tamedtable/chat-panel": "workspace:*",
         "@tamedtable/core": "workspace:*",
         "@tamedtable/file-io": "workspace:*",
@@ -397,6 +403,8 @@
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.3", "", { "os": "win32", "cpu": "x64" }, "sha512-hPt/bgL5cE+Qp+/TPHBqptcAgPzgj46mPcg/16zNUmbQk0j+mOEQV/+Lqu8QRtDV3Ek95Q6FeFITpuhl6OTsAA=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
+
+    "@tamedtable/cassette": ["@tamedtable/cassette@workspace:packages/cassette"],
 
     "@tamedtable/chat-panel": ["@tamedtable/chat-panel@workspace:packages/chat-panel"],
 

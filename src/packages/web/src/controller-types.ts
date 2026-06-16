@@ -4,22 +4,39 @@
 // imports through ./controller.ts keep working.
 
 import type { RequestDebugInfo } from '@tamedtable/headless';
-import type { TourScenario } from '@tamedtable/gherkin-tour';
 import type { FetchLike, FilePort } from '@tamedtable/file-io';
 import type { VoicePort } from '@tamedtable/voice-input';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 
 export type { ResolvedConfig };
 
-/** Bundled sources the tutorial panel needs. In the browser these come from
- *  Vite's import.meta.glob at build time; in tests they are injected directly. */
+/** One scenario in the tutorial manifest: enough to render the panel's
+ *  clickable list and the Dev dropdown without fetching anything. The heavy
+ *  assets (feature source, fixtures, goldens, cassettes) load lazily when a
+ *  tour is opened. `feature` is the source `.feature` file name, which
+ *  disambiguates a deep link when two files share a scenario name. */
+export interface TutorialManifestEntry {
+  name: string;
+  feature: string;
+  tags: string[];
+}
+
+/** The tutorial panel's data source. Only the lightweight `manifest` ships in
+ *  the JS bundle; everything heavy is fetched same-origin on demand (in the
+ *  browser) or read from disk (in tests). See spec/code-contract.md § Tutorial
+ *  mode. */
 export interface TutorialSources {
-  /** All @tutorial-tagged scenarios, parsed from every bundled feature file. */
-  tours: TourScenario[];
-  /** Fixture content keyed by filename, e.g. 'filter-input.csv'. */
-  inputs: Record<string, string>;
-  /** Golden content keyed by filename, e.g. 'filter-expected.jsonl'. */
-  goldens: Record<string, string>;
+  /** Lightweight scenario index — drives the clickable list and Dev dropdown
+   *  with no fetch. */
+  manifest: TutorialManifestEntry[];
+  /** Raw text of a `.feature` file, parsed lazily when a tour is opened. */
+  loadFeature(name: string): Promise<string>;
+  /** Raw text of an input or golden fixture (CSV/JSONL), served same-origin
+   *  from the deployed `/samples/` directory. */
+  loadFixture(name: string): Promise<string>;
+  /** Raw JSON text of a feature's recorded cassette, for key-free playback —
+   *  `feature` is the feature base name without extension (e.g. `validate`). */
+  loadCassette(feature: string): Promise<string>;
 }
 
 export interface WebControllerOptions {

@@ -52,9 +52,12 @@ step, dropped). `Background` steps prepend to every scenario in scope.
 
 A `TourScenario` also carries an optional `feature` field — the source file name
 the scenario came from. `parseTours` does **not** set it (it sees only the
-source string); the consumer that assembles tours from many files stamps each
-scenario with its filename, so a deep link can identify one tour by
-`(feature, name)` even when two files share a scenario name.
+source string); the consumer that assembles tours stamps each scenario with its
+filename, so a deep link can identify one tour by `(feature, name)` even when two
+files share a scenario name. The web app's tutorial panel ships only a manifest
+of scenario names + tags and calls `parseTours` lazily — once, when a tour is
+opened — on the feature file it fetches same-origin, so the parser need not run
+at page load.
 
 ## Parsing rules
 

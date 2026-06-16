@@ -34,6 +34,7 @@ import type {
   ChatMessage,
   DialogKind,
   Toast,
+  TutorialManifestEntry,
   TutorialSources,
   VoiceStatus,
   WebControllerOptions,
@@ -50,6 +51,7 @@ export type {
   DialogKind,
   ResolvedConfig,
   Toast,
+  TutorialManifestEntry,
   TutorialSources,
   VoiceStatus,
   WebControllerOptions,
@@ -202,8 +204,9 @@ export class WebController implements ControllerHost {
     // Text requests route through Anthropic whatever provider is selected
     // (Google is voice-only here; OpenAI is not wired for chat), so a missing
     // Anthropic key fails fast — before any network call — leaving the table
-    // untouched. See spec/behavior.md § Web UI / settings.
-    if (!this.config.anthropicKey?.trim()) {
+    // untouched. A playing tutorial is the exception: it replays from a cassette
+    // and needs no key. See spec/behavior.md § Web UI / settings.
+    if (!this.tutorial.isReplaying() && !this.config.anthropicKey?.trim()) {
       this.fail('Text requests require an Anthropic API key — open Settings and add one.');
       return;
     }
@@ -321,6 +324,8 @@ export class WebController implements ControllerHost {
     return this.tutorial.openTutorialFromLink(feature, scenario);
   }
   playTutorial(): Promise<void> { return this.tutorial.playTutorial(); }
+  /** Await any in-flight tutorial prefill-chat request (used by tests). */
+  tutorialSettle(): Promise<void> { return this.tutorial.settle(); }
   nextStep(): Promise<void> { return this.tutorial.nextStep(); }
   prevStep(): void { this.tutorial.prevStep(); }
   cancelTutorial(): void { this.tutorial.cancelTutorial(); }

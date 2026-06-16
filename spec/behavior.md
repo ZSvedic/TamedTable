@@ -828,9 +828,14 @@ resolves against what the user is looking at.
 ## Tutorial mode (#TutorialMode)
 
 Tutorial mode lets a user walk through a `@tutorial`-tagged Gherkin scenario
-interactively. Each tutorial uses pre-bundled fixtures so no API key is
-needed for the file-loading and display steps; `prefill-chat` steps do call
-the LLM with the request text auto-submitted.
+interactively, with **no API key**. The clickable list renders instantly from
+a small bundled index of scenario names; everything heavy — the feature
+source, the input/golden fixtures, and the recorded model responses — loads
+lazily, fetched from the deployed site itself the moment a tour opens. A
+`prefill-chat` step auto-submits its request text, but instead of calling the
+live model it **replays the tour's recorded cassette**, so a visitor with no
+key set can still play a full tour end to end. A miss (no recording for the
+exact request) fails loudly with a toast rather than hanging.
 
 A **Tutorial** button in the toolbar opens the Tutorial panel. The panel shows
 a **clickable list** of every `@tutorial`-tagged scenario drawn from the bundled
@@ -866,10 +871,24 @@ step maps to one of four actions:
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
 
-Fixtures and golden files are bundled at build time from `spec/test-cases/`
-by `vite.config.ts`; the tutorial controller resolves lookup files from
-`tutorialSrc.inputs` and the golden file from `scenario.golden`, which the
+The feature source, input/lookup fixtures, and golden files are fetched
+same-origin on demand — the feature when a tour opens (then parsed to get its
+steps), a fixture when a `load-file`/`load-lookup`/`show-golden` step runs.
+Only the scenario index (name, source file, tags) ships in the bundle, so the
+page stays small. The golden file is named by `scenario.golden`, which the
 parser lifts from the `the expected output is "X"` step.
+
+### Key-free playback
+
+A tour's `prefill-chat` step would ordinarily call the model. Instead, while a
+tour plays the engine runs in **replay mode**: each model call is matched
+against the tour's recorded cassette (fetched same-origin) and served from it,
+so no key is needed and no network call leaves the browser. Matching is exact
+over the whole request, so the tour must reproduce the request that was
+recorded — playback therefore pins the same model and configuration the
+recording used. A request with no recording fails loudly (a toast), never a
+silent hang. Normal (non-tutorial) chat is unaffected: it still uses the
+visitor's own key against the live model.
 
 ### Deep links into a tutorial
 

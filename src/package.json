@@ -20,6 +20,7 @@
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2",
     "@duckdb/node-api": "1.5.2-r.1",
+    "@tamedtable/cassette": "workspace:*",
     "@tamedtable/cli": "workspace:*",
     "@tamedtable/chat-panel": "workspace:*",
     "@tamedtable/core": "workspace:*",

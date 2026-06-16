@@ -36,6 +36,7 @@ Each row is a self-contained library package with its own spec under `spec/packa
 
 | Area | ID | Description |
 |---|---|---|
+| Cassette replay | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | Shared fingerprint + replay primitives used by the test recorder and the browser tutorial player — no Node deps, browser-safe (`src/packages/cassette/`) |
 | Chat panel | [#ChatPanel](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ChatPanel&type=code) | Chat sidebar with request detail, send/stop input row, and the press-and-hold `MicButton` (`src/packages/chat-panel/`, spec at `spec/packages/chat-panel/`) |
 | File IO | [#FileIO](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FileIO&type=code) | Browser file open/save dialogs (`FilePort`), format detection, URL fetch, `.flow` serialization (`src/packages/file-io/`, spec at `spec/packages/file-io/`) |
 | Gherkin Tour parser | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser; returns `@tutorial` scenarios with typed `TourAction` steps (`src/packages/gherkin-tour/`, spec at `spec/packages/gherkin-tour/`) |
