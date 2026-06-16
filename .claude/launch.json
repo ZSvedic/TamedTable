@@ -8,6 +8,12 @@
       "port": 5174
     },
     {
+      "name": "illustrations",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd marketing/illustrations && exec bunx serve -p 5180 ."],
+      "port": 5180
+    },
+    {
       "name": "web",
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd src/packages/web && exec bun run dev"],
