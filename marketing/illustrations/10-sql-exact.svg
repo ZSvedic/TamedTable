@@ -9,7 +9,7 @@
   <rect x="18" y="64" width="324" height="28" rx="6" fill="#281C60"/>
   <text x="28" y="82" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11.5"><tspan fill="#96BED7">SELECT</tspan><tspan fill="#FFFFFF"> price * qty </tspan><tspan fill="#96BED7">AS</tspan><tspan fill="#FFFFFF"> total</tspan></text>
   <g>
-    <rect x="18" y="100" width="324" height="28" rx="6" fill="#3A2D7A"/>
+    <path d="M18 106 q0 -6 6 -6 h312 q6 0 6 6 v22 h-324 Z" fill="#3A2D7A"/>
     <text x="40" y="118" font-size="11.5" font-weight="600" fill="#FFFFFF">price</text>
     <text x="140" y="118" font-size="11.5" font-weight="600" fill="#FFFFFF">qty</text>
     <text x="250" y="118" font-size="11.5" font-weight="600" fill="#96BED7">total</text>
