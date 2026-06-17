@@ -14,8 +14,8 @@
   Assets are symlinks (DRY): favicon-32.png → design/brand/, illustrations/ → marketing/illustrations/.
   The deploy workflow assembles this dir at the site root; the web app lives under /app/.
 
-  Production note: self-host the three brand fonts instead of the Google Fonts
-  <link> below so the page renders with no network.
+  Fonts: loaded straight from Google Fonts. No offline story needed — the web
+  app this links to requires network (the LLM call), so self-hosting buys nothing.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
