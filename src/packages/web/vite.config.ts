@@ -92,7 +92,9 @@ export default defineConfig({
     staticDirPlugin('tutorials', specTcDir, tutorialFeatureNames),
     staticDirPlugin('cassettes', cassetteDir, cassetteFiles),
   ],
-  base: '/TamedTable/',
+  // The web app is published under /app/; the site root serves the marketing
+  // homepage (marketing/web/), assembled by .github/workflows/deploy.yml.
+  base: '/TamedTable/app/',
   define: {
     // The system-prompt file the engine reads at module init, inlined. The
     // engine's `process` references are satisfied by a stub in index.html.
