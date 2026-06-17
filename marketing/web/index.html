@@ -62,8 +62,11 @@
         </div>
       </div>
 
-      <!-- Demo: real before/after run, stand-in for the 60-second screencast -->
-      <div class="demo" role="img" aria-label="TamedTable normalizing phone numbers across a table">
+      <!-- Demo: looping before/after run — the "60-second screencast", animated in CSS.
+           Each phone cell stacks a messy "before" and a clean "after"; the keyframes in
+           styles.css type the prompt, then swap before→after with a highlight pop, on a loop.
+           Honors prefers-reduced-motion: the final (clean) state shows static. -->
+      <div class="demo demo--anim" role="img" aria-label="TamedTable normalizing phone numbers across a table">
         <div class="demo-bar">
           <span class="demo-dot" style="background:#E66A5A"></span>
           <span class="demo-dot" style="background:#E7B84B"></span>
@@ -71,13 +74,13 @@
           <span class="demo-cap">TamedTable in 60 seconds</span>
         </div>
         <div class="demo-body">
-          <div class="demo-prompt"><span class="caret">&gt;</span> normalize the phone numbers</div>
+          <div class="demo-prompt"><span class="caret">&gt;</span> <span class="demo-typed">normalize the phone numbers</span></div>
           <table class="demo-tbl">
             <thead><tr><th>Email</th><th>Phone</th><th>Country</th></tr></thead>
             <tbody>
-              <tr><td>alice@example.com</td><td><span class="cell-changed">+15551234567</span></td><td>usa</td></tr>
-              <tr><td>bob@example.com</td><td><span class="cell-changed">+15559876543</span></td><td>usa</td></tr>
-              <tr><td>cara@example.com</td><td><span class="cell-changed">+15553456789</span></td><td>usa</td></tr>
+              <tr><td>alice@example.com</td><td><span class="swap"><span class="v-before">(555) 123.4567</span><span class="v-after cell-changed">+15551234567</span></span></td><td>usa</td></tr>
+              <tr><td>bob@example.com</td><td><span class="swap"><span class="v-before">555-987.6543</span><span class="v-after cell-changed">+15559876543</span></span></td><td>usa</td></tr>
+              <tr><td>cara@example.com</td><td><span class="swap"><span class="v-before">555 345 6789</span><span class="v-after cell-changed">+15553456789</span></span></td><td>usa</td></tr>
             </tbody>
           </table>
         </div>
@@ -210,18 +213,14 @@
           <h2>Save and replay</h2>
           <p>Your steps are yours to keep — replay them on new data, hand them off as a script, or undo anything.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/repl-commands.feature" data-label="View steps →"><span class="fname">Save the recipe</span><span class="fcmd">:save-flow tidy.flow</span></button>
-            <button class="feat-item" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/convert.feature" data-label="View steps →"><span class="fname">Save the clean data</span><span class="fcmd">:save clean.csv</span></button>
-            <button class="feat-item" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/save-py.feature" data-label="View steps →"><span class="fname">Export to Python</span><span class="fcmd">:save-py tidy.py</span></button>
-            <button class="feat-item" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/repl-commands.feature" data-label="View steps →"><span class="fname">Undo anything</span><span class="fcmd">:undo / :redo</span></button>
+            <button class="feat-item active" data-ill="illustrations/11-save-flow.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/repl-commands.feature" data-label="View steps →"><span class="fname">Save the recipe</span><span class="fcmd">:save-flow tidy.flow</span></button>
+            <button class="feat-item" data-ill="illustrations/12-save-csv.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/convert.feature" data-label="View steps →"><span class="fname">Save the clean data</span><span class="fcmd">:save clean.csv</span></button>
+            <button class="feat-item" data-ill="illustrations/13-save-py.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/save-py.feature" data-label="View steps →"><span class="fname">Export to Python</span><span class="fcmd">:save-py tidy.py</span></button>
+            <button class="feat-item" data-ill="illustrations/14-undo-redo.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/repl-commands.feature" data-label="View steps →"><span class="fname">Undo anything</span><span class="fcmd">:undo / :redo</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <!-- Placeholder: no illustration asset yet for this section -->
-          <div class="feat-ph">
-            <div class="ph-snip"><b>&gt;</b> :save-flow tidy.flow</div>
-            <div class="ph-tag">replay 4 steps on new data — no AI call</div>
-          </div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/11-save-flow.svg" alt="Saving and replaying steps"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
             <a class="feat-demo" target="_blank" rel="noopener" href="#">View steps →</a>
@@ -240,17 +239,13 @@
           <h2>Browser, terminal, voice</h2>
           <p>Click, type, or speak — use the best UI for the job.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/voice.feature" data-label="View steps →"><span class="fname">Speak instead of type</span><span class="fcmd">tap the mic</span></button>
-            <button class="feat-item" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/multilingual.feature" data-label="View steps →"><span class="fname">Ask in any language</span><span class="fcmd">"normaliza los números de teléfono"</span></button>
-            <button class="feat-item" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/web.feature" data-label="View steps →"><span class="fname">Web app or CLI</span><span class="fcmd">same engine underneath</span></button>
+            <button class="feat-item active" data-ill="illustrations/15-voice.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/voice.feature" data-label="View steps →"><span class="fname">Speak instead of type</span><span class="fcmd">tap the mic</span></button>
+            <button class="feat-item" data-ill="illustrations/16-multilingual.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/multilingual.feature" data-label="View steps →"><span class="fname">Ask in any language</span><span class="fcmd">"normaliza los números de teléfono"</span></button>
+            <button class="feat-item" data-ill="illustrations/17-web-cli.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/web.feature" data-label="View steps →"><span class="fname">Web app or CLI</span><span class="fcmd">same engine underneath</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <!-- Placeholder: no illustration asset yet for this section -->
-          <div class="feat-ph">
-            <div class="ph-snip">browser · terminal · mic</div>
-            <div class="ph-tag">same engine underneath</div>
-          </div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/15-voice.svg" alt="Browser, terminal, and voice input"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
             <a class="feat-demo" target="_blank" rel="noopener" href="#">View steps →</a>

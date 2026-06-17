@@ -134,6 +134,49 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
 .demo-foot { padding: 12px 20px 18px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
 .demo-foot strong { color: var(--ink); font-weight: 600; }
 
+/* Hero demo animation — the looping "60-second" run.
+   One 9s timeline shared by every piece: the caret blinks, the prompt types in,
+   then each row's messy "before" cross-fades to a clean, highlighted "after" with a
+   little pop, holds, and resets. Rows stagger so the change cascades top-to-bottom. */
+.demo-prompt .caret { animation: heroCaret 1s steps(1) infinite; }
+.demo--anim .demo-typed { display: inline-block; animation: heroType 9s ease-out infinite; }
+.demo--anim .swap { position: relative; display: inline-block; }
+.demo--anim .swap .v-after { position: absolute; left: 0; top: 0; white-space: nowrap; }
+.demo--anim .swap .v-before { animation: heroBefore 9s ease-in-out infinite; }
+.demo--anim .swap .v-after  { animation: heroAfter 9s ease-in-out infinite; }
+.demo--anim tr:nth-child(2) .swap .v-before,
+.demo--anim tr:nth-child(2) .swap .v-after { animation-delay: .25s; }
+.demo--anim tr:nth-child(3) .swap .v-before,
+.demo--anim tr:nth-child(3) .swap .v-after { animation-delay: .5s; }
+
+@keyframes heroCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes heroType {
+  0%, 6%   { opacity: 0; transform: translateY(-2px); }
+  16%, 96% { opacity: 1; transform: none; }
+  100%     { opacity: 0; }
+}
+@keyframes heroBefore {
+  0%, 42%  { opacity: 1; }
+  50%, 94% { opacity: 0; }
+  100%     { opacity: 1; }
+}
+@keyframes heroAfter {
+  0%, 42%  { opacity: 0; transform: scale(.96); }
+  50%      { opacity: 1; transform: scale(1.05); }
+  56%, 94% { opacity: 1; transform: scale(1); }
+  100%     { opacity: 0; transform: scale(.96); }
+}
+
+/* Respect reduced-motion: hold the clean, final state, no looping. */
+@media (prefers-reduced-motion: reduce) {
+  .demo-prompt .caret,
+  .demo--anim .demo-typed,
+  .demo--anim .swap .v-before,
+  .demo--anim .swap .v-after { animation: none; }
+  .demo--anim .swap .v-before { opacity: 0; }
+  .demo--anim .swap .v-after  { opacity: 1; transform: none; }
+}
+
 /* ---------- Section scaffolding ---------- */
 section { padding: 76px 0; }
 .sec-paper { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
