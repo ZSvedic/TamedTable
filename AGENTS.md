@@ -37,6 +37,7 @@ Reusable session starters in `ops/prompts/`:
 | Prompt | Use for |
 |---|---|
 | [prompt-cleanup.md](ops/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
+| [prompt-illustrate.md](ops/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
 | [prompt-implement.md](ops/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
 | [prompt-meeting.md](ops/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
 | [prompt-scribe.md](ops/prompts/prompt-scribe.md) | SCRIBE — spec-only editor, never touches `src/`. Paired with WoZ. |
