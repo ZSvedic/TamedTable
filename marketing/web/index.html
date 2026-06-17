@@ -5,314 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TamedTable — Talk to your data</title>
 <meta name="description" content="Load a spreadsheet, say what you want, and watch it happen. No formulas, no code. Open source, runs on your own API key.">
-<link rel="icon" type="image/png" sizes="32x32" href="design/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
-  TamedTable homepage — hi-fidelity, single-file static page.
+  TamedTable homepage — hi-fidelity static landing page.
   Stack: plain HTML + CSS + vanilla JS. No framework, no build step, no dependencies.
-  KISS: one file, semantic markup, CSS custom properties for the palette,
-  a little vanilla JS for the interactive feature lists and mobile menu.
+  KISS: markup here, palette + layout in styles.css, interactivity in main.js.
+  Assets are symlinks (DRY): favicon-32.png → design/brand/, illustrations/ → marketing/illustrations/.
+  The deploy workflow assembles this dir at the site root; the web app lives under /app/.
 
-  THEMING: every color is a CSS variable on :root (the "SaaSify Shade" palette).
-  Change a value there to re-skin the whole page; dark zones use the --dark→--dark2 gradient.
-
-  Production note (per marketing/prompt-webpage-design.md): self-host the three brand
-  fonts instead of the Google Fonts <link> below so the page renders with no network.
-  Brand mark is inlined as SVG (theme-aware); illustrations live in marketing/illustrations/.
+  Production note: self-host the three brand fonts instead of the Google Fonts
+  <link> below so the page renders with no network.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-<style>
-  /* ---------- Palette (SaaSify Shade) ----------
-     One locked palette. Light zones use linen/paper; dark zones (nav, hero, CTA)
-     use the --dark → --dark2 gradient. Tweak these values to re-skin the page. */
-  :root {
-    --ink:            #2A1E5C;   /* primary text / headings */
-    --muted:          #6E6597;   /* secondary text on light */
-    --accent:         #3D5AF1;   /* accent / primary action (blue) */
-    --accent-soft:    #E6E9FE;   /* accent tint (highlights) */
-    --silver:         #E4DDF4;   /* card borders on light */
-    --line:           #EEE9F8;   /* hairline dividers on light */
-    --linen:          #F4F1FB;   /* page ground (light zones) */
-    --paper:          #FFFFFF;   /* cards / paper sections */
-    --stage:          #ECE6F9;   /* illustration stage (distinct from sections) */
-    --dark:           #4A2598;   /* dark-zone gradient start (indigo) */
-    --dark2:          #9B2A78;   /* dark-zone gradient end (magenta) */
-    --on-dark:        #F3F0FB;   /* text on dark */
-    --on-dark-muted:  #CDC2EC;   /* muted text on dark */
-    --dark-border:    #6A4FB0;   /* borders within dark zones */
-    --btn-bg:         #3D5AF1;   /* primary button (light zones) */
-    --btn-fg:         #FFFFFF;
-    --dbtn-bg:        #3D5AF1;   /* primary button (dark zones) */
-    --dbtn-fg:        #FFFFFF;
-
-    --maxw: 1180px;
-    --radius: 12px;
-    --font-head: 'Outfit', system-ui, -apple-system, sans-serif;
-    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
-  }
-
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    font-family: var(--font-body);
-    color: var(--ink);
-    background: var(--linen);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-  }
-  h1, h2, h3 { font-family: var(--font-head); margin: 0; letter-spacing: -0.02em; }
-  p { margin: 0; }
-  a { color: inherit; }
-  img, svg { display: block; max-width: 100%; }
-
-  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 32px; }
-
-  .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 12px; font-weight: 500;
-    letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  /* ---------- Buttons ---------- */
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-family: var(--font-body); font-size: 15px; font-weight: 600;
-    padding: 11px 22px; border-radius: 8px;
-    text-decoration: none; cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease;
-    white-space: nowrap;
-  }
-  .btn .arrow { transition: transform .15s ease; }
-  .btn:hover .arrow { transform: translateX(3px); }
-  /* light-zone */
-  .btn-primary { background: var(--btn-bg); color: var(--btn-fg); }
-  .btn-primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
-  .btn-outline { background: transparent; color: var(--ink); border-color: var(--silver); }
-  .btn-outline:hover { border-color: var(--ink); transform: translateY(-1px); }
-  /* dark-zone */
-  .btn-dprimary { background: var(--dbtn-bg); color: var(--dbtn-fg); }
-  .btn-dprimary:hover { filter: brightness(1.06); transform: translateY(-1px); }
-  .btn-doutline { background: transparent; color: var(--on-dark); border-color: var(--dark-border); }
-  .btn-doutline:hover { border-color: var(--on-dark); transform: translateY(-1px); }
-
-  /* ---------- Brand lockup (inline, theme-aware) ---------- */
-  .brand { display: inline-flex; align-items: center; gap: 0.40em; text-decoration: none; font-size: 20px; }
-  .mark { height: 1.18em; width: auto; }
-  .wordmark { font-family: var(--font-head); font-weight: 500; font-variant-caps: small-caps; letter-spacing: 0.005em; }
-
-  /* ---------- Nav (dark zone) ---------- */
-  header.nav {
-    position: relative;
-    background: linear-gradient(120deg, var(--dark) 0%, var(--dark2) 100%);
-    border-bottom: 1px solid var(--dark-border);
-  }
-  .nav-inner { display: flex; align-items: center; height: 66px; }
-  .nav .mark { color: var(--on-dark); }
-  .nav .wordmark { color: var(--on-dark); }
-  .nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; }
-  .nav-links a.link { font-size: 15px; font-weight: 500; color: var(--on-dark-muted); text-decoration: none; transition: color .15s; }
-  .nav-links a.link:hover { color: var(--on-dark); }
-  .nav-toggle { display: none; }
-
-  /* ---------- Hero (dark zone) ---------- */
-  .hero { padding: 84px 0 76px; background: linear-gradient(120deg, var(--dark) 0%, var(--dark2) 100%); }
-  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
-  .hero h1 { font-size: 58px; font-weight: 600; line-height: 1.02; color: var(--on-dark); }
-  .hero .sub { font-size: 19px; color: var(--on-dark-muted); margin-top: 20px; max-width: 440px; }
-  .hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
-
-  /* Hero demo — before/after run, stand-in for the 60s screencast */
-  .demo {
-    border: 1px solid var(--silver); border-radius: var(--radius);
-    background: var(--paper); overflow: hidden;
-    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.55);
-  }
-  .demo-bar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--stage);
-  }
-  .demo-dot { width: 11px; height: 11px; border-radius: 50%; }
-  .demo-cap { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-  .demo-body { padding: 20px; font-family: var(--font-mono); font-size: 13px; }
-  .demo-prompt { color: var(--ink); font-weight: 500; }
-  .demo-prompt .caret { color: var(--accent); }
-  table.demo-tbl { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12.5px; }
-  table.demo-tbl th {
-    text-align: left; font-weight: 500; color: var(--paper); background: var(--ink);
-    padding: 8px 10px;
-  }
-  table.demo-tbl th:first-child { border-radius: 6px 0 0 0; }
-  table.demo-tbl th:last-child  { border-radius: 0 6px 0 0; }
-  table.demo-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--ink); }
-  table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
-  .cell-changed { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 5px; padding: 1px 6px; color: var(--ink); }
-  .demo-foot { padding: 12px 20px 18px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
-  .demo-foot strong { color: var(--ink); font-weight: 600; }
-
-  /* ---------- Section scaffolding ---------- */
-  section { padding: 76px 0; }
-  .sec-paper { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .sec-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
-  .sec-head h2 { font-size: 36px; font-weight: 600; color: var(--ink); }
-  .sec-head p { color: var(--muted); margin-top: 14px; font-size: 17px; }
-
-  /* ---------- Value props ---------- */
-  .vp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .vp-card {
-    border: 1px solid var(--silver); border-radius: var(--radius);
-    background: var(--paper); padding: 26px 24px;
-    display: flex; gap: 16px; align-items: flex-start;
-    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-  }
-  .vp-card:hover { transform: translateY(-3px); box-shadow: 0 18px 36px -26px rgba(0,0,0,0.35); }
-  .vp-ic { flex-shrink: 0; width: 40px; height: 40px; }
-  .vp-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
-  .vp-card p { font-size: 14.5px; color: var(--muted); line-height: 1.55; }
-
-  /* ---------- How it works ---------- */
-  .steps { display: grid; grid-template-columns: repeat(5, 1fr); position: relative; gap: 12px; }
-  .steps::before {
-    content: ""; position: absolute; top: 23px; left: 10%; right: 10%;
-    height: 2px; background: var(--silver); z-index: 0;
-  }
-  .step { text-align: center; position: relative; z-index: 1; padding: 0 6px; }
-  .step .num {
-    width: 48px; height: 48px; margin: 0 auto 16px;
-    border-radius: 50%; border: 2px solid var(--ink); background: var(--paper);
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-head); font-size: 18px; font-weight: 600; color: var(--ink);
-  }
-  .step h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
-  .step p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
-
-  /* ---------- Feature sections ---------- */
-  .feature { display: grid; grid-template-columns: 40fr 60fr; gap: 48px; align-items: center; }
-  .feature.flip .feat-text { order: 2; }
-  .feature.flip .feat-visual { order: 1; }
-  .feat-text h2 { font-size: 30px; font-weight: 600; margin: 8px 0 12px; color: var(--ink); }
-  .feat-text > p { color: var(--muted); font-size: 16px; margin-bottom: 22px; }
-  .feat-list { border-top: 1px solid var(--line); }
-  .feat-item {
-    display: block; width: 100%; text-align: left; cursor: pointer;
-    font-family: var(--font-body); background: transparent;
-    border: 0; border-left: 2px solid transparent; border-bottom: 1px solid var(--line);
-    padding: 13px 16px; transition: background .12s ease, border-color .12s ease;
-  }
-  .feat-item:hover { background: var(--stage); }
-  .feat-item.active { background: var(--accent-soft); border-left-color: var(--ink); }
-  .feat-item .fname { font-size: 15px; font-weight: 500; color: var(--ink); }
-  .feat-item.active .fname { font-weight: 600; }
-  .feat-item .fcmd { display: block; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); margin-top: 3px; }
-
-  .feat-visual {
-    border: 1px solid var(--silver); border-radius: var(--radius);
-    background: var(--paper); overflow: hidden; display: flex; flex-direction: column;
-  }
-  .feat-stage {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    padding: 26px; min-height: 280px; background: var(--stage);
-  }
-  .feat-stage img { width: 100%; max-width: 380px; height: auto; }
-  .feat-foot {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 18px; border-top: 1px solid var(--line); background: var(--paper);
-  }
-  .feat-dots { display: flex; gap: 8px; }
-  .feat-dot {
-    width: 10px; height: 10px; border-radius: 50%; cursor: pointer; padding: 0;
-    background: transparent; border: 2px solid var(--silver); transition: background .12s, border-color .12s;
-  }
-  .feat-dot.active { background: var(--ink); border-color: var(--ink); }
-  .feat-demo {
-    font-family: var(--font-body); font-size: 13px; font-weight: 600;
-    background: var(--btn-bg); color: var(--btn-fg); text-decoration: none;
-    padding: 7px 14px; border-radius: 7px; transition: filter .15s;
-  }
-  .feat-demo:hover { filter: brightness(1.12); }
-
-  /* Placeholder stage (features without an illustration yet) */
-  .feat-ph {
-    flex: 1; min-height: 280px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 12px; padding: 30px; text-align: center;
-    background: var(--stage);
-  }
-  .feat-ph .ph-tag { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
-  .feat-ph .ph-snip {
-    font-family: var(--font-mono); font-size: 14px; color: var(--ink);
-    background: var(--paper); border: 1px solid var(--silver); border-radius: 8px;
-    padding: 12px 16px; box-shadow: 0 10px 24px -18px rgba(0,0,0,0.4);
-  }
-  .feat-ph .ph-snip b { color: var(--accent); font-weight: 500; }
-
-  /* ---------- CTA (dark zone) ---------- */
-  .cta { background: linear-gradient(120deg, var(--dark) 0%, var(--dark2) 100%); text-align: center; }
-  .cta h2 { font-size: 40px; font-weight: 600; color: var(--on-dark); }
-  .cta p { color: var(--on-dark-muted); font-size: 18px; margin-top: 14px; }
-  .cta-row { display: flex; gap: 14px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
-
-  /* ---------- Footer (light zone) ---------- */
-  footer.foot { background: var(--paper); border-top: 1px solid var(--line); padding: 32px 0; }
-  .foot-inner { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
-  .foot .mark { color: var(--ink); }
-  .foot .wordmark { color: var(--ink); }
-  .foot-links { display: flex; gap: 24px; margin-left: auto; }
-  .foot-links a { font-size: 14px; color: var(--muted); text-decoration: none; }
-  .foot-links a:hover { color: var(--ink); }
-
-  /* ---------- Responsive ---------- */
-  @media (max-width: 860px) {
-    .wrap { padding: 0 20px; }
-    .nav-toggle {
-      display: flex; flex-direction: column; gap: 5px; margin-left: auto;
-      background: transparent; border: 0; cursor: pointer; padding: 8px;
-    }
-    .nav-toggle span { width: 22px; height: 2px; background: var(--on-dark); border-radius: 2px; }
-    .nav-links {
-      position: absolute; top: 66px; left: 0; right: 0;
-      flex-direction: column; align-items: stretch; gap: 0; margin: 0;
-      background: var(--dark); border-bottom: 1px solid var(--dark-border);
-      max-height: 0; overflow: hidden; transition: max-height .25s ease;
-    }
-    .nav-links.open { max-height: 320px; }
-    .nav-links a.link { padding: 16px 20px; border-bottom: 1px solid var(--dark-border); }
-    .nav-links .btn { margin: 14px 20px; justify-content: center; }
-
-    .hero { padding: 56px 0; }
-    .hero-grid { grid-template-columns: 1fr; gap: 36px; }
-    .hero h1 { font-size: 40px; }
-    .hero .sub { font-size: 17px; }
-
-    section { padding: 52px 0; }
-    .sec-head h2 { font-size: 28px; }
-    .vp-grid { grid-template-columns: 1fr; }
-    .steps { grid-template-columns: 1fr; gap: 0; }
-    .steps::before { display: none; }
-    .step { display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; row-gap: 2px; text-align: left; padding: 16px 0; border-bottom: 1px solid var(--line); }
-    .step .num { grid-row: 1 / 3; align-self: center; margin: 0; }
-    .step h3 { grid-column: 2; align-self: end; margin-bottom: 0; }
-    .step p { grid-column: 2; align-self: start; }
-
-    .feature { grid-template-columns: 1fr; gap: 24px; }
-    .feature.flip .feat-text { order: 1; }
-    .feature.flip .feat-visual { order: 2; }
-    .feat-text h2 { font-size: 24px; }
-    .feat-stage, .feat-ph { min-height: 200px; }
-    /* Compact one-line feature rows on mobile (matches the wireframe) */
-    .feat-item { padding: 12px 14px; }
-    .feat-item .fcmd { display: none; }
-
-    .cta h2 { font-size: 30px; }
-    .foot-links { margin-left: 0; width: 100%; }
-  }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -335,7 +43,7 @@
     </button>
     <nav class="nav-links" id="navLinks">
       <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
-      <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
+      <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
     </nav>
   </div>
 </header>
@@ -349,7 +57,7 @@
         <h1>Talk to your data.</h1>
         <p class="sub">Load a spreadsheet, say what you want, and watch it happen. No formulas, no code.</p>
         <div class="hero-cta">
-          <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/" target="_blank" rel="noopener">Open Web App</a>
+          <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open Web App</a>
           <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
         </div>
       </div>
@@ -448,15 +156,15 @@
           <h2>Clean your data</h2>
           <p>Fix messy fields, drop duplicates, filter, sort, and validate — by saying what you want.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="marketing/illustrations/01-clean-fields.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/datanorm.feature" data-label="View steps →"><span class="fname">Clean messy fields</span><span class="fcmd">"normalize the phone numbers"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/02-drop-duplicates.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email" data-label="Show me →"><span class="fname">Drop duplicate rows</span><span class="fcmd">"remove duplicate emails"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/03-filter-rows.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=filter.feature&scenario=Filter+by+Country" data-label="Show me →"><span class="fname">Keep the rows you want</span><span class="fcmd">"keep customers in the USA"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/04-sort-top.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/sort.feature" data-label="View steps →"><span class="fname">Sort or take the top few</span><span class="fcmd">"sort by revenue, top 10"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/09-flag-rows.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=validate.feature&scenario=Flag+rows+with+empty+Phone" data-label="Show me →"><span class="fname">Flag the bad rows</span><span class="fcmd">"mark rows with a missing email"</span></button>
+            <button class="feat-item active" data-ill="illustrations/01-clean-fields.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/datanorm.feature" data-label="View steps →"><span class="fname">Clean messy fields</span><span class="fcmd">"normalize the phone numbers"</span></button>
+            <button class="feat-item" data-ill="illustrations/02-drop-duplicates.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email" data-label="Show me →"><span class="fname">Drop duplicate rows</span><span class="fcmd">"remove duplicate emails"</span></button>
+            <button class="feat-item" data-ill="illustrations/03-filter-rows.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country" data-label="Show me →"><span class="fname">Keep the rows you want</span><span class="fcmd">"keep customers in the USA"</span></button>
+            <button class="feat-item" data-ill="illustrations/04-sort-top.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/sort.feature" data-label="View steps →"><span class="fname">Sort or take the top few</span><span class="fcmd">"sort by revenue, top 10"</span></button>
+            <button class="feat-item" data-ill="illustrations/09-flag-rows.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=validate.feature&scenario=Flag+rows+with+empty+Phone" data-label="Show me →"><span class="fname">Flag the bad rows</span><span class="fcmd">"mark rows with a missing email"</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <div class="feat-stage"><img class="feat-ill" src="marketing/illustrations/01-clean-fields.svg" alt="Cleaning a data table"></div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/01-clean-fields.svg" alt="Cleaning a data table"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
             <a class="feat-demo" target="_blank" rel="noopener" href="#">View steps →</a>
@@ -475,15 +183,15 @@
           <h2>Reshape your data</h2>
           <p>Aggregate, split, join, pivot, or drop to SQL — just describe the structure you need.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="marketing/illustrations/05-group-totals.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=aggregate.feature&scenario=Count+customers+per+country" data-label="Show me →"><span class="fname">Total things up by group</span><span class="fcmd">"total sales per region"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/06-split-column.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=colsplit.feature&scenario=Split+FullName+into+FirstName+and+LastName+on+space" data-label="Show me →"><span class="fname">Split one column into several</span><span class="fcmd">"split full name into first and last"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/07-join-tables.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=join.feature&scenario=Left+join+enriches+each+customer+with+ISO+and+Region" data-label="Show me →"><span class="fname">Combine two tables</span><span class="fcmd">"add each order's customer name"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/08-pivot-wide.svg" data-url="https://zsvedic.github.io/TamedTable/?feature=pivot.feature&scenario=One+column+per+distinct+on-value%2C+default+agg+first" data-label="Show me →"><span class="fname">Reshape tall to wide</span><span class="fcmd">"pivot months into columns"</span></button>
-            <button class="feat-item" data-ill="marketing/illustrations/10-sql-exact.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/sql.feature" data-label="View steps →"><span class="fname">Be exact with SQL</span><span class="fcmd">"set total = price * qty"</span></button>
+            <button class="feat-item active" data-ill="illustrations/05-group-totals.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=aggregate.feature&scenario=Count+customers+per+country" data-label="Show me →"><span class="fname">Total things up by group</span><span class="fcmd">"total sales per region"</span></button>
+            <button class="feat-item" data-ill="illustrations/06-split-column.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=colsplit.feature&scenario=Split+FullName+into+FirstName+and+LastName+on+space" data-label="Show me →"><span class="fname">Split one column into several</span><span class="fcmd">"split full name into first and last"</span></button>
+            <button class="feat-item" data-ill="illustrations/07-join-tables.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=join.feature&scenario=Left+join+enriches+each+customer+with+ISO+and+Region" data-label="Show me →"><span class="fname">Combine two tables</span><span class="fcmd">"add each order's customer name"</span></button>
+            <button class="feat-item" data-ill="illustrations/08-pivot-wide.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=pivot.feature&scenario=One+column+per+distinct+on-value%2C+default+agg+first" data-label="Show me →"><span class="fname">Reshape tall to wide</span><span class="fcmd">"pivot months into columns"</span></button>
+            <button class="feat-item" data-ill="illustrations/10-sql-exact.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/sql.feature" data-label="View steps →"><span class="fname">Be exact with SQL</span><span class="fcmd">"set total = price * qty"</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <div class="feat-stage"><img class="feat-ill" src="marketing/illustrations/05-group-totals.svg" alt="Reshaping a data table"></div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/05-group-totals.svg" alt="Reshaping a data table"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
             <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
@@ -558,7 +266,7 @@
       <h2>Try it in two minutes</h2>
       <p>Open source. Runs on your own API key.</p>
       <div class="cta-row">
-        <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/" target="_blank" rel="noopener">Open the web app</a>
+        <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open the web app</a>
         <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
       </div>
     </div>
@@ -586,49 +294,7 @@
   </div>
 </footer>
 
-<script>
-  // ---- Mobile nav toggle ----
-  (function () {
-    var toggle = document.getElementById('navToggle');
-    var links = document.getElementById('navLinks');
-    toggle.addEventListener('click', function () {
-      var open = links.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    links.addEventListener('click', function (e) {
-      if (e.target.closest('a')) { links.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); }
-    });
-  })();
-
-  // ---- Interactive feature lists ----
-  document.querySelectorAll('[data-feature]').forEach(function (block) {
-    var items = Array.prototype.slice.call(block.querySelectorAll('.feat-item'));
-    var img   = block.querySelector('.feat-ill');
-    var demo  = block.querySelector('.feat-demo');
-    var dotWrap = block.querySelector('.feat-dots');
-
-    var dots = items.map(function (item, i) {
-      var dot = document.createElement('button');
-      dot.className = 'feat-dot' + (item.classList.contains('active') ? ' active' : '');
-      dot.setAttribute('aria-label', 'Show example ' + (i + 1));
-      dot.addEventListener('click', function () { activate(i); });
-      dotWrap.appendChild(dot);
-      return dot;
-    });
-
-    function activate(i) {
-      items.forEach(function (it, j) { it.classList.toggle('active', i === j); });
-      dots.forEach(function (d, j) { d.classList.toggle('active', i === j); });
-      var item = items[i];
-      if (img && item.dataset.ill) { img.src = item.dataset.ill; }
-      if (demo) { demo.href = item.dataset.url; demo.textContent = item.dataset.label; }
-    }
-
-    items.forEach(function (item, i) { item.addEventListener('click', function () { activate(i); }); });
-    var startIndex = Math.max(0, items.findIndex(function (it) { return it.classList.contains('active'); }));
-    activate(startIndex);
-  });
-</script>
+<script src="main.js"></script>
 
 </body>
 </html>

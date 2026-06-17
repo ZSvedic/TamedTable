@@ -906,7 +906,7 @@ scenario boots the app normally — panel closed, no error toast; a deep link
 never crashes or blocks a normal visit.
 
 Production links use the deployed base, e.g.
-`https://zsvedic.github.io/TamedTable/?feature=filter.feature&scenario=Filter+by+Country`.
+`https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 

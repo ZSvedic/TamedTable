@@ -1,10 +1,10 @@
-name: Deploy web app to GitHub Pages
+name: Deploy site to GitHub Pages
 on:
   push:
     branches: [main]
     paths:
-      # Only rebuild when something that affects the web bundle changes.
-      # Doc-only / ops-only commits should not redeploy.
+      # Rebuild when the web bundle, the marketing homepage, or its shared
+      # assets change. Doc-only / ops-only commits should not redeploy.
       - 'src/packages/web/**'
       - 'src/packages/core/**'
       - 'src/packages/headless/**'
@@ -12,6 +12,9 @@ on:
       - 'src/packages/gherkin-tour/**'
       - 'src/package.json'
       - 'src/bun.lock'
+      - 'marketing/web/**'
+      - 'marketing/illustrations/**'
+      - 'design/brand/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:  # manual rebuild from the Actions tab
 permissions:
@@ -28,24 +31,33 @@ jobs:
         working-directory: src
       - run: bun run build
         working-directory: src/packages/web
-      # Bundle each module's standalone demo into the Pages artifact.
-      - run: |
-          bun build packages/chat-panel/demo.html --outdir packages/web/dist/demos/chat-panel --public-path=/TamedTable/demos/chat-panel/
-          bun build packages/file-io/demo.html --outdir packages/web/dist/demos/file-io --public-path=/TamedTable/demos/file-io/
-          bun build packages/gherkin-tour/demo.html --outdir packages/web/dist/demos/gherkin-tour --public-path=/TamedTable/demos/gherkin-tour/
-          bun build packages/model-config/demo.html --outdir packages/web/dist/demos/model-config --public-path=/TamedTable/demos/model-config/
-          bun build packages/table-view/demo.html --outdir packages/web/dist/demos/table-view --public-path=/TamedTable/demos/table-view/
-          bun build packages/toolbar/demo.html --outdir packages/web/dist/demos/toolbar --public-path=/TamedTable/demos/toolbar/
-          bun build packages/ui-kit/demo.html --outdir packages/web/dist/demos/ui-kit --public-path=/TamedTable/demos/ui-kit/
-          bun build packages/voice-input/demo.html --outdir packages/web/dist/demos/voice-input --public-path=/TamedTable/demos/voice-input/
+      # Assemble the Pages artifact: the marketing homepage at the root, the web
+      # app under /app/, and the standalone module demos under /demos/.
+      #   _site/            ← marketing/web/ (index.html + favicon + illustrations; symlinks dereferenced)
+      #   _site/app/        ← web app build (vite base /TamedTable/app/)
+      #   _site/demos/<n>/  ← per-package demo bundles
+      - name: Assemble site root and app
+        run: |
+          set -euo pipefail
+          mkdir -p _site/app
+          cp -rL marketing/web/. _site/
+          cp -r src/packages/web/dist/. _site/app/
+      - name: Bundle module demos
         working-directory: src
+        run: |
+          set -euo pipefail
+          for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-kit voice-input; do
+            bun build "packages/$name/demo.html" \
+              --outdir "../_site/demos/$name" \
+              --public-path="/TamedTable/demos/$name/"
+          done
       # Smoke-test the demo bundles in headless Chromium before deploying.
       - run: bunx playwright install chromium
         working-directory: src
       - run: bun run test:smoke
         working-directory: src
       - uses: actions/upload-pages-artifact@v3
-        with: { path: src/packages/web/dist }
+        with: { path: _site }
   deploy:
     needs: build
     runs-on: ubuntu-latest
