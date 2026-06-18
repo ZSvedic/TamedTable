@@ -821,18 +821,20 @@ scenario already recorded — no separate tutorial recording is needed.
 | `tutorialScenarioNames(): string[]` | Names of `@tutorial` tours (the clickable list). |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tutorial` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
-| `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, executes step 0. |
+| `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
-| `async nextStep()` | Increments step index; executes the new step. |
+| `async nextStep()` | Executes the **current** step, then advances the step index. On the last step, executes it and enters the done state (opens the Tutorial panel for completion view). |
 | `prevStep()` | Decrements step index; no step execution (display only). |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
-| `isTutorialActive(): boolean` | True when `tutorialStepIndex !== null`. |
-| `currentTutorialStepNumber(): number \| null` | 1-based step number. |
+| `finishTutorial()` | Cancels the active tour. If the tour was started from the Tutorial panel, reopens the panel at the chooser. If started via a deep link, navigates to the bare app URL (strips query params) using `window.location.replace()` so the tour doesn't replay on refresh and the back button skips the finished tour. |
+| `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
+| `isTutorialDone(): boolean` | True once all steps have been executed and the tour is awaiting the final Finish action. |
+| `currentTutorialStepNumber(): number \| null` | 1-based step number, or `null` when inactive or done. |
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
 | `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn`, `tutorial-chat-input`, or `tutorial-table-view`. |
-| `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: opens the panel, selects that tour, plays from step 1, returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
+| `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing
 `new URLSearchParams(window.location.search).get('feature' / 'scenario')`

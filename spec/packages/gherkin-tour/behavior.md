@@ -94,6 +94,7 @@ Each step is classified into a `TourAction` by matching the step text:
 | `query "Y"` | `{ kind: "prefill-chat", text: "Y" }` |
 | `the expected output is "X"` | `{ kind: "golden-source", filename: "X" }` |
 | `compare with the expected output` | `{ kind: "show-golden" }` |
+| `play audio "X"` | `{ kind: "play-audio", filename: "X" }` |
 | anything else | `{ kind: "display" }` |
 
 The keyword (`Given`, `When`, `Then`, `And`, `But`) does not affect
@@ -111,5 +112,5 @@ driver-meaningful steps and discards the rest:
   `golden` field (the first one wins) and dropped from `steps`, so the driver
   resolves the golden file without scanning step text.
 
-`load-file`, `load-lookup`, `prefill-chat`, and `show-golden` steps are kept,
-in order.
+`load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and `play-audio`
+steps are kept, in order.

@@ -32,6 +32,9 @@ export class TutorialManager {
   private readonly featureCache = new Map<string, TourScenario[]>();
   private readonly cassetteCache = new Map<string, Cassette>();
 
+  /** Tracks how the active tour was started so Finish can navigate correctly. */
+  private launchedFrom: 'panel' | 'deeplink' = 'panel';
+
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
@@ -74,22 +77,24 @@ export class TutorialManager {
     this.host.notify();
   }
 
-  /** Deep link: open, select by (feature, scenario), and play from step 1.
+  /** Deep link: select by (feature, scenario) and play from step 1, keeping
+   *  the Tutorial panel closed (Driver.js overlay takes over immediately).
    *  Returns true when a tour matched; otherwise leaves the panel closed and
    *  returns false. A missing/empty arg or an unknown file/scenario never
-   *  opens the panel — a deep link must not block a normal visit. The (feature,
-   *  name) pair disambiguates when two files share a scenario name. */
+   *  opens the panel — a deep link must not block a normal visit. */
   async openTutorialFromLink(feature: string | null, scenario: string | null): Promise<boolean> {
     if (!feature || !scenario) return false;
     const entry = this.manifest.find((t) => t.feature === feature && t.name === scenario);
     if (!entry) return false;
-    this.openTutorial();
     this.selected = entry;
     this.activeTour = null;
     this.tutorialStepIndex = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
     await this.playTutorial();
+    // Stamp 'deeplink' after playTutorial so a direct Play from the panel always
+    // resets to 'panel' first — overwrite only when we know it's a deep link.
+    this.launchedFrom = 'deeplink';
     return true;
   }
 
@@ -104,21 +109,37 @@ export class TutorialManager {
     this.tutorialStepIndex = 0;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
-    await this.executeTutorialStep(0);
+    this.launchedFrom = 'panel'; // overwritten to 'deeplink' by openTutorialFromLink if needed
+    // Close the Tutorial panel — Driver.js takes over. The step is highlighted
+    // but NOT executed yet; execution happens when the user clicks Next.
+    this.host.tutorialOpen = false;
     this.host.notify();
   }
 
   async nextStep(): Promise<void> {
     if (this.tutorialStepIndex === null || !this.activeTour) return;
-    if (this.tutorialStepIndex < this.activeTour.steps.length - 1) {
+    const total = this.activeTour.steps.length;
+    if (this.tutorialStepIndex >= total) return; // already done
+
+    // Execute the currently highlighted step before advancing.
+    await this.executeTutorialStep(this.tutorialStepIndex);
+
+    if (this.tutorialStepIndex < total - 1) {
+      // Advance to next step (still active).
       this.tutorialStepIndex++;
-      await this.executeTutorialStep(this.tutorialStepIndex);
+      this.host.notify();
+    } else {
+      // Last step executed — enter done state and reopen panel for completion.
+      this.tutorialStepIndex = total;
+      this.host.tutorialOpen = true;
       this.host.notify();
     }
   }
 
   prevStep(): void {
     if (this.tutorialStepIndex === null || this.tutorialStepIndex === 0) return;
+    // Don't step back past active range (done state has index = total).
+    if (this.activeTour && this.tutorialStepIndex > this.activeTour.steps.length - 1) return;
     this.tutorialStepIndex--;
     this.host.notify();
   }
@@ -140,8 +161,37 @@ export class TutorialManager {
     this.host.notify();
   }
 
+  /** Cancel the active tour. For panel-started tours, reopens the chooser.
+   *  For deep-link-started tours, navigates to the bare app URL (strips query
+   *  params so the tour doesn't replay on refresh) using replace() so the back
+   *  button skips the finished tour entirely. */
+  finishTutorial(): void {
+    const fromLink = this.launchedFrom === 'deeplink';
+    this.cancelTutorial();
+    if (fromLink) {
+      if (typeof window !== 'undefined') {
+        window.location.replace(window.location.pathname);
+      }
+    } else {
+      this.openTutorial();
+    }
+  }
+
   isTutorialActive(): boolean {
-    return this.tutorialStepIndex !== null;
+    return (
+      this.tutorialStepIndex !== null &&
+      this.activeTour !== null &&
+      this.tutorialStepIndex < this.activeTour.steps.length
+    );
+  }
+
+  /** True once all steps have been executed and the tour awaits the Finish action. */
+  isTutorialDone(): boolean {
+    return (
+      this.activeTour !== null &&
+      this.tutorialStepIndex !== null &&
+      this.tutorialStepIndex >= this.activeTour.steps.length
+    );
   }
 
   /** True while a tour is playing — the engine pins the recording config and
@@ -185,9 +235,10 @@ export class TutorialManager {
     return this.selected?.name ?? '';
   }
 
-  /** Keyword and text of the current step, or null when no tour is active. */
+  /** Keyword and text of the current step, or null when no tour is active or done. */
   currentTutorialStepNumber(): number | null {
-    return this.tutorialStepIndex !== null ? this.tutorialStepIndex + 1 : null;
+    if (this.tutorialStepIndex === null || this.isTutorialDone()) return null;
+    return this.tutorialStepIndex + 1;
   }
 
   currentStepDetail(): { keyword: string; text: string } | null {
@@ -205,6 +256,7 @@ export class TutorialManager {
       case 'load-file':
       case 'load-lookup': return 'tutorial-open-btn';
       case 'prefill-chat': return 'tutorial-chat-input';
+      case 'play-audio':
       case 'show-golden':
       case 'golden-source':
       case 'display': return 'tutorial-table-view';
@@ -257,9 +309,15 @@ export class TutorialManager {
       }
       case 'prefill-chat':
         this.host.tutorialPrefill = action.text;
-        // Auto-submit, but don't block the tour on the round trip; the request
-        // replays from the cassette. `settle()` lets tests await it.
+        // Notify so the chat input shows the prefill text before submitting.
+        this.host.notify();
+        // Brief pause so the user can see the filled input before the auto-submit.
+        await new Promise<void>((r) => setTimeout(r, 500));
+        // Auto-submit from the cassette. `settle()` lets tests await it.
         if (!this.host.streaming) this.pending = this.host.sendChat(action.text);
+        // Clear the prefill so the input empties after submission (the empty
+        // string triggers the ChatPanel effect; null would leave the draft).
+        this.host.tutorialPrefill = '';
         break;
       case 'show-golden': {
         // The golden filename is lifted onto the scenario by the parser (from
@@ -271,6 +329,19 @@ export class TutorialManager {
             this.host.goldenRows = raw.trim().split('\n').filter(Boolean)
               .map((l) => JSON.parse(l) as Row);
           }
+        }
+        break;
+      }
+      case 'play-audio': {
+        // Play the named audio clip in the browser. No-op in test environments
+        // where the Audio constructor is not available.
+        if (typeof Audio !== 'undefined') {
+          const audio = new Audio(action.filename);
+          await new Promise<void>((resolve) => {
+            audio.onended = () => resolve();
+            audio.onerror = () => resolve();
+            audio.play().catch(() => resolve());
+          });
         }
         break;
       }

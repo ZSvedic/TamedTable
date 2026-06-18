@@ -143,6 +143,19 @@ Feature: Gherkin Tour parser
       When parseTours is called
       Then step 2 of scenario 1 has action kind "show-golden"
 
+    @headless
+    Scenario: play-audio action from play audio "X"
+      Given a feature string:
+        """
+        Feature: Demo
+          @tutorial
+          Scenario: Audio step
+            When play audio "voice-demo.mp3"
+        """
+      When parseTours is called
+      Then step 1 of scenario 1 has action kind "play-audio"
+      And step 1 of scenario 1 has action filename "voice-demo.mp3"
+
   Rule: Verification steps are dropped; the golden source is lifted
 
     @headless
