@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths:
       # Rebuild when the web bundle, the marketing homepage, or its shared
-      # assets change. Doc-only / ops-only commits should not redeploy.
+      # assets change. Doc-only / process-only commits should not redeploy.
       - 'src/packages/web/**'
       - 'src/packages/core/**'
       - 'src/packages/headless/**'
@@ -14,7 +14,7 @@ on:
       - 'src/bun.lock'
       - 'marketing/web/**'
       - 'marketing/illustrations/**'
-      - 'design/brand/**'
+      - 'marketing/brand/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:  # manual rebuild from the Actions tab
 permissions:

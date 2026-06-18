@@ -7,7 +7,7 @@ List of tiles to create (each: the feature and the exact phrase a user would typ
 Before drawing, read these and match what's already there:
 
 - `marketing/illustrations/` — the existing tiles are the template. Reuse their structure: a 360×230 frame, a prompt chip at top showing the typed phrase, and one focused mini-table that shows the change. Study a few before starting.
-- `design/brand/brand.md` — the palette and type system. Ink `#281C60`, accent Pale Sky `#96BED7`, grid Silver `#DCDCDC`, ground Linen `#F6F2EB`. Body/UI in Inter, data/labels in JetBrains Mono.
+- `marketing/brand/brand.md` — the palette and type system. Ink `#281C60`, accent Pale Sky `#96BED7`, grid Silver `#DCDCDC`, ground Linen `#F6F2EB`. Body/UI in Inter, data/labels in JetBrains Mono.
 - `marketing/features.md` — the source of feature copy; lead each tile with the real phrase, not a label.
 
 Rules learned the hard way — follow them or the tiles look off:

@@ -21,7 +21,7 @@ Example:
 ## You may NOT modify
 
 - `src/` — implementation only.
-- `ops/journal/` — frozen planning records.
+- `process/journal/` — frozen planning records.
 - `spec/test-cases/*.feature` — separate workflow.
 
 ## Editing rules
@@ -39,5 +39,5 @@ Validation is interactive, not automated. After a spec edit, suggest the HUMAN s
 ## Constraints
 
 - Do NOT generate app code.
-- Do NOT touch `src/`, `ops/journal/`, or `spec/test-cases/*.feature`.
+- Do NOT touch `src/`, `process/journal/`, or `spec/test-cases/*.feature`.
 - Every line of your prose response starts with `> `.

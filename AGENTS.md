@@ -14,7 +14,7 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 | Spec index, test-fixture naming | [spec/README.md](spec/README.md) |
 | Package specs: layout, step-def ownership, UI rules, demos | [spec/packages/README.md](spec/packages/README.md) |
 | How to write any markdown you add | [spec/writing-style.md](spec/writing-style.md) |
-| Past decisions and status reports | [ops/journal/](ops/journal/) — read, don't rewrite |
+| Past decisions and status reports | [process/journal/](process/journal/) — read, don't rewrite |
 | Code and feature map | [MAP.md](MAP.md) |
 
 ## Explaining things in chat — KISS
@@ -32,16 +32,16 @@ When you answer the user in chat (status updates, failure reports, "why did X ha
 
 ## Available prompts
 
-Reusable session starters in `ops/prompts/`:
+Reusable session starters in `process/prompts/`:
 
 | Prompt | Use for |
 |---|---|
-| [prompt-cleanup.md](ops/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
-| [prompt-illustrate.md](ops/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
-| [prompt-implement.md](ops/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
-| [prompt-meeting.md](ops/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
-| [prompt-scribe.md](ops/prompts/prompt-scribe.md) | SCRIBE — spec-only editor, never touches `src/`. Paired with WoZ. |
-| [prompt-woz.md](ops/prompts/prompt-woz.md) | WoZ — interactive behavior simulator driven by `spec/behavior.md`. |
+| [prompt-cleanup.md](process/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
+| [prompt-illustrate.md](process/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
+| [prompt-implement.md](process/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
+| [prompt-meeting.md](process/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
+| [prompt-scribe.md](process/prompts/prompt-scribe.md) | SCRIBE — spec-only editor, never touches `src/`. Paired with WoZ. |
+| [prompt-woz.md](process/prompts/prompt-woz.md) | WoZ — interactive behavior simulator driven by `spec/behavior.md`. |
 
 ## Layout, stack & process
 
@@ -95,7 +95,7 @@ Any `.md` you add or edit follows [spec/writing-style.md](spec/writing-style.md)
 
 ## Don't
 
-- Rewrite entries in `ops/journal/` — they are historical.
+- Rewrite entries in `process/journal/` — they are historical.
 - Add a top-level directory without reading [Layout, stack & process](#layout-stack--process).
 - Restate what's in canonical docs. Link instead.
 - Leave "future", "planned", or "deferred" language in docs after a feature ships — update those references in the same PR that implements the feature.

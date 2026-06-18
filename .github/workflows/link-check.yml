@@ -1,7 +1,7 @@
 name: Link check
 
 # Lychee no longer gates PRs — link rot is caught during the
-# periodic project cleanup pass (see ops/prompts/prompt-cleanup.md).
+# periodic project cleanup pass (see process/prompts/prompt-cleanup.md).
 # This workflow stays as a manual + scheduled safety net.
 
 on:
@@ -42,6 +42,6 @@ jobs:
             --exclude-path node_modules
             --exclude-path src/node_modules
             --exclude-path src/packages/web/node_modules
-            --exclude-path ops/journal
+            --exclude-path process/journal
             './**/*.md'
           fail: true

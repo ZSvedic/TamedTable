@@ -24,10 +24,10 @@ Inside any child, `useTheme()` returns the active `Theme` object and
 ## Tokens (main entry, React-free)
 
 The canonical token *values* live at
-`design/tokens.json`, so they survive a full `src/`
+`marketing/tokens.json`, so they survive a full `src/`
 regeneration. `bun run sync:tokens` regenerates two copies from it:
 `packages/ui-kit/tokens.json` (which this package imports, so `src/` stays a
-self-contained deployable unit) and `design/claude-design-app/tokens.jsx` (the
+self-contained deployable unit) and `marketing/claude-design-app/tokens.jsx` (the
 design canvas globals). The guard test fails CI if either copy drifts. The main entry types and names the tokens,
 exporting the brand system as plain objects — no React:
 

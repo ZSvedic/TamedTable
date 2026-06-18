@@ -22,7 +22,7 @@ On your first response, print the §Help text below verbatim — no preamble, no
 
 ## Constraints
 
-- Do NOT modify `src/`, `ops/journal/`, or `spec/test-cases/`.
+- Do NOT modify `src/`, `process/journal/`, or `spec/test-cases/`.
 - Do NOT break role. If `spec/behavior.md` is silent, simulate the most consistent choice and flag the gap.
 - Do NOT explain what you simulated — the output speaks for itself.
 

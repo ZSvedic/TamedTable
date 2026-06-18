@@ -1,6 +1,6 @@
-Read `AGENTS.md` and `README.md` first. Find the most recent `ops/journal/YYYY-MM-DD-status.md` and read it. Run `git log --since=<last-status-date> --oneline` to see what changed since.
+Read `AGENTS.md` and `README.md` first. Find the most recent `process/journal/YYYY-MM-DD-status.md` and read it. Run `git log --since=<last-status-date> --oneline` to see what changed since.
 
-Walk every tracked file outside `ops/journal/` and gitignored paths. For each one:
+Walk every tracked file outside `process/journal/` and gitignored paths. For each one:
 
 - **Outdated?** Compare against the current state of the repo — what shipped, which files and directories exist. Update any stale reference, regardless of file format (`.md`, `.csv`, `.txt`, anything).
 - **Consistent?** Does it agree with every other tracked file? Fix any mismatch. The library-package mirror must stay complete: every library package under `src/packages/` has a matching `spec/packages/<name>/` (and no spec dir is an orphan), and each package `README.md` link table (spec, scenarios, code, demo) resolves. The app packages (`core`, `headless`, `cli`, `web`) are specced at app level, not in `spec/packages/`.
@@ -15,7 +15,7 @@ Then run the link check and fix any broken links:
       --exclude-path src/node_modules \
       './**/*.md'
 
-Write `ops/journal/YYYY-MM-DD-status.md` (today's date) with this table:
+Write `process/journal/YYYY-MM-DD-status.md` (today's date) with this table:
 
 | File | Consistent | Simplified | Updates | Reason for existence |
 |---|---|---|---|---|
