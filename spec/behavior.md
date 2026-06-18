@@ -421,6 +421,10 @@ The CLI exposes two help screens. They cover disjoint surface:
   every `:` command, the natural-language request convention, and the
   Ctrl-C behavior. It does NOT mention `execute`, `--input`, or
   `--output`.
+- `tamedtable --version` / `-v` prints the version — the line
+  `tamedtable <version>`, sourced from the CLI package manifest — and
+  exits 0. Like `--help` it runs offline, never starts the REPL, and
+  never lists the `:` commands.
 
 A reader who types `--help` is asking "how do I run this binary";
 a reader who types `:help` is asking "what can I type now that I'm
@@ -442,6 +446,7 @@ Usage:
                                      source path recorded in <flow>.
     --output <file>                  Destination .jsonl. Required.
   tamedtable --help, -h, help        Show this usage screen.
+  tamedtable --version, -v           Print the version and exit.
 
 The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
 ```

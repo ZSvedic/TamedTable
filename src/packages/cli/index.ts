@@ -19,6 +19,7 @@ import {
 } from '@tamedtable/headless';
 import { resolveConfig } from '@tamedtable/model-config';
 import { readConfigFromEnv } from '@tamedtable/model-config/env';
+import pkg from './package.json' with { type: 'json' };
 
 export interface CliRunnerOptions extends HeadlessRunnerOptions {
   stdout?: NodeJS.WritableStream;
@@ -76,6 +77,10 @@ export function replReadlineOptions(
   };
 }
 
+// Version line for `--version` / `-v`, sourced from this package's manifest so
+// it stays in sync with a single bump. See behavior.md §CLI/Discovery.
+const VERSION_TEXT = `tamedtable ${pkg.version}\n`;
+
 const CLI_USAGE_TEXT = `tamedtable — work tables in your terminal with natural-language requests.
 
 Usage:
@@ -88,6 +93,7 @@ Usage:
                                      source path recorded in <flow>.
     --output <file>                  Destination .jsonl. Required.
   tamedtable --help, -h, help        Show this usage screen.
+  tamedtable --version, -v           Print the version and exit.
 
 The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
 `;
@@ -863,6 +869,10 @@ export async function runCli(argv: string[], opts: CliRunnerOptions = {}): Promi
 
   if (argv[0] === '--help' || argv[0] === '-h' || argv[0] === 'help') {
     (opts.stdout ?? process.stdout).write(CLI_USAGE_TEXT);
+    return { exitCode: 0, stderr: '' };
+  }
+  if (argv[0] === '--version' || argv[0] === '-v') {
+    (opts.stdout ?? process.stdout).write(VERSION_TEXT);
     return { exitCode: 0, stderr: '' };
   }
   if (argv.length === 0) return fail(1, 'tamedtable: REPL mode requires a CSV or JSONL path. Try --help for usage.');
