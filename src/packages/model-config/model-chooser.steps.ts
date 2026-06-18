@@ -191,6 +191,32 @@ Then(
 );
 
 Then(
+  "the {string} card's Get-API-key link opens {string} in a new tab",
+  async function (this: DemoWorld, provider: string, url: string) {
+    const p = page(this);
+    const sel = `[data-mc-keyurl="${provider}"]`;
+    await p.waitForSelector(sel, { timeout: 5_000 });
+    assert.equal(await p.getAttribute(sel, 'href'), url);
+    assert.equal(await p.getAttribute(sel, 'target'), '_blank');
+    assert.match(await p.getAttribute(sel, 'rel') ?? '', /noopener/);
+  },
+);
+
+Then(
+  'the chooser shows a BYOK help link to {string} in a new tab',
+  async function (this: DemoWorld, url: string) {
+    const p = page(this);
+    await p.waitForSelector('[data-mc-byok]', { timeout: 5_000 });
+    assert.ok(
+      (await p.getAttribute('[data-mc-byok]', 'href'))?.includes(url),
+      `expected the BYOK help link href to include "${url}"`,
+    );
+    assert.equal(await p.getAttribute('[data-mc-byok]', 'target'), '_blank');
+    assert.match(await p.getAttribute('[data-mc-byok]', 'rel') ?? '', /noopener/);
+  },
+);
+
+Then(
   'the demo shows resolved provider {string}',
   async function (this: DemoWorld, expected: string) {
     await expectResolved(page(this), 'provider', expected);

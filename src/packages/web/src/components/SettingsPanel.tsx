@@ -126,6 +126,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             secondaryModel={cfg.cellModel}
             keys={keys}
             expandedProvider={controller.expandedProvider}
+            byokHelpUrl="../BYOK-setup.html"
             onProviderClick={(p) => void controller.clickProviderCard(p)}
             onKeyChange={handleKeyChange}
             onSelectModel={(role, modelId) =>
