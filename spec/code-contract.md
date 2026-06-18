@@ -823,10 +823,10 @@ scenario already recorded — no separate tutorial recording is needed.
 | `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
-| `async nextStep()` | Executes the **current** step, then advances the step index. On the last step, executes it and enters the done state (opens the Tutorial panel for completion view). |
+| `async nextStep()` | Executes the **current** step, then advances the step index. On the last step, executes it and enters the done state — the completion is shown in the Driver.js popover (the slide-over panel stays closed). |
 | `prevStep()` | Decrements step index; no step execution (display only). |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
-| `finishTutorial()` | Cancels the active tour. If the tour was started from the Tutorial panel, reopens the panel at the chooser. If started via a deep link, navigates to the bare app URL (strips query params) using `window.location.replace()` so the tour doesn't replay on refresh and the back button skips the finished tour. |
+| `finishTutorial()` | Cancels the active tour and returns the user to their source. Panel-started tours reopen the panel at the chooser. Deep-link-started tours go back to the referring page (`history.back()` when `document.referrer` is set); a direct visit with no referrer strips the tour's query params (`window.location.replace(pathname)`) so a refresh doesn't replay the tour. |
 | `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
 | `isTutorialDone(): boolean` | True once all steps have been executed and the tour is awaiting the final Finish action. |
 | `currentTutorialStepNumber(): number \| null` | 1-based step number, or `null` when inactive or done. |

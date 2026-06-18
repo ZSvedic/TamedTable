@@ -852,16 +852,18 @@ disabled until one is).
 
 When Play is clicked, the Tutorial panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
-instruction, keyboard shortcut hints (**← Prev**, **→** / **Space** next,
-**Esc** cancel), **← Prev**, **Next →** (or **Finish** on the last step), and
-a close (**×**) button. Each step is **highlighted first** and **executed only
-when the user clicks Next** — the action runs as the tour advances, not at the
-moment the step appears.
+instruction, the **← Prev**, **Next →** (or **Finish** on the last step) and
+close (**×**) buttons, and a subtle keyboard-shortcut hint **below the buttons**
+(**← Prev**, **→** / **Space** next, **Esc** cancel). Each step is **highlighted
+first** and **executed only when the user clicks Next** — the action runs as the
+tour advances, not at the moment the step appears.
 
-After clicking Next on the last step the tour enters a **done state**: the
-Driver.js overlay disappears, the Tutorial panel reopens, and the body shows a
-completion message ("Tutorial complete!"). A **Back to tutorials** button
-returns to the scenario chooser.
+After clicking Finish on the last step the tour enters a **done state**: the
+spotlight stays on the table and the popover shows a completion message
+("Tutorial complete · Data is as expected.") with a single **Done** button (the
+slide-over panel does **not** reopen). Done returns the user to wherever they
+started: a tour launched from the Tutorial panel reopens the chooser, while a
+deep-link tour goes back to the page the user came from (see *Deep links*).
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)
@@ -917,12 +919,14 @@ closed — the Driver.js overlay takes over immediately). A missing parameter, a
 unknown file, or an unknown scenario boots the app normally — panel closed, no
 error toast; a deep link never crashes or blocks a normal visit.
 
-**Finishing a deep-link tour.** When the user clicks the **Back to tutorials**
-button after completing a deep-link-started tour, the app navigates to the bare
-app URL (pathname only, query params stripped) via `window.location.replace()`.
-This prevents the tour from replaying on a page refresh and makes the browser
-back button skip the finished tour. Tours started from the Tutorial panel chooser
-return to the chooser as usual.
+**Finishing a deep-link tour.** Clicking **Done** after completing a
+deep-link-started tour returns the user to the page they came from: if the page
+has a referrer (e.g. they clicked a "Show me →" button on the marketing
+homepage), the app calls `history.back()`. A direct visit with no referrer has
+no source to return to, so the app strips the tour's query params and stays on
+the bare app URL (`window.location.replace(pathname)`) — that way a refresh
+doesn't replay the tour. Tours started from the Tutorial panel chooser return to
+the chooser instead.
 
 Production links use the deployed base, e.g.
 `https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.
