@@ -33,6 +33,26 @@ Feature: CLI invocation flags
     And stdout contains "execute"
 
   @cli @offline
+  Scenario: --version prints the version and exits 0
+    When user invokes "tamedtable --version"
+    Then exit code is 0
+    And stdout contains "tamedtable"
+
+  @cli @offline
+  Scenario: -v is an alias for --version
+    When user invokes "tamedtable -v"
+    Then exit code is 0
+    And stdout contains "tamedtable"
+
+  @cli @offline
+  Scenario: --version does not start the REPL or list slash commands
+    When user invokes "tamedtable --version"
+    Then exit code is 0
+    And stdout does not contain ":help"
+    And stdout does not contain ":undo"
+    And stdout does not contain "Usage:"
+
+  @cli @offline
   Scenario: bare "help" subcommand also prints CLI usage
     When user invokes "tamedtable help"
     Then exit code is 0

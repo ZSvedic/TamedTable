@@ -309,7 +309,9 @@ don't need them. The two help screens are the verbatim fenced blocks
 in [behavior.md §CLI/REPL](behavior.md#cli) (`:help`, in-session) <!-- #ReplCmds -->
 and [behavior.md §CLI/Discovery](behavior.md#cli) (`--help` / `-h` /
 `help`, binary invocation), <!-- #CliFlags --> both loaded as strings at module init and
-emitted unchanged. `runCli` returns instead of calling `process.exit`
+emitted unchanged. `--version` / `-v` <!-- #CliFlags --> writes `tamedtable ${version}`
+(the `version` field of the CLI package manifest) and returns exit 0.
+`runCli` returns instead of calling `process.exit`
 so callers can decide what to do with a failure.
 
 `.flow` file shape:
