@@ -882,8 +882,12 @@ step maps to one of five actions:
 - **show-golden** — the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
-- **play-audio** — the named audio clip plays in the browser. Useful for voice
-  demo steps. The table view is highlighted.
+- **play-audio** — the named audio clip plays in the browser and then drives a
+  real voice turn: the controller fetches the clip, reuses the voice plumbing to
+  build the same spoken request the microphone would, and runs it through the
+  engine in replay mode — so a voice tour transforms the table from the recorded
+  cassette with **no API key**, exactly like a `prefill-chat` step does for typed
+  requests. The table view is highlighted.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its
@@ -900,9 +904,11 @@ against the tour's recorded cassette (fetched same-origin) and served from it,
 so no key is needed and no network call leaves the browser. Matching is exact
 over the whole request, so the tour must reproduce the request that was
 recorded — playback therefore pins the same model and configuration the
-recording used. A request with no recording fails loudly (a toast), never a
-silent hang. Normal (non-tutorial) chat is unaffected: it still uses the
-visitor's own key against the live model.
+recording used. Each tour pins its own provider: a **voice tour** (one with a
+`play-audio` step) replays against Gemini, the provider voice input uses, while
+every other tour replays against Anthropic. A request with no recording fails
+loudly (a toast), never a silent hang. Normal (non-tutorial) chat is unaffected:
+it still uses the visitor's own key against the live model.
 
 ### Deep links into a tutorial
 

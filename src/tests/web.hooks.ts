@@ -12,6 +12,7 @@ import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-p
 const TUTORIAL_FEATURES = [
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
+  'voice.feature',
 ];
 
 /** Build TutorialSources from disk: a lightweight manifest plus on-demand
@@ -28,6 +29,7 @@ function buildTutorialSources(): TutorialSources {
     loadFeature: (name) => Promise.resolve(readFileSync(join(SPEC_TC_DIR, name), 'utf8')),
     loadFixture: (name) => Promise.resolve(readFileSync(join(SPEC_TC_DIR, name), 'utf8')),
     loadCassette: (feature) => Promise.resolve(readFileSync(join(CASSETTE_DIR, `${feature}.json`), 'utf8')),
+    loadAudio: (name) => Promise.resolve(new Uint8Array(readFileSync(join(SPEC_TC_DIR, name)))),
   };
 }
 

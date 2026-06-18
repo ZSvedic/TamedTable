@@ -62,16 +62,20 @@ export class EngineManager {
   ensureHeadless(): HeadlessRunner {
     const replaying = this.host.tutorial.isReplaying();
     if (this.headless && this.builtForReplay === replaying) return this.headless;
+    // Tutorial replay pins the recording config — the active tour's provider
+    // defaults — so the request matches the taped one. A voice tour replays
+    // against Gemini (where its audio request went), every other tour against
+    // Anthropic; replayProvider() decides. The engine is rebuilt when replay
+    // mode flips (and playTutorial resets it per tour, so the provider tracks).
+    const replayProvider = replaying ? this.host.tutorial.replayProvider() : 'anthropic';
     this.headless = createHeadlessRunner({
-      // Tutorial replay pins the recording config — model `claude-sonnet-4-6`
-      // with the default cell model — so the request matches the taped one; a
-      // placeholder key is enough because the cassette intercepts every call.
-      // Otherwise pass the active provider's key (a non-empty fallback lets the
-      // SDK initialise even with no key — the real error then surfaces from the
-      // API response, which userFacingMessage describes clearly).
+      // A placeholder key is enough in replay because the cassette intercepts
+      // every call. Otherwise pass the active provider's key (a non-empty
+      // fallback lets the SDK initialise even with no key — the real error then
+      // surfaces from the API response, which userFacingMessage describes).
       apiKey: replaying ? PLACEHOLDER_KEY : (this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY),
-      model: replaying ? defaultModel('anthropic') : this.host.config.model,
-      cellModel: replaying ? defaultCellModel('anthropic') : this.host.config.cellModel,
+      model: replaying ? defaultModel(replayProvider) : this.host.config.model,
+      cellModel: replaying ? defaultCellModel(replayProvider) : this.host.config.cellModel,
       fetch: this.makeFetch(),
       batchSize: this.host.opts.batchSize,
       chunkSize: this.host.opts.chunkSize,

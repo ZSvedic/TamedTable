@@ -25,6 +25,7 @@ const cassetteDir = join(here, '../../tests/__cassettes__');
 const tutorialFeatureNames = [
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
+  'voice.feature',
 ];
 
 const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {
@@ -41,12 +42,17 @@ const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {
 const sampleFiles = readdirSync(specTcDir)
   .filter((name) => name.endsWith('.csv') || name.endsWith('.jsonl'))
   .sort();
+// Voice clips for `play-audio` tour steps — served from /samples/ alongside the
+// CSV/JSONL fixtures, but kept out of __TT_SAMPLE_FILES__ (the Open URL dialog's
+// quick-picks are data files only).
+const audioFiles = readdirSync(specTcDir).filter((name) => name.endsWith('.m4a')).sort();
 const cassetteFiles = readdirSync(cassetteDir).filter((name) => name.endsWith('.json')).sort();
 
 function contentTypeFor(name: string): string {
   if (name.endsWith('.csv')) return 'text/csv; charset=utf-8';
   if (name.endsWith('.jsonl')) return 'application/x-ndjson; charset=utf-8';
   if (name.endsWith('.json')) return 'application/json; charset=utf-8';
+  if (name.endsWith('.m4a')) return 'audio/mp4';
   return 'text/plain; charset=utf-8';  // .feature
 }
 
@@ -88,7 +94,7 @@ function staticDirPlugin(route: string, srcDir: string, files: string[]): Plugin
 export default defineConfig({
   plugins: [
     react(),
-    staticDirPlugin('samples', specTcDir, sampleFiles),
+    staticDirPlugin('samples', specTcDir, [...sampleFiles, ...audioFiles]),
     staticDirPlugin('tutorials', specTcDir, tutorialFeatureNames),
     staticDirPlugin('cassettes', cassetteDir, cassetteFiles),
   ],
