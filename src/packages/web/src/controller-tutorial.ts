@@ -32,6 +32,9 @@ export class TutorialManager {
   private readonly featureCache = new Map<string, TourScenario[]>();
   private readonly cassetteCache = new Map<string, Cassette>();
 
+  /** Tracks how the active tour was started so Finish can navigate correctly. */
+  private launchedFrom: 'panel' | 'deeplink' = 'panel';
+
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
@@ -89,6 +92,9 @@ export class TutorialManager {
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
     await this.playTutorial();
+    // Stamp 'deeplink' after playTutorial so a direct Play from the panel always
+    // resets to 'panel' first — overwrite only when we know it's a deep link.
+    this.launchedFrom = 'deeplink';
     return true;
   }
 
@@ -103,6 +109,7 @@ export class TutorialManager {
     this.tutorialStepIndex = 0;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
+    this.launchedFrom = 'panel'; // overwritten to 'deeplink' by openTutorialFromLink if needed
     // Close the Tutorial panel — Driver.js takes over. The step is highlighted
     // but NOT executed yet; execution happens when the user clicks Next.
     this.host.tutorialOpen = false;
@@ -154,10 +161,20 @@ export class TutorialManager {
     this.host.notify();
   }
 
-  /** Cancel the active tour and reopen the Tutorial panel at the chooser. */
+  /** Cancel the active tour. For panel-started tours, reopens the chooser.
+   *  For deep-link-started tours, navigates to the bare app URL (strips query
+   *  params so the tour doesn't replay on refresh) using replace() so the back
+   *  button skips the finished tour entirely. */
   finishTutorial(): void {
+    const fromLink = this.launchedFrom === 'deeplink';
     this.cancelTutorial();
-    this.openTutorial();
+    if (fromLink) {
+      if (typeof window !== 'undefined') {
+        window.location.replace(window.location.pathname);
+      }
+    } else {
+      this.openTutorial();
+    }
   }
 
   isTutorialActive(): boolean {

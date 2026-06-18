@@ -826,7 +826,7 @@ scenario already recorded — no separate tutorial recording is needed.
 | `async nextStep()` | Executes the **current** step, then advances the step index. On the last step, executes it and enters the done state (opens the Tutorial panel for completion view). |
 | `prevStep()` | Decrements step index; no step execution (display only). |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
-| `finishTutorial()` | Cancels the active tour and reopens the Tutorial panel at the chooser (called from the done-state "Back to tutorials" button). |
+| `finishTutorial()` | Cancels the active tour. If the tour was started from the Tutorial panel, reopens the panel at the chooser. If started via a deep link, navigates to the bare app URL (strips query params) using `window.location.replace()` so the tour doesn't replay on refresh and the back button skips the finished tour. |
 | `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
 | `isTutorialDone(): boolean` | True once all steps have been executed and the tour is awaiting the final Finish action. |
 | `currentTutorialStepNumber(): number \| null` | 1-based step number, or `null` when inactive or done. |

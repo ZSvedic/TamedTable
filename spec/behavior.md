@@ -917,6 +917,13 @@ closed — the Driver.js overlay takes over immediately). A missing parameter, a
 unknown file, or an unknown scenario boots the app normally — panel closed, no
 error toast; a deep link never crashes or blocks a normal visit.
 
+**Finishing a deep-link tour.** When the user clicks the **Back to tutorials**
+button after completing a deep-link-started tour, the app navigates to the bare
+app URL (pathname only, query params stripped) via `window.location.replace()`.
+This prevents the tour from replaying on a page refresh and makes the browser
+back button skip the finished tour. Tours started from the Tutorial panel chooser
+return to the chooser as usual.
+
 Production links use the deployed base, e.g.
 `https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.
 
