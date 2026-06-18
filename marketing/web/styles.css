@@ -113,11 +113,11 @@ header.nav {
   box-shadow: 0 30px 60px -30px rgba(0,0,0,0.55);
 }
 .demo-bar {
-  display: flex; align-items: center; gap: 8px;
+  position: relative; display: flex; align-items: center; gap: 8px;
   padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--stage);
 }
 .demo-dot { width: 11px; height: 11px; border-radius: 50%; }
-.demo-cap { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.demo-cap { position: absolute; left: 0; right: 0; text-align: center; pointer-events: none; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
 .demo-body { padding: 20px; font-family: var(--font-mono); font-size: 13px; }
 .demo-prompt { color: var(--ink); font-weight: 500; }
 .demo-prompt .caret { color: var(--accent); }
