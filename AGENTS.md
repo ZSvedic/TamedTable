@@ -73,6 +73,20 @@ When you change observable behavior of `cli`, `core`, `headless`, or `web`, upda
 
 Pure refactors that preserve behavior touch only steps 4 and 5 — no spec or Gherkin change.
 
+## Issue-driven development — the `claude-implement` label
+
+A GitHub issue labelled **`claude-implement`** is a task queued for an autonomous session. The human files the issue and labels it; an agent session picks it up and does the rest.
+
+When you are a session started for such an issue:
+
+1. Read the issue body — it is the task spec. If it is ambiguous enough that you'd guess at something hard to reverse, ask in an issue comment (or the PR) before doing large work.
+2. Implement it through the [workflow rule](#workflow-rule--changing-a-component) above: spec → Gherkin → step defs → code, red before green. Pure-doc tasks skip straight to the edit.
+3. Run `cd src && bun run test` — confirm green.
+4. Open **one PR per issue** on its own branch. Put `Fixes #<n>` in the PR body so merging the PR closes the issue automatically.
+5. Stop there. Review and merge are the human's job; respond to review comments on the PR.
+
+The issue is the durable task record; the closed issue plus the matching PR are the log. No separate `todo/`/`done/` files needed.
+
 ## Direct commit vs PR
 
 Open a PR when the change:
