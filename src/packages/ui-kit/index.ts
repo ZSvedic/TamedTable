@@ -1,7 +1,7 @@
 // #UiKit
 // Single source of truth for every visual choice — the TamedTable brand
 // system expressed as design tokens. The canonical token *values* live in the
-// design base, design/tokens.json, so they survive a full src/
+// design base, marketing/tokens.json, so they survive a full src/
 // regeneration; ./tokens.json here is a generated copy (run `bun run
 // sync:tokens` from src/ after editing the master) that this package imports
 // so src/ stays a self-contained deployable unit. This module gives the tokens
@@ -10,7 +10,7 @@
 // one package. This entry is React-free; the components live in ./components.
 // Spec: spec/packages/ui-kit/behavior.md.
 //
-// Brand system (see design/brand/brand.md):
+// Brand system (see marketing/brand/brand.md):
 //   Ink     · Aubergine  #281C60   replaces black throughout
 //   Accent  · Pale Sky   #96BED7   the mark's accent cell + focus only
 //   Lines   · Silver     #DCDCDC

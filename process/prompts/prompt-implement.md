@@ -9,6 +9,6 @@ Process:
 - Do not rewrite step defs to fit your implementation. The step defs define the contract; the implementation moves to fit them.
 - New dependencies must honor the project's minimum release age. Check before installing.
 
-Out of scope: edits to `spec/`, `spec/test-cases/`, or `ops/`. Those go through SCRIBE.
+Out of scope: edits to `spec/`, `spec/test-cases/`, or `process/`. Those go through SCRIBE.
 
 Confirm before executing.

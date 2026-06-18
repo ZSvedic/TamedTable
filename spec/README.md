@@ -1,6 +1,6 @@
 # Spec
 
-The human-authored contract for TamedTable: what the system does, the types it exposes, and the scenarios that prove it. Implementation lives in [`src/`](../src/); process docs and history in [`ops/`](../ops/).
+The human-authored contract for TamedTable: what the system does, the types it exposes, and the scenarios that prove it. Implementation lives in [`src/`](../src/); process docs and history in [`process/`](../process/).
 
 | File | What it covers |
 |---|---|

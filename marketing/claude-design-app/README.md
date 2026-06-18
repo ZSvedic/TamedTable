@@ -4,7 +4,7 @@ The TamedTable **app** design base — the canonical home for the running app's
 visual design, deliberately kept **outside `src/`** so it survives a full
 `src/` regeneration (e.g. rebuilding the app with a different model). Iterate on
 the design here, then flow changes into the code. Shared assets live one level
-up: `design/tokens.json` (the token master) and `design/brand/` (marks,
+up: `marketing/tokens.json` (the token master) and `marketing/brand/` (marks,
 favicons, lockups, `brand.md`).
 
 ## Source of truth

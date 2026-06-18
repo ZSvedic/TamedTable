@@ -8,8 +8,13 @@ Organized by **lifecycle**, not by file type:
 
 ```
 TamedTable/                  root: README.md, MAP.md (feature + code navigation), LICENSE, .gitignore
-├── design/                  shared design base — tokens.json (master), brand/ (marks + favicons), per-surface bases (claude-design-app, claude-design-web)
-├── ops/                     how the project is built; never deployed
+├── marketing/               everything the public sees + the shared design base — never part of src/
+│   ├── tokens.json          design token master — colors, typography, spacing
+│   ├── brand/               marks, favicons, lockups, brand.md
+│   ├── claude-design-app/   in-browser design canvas (scratch JSX + generated tokens.jsx)
+│   ├── illustrations/       SVG feature tiles + gallery
+│   └── web/                 the landing page that ships to the site root
+├── process/                 how the project is built; never deployed
 │   ├── journal/             historic status reports
 │   ├── prompts/             reusable session starters — see AGENTS.md
 │   └── repo-tracking/       commit-size script + chart generator
@@ -165,7 +170,7 @@ In a fresh Claude Code session at the repo root:
 
 ```
 claude
-> @ops/prompts/prompt-woz.md
+> @process/prompts/prompt-woz.md
 ```
 
 That loads WoZ. Every message you type is independently classified by its first character — no persistent persona switching:
@@ -177,7 +182,7 @@ That loads WoZ. Every message you type is independently classified by its first 
 
 Visual: WoZ output appears in fenced code blocks (terminal-shaped — that's the simulated TamedTable output). SCRIBE responses appear as markdown blockquotes (every line prefixed with `> `, mirroring your input prefix).
 
-SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or any LLM prompt files the spec references (prompt tuning). It never touches `src/`, `ops/journal/`, or `spec/test-cases/*.feature`.
+SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or any LLM prompt files the spec references (prompt tuning). It never touches `src/`, `process/journal/`, or `spec/test-cases/*.feature`.
 
 ## Known limitations
 

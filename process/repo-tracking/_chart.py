@@ -11,7 +11,7 @@ Reads temp/commit-sizes.csv and renders temp/commit-sizes.png: two vertically
 stacked subplots.  Chart 1 shows the full commit history with index-number
 x-axis ticks (every 10).  Chart 2 zooms in on the last 20 commits with full
 short-hash + message labels at 45°.  Both charts use a stacked area for
-ops/ spec/ src/ byte sizes and overlay the tracked TOTAL as a line.  The gap
+process/ spec/ src/ byte sizes and overlay the tracked TOTAL as a line.  The gap
 between the stack top and the TOTAL line is the root files (README.md,
 LICENSE, .gitignore)."""
 
@@ -40,8 +40,8 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 14))
 # --- Chart 1: full history, index-number x-axis ---
 x_all = range(len(df))
 ax1.stackplot(
-    x_all, kb("ops"), kb("spec"), kb("src"),
-    labels=["ops/", "spec/", "src/"], alpha=0.85,
+    x_all, kb("process"), kb("spec"), kb("src"),
+    labels=["process/", "spec/", "src/"], alpha=0.85,
 )
 ax1.plot(x_all, kb("total"), color="black", linewidth=1.5, marker="o", markersize=3, label="TOTAL")
 tick_positions = list(range(0, len(df), 10))
@@ -55,8 +55,8 @@ ax1.legend(loc="upper left")
 x_recent = range(len(recent))
 kb_recent = lambda col: recent[col] / 1024
 ax2.stackplot(
-    x_recent, kb_recent("ops"), kb_recent("spec"), kb_recent("src"),
-    labels=["ops/", "spec/", "src/"], alpha=0.85,
+    x_recent, kb_recent("process"), kb_recent("spec"), kb_recent("src"),
+    labels=["process/", "spec/", "src/"], alpha=0.85,
 )
 ax2.plot(x_recent, kb_recent("total"), color="black", linewidth=1.5, marker="o", markersize=3, label="TOTAL")
 ax2.set_xticks(list(x_recent))
