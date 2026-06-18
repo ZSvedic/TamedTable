@@ -24,6 +24,9 @@ export interface ModelChooserProps {
   secondaryModel: string;
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
+  /** Optional URL for a general "how to get an API key" help link below the
+   * cards. The host supplies the path so the component carries no site URL. */
+  byokHelpUrl?: string;
   onProviderClick: (p: Provider) => void;
   onKeyChange: (p: Provider, value: string) => void;
   onSelectModel: (role: ModelRole, modelId: string) => void;
@@ -58,6 +61,8 @@ interface ProviderMeta {
   tagline: string;
   envHint: string;
   keyPlaceholder: string;
+  /** Direct link to that provider's "create API key" page. */
+  keyUrl: string;
 }
 
 const PROVIDERS: ProviderMeta[] = [
@@ -67,6 +72,7 @@ const PROVIDERS: ProviderMeta[] = [
     tagline: 'Gemini models',
     envHint: 'or set GEMINI_API_KEY in .env',
     keyPlaceholder: 'AIza…',
+    keyUrl: 'https://aistudio.google.com/apikey',
   },
   {
     id: 'openai',
@@ -74,6 +80,7 @@ const PROVIDERS: ProviderMeta[] = [
     tagline: 'GPT models',
     envHint: 'or set OPENAI_API_KEY in .env',
     keyPlaceholder: 'sk-…',
+    keyUrl: 'https://platform.openai.com/api-keys',
   },
   {
     id: 'anthropic',
@@ -81,6 +88,7 @@ const PROVIDERS: ProviderMeta[] = [
     tagline: 'Claude models',
     envHint: 'or set ANTHROPIC_API_KEY in .env',
     keyPlaceholder: 'sk-ant-…',
+    keyUrl: 'https://console.anthropic.com/settings/keys',
   },
 ];
 
@@ -118,6 +126,7 @@ export function ModelChooser({
   secondaryModel,
   keys,
   expandedProvider,
+  byokHelpUrl,
   onProviderClick,
   onKeyChange,
   onSelectModel,
@@ -281,9 +290,36 @@ export function ModelChooser({
               {eyeIcon(!revealed[meta.id])}
             </button>
           </div>
-          {/* Env-var hint */}
-          <div style={{ fontFamily: fontMono, fontSize: 11.5, color: ink3, marginTop: 4 }}>
-            {meta.envHint}
+          {/* Env-var hint + deep link to the provider's key page */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              gap: 8,
+              marginTop: 4,
+            }}
+          >
+            <span style={{ fontFamily: fontMono, fontSize: 11.5, color: ink3 }}>
+              {meta.envHint}
+            </span>
+            <a
+              data-mc-keyurl={meta.id}
+              href={meta.keyUrl}
+              target="_blank"
+              rel="noopener"
+              style={{
+                fontFamily: fontUi,
+                fontSize: 11.5,
+                fontWeight: 500,
+                color: accent,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              Get API key ↗
+            </a>
           </div>
         </div>
 
@@ -403,6 +439,25 @@ export function ModelChooser({
           </div>
         );
       })}
+      {/* General "how to get an API key" help link — host-supplied URL. */}
+      {byokHelpUrl && (
+        <a
+          data-mc-byok
+          href={byokHelpUrl}
+          target="_blank"
+          rel="noopener"
+          style={{
+            fontFamily: fontUi,
+            fontSize: 11.5,
+            fontWeight: 500,
+            color: accent,
+            textDecoration: 'none',
+            alignSelf: 'flex-start',
+          }}
+        >
+          New here? How to get an API key ↗
+        </a>
+      )}
     </div>
   );
 }

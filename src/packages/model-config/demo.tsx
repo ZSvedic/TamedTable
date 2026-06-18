@@ -137,6 +137,7 @@ function Demo() {
         secondaryModel={resolved.cellModel}
         keys={keys}
         expandedProvider={expanded}
+        byokHelpUrl="/TamedTable/BYOK-setup.html"
         onProviderClick={(p) => {
           // Same semantics as WebController.clickProviderCard: expanding a
           // card selects that provider; collapsing changes nothing. A stale

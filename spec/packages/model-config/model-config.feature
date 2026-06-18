@@ -201,6 +201,21 @@ Feature: Model config
       Then the demo shows resolved cellModel "gemini-3.1-pro-preview"
 
     @web
+    Scenario: Each expanded card deep-links to that provider's key page
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      Then the "gemini" card's Get-API-key link opens "https://aistudio.google.com/apikey" in a new tab
+      When the user clicks the "OpenAI" provider card
+      Then the "openai" card's Get-API-key link opens "https://platform.openai.com/api-keys" in a new tab
+      When the user clicks the "Anthropic" provider card
+      Then the "anthropic" card's Get-API-key link opens "https://console.anthropic.com/settings/keys" in a new tab
+
+    @web
+    Scenario: The chooser shows a general how-to-get-a-key help link
+      Given the model-config demo page
+      Then the chooser shows a BYOK help link to "BYOK-setup.html" in a new tab
+
+    @web
     Scenario: A typed API key stays masked until the eye toggle reveals it
       Given the model-config demo page
       When the user clicks the "Anthropic" provider card

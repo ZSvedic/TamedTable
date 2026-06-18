@@ -146,6 +146,19 @@ voice-capable models. It lives in its own entry point
 (`@tamedtable/model-config/ModelChooser`) so the main entry stays React-free;
 `react` is a peer dependency.
 
+Each expanded card also shows a **"Get API key ↗"** deep link to that
+provider's key page, opening in a new tab:
+
+- Google → `https://aistudio.google.com/apikey`
+- OpenAI → `https://platform.openai.com/api-keys`
+- Anthropic → `https://console.anthropic.com/settings/keys`
+
+These URLs are provider metadata baked into the component. When the optional
+`byokHelpUrl` prop is set, a single **"How to get an API key ↗"** link to that
+URL renders below the cards (also new-tab); the host supplies the path so the
+component stays free of any site-specific URL. The web app points it at the
+BYOK setup guide.
+
 The component is pure — props in, callbacks out — and holds no state except
 the per-provider reveal toggle. It never touches storage or the network:
 
@@ -199,7 +212,7 @@ setting the variables on any wrapping element: `--mc-ink`, `--mc-ink3`,
 `--mc-font-mono`, `--mc-radius`, `--mc-radius-sm`, `--mc-radius-lg`.
 
 For tests, each interactive element carries a stable data attribute:
-`data-mc-card`, `data-mc-key`, `data-mc-reveal` (all keyed by provider id),
-`data-mc-model` (the matrix row, keyed by model id), and the two role radios
-`data-mc-primary` / `data-mc-secondary` (each keyed by model id, plus
-`data-mc-role`).
+`data-mc-card`, `data-mc-key`, `data-mc-reveal`, `data-mc-keyurl` (all keyed by
+provider id), `data-mc-model` (the matrix row, keyed by model id), the two role
+radios `data-mc-primary` / `data-mc-secondary` (each keyed by model id, plus
+`data-mc-role`), and `data-mc-byok` on the general BYOK help link.
