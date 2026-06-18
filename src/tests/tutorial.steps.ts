@@ -27,8 +27,8 @@ When('user plays the tutorial', async function (this: TamedTableWorld) {
 When('user plays the whole tutorial', async function (this: TamedTableWorld) {
   const c = controller(this);
   await c.playTutorial();
-  const total = c.tutorialStepCount();
-  while ((c.currentTutorialStepNumber() ?? 0) < total) {
+  // Execute all steps by clicking Next until the tour is done.
+  while (!c.isTutorialDone()) {
     await c.nextStep();
   }
   // Await the auto-submitted prefill-chat request (replayed from the cassette).
@@ -47,10 +47,14 @@ When('user cancels the tutorial', function (this: TamedTableWorld) {
   controller(this).cancelTutorial();
 });
 
+When('user finishes the tutorial', function (this: TamedTableWorld) {
+  controller(this).finishTutorial();
+});
+
 When('user advances to the last tutorial step', async function (this: TamedTableWorld) {
   const c = controller(this);
-  const total = c.tutorialStepCount();
-  while ((c.currentTutorialStepNumber() ?? 0) < total) {
+  // Execute all steps including the last one (enters done state).
+  while (!c.isTutorialDone()) {
     await c.nextStep();
   }
 });

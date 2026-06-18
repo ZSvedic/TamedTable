@@ -329,7 +329,11 @@ export class WebController implements ControllerHost {
   nextStep(): Promise<void> { return this.tutorial.nextStep(); }
   prevStep(): void { this.tutorial.prevStep(); }
   cancelTutorial(): void { this.tutorial.cancelTutorial(); }
+  /** Cancel the active tour and reopen the Tutorial panel at the chooser. */
+  finishTutorial(): void { this.tutorial.finishTutorial(); }
   isTutorialActive(): boolean { return this.tutorial.isTutorialActive(); }
+  /** True once all steps have been executed and the tour awaits the Finish action. */
+  isTutorialDone(): boolean { return this.tutorial.isTutorialDone(); }
   currentTutorialStepNumber(): number | null { return this.tutorial.currentTutorialStepNumber(); }
   tutorialStepCount(): number { return this.tutorial.tutorialStepCount(); }
   /** Name of the currently selected tour, or empty string. */

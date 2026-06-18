@@ -850,19 +850,23 @@ Below the list, a **Dev** dropdown lists every `@web` scenario that is *not*
 `.feature` file. A Play button starts whichever scenario is selected (it is
 disabled until one is).
 
-While a tour is active, the panel shows the current step number, the step
-rendered as an imperative instruction (the Gherkin keyword is dropped and the
-text is capitalized — e.g. `When query "…"` reads as **Query: "…"**), and
-keyboard shortcut hints. Driver.js highlights the relevant part of the UI and
-shows a popover with **← Prev**, **Next →**, and a close (**×**) button
-directly in the popover. The same actions are available via keyboard: **←**
-previous step, **→** or **Space** next step, **Esc** cancel. The panel also
-shows the expected output table when a `show-golden` step is active.
+When Play is clicked, the Tutorial panel **closes** and Driver.js takes over:
+it highlights the relevant part of the UI and shows a popover with the step
+instruction, keyboard shortcut hints (**← Prev**, **→** / **Space** next,
+**Esc** cancel), **← Prev**, **Next →** (or **Finish** on the last step), and
+a close (**×**) button. Each step is **highlighted first** and **executed only
+when the user clicks Next** — the action runs as the tour advances, not at the
+moment the step appears.
+
+After clicking Next on the last step the tour enters a **done state**: the
+Driver.js overlay disappears, the Tutorial panel reopens, and the body shows a
+completion message ("Tutorial complete!"). A **Back to tutorials** button
+returns to the scenario chooser.
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)
 are dropped by the parser, so a tour reads load → query → compare. Each shown
-step maps to one of four actions:
+step maps to one of five actions:
 
 - **load-file** — the controller loads the named fixture into the in-memory
   store and calls `loadInput`, replacing the current dataset. The open-file
@@ -870,11 +874,14 @@ step maps to one of four actions:
 - **load-lookup** — the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
   No dataset is replaced. The open-file button is highlighted.
-- **prefill-chat** — the chat input is filled with the step's request text and
-  `sendChat` is called immediately (auto-submit). The chat input is highlighted.
+- **prefill-chat** — the chat input is filled with the step's request text.
+  After a brief pause (500 ms) `sendChat` is called (auto-submit) and the
+  input clears. The chat input is highlighted.
 - **show-golden** — the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
+- **play-audio** — the named audio clip plays in the browser. Useful for voice
+  demo steps. The table view is highlighted.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its
@@ -905,10 +912,10 @@ reads two query parameters:
 
 Both together name one tour; the file disambiguates when two files share a
 scenario name, so matching on the scenario name alone is not enough. When both
-resolve to a real tour the app opens the Tutorial panel, selects that tour, and
-plays it from step 1. A missing parameter, an unknown file, or an unknown
-scenario boots the app normally — panel closed, no error toast; a deep link
-never crashes or blocks a normal visit.
+resolve to a real tour the app plays it from step 1 (the Tutorial panel stays
+closed — the Driver.js overlay takes over immediately). A missing parameter, an
+unknown file, or an unknown scenario boots the app normally — panel closed, no
+error toast; a deep link never crashes or blocks a normal visit.
 
 Production links use the deployed base, e.g.
 `https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.

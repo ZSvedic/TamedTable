@@ -17,6 +17,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 
   const open = controller.tutorialOpen;
   const active = controller.isTutorialActive();
+  const done = controller.isTutorialDone();
   const stepNum = controller.currentTutorialStepNumber();
   const stepTotal = controller.tutorialStepCount();
   const names = controller.tutorialScenarioNames();
@@ -26,6 +27,8 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const currentStep = controller.currentStepDetail();
 
   // Driver.js spotlight + popover with inline Prev/Next/Cancel buttons.
+  // This effect runs even when the Tutorial panel is visually closed (panel
+  // closes when a tour starts so the data table is visible).
   useEffect(() => {
     const silentDestroy = (): void => {
       silentDestroyRef.current = true;
@@ -47,6 +50,8 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     const isFirst = stepNum === 1;
     const isLast  = stepNum === stepTotal;
 
+    const kbHints = '← prev   → / Space next   Esc cancel';
+
     const d = driver({
       animate: false,
       overlayOpacity: 0.25,
@@ -65,13 +70,17 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 
     const disableButtons: AllowedButtons[] = [];
     if (isFirst) disableButtons.push('previous');
-    if (isLast)  disableButtons.push('next');
+    // Finish (last step's Next button) is intentionally NOT disabled — clicking
+    // it executes the step and transitions to the done state.
 
     d.highlight({
       element: `#${elementId}`,
       popover: {
         title: `Step ${stepNum ?? 1} of ${stepTotal}`,
-        description: currentStep ? asInstruction(currentStep.text) : '',
+        description: [
+          currentStep ? asInstruction(currentStep.text) : '',
+          kbHints,
+        ].filter(Boolean).join('\n\n'),
         side: 'bottom',
         align: 'start',
         // highlight() defaults showButtons:[] — override to show our buttons.
@@ -90,7 +99,8 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     const handler = (e: KeyboardEvent): void => {
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
-        if (stepNum !== stepTotal) void controller.nextStep();
+        // Allow advancing from any active step, including the last (enters done state).
+        void controller.nextStep();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         if (stepNum !== 1) controller.prevStep();
@@ -102,7 +112,8 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     return () => window.removeEventListener('keydown', handler);
   }, [active, controller, stepNum, stepTotal]);
 
-  if (!open) return null;
+  // Render nothing when there is nothing to show and no active Driver.js effects.
+  if (!open && !active && !done) return null;
 
   const labelStyle: React.CSSProperties = {
     fontFamily: typography.ui,
@@ -113,302 +124,331 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   };
 
   return (
-    <div
-      onClick={() => { controller.closeTutorial(); }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: t.overlay,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        // Must exceed Driver.js's overlay z-index (~100000) so the panel
-        // buttons remain clickable when a spotlight is active.
-        zIndex: 200000,
-      }}
-    >
-      <div
-        data-testid="tutorial-panel"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 400,
-          maxWidth: '92vw',
-          height: '100%',
-          background: t.surface,
-          borderLeft: `1px solid ${t.line2}`,
-          boxShadow: t.shadowLg,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* header */}
+    <>
+      {/* Visual panel — only rendered when open. Driver.js + keyboard effects
+          above stay mounted as long as the component renders (active or done). */}
+      {open && (
         <div
+          onClick={() => { controller.closeTutorial(); }}
           style={{
-            height: space.topbarH,
-            flex: '0 0 auto',
+            position: 'fixed',
+            inset: 0,
+            background: t.overlay,
             display: 'flex',
-            alignItems: 'center',
-            padding: `0 ${space.px14}px`,
-            borderBottom: `1px solid ${t.line}`,
+            justifyContent: 'flex-end',
+            // Must exceed Driver.js's overlay z-index (~100000) so the panel
+            // buttons remain clickable when a spotlight is active.
+            zIndex: 200000,
           }}
         >
-          <span
+          <div
+            data-testid="tutorial-panel"
+            onClick={(e) => e.stopPropagation()}
             style={{
-              fontFamily: typography.ui,
-              fontSize: typography.size.md,
-              fontWeight: 600,
-              color: t.ink,
-            }}
-          >
-            Tutorial
-          </span>
-          <span style={{ flex: 1 }} />
-          <button
-            type="button"
-            onClick={() => { controller.closeTutorial(); }}
-            title="Close"
-            style={{
-              background: 'transparent',
-              border: 0,
-              padding: space.px4,
-              cursor: 'pointer',
-              color: t.ink3,
+              width: 400,
+              maxWidth: '92vw',
+              height: '100%',
+              background: t.surface,
+              borderLeft: `1px solid ${t.line2}`,
+              boxShadow: t.shadowLg,
               display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <Icon name="x" />
-          </button>
-        </div>
+            {/* header */}
+            <div
+              style={{
+                height: space.topbarH,
+                flex: '0 0 auto',
+                display: 'flex',
+                alignItems: 'center',
+                padding: `0 ${space.px14}px`,
+                borderBottom: `1px solid ${t.line}`,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.md,
+                  fontWeight: 600,
+                  color: t.ink,
+                }}
+              >
+                Tutorial
+              </span>
+              <span style={{ flex: 1 }} />
+              <button
+                type="button"
+                onClick={() => { controller.closeTutorial(); }}
+                title="Close"
+                style={{
+                  background: 'transparent',
+                  border: 0,
+                  padding: space.px4,
+                  cursor: 'pointer',
+                  color: t.ink3,
+                  display: 'flex',
+                }}
+              >
+                <Icon name="x" />
+              </button>
+            </div>
 
-        {/* body */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: space.px16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: space.px16,
-          }}
-        >
-          {!active ? (
-            /* Scenario picker */
-            <div>
-              <div style={labelStyle}>Pick a tutorial</div>
-              {names.length === 0 ? (
-                <div
-                  style={{
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.sm,
-                    color: t.ink3,
-                    padding: `${space.px8}px 0`,
-                  }}
-                >
-                  No tutorials available.
-                </div>
-              ) : (
-                <div role="listbox" style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
-                  {names.map((name) => {
-                    const selected = name === selectedTourName;
-                    return (
-                      <button
-                        key={name}
-                        type="button"
-                        role="option"
-                        aria-selected={selected}
-                        onClick={() => { controller.selectTutorialScenario(name); }}
-                        onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
-                        style={{
-                          textAlign: 'left',
-                          padding: '8px 10px',
-                          border: `1px solid ${selected ? t.accent : t.line2}`,
-                          borderRadius: space.radiusSm,
-                          background: selected ? t.accentSoft : t.surface2,
-                          color: t.ink,
-                          fontFamily: typography.ui,
-                          fontSize: typography.size.base,
-                          fontWeight: selected ? 600 : 400,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Dev: any @web scenario, for smoke-testing without opening the .feature file. */}
-              {devNames.length > 0 && (
-                <div style={{ marginTop: space.px16 }}>
-                  <div style={{ ...labelStyle, color: t.ink3 }}>Dev — run any scenario</div>
-                  <select
-                    value={devNames.includes(selectedTourName) ? selectedTourName : ''}
-                    onChange={(e) => { if (e.target.value) controller.selectTutorialScenario(e.target.value); }}
+            {/* body */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: space.px16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: space.px16,
+              }}
+            >
+              {done ? (
+                /* Done state — shown after all steps have been executed */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: space.px12 }}>
+                  <div
                     style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      border: `1px solid ${t.line2}`,
-                      borderRadius: space.radiusSm,
-                      background: t.surface2,
-                      color: t.ink,
                       fontFamily: typography.ui,
-                      fontSize: typography.size.base,
-                      cursor: 'pointer',
-                      appearance: 'auto',
+                      fontSize: typography.size.sm,
+                      color: t.ink3,
                     }}
                   >
-                    <option value="">Select a scenario…</option>
-                    {devNames.map((name) => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div style={{ marginTop: space.px12 }}>
-                <Button
-                  variant="primary"
-                  onClick={() => { void controller.playTutorial(); }}
-                  disabled={selectedTourName === ''}
-                >
-                  Play
-                </Button>
-              </div>
-            </div>
-          ) : (
-            /* Active tour */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: space.px12 }}>
-              <div
-                style={{
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.sm,
-                  color: t.ink3,
-                }}
-              >
-                {selectedTourName}
-              </div>
-              <div
-                data-testid="tutorial-step"
-                style={{
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.sm,
-                  fontWeight: 600,
-                  color: t.accent,
-                }}
-              >
-                Step {stepNum} of {stepTotal}
-              </div>
-              {currentStep && (
-                <div
-                  style={{
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.base,
-                    color: t.ink,
-                    lineHeight: 1.5,
-                    padding: `${space.px8}px ${space.px10}px`,
-                    background: t.surface2,
-                    borderRadius: space.radiusSm,
-                    border: `1px solid ${t.line}`,
-                  }}
-                >
-                  {asInstruction(currentStep.text)}
-                </div>
-              )}
-
-              {/* Keyboard hints */}
-              <div
-                style={{
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.xs,
-                  color: t.ink4,
-                  display: 'flex',
-                  gap: space.px8,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <span><kbd style={kbdStyle}>←</kbd> prev</span>
-                <span><kbd style={kbdStyle}>→</kbd> / <kbd style={kbdStyle}>Space</kbd> next</span>
-                <span><kbd style={kbdStyle}>Esc</kbd> cancel</span>
-              </div>
-
-              {/* Golden rows comparison */}
-              {goldenRows && (
-                <div>
-                  <div style={{ ...labelStyle, marginBottom: space.px8 }}>
-                    Expected output ({goldenRows.length} rows)
+                    {selectedTourName}
                   </div>
                   <div
                     style={{
-                      overflowX: 'auto',
-                      border: `1px solid ${t.line}`,
-                      borderRadius: space.radiusSm,
-                      maxHeight: 240,
-                      overflowY: 'auto',
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.base,
+                      fontWeight: 600,
+                      color: t.accent,
                     }}
                   >
-                    <table
+                    Tutorial complete!
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.base,
+                      color: t.ink,
+                    }}
+                  >
+                    Data is as expected.
+                  </div>
+                  <Button
+                    variant="primary"
+                    onClick={() => { controller.finishTutorial(); }}
+                  >
+                    Back to tutorials
+                  </Button>
+                </div>
+              ) : !active ? (
+                /* Scenario picker */
+                <div>
+                  <div style={labelStyle}>Pick a tutorial</div>
+                  {names.length === 0 ? (
+                    <div
                       style={{
-                        borderCollapse: 'collapse',
-                        width: '100%',
-                        fontFamily: typography.mono,
-                        fontSize: typography.size.xs,
+                        fontFamily: typography.ui,
+                        fontSize: typography.size.sm,
+                        color: t.ink3,
+                        padding: `${space.px8}px 0`,
                       }}
                     >
-                      {goldenRows.length > 0 && (
-                        <thead>
-                          <tr>
-                            {Object.keys(goldenRows[0]!).map((col) => (
-                              <th
-                                key={col}
-                                style={{
-                                  padding: '4px 8px',
-                                  textAlign: 'left',
-                                  borderBottom: `1px solid ${t.line}`,
-                                  background: t.surface,
-                                  color: t.ink2,
-                                  whiteSpace: 'nowrap',
-                                  position: 'sticky',
-                                  top: 0,
-                                }}
-                              >
-                                {col}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                      )}
-                      <tbody>
-                        {goldenRows.map((row, i) => (
-                          <tr key={i}>
-                            {Object.values(row).map((val, j) => (
-                              <td
-                                key={j}
-                                style={{
-                                  padding: '3px 8px',
-                                  borderBottom: `1px solid ${t.line}`,
-                                  color: t.ink,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {val === null ? (
-                                  <span style={{ color: t.ink4 }}>null</span>
-                                ) : (
-                                  String(val)
-                                )}
-                              </td>
-                            ))}
-                          </tr>
+                      No tutorials available.
+                    </div>
+                  ) : (
+                    <div role="listbox" style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
+                      {names.map((name) => {
+                        const selected = name === selectedTourName;
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            onClick={() => { controller.selectTutorialScenario(name); }}
+                            onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                            style={{
+                              textAlign: 'left',
+                              padding: '8px 10px',
+                              border: `1px solid ${selected ? t.accent : t.line2}`,
+                              borderRadius: space.radiusSm,
+                              background: selected ? t.accentSoft : t.surface2,
+                              color: t.ink,
+                              fontFamily: typography.ui,
+                              fontSize: typography.size.base,
+                              fontWeight: selected ? 600 : 400,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Dev: any @web scenario, for smoke-testing without opening the .feature file. */}
+                  {devNames.length > 0 && (
+                    <div style={{ marginTop: space.px16 }}>
+                      <div style={{ ...labelStyle, color: t.ink3 }}>Dev — run any scenario</div>
+                      <select
+                        value={devNames.includes(selectedTourName) ? selectedTourName : ''}
+                        onChange={(e) => { if (e.target.value) controller.selectTutorialScenario(e.target.value); }}
+                        style={{
+                          width: '100%',
+                          padding: '6px 8px',
+                          border: `1px solid ${t.line2}`,
+                          borderRadius: space.radiusSm,
+                          background: t.surface2,
+                          color: t.ink,
+                          fontFamily: typography.ui,
+                          fontSize: typography.size.base,
+                          cursor: 'pointer',
+                          appearance: 'auto',
+                        }}
+                      >
+                        <option value="">Select a scenario…</option>
+                        {devNames.map((name) => (
+                          <option key={name} value={name}>{name}</option>
                         ))}
-                      </tbody>
-                    </table>
+                      </select>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: space.px12 }}>
+                    <Button
+                      variant="primary"
+                      onClick={() => { void controller.playTutorial(); }}
+                      disabled={selectedTourName === ''}
+                    >
+                      Play
+                    </Button>
                   </div>
+                </div>
+              ) : (
+                /* Active tour — panel is normally closed during a tour, but may
+                   briefly render here (e.g. when open=true during a step transition). */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: space.px12 }}>
+                  <div
+                    style={{
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.sm,
+                      color: t.ink3,
+                    }}
+                  >
+                    {selectedTourName}
+                  </div>
+                  <div
+                    data-testid="tutorial-step"
+                    style={{
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.sm,
+                      fontWeight: 600,
+                      color: t.accent,
+                    }}
+                  >
+                    Step {stepNum} of {stepTotal}
+                  </div>
+                  {currentStep && (
+                    <div
+                      style={{
+                        fontFamily: typography.ui,
+                        fontSize: typography.size.base,
+                        color: t.ink,
+                        lineHeight: 1.5,
+                        padding: `${space.px8}px ${space.px10}px`,
+                        background: t.surface2,
+                        borderRadius: space.radiusSm,
+                        border: `1px solid ${t.line}`,
+                      }}
+                    >
+                      {asInstruction(currentStep.text)}
+                    </div>
+                  )}
+
+                  {/* Golden rows comparison */}
+                  {goldenRows && (
+                    <div>
+                      <div style={{ ...labelStyle, marginBottom: space.px8 }}>
+                        Expected output ({goldenRows.length} rows)
+                      </div>
+                      <div
+                        style={{
+                          overflowX: 'auto',
+                          border: `1px solid ${t.line}`,
+                          borderRadius: space.radiusSm,
+                          maxHeight: 240,
+                          overflowY: 'auto',
+                        }}
+                      >
+                        <table
+                          style={{
+                            borderCollapse: 'collapse',
+                            width: '100%',
+                            fontFamily: typography.mono,
+                            fontSize: typography.size.xs,
+                          }}
+                        >
+                          {goldenRows.length > 0 && (
+                            <thead>
+                              <tr>
+                                {Object.keys(goldenRows[0]!).map((col) => (
+                                  <th
+                                    key={col}
+                                    style={{
+                                      padding: '4px 8px',
+                                      textAlign: 'left',
+                                      borderBottom: `1px solid ${t.line}`,
+                                      background: t.surface,
+                                      color: t.ink2,
+                                      whiteSpace: 'nowrap',
+                                      position: 'sticky',
+                                      top: 0,
+                                    }}
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                          )}
+                          <tbody>
+                            {goldenRows.map((row, i) => (
+                              <tr key={i}>
+                                {Object.values(row).map((val, j) => (
+                                  <td
+                                    key={j}
+                                    style={{
+                                      padding: '3px 8px',
+                                      borderBottom: `1px solid ${t.line}`,
+                                      color: t.ink,
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {val === null ? (
+                                      <span style={{ color: t.ink4 }}>null</span>
+                                    ) : (
+                                      String(val)
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
@@ -419,13 +459,3 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 function asInstruction(text: string): string {
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }
-
-const kbdStyle: React.CSSProperties = {
-  display: 'inline-block',
-  padding: '1px 4px',
-  borderRadius: 3,
-  border: '1px solid currentColor',
-  fontFamily: 'inherit',
-  fontSize: 'inherit',
-  lineHeight: 1.4,
-};

@@ -36,7 +36,15 @@ Feature: Tutorial panel
       Then the tutorial is at step 1
 
     @web
-    Scenario: Next advances to the next step
+    Scenario: Play closes the tutorial panel
+      Given the TamedTable web app
+      And the tutorial "Filter by Country" is selected
+      And user opens the tutorial panel
+      When user plays the tutorial
+      Then the tutorial panel is not shown
+
+    @web
+    Scenario: Next executes the current step and advances
       Given the TamedTable web app
       And the tutorial "Filter by Country" is selected
       And user plays the tutorial
@@ -69,19 +77,30 @@ Feature: Tutorial panel
       When user plays the tutorial
       Then the tutorial is at step 1
 
+    @web
+    Scenario: Finish after last step returns to the tutorial chooser
+      Given the TamedTable web app
+      And the tutorial "Filter by Country" is selected
+      And user plays the tutorial
+      And user advances to the last tutorial step
+      When user finishes the tutorial
+      Then the tutorial panel is shown
+      And the tutorial is not active
+
   Rule: load-file steps auto-load fixtures
 
     @web
-    Scenario: A load-file step loads the fixture automatically
+    Scenario: A load-file step loads the fixture on Next
       Given the TamedTable web app
       And the tutorial "Filter by Country" is selected
-      When user plays the tutorial
+      And user plays the tutorial
+      When user advances to the next tutorial step
       Then the table is loaded
 
   Rule: show-golden steps expose the golden comparison
 
     @web
-    Scenario: A show-golden step makes the golden rows available
+    Scenario: A show-golden step makes the golden rows available after execution
       Given the TamedTable web app
       And the tutorial "Filter by Country" is selected
       And user plays the tutorial
@@ -105,8 +124,8 @@ Feature: Tutorial panel
     Scenario: A valid feature and scenario autoplays from step 1
       Given the TamedTable web app
       When user opens a deep link to feature "filter.feature" scenario "Filter by Country"
-      Then the tutorial panel is shown
-      And the tutorial is at step 1
+      Then the tutorial is at step 1
+      And the tutorial panel is not shown
 
     @web
     Scenario: An unknown scenario leaves the panel closed

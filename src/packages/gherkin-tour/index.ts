@@ -4,6 +4,7 @@ export type TourAction =
   | { kind: 'prefill-chat';  text: string     }
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }
+  | { kind: 'play-audio';    filename: string }
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -28,6 +29,9 @@ function classify(text: string): TourAction {
   if (golden) return { kind: 'golden-source', filename: golden[1]! };
 
   if (text === 'compare with the expected output') return { kind: 'show-golden' };
+
+  const audio = text.match(/^play audio "(.+)"$/);
+  if (audio) return { kind: 'play-audio', filename: audio[1]! };
 
   return { kind: 'display' };
 }
