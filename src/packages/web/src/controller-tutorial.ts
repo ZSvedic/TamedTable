@@ -129,9 +129,11 @@ export class TutorialManager {
       this.tutorialStepIndex++;
       this.host.notify();
     } else {
-      // Last step executed — enter done state and reopen panel for completion.
+      // Last step executed — enter the done state. The completion is shown in
+      // the Driver.js popover (anchored to the table), NOT the slide-over panel:
+      // a deep-link visitor never opened that panel, so popping it up on Finish
+      // is jarring. The panel stays closed; finishTutorial() handles navigation.
       this.tutorialStepIndex = total;
-      this.host.tutorialOpen = true;
       this.host.notify();
     }
   }
@@ -161,19 +163,27 @@ export class TutorialManager {
     this.host.notify();
   }
 
-  /** Cancel the active tour. For panel-started tours, reopens the chooser.
-   *  For deep-link-started tours, navigates to the bare app URL (strips query
-   *  params so the tour doesn't replay on refresh) using replace() so the back
-   *  button skips the finished tour entirely. */
+  /** End the tour and return the user to wherever they started it.
+   *
+   *  - Started from the Tutorial panel → reopen the panel at the chooser. The
+   *    panel *is* the source, so going back there is the natural "done".
+   *  - Started from a deep link (e.g. a "Show me →" button on the marketing
+   *    homepage) → go back to that source page. `history.back()` returns to the
+   *    referring page when there is one; a direct visit (no referrer) has no
+   *    source to return to, so we strip the tour's query params instead, leaving
+   *    the bare app so a refresh doesn't replay the tour. */
   finishTutorial(): void {
     const fromLink = this.launchedFrom === 'deeplink';
     this.cancelTutorial();
-    if (fromLink) {
-      if (typeof window !== 'undefined') {
-        window.location.replace(window.location.pathname);
-      }
-    } else {
+    if (!fromLink) {
       this.openTutorial();
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    if (document.referrer) {
+      window.history.back();
+    } else {
+      window.location.replace(window.location.pathname);
     }
   }
 

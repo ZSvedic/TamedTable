@@ -26,9 +26,11 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const selectedTourName = controller.selectedTourName();
   const currentStep = controller.currentStepDetail();
 
-  // Driver.js spotlight + popover with inline Prev/Next/Cancel buttons.
-  // This effect runs even when the Tutorial panel is visually closed (panel
-  // closes when a tour starts so the data table is visible).
+  // Driver.js spotlight + popover with inline Prev/Next/Cancel buttons. Runs for
+  // both an active step and the final done state, even though the slide-over
+  // panel is closed during a tour (so the data table stays visible). The done
+  // state shows a completion popover whose single "Done" button ends the tour and
+  // returns the user to their source (chooser panel or referring page).
   useEffect(() => {
     const silentDestroy = (): void => {
       silentDestroyRef.current = true;
@@ -37,11 +39,13 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       silentDestroyRef.current = false;
     };
 
-    if (!active) {
+    if (!active && !done) {
       silentDestroy();
       return;
     }
-    const elementId = controller.currentStepElementId();
+
+    // In the done state the step's own target may be gone — anchor to the table.
+    const elementId = done ? 'tutorial-table-view' : controller.currentStepElementId();
     const el = elementId ? document.getElementById(elementId) : null;
     if (!el) return;
 
@@ -50,23 +54,40 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
     const isFirst = stepNum === 1;
     const isLast  = stepNum === stepTotal;
 
-    const kbHints = '← prev   → / Space next   Esc cancel';
-
     const d = driver({
       animate: false,
       overlayOpacity: 0.25,
       // Prevent Driver.js overlay and Escape key from dismissing the tour —
       // only the explicit close/cancel controls should do that.
       allowClose: false,
-      onNextClick:  () => { void controller.nextStep(); },
+      // Done: the lone "Done" button ends the tour and navigates back to source.
+      // Mid-tour: Next executes the current step and advances.
+      onNextClick:  () => { if (done) controller.finishTutorial(); else void controller.nextStep(); },
       onPrevClick:  () => { controller.prevStep(); },
       onCloseClick: () => { controller.cancelTutorial(); },
       // onDestroyStarted fires only when our silentDestroy() calls driver.destroy()
       // (programmatic, step-change cleanup). silentDestroyRef suppresses a spurious
       // cancelTutorial in that path.
       onDestroyStarted: () => { if (!silentDestroyRef.current) controller.cancelTutorial(); },
+      // Subtle keyboard-shortcut hints, rendered below the popover buttons.
+      onPopoverRender: (popover) => { renderKbHints(popover.wrapper, done); },
     });
     driverRef.current = d;
+
+    if (done) {
+      d.highlight({
+        element: `#${elementId}`,
+        popover: {
+          title: 'Tutorial complete',
+          description: 'Data is as expected.',
+          side: 'bottom',
+          align: 'start',
+          showButtons: ['next'], // a single "Done" button — no Prev/Close
+          nextBtnText: 'Done',
+        },
+      });
+      return () => { silentDestroy(); };
+    }
 
     const disableButtons: AllowedButtons[] = [];
     if (isFirst) disableButtons.push('previous');
@@ -77,10 +98,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       element: `#${elementId}`,
       popover: {
         title: `Step ${stepNum ?? 1} of ${stepTotal}`,
-        description: [
-          currentStep ? asInstruction(currentStep.text) : '',
-          kbHints,
-        ].filter(Boolean).join('\n\n'),
+        description: currentStep ? asInstruction(currentStep.text) : '',
         side: 'bottom',
         align: 'start',
         // highlight() defaults showButtons:[] — override to show our buttons.
@@ -91,26 +109,27 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       },
     });
     return () => { silentDestroy(); };
-  }, [active, stepNum, stepTotal]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [active, done, stepNum, stepTotal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keyboard navigation while a tour is active.
+  // Keyboard navigation while a tour is active or awaiting the final Done.
   useEffect(() => {
-    if (!active) return;
+    if (!active && !done) return;
     const handler = (e: KeyboardEvent): void => {
-      if (e.key === 'ArrowRight' || e.key === ' ') {
+      if (e.key === 'ArrowRight' || e.key === ' ' || (done && e.key === 'Enter')) {
         e.preventDefault();
-        // Allow advancing from any active step, including the last (enters done state).
-        void controller.nextStep();
+        // Done: end the tour; otherwise advance (the last step enters done).
+        if (done) controller.finishTutorial();
+        else void controller.nextStep();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        if (stepNum !== 1) controller.prevStep();
+        if (!done && stepNum !== 1) controller.prevStep();
       } else if (e.key === 'Escape') {
         controller.cancelTutorial();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [active, controller, stepNum, stepTotal]);
+  }, [active, done, controller, stepNum, stepTotal]);
 
   // Render nothing when there is nothing to show and no active Driver.js effects.
   if (!open && !active && !done) return null;
@@ -205,46 +224,10 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                 gap: space.px16,
               }}
             >
-              {done ? (
-                /* Done state — shown after all steps have been executed */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: space.px12 }}>
-                  <div
-                    style={{
-                      fontFamily: typography.ui,
-                      fontSize: typography.size.sm,
-                      color: t.ink3,
-                    }}
-                  >
-                    {selectedTourName}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: typography.ui,
-                      fontSize: typography.size.base,
-                      fontWeight: 600,
-                      color: t.accent,
-                    }}
-                  >
-                    Tutorial complete!
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: typography.ui,
-                      fontSize: typography.size.base,
-                      color: t.ink,
-                    }}
-                  >
-                    Data is as expected.
-                  </div>
-                  <Button
-                    variant="primary"
-                    onClick={() => { controller.finishTutorial(); }}
-                  >
-                    Back to tutorials
-                  </Button>
-                </div>
-              ) : !active ? (
-                /* Scenario picker */
+              {!active ? (
+                /* Scenario picker. The done state is shown in the Driver.js
+                   completion popover, not here — the panel stays closed during a
+                   tour, so a deep-link visitor never sees this slide-over. */
                 <div>
                   <div style={labelStyle}>Pick a tutorial</div>
                   {names.length === 0 ? (
@@ -458,4 +441,28 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 // step text for display.
 function asInstruction(text: string): string {
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// Append a subtle keyboard-shortcut hint line below the popover's button row.
+// Driver.js has no slot for this, so we inject a small muted footnote into the
+// popover wrapper (after the footer) on each render. The id keeps it idempotent
+// if Driver re-renders the same popover.
+const KB_HINT_ID = 'tt-kb-hint';
+function renderKbHints(wrapper: HTMLElement, done: boolean): void {
+  if (wrapper.querySelector(`#${KB_HINT_ID}`)) return;
+  const hint = document.createElement('div');
+  hint.id = KB_HINT_ID;
+  hint.textContent = done
+    ? 'Enter or Space to finish'
+    : '← Prev    → / Space Next    Esc Cancel';
+  hint.style.cssText = [
+    'padding: 8px 4px 2px',
+    'font-size: 11px',
+    'line-height: 1.4',
+    'letter-spacing: 0.02em',
+    'text-align: center',
+    'opacity: 0.55',
+    'user-select: none',
+  ].join(';');
+  wrapper.appendChild(hint);
 }
