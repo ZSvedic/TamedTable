@@ -112,6 +112,15 @@ If CI is red, fix on the branch and push again — don't merge red.
 
 ## Notes
 
+- **Keep the Mac awake for long loops.** The dev server and this session run locally,
+  so if macOS sleeps (idle or lid-close), the whole loop freezes until you wake it. For
+  a long iteration session, run under `caffeinate` so the machine stays awake while it
+  runs, then sleeps normally afterwards:
+  ```sh
+  caffeinate -i claude     # -i blocks idle sleep for the life of the process
+  ```
+  If you'll close the lid, stay on AC power and use `caffeinate -dimsu` (it can't
+  override lid-close sleep on battery).
 - The **preview pane is local-only** — it can't show the deployed
   `zsvedic.github.io` URL, only the worktree's dev server. That's the point: you see
   *your* edits, not what's shipped.
