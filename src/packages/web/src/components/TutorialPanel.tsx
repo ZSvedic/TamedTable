@@ -47,6 +47,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       // In the done state the step's own target may be gone — anchor to the table.
       doneElementId: 'tutorial-table-view',
       doneTitle: 'Tutorial complete',
+      // The final step is the terminal celebration — keeps its "Step N of N"
+      // title, Next disabled, Previous live, no separate done screen.
+      lastStepDescription: `Voilà, "${selectedTourName}" is done.`,
       theme: { background: t.surface, text: t.ink, border: t.line2, accent: t.accent },
     });
     ui.start();
@@ -360,7 +363,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 // Tour steps read as imperative instructions ("load …", "query …", "compare
 // …"). The Gherkin keyword (Given/When/Then) is test-suite structure, not
 // something a learner needs — so the tour drops it and just capitalizes the
-// step text for display.
+// step text for display. A `query "…"` step's text is prefilled into the chat
+// box, so the instruction just tells the learner to run it.
 function asInstruction(text: string): string {
+  if (/^query "(.+)"$/.test(text)) return 'Run the query';
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }

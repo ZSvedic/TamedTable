@@ -193,6 +193,24 @@ color strings, applied to the popover box, title, description, footer buttons,
 and badges. The colors are supplied by the host (the app passes its ui-kit
 tokens); the package source stays free of color literals.
 
+### Step instruction text
+
+The popover description is the step text rendered as an imperative — the Gherkin
+keyword (`Given`/`When`/`Then`) is dropped and the first letter capitalized
+(`load "x.csv"` → `Load "x.csv"`). One step is special: a **`query "…"`** step's
+text is prefilled into the host's chat input when the step is highlighted, so its
+popover shows just **"Run the query"** rather than repeating the query string.
+
+### Terminal last step (`lastStepDescription`)
+
+By default the final `next` enters the driver's **done** state — a separate
+completion popover anchored to `doneElementId`. A host can instead make the final
+step itself terminal by passing **`lastStepDescription`**: the last step keeps
+its **"Step N of N"** title but shows that text in place of the step instruction,
+**Next is disabled**, and **Finish** ends the tour from there — no separate done
+screen. The app uses this for its `Voilà, "<tour>" is done.` celebration. Omit
+the option to keep the default step → … → done flow (the package's demo does).
+
 ### Popover footer
 
 `TourUi` replaces Driver.js's default button row with its own footer holding
@@ -201,9 +219,11 @@ three buttons:
 - **Previous** and **Next** grouped on the left, **Finish** on the right.
 - Each button shows a key-cap badge of its keyboard shortcut before the label:
   **← Previous**, **→ Next**, **↵ Finish**.
-- **Previous** is disabled on the first step (and in the done state).
+- **Previous** is disabled on the first step (and in the done state), but stays
+  live on a terminal last step so the user can step back.
+- **Next** is disabled in the done state and on a terminal last step.
 
 Keyboard shortcuts mirror the buttons: **←** goes back, **→** or **Space**
-advances, **Enter** finishes, **Esc** cancels. The badges and labels carry no
-hard-coded colors — borders and text inherit the popover's `currentColor`, so the
-footer reads correctly against the host's theme.
+advances (a no-op on a terminal last step), **Enter** finishes, **Esc** cancels.
+The badges and labels carry no hard-coded colors — borders and text inherit the
+popover's `currentColor`, so the footer reads correctly against the host's theme.

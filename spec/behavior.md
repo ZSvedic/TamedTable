@@ -852,18 +852,22 @@ disabled until one is).
 
 When Play is clicked, the Tutorial panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
-instruction, the **← Prev**, **Next →** (or **Finish** on the last step) and
-close (**×**) buttons, and a subtle keyboard-shortcut hint **below the buttons**
-(**← Prev**, **→** / **Space** next, **Esc** cancel). Each step is **highlighted
-first** and **executed only when the user clicks Next** — the action runs as the
-tour advances, not at the moment the step appears.
+instruction, the **← Prev**, **Next →** and close (**×**) buttons, and a subtle
+keyboard-shortcut hint **below the buttons** (**← Prev**, **→** / **Space**
+next, **Esc** cancel). Each step is **highlighted first** and **executed only
+when the user clicks Next** — the action runs as the tour advances, not at the
+moment the step appears. A step's action runs **once**: stepping back with Prev
+and forward again with Next re-highlights the step but does **not** re-run it —
+the file stays loaded and the query is not re-sent (a re-sent request would miss
+the cassette and fail with a toast).
 
-After clicking Finish on the last step the tour enters a **done state**: the
-spotlight stays on the table and the popover shows a completion message
-("Tutorial complete · Data is as expected.") with a single **Done** button (the
-slide-over panel does **not** reopen). Done returns the user to wherever they
-started: a tour launched from the Tutorial panel reopens the chooser, while a
-deep-link tour goes back to the page the user came from (see *Deep links*).
+The **last step is terminal**: it keeps its **"Step N of N"** title but its
+popover shows a completion message — `Voilà, "<tour name>" is done.` — with
+**Next disabled** and **Previous** still live (the user can step back). There is
+no separate "done" screen after it. **Finish** ends the tour from here and
+returns the user to wherever they started: a tour launched from the Tutorial
+panel reopens the chooser, while a deep-link tour goes back to the page the user
+came from (see *Deep links*).
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)
@@ -876,9 +880,10 @@ step maps to one of five actions:
 - **load-lookup** — the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
   No dataset is replaced. The open-file button is highlighted.
-- **prefill-chat** — the chat input is filled with the step's request text.
-  After a brief pause (500 ms) `sendChat` is called (auto-submit) and the
-  input clears. The chat input is highlighted.
+- **prefill-chat** — the chat input is filled with the step's request text the
+  moment the step is **highlighted**, so the popover reads simply **"Run the
+  query"** instead of repeating it. Clicking **Next** submits the request
+  (`sendChat`) and clears the input. The chat input is highlighted.
 - **show-golden** — the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
@@ -925,9 +930,9 @@ closed — the Driver.js overlay takes over immediately). A missing parameter, a
 unknown file, or an unknown scenario boots the app normally — panel closed, no
 error toast; a deep link never crashes or blocks a normal visit.
 
-**Finishing a tour.** Clicking **Done** opens the Tutorial panel chooser,
-whichever way the tour was started — so the visitor can pick another tutorial
-without hunting for the panel. The marketing homepage opens every "Show me →"
+**Finishing a tour.** Clicking **Finish** on the terminal last step opens the
+Tutorial panel chooser, whichever way the tour was started — so the visitor can
+pick another tutorial without hunting for the panel. The marketing homepage opens every "Show me →"
 link in a **new tab**, so a deep-link visitor who is finished simply closes that
 tab and is back on the homepage they came from; the app does not navigate for
 them. (This replaces an earlier `history.back()` / query-strip scheme, which

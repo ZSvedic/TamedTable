@@ -107,3 +107,16 @@ Then('the table is loaded', function (this: TamedTableWorld) {
 Then('the golden rows are available', function (this: TamedTableWorld) {
   assert.notEqual(controller(this).goldenRows, null, 'goldenRows should not be null');
 });
+
+Then('the chat input is prefilled with {string}', function (this: TamedTableWorld, text: string) {
+  assert.equal(controller(this).tutorialPrefill, text);
+});
+
+Then('the chat input is not prefilled', function (this: TamedTableWorld) {
+  const prefill = controller(this).tutorialPrefill;
+  assert.ok(prefill === '' || prefill === null, `expected no prefill; got ${JSON.stringify(prefill)}`);
+});
+
+Then('the tutorial settles', async function (this: TamedTableWorld) {
+  await controller(this).tutorialSettle();
+});
