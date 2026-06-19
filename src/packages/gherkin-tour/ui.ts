@@ -35,6 +35,11 @@ export interface TourUiOptions {
   doneTitle?: string;
   /** Completion-popover body; defaults to "Data is as expected.". */
   doneDescription?: string;
+  /** When set, the final step is terminal: it keeps its "Step N of N" title but
+   *  shows this text instead of the step instruction, Next is disabled, and the
+   *  tour ends there (no separate done screen). Omit to keep the default
+   *  step → … → done flow. */
+  lastStepDescription?: string;
   /** Host theme colors for the popover; omit to keep Driver.js defaults. */
   theme?: TourUiTheme;
 }
@@ -86,6 +91,7 @@ export class TourUi {
     const stepNum = this.tour.currentStepNumber();
     const stepTotal = this.tour.stepCount();
     const isFirst = stepNum === 1;
+    const isTerminalLast = this.isTerminalLast();
 
     const d = driver({
       animate: false,
@@ -96,7 +102,7 @@ export class TourUi {
       onDestroyStarted: () => { if (!this.silentDestroy) this.cancel(); },
       onPopoverRender: (popover) => {
         this.applyTheme(popover.wrapper);
-        this.renderFooter(popover.wrapper, done, isFirst);
+        this.renderFooter(popover.wrapper, done, isFirst, isTerminalLast);
       },
     });
     this.d = d;
@@ -120,7 +126,9 @@ export class TourUi {
       element: `#${elementId}`,
       popover: {
         title: `Step ${stepNum ?? 1} of ${stepTotal}`,
-        description: step ? asInstruction(step.text) : '',
+        description: isTerminalLast
+          ? this.opts.lastStepDescription!
+          : (step ? asInstruction(step.text) : ''),
         side: 'bottom',
         align: 'start',
       },
@@ -138,7 +146,7 @@ export class TourUi {
   // on the left, Finish on the right, each with a key-cap badge of its keyboard
   // shortcut before the label. Driver has no slot for this, so we hide its
   // (empty) footer and append ours to the popover wrapper on each render.
-  private renderFooter(wrapper: HTMLElement, done: boolean, isFirst: boolean): void {
+  private renderFooter(wrapper: HTMLElement, done: boolean, isFirst: boolean, isTerminalLast = false): void {
     wrapper.querySelector('#tt-tour-footer')?.remove();
     const defFooter = wrapper.querySelector('.driver-popover-footer') as HTMLElement | null;
     if (defFooter) defFooter.style.display = 'none';
@@ -157,7 +165,8 @@ export class TourUi {
     left.style.cssText = 'display:flex;gap:8px';
     left.appendChild(this.footerButton('Previous', '←', done || isFirst,
       () => { this.tour.prev(); this.render(); }));
-    left.appendChild(this.footerButton('Next', '→', done,
+    // Next is disabled on the terminal last step too — Finish ends the tour there.
+    left.appendChild(this.footerButton('Next', '→', done || isTerminalLast,
       () => { void this.advance(); }));
 
     const right = document.createElement('div');
@@ -234,7 +243,16 @@ export class TourUi {
     }
   }
 
+  // With lastStepDescription set, the final step is the terminal celebration:
+  // no Next, no separate done screen — Finish ends the tour from here.
+  private isTerminalLast(): boolean {
+    return this.opts.lastStepDescription !== undefined
+      && !this.tour.isDone()
+      && this.tour.currentStepNumber() === this.tour.stepCount();
+  }
+
   private async advance(): Promise<void> {
+    if (this.isTerminalLast()) return;
     await this.tour.next();
     this.render();
   }
@@ -290,6 +308,11 @@ export class TourUi {
 // Tour steps read as imperative instructions ("load …", "query …", "compare
 // …"). The Gherkin keyword (Given/When/Then) is test structure, not something a
 // learner needs — so the tour drops it and just capitalizes the step text.
+//
+// A `query "…"` step is special: its text is prefilled into the chat box when
+// the step is highlighted, so the popover doesn't repeat it — it just tells the
+// learner to run what they can already see in the input.
 function asInstruction(text: string): string {
+  if (/^query "(.+)"$/.test(text)) return 'Run the query';
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }

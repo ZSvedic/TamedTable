@@ -842,8 +842,8 @@ voice turn and replays key-free.
 | `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
-| `async nextStep()` | Executes the **current** step, then advances the step index. On the last step, executes it and enters the done state — the completion is shown in the Driver.js popover (the slide-over panel stays closed). |
-| `prevStep()` | Decrements step index; no step execution (display only). |
+| `async nextStep()` | Executes the **current** step (only if it hasn't run before — see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`lastStepDescription`), so in the UI Next is disabled there and the done state is not reached; `nextStep` still supports it for the step-def loop. |
+| `prevStep()` | Decrements step index; re-highlights the step but executes nothing. A subsequent `nextStep` over an already-run step skips its side effect. |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
 | `finishTutorial()` | Cancels the active tour and opens the Tutorial panel chooser, regardless of how the tour was launched, so the user can pick another tutorial. Deep-link visitors arrive in a new tab (the homepage opens "Show me →" in a new tab) and close it to return to the homepage; the app does not navigate for them. |
 | `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
@@ -858,3 +858,17 @@ voice turn and replays key-free.
 `main.tsx` calls `openTutorialFromLink` once at app start, passing
 `new URLSearchParams(window.location.search).get('feature' / 'scenario')`
 (each `string | null`). The URL is read in `main.tsx`, not the controller.
+
+**Prefill on highlight.** When a `prefill-chat` step becomes the current step
+(on play and on every `nextStep`/`prevStep`), the controller sets
+`tutorialPrefill` to the step's query text so the chat input shows it; any other
+current step clears it (`''`). The `TutorialPanel` passes the tour name to
+`TourUi` as `lastStepDescription: Voilà, "<name>" is done.`, making the final
+step a terminal celebration (see
+[gherkin-tour behavior — Terminal last step](packages/gherkin-tour/behavior.md#terminal-last-step-laststepdescription)).
+
+**Execute once.** `TutorialManager` tracks `executedThrough` (highest executed
+step index, `-1` before play; reset on play/select/cancel). `nextStep` runs a
+step's side effect only when `tutorialStepIndex > executedThrough`, so stepping
+Prev then Next re-highlights a step without re-loading its file or re-sending its
+query — a re-sent request would miss the replay cassette.

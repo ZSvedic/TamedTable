@@ -28,6 +28,11 @@ export class TutorialManager {
    *  the engine runs in key-free replay mode against this tour's cassette. */
   private activeTour: TourScenario | null = null;
   private tutorialStepIndex: number | null = null;
+  /** Highest step index whose side effect has already run. Steps execute once:
+   *  stepping back then forward re-visits a step that already loaded its file or
+   *  sent its query — re-sending in replay mode would miss the cassette, so a
+   *  re-visit just navigates. -1 means nothing executed yet. */
+  private executedThrough = -1;
   /** The in-flight prefill-chat request, exposed via `settle()` for tests. */
   private pending: Promise<void> | null = null;
 
@@ -72,6 +77,7 @@ export class TutorialManager {
     this.selected = this.manifest.find((t) => t.name === name) ?? null;
     this.activeTour = null;
     this.tutorialStepIndex = null;
+    this.executedThrough = -1;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
     this.host.notify();
@@ -104,11 +110,13 @@ export class TutorialManager {
     // the request the tour issues fingerprints identically to what was taped.
     this.host.engine.reset();
     this.tutorialStepIndex = 0;
+    this.executedThrough = -1;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
     // Close the Tutorial panel — Driver.js takes over. The step is highlighted
     // but NOT executed yet; execution happens when the user clicks Next.
     this.host.tutorialOpen = false;
+    this.prefillCurrentStep();
     this.host.notify();
   }
 
@@ -117,12 +125,18 @@ export class TutorialManager {
     const total = this.activeTour.steps.length;
     if (this.tutorialStepIndex >= total) return; // already done
 
-    // Execute the currently highlighted step before advancing.
-    await this.executeTutorialStep(this.tutorialStepIndex);
+    // Execute each step once. A re-visit (Previous then Next) skips the side
+    // effect — the file is already loaded, the query already sent — so replay
+    // doesn't fire a second, unrecorded request.
+    if (this.tutorialStepIndex > this.executedThrough) {
+      await this.executeTutorialStep(this.tutorialStepIndex);
+      this.executedThrough = this.tutorialStepIndex;
+    }
 
     if (this.tutorialStepIndex < total - 1) {
       // Advance to next step (still active).
       this.tutorialStepIndex++;
+      this.prefillCurrentStep();
       this.host.notify();
     } else {
       // Last step executed — enter the done state. The completion is shown in
@@ -130,6 +144,7 @@ export class TutorialManager {
       // closed until the user clicks Done, at which point finishTutorial() opens
       // the Tutorial chooser.
       this.tutorialStepIndex = total;
+      this.host.tutorialPrefill = '';
       this.host.notify();
     }
   }
@@ -139,12 +154,14 @@ export class TutorialManager {
     // Don't step back past active range (done state has index = total).
     if (this.activeTour && this.tutorialStepIndex > this.activeTour.steps.length - 1) return;
     this.tutorialStepIndex--;
+    this.prefillCurrentStep();
     this.host.notify();
   }
 
   cancelTutorial(): void {
     const wasReplaying = this.activeTour !== null;
     this.tutorialStepIndex = null;
+    this.executedThrough = -1;
     this.activeTour = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
@@ -263,6 +280,15 @@ export class TutorialManager {
     }
   }
 
+  /** When the highlighted step is a `query "…"`, drop its text into the chat box
+   *  so the learner sees the query while the popover says "Run the query"; any
+   *  other step empties the box. Runs on every step transition. */
+  private prefillCurrentStep(): void {
+    if (this.tutorialStepIndex === null || !this.activeTour) return;
+    const step = this.activeTour.steps[this.tutorialStepIndex];
+    this.host.tutorialPrefill = step?.action.kind === 'prefill-chat' ? step.action.text : '';
+  }
+
   /** Fetch + parse a manifest entry's feature, returning its matching tour. */
   private async loadTour(entry: TutorialManifestEntry): Promise<TourScenario | null> {
     let tours = this.featureCache.get(entry.feature);
@@ -318,15 +344,12 @@ export class TutorialManager {
         break;
       }
       case 'prefill-chat':
-        this.host.tutorialPrefill = action.text;
-        // Notify so the chat input shows the prefill text before submitting.
-        this.host.notify();
-        // Brief pause so the user can see the filled input before the auto-submit.
-        await new Promise<void>((r) => setTimeout(r, 500));
-        // Auto-submit from the cassette. `settle()` lets tests await it.
+        // The query is already sitting in the chat box (prefilled when this step
+        // was highlighted, so the popover could just say "Run the query"). Next
+        // runs it: submit from the cassette — `settle()` lets tests await it.
         if (!this.host.streaming) this.pending = this.host.sendChat(action.text);
-        // Clear the prefill so the input empties after submission (the empty
-        // string triggers the ChatPanel effect; null would leave the draft).
+        // Empty the box after submission (the empty string triggers the ChatPanel
+        // effect; null would leave the draft).
         this.host.tutorialPrefill = '';
         break;
       case 'show-golden': {
