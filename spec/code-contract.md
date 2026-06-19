@@ -703,12 +703,15 @@ fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
 
 `WebController` adds `voiceStatus: 'idle' | 'recording' | 'sending'` and three
 methods: `startVoice()` begins recording (auto-stopping after 30 s),
-`stopVoice()` ends it, builds a `VoiceContext` from `currentSpec()` and
-`selection`, and runs the ordinary `request` with the recorded bytes as the
-`audio` option — one patch turn, no transcription call. It posts a
-`🎙 Voice request` placeholder user bubble immediately; when `onTranscript`
-fires it rewrites that bubble (and, on success, the undo-history label) to
-`🎙 <transcript>`. Request failures go through the same `fail()` path a
+`stopVoice()` ends it and delegates to `sendAudioRequest(audio, signal)`, which
+builds a `VoiceContext` from `currentSpec()` and `selection` and runs the
+ordinary `request` with the recorded bytes as the `audio` option — one patch
+turn, no transcription call. It posts a `🎙 Voice request` placeholder user
+bubble immediately; when `onTranscript` fires it rewrites that bubble (and, on
+success, the undo-history label) to `🎙 <transcript>`. `sendAudioRequest` is the
+shared patch-turn-with-audio path: the tutorial `play-audio` step calls it too,
+so a voice tour issues a byte-identical request and replays its cassette
+key-free. Request failures go through the same `fail()` path a
 typed request uses — error toast plus an `Error: Voice input failed: …`
 assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` discards the recording. The mic button is
 gated on the selected model's `voiceInput` flag plus a key for the selected
@@ -737,6 +740,7 @@ export type TourAction =
   | { kind: 'prefill-chat';  text: string     }
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }  // lifted onto scenario.golden
+  | { kind: 'play-audio';    filename: string }  // voice clip → real voice turn
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -750,7 +754,8 @@ scenario (each with its `tags`) and its Background steps prepended; the consumer
 filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
-holds only `load-file`, `load-lookup`, `prefill-chat`, and `show-golden`.
+holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and
+`play-audio` (matched from `play audio "<clip>"`).
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename
@@ -771,17 +776,20 @@ export interface TutorialSources {
   loadFeature(name: string): Promise<string>;     // raw .feature text
   loadFixture(name: string): Promise<string>;     // raw CSV/JSONL (input or golden)
   loadCassette(feature: string): Promise<string>; // raw cassette JSON, feature base name
+  loadAudio(name: string): Promise<Uint8Array>;   // raw clip bytes for play-audio
 }
 ```
 
 Only the lightweight `manifest` ships in the JS bundle; the feature source,
-fixtures, goldens, and cassettes load lazily through the three loaders. In the
-browser (`main.tsx`) the loaders `fetch` same-origin under
-`import.meta.env.BASE_URL` — `tutorials/<name>`, `samples/<name>`,
-`cassettes/<feature>.json` — directories the Vite `staticDirPlugin` copies into
-`dist/` at build and serves via dev middleware (features and fixtures from
-`spec/test-cases/`, cassettes from `src/tests/__cassettes__/`). In tests the
-loaders read the same files with `readFileSync`. The `manifest` is frozen at
+fixtures, goldens, cassettes, and audio clips load lazily through the loaders.
+In the browser (`main.tsx`) the loaders `fetch` same-origin under
+`import.meta.env.BASE_URL` — `tutorials/<name>`, `samples/<name>` (CSV/JSONL
+fixtures *and* `.m4a` voice clips), `cassettes/<feature>.json` — directories the
+Vite `staticDirPlugin` copies into `dist/` at build and serves via dev
+middleware (features and fixtures from `spec/test-cases/`, cassettes from
+`src/tests/__cassettes__/`). `loadAudio` fetches the clip's bytes
+(`arrayBuffer`); the other loaders return text. In tests the loaders read the
+same files with `readFileSync` (`loadAudio` returns the raw `Buffer` bytes). The `manifest` is frozen at
 build time by `vite.config.ts` (parsing each `@tutorial`/`@web` feature into
 `{ name, feature, tags }`) and exposed as the `__TT_TUTORIAL_MANIFEST__` define
 global.
@@ -805,12 +813,23 @@ While `TutorialManager.isReplaying()` is true, `EngineManager.makeFetch` routes
 every model call through `TutorialManager.replayFetch`, which loads the tour's
 cassette (`loadCassette(feature)`, cached) and serves the recorded response or
 throws on a miss. `ensureHeadless` pins the recording configuration during
-replay — model `claude-sonnet-4-6`, the default cell model, a placeholder key —
-so the request fingerprints identically to the taped one; the engine is rebuilt
-when replay mode flips. `sendChat` skips its Anthropic-key guard while replaying.
-Because the patch turn embeds only `basename(spec.table)` and pins the default
-model, a tour replays the cassette a `@headless`/`@cli`/`@web` run of the same
-scenario already recorded — no separate tutorial recording is needed.
+replay — `defaultModel(provider)` / `defaultCellModel(provider)` and a
+placeholder key — so the request fingerprints identically to the taped one; the
+engine is rebuilt when replay mode flips. The provider comes from
+`TutorialManager.replayProvider()`: a **voice tour** (any `play-audio` step)
+pins `'gemini'` (the request the voice path issues went to Gemini); every other
+tour pins `'anthropic'`. `sendChat` skips its Anthropic-key guard while
+replaying. Because the patch turn embeds only `basename(spec.table)` and pins
+the default model, a tour replays the cassette a `@headless`/`@cli`/`@web` run of
+the same scenario already recorded — no separate tutorial recording is needed (a
+voice tour reuses the cassette its `@web` voice scenario recorded).
+
+A `play-audio` step is the voice analogue of `prefill-chat`:
+`TutorialManager.executeTutorialStep` fetches the clip with `loadAudio`, plays it
+in the browser (no-op where `Audio` is absent), then hands the bytes to
+`VoiceManager.sendAudioRequest` — the same patch-turn-with-audio path the
+microphone release uses — so the request fingerprints identically to the recorded
+voice turn and replays key-free.
 
 ### Tutorial controller methods
 

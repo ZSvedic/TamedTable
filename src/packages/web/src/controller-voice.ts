@@ -73,13 +73,29 @@ export class VoiceManager {
       return;
     }
 
+    try {
+      await this.sendAudioRequest(audio, this.voiceAbort.signal);
+    } finally {
+      this.host.voiceStatus = 'idle';
+      this.voiceAbort = null;
+      this.host.notify();
+    }
+  }
+
+  /** Run the ordinary patch turn for already-captured `audio`: post the
+   *  placeholder user bubble, send the audio on a single model call (the same
+   *  call returns the spec patch and a transcript), swap the bubble + history
+   *  label to the transcript, and surface failures the same way a typed request
+   *  does. Shared by the mic-release path and the tutorial `play-audio` step —
+   *  which replays this exact request from a cassette, key-free. */
+  async sendAudioRequest(audio: RequestAudio, signal?: AbortSignal): Promise<void> {
     // Placeholder bubble; the same model call that patches the spec also
     // returns a transcript, which replaces it the moment the call lands.
     const bubbleId = this.host.pushMessage('user', VOICE_REQUEST_LABEL);
     let heard: string | undefined;
     try {
       await this.host.engine.request(buildVoicePrompt(this.buildVoiceContext()), {
-        signal: this.voiceAbort.signal,
+        signal,
         audio,
         label: VOICE_REQUEST_LABEL,
         onTranscript: (t) => {
@@ -95,10 +111,6 @@ export class VoiceManager {
       // assistant message carrying the per-attempt debug info.
       const debug = (e as { debug?: RequestDebugInfo }).debug;
       this.host.fail(`Voice input failed: ${userFacingMessage(e, this.host.config.provider)}`, debug);
-    } finally {
-      this.host.voiceStatus = 'idle';
-      this.voiceAbort = null;
-      this.host.notify();
     }
   }
 
