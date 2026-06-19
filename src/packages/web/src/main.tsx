@@ -18,13 +18,20 @@ async function fetchText(url: string): Promise<string> {
   return res.text();
 }
 
+async function fetchBytes(url: string): Promise<Uint8Array> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`fetch ${url} → ${res.status} ${res.statusText}`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 const tutorialSources: TutorialSources = {
   manifest: __TT_TUTORIAL_MANIFEST__,
-  // Feature source, fixtures, and cassettes are served same-origin by the
-  // staticDirPlugin copies in vite.config (dev + build).
+  // Feature source, fixtures, cassettes, and voice clips are served same-origin
+  // by the staticDirPlugin copies in vite.config (dev + build).
   loadFeature: (name) => fetchText(`${base}tutorials/${name}`),
   loadFixture: (name) => fetchText(`${base}samples/${name}`),
   loadCassette: (feature) => fetchText(`${base}cassettes/${feature}.json`),
+  loadAudio: (name) => fetchBytes(`${base}samples/${name}`),
 };
 
 const controller = createWebController({

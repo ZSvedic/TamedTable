@@ -127,6 +127,15 @@ Feature: Tutorial panel
       Then the spec has 1 transformation
       And no toast is shown
 
+    @web
+    Scenario: A play-audio step replays the voice cassette against Gemini, key-free
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Normalize DOB by voice" is selected
+      When user plays the whole tutorial
+      Then the spec has 1 transformation
+      And no toast is shown
+
   Rule: A deep link opens, selects, and plays a named tour
 
     @web

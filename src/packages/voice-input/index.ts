@@ -26,6 +26,20 @@ export interface VoicePort {
   cancelRecording(): void;
 }
 
+/** Map an audio filename's extension to the MIME type the voice patch turn
+ *  sends. Shared by the test mic stub and the tutorial `play-audio` step so a
+ *  replayed tour request fingerprints identically to the recorded voice turn. */
+export function audioMediaType(filename: string): string {
+  const ext = filename.slice(filename.lastIndexOf('.') + 1).toLowerCase();
+  switch (ext) {
+    case 'm4a': return 'audio/mp4';
+    case 'mp3': return 'audio/mpeg';
+    case 'wav': return 'audio/wav';
+    case 'webm': return 'audio/webm';
+    default: throw new Error(`unsupported audio extension on "${filename}"`);
+  }
+}
+
 /** Build the deterministic instruction text sent next to the audio on the
  *  patch turn. Pure — no network, no DOM — so it is unit- and
  *  Gherkin-testable. */

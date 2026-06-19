@@ -37,6 +37,9 @@ export interface TutorialSources {
   /** Raw JSON text of a feature's recorded cassette, for key-free playback —
    *  `feature` is the feature base name without extension (e.g. `validate`). */
   loadCassette(feature: string): Promise<string>;
+  /** Raw bytes of a voice clip, for a `play-audio` step — served same-origin
+   *  from the deployed `/samples/` directory alongside the CSV/JSONL fixtures. */
+  loadAudio(name: string): Promise<Uint8Array>;
 }
 
 export interface WebControllerOptions {

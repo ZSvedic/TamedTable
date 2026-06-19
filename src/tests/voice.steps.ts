@@ -4,6 +4,7 @@ import { strict as assert } from 'node:assert';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { WebController, VoicePort } from '@tamedtable/web';
+import { audioMediaType } from '@tamedtable/voice-input';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 import { webScenarios } from './web-file-port.ts';
 
@@ -19,20 +20,12 @@ function ctxOf(world: TamedTableWorld) {
 
 // A deterministic mic: it plays a committed audio fixture (a real clip), so
 // the Gemini request fingerprints identically on every run, which is what
-// lets the cassette replay it.
-const AUDIO_TYPES: Record<string, string> = {
-  m4a: 'audio/mp4',
-  mp3: 'audio/mpeg',
-  wav: 'audio/wav',
-  webm: 'audio/webm',
-};
-
+// lets the cassette replay it. `audioMediaType` (shared with the tutorial
+// play-audio step) keeps the clip's MIME type identical across both paths.
 function fixtureAudio(clip: string): Blob {
   const path = join(SPEC_TC_DIR, clip);
   if (!existsSync(path)) throw new Error(`voice steps: no audio fixture at ${path}`);
-  const type = AUDIO_TYPES[clip.split('.').pop() ?? ''];
-  if (!type) throw new Error(`voice steps: unsupported audio extension on ${clip}`);
-  return new Blob([readFileSync(path)], { type });
+  return new Blob([readFileSync(path)], { type: audioMediaType(clip) });
 }
 
 function stubVoicePort(clip: string): VoicePort {
@@ -66,6 +59,17 @@ Given('the Gemini endpoint returns an error', function (this: TamedTableWorld) {
         { status: 401, headers: { 'content-type': 'application/json' } },
       ),
     );
+});
+
+// The tour `play audio "X"` step, exercised here as a plain @web scenario so the
+// recorder taps the cassette: it builds the same RequestAudio the mic release
+// would and runs it through the shared voice patch-turn path. Played as a
+// @tutorial tour, TutorialManager.executeTutorialStep drives the identical
+// request and replays this same recording, key-free.
+When('play audio {string}', async function (this: TamedTableWorld, clip: string) {
+  const blob = fixtureAudio(clip);
+  const audio = { data: new Uint8Array(await blob.arrayBuffer()), mediaType: blob.type };
+  await controller(this).voice.sendAudioRequest(audio);
 });
 
 When('user presses and holds the mic button', async function (this: TamedTableWorld) {

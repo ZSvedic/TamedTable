@@ -12,6 +12,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import type { Row } from '@tamedtable/core';
+import type { RequestAudio } from '@tamedtable/headless';
+import type { Provider } from '@tamedtable/model-config';
+import { audioMediaType } from '@tamedtable/voice-input';
 import { parseTours, type TourScenario } from '@tamedtable/gherkin-tour';
 import { replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
@@ -215,6 +218,15 @@ export class TutorialManager {
     return this.activeTour ? basename(this.activeTour.feature ?? '', '.feature') : null;
   }
 
+  /** Provider the active tour pins for replay. A voice tour (any `play-audio`
+   *  step) replays against Gemini — that is where its audio request went, so
+   *  the recorded cassette is a Gemini call; every other tour replays against
+   *  Anthropic. Drives the replay model in `EngineManager.ensureHeadless`. */
+  replayProvider(): Provider {
+    const hasAudio = this.activeTour?.steps.some((s) => s.action.kind === 'play-audio');
+    return hasAudio ? 'gemini' : 'anthropic';
+  }
+
   /** Replay one model call from the active tour's cassette. Fetched (and
    *  parsed) once, then cached. A miss throws so the failure surfaces as a
    *  toast rather than hanging. */
@@ -296,6 +308,16 @@ export class TutorialManager {
     }
   }
 
+  /** Fetch an audio clip's raw bytes, surfacing a fetch failure as a toast. */
+  private async loadAudio(filename: string): Promise<Uint8Array | undefined> {
+    try {
+      return await this.tutorialSrc!.loadAudio(filename);
+    } catch (e) {
+      this.host.pushToast('error', `Could not load tutorial audio "${filename}": ${(e as Error).message}`);
+      return undefined;
+    }
+  }
+
   private async executeTutorialStep(index: number): Promise<void> {
     const tour = this.activeTour;
     const step = tour?.steps[index];
@@ -343,16 +365,25 @@ export class TutorialManager {
         break;
       }
       case 'play-audio': {
-        // Play the named audio clip in the browser. No-op in test environments
-        // where the Audio constructor is not available.
+        // A voice step: fetch the clip, play it aloud for the demo, then run it
+        // through the engine as a real voice turn — reusing the mic-release
+        // plumbing so the request fingerprints identically to the recorded
+        // voice turn and replays from the tour's cassette, key-free.
+        const bytes = await this.loadAudio(action.filename);
+        if (!bytes) break;
+        // Play the clip in the browser. No-op in test environments where the
+        // Audio constructor is not available.
         if (typeof Audio !== 'undefined') {
-          const audio = new Audio(action.filename);
+          const sound = new Audio(action.filename);
           await new Promise<void>((resolve) => {
-            audio.onended = () => resolve();
-            audio.onerror = () => resolve();
-            audio.play().catch(() => resolve());
+            sound.onended = () => resolve();
+            sound.onerror = () => resolve();
+            sound.play().catch(() => resolve());
           });
         }
+        const audio: RequestAudio = { data: bytes, mediaType: audioMediaType(action.filename) };
+        this.pending = this.host.voice.sendAudioRequest(audio);
+        await this.pending;
         break;
       }
       case 'golden-source':

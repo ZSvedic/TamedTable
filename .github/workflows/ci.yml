@@ -1,0 +1,34 @@
+name: CI
+# Runs the real test suite on every PR so reviewers (and autonomous agents on a
+# claude/* branch) get a pass/fail gate. workflow_dispatch lets an agent
+# re-trigger the run via the GitHub API after pushing a fix.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+        working-directory: src
+      - run: bun run typecheck
+        working-directory: src
+      # The @web cucumber profile and the demo smoke test drive headless
+      # Chromium; `bun install` alone does not fetch the browser binary.
+      - run: bunx playwright install chromium
+        working-directory: src
+      # Offline + key-free: cucumber.js defaults TAMEDTABLE_CASSETTE=replay, so
+      # every model call is served from a recorded cassette. No secrets needed.
+      - run: bun run test
+        working-directory: src
+      - run: bun run test:smoke
+        working-directory: src

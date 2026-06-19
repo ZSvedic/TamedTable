@@ -85,6 +85,23 @@ Feature: Voice input
       And no chat message is shown
       And the spec has 0 transformations
 
+  # #TutorialMode
+  # A runnable, key-free voice tour for the marketing "Speak instead of type"
+  # deep link. Run as a plain @web scenario it records/replays voice.json via
+  # the `play audio` step (same request the mic release issues); played as a
+  # @tutorial tour it replays that same cassette with no key (see
+  # tutorial.feature). The clip is the committed English "normalize DOB column".
+  Rule: A spoken tour normalizes a column key-free
+
+    @web @tutorial
+    Scenario: Normalize DOB by voice
+      Given the TamedTable web app
+      And load "datanorm-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      And play audio "voice-normalize-dob.m4a"
+      Then the spec has 1 transformation
+      And an assistant bubble is shown
+
   Rule: A model error surfaces a toast and changes nothing
 
     @web
