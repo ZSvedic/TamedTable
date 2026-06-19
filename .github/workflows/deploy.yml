@@ -16,52 +16,40 @@ on:
       - 'marketing/illustrations/**'
       - 'marketing/brand/**'
       - '.github/workflows/deploy.yml'
+      - '.github/scripts/build-site.sh'
   workflow_dispatch:  # manual rebuild from the Actions tab
+# Publishes to the gh-pages branch (Pages source: "Deploy from a branch"). The
+# branch source is shared with PR previews (pr-preview.yml): prod lives at the
+# branch root, previews under pr-preview/pr-<N>/. keep_files preserves those
+# preview subdirs when prod redeploys.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install
         working-directory: src
-      - run: bun run build
-        working-directory: src/packages/web
-      # Assemble the Pages artifact: the marketing homepage at the root, the web
-      # app under /app/, and the standalone module demos under /demos/.
-      #   _site/            ← marketing/web/ (index.html + favicon + illustrations; symlinks dereferenced)
-      #   _site/app/        ← web app build (vite base /TamedTable/app/)
-      #   _site/demos/<n>/  ← per-package demo bundles
-      - name: Assemble site root and app
-        run: |
-          set -euo pipefail
-          mkdir -p _site/app
-          cp -rL marketing/web/. _site/
-          cp -r src/packages/web/dist/. _site/app/
-      - name: Bundle module demos
-        working-directory: src
-        run: |
-          set -euo pipefail
-          for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-kit voice-input; do
-            bun build "packages/$name/demo.html" \
-              --outdir "../_site/demos/$name" \
-              --public-path="/TamedTable/demos/$name/"
-          done
+      # Assemble _site for the prod prefix: marketing homepage at the root, the
+      # web app under /app/, the module demos under /demos/. See build-site.sh.
+      - name: Build site
+        run: .github/scripts/build-site.sh
+        env:
+          SITE_BASE: /TamedTable/
+          OUT_DIR: _site
       # Smoke-test the demo bundles in headless Chromium before deploying.
       - run: bunx playwright install chromium
         working-directory: src
       - run: bun run test:smoke
         working-directory: src
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: _site }
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
-    steps:
-      - id: d
-        uses: actions/deploy-pages@v4
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          keep_files: true  # don't wipe pr-preview/ subdirs

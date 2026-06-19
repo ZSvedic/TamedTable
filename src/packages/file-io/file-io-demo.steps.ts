@@ -1,7 +1,7 @@
 // #FileIO
 // Step defs for the @web file-io scenarios. They drive the package's demo
 // page in headless Chromium: the demo is bundled once per run with the same
-// `bun build demo.html` line deploy.yml uses, served to the page via
+// `bun build demo.html` line .github/scripts/build-site.sh uses, served to the page via
 // Playwright request interception (no HTTP server), and asserted through the
 // demo's #fio-* elements. Table URLs the scenarios fetch are served from a
 // per-page fixture map by the same interceptor — no network.

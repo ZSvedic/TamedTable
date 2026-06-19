@@ -1,5 +1,5 @@
 // Smoke tests for the module demos (#GherkinTour, #ModelConfig). Each demo is
-// built with the exact `bun build` flags deploy.yml uses, served under the
+// built with the exact `bun build` flags .github/scripts/build-site.sh uses, served under the
 // same /TamedTable/ base path as GitHub Pages, and driven with headless
 // Chromium — so a bundle that 404s or renders nothing (the PR #79 regression)
 // fails here instead of on the live site.
@@ -70,7 +70,7 @@ beforeAll(async () => {
   if (skip) return;
   outRoot = await mkdtemp(join(tmpdir(), 'demo-smoke-'));
 
-  // Same flags as the demo-bundling step in .github/workflows/deploy.yml.
+  // Same flags as the demo-bundling step in .github/scripts/build-site.sh.
   for (const name of DEMOS) {
     const build = Bun.spawn(
       [

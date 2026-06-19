@@ -1,0 +1,38 @@
+name: Deploy PR preview
+# Every PR gets a live preview at
+#   https://zsvedic.github.io/TamedTable/pr-preview/pr-<N>/
+# auto-updated on push and torn down when the PR closes. It shares the gh-pages
+# branch with prod (deploy.yml): prod at the root, previews under pr-preview/.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: preview-${{ github.event.number }}
+  cancel-in-progress: true
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Build only when deploying. On close, pr-preview-action just removes the
+      # preview dir, so the build steps are skipped.
+      - uses: oven-sh/setup-bun@v2
+        if: github.event.action != 'closed'
+      - run: bun install
+        working-directory: src
+        if: github.event.action != 'closed'
+      # Bake the per-PR prefix so the preview's asset links resolve at its URL.
+      - name: Build site for preview
+        if: github.event.action != 'closed'
+        run: .github/scripts/build-site.sh
+        env:
+          SITE_BASE: /TamedTable/pr-preview/pr-${{ github.event.number }}/
+          OUT_DIR: _site
+      - uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./_site
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview

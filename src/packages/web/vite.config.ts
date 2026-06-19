@@ -99,8 +99,10 @@ export default defineConfig({
     staticDirPlugin('cassettes', cassetteDir, cassetteFiles),
   ],
   // The web app is published under /app/; the site root serves the marketing
-  // homepage (marketing/web/), assembled by .github/workflows/deploy.yml.
-  base: '/TamedTable/app/',
+  // homepage (marketing/web/), assembled by .github/scripts/build-site.sh.
+  // The deploy/preview workflows override the prefix via TAMEDTABLE_WEB_BASE so
+  // a PR preview at /TamedTable/pr-preview/pr-<N>/ bakes matching asset URLs.
+  base: process.env.TAMEDTABLE_WEB_BASE ?? '/TamedTable/app/',
   define: {
     // The system-prompt file the engine reads at module init, inlined. The
     // engine's `process` references are satisfied by a stub in index.html.
