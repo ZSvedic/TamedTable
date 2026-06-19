@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- #FileIO demo — manual, isolated test of the file-io package.
+     Run: bun packages/file-io/demo.html -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>file-io demo</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 1rem; margin-top: 1.5rem; }
+    .row { display: flex; gap: .5rem; margin: .5rem 0; }
+    input { flex: 1; padding: .3rem .5rem; font-family: monospace; }
+    button { padding: .3rem .8rem; }
+    dt { font-weight: 600; }
+    dl { display: grid; grid-template-columns: 8rem 1fr; gap: .2rem .5rem; margin: .5rem 0; }
+    dd { margin: 0; font-family: monospace; }
+    pre { padding: .5rem; background: #f4f4f4; overflow: auto; max-height: 18rem; }
+    #fio-error { color: #b00020; min-height: 1.2em; }
+    #fio-fsa { color: #555; }
+  </style>
+<script type="module" crossorigin src="/TamedTable/pr-preview/pr-151/demos/file-io/demo-fwmn4x7z.js"></script></head>
+<body>
+  <h1>file-io — open, fetch, save</h1>
+  <p id="fio-fsa"></p>
+
+  <div class="row">
+    <button id="fio-open">Open file…</button>
+    <input id="fio-url" spellcheck="false"
+      value="https://raw.githubusercontent.com/ZSvedic/TamedTable/main/spec/test-cases/datanorm-input.csv" />
+    <button id="fio-fetch">Fetch URL</button>
+    <button id="fio-save" disabled>Save…</button>
+  </div>
+  <p id="fio-error"></p>
+
+  <dl>
+    <dt>Name</dt><dd id="fio-name">—</dd>
+    <dt>Format</dt><dd id="fio-format">—</dd>
+    <dt>Save outcome</dt><dd id="fio-outcome">—</dd>
+  </dl>
+  <pre id="fio-preview"></pre>
+
+  <h2>serializeFlow — sample spec</h2>
+  <pre id="out"></pre>
+
+  
+</body>
+</html>
