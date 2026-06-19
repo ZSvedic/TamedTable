@@ -114,3 +114,64 @@ driver-meaningful steps and discards the rest:
 
 `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and `play-audio`
 steps are kept, in order.
+
+## Tour driver
+
+`parseTours` answers *what the steps are*; `TourDriver` runs *the flow* — the
+cursor, executing each step, the done state, and return-on-finish — without
+knowing anything about a host. It holds no DOM id, no engine, no cassette: every
+side effect goes through a host-supplied `TourAdapter` (below). The same driver
+runs the TamedTable app and the package's standalone demo.
+
+A driver is constructed with an adapter, then armed with a tour:
+
+- **`play(tour)`** arms the tour from the panel and highlights step 1.
+- **`startFromLink(tour)`** arms it from a deep link; `finish` will return to the
+  referring page instead of the panel. Both ignore an empty tour.
+- **`next()`** executes the highlighted step through the adapter, then advances.
+  The final `next` (on the last step) enters the **done** state — the cursor sits
+  one past the last step, no step is highlighted, and the tour awaits `finish`.
+- **`prev()`** steps the cursor back one stop; a no-op at the first step or once
+  done.
+- **`cancel()`** abandons the tour, running nothing further.
+- **`finish()`** ends the tour and calls the adapter's `returnToSource`, passing
+  `'panel'` or `'deeplink'` to match how the tour was launched.
+
+State queries: **`isActive()`** (a step is highlighted), **`isDone()`** (all
+steps ran, awaiting finish), **`currentStep()`** (the highlighted `TourStep`, or
+null when not active), **`currentStepElementId()`** (the adapter's element id for
+the current step), **`currentStepNumber()`** (1-based, or null), and
+**`stepCount()`**.
+
+## Tour adapter
+
+A host implements `TourAdapter` to bind the driver's typed actions to concrete
+side effects and DOM ids — that is where TamedTable's engine, cassette replay,
+golden rows, and navigation live, and where the demo's trivial page handlers
+live. The driver calls:
+
+| Method | When | Argument |
+|---|---|---|
+| `loadFile(filename)` | a `load-file` step | the file to load |
+| `loadLookup(filename)` | a `load-lookup` step | the lookup file |
+| `prefillChat(text)` | a `prefill-chat` step | the query text |
+| `showGolden(goldenFile)` | a `show-golden` step | the scenario's lifted `golden`, or undefined |
+| `playAudio(filename)` | a `play-audio` step | the clip to play |
+| `elementIdFor(action)` | resolving a spotlight target | the current step's action → DOM id, or null |
+| `returnToSource(from)` | `finish` | `'panel'` or `'deeplink'` |
+
+The `load`/`prefill`/`show`/`play` methods are async — the driver awaits each
+before advancing, so a step that issues a model call (in the app) or plays a
+clip (in the demo) completes before the next step highlights.
+
+## Tour UI (`./ui`)
+
+`TourUi` (the `@tamedtable/gherkin-tour/ui` export) is the only entry point that
+depends on `driver.js`; importing the package's root pulls neither `driver.js`
+nor any styling. It drives a Driver.js spotlight + popover (Prev / Next / Cancel)
+and keyboard navigation (→ / Space advance, ← back, Esc cancel, Enter to finish)
+from a `TourDriver`: `start()` attaches the keyboard and renders the first
+spotlight; `render()` re-syncs after each transition; the spotlight target for
+each step comes from the driver's adapter, and the completion popover anchors to
+the host-named `doneElementId`. The package's `demo.html` wires a trivial
+page-only adapter through `parseTours → TourDriver → ./ui` to tour itself.

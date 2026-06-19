@@ -181,3 +181,132 @@ export function parseTours(source: string): TourScenario[] {
   flush();
   return result;
 }
+
+// ── Tour driver ──────────────────────────────────────────────────────────────
+
+// The driver owns the *flow* of a tour — cursor, step execution, done state,
+// return-on-finish — but knows nothing about any host: no DOM ids, no engine, no
+// cassette. The host supplies a TourAdapter that turns each typed action into a
+// concrete side effect and owns its own element ids and navigation. This is what
+// lets the same flow drive TamedTable's app and the package's standalone demo.
+
+/** Host bridge: the driver calls these to execute each step's action and to
+ *  resolve the element a step should spotlight. Every method is host-supplied. */
+export interface TourAdapter {
+  loadFile(filename: string): Promise<void>;
+  loadLookup(filename: string): Promise<void>;
+  prefillChat(text: string): Promise<void>;
+  /** `goldenFile` is the scenario's lifted `golden`, or undefined when none. */
+  showGolden(goldenFile: string | undefined): Promise<void>;
+  playAudio(filename: string): Promise<void>;
+  /** DOM id of the element a step should spotlight, or null for none. */
+  elementIdFor(action: TourAction): string | null;
+  /** End-of-tour navigation back to wherever the tour was launched. */
+  returnToSource(from: 'panel' | 'deeplink'): void;
+}
+
+/** Host-agnostic tour cursor. `play` / `startFromLink` arm a tour at step 1;
+ *  `next` executes the highlighted step through the adapter then advances; the
+ *  final `next` enters a *done* state (cursor past the last step) where `finish`
+ *  hands navigation back to the adapter. Empty tours are ignored. */
+export class TourDriver {
+  private tour: TourScenario | null = null;
+  private index: number | null = null;
+  private launchedFrom: 'panel' | 'deeplink' = 'panel';
+  private readonly adapter: TourAdapter;
+
+  constructor(adapter: TourAdapter) {
+    this.adapter = adapter;
+  }
+
+  /** Arm a tour from the panel and highlight step 1. */
+  play(tour: TourScenario): void {
+    this.arm(tour, 'panel');
+  }
+
+  /** Arm a tour from a deep link; `finish` returns to the referring page. */
+  startFromLink(tour: TourScenario): void {
+    this.arm(tour, 'deeplink');
+  }
+
+  private arm(tour: TourScenario, from: 'panel' | 'deeplink'): void {
+    if (tour.steps.length === 0) return;
+    this.tour = tour;
+    this.index = 0;
+    this.launchedFrom = from;
+  }
+
+  /** Execute the highlighted step, then advance. The last step enters done. */
+  async next(): Promise<void> {
+    if (this.index === null || !this.tour) return;
+    const total = this.tour.steps.length;
+    if (this.index >= total) return; // already done
+    await this.execute(this.tour.steps[this.index]!);
+    this.index = this.index < total - 1 ? this.index + 1 : total;
+  }
+
+  /** Step the cursor back one stop. No-op at the first step or once done. */
+  prev(): void {
+    if (this.index === null || this.index === 0) return;
+    if (this.tour && this.index > this.tour.steps.length - 1) return;
+    this.index--;
+  }
+
+  /** Abandon the tour without executing anything further. */
+  cancel(): void {
+    this.tour = null;
+    this.index = null;
+  }
+
+  /** End the tour and hand navigation back to the adapter. */
+  finish(): void {
+    const from = this.launchedFrom;
+    this.cancel();
+    this.adapter.returnToSource(from);
+  }
+
+  /** True while a step is highlighted and awaiting execution. */
+  isActive(): boolean {
+    return this.tour !== null && this.index !== null && this.index < this.tour.steps.length;
+  }
+
+  /** True once every step has run and the tour awaits `finish`. */
+  isDone(): boolean {
+    return this.tour !== null && this.index !== null && this.index >= this.tour.steps.length;
+  }
+
+  /** The highlighted step, or null when no tour is active (or it is done). */
+  currentStep(): TourStep | null {
+    if (!this.isActive() || !this.tour || this.index === null) return null;
+    return this.tour.steps[this.index] ?? null;
+  }
+
+  /** DOM id the host wants spotlighted for the current step, or null. */
+  currentStepElementId(): string | null {
+    const step = this.currentStep();
+    return step ? this.adapter.elementIdFor(step.action) : null;
+  }
+
+  /** 1-based number of the highlighted step, or null when not active. */
+  currentStepNumber(): number | null {
+    return this.isActive() && this.index !== null ? this.index + 1 : null;
+  }
+
+  /** Total steps in the active tour, or 0 when none. */
+  stepCount(): number {
+    return this.tour?.steps.length ?? 0;
+  }
+
+  private async execute(step: TourStep): Promise<void> {
+    const { action } = step;
+    switch (action.kind) {
+      case 'load-file':    await this.adapter.loadFile(action.filename);    break;
+      case 'load-lookup':  await this.adapter.loadLookup(action.filename);  break;
+      case 'prefill-chat': await this.adapter.prefillChat(action.text);     break;
+      case 'show-golden':  await this.adapter.showGolden(this.tour?.golden); break;
+      case 'play-audio':   await this.adapter.playAudio(action.filename);   break;
+      case 'golden-source':
+      case 'display': break;
+    }
+  }
+}

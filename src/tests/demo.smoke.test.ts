@@ -186,13 +186,16 @@ describe.skipIf(skip)('demo smoke', () => {
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
-  it('gherkin-tour: renders the sample tour and re-parses on edit', async () => {
+  it('gherkin-tour: parses its own feature and tours the page on Start tour', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('gherkin-tour');
     const tours = JSON.parse((await page.textContent('#out'))!);
     expect(tours.length).toBeGreaterThan(0);
 
-    await page.fill('#src', '');
-    await page.waitForFunction(`document.querySelector('#out')?.textContent === '[]'`);
+    // Start tour → the Driver.js spotlight + popover appears over the page's own
+    // elements, proving parseTours → TourDriver → ./ui drives a non-TamedTable host.
+    await page.click('#start-tour');
+    await page.waitForSelector('.driver-popover');
+    expect((await page.textContent('.driver-popover'))!).toContain('Step 1 of');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
