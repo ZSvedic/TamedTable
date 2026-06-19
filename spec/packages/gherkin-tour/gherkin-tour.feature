@@ -304,23 +304,14 @@ Feature: Gherkin Tour parser
       And the driver goes back
       Then the current step element id is "el-load-file"
 
-  Rule: Finishing returns to the source the tour was launched from
+  Rule: Finishing calls the adapter's onFinish hook
 
     @headless
-    Scenario: a panel-launched tour returns to the panel on finish
+    Scenario: finishing a tour calls onFinish and ends the tour
       Given a tour with steps:
         | kind      | arg   |
         | load-file | x.csv |
       When the driver plays the tour
       And the driver finishes
-      Then the adapter returned to source from "panel"
+      Then the adapter onFinish was called
       And the driver is not active
-
-    @headless
-    Scenario: a deep-linked tour returns to the deeplink on finish
-      Given a tour with steps:
-        | kind      | arg   |
-        | load-file | x.csv |
-      When the driver starts the tour from a link
-      And the driver finishes
-      Then the adapter returned to source from "deeplink"

@@ -118,24 +118,22 @@ steps are kept, in order.
 ## Tour driver
 
 `parseTours` answers *what the steps are*; `TourDriver` runs *the flow* — the
-cursor, executing each step, the done state, and return-on-finish — without
+cursor, executing each step, the done state, and the finish hook — without
 knowing anything about a host. It holds no DOM id, no engine, no cassette: every
 side effect goes through a host-supplied `TourAdapter` (below). The same driver
 runs the TamedTable app and the package's standalone demo.
 
 A driver is constructed with an adapter, then armed with a tour:
 
-- **`play(tour)`** arms the tour from the panel and highlights step 1.
-- **`startFromLink(tour)`** arms it from a deep link; `finish` will return to the
-  referring page instead of the panel. Both ignore an empty tour.
+- **`play(tour)`** arms the tour and highlights step 1; an empty tour is ignored.
 - **`next()`** executes the highlighted step through the adapter, then advances.
   The final `next` (on the last step) enters the **done** state — the cursor sits
   one past the last step, no step is highlighted, and the tour awaits `finish`.
 - **`prev()`** steps the cursor back one stop; a no-op at the first step or once
   done.
 - **`cancel()`** abandons the tour, running nothing further.
-- **`finish()`** ends the tour and calls the adapter's `returnToSource`, passing
-  `'panel'` or `'deeplink'` to match how the tour was launched.
+- **`finish()`** ends the tour and calls the adapter's `onFinish` hook (the app
+  opens its Tutorial panel there; the demo shows a status line).
 
 State queries: **`isActive()`** (a step is highlighted), **`isDone()`** (all
 steps ran, awaiting finish), **`currentStep()`** (the highlighted `TourStep`, or
@@ -158,7 +156,7 @@ live. The driver calls:
 | `showGolden(goldenFile)` | a `show-golden` step | the scenario's lifted `golden`, or undefined |
 | `playAudio(filename)` | a `play-audio` step | the clip to play |
 | `elementIdFor(action)` | resolving a spotlight target | the current step's action → DOM id, or null |
-| `returnToSource(from)` | `finish` | `'panel'` or `'deeplink'` |
+| `onFinish()` | `finish` | — |
 
 The `load`/`prefill`/`show`/`play` methods are async — the driver awaits each
 before advancing, so a step that issues a model call (in the app) or plays a
@@ -168,10 +166,24 @@ clip (in the demo) completes before the next step highlights.
 
 `TourUi` (the `@tamedtable/gherkin-tour/ui` export) is the only entry point that
 depends on `driver.js`; importing the package's root pulls neither `driver.js`
-nor any styling. It drives a Driver.js spotlight + popover (Prev / Next / Cancel)
-and keyboard navigation (→ / Space advance, ← back, Esc cancel, Enter to finish)
-from a `TourDriver`: `start()` attaches the keyboard and renders the first
-spotlight; `render()` re-syncs after each transition; the spotlight target for
-each step comes from the driver's adapter, and the completion popover anchors to
-the host-named `doneElementId`. The package's `demo.html` wires a trivial
-page-only adapter through `parseTours → TourDriver → ./ui` to tour itself.
+nor any styling. It drives a Driver.js spotlight + popover from a `TourDriver`:
+`start()` attaches the keyboard and renders the first spotlight; `render()`
+re-syncs after each transition; the spotlight target for each step comes from the
+driver's adapter, and the completion popover anchors to the host-named
+`doneElementId`. The package's `demo.html` wires a trivial page-only adapter
+through `parseTours → TourDriver → ./ui` to tour itself.
+
+### Popover footer
+
+`TourUi` replaces Driver.js's default button row with its own footer holding
+three buttons:
+
+- **Previous** and **Next** grouped on the left, **Finish** on the right.
+- Each button shows a key-cap badge of its keyboard shortcut before the label:
+  **← Previous**, **→ Next**, **↵ Finish**.
+- **Previous** is disabled on the first step (and in the done state).
+
+Keyboard shortcuts mirror the buttons: **←** goes back, **→** or **Space**
+advances, **Enter** finishes, **Esc** cancels. The badges and labels carry no
+hard-coded colors — borders and text inherit the popover's `currentColor`, so the
+footer reads correctly against the host's theme.
