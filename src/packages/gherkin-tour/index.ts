@@ -206,11 +206,29 @@ export interface TourAdapter {
   onFinish(): void;
 }
 
+/** The read/navigate surface a tour UI needs from whatever owns the cursor.
+ *  `TourDriver` implements it for hosts that let the package run the flow; a host
+ *  that owns its own cursor (TamedTable's app drives the engine + cassette replay
+ *  from its controller) implements it directly and hands itself to `TourUi`. */
+export interface TourCursor {
+  isActive(): boolean;
+  isDone(): boolean;
+  /** The highlighted step — `TourUi` reads only its `text` for the popover. */
+  currentStep(): { text: string } | null;
+  currentStepElementId(): string | null;
+  currentStepNumber(): number | null;
+  stepCount(): number;
+  next(): Promise<void> | void;
+  prev(): void;
+  finish(): void;
+  cancel(): void;
+}
+
 /** Host-agnostic tour cursor. `play` arms a tour at step 1; `next` executes the
  *  highlighted step through the adapter then advances; the final `next` enters a
  *  *done* state (cursor past the last step) where `finish` calls the adapter's
  *  `onFinish` hook. Empty tours are ignored. */
-export class TourDriver {
+export class TourDriver implements TourCursor {
   private tour: TourScenario | null = null;
   private index: number | null = null;
   private readonly adapter: TourAdapter;

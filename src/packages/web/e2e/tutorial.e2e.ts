@@ -13,7 +13,8 @@ function panel(page: Parameters<typeof test>[1] extends (args: { page: infer P }
   return page.getByTestId('tutorial-panel');
 }
 
-/** Prev/Next/close buttons live in the Driver.js popover, not the panel footer. */
+/** Previous/Next/Finish buttons live in the shared gherkin-tour popover footer
+ *  (each prefixed with a key-cap badge), not the slide-over panel. */
 function popoverBtn(page: Parameters<typeof test>[1] extends (args: { page: infer P }) => unknown ? P : never, name: string | RegExp) {
   return page.locator('.driver-popover').getByRole('button', { name });
 }
@@ -41,8 +42,8 @@ test('Next advances to step 2 without closing the tutorial', async ({ page }) =>
   await panel(page).getByRole('button', { name: 'Play' }).click();
   await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
 
-  // Next button is now in the Driver.js popover, not the panel footer.
-  await popoverBtn(page, 'Next →').click();
+  // Next button is now in the shared popover footer, not the panel.
+  await popoverBtn(page, 'Next').click();
 
   // Must show step 2 — not collapsed back to the picker or closed.
   await expect(page.getByTestId('tutorial-step')).toHaveText('Step 2 of 4');
@@ -54,7 +55,7 @@ test('Next works for the Left join tutorial', async ({ page }) => {
   await panel(page).getByRole('button', { name: 'Play' }).click();
   await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 6');
 
-  await popoverBtn(page, 'Next →').click();
+  await popoverBtn(page, 'Next').click();
 
   await expect(page.getByTestId('tutorial-step')).toHaveText('Step 2 of 6');
 });
@@ -65,8 +66,8 @@ test('Cancel exits the tour and Play restarts it', async ({ page }) => {
   await panel(page).getByRole('button', { name: 'Play' }).click();
   await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
 
-  // Cancel via the Driver.js popover close button.
-  await page.locator('.driver-popover-close-btn').click();
+  // The shared popover footer has no close button — Esc cancels the tour.
+  await page.keyboard.press('Escape');
   // After cancel, panel returns to picker.
   await expect(panel(page).getByRole('button', { name: 'Play' })).toBeVisible();
 

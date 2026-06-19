@@ -120,8 +120,9 @@ steps are kept, in order.
 `parseTours` answers *what the steps are*; `TourDriver` runs *the flow* — the
 cursor, executing each step, the done state, and the finish hook — without
 knowing anything about a host. It holds no DOM id, no engine, no cassette: every
-side effect goes through a host-supplied `TourAdapter` (below). The same driver
-runs the TamedTable app and the package's standalone demo.
+side effect goes through a host-supplied `TourAdapter` (below). It is what the
+package's standalone demo runs; the app implements the same cursor contract
+itself (see Tour UI) rather than building a `TourDriver`.
 
 A driver is constructed with an adapter, then armed with a tour:
 
@@ -143,10 +144,11 @@ the current step), **`currentStepNumber()`** (1-based, or null), and
 
 ## Tour adapter
 
-A host implements `TourAdapter` to bind the driver's typed actions to concrete
-side effects and DOM ids — that is where TamedTable's engine, cassette replay,
-golden rows, and navigation live, and where the demo's trivial page handlers
-live. The driver calls:
+A host that uses `TourDriver` implements `TourAdapter` to bind the driver's typed
+actions to concrete side effects and DOM ids — that is where the demo's trivial
+page handlers live. (TamedTable's app keeps the equivalent logic — engine,
+cassette replay, golden rows, navigation — in its tutorial controller, which
+plays the driver's role itself.) The driver calls:
 
 | Method | When | Argument |
 |---|---|---|
@@ -166,12 +168,30 @@ clip (in the demo) completes before the next step highlights.
 
 `TourUi` (the `@tamedtable/gherkin-tour/ui` export) is the only entry point that
 depends on `driver.js`; importing the package's root pulls neither `driver.js`
-nor any styling. It drives a Driver.js spotlight + popover from a `TourDriver`:
+nor any styling. It drives a Driver.js spotlight + popover from a `TourCursor`:
 `start()` attaches the keyboard and renders the first spotlight; `render()`
 re-syncs after each transition; the spotlight target for each step comes from the
-driver's adapter, and the completion popover anchors to the host-named
-`doneElementId`. The package's `demo.html` wires a trivial page-only adapter
-through `parseTours → TourDriver → ./ui` to tour itself.
+cursor's `currentStepElementId()`, and the completion popover anchors to the
+host-named `doneElementId`.
+
+A `TourCursor` is the read/navigate surface `TourUi` needs — `isActive`,
+`isDone`, `currentStep`, `currentStepElementId`, `currentStepNumber`,
+`stepCount`, `next`, `prev`, `finish`, `cancel`. `TourDriver` implements it, so
+the package's `demo.html` wires a trivial page-only adapter through
+`parseTours → TourDriver → ./ui` to tour itself. The TamedTable app does **not**
+build a `TourDriver`: its tutorial controller already owns the cursor, the engine,
+and cassette replay, so it implements `TourCursor` directly and hands itself to
+`TourUi` — the same popover/footer/keyboard, driven by the app's own state.
+
+### Theming
+
+`TourUi` ships no colors of its own. By default the popover keeps Driver.js's
+styling and the footer's borders and text inherit `currentColor`, so it reads on
+any background. A host that wants the popover to match its own theme passes an
+optional `theme` to `TourUi` — `background`, `text`, `border`, and `accent`
+color strings, applied to the popover box, title, description, footer buttons,
+and badges. The colors are supplied by the host (the app passes its ui-kit
+tokens); the package source stays free of color literals.
 
 ### Popover footer
 
