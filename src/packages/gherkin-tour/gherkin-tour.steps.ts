@@ -1,7 +1,14 @@
 // #GherkinTour
-import { Given, When, Then } from '@cucumber/cucumber';
+import { Given, When, Then, DataTable } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { parseTours, type TourScenario, type TourAction } from '@tamedtable/gherkin-tour';
+import {
+  parseTours,
+  TourDriver,
+  type TourScenario,
+  type TourStep,
+  type TourAction,
+  type TourAdapter,
+} from '@tamedtable/gherkin-tour';
 
 interface GherkinTourCtx {
   source: string;
@@ -101,3 +108,121 @@ Then(
     assert.equal((action as { text: string }).text, text);
   },
 );
+
+// ── TourDriver steps ─────────────────────────────────────────────────────────
+
+// A fake adapter that records every dispatch as `method(arg)` and the source it
+// was asked to return to, so a tour's flow is asserted without any real UI,
+// engine, or cassette.
+class FakeAdapter implements TourAdapter {
+  readonly calls: string[] = [];
+  returnedFrom: 'panel' | 'deeplink' | null = null;
+  private log(method: string, arg: string | undefined) {
+    this.calls.push(`${method}(${arg ?? ''})`);
+  }
+  async loadFile(f: string)             { this.log('loadFile', f); }
+  async loadLookup(f: string)           { this.log('loadLookup', f); }
+  async prefillChat(t: string)          { this.log('prefillChat', t); }
+  async showGolden(g: string | undefined) { this.log('showGolden', g); }
+  async playAudio(f: string)            { this.log('playAudio', f); }
+  elementIdFor(a: TourAction): string { return `el-${a.kind}`; }
+  returnToSource(from: 'panel' | 'deeplink') { this.returnedFrom = from; }
+}
+
+interface DriverCtx {
+  adapter: FakeAdapter;
+  driver: TourDriver;
+  tour: TourScenario;
+}
+
+interface DriverWorld {
+  _driverCtx?: DriverCtx;
+}
+
+function dctx(world: DriverWorld): DriverCtx {
+  assert.ok(world._driverCtx, 'no tour driver set up — call "a tour with steps" first');
+  return world._driverCtx;
+}
+
+// Build a TourStep from a `| kind | arg |` row. `arg` fills whichever field the
+// action kind carries (filename or text); kinds without an argument ignore it.
+function makeStep(kind: string, arg: string): TourStep {
+  let action: TourAction;
+  switch (kind) {
+    case 'load-file':     action = { kind: 'load-file',   filename: arg }; break;
+    case 'load-lookup':   action = { kind: 'load-lookup', filename: arg }; break;
+    case 'prefill-chat':  action = { kind: 'prefill-chat', text: arg };    break;
+    case 'play-audio':    action = { kind: 'play-audio',  filename: arg }; break;
+    case 'golden-source': action = { kind: 'golden-source', filename: arg }; break;
+    case 'show-golden':   action = { kind: 'show-golden' };                break;
+    case 'display':       action = { kind: 'display' };                    break;
+    default: throw new Error(`unknown action kind "${kind}"`);
+  }
+  return { keyword: 'Given', text: kind, action };
+}
+
+Given('a tour with steps:', function (this: DriverWorld, table: DataTable) {
+  const steps = table.hashes().map((r) => makeStep(r.kind!, r.arg ?? ''));
+  const tour: TourScenario = { name: 'Test tour', tags: ['@tutorial'], steps };
+  const adapter = new FakeAdapter();
+  this._driverCtx = { adapter, driver: new TourDriver(adapter), tour };
+});
+
+Given('the tour\'s golden is {string}', function (this: DriverWorld, golden: string) {
+  dctx(this).tour.golden = golden;
+});
+
+When('the driver plays the tour', function (this: DriverWorld) {
+  const c = dctx(this);
+  c.driver.play(c.tour);
+});
+
+When('the driver starts the tour from a link', function (this: DriverWorld) {
+  const c = dctx(this);
+  c.driver.startFromLink(c.tour);
+});
+
+When('the driver advances {int} time(s)', async function (this: DriverWorld, n: number) {
+  const c = dctx(this);
+  for (let i = 0; i < n; i++) await c.driver.next();
+});
+
+When('the driver goes back', function (this: DriverWorld) {
+  dctx(this).driver.prev();
+});
+
+When('the driver finishes', function (this: DriverWorld) {
+  dctx(this).driver.finish();
+});
+
+Then('the driver is active', function (this: DriverWorld) {
+  assert.equal(dctx(this).driver.isActive(), true);
+});
+
+Then('the driver is not active', function (this: DriverWorld) {
+  assert.equal(dctx(this).driver.isActive(), false);
+});
+
+Then('the driver is done', function (this: DriverWorld) {
+  assert.equal(dctx(this).driver.isDone(), true);
+});
+
+Then('the driver is not done', function (this: DriverWorld) {
+  assert.equal(dctx(this).driver.isDone(), false);
+});
+
+Then('the current step is null', function (this: DriverWorld) {
+  assert.equal(dctx(this).driver.currentStep(), null);
+});
+
+Then('the current step element id is {string}', function (this: DriverWorld, id: string) {
+  assert.equal(dctx(this).driver.currentStepElementId(), id);
+});
+
+Then('the adapter calls were {string}', function (this: DriverWorld, expected: string) {
+  assert.equal(dctx(this).adapter.calls.join(', '), expected);
+});
+
+Then('the adapter returned to source from {string}', function (this: DriverWorld, from: string) {
+  assert.equal(dctx(this).adapter.returnedFrom, from);
+});
