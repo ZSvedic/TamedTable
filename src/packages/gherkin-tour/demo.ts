@@ -76,7 +76,8 @@ function playChime(): Promise<void> {
 // ── The demo's TourAdapter ───────────────────────────────────────────────────
 // Maps each typed action to a side effect on this page, and each action to the
 // element the spotlight should land on. No engine, no cassette — playAudio
-// plays a tone then shows a canned result; returnToSource navigates back.
+// plays a tone then shows a canned result; onFinish just notes completion (the
+// app opens its Tutorial panel here instead).
 const adapter = {
   async loadFile(_filename: string): Promise<void> {
     renderTable(PEOPLE);
@@ -110,14 +111,10 @@ const adapter = {
       case 'display': return 'table-view';
     }
   },
-  returnToSource(from: 'panel' | 'deeplink'): void {
-    setStatus(`Tour finished (from ${from}).`);
-    if (from === 'deeplink') {
-      // Back to the referring page if there is one; otherwise drop ?tour= so a
-      // refresh doesn't replay the tour.
-      if (document.referrer) window.history.back();
-      else window.location.replace(window.location.pathname);
-    }
+  onFinish(): void {
+    // In the app this is where the Tutorial panel reopens so the user can pick
+    // another tour; the demo just notes it.
+    setStatus('Tour finished — the app would open the Tutorials panel here.');
   },
 };
 
@@ -140,22 +137,4 @@ el('start-tour').addEventListener('click', () => {
   ui.start();
 });
 
-el('deeplink-btn').addEventListener('click', () => {
-  // Navigate to ourselves with ?tour=<scenario>; the load handler below auto-starts.
-  const name = encodeURIComponent(tour().name);
-  window.location.href = `${window.location.pathname}?tour=${name}`;
-});
-
 el('open-btn').addEventListener('click', () => { void adapter.loadFile('people.csv'); });
-
-// Deep link: ?tour=<scenario> auto-starts via startFromLink, so Finish returns
-// to the referring page (or strips the query on a direct visit).
-const wanted = new URLSearchParams(window.location.search).get('tour');
-if (wanted) {
-  const t = parseTours(featureText).find((s) => s.name === wanted);
-  if (t) {
-    const { driver, ui } = makeUi();
-    driver.startFromLink(t);
-    ui.start();
-  }
-}

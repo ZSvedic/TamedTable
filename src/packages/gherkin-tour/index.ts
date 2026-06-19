@@ -201,39 +201,29 @@ export interface TourAdapter {
   playAudio(filename: string): Promise<void>;
   /** DOM id of the element a step should spotlight, or null for none. */
   elementIdFor(action: TourAction): string | null;
-  /** End-of-tour navigation back to wherever the tour was launched. */
-  returnToSource(from: 'panel' | 'deeplink'): void;
+  /** Called once when the tour finishes — the host decides what comes next
+   *  (the app opens its Tutorial panel; the demo shows a status line). */
+  onFinish(): void;
 }
 
-/** Host-agnostic tour cursor. `play` / `startFromLink` arm a tour at step 1;
- *  `next` executes the highlighted step through the adapter then advances; the
- *  final `next` enters a *done* state (cursor past the last step) where `finish`
- *  hands navigation back to the adapter. Empty tours are ignored. */
+/** Host-agnostic tour cursor. `play` arms a tour at step 1; `next` executes the
+ *  highlighted step through the adapter then advances; the final `next` enters a
+ *  *done* state (cursor past the last step) where `finish` calls the adapter's
+ *  `onFinish` hook. Empty tours are ignored. */
 export class TourDriver {
   private tour: TourScenario | null = null;
   private index: number | null = null;
-  private launchedFrom: 'panel' | 'deeplink' = 'panel';
   private readonly adapter: TourAdapter;
 
   constructor(adapter: TourAdapter) {
     this.adapter = adapter;
   }
 
-  /** Arm a tour from the panel and highlight step 1. */
+  /** Arm a tour and highlight step 1. An empty tour is ignored. */
   play(tour: TourScenario): void {
-    this.arm(tour, 'panel');
-  }
-
-  /** Arm a tour from a deep link; `finish` returns to the referring page. */
-  startFromLink(tour: TourScenario): void {
-    this.arm(tour, 'deeplink');
-  }
-
-  private arm(tour: TourScenario, from: 'panel' | 'deeplink'): void {
     if (tour.steps.length === 0) return;
     this.tour = tour;
     this.index = 0;
-    this.launchedFrom = from;
   }
 
   /** Execute the highlighted step, then advance. The last step enters done. */
@@ -258,11 +248,10 @@ export class TourDriver {
     this.index = null;
   }
 
-  /** End the tour and hand navigation back to the adapter. */
+  /** End the tour and hand off to the adapter's onFinish hook. */
   finish(): void {
-    const from = this.launchedFrom;
     this.cancel();
-    this.adapter.returnToSource(from);
+    this.adapter.onFinish();
   }
 
   /** True while a step is highlighted and awaiting execution. */
