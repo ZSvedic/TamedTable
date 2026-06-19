@@ -18,6 +18,12 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd src/packages/web && exec bun run dev"],
       "port": 5173
+    },
+    {
+      "name": "gherkin-tour-demo",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd src/packages/gherkin-tour && exec bun demo.html --port 3000"],
+      "port": 3000
     }
   ]
 }

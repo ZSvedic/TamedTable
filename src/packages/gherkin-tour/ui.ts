@@ -1,5 +1,6 @@
 // #GherkinTour
-// Reusable tour UI: a Driver.js spotlight + popover (Prev / Next / Cancel) and
+// Reusable tour UI: a Driver.js spotlight + popover (Previous / Next / Finish,
+// each with a key-cap badge of its keyboard shortcut before the label) and
 // keyboard navigation, driving a TourDriver. This is the only entry point that
 // pulls in driver.js — the parser and driver in `./index.ts` stay zero-dep, so a
 // consumer that only needs `parseTours` / `TourDriver` never ships driver.js.
@@ -8,7 +9,7 @@
 // kept the same Driver.js options, the same Prev/Next/Cancel wiring, and the
 // same keyboard map — only the state now lives in TourDriver instead of the
 // controller, and the spotlight targets come from the adapter's element ids.
-import { driver, type AllowedButtons } from 'driver.js';
+import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { TourDriver } from './index.ts';
 
@@ -68,18 +69,15 @@ export class TourUi {
     const stepNum = this.tour.currentStepNumber();
     const stepTotal = this.tour.stepCount();
     const isFirst = stepNum === 1;
-    const isLast = stepNum === stepTotal;
 
     const d = driver({
       animate: false,
       overlayOpacity: 0.25,
-      // Only the explicit close/cancel controls dismiss the tour.
+      // Buttons live in our own footer (renderFooter) — driver renders none.
       allowClose: false,
-      onNextClick: () => { if (done) { this.finish(); } else { void this.advance(); } },
-      onPrevClick: () => { this.tour.prev(); this.render(); },
-      onCloseClick: () => { this.cancel(); },
+      showButtons: [],
       onDestroyStarted: () => { if (!this.silentDestroy) this.cancel(); },
-      onPopoverRender: (popover) => { renderKbHints(popover.wrapper, done); },
+      onPopoverRender: (popover) => { this.renderFooter(popover.wrapper, done, isFirst); },
     });
     this.d = d;
 
@@ -91,8 +89,6 @@ export class TourUi {
           description: 'Data is as expected.',
           side: 'bottom',
           align: 'start',
-          showButtons: ['next'], // a single "Done" button — no Prev/Close
-          nextBtnText: 'Done',
         },
       });
       this.opts.onChange?.();
@@ -100,11 +96,6 @@ export class TourUi {
     }
 
     const step = this.tour.currentStep();
-    const disableButtons: AllowedButtons[] = [];
-    if (isFirst) disableButtons.push('previous');
-    // The last step's Next ("Finish") is intentionally enabled — it executes the
-    // step and transitions to the done state.
-
     d.highlight({
       element: `#${elementId}`,
       popover: {
@@ -112,10 +103,6 @@ export class TourUi {
         description: step ? asInstruction(step.text) : '',
         side: 'bottom',
         align: 'start',
-        showButtons: ['next', 'previous', 'close'],
-        nextBtnText: isLast ? 'Finish' : 'Next →',
-        prevBtnText: '← Prev',
-        ...(disableButtons.length > 0 ? { disableButtons } : {}),
       },
     });
     this.opts.onChange?.();
@@ -125,6 +112,69 @@ export class TourUi {
   destroy(): void {
     this.destroyOverlay();
     this.detachKeyboard();
+  }
+
+  // Replace Driver.js's button row with our own footer: Previous + Next grouped
+  // on the left, Finish on the right, each with a key-cap badge of its keyboard
+  // shortcut before the label. Driver has no slot for this, so we hide its
+  // (empty) footer and append ours to the popover wrapper on each render.
+  private renderFooter(wrapper: HTMLElement, done: boolean, isFirst: boolean): void {
+    wrapper.querySelector('#tt-tour-footer')?.remove();
+    const defFooter = wrapper.querySelector('.driver-popover-footer') as HTMLElement | null;
+    if (defFooter) defFooter.style.display = 'none';
+
+    // Driver caps the popover at 300px; the three-button row needs more, and the
+    // extra width past the left group is what visually separates Next from Finish.
+    wrapper.style.maxWidth = 'none';
+    wrapper.style.minWidth = '370px';
+
+    const footer = document.createElement('div');
+    footer.id = 'tt-tour-footer';
+    footer.style.cssText =
+      'display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-top:14px';
+
+    const left = document.createElement('div');
+    left.style.cssText = 'display:flex;gap:8px';
+    left.appendChild(this.footerButton('Previous', '←', done || isFirst,
+      () => { this.tour.prev(); this.render(); }));
+    left.appendChild(this.footerButton('Next', '→', done,
+      () => { void this.advance(); }));
+
+    const right = document.createElement('div');
+    // margin-left guarantees a clear gap before Finish even if the popover does
+    // not stretch to its min-width; space-between pushes it further right.
+    right.style.cssText = 'display:flex;gap:8px;margin-left:24px';
+    right.appendChild(this.footerButton('Finish', '↵', false,
+      () => { this.finish(); }));
+
+    footer.appendChild(left);
+    footer.appendChild(right);
+    wrapper.appendChild(footer);
+  }
+
+  /** One footer button: a key-cap badge for its shortcut, then the label. */
+  private footerButton(label: string, key: string, disabled: boolean, onClick: () => void): HTMLElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.disabled = disabled;
+    btn.style.cssText = [
+      'font:inherit', 'font-size:13px', 'display:inline-flex', 'align-items:center', 'gap:7px',
+      'padding:5px 11px', 'border:1px solid', 'border-radius:6px', 'background:transparent',
+      `cursor:${disabled ? 'default' : 'pointer'}`, `opacity:${disabled ? '0.4' : '1'}`,
+    ].join(';');
+    if (!disabled) btn.addEventListener('click', onClick);
+
+    const cap = document.createElement('span');
+    cap.textContent = key;
+    cap.style.cssText = [
+      'display:inline-flex', 'align-items:center', 'justify-content:center',
+      'min-width:18px', 'height:18px', 'padding:0 4px', 'border:1px solid',
+      'border-radius:4px', 'font-size:11px', 'line-height:1', 'opacity:0.7',
+    ].join(';');
+
+    btn.appendChild(cap);
+    btn.appendChild(document.createTextNode(label));
+    return btn;
   }
 
   private async advance(): Promise<void> {
@@ -157,7 +207,10 @@ export class TourUi {
       const done = this.tour.isDone();
       const active = this.tour.isActive();
       if (!active && !done) return;
-      if (e.key === 'ArrowRight' || e.key === ' ' || (done && e.key === 'Enter')) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.finish();
+      } else if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
         if (done) this.finish(); else void this.advance();
       } else if (e.key === 'ArrowLeft') {
@@ -182,27 +235,4 @@ export class TourUi {
 // learner needs — so the tour drops it and just capitalizes the step text.
 function asInstruction(text: string): string {
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-// Append a subtle keyboard-shortcut hint below the popover's button row.
-// Driver.js has no slot for this, so inject a small muted footnote into the
-// popover wrapper on each render. The id keeps it idempotent on re-render.
-const KB_HINT_ID = 'tt-kb-hint';
-function renderKbHints(wrapper: HTMLElement, done: boolean): void {
-  if (wrapper.querySelector(`#${KB_HINT_ID}`)) return;
-  const hint = document.createElement('div');
-  hint.id = KB_HINT_ID;
-  hint.textContent = done
-    ? 'Enter or Space to finish'
-    : '← Prev    → / Space Next    Esc Cancel';
-  hint.style.cssText = [
-    'padding: 8px 4px 2px',
-    'font-size: 11px',
-    'line-height: 1.4',
-    'letter-spacing: 0.02em',
-    'text-align: center',
-    'opacity: 0.55',
-    'user-select: none',
-  ].join(';');
-  wrapper.appendChild(hint);
 }

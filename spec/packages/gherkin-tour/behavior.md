@@ -168,10 +168,24 @@ clip (in the demo) completes before the next step highlights.
 
 `TourUi` (the `@tamedtable/gherkin-tour/ui` export) is the only entry point that
 depends on `driver.js`; importing the package's root pulls neither `driver.js`
-nor any styling. It drives a Driver.js spotlight + popover (Prev / Next / Cancel)
-and keyboard navigation (→ / Space advance, ← back, Esc cancel, Enter to finish)
-from a `TourDriver`: `start()` attaches the keyboard and renders the first
-spotlight; `render()` re-syncs after each transition; the spotlight target for
-each step comes from the driver's adapter, and the completion popover anchors to
-the host-named `doneElementId`. The package's `demo.html` wires a trivial
-page-only adapter through `parseTours → TourDriver → ./ui` to tour itself.
+nor any styling. It drives a Driver.js spotlight + popover from a `TourDriver`:
+`start()` attaches the keyboard and renders the first spotlight; `render()`
+re-syncs after each transition; the spotlight target for each step comes from the
+driver's adapter, and the completion popover anchors to the host-named
+`doneElementId`. The package's `demo.html` wires a trivial page-only adapter
+through `parseTours → TourDriver → ./ui` to tour itself.
+
+### Popover footer
+
+`TourUi` replaces Driver.js's default button row with its own footer holding
+three buttons:
+
+- **Previous** and **Next** grouped on the left, **Finish** on the right.
+- Each button shows a key-cap badge of its keyboard shortcut before the label:
+  **← Previous**, **→ Next**, **↵ Finish**.
+- **Previous** is disabled on the first step (and in the done state).
+
+Keyboard shortcuts mirror the buttons: **←** goes back, **→** or **Space**
+advances, **Enter** finishes, **Esc** cancels. The badges and labels carry no
+hard-coded colors — borders and text inherit the popover's `currentColor`, so the
+footer reads correctly against the host's theme.
