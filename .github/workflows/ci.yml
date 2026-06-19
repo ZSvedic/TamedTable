@@ -18,12 +18,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
+      # Cache the bun install store and the Playwright browser download — both
+      # keyed on bun.lock, so a run only pays the install/download cost when
+      # dependencies change. The Chromium download is the slowest CI step.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('src/bun.lock') }}
+          restore-keys: deps-${{ runner.os }}-
       - run: bun install
         working-directory: src
       - run: bun run typecheck
         working-directory: src
       # The @web cucumber profile and the demo smoke test drive headless
       # Chromium; `bun install` alone does not fetch the browser binary.
+      # `--with-deps` is skipped — a cache hit makes the install a no-op.
       - run: bunx playwright install chromium
         working-directory: src
       # Offline + key-free: cucumber.js defaults TAMEDTABLE_CASSETTE=replay, so
