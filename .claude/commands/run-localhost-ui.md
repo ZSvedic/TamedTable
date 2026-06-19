@@ -88,11 +88,25 @@ When I say **finish** (or "ship it"/"land it"), follow the repo
    the suite goes **green**.
 5. `cd src && bun run test` — confirm green before committing.
 6. Commit on the worktree branch, push, open a PR (`gh pr create`) with a body
-   describing the UI change. Wait for CI; when green, merge (`gh pr merge --squash
-   --delete-branch`).
-7. Stop the preview server (`preview_stop`) and **remove the temp config** you added
+   describing the UI change.
+7. **Decide how it merges (merge policy):**
+   - **Routine change** → queue auto-merge: `gh pr merge --squash --auto
+     --delete-branch`. It lands automatically once CI is green; you don't wait.
+   - **Notable UI change** (this command is for UI work, so this is common) → **do
+     not** auto-merge. Add the `pr-preview` label (`gh pr edit --add-label
+     pr-preview`), which triggers [pr-preview.yml](../../.github/workflows/pr-preview.yml)
+     to build a live preview at `https://zsvedic.github.io/TamedTable/pr-preview/pr-<N>/`.
+     Post that URL and **wait** for the user to eyeball it and say "merge"; then
+     `gh pr merge --squash --delete-branch`.
+   - **User said "hold merges"** (e.g. they're testing on `main`) → do neither. Leave
+     the PR open, report its URL, and don't queue or merge anything until they clear it.
+
+   When unsure whether a change is "notable", default to the `pr-preview` path — a
+   visual sign-off is cheap; an unwanted merge into `main` is not.
+8. Stop the preview server (`preview_stop`) and **remove the temp config** you added
    to `<main>/.claude/launch.json` in Phase 1 — leave that file as it was.
-8. `ExitWorktree` with `action: "remove"` to clean up the worktree.
+9. `ExitWorktree` with `action: "remove"` once the work is merged (or `keep` if the PR
+   is still awaiting the user's preview sign-off).
 
 If CI is red, fix on the branch and push again — don't merge red.
 

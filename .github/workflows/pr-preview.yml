@@ -1,7 +1,7 @@
 name: Deploy PR preview
 # Opt-in live preview at
 #   https://zsvedic.github.io/TamedTable/pr-preview/pr-<N>/
-# Add the `preview` label to a PR to build it; pushes then keep it fresh while
+# Add the `pr-preview` label to a PR to build it; pushes then keep it fresh while
 # the label is on. Torn down when the PR closes. Shares the gh-pages branch with
 # prod (deploy.yml): prod at the root, previews under pr-preview/.
 on:
@@ -16,11 +16,11 @@ concurrency:
 jobs:
   preview:
     runs-on: ubuntu-latest
-    # Build only for `preview`-labelled PRs; always run on close so the teardown
+    # Build only for `pr-preview`-labelled PRs; always run on close so the teardown
     # still removes a preview dir even after the label is gone.
     if: >-
       github.event.action == 'closed' ||
-      contains(github.event.pull_request.labels.*.name, 'preview')
+      contains(github.event.pull_request.labels.*.name, 'pr-preview')
     steps:
       - uses: actions/checkout@v5
       # Build only when deploying. On close, pr-preview-action just removes the
