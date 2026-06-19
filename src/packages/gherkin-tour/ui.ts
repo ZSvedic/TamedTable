@@ -40,8 +40,8 @@ export class TourUi {
     this.opts = opts;
   }
 
-  /** Begin driving the UI for an already-armed tour (after `driver.play()` or
-   *  `startFromLink()`): attach keyboard nav and render the first spotlight. */
+  /** Begin driving the UI for an already-armed tour (after `driver.play()`):
+   *  attach keyboard nav and render the first spotlight. */
   start(): void {
     this.attachKeyboard();
     this.render();

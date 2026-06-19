@@ -35,9 +35,6 @@ export class TutorialManager {
   private readonly featureCache = new Map<string, TourScenario[]>();
   private readonly cassetteCache = new Map<string, Cassette>();
 
-  /** Tracks how the active tour was started so Finish can navigate correctly. */
-  private launchedFrom: 'panel' | 'deeplink' = 'panel';
-
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
@@ -95,9 +92,6 @@ export class TutorialManager {
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
     await this.playTutorial();
-    // Stamp 'deeplink' after playTutorial so a direct Play from the panel always
-    // resets to 'panel' first — overwrite only when we know it's a deep link.
-    this.launchedFrom = 'deeplink';
     return true;
   }
 
@@ -112,7 +106,6 @@ export class TutorialManager {
     this.tutorialStepIndex = 0;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
-    this.launchedFrom = 'panel'; // overwritten to 'deeplink' by openTutorialFromLink if needed
     // Close the Tutorial panel — Driver.js takes over. The step is highlighted
     // but NOT executed yet; execution happens when the user clicks Next.
     this.host.tutorialOpen = false;
@@ -133,9 +126,9 @@ export class TutorialManager {
       this.host.notify();
     } else {
       // Last step executed — enter the done state. The completion is shown in
-      // the Driver.js popover (anchored to the table), NOT the slide-over panel:
-      // a deep-link visitor never opened that panel, so popping it up on Finish
-      // is jarring. The panel stays closed; finishTutorial() handles navigation.
+      // the Driver.js popover (anchored to the table); the slide-over panel stays
+      // closed until the user clicks Done, at which point finishTutorial() opens
+      // the Tutorial chooser.
       this.tutorialStepIndex = total;
       this.host.notify();
     }
@@ -166,28 +159,13 @@ export class TutorialManager {
     this.host.notify();
   }
 
-  /** End the tour and return the user to wherever they started it.
-   *
-   *  - Started from the Tutorial panel → reopen the panel at the chooser. The
-   *    panel *is* the source, so going back there is the natural "done".
-   *  - Started from a deep link (e.g. a "Show me →" button on the marketing
-   *    homepage) → go back to that source page. `history.back()` returns to the
-   *    referring page when there is one; a direct visit (no referrer) has no
-   *    source to return to, so we strip the tour's query params instead, leaving
-   *    the bare app so a refresh doesn't replay the tour. */
+  /** End the tour and open the Tutorial panel chooser, however the tour was
+   *  started, so the user can pick another tutorial. A deep-link visitor arrived
+   *  in a new tab (the homepage opens "Show me →" links in a new tab) and closes
+   *  that tab to return to the homepage — the app does not navigate for them. */
   finishTutorial(): void {
-    const fromLink = this.launchedFrom === 'deeplink';
     this.cancelTutorial();
-    if (!fromLink) {
-      this.openTutorial();
-      return;
-    }
-    if (typeof window === 'undefined') return;
-    if (document.referrer) {
-      window.history.back();
-    } else {
-      window.location.replace(window.location.pathname);
-    }
+    this.openTutorial();
   }
 
   isTutorialActive(): boolean {

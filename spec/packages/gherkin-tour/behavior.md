@@ -118,24 +118,22 @@ steps are kept, in order.
 ## Tour driver
 
 `parseTours` answers *what the steps are*; `TourDriver` runs *the flow* — the
-cursor, executing each step, the done state, and return-on-finish — without
+cursor, executing each step, the done state, and the finish hook — without
 knowing anything about a host. It holds no DOM id, no engine, no cassette: every
 side effect goes through a host-supplied `TourAdapter` (below). The same driver
 runs the TamedTable app and the package's standalone demo.
 
 A driver is constructed with an adapter, then armed with a tour:
 
-- **`play(tour)`** arms the tour from the panel and highlights step 1.
-- **`startFromLink(tour)`** arms it from a deep link; `finish` will return to the
-  referring page instead of the panel. Both ignore an empty tour.
+- **`play(tour)`** arms the tour and highlights step 1; an empty tour is ignored.
 - **`next()`** executes the highlighted step through the adapter, then advances.
   The final `next` (on the last step) enters the **done** state — the cursor sits
   one past the last step, no step is highlighted, and the tour awaits `finish`.
 - **`prev()`** steps the cursor back one stop; a no-op at the first step or once
   done.
 - **`cancel()`** abandons the tour, running nothing further.
-- **`finish()`** ends the tour and calls the adapter's `returnToSource`, passing
-  `'panel'` or `'deeplink'` to match how the tour was launched.
+- **`finish()`** ends the tour and calls the adapter's `onFinish` hook (the app
+  opens its Tutorial panel there; the demo shows a status line).
 
 State queries: **`isActive()`** (a step is highlighted), **`isDone()`** (all
 steps ran, awaiting finish), **`currentStep()`** (the highlighted `TourStep`, or
@@ -158,7 +156,7 @@ live. The driver calls:
 | `showGolden(goldenFile)` | a `show-golden` step | the scenario's lifted `golden`, or undefined |
 | `playAudio(filename)` | a `play-audio` step | the clip to play |
 | `elementIdFor(action)` | resolving a spotlight target | the current step's action → DOM id, or null |
-| `returnToSource(from)` | `finish` | `'panel'` or `'deeplink'` |
+| `onFinish()` | `finish` | — |
 
 The `load`/`prefill`/`show`/`play` methods are async — the driver awaits each
 before advancing, so a step that issues a model call (in the app) or plays a

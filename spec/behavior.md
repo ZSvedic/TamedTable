@@ -925,14 +925,14 @@ closed — the Driver.js overlay takes over immediately). A missing parameter, a
 unknown file, or an unknown scenario boots the app normally — panel closed, no
 error toast; a deep link never crashes or blocks a normal visit.
 
-**Finishing a deep-link tour.** Clicking **Done** after completing a
-deep-link-started tour returns the user to the page they came from: if the page
-has a referrer (e.g. they clicked a "Show me →" button on the marketing
-homepage), the app calls `history.back()`. A direct visit with no referrer has
-no source to return to, so the app strips the tour's query params and stays on
-the bare app URL (`window.location.replace(pathname)`) — that way a refresh
-doesn't replay the tour. Tours started from the Tutorial panel chooser return to
-the chooser instead.
+**Finishing a tour.** Clicking **Done** opens the Tutorial panel chooser,
+whichever way the tour was started — so the visitor can pick another tutorial
+without hunting for the panel. The marketing homepage opens every "Show me →"
+link in a **new tab**, so a deep-link visitor who is finished simply closes that
+tab and is back on the homepage they came from; the app does not navigate for
+them. (This replaces an earlier `history.back()` / query-strip scheme, which
+could not work once the homepage began opening each tour in a new tab — a fresh
+tab has no history to go back to.)
 
 Production links use the deployed base, e.g.
 `https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.

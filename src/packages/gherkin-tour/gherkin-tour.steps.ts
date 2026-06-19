@@ -111,12 +111,12 @@ Then(
 
 // ── TourDriver steps ─────────────────────────────────────────────────────────
 
-// A fake adapter that records every dispatch as `method(arg)` and the source it
-// was asked to return to, so a tour's flow is asserted without any real UI,
-// engine, or cassette.
+// A fake adapter that records every dispatch as `method(arg)` and whether the
+// finish hook fired, so a tour's flow is asserted without any real UI, engine,
+// or cassette.
 class FakeAdapter implements TourAdapter {
   readonly calls: string[] = [];
-  returnedFrom: 'panel' | 'deeplink' | null = null;
+  finished = false;
   private log(method: string, arg: string | undefined) {
     this.calls.push(`${method}(${arg ?? ''})`);
   }
@@ -126,7 +126,7 @@ class FakeAdapter implements TourAdapter {
   async showGolden(g: string | undefined) { this.log('showGolden', g); }
   async playAudio(f: string)            { this.log('playAudio', f); }
   elementIdFor(a: TourAction): string { return `el-${a.kind}`; }
-  returnToSource(from: 'panel' | 'deeplink') { this.returnedFrom = from; }
+  onFinish() { this.finished = true; }
 }
 
 interface DriverCtx {
@@ -177,11 +177,6 @@ When('the driver plays the tour', function (this: DriverWorld) {
   c.driver.play(c.tour);
 });
 
-When('the driver starts the tour from a link', function (this: DriverWorld) {
-  const c = dctx(this);
-  c.driver.startFromLink(c.tour);
-});
-
 When('the driver advances {int} time(s)', async function (this: DriverWorld, n: number) {
   const c = dctx(this);
   for (let i = 0; i < n; i++) await c.driver.next();
@@ -223,6 +218,6 @@ Then('the adapter calls were {string}', function (this: DriverWorld, expected: s
   assert.equal(dctx(this).adapter.calls.join(', '), expected);
 });
 
-Then('the adapter returned to source from {string}', function (this: DriverWorld, from: string) {
-  assert.equal(dctx(this).adapter.returnedFrom, from);
+Then('the adapter onFinish was called', function (this: DriverWorld) {
+  assert.equal(dctx(this).adapter.finished, true);
 });

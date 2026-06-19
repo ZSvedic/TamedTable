@@ -88,12 +88,12 @@ Feature: Tutorial panel
       And the tutorial is not active
 
     @web
-    Scenario: Finishing a deep-link tour does not reopen the chooser panel
+    Scenario: Finishing a deep-link tour opens the Tutorial chooser panel
       Given the TamedTable web app
       When user opens a deep link to feature "filter.feature" scenario "Filter by Country"
       And user advances to the last tutorial step
       And user finishes the tutorial
-      Then the tutorial panel is not shown
+      Then the tutorial panel is shown
       And the tutorial is not active
 
   Rule: load-file steps auto-load fixtures
