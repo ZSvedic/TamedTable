@@ -235,3 +235,92 @@ Feature: Gherkin Tour parser
         """
       When parseTours is called
       Then the result is empty
+
+  Rule: TourDriver steps a tour and dispatches actions to the adapter
+
+    @headless
+    Scenario: play arms the tour at the first step
+      Given a tour with steps:
+        | kind         | arg   |
+        | load-file    | x.csv |
+        | prefill-chat | do it |
+      When the driver plays the tour
+      Then the driver is active
+      And the driver is not done
+      And the current step element id is "el-load-file"
+
+    @headless
+    Scenario: next executes the highlighted step then advances
+      Given a tour with steps:
+        | kind         | arg   |
+        | load-file    | x.csv |
+        | prefill-chat | do it |
+      When the driver plays the tour
+      And the driver advances 1 time
+      Then the adapter calls were "loadFile(x.csv)"
+      And the current step element id is "el-prefill-chat"
+
+    @headless
+    Scenario: each action dispatches to its own adapter method
+      Given a tour with steps:
+        | kind         | arg   |
+        | load-file    | a.csv |
+        | load-lookup  | b.csv |
+        | prefill-chat | hi    |
+        | play-audio   | c.mp3 |
+      When the driver plays the tour
+      And the driver advances 4 times
+      Then the adapter calls were "loadFile(a.csv), loadLookup(b.csv), prefillChat(hi), playAudio(c.mp3)"
+
+    @headless
+    Scenario: show-golden dispatches the scenario's golden file
+      Given a tour with steps:
+        | kind        | arg |
+        | show-golden |     |
+      And the tour's golden is "expected.jsonl"
+      When the driver plays the tour
+      And the driver advances 1 time
+      Then the adapter calls were "showGolden(expected.jsonl)"
+
+    @headless
+    Scenario: advancing past the last step enters the done state
+      Given a tour with steps:
+        | kind      | arg   |
+        | load-file | x.csv |
+      When the driver plays the tour
+      And the driver advances 1 time
+      Then the driver is done
+      And the driver is not active
+      And the current step is null
+
+    @headless
+    Scenario: prev steps the cursor back
+      Given a tour with steps:
+        | kind         | arg   |
+        | load-file    | x.csv |
+        | prefill-chat | hi    |
+      When the driver plays the tour
+      And the driver advances 1 time
+      And the driver goes back
+      Then the current step element id is "el-load-file"
+
+  Rule: Finishing returns to the source the tour was launched from
+
+    @headless
+    Scenario: a panel-launched tour returns to the panel on finish
+      Given a tour with steps:
+        | kind      | arg   |
+        | load-file | x.csv |
+      When the driver plays the tour
+      And the driver finishes
+      Then the adapter returned to source from "panel"
+      And the driver is not active
+
+    @headless
+    Scenario: a deep-linked tour returns to the deeplink on finish
+      Given a tour with steps:
+        | kind      | arg   |
+        | load-file | x.csv |
+      When the driver starts the tour from a link
+      And the driver finishes
+      Then the adapter returned to source from "deeplink"
