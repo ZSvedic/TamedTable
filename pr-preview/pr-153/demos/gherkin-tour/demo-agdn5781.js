@@ -129,23 +129,15 @@ function parseTours(source) {
 class TourDriver {
   tour = null;
   index = null;
-  launchedFrom = "panel";
   adapter;
   constructor(adapter) {
     this.adapter = adapter;
   }
   play(tour) {
-    this.arm(tour, "panel");
-  }
-  startFromLink(tour) {
-    this.arm(tour, "deeplink");
-  }
-  arm(tour, from) {
     if (tour.steps.length === 0)
       return;
     this.tour = tour;
     this.index = 0;
-    this.launchedFrom = from;
   }
   async next() {
     if (this.index === null || !this.tour)
@@ -168,9 +160,8 @@ class TourDriver {
     this.index = null;
   }
   finish() {
-    const from = this.launchedFrom;
     this.cancel();
-    this.adapter.returnToSource(from);
+    this.adapter.onFinish();
   }
   isActive() {
     return this.tour !== null && this.index !== null && this.index < this.tour.steps.length;
@@ -1132,14 +1123,8 @@ var adapter = {
         return "table-view";
     }
   },
-  returnToSource(from) {
-    setStatus(`Tour finished (from ${from}).`);
-    if (from === "deeplink") {
-      if (document.referrer)
-        window.history.back();
-      else
-        window.location.replace(window.location.pathname);
-    }
+  onFinish() {
+    setStatus("Tour finished — the app would open the Tutorials panel here.");
   }
 };
 function tour() {
@@ -1158,19 +1143,6 @@ el("start-tour").addEventListener("click", () => {
   driver.play(tour());
   ui.start();
 });
-el("deeplink-btn").addEventListener("click", () => {
-  const name = encodeURIComponent(tour().name);
-  window.location.href = `${window.location.pathname}?tour=${name}`;
-});
 el("open-btn").addEventListener("click", () => {
   adapter.loadFile("people.csv");
 });
-var wanted = new URLSearchParams(window.location.search).get("tour");
-if (wanted) {
-  const t = parseTours(featureText).find((s2) => s2.name === wanted);
-  if (t) {
-    const { driver, ui } = makeUi();
-    driver.startFromLink(t);
-    ui.start();
-  }
-}
