@@ -11,7 +11,18 @@
 // controller, and the spotlight targets come from the adapter's element ids.
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { TourDriver } from './index.ts';
+import type { TourCursor } from './index.ts';
+
+/** Optional color overrides so the popover matches a host theme. All fields are
+ *  color strings supplied by the host (the app passes its ui-kit tokens); the
+ *  package itself hard-codes no colors. Omit `theme` to keep Driver.js's default
+ *  styling with the footer inheriting `currentColor`. */
+export interface TourUiTheme {
+  /** Popover box background. */            background?: string;
+  /** Popover body + footer text. */        text?: string;
+  /** Popover box + control borders. */     border?: string;
+  /** Title / emphasis color. */            accent?: string;
+}
 
 export interface TourUiOptions {
   /** Element the completion popover anchors to — a step's own target may be
@@ -20,6 +31,12 @@ export interface TourUiOptions {
   /** Run after every state change so the host can sync its own view (e.g. show
    *  a prefilled chat input) and re-render if a spotlight target appeared. */
   onChange?: () => void;
+  /** Completion-popover title; defaults to "Tour complete". */
+  doneTitle?: string;
+  /** Completion-popover body; defaults to "Data is as expected.". */
+  doneDescription?: string;
+  /** Host theme colors for the popover; omit to keep Driver.js defaults. */
+  theme?: TourUiTheme;
 }
 
 /** Drives a Driver.js overlay from a TourDriver: spotlights the current step,
@@ -27,7 +44,7 @@ export interface TourUiOptions {
  *  on every transition. Host-agnostic — all DOM ids come from the driver's
  *  adapter (`elementIdFor`) plus the `doneElementId` fallback. */
 export class TourUi {
-  private readonly tour: TourDriver;
+  private readonly tour: TourCursor;
   private readonly opts: TourUiOptions;
   private d: ReturnType<typeof driver> | null = null;
   // True while our code is programmatically destroying the overlay (step change,
@@ -35,7 +52,7 @@ export class TourUi {
   private silentDestroy = false;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
 
-  constructor(tour: TourDriver, opts: TourUiOptions) {
+  constructor(tour: TourCursor, opts: TourUiOptions) {
     this.tour = tour;
     this.opts = opts;
   }
@@ -77,7 +94,10 @@ export class TourUi {
       allowClose: false,
       showButtons: [],
       onDestroyStarted: () => { if (!this.silentDestroy) this.cancel(); },
-      onPopoverRender: (popover) => { this.renderFooter(popover.wrapper, done, isFirst); },
+      onPopoverRender: (popover) => {
+        this.applyTheme(popover.wrapper);
+        this.renderFooter(popover.wrapper, done, isFirst);
+      },
     });
     this.d = d;
 
@@ -85,8 +105,8 @@ export class TourUi {
       d.highlight({
         element: `#${elementId}`,
         popover: {
-          title: 'Tour complete',
-          description: 'Data is as expected.',
+          title: this.opts.doneTitle ?? 'Tour complete',
+          description: this.opts.doneDescription ?? 'Data is as expected.',
           side: 'bottom',
           align: 'start',
         },
@@ -154,6 +174,7 @@ export class TourUi {
 
   /** One footer button: a key-cap badge for its shortcut, then the label. */
   private footerButton(label: string, key: string, disabled: boolean, onClick: () => void): HTMLElement {
+    const theme = this.opts.theme;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.disabled = disabled;
@@ -162,6 +183,10 @@ export class TourUi {
       'padding:5px 11px', 'border:1px solid', 'border-radius:6px', 'background:transparent',
       `cursor:${disabled ? 'default' : 'pointer'}`, `opacity:${disabled ? '0.4' : '1'}`,
     ].join(';');
+    // Border/text default to currentColor; a theme overrides them so the footer
+    // matches the host's popover rather than inheriting Driver.js's defaults.
+    if (theme?.border) btn.style.borderColor = theme.border;
+    if (theme?.text) btn.style.color = theme.text;
     if (!disabled) btn.addEventListener('click', onClick);
 
     const cap = document.createElement('span');
@@ -171,10 +196,42 @@ export class TourUi {
       'min-width:18px', 'height:18px', 'padding:0 4px', 'border:1px solid',
       'border-radius:4px', 'font-size:11px', 'line-height:1', 'opacity:0.7',
     ].join(';');
+    if (theme?.border) cap.style.borderColor = theme.border;
 
     btn.appendChild(cap);
     btn.appendChild(document.createTextNode(label));
     return btn;
+  }
+
+  // Paint the popover box, title, and description with the host's theme colors.
+  // No-op without a theme — the popover then keeps Driver.js's default styling.
+  // No color literals here: every value comes from the host-supplied theme.
+  private applyTheme(wrapper: HTMLElement): void {
+    const theme = this.opts.theme;
+    if (!theme) return;
+    if (theme.background) wrapper.style.background = theme.background;
+    if (theme.text) wrapper.style.color = theme.text;
+    if (theme.border) {
+      wrapper.style.borderStyle = 'solid';
+      wrapper.style.borderWidth = '1px';
+      wrapper.style.borderColor = theme.border;
+    }
+    const title = wrapper.querySelector('.driver-popover-title') as HTMLElement | null;
+    if (title && theme.accent) title.style.color = theme.accent;
+    const desc = wrapper.querySelector('.driver-popover-description') as HTMLElement | null;
+    if (desc && theme.text) desc.style.color = theme.text;
+    // The arrow's visible side is filled with the popover background; retint just
+    // that side so it doesn't stay Driver's default light color on a dark theme.
+    if (theme.background) {
+      const arrow = wrapper.querySelector('.driver-popover-arrow') as HTMLElement | null;
+      const side = (['top', 'bottom', 'left', 'right'] as const)
+        .find((s) => arrow?.classList.contains(`driver-popover-arrow-side-${s}`));
+      if (arrow && side) {
+        const prop = `border${side[0]!.toUpperCase()}${side.slice(1)}Color` as
+          'borderTopColor' | 'borderBottomColor' | 'borderLeftColor' | 'borderRightColor';
+        arrow.style[prop] = theme.background;
+      }
+    }
   }
 
   private async advance(): Promise<void> {
