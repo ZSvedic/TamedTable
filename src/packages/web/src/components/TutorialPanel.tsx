@@ -39,17 +39,15 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       currentStepNumber:    () => controller.currentTutorialStepNumber(),
       stepCount:            () => controller.tutorialStepCount(),
       next:                 () => controller.nextStep(),
-      prev:                 () => { controller.prevStep(); },
       finish:               () => { controller.finishTutorial(); },
       cancel:               () => { controller.cancelTutorial(); },
     };
     const ui = new TourUi(cursor, {
-      // In the done state the step's own target may be gone — anchor to the table.
+      // On the terminal stop the step's own target may be gone — anchor to the table.
       doneElementId: 'tutorial-table-view',
-      doneTitle: 'Tutorial complete',
-      // The final step is the terminal celebration — keeps its "Step N of N"
-      // title, Next disabled, Previous live, no separate done screen.
-      lastStepDescription: `Voilà, "${selectedTourName}" is done.`,
+      // The terminal stop's "Voilà …" celebration, shown after the last real
+      // step has run, numbered "N of N" with a Done button.
+      doneDescription: `Voilà, "${selectedTourName}" is done.`,
       theme: { background: t.surface, text: t.ink, border: t.line2, accent: t.accent },
     });
     ui.start();

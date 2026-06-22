@@ -327,7 +327,6 @@ export class WebController implements ControllerHost {
   /** Await any in-flight tutorial prefill-chat request (used by tests). */
   tutorialSettle(): Promise<void> { return this.tutorial.settle(); }
   nextStep(): Promise<void> { return this.tutorial.nextStep(); }
-  prevStep(): void { this.tutorial.prevStep(); }
   cancelTutorial(): void { this.tutorial.cancelTutorial(); }
   /** Cancel the active tour and reopen the Tutorial panel at the chooser. */
   finishTutorial(): void { this.tutorial.finishTutorial(); }

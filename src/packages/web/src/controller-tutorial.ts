@@ -139,23 +139,17 @@ export class TutorialManager {
       this.prefillCurrentStep();
       this.host.notify();
     } else {
-      // Last step executed — enter the done state. The completion is shown in
-      // the Driver.js popover (anchored to the table); the slide-over panel stays
-      // closed until the user clicks Done, at which point finishTutorial() opens
-      // the Tutorial chooser.
+      // Last real step executed — enter the terminal stop. The trailing
+      // `compare with the expected output` collapsed into here, so surface the
+      // golden now (never before the query has run). The "Voilà …" completion is
+      // shown in the Driver.js popover, numbered "N of N"; the slide-over panel
+      // stays closed until the user clicks Done, at which point finishTutorial()
+      // opens the Tutorial chooser.
       this.tutorialStepIndex = total;
       this.host.tutorialPrefill = '';
+      await this.surfaceGolden();
       this.host.notify();
     }
-  }
-
-  prevStep(): void {
-    if (this.tutorialStepIndex === null || this.tutorialStepIndex === 0) return;
-    // Don't step back past active range (done state has index = total).
-    if (this.activeTour && this.tutorialStepIndex > this.activeTour.steps.length - 1) return;
-    this.tutorialStepIndex--;
-    this.prefillCurrentStep();
-    this.host.notify();
   }
 
   cancelTutorial(): void {
@@ -243,8 +237,10 @@ export class TutorialManager {
     await this.pending;
   }
 
+  /** Total stops including the terminal "Voilà …" one, so progress reads "N of
+   *  N" there — matching the gherkin-tour cursor contract. */
   tutorialStepCount(): number {
-    return this.activeTour?.steps.length ?? 0;
+    return this.activeTour ? this.activeTour.steps.length + 1 : 0;
   }
 
   /** Name of the currently selected tour, or empty string. */
@@ -344,27 +340,18 @@ export class TutorialManager {
         break;
       }
       case 'prefill-chat':
-        // The query is already sitting in the chat box (prefilled when this step
-        // was highlighted, so the popover could just say "Run the query"). Next
-        // runs it: submit from the cassette — `settle()` lets tests await it.
-        if (!this.host.streaming) this.pending = this.host.sendChat(action.text);
+        // The query is already typed into the chat box (animated in when this
+        // step was highlighted, so the popover could just say "Run the query").
+        // Next runs it: a brief pause simulates the LLM call, then submit from
+        // the cassette — `settle()` lets tests await it.
+        if (!this.host.streaming) {
+          await simulateModelLatency();
+          this.pending = this.host.sendChat(action.text);
+        }
         // Empty the box after submission (the empty string triggers the ChatPanel
         // effect; null would leave the draft).
         this.host.tutorialPrefill = '';
         break;
-      case 'show-golden': {
-        // The golden filename is lifted onto the scenario by the parser (from
-        // the `the expected output is "X"` step), so no step scan is needed.
-        const goldenFile = tour.golden;
-        if (goldenFile) {
-          const raw = await this.loadFixture(goldenFile);
-          if (raw) {
-            this.host.goldenRows = raw.trim().split('\n').filter(Boolean)
-              .map((l) => JSON.parse(l) as Row);
-          }
-        }
-        break;
-      }
       case 'play-audio': {
         // A voice step: fetch the clip, play it aloud for the demo, then run it
         // through the engine as a real voice turn — reusing the mic-release
@@ -387,9 +374,33 @@ export class TutorialManager {
         await this.pending;
         break;
       }
+      case 'show-golden':
       case 'golden-source':
       case 'display':
         break;
     }
   }
+
+  /** Load the scenario's golden (lifted by the parser from `the expected output
+   *  is "X"`) into `goldenRows` for the side-by-side comparison. Called when the
+   *  tour reaches its terminal stop — the trailing `compare with the expected
+   *  output` collapsed into there. No golden ⇒ nothing to show. */
+  private async surfaceGolden(): Promise<void> {
+    const goldenFile = this.activeTour?.golden;
+    if (!goldenFile) return;
+    const raw = await this.loadFixture(goldenFile);
+    if (raw) {
+      this.host.goldenRows = raw.trim().split('\n').filter(Boolean)
+        .map((l) => JSON.parse(l) as Row);
+    }
+  }
+}
+
+// A playing tutorial replays its model call from a cassette, which returns
+// instantly — too fast to read as "the model is working". In a real browser a
+// short pause after Next restores that beat; in headless tests (no DOM) it is
+// skipped so the suite stays fast.
+function simulateModelLatency(): Promise<void> {
+  if (typeof document === 'undefined') return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, 500));
 }

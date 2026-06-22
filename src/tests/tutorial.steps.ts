@@ -39,10 +39,6 @@ When('user advances to the next tutorial step', async function (this: TamedTable
   await controller(this).nextStep();
 });
 
-When('user goes to the previous tutorial step', function (this: TamedTableWorld) {
-  controller(this).prevStep();
-});
-
 When('user cancels the tutorial', function (this: TamedTableWorld) {
   controller(this).cancelTutorial();
 });

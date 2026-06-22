@@ -1,14 +1,14 @@
 // #GherkinTour
-// Reusable tour UI: a Driver.js spotlight + popover (Previous / Next / Finish,
-// each with a key-cap badge of its keyboard shortcut before the label) and
-// keyboard navigation, driving a TourDriver. This is the only entry point that
-// pulls in driver.js — the parser and driver in `./index.ts` stay zero-dep, so a
-// consumer that only needs `parseTours` / `TourDriver` never ships driver.js.
+// Reusable tour UI: a Driver.js spotlight + popover driving a TourCursor. The
+// popover uses Driver.js's own footer — its Next/Done button, its "X of Y"
+// progress, its animation, and Esc-to-cancel — so there is no hand-rolled button
+// row or key-cap badges to maintain. The tour only moves forward: there is no
+// Previous button and no ← key (stepping back would desync the app's replay
+// engine, so it was removed rather than made to undo state).
 //
-// Lifted, host-agnostic, from the app's TutorialPanel.tsx: the React component
-// kept the same Driver.js options, the same Prev/Next/Cancel wiring, and the
-// same keyboard map — only the state now lives in TourDriver instead of the
-// controller, and the spotlight targets come from the adapter's element ids.
+// This is the only entry point that pulls in driver.js — the parser and driver
+// in `./index.ts` stay zero-dep, so a consumer that only needs `parseTours` /
+// `TourDriver` never ships driver.js.
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import type { TourCursor } from './index.ts';
@@ -16,7 +16,7 @@ import type { TourCursor } from './index.ts';
 /** Optional color overrides so the popover matches a host theme. All fields are
  *  color strings supplied by the host (the app passes its ui-kit tokens); the
  *  package itself hard-codes no colors. Omit `theme` to keep Driver.js's default
- *  styling with the footer inheriting `currentColor`. */
+ *  styling. */
 export interface TourUiTheme {
   /** Popover box background. */            background?: string;
   /** Popover body + footer text. */        text?: string;
@@ -25,29 +25,23 @@ export interface TourUiTheme {
 }
 
 export interface TourUiOptions {
-  /** Element the completion popover anchors to — a step's own target may be
-   *  gone by the time the tour is done, so the host names a stable fallback. */
+  /** Element the terminal popover anchors to — a step's own target may be gone
+   *  by the time the tour is done, so the host names a stable fallback. */
   doneElementId: string;
   /** Run after every state change so the host can sync its own view (e.g. show
    *  a prefilled chat input) and re-render if a spotlight target appeared. */
   onChange?: () => void;
-  /** Completion-popover title; defaults to "Tour complete". */
-  doneTitle?: string;
-  /** Completion-popover body; defaults to "Data is as expected.". */
+  /** Terminal-stop text — shown after the last real step has run, e.g.
+   *  `Voilà, "<tour>" is done.`. Defaults to "Done.". */
   doneDescription?: string;
-  /** When set, the final step is terminal: it keeps its "Step N of N" title but
-   *  shows this text instead of the step instruction, Next is disabled, and the
-   *  tour ends there (no separate done screen). Omit to keep the default
-   *  step → … → done flow. */
-  lastStepDescription?: string;
   /** Host theme colors for the popover; omit to keep Driver.js defaults. */
   theme?: TourUiTheme;
 }
 
-/** Drives a Driver.js overlay from a TourDriver: spotlights the current step,
- *  wires the popover buttons and the keyboard back to the driver, and re-renders
- *  on every transition. Host-agnostic — all DOM ids come from the driver's
- *  adapter (`elementIdFor`) plus the `doneElementId` fallback. */
+/** Drives a Driver.js overlay from a TourCursor: spotlights the current step,
+ *  wires Driver's own Next/Done button and keyboard back to the cursor, and
+ *  re-renders on every transition. Host-agnostic — all DOM ids come from the
+ *  cursor (`currentStepElementId`) plus the `doneElementId` fallback. */
 export class TourUi {
   private readonly tour: TourCursor;
   private readonly opts: TourUiOptions;
@@ -62,14 +56,14 @@ export class TourUi {
     this.opts = opts;
   }
 
-  /** Begin driving the UI for an already-armed tour (after `driver.play()`):
-   *  attach keyboard nav and render the first spotlight. */
+  /** Begin driving the UI for an already-armed tour (after `play()`): attach
+   *  keyboard nav and render the first spotlight. */
   start(): void {
     this.attachKeyboard();
     this.render();
   }
 
-  /** Re-sync the spotlight to the driver's current state. Safe to call after
+  /** Re-sync the spotlight to the cursor's current state. Safe to call after
    *  every transition; tears the overlay down once the tour is over. */
   render(): void {
     const active = this.tour.isActive();
@@ -80,57 +74,46 @@ export class TourUi {
       return;
     }
 
-    // In the done state the step's own target may be gone — anchor to the host's
-    // stable fallback element instead.
+    // On the terminal stop the step's own target may be gone — anchor to the
+    // host's stable fallback element instead.
     const elementId = done ? this.opts.doneElementId : this.tour.currentStepElementId();
     const el = elementId ? document.getElementById(elementId) : null;
     if (!el) return; // target not mounted yet; the host re-renders once it is
 
     this.destroyOverlay();
 
-    const stepNum = this.tour.currentStepNumber();
-    const stepTotal = this.tour.stepCount();
-    const isFirst = stepNum === 1;
-    const isTerminalLast = this.isTerminalLast();
+    const total = this.tour.stepCount();
+    const num = done ? total : (this.tour.currentStepNumber() ?? 1);
+    const description = done
+      ? (this.opts.doneDescription ?? 'Done.')
+      : asInstruction(this.tour.currentStep()?.text ?? '');
 
     const d = driver({
-      animate: false,
+      animate: true,
       overlayOpacity: 0.25,
-      // Buttons live in our own footer (renderFooter) — driver renders none.
-      allowClose: false,
-      showButtons: [],
+      allowClose: true,
+      // Esc cancels (allowClose), but an accidental overlay click must not — a
+      // no-op behavior keeps the tour from vanishing on a stray click.
+      overlayClickBehavior: () => {},
       onDestroyStarted: () => { if (!this.silentDestroy) this.cancel(); },
-      onPopoverRender: (popover) => {
-        this.applyTheme(popover.wrapper);
-        this.renderFooter(popover.wrapper, done, isFirst, isTerminalLast);
-      },
+      onPopoverRender: (popover) => { this.applyTheme(popover.wrapper); },
     });
     this.d = d;
 
-    if (done) {
-      d.highlight({
-        element: `#${elementId}`,
-        popover: {
-          title: this.opts.doneTitle ?? 'Tour complete',
-          description: this.opts.doneDescription ?? 'Data is as expected.',
-          side: 'bottom',
-          align: 'start',
-        },
-      });
-      this.opts.onChange?.();
-      return;
-    }
-
-    const step = this.tour.currentStep();
     d.highlight({
       element: `#${elementId}`,
       popover: {
-        title: `Step ${stepNum ?? 1} of ${stepTotal}`,
-        description: isTerminalLast
-          ? this.opts.lastStepDescription!
-          : (step ? asInstruction(step.text) : ''),
+        description,
         side: 'bottom',
         align: 'start',
+        // Driver's own footer: progress on the left, a single forward button on
+        // the right (no Previous, no close button). Esc still cancels.
+        showButtons: ['next'],
+        showProgress: true,
+        progressText: `${num} of ${total}`,
+        nextBtnText: done ? 'Done' : 'Next &rarr;',
+        onNextClick: () => { if (done) this.finish(); else void this.advance(); },
+        onCloseClick: () => { this.cancel(); },
       },
     });
     this.opts.onChange?.();
@@ -142,79 +125,10 @@ export class TourUi {
     this.detachKeyboard();
   }
 
-  // Replace Driver.js's button row with our own footer: Previous + Next grouped
-  // on the left, Finish on the right, each with a key-cap badge of its keyboard
-  // shortcut before the label. Driver has no slot for this, so we hide its
-  // (empty) footer and append ours to the popover wrapper on each render.
-  private renderFooter(wrapper: HTMLElement, done: boolean, isFirst: boolean, isTerminalLast = false): void {
-    wrapper.querySelector('#tt-tour-footer')?.remove();
-    const defFooter = wrapper.querySelector('.driver-popover-footer') as HTMLElement | null;
-    if (defFooter) defFooter.style.display = 'none';
-
-    // Driver caps the popover at 300px; the three-button row needs more, and the
-    // extra width past the left group is what visually separates Next from Finish.
-    wrapper.style.maxWidth = 'none';
-    wrapper.style.minWidth = '370px';
-
-    const footer = document.createElement('div');
-    footer.id = 'tt-tour-footer';
-    footer.style.cssText =
-      'display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-top:14px';
-
-    const left = document.createElement('div');
-    left.style.cssText = 'display:flex;gap:8px';
-    left.appendChild(this.footerButton('Previous', '←', done || isFirst,
-      () => { this.tour.prev(); this.render(); }));
-    // Next is disabled on the terminal last step too — Finish ends the tour there.
-    left.appendChild(this.footerButton('Next', '→', done || isTerminalLast,
-      () => { void this.advance(); }));
-
-    const right = document.createElement('div');
-    // margin-left guarantees a clear gap before Finish even if the popover does
-    // not stretch to its min-width; space-between pushes it further right.
-    right.style.cssText = 'display:flex;gap:8px;margin-left:24px';
-    right.appendChild(this.footerButton('Finish', '↵', false,
-      () => { this.finish(); }));
-
-    footer.appendChild(left);
-    footer.appendChild(right);
-    wrapper.appendChild(footer);
-  }
-
-  /** One footer button: a key-cap badge for its shortcut, then the label. */
-  private footerButton(label: string, key: string, disabled: boolean, onClick: () => void): HTMLElement {
-    const theme = this.opts.theme;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.disabled = disabled;
-    btn.style.cssText = [
-      'font:inherit', 'font-size:13px', 'display:inline-flex', 'align-items:center', 'gap:7px',
-      'padding:5px 11px', 'border:1px solid', 'border-radius:6px', 'background:transparent',
-      `cursor:${disabled ? 'default' : 'pointer'}`, `opacity:${disabled ? '0.4' : '1'}`,
-    ].join(';');
-    // Border/text default to currentColor; a theme overrides them so the footer
-    // matches the host's popover rather than inheriting Driver.js's defaults.
-    if (theme?.border) btn.style.borderColor = theme.border;
-    if (theme?.text) btn.style.color = theme.text;
-    if (!disabled) btn.addEventListener('click', onClick);
-
-    const cap = document.createElement('span');
-    cap.textContent = key;
-    cap.style.cssText = [
-      'display:inline-flex', 'align-items:center', 'justify-content:center',
-      'min-width:18px', 'height:18px', 'padding:0 4px', 'border:1px solid',
-      'border-radius:4px', 'font-size:11px', 'line-height:1', 'opacity:0.7',
-    ].join(';');
-    if (theme?.border) cap.style.borderColor = theme.border;
-
-    btn.appendChild(cap);
-    btn.appendChild(document.createTextNode(label));
-    return btn;
-  }
-
-  // Paint the popover box, title, and description with the host's theme colors.
-  // No-op without a theme — the popover then keeps Driver.js's default styling.
-  // No color literals here: every value comes from the host-supplied theme.
+  // Paint the popover box, description, and Driver's footer controls with the
+  // host's theme colors. No-op without a theme — the popover then keeps
+  // Driver.js's default styling. No color literals here: every value comes from
+  // the host-supplied theme.
   private applyTheme(wrapper: HTMLElement): void {
     const theme = this.opts.theme;
     if (!theme) return;
@@ -225,10 +139,18 @@ export class TourUi {
       wrapper.style.borderWidth = '1px';
       wrapper.style.borderColor = theme.border;
     }
-    const title = wrapper.querySelector('.driver-popover-title') as HTMLElement | null;
-    if (title && theme.accent) title.style.color = theme.accent;
     const desc = wrapper.querySelector('.driver-popover-description') as HTMLElement | null;
     if (desc && theme.text) desc.style.color = theme.text;
+    const progress = wrapper.querySelector('.driver-popover-progress-text') as HTMLElement | null;
+    if (progress && theme.text) progress.style.color = theme.text;
+    const next = wrapper.querySelector('.driver-popover-next-btn') as HTMLElement | null;
+    if (next) {
+      next.style.textShadow = 'none';
+      // Accent fill, with the popover background as the contrasting label color.
+      if (theme.accent) next.style.background = theme.accent;
+      if (theme.background) next.style.color = theme.background;
+      if (theme.border) next.style.borderColor = theme.border;
+    }
     // The arrow's visible side is filled with the popover background; retint just
     // that side so it doesn't stay Driver's default light color on a dark theme.
     if (theme.background) {
@@ -243,16 +165,7 @@ export class TourUi {
     }
   }
 
-  // With lastStepDescription set, the final step is the terminal celebration:
-  // no Next, no separate done screen — Finish ends the tour from here.
-  private isTerminalLast(): boolean {
-    return this.opts.lastStepDescription !== undefined
-      && !this.tour.isDone()
-      && this.tour.currentStepNumber() === this.tour.stepCount();
-  }
-
   private async advance(): Promise<void> {
-    if (this.isTerminalLast()) return;
     await this.tour.next();
     this.render();
   }
@@ -276,23 +189,18 @@ export class TourUi {
     this.silentDestroy = false;
   }
 
+  // Driver binds its arrow keys only in multi-step drive mode; we drive single
+  // highlights, so bind the one forward key ourselves. → / Space / Enter advance
+  // (or finish on the terminal stop); Esc cancels through Driver's own handler.
+  // There is deliberately no ← key.
   private attachKeyboard(): void {
     if (this.keyHandler) return;
     this.keyHandler = (e: KeyboardEvent): void => {
       const done = this.tour.isDone();
-      const active = this.tour.isActive();
-      if (!active && !done) return;
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.finish();
-      } else if (e.key === 'ArrowRight' || e.key === ' ') {
+      if (!this.tour.isActive() && !done) return;
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         if (done) this.finish(); else void this.advance();
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        if (!done && this.tour.currentStepNumber() !== 1) { this.tour.prev(); this.render(); }
-      } else if (e.key === 'Escape') {
-        this.cancel();
       }
     };
     window.addEventListener('keydown', this.keyHandler);
@@ -305,12 +213,12 @@ export class TourUi {
   }
 }
 
-// Tour steps read as imperative instructions ("load …", "query …", "compare
-// …"). The Gherkin keyword (Given/When/Then) is test structure, not something a
-// learner needs — so the tour drops it and just capitalizes the step text.
+// Tour steps read as imperative instructions ("load …", "query …"). The Gherkin
+// keyword (Given/When/Then) is test structure, not something a learner needs —
+// so the tour drops it and just capitalizes the step text.
 //
-// A `query "…"` step is special: its text is prefilled into the chat box when
-// the step is highlighted, so the popover doesn't repeat it — it just tells the
+// A `query "…"` step is special: its text is typed into the chat box when the
+// step is highlighted, so the popover doesn't repeat it — it just tells the
 // learner to run what they can already see in the input.
 function asInstruction(text: string): string {
   if (/^query "(.+)"$/.test(text)) return 'Run the query';
