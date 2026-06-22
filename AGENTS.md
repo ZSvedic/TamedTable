@@ -82,7 +82,7 @@ When you are a session started for such an issue:
 1. Read the issue body — it is the task spec. If it is ambiguous enough that you'd guess at something hard to reverse, ask in an issue comment (or the PR) before doing large work.
 2. Implement it through the [workflow rule](#workflow-rule--changing-a-component) above: spec → Gherkin → step defs → code, red before green. Pure-doc tasks skip straight to the edit.
 3. Run `cd src && bun run test` — confirm green.
-4. Open **one PR per issue** on its own branch. Put `Fixes #<n>` in the PR body so merging the PR closes the issue automatically.
+4. Open **one PR per issue** on its own branch. Put `Fixes #<n>` in the PR body so merging the PR closes the issue automatically. If the issue carries the `pr-preview` label, add that same label to the PR you open (the preview build keys off the **PR's** label, not the issue's) and put the preview URL — `https://zsvedic.github.io/TamedTable/pr-preview/pr-<n>/` — in your closing summary so it never has to be guessed.
 5. Stop there. Review and merge are the human's job; respond to review comments on the PR.
 
 The issue is the durable task record; the closed issue plus the matching PR are the log. No separate `todo/`/`done/` files needed.
