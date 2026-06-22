@@ -18,7 +18,7 @@ marketing/
 
 `web/`'s favicon and illustrations are **symlinks**, not copies — one source of truth. Edit the real file under `brand/` or `illustrations/`; both the homepage and the app pick the change up. Never replace a symlink with a copy.
 
-The homepage and the web app deliberately use **different** favicons so a browser tab tells them apart: the homepage shows the dark-on-white mark (`favicon-32.png`), the app shows the white-on-dark mark (`favicon-ink-*.png`, copied into the app build from `src/packages/web/public/`). Both sets live in [brand/](brand/brand.md#favicons) — see there for how to regenerate them.
+The homepage and the web app deliberately use **different** favicons so a browser tab tells them apart: the homepage shows the dark-on-white mark (`favicon-32.png`), the app shows the white-on-dark mark (`favicon-ink-*.png`, copied into the app build from `src/packages/web/public/`). Both sets live in [brand/](brand/brand.md#favicons).
 
 ## What ships where
 
