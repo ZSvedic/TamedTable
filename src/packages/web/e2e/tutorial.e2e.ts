@@ -13,10 +13,15 @@ function panel(page: Parameters<typeof test>[1] extends (args: { page: infer P }
   return page.getByTestId('tutorial-panel');
 }
 
-/** Previous/Next/Finish buttons live in the shared gherkin-tour popover footer
- *  (each prefixed with a key-cap badge), not the slide-over panel. */
-function popoverBtn(page: Parameters<typeof test>[1] extends (args: { page: infer P }) => unknown ? P : never, name: string | RegExp) {
-  return page.locator('.driver-popover').getByRole('button', { name });
+/** The tour runs in the shared gherkin-tour popover (the slide-over panel is
+ *  closed during a tour). Driver.js's own footer holds the progress text and a
+ *  single forward button — Next on a step, Done on the terminal stop. There is
+ *  no Previous button. */
+function progress(page: Parameters<typeof test>[1] extends (args: { page: infer P }) => unknown ? P : never) {
+  return page.locator('.driver-popover-progress-text');
+}
+function nextBtn(page: Parameters<typeof test>[1] extends (args: { page: infer P }) => unknown ? P : never) {
+  return page.locator('.driver-popover-next-btn');
 }
 
 test('Tutorial button opens the panel with scenario names', async ({ page }) => {
@@ -29,71 +34,73 @@ test('Tutorial button opens the panel with scenario names', async ({ page }) => 
   await expect(p.getByRole('option', { name: /Drop duplicates/ })).toBeAttached();
 });
 
-test('Play starts at step 1', async ({ page }) => {
+test('Play starts at the first stop', async ({ page }) => {
   await page.getByRole('button', { name: 'Tutorial' }).click();
   await page.locator('select').selectOption('Filter by Country');
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  // Filter by Country: load → query → terminal = 3 stops.
+  await expect(progress(page)).toHaveText('1 of 3');
 });
 
-test('Next advances to step 2 without closing the tutorial', async ({ page }) => {
+test('Next advances to the second stop', async ({ page }) => {
   await page.getByRole('button', { name: 'Tutorial' }).click();
   await page.locator('select').selectOption('Filter by Country');
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  await expect(progress(page)).toHaveText('1 of 3');
 
-  // Next button is now in the shared popover footer, not the panel.
-  await popoverBtn(page, 'Next').click();
+  await nextBtn(page).click();
 
-  // Must show step 2 — not collapsed back to the picker or closed.
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 2 of 4');
+  await expect(progress(page)).toHaveText('2 of 3');
+  // There is no Previous button — the tour only moves forward.
+  await expect(page.locator('.driver-popover-prev-btn')).toBeHidden();
 });
 
 test('Next works for the Left join tutorial', async ({ page }) => {
   await page.getByRole('button', { name: 'Tutorial' }).click();
   await page.locator('select').selectOption('Left join enriches each customer with ISO and Region');
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 6');
+  // Left join: load → load-lookup → query → terminal = 4 stops.
+  await expect(progress(page)).toHaveText('1 of 4');
 
-  await popoverBtn(page, 'Next').click();
+  await nextBtn(page).click();
 
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 2 of 6');
+  await expect(progress(page)).toHaveText('2 of 4');
 });
 
 test('Cancel exits the tour and Play restarts it', async ({ page }) => {
   await page.getByRole('button', { name: 'Tutorial' }).click();
   await page.locator('select').selectOption('Filter by Country');
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  await expect(progress(page)).toHaveText('1 of 3');
 
-  // The shared popover footer has no close button — Esc cancels the tour.
+  // Esc cancels the tour (Driver.js default); the panel returns to the picker.
   await page.keyboard.press('Escape');
-  // After cancel, panel returns to picker.
   await expect(panel(page).getByRole('button', { name: 'Play' })).toBeVisible();
 
-  // Play again restarts from step 1.
+  // Play again restarts from the first stop.
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  await expect(progress(page)).toHaveText('1 of 3');
 });
 
-test('Arrow-key navigation advances and retreats steps', async ({ page }) => {
+test('Arrow-right advances; there is no ← key', async ({ page }) => {
   await page.getByRole('button', { name: 'Tutorial' }).click();
   await page.locator('select').selectOption('Filter by Country');
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  await expect(progress(page)).toHaveText('1 of 3');
 
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 2 of 4');
+  await expect(progress(page)).toHaveText('2 of 3');
 
+  // ← does nothing: the tour never steps back.
   await page.keyboard.press('ArrowLeft');
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  await expect(progress(page)).toHaveText('2 of 3');
 });
 
 test('Escape key cancels the tutorial', async ({ page }) => {
   await page.getByRole('button', { name: 'Tutorial' }).click();
   await page.locator('select').selectOption('Filter by Country');
   await panel(page).getByRole('button', { name: 'Play' }).click();
-  await expect(page.getByTestId('tutorial-step')).toHaveText('Step 1 of 4');
+  await expect(progress(page)).toHaveText('1 of 3');
 
   await page.keyboard.press('Escape');
   await expect(panel(page).getByRole('button', { name: 'Play' })).toBeVisible();

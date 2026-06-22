@@ -131,19 +131,6 @@ Feature: Gherkin Tour parser
       And step 1 of scenario 1 has action text "Normalize phone numbers"
 
     @headless
-    Scenario: show-golden action from compare with the expected output
-      Given a feature string:
-        """
-        Feature: Demo
-          @tutorial
-          Scenario: Golden step
-            When query "Do it"
-            Then compare with the expected output
-        """
-      When parseTours is called
-      Then step 2 of scenario 1 has action kind "show-golden"
-
-    @headless
     Scenario: play-audio action from play audio "X"
       Given a feature string:
         """
@@ -157,6 +144,20 @@ Feature: Gherkin Tour parser
       And step 1 of scenario 1 has action filename "voice-demo.mp3"
 
   Rule: Verification steps are dropped; the golden source is lifted
+
+    @headless
+    Scenario: the compare step is dropped — it collapses into the terminal stop
+      Given a feature string:
+        """
+        Feature: Demo
+          @tutorial
+          Scenario: Golden step
+            When query "Do it"
+            Then compare with the expected output
+        """
+      When parseTours is called
+      Then scenario 1 has 1 step
+      And step 1 of scenario 1 has action kind "prefill-chat"
 
     @headless
     Scenario: Unrecognised (verification) steps are dropped from the tour
@@ -188,7 +189,7 @@ Feature: Gherkin Tour parser
             Then compare with the expected output
         """
       When parseTours is called
-      Then scenario 1 has 3 steps
+      Then scenario 1 has 2 steps
       And scenario 1 has golden "x-expected.jsonl"
 
   Rule: Comments and Scenario Outlines are ignored
@@ -273,17 +274,18 @@ Feature: Gherkin Tour parser
       Then the adapter calls were "loadFile(a.csv), loadLookup(b.csv), prefillChat(hi), playAudio(c.mp3)"
 
     @headless
-    Scenario: show-golden dispatches the scenario's golden file
+    Scenario: reaching the terminal stop dispatches the scenario's golden file
       Given a tour with steps:
-        | kind        | arg |
-        | show-golden |     |
+        | kind         | arg   |
+        | prefill-chat | do it |
       And the tour's golden is "expected.jsonl"
       When the driver plays the tour
       And the driver advances 1 time
-      Then the adapter calls were "showGolden(expected.jsonl)"
+      Then the adapter calls were "prefillChat(do it), showGolden(expected.jsonl)"
+      And the driver is done
 
     @headless
-    Scenario: advancing past the last step enters the done state
+    Scenario: advancing past the last step enters the terminal stop
       Given a tour with steps:
         | kind      | arg   |
         | load-file | x.csv |
@@ -292,17 +294,6 @@ Feature: Gherkin Tour parser
       Then the driver is done
       And the driver is not active
       And the current step is null
-
-    @headless
-    Scenario: prev steps the cursor back
-      Given a tour with steps:
-        | kind         | arg   |
-        | load-file    | x.csv |
-        | prefill-chat | hi    |
-      When the driver plays the tour
-      And the driver advances 1 time
-      And the driver goes back
-      Then the current step element id is "el-load-file"
 
   Rule: Finishing calls the adapter's onFinish hook
 

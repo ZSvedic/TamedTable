@@ -52,15 +52,6 @@ Feature: Tutorial panel
       Then the tutorial is at step 2
 
     @web
-    Scenario: Prev goes back one step
-      Given the TamedTable web app
-      And the tutorial "Filter by Country" is selected
-      And user plays the tutorial
-      And user advances to the next tutorial step
-      When user goes to the previous tutorial step
-      Then the tutorial is at step 1
-
-    @web
     Scenario: Cancel exits the tutorial
       Given the TamedTable web app
       And the tutorial "Filter by Country" is selected
@@ -96,7 +87,7 @@ Feature: Tutorial panel
       Then the tutorial panel is shown
       And the tutorial is not active
 
-  Rule: Query steps prefill the chat input, and each step runs once
+  Rule: Query steps prefill the chat input
 
     @web
     Scenario: A query step prefills the chat input when highlighted
@@ -107,28 +98,15 @@ Feature: Tutorial panel
       Then the chat input is prefilled with "Show only customers in the USA"
 
     @web
-    Scenario: Stepping off a query step clears the prefilled chat input
-      Given the TamedTable web app
-      And the tutorial "Filter by Country" is selected
-      And user plays the tutorial
-      And user advances to the next tutorial step
-      When user goes to the previous tutorial step
-      Then the chat input is not prefilled
-
-    @web
-    Scenario: Stepping back then forward does not re-run a step
+    Scenario: Running a query step clears the prefilled chat input
       Given the TamedTable web app
       And the API key has not been set
       And the tutorial "Filter by Country" is selected
       And user plays the tutorial
       And user advances to the next tutorial step
-      And user advances to the next tutorial step
-      And the tutorial settles
-      And user goes to the previous tutorial step
       When user advances to the next tutorial step
-      Then the tutorial settles
-      And the spec has 1 transformation
-      And no toast is shown
+      And the tutorial settles
+      Then the chat input is not prefilled
 
   Rule: load-file steps auto-load fixtures
 

@@ -127,7 +127,10 @@ function tour(): TourScenario {
 
 function makeUi(): { driver: TourDriver; ui: TourUi } {
   const driver = new TourDriver(adapter);
-  const ui = new TourUi(driver, { doneElementId: 'table-view' });
+  const ui = new TourUi(driver, {
+    doneElementId: 'table-view',
+    doneDescription: 'Voilà, the tour is done.',
+  });
   return { driver, ui };
 }
 

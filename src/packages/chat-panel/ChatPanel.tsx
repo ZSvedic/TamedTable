@@ -3,7 +3,7 @@
 // list and the streaming flag; the panel owns only its draft text and which
 // detail panels are open. App copy (empty state, help lines) and the mic
 // button arrive as props, so the panel knows nothing about engines or files.
-import { useState, useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { ChatPanelMessage, ChatRequestDetail } from './index.ts';
@@ -231,11 +231,32 @@ export function ChatPanel({
   const [focused, setFocused] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  // When a prefill arrives (tutorial prefill-chat step), sync it into the draft.
+  // When a prefill arrives (a tutorial prefill-chat step is highlighted), type
+  // it into the draft ~40 ms/char so the learner watches the query appear, the
+  // way a person would type it. An empty prefill clears the box at once.
+  //
+  // Re-entrancy guard: Driver.js re-highlights the step on refresh() (window
+  // resize, scroll recalculation), re-firing this effect with the same prefill —
+  // without the `typed` guard the animation would restart or double-type.
+  const typing = useRef<{ typed: string | null; timer: ReturnType<typeof setInterval> | null }>({
+    typed: null,
+    timer: null,
+  });
   useEffect(() => {
-    if (prefill !== null) {
-      setDraft(prefill);
-    }
+    if (prefill === null) return;
+    const guard = typing.current;
+    if (prefill === guard.typed) return; // same value re-fired — ignore
+    guard.typed = prefill;
+    if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
+    if (prefill === '') { setDraft(''); return; }
+    let i = 0;
+    setDraft('');
+    guard.timer = setInterval(() => {
+      i += 1;
+      setDraft(prefill.slice(0, i));
+      if (i >= prefill.length && guard.timer) { clearInterval(guard.timer); guard.timer = null; }
+    }, 40);
+    return () => { if (guard.timer) { clearInterval(guard.timer); guard.timer = null; } };
   }, [prefill]);
 
   const send = (): void => {

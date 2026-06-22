@@ -195,7 +195,11 @@ describe.skipIf(skip)('demo smoke', () => {
     // elements, proving parseTours → TourDriver → ./ui drives a non-TamedTable host.
     await page.click('#start-tour');
     await page.waitForSelector('.driver-popover');
-    expect((await page.textContent('.driver-popover'))!).toContain('Step 1 of');
+    // Driver.js's own footer shows progress ("1 of N") and a Next button — the
+    // package no longer renders a custom "Step N of N" title or button row.
+    const popover = (await page.textContent('.driver-popover'))!;
+    expect(popover).toContain('1 of 4');
+    expect(popover).toContain('Next');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 

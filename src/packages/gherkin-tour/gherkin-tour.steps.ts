@@ -182,10 +182,6 @@ When('the driver advances {int} time(s)', async function (this: DriverWorld, n: 
   for (let i = 0; i < n; i++) await c.driver.next();
 });
 
-When('the driver goes back', function (this: DriverWorld) {
-  dctx(this).driver.prev();
-});
-
 When('the driver finishes', function (this: DriverWorld) {
   dctx(this).driver.finish();
 });

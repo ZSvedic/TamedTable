@@ -74,11 +74,17 @@ export function parseTours(source: string): TourScenario[] {
         if (s.action.kind === 'golden-source') { golden = s.action.filename; break; }
       }
 
-      // Verification / narration steps (anything unclassified) are test
-      // machinery, not tour stops — drop them so a tour reads load → query →
-      // compare. The golden-source step is dropped too (lifted above).
+      // Drop everything that isn't an executable tour stop. Verification /
+      // narration (`display`) is test machinery; `golden-source` is lifted
+      // above; `show-golden` (`compare with the expected output`) is the
+      // trailing verification block — it collapses into the driver's terminal
+      // step, which surfaces the lifted `golden` after the last real step has
+      // run. What remains reads load → query.
       const steps = all.filter(
-        (s) => s.action.kind !== 'display' && s.action.kind !== 'golden-source',
+        (s) =>
+          s.action.kind !== 'display' &&
+          s.action.kind !== 'golden-source' &&
+          s.action.kind !== 'show-golden',
       );
 
       const scenario: TourScenario = { name: scenarioName, tags: scenarioTags, steps };
@@ -212,22 +218,27 @@ export interface TourAdapter {
  *  from its controller) implements it directly and hands itself to `TourUi`. */
 export interface TourCursor {
   isActive(): boolean;
+  /** True on the terminal stop — the last real step has run and the tour shows
+   *  its completion ("Voilà …") awaiting `finish`. */
   isDone(): boolean;
   /** The highlighted step — `TourUi` reads only its `text` for the popover. */
   currentStep(): { text: string } | null;
   currentStepElementId(): string | null;
+  /** 1-based number of the highlighted step, or null on the terminal stop. */
   currentStepNumber(): number | null;
+  /** Total stops including the terminal one, so progress reads "N of N" there. */
   stepCount(): number;
   next(): Promise<void> | void;
-  prev(): void;
   finish(): void;
   cancel(): void;
 }
 
 /** Host-agnostic tour cursor. `play` arms a tour at step 1; `next` executes the
- *  highlighted step through the adapter then advances; the final `next` enters a
- *  *done* state (cursor past the last step) where `finish` calls the adapter's
- *  `onFinish` hook. Empty tours are ignored. */
+ *  highlighted step through the adapter then advances; the final `next` runs the
+ *  last real step then enters the *terminal* stop (cursor one past the last
+ *  step), surfacing the scenario's golden and awaiting `finish`, which calls the
+ *  adapter's `onFinish` hook. There is no `prev` — a tour only moves forward, so
+ *  a step never re-runs. Empty tours are ignored. */
 export class TourDriver implements TourCursor {
   private tour: TourScenario | null = null;
   private index: number | null = null;
@@ -244,20 +255,21 @@ export class TourDriver implements TourCursor {
     this.index = 0;
   }
 
-  /** Execute the highlighted step, then advance. The last step enters done. */
+  /** Execute the highlighted step, then advance. After the last step runs the
+   *  cursor lands on the terminal stop, where the scenario's golden (if any) is
+   *  surfaced through the adapter. */
   async next(): Promise<void> {
     if (this.index === null || !this.tour) return;
     const total = this.tour.steps.length;
-    if (this.index >= total) return; // already done
+    if (this.index >= total) return; // already on the terminal stop
     await this.execute(this.tour.steps[this.index]!);
     this.index = this.index < total - 1 ? this.index + 1 : total;
-  }
-
-  /** Step the cursor back one stop. No-op at the first step or once done. */
-  prev(): void {
-    if (this.index === null || this.index === 0) return;
-    if (this.tour && this.index > this.tour.steps.length - 1) return;
-    this.index--;
+    // Entering the terminal stop: the trailing `compare with the expected
+    // output` collapsed into here, so surface the lifted golden now — after the
+    // query has run, never before.
+    if (this.index >= total && this.tour.golden !== undefined) {
+      await this.adapter.showGolden(this.tour.golden);
+    }
   }
 
   /** Abandon the tour without executing anything further. */
@@ -277,7 +289,7 @@ export class TourDriver implements TourCursor {
     return this.tour !== null && this.index !== null && this.index < this.tour.steps.length;
   }
 
-  /** True once every step has run and the tour awaits `finish`. */
+  /** True on the terminal stop — every step has run and the tour awaits `finish`. */
   isDone(): boolean {
     return this.tour !== null && this.index !== null && this.index >= this.tour.steps.length;
   }
@@ -299,9 +311,9 @@ export class TourDriver implements TourCursor {
     return this.isActive() && this.index !== null ? this.index + 1 : null;
   }
 
-  /** Total steps in the active tour, or 0 when none. */
+  /** Total stops including the terminal one, or 0 when no tour is armed. */
   stepCount(): number {
-    return this.tour?.steps.length ?? 0;
+    return this.tour ? this.tour.steps.length + 1 : 0;
   }
 
   private async execute(step: TourStep): Promise<void> {
