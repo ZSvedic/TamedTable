@@ -42,3 +42,7 @@ jobs:
           source-dir: ./_site
           preview-branch: gh-pages
           umbrella-dir: pr-preview
+          # The action's `auto` mode ignores the `labeled` event, so adding the
+          # label alone never deploys. Force a deploy on `labeled`; leave every
+          # other event (synchronize / closed / …) to `auto`.
+          action: ${{ github.event.action == 'labeled' && 'deploy' || 'auto' }}
