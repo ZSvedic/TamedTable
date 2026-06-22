@@ -359,15 +359,24 @@ export class TutorialManager {
         // voice turn and replays from the tour's cassette, key-free.
         const bytes = await this.loadAudio(action.filename);
         if (!bytes) break;
-        // Play the clip in the browser. No-op in test environments where the
-        // Audio constructor is not available.
-        if (typeof Audio !== 'undefined') {
-          const sound = new Audio(action.filename);
-          await new Promise<void>((resolve) => {
-            sound.onended = () => resolve();
-            sound.onerror = () => resolve();
-            sound.play().catch(() => resolve());
-          });
+        // Play the clip aloud from the bytes we just fetched. A blob URL is used
+        // rather than the bare filename: `new Audio("voice-….m4a")` resolves
+        // against /app/, 404s, and fires `onerror` at once — so nothing is heard
+        // and the step finishes instantly. Playing the in-memory bytes both makes
+        // it audible and lets us await real playback, so the tour pauses for the
+        // clip. No-op where the Audio constructor is unavailable (headless tests).
+        if (typeof Audio !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+          const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: audioMediaType(action.filename) }));
+          try {
+            const sound = new Audio(url);
+            await new Promise<void>((resolve) => {
+              sound.onended = () => resolve();
+              sound.onerror = () => resolve();
+              void sound.play().catch(() => resolve());
+            });
+          } finally {
+            URL.revokeObjectURL(url);
+          }
         }
         const audio: RequestAudio = { data: bytes, mediaType: audioMediaType(action.filename) };
         this.pending = this.host.voice.sendAudioRequest(audio);
