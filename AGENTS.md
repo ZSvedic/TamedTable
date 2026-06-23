@@ -103,6 +103,8 @@ Commit directly to `main` when the change is:
 
 The test: "does this need CI to verify it?" If yes, PR. If no, commit.
 
+A direct `git push` to `main` is blocked from the Claude-on-the-web sandbox, but the GitHub API is not — use the `create_or_update_file` MCP tool (it needs the file's current blob SHA) to land a docs-only commit on `main` without a branch or PR.
+
 ## Writing markdown
 
 Any `.md` you add or edit follows [spec/writing-style.md](spec/writing-style.md). The same rules apply to this file.
