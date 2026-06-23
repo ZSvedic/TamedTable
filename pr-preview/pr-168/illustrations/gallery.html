@@ -1,0 +1,58 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>TamedTable feature illustrations</title>
+<style>
+  body{background:#F6F2EB;margin:0;padding:24px;font-family:Inter,system-ui,sans-serif}
+  h1{color:#281C60;font-size:18px}
+  .grid{display:grid;grid-template-columns:repeat(2,360px);gap:20px}
+  figure{margin:0;position:relative}
+  figcaption{color:#6A6280;font-size:12px;margin-top:4px}
+  img{display:block;border-radius:16px}
+  .tag{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;letter-spacing:.06em;
+       padding:3px 8px;border-radius:10px;color:#fff}
+  .tag.new{background:#281C60}
+  .tag.old{background:#96BED7;color:#281C60}
+</style>
+<h1>TamedTable — feature illustrations</h1>
+<p style="color:#6A6280;font-size:12px">Same order as the marketing list. <b>NEW</b> = freshly drawn, <b>OLD</b> = reused tile renamed to <code>{category}-{name}.svg</code>.</p>
+<div class="grid" id="g"></div>
+<script>
+  // [file, caption, status]  — order matches marketing/new-ai-features.md
+  const files=[
+    ["CLN-phone-numbers.svg","\"normalize the phone numbers\"","new"],
+    ["CLN-country-names.svg","\"make the country names consistent\"","new"],
+    ["CLN-capitalization.svg","\"fix the capitalization of names\"","new"],
+    ["CLN-birth-dates.svg","\"clean up the birth dates\"","new"],
+    ["ENR-split-address.svg","\"split the address into its parts\"","new"],
+    ["ENR-country-from-city.svg","\"fill the country from the city column\"","new"],
+    ["ENR-industry.svg","\"add the industry for each company\"","new"],
+    ["ENR-amount-date.svg","\"extract the amount and date from the memo\"","new"],
+    ["CLS-ticket-label.svg","\"label each ticket as billing, bug, or feature\"","new"],
+    ["CLS-sentiment.svg","\"score the sentiment of every review\"","new"],
+    ["CLS-seniority.svg","\"sort the titles by seniority\"","new"],
+    ["CLS-gender.svg","\"split customers into men, women, and unknown\"","new"],
+    ["VAL-fake-emails.svg","\"flag emails that look fake\"","new"],
+    ["VAL-impossible-date.svg","\"flag any impossible birth date\"","new"],
+    ["VAL-city-country.svg","\"check the city matches the country\"","new"],
+    ["VAL-wrong-prices.svg","\"flag prices that seem wrong\"","new"],
+    ["LNG-summarize.svg","\"summarize each review in one line\"","new"],
+    ["LNG-translate.svg","\"translate the comments to English\"","new"],
+    ["LNG-detect-language.svg","\"tag the language of every comment\"","new"],
+    ["LNG-multilingual.svg","\"normaliza los números de teléfono\"","old"],
+    ["DET-filter.svg","\"keep only customers in the USA\"","old"],
+    ["DET-sort-top.svg","\"sort by revenue, top 10\"","old"],
+    ["DET-dedupe.svg","\"remove duplicate emails\"","old"],
+    ["DET-pivot.svg","\"pivot months into columns\"","old"],
+    ["DET-join.svg","\"add each order's customer name\"","old"],
+    ["LSR-load.svg","a file or a URL","old"],
+    ["LSR-save-csv.svg",":save clean.csv","old"],
+    ["LSR-save-flow.svg",":save-flow tidy.flow","old"],
+    ["LSR-save-py.svg",":save-py tidy.py","old"],
+    ["LSR-undo-redo.svg",":undo / :redo","old"],
+  ];
+  const g=document.getElementById("g");
+  for(const [f,c,s] of files){
+    g.insertAdjacentHTML("beforeend",
+      `<figure><img src="${f}" width="360" height="230"><span class="tag ${s}">${s.toUpperCase()}</span><figcaption>${f} — ${c}</figcaption></figure>`);
+  }
+</script>
