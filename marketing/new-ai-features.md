@@ -8,7 +8,7 @@ are still here, but they no longer headline — the AI rows do.
 Three columns: a category, the plain-language request a user types or says, and a
 short note on the context the LLM uses to answer it.
 
-| Category | Say or type | Context |
+| Category | Say or type | Note |
 |---|---|---|
 | Clean up | *"normalize the phone numbers"* | Dialing prefix implied from each row's `Country` |
 | Clean up | *"make the country names consistent"* | Folds *USA / U.S. / United States* into one |
@@ -35,8 +35,8 @@ short note on the context the LLM uses to answer it.
 | Everyday | *"remove duplicate emails"* | Dedupe |
 | Everyday | *"pivot months into columns"* | Reshape tall to wide |
 | Everyday | *"add each order's customer name"* | Join two tables |
-| Save & reuse | `:save clean.csv` | Write CSV or JSONL |
-| Save & reuse | `:save-flow tidy.flow` | Replay later, no AI |
-| Save & reuse | `:save-py tidy.py` | Standalone Python script |
-| Save & reuse | `:undo` / `:redo` | Take back any change |
+| Save & reuse | `:save clean.csv` | Save data to CSV or JSONL |
+| Save & reuse | `:save-flow tidy.flow` | Save transformations as a TamedTable script |
+| Save & reuse | `:save-py tidy.py` | Save transformations as a Python script |
+| Save & reuse | `:undo` / `:redo` | Undo/redo any change |
 | Open & run | a file or a URL | Browser or command line |
