@@ -161,10 +161,18 @@ function lastTableHeader(stdout: string): string {
   return '';
 }
 
-Then('column {string} exists in the spec', function (this: TamedTableWorld, column: string) {
-  if (this.runner) {
+// Pull the column names out of a `"A", "B", "C"` list (the form the plural
+// steps take). Falls back to a bare comma-split if the names aren't quoted, so
+// either spelling works.
+function parseColumnList(list: string): string[] {
+  const quoted = [...list.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+  return quoted.length ? quoted : list.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function assertColumnExists(world: TamedTableWorld, column: string): void {
+  if (world.runner) {
     try {
-      const spec = this.runner.currentSpec();
+      const spec = world.runner.currentSpec();
       const ids = spec.columns.map((c) => c.id);
       if (!ids.includes(column)) {
         throw new Error(`expected column "${column}" in spec.columns. Got: ${ids.join(', ')}`);
@@ -177,26 +185,45 @@ Then('column {string} exists in the spec', function (this: TamedTableWorld, colu
   // Default page is only 5 cols wide so the column may be in the hidden tail
   // of the table — scan plan-emitted "add column 'X'" lines and the schema
   // command output too, in addition to the last header.
-  const stdout = this.lastInvocation?.stdout ?? '';
+  const stdout = world.lastInvocation?.stdout ?? '';
   const inHeader = lastTableHeader(stdout).includes(column);
   const inPlan = new RegExp(`add column ['"\`]${column.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}['"\`]`).test(stdout);
   if (!inHeader && !inPlan) {
     throw new Error(`expected column "${column}" in last REPL table header or plan. Header was: "${lastTableHeader(stdout)}". Full stdout tail:\n${stdout.slice(-800)}`);
   }
+}
+
+Then('column {string} exists in the spec', function (this: TamedTableWorld, column: string) {
+  assertColumnExists(this, column);
 });
 
-Then('column {string} is absent from the current rows', function (this: TamedTableWorld, column: string) {
-  if (this.runner) {
+// Plural form: one line for a run of columns. `Then columns exist in the spec:
+// "A", "B", "C"` replaces a ladder of `And column "X" exists in the spec`.
+Then(/^columns exist in the spec: (.+)$/, function (this: TamedTableWorld, list: string) {
+  for (const column of parseColumnList(list)) assertColumnExists(this, column);
+});
+
+function assertColumnAbsent(world: TamedTableWorld, column: string): void {
+  if (world.runner) {
     try {
-      const rows = this.runner.currentRows();
+      const rows = world.runner.currentRows();
       const present = rows.some((r) => column in (r as Record<string, unknown>));
       assert.ok(!present, `expected column "${column}" to be absent from every row`);
       return;
     } catch { /* fall through */ }
   }
-  const stdout = this.lastInvocation?.stdout ?? '';
+  const stdout = world.lastInvocation?.stdout ?? '';
   const header = lastTableHeader(stdout);
   assert.ok(!header.includes(column), `expected column "${column}" absent from last REPL table header. Header was: ${header}`);
+}
+
+Then('column {string} is absent from the current rows', function (this: TamedTableWorld, column: string) {
+  assertColumnAbsent(this, column);
+});
+
+// Plural form, mirroring `columns exist in the spec: …`.
+Then(/^columns are absent from the current rows: (.+)$/, function (this: TamedTableWorld, list: string) {
+  for (const column of parseColumnList(list)) assertColumnAbsent(this, column);
 });
 
 Then('every row has a non-null {string} and {string}', function (this: TamedTableWorld, colA: string, colB: string) {

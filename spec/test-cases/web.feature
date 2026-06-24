@@ -101,22 +101,19 @@ Feature: Web front-end
       Then table displays the header and at least the first 5 rows
 
     @web
-    Scenario: A non-http URL is rejected with a clear error
+    # The dialog's three rejection paths share one shape. The library-level
+    # checks (blank / garbage / non-http / network / HTTP-status) live in
+    # file-io.feature; these are the thin integration pass through the dialog.
+    Scenario Outline: <kind> is rejected with a clear error
       Given the TamedTable web app
-      When user tries to load URL "ftp://example.com/data.csv"
-      Then loading fails with "http"
+      When user tries to load URL "<url>"
+      Then loading fails with "<message>"
 
-    @web
-    Scenario: An invalid URL string is rejected with a clear error
-      Given the TamedTable web app
-      When user tries to load URL "not-a-url"
-      Then loading fails with "valid URL"
-
-    @web
-    Scenario: An empty URL is rejected
-      Given the TamedTable web app
-      When user tries to load URL ""
-      Then loading fails with "Enter a URL"
+      Examples:
+        | kind           | url                        | message     |
+        | A non-http URL | ftp://example.com/data.csv | http        |
+        | An invalid URL | not-a-url                  | valid URL   |
+        | An empty URL   |                            | Enter a URL |
 
   Rule: Browser gestures produce spec patches
 
@@ -257,12 +254,13 @@ Feature: Web front-end
       And the provider card "gemini" is collapsed
 
     @web
-    Scenario: Clicking the OpenAI card shows GPT models without voice tags
+    Scenario: Clicking the OpenAI card shows GPT models and the env hint
       Given the TamedTable web app
       When user opens the settings panel
       And user clicks the provider card "openai"
       Then the model list contains "gpt-5.5" with voice tag false
       And the model list contains "gpt-5.4-mini" with voice tag false
+      And the expanded card body shows env hint "OPENAI_API_KEY"
 
     @web
     Scenario: Clicking an already-open card collapses it
@@ -279,13 +277,6 @@ Feature: Web front-end
       And user clicks the provider card "anthropic"
       Then the expanded card body shows env hint "ANTHROPIC_API_KEY"
       And the configured provider is "anthropic"
-
-    @web
-    Scenario: Clicking the OpenAI card shows the OPENAI_API_KEY env hint
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "openai"
-      Then the expanded card body shows env hint "OPENAI_API_KEY"
 
     @web
     Scenario: Settings panel opens with the currently selected provider card expanded
