@@ -178,11 +178,13 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
 }
 
 /* ---------- Section scaffolding ---------- */
-section { padding: 76px 0; }
+section { padding: 52px 0; }
 .sec-paper { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.sec-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
+.sec-head { text-align: center; margin: 0 auto 48px; }
 .sec-head h2 { font-size: 36px; font-weight: 600; color: var(--ink); }
-.sec-head p { color: var(--muted); margin-top: 14px; font-size: 17px; }
+/* Cap the readable width of the *subtitle* only — capping the whole header made
+   the heading wrap on wide screens (less room than narrow). */
+.sec-head p { color: var(--muted); margin: 14px auto 0; font-size: 17px; max-width: 640px; }
 
 /* ---------- Value props ---------- */
 .vp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -230,7 +232,8 @@ section { padding: 76px 0; }
 .feat-item.active { background: var(--accent-soft); border-left-color: var(--ink); }
 .feat-item .fname { font-size: 15px; font-weight: 500; color: var(--ink); }
 .feat-item.active .fname { font-weight: 600; }
-.feat-item .fcmd { display: block; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.feat-item .fcmd { display: block; font-family: var(--font-mono); font-size: 14px; color: var(--ink); font-weight: 500; font-style: italic; margin-top: 0; }
+.feat-item .fnote { display: block; font-family: var(--font-body); font-size: 14px; color: var(--ink); font-weight: 400; font-style: normal; margin-top: 6px; }
 
 .feat-visual {
   border: 1px solid var(--silver); border-radius: var(--radius);
@@ -325,9 +328,9 @@ footer.foot { background: var(--paper); border-top: 1px solid var(--line); paddi
   .feature.flip .feat-visual { order: 2; }
   .feat-text h2 { font-size: 24px; }
   .feat-stage, .feat-ph { min-height: 200px; }
-  /* Compact one-line feature rows on mobile (matches the wireframe) */
+  /* Compact feature rows on mobile: show the phrase, drop the context note */
   .feat-item { padding: 12px 14px; }
-  .feat-item .fcmd { display: none; }
+  .feat-item .fnote { display: none; }
 
   .cta h2 { font-size: 30px; }
   .foot-links { margin-left: 0; width: 100%; }

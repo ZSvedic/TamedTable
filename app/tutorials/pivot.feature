@@ -8,7 +8,7 @@ Feature: Pivot and unpivot
       Given load "pivot-long-input.csv"
       And the columns are "Region, Quarter, Revenue"
 
-    @headless @cli @web @tutorial
+    @headless @cli @web @tutorial @cat-deterministic
     Scenario: One column per distinct on-value, default agg first
       When query "Pivot Quarter into columns, with Revenue as the value"
       Then column "Q1" exists in the spec
@@ -42,7 +42,7 @@ Feature: Pivot and unpivot
       Given load "pivot-wide-input.csv"
       And the columns are "Region, Q1, Q2, Q3, Q4"
 
-    @headless @cli @web @tutorial
+    @headless @cli @web
     Scenario: One row per measure per input row
       When query "Unpivot Q1, Q2, Q3, Q4 into name and value columns"
       Then column "name" exists in the spec

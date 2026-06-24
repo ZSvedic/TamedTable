@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Infer gender — "split customers into men, women, and unknown" -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
+  <circle cx="40" cy="36" r="7" fill="#96BED7"/>
+  <path d="M37.5 32.5 L43.5 36 L37.5 39.5 Z" fill="#281C60"/>
+  <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#281C60">split customers into men, women, and unknown</text>
+  <g>
+    <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
+    <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">first name</text>
+    <text x="240" y="91" font-size="12" font-weight="600" fill="#FFFFFF">group</text>
+    <g font-size="12" fill="#281C60">
+      <rect x="18" y="104" width="324" height="34" fill="#FFFFFF"/>
+      <rect x="18" y="138" width="324" height="34" fill="#F6F2EB"/>
+      <rect x="18" y="172" width="324" height="34" fill="#FFFFFF"/>
+
+      <text x="32" y="125">James</text>
+      <rect x="240" y="111" width="56" height="20" rx="10" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="248" y="125" font-size="11" font-weight="600" fill="#281C60">men</text>
+
+      <text x="32" y="159">Maria</text>
+      <rect x="240" y="145" width="62" height="20" rx="10" fill="#F6F2EB" stroke="#E2D9C8"/>
+      <text x="248" y="159" font-size="11" font-weight="600" fill="#281C60">women</text>
+
+      <text x="32" y="193">Alex</text>
+      <rect x="240" y="179" width="70" height="20" rx="10" fill="#EFEBF7" stroke="#D8D0EC"/>
+      <text x="248" y="193" font-size="11" font-weight="600" fill="#6A6280">unknown</text>
+    </g>
+    <rect x="18" y="72" width="324" height="134" rx="6" fill="none" stroke="#DCDCDC"/>
+  </g>
+</svg>

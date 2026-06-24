@@ -109,8 +109,8 @@
             <path d="M3 14.75H21"></path>
           </svg>
           <div>
-            <h3>Transform large data tables</h3>
-            <p>Normalize, dedupe, filter, join, pivot, and more — by saying what you want.</p>
+            <h3>Reads each row like a person</h3>
+            <p>The AI understands context, so it cleans, enriches, classifies, and validates — things no formula can.</p>
           </div>
         </div>
         <div class="vp-card">
@@ -154,51 +154,26 @@
     </div>
   </section>
 
-  <!-- ============================ FEATURE 01 — Clean your data ============================ -->
+  <!-- ============================ FEATURE 01 — Clean up ============================ -->
+  <!-- Feature menu follows marketing/new-ai-features.md: AI rows lead, deterministic jobs
+       and load/save trail. Every item links "Show me →" — placeholder app links for now;
+       phase 3 wires each to its own executable tour. -->
   <section class="sec-paper">
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
           <span class="eyebrow">01</span>
-          <h2>Clean your data</h2>
-          <p>Fix messy fields, drop duplicates, filter, sort, and validate — by saying what you want.</p>
+          <h2>Clean up</h2>
+          <p>Fix messy fields the way a person would — the AI reads each row's context, not just a pattern.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/01-clean-fields.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/datanorm.feature" data-label="View steps →"><span class="fname">Clean messy fields</span><span class="fcmd">"normalize the phone numbers"</span></button>
-            <button class="feat-item" data-ill="illustrations/02-drop-duplicates.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email" data-label="Show me →"><span class="fname">Drop duplicate rows</span><span class="fcmd">"remove duplicate emails"</span></button>
-            <button class="feat-item" data-ill="illustrations/03-filter-rows.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country" data-label="Show me →"><span class="fname">Keep the rows you want</span><span class="fcmd">"keep customers in the USA"</span></button>
-            <button class="feat-item" data-ill="illustrations/04-sort-top.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/sort.feature" data-label="View steps →"><span class="fname">Sort or take the top few</span><span class="fcmd">"sort by revenue, top 10"</span></button>
-            <button class="feat-item" data-ill="illustrations/09-flag-rows.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=validate.feature&scenario=Flag+rows+with+empty+Phone" data-label="Show me →"><span class="fname">Flag the bad rows</span><span class="fcmd">"mark rows with a missing email"</span></button>
+            <button class="feat-item active" data-ill="illustrations/CleanUp-phone-numbers.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="clean-up.feature" data-scenario="Normalize the phone numbers" data-label="Show me →"><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
+            <button class="feat-item" data-ill="illustrations/CleanUp-country-names.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="clean-up.feature" data-scenario="Make the country names consistent" data-label="Show me →"><span class="fcmd">"make the country names consistent"</span><span class="fnote">Folds USA / U.S. / United States into one</span></button>
+            <button class="feat-item" data-ill="illustrations/CleanUp-capitalization.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="clean-up.feature" data-scenario="Fix the capitalization of names" data-label="Show me →"><span class="fcmd">"fix the capitalization of names"</span><span class="fnote">Handles McDonald, van der Berg</span></button>
+            <button class="feat-item" data-ill="illustrations/CleanUp-birth-dates.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="clean-up.feature" data-scenario="Clean up the birth dates" data-label="Show me →"><span class="fcmd">"clean up the birth dates"</span><span class="fnote">Knows 03/04 is March in the US, April in the EU</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <div class="feat-stage"><img class="feat-ill" src="illustrations/01-clean-fields.svg" alt="Cleaning a data table"></div>
-          <div class="feat-foot">
-            <div class="feat-dots"></div>
-            <a class="feat-demo" target="_blank" rel="noopener" href="#">View steps →</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================ FEATURE 02 — Reshape your data (flipped) ============================ -->
-  <section>
-    <div class="wrap">
-      <div class="feature flip" data-feature>
-        <div class="feat-text">
-          <span class="eyebrow">02</span>
-          <h2>Reshape your data</h2>
-          <p>Aggregate, split, join, pivot, or drop to SQL — just describe the structure you need.</p>
-          <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/05-group-totals.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=aggregate.feature&scenario=Count+customers+per+country" data-label="Show me →"><span class="fname">Total things up by group</span><span class="fcmd">"total sales per region"</span></button>
-            <button class="feat-item" data-ill="illustrations/06-split-column.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=colsplit.feature&scenario=Split+FullName+into+FirstName+and+LastName+on+space" data-label="Show me →"><span class="fname">Split one column into several</span><span class="fcmd">"split full name into first and last"</span></button>
-            <button class="feat-item" data-ill="illustrations/07-join-tables.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=join.feature&scenario=Left+join+enriches+each+customer+with+ISO+and+Region" data-label="Show me →"><span class="fname">Combine two tables</span><span class="fcmd">"add each order's customer name"</span></button>
-            <button class="feat-item" data-ill="illustrations/08-pivot-wide.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=pivot.feature&scenario=One+column+per+distinct+on-value%2C+default+agg+first" data-label="Show me →"><span class="fname">Reshape tall to wide</span><span class="fcmd">"pivot months into columns"</span></button>
-            <button class="feat-item" data-ill="illustrations/10-sql-exact.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/sql.feature" data-label="View steps →"><span class="fname">Be exact with SQL</span><span class="fcmd">"set total = price * qty"</span></button>
-          </div>
-        </div>
-        <div class="feat-visual">
-          <div class="feat-stage"><img class="feat-ill" src="illustrations/05-group-totals.svg" alt="Reshaping a data table"></div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/CleanUp-phone-numbers.svg" alt="Cleaning a data table"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
             <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
@@ -208,48 +183,156 @@
     </div>
   </section>
 
-  <!-- ============================ FEATURE 03 — Save and replay ============================ -->
-  <section class="sec-paper">
+  <!-- ============================ FEATURE 02 — Enrich & extract (flipped) ============================ -->
+  <section>
     <div class="wrap">
-      <div class="feature" data-feature>
+      <div class="feature flip" data-feature>
         <div class="feat-text">
-          <span class="eyebrow">03</span>
-          <h2>Save and replay</h2>
-          <p>Your steps are yours to keep — replay them on new data, hand them off as a script, or undo anything.</p>
+          <span class="eyebrow">02</span>
+          <h2>Enrich &amp; extract</h2>
+          <p>Add what isn't there yet — the model fills the gaps and pulls structure out of free text.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/11-save-flow.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/repl-commands.feature" data-label="View steps →"><span class="fname">Save the recipe</span><span class="fcmd">:save-flow tidy.flow</span></button>
-            <button class="feat-item" data-ill="illustrations/12-save-csv.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/convert.feature" data-label="View steps →"><span class="fname">Save the clean data</span><span class="fcmd">:save clean.csv</span></button>
-            <button class="feat-item" data-ill="illustrations/13-save-py.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/save-py.feature" data-label="View steps →"><span class="fname">Export to Python</span><span class="fcmd">:save-py tidy.py</span></button>
-            <button class="feat-item" data-ill="illustrations/14-undo-redo.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/repl-commands.feature" data-label="View steps →"><span class="fname">Undo anything</span><span class="fcmd">:undo / :redo</span></button>
+            <button class="feat-item active" data-ill="illustrations/EnrichExtract-split-address.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="enrich.feature" data-scenario="Split the address into its parts" data-label="Show me →"><span class="fcmd">"split the address into its parts"</span><span class="fnote">Structures whatever mess they typed</span></button>
+            <button class="feat-item" data-ill="illustrations/EnrichExtract-country-from-city.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="enrich.feature" data-scenario="Fill the country from the city column" data-label="Show me →"><span class="fcmd">"fill the country from the city column"</span><span class="fnote">Knows Osaka → Japan</span></button>
+            <button class="feat-item" data-ill="illustrations/EnrichExtract-industry.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="enrich.feature" data-scenario="Add the industry for each company" data-label="Show me →"><span class="fcmd">"add the industry for each company"</span><span class="fnote">Inferred from company names</span></button>
+            <button class="feat-item" data-ill="illustrations/EnrichExtract-amount-date.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="enrich.feature" data-scenario="Extract the amount and date from the memo" data-label="Show me →"><span class="fcmd">"extract the amount and date from the memo"</span><span class="fnote">Pulled from free text</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <div class="feat-stage"><img class="feat-ill" src="illustrations/11-save-flow.svg" alt="Saving and replaying steps"></div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/EnrichExtract-split-address.svg" alt="Enriching a data table"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
-            <a class="feat-demo" target="_blank" rel="noopener" href="#">View steps →</a>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============================ FEATURE 04 — Browser, terminal, voice (flipped) ============================ -->
+  <!-- ============================ FEATURE 03 — Classify ============================ -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <span class="eyebrow">03</span>
+          <h2>Classify</h2>
+          <p>Sort rows by meaning, not keywords — the AI reads what each row is actually about.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Classify-ticket-label.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="classify.feature" data-scenario="Label each ticket as billing, bug, or feature" data-label="Show me →"><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
+            <button class="feat-item" data-ill="illustrations/Classify-sentiment.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="classify.feature" data-scenario="Score the sentiment of every review" data-label="Show me →"><span class="fcmd">"score the sentiment of every review"</span><span class="fnote">Positive, neutral, or negative</span></button>
+            <button class="feat-item" data-ill="illustrations/Classify-seniority.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="classify.feature" data-scenario="Sort the titles by seniority" data-label="Show me →"><span class="fcmd">"sort the titles by seniority"</span><span class="fnote">Ranks junior → senior</span></button>
+            <button class="feat-item" data-ill="illustrations/Classify-gender.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="classify.feature" data-scenario="Split customers into men, women, and unknown" data-label="Show me →"><span class="fcmd">"split customers into men, women, and unknown"</span><span class="fnote">Gender inferred from first names</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Classify-ticket-label.svg" alt="Classifying rows in a table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FEATURE 04 — Validate (flipped) ============================ -->
   <section>
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
           <span class="eyebrow">04</span>
-          <h2>Browser, terminal, voice</h2>
-          <p>Click, type, or speak — use the best UI for the job.</p>
+          <h2>Validate</h2>
+          <p>Catch the wrong-looking rows before anyone else does.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/15-voice.svg" data-url="https://zsvedic.github.io/TamedTable/app/?feature=voice.feature&scenario=Normalize+DOB+by+voice" data-label="Show me →"><span class="fname">Speak instead of type</span><span class="fcmd">tap the mic</span></button>
-            <button class="feat-item" data-ill="illustrations/16-multilingual.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/multilingual.feature" data-label="View steps →"><span class="fname">Ask in any language</span><span class="fcmd">"normaliza los números de teléfono"</span></button>
-            <button class="feat-item" data-ill="illustrations/17-web-cli.svg" data-url="https://github.com/ZSvedic/TamedTable/blob/main/spec/test-cases/web.feature" data-label="View steps →"><span class="fname">Web app or CLI</span><span class="fcmd">same engine underneath</span></button>
+            <button class="feat-item active" data-ill="illustrations/Validate-fake-emails.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="validate.feature" data-scenario="Flag emails that look fake" data-label="Show me →"><span class="fcmd">"flag emails that look fake"</span><span class="fnote">bill.gates@microsoft.com probably didn't sign up</span></button>
+            <button class="feat-item" data-ill="illustrations/Validate-impossible-date.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="validate.feature" data-scenario="Flag any impossible birth date" data-label="Show me →"><span class="fcmd">"flag any impossible birth date"</span><span class="fnote">Flags both 1873 and Feb 30th</span></button>
+            <button class="feat-item" data-ill="illustrations/Validate-city-country.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="validate.feature" data-scenario="Check the city matches the country" data-label="Show me →"><span class="fcmd">"check the city matches the country"</span><span class="fnote">Paris, Japan gets a second look</span></button>
+            <button class="feat-item" data-ill="illustrations/Validate-wrong-prices.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="validate.feature" data-scenario="Flag prices that seem wrong" data-label="Show me →"><span class="fcmd">"flag prices that seem wrong"</span><span class="fnote">Catches the missing zero before Reddit does</span></button>
           </div>
         </div>
         <div class="feat-visual">
-          <div class="feat-stage"><img class="feat-ill" src="illustrations/15-voice.svg" alt="Browser, terminal, and voice input"></div>
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Validate-fake-emails.svg" alt="Flagging suspicious rows"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FEATURE 05 — Language ============================ -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <span class="eyebrow">05</span>
+          <h2>Language</h2>
+          <p>Summarize, translate, and detect — across any language, asked in any language.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Language-voice.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="voice.feature" data-scenario="Normalize DOB by voice" data-label="Show me →"><span class="fcmd">tap the mic</span><span class="fnote">Say any command out loud, hands-free</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-summarize.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="language-ai.feature" data-scenario="Summarize each review in one line" data-label="Show me →"><span class="fcmd">"summarize each review in one line"</span><span class="fnote">Even the 500-word rant</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-translate.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="language-ai.feature" data-scenario="Translate the comments to English" data-label="Show me →"><span class="fcmd">"translate the comments to English"</span><span class="fnote">From any source language</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-detect-language.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="language-ai.feature" data-scenario="Tag the language of every comment" data-label="Show me →"><span class="fcmd">"tag the language of every comment"</span><span class="fnote">Language detected per row</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-multilingual.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="multilingual.feature" data-scenario="Normalize phone numbers in Spanish" data-label="Show me →"><span class="fcmd">"normaliza los números de teléfono"</span><span class="fnote">Ask in any language, voice or text</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Language-voice.svg" alt="Language tasks on a table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FEATURE 06 — Deterministic (flipped) ============================ -->
+  <section>
+    <div class="wrap">
+      <div class="feature flip" data-feature>
+        <div class="feat-text">
+          <span class="eyebrow">06</span>
+          <h2>Deterministic</h2>
+          <p>The everyday spreadsheet jobs are still here — exact, repeatable, no guesswork.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Deterministic-filter.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="filter.feature" data-scenario="Filter by Country" data-label="Show me →"><span class="fcmd">"keep only customers in the USA"</span><span class="fnote">Filter rows</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-sort-top.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="sort.feature" data-scenario="Sort by revenue, top 10" data-label="Show me →"><span class="fcmd">"sort by revenue, top 10"</span><span class="fnote">Sort or top-N</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="dedupe.feature" data-scenario="Drop duplicates by Email" data-label="Show me →"><span class="fcmd">"remove duplicate emails"</span><span class="fnote">Dedupe</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-pivot.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="pivot.feature" data-scenario="One column per distinct on-value, default agg first" data-label="Show me →"><span class="fcmd">"pivot months into columns"</span><span class="fnote">Reshape tall to wide</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-join.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="join.feature" data-scenario="Left join enriches each customer with ISO and Region" data-label="Show me →"><span class="fcmd">"add each order's customer name"</span><span class="fnote">Join two tables</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Deterministic-filter.svg" alt="Filtering and reshaping a table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FEATURE 07 — Load, save & reuse ============================ -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <span class="eyebrow">07</span>
+          <h2>Load, save &amp; reuse</h2>
+          <p>Your work is yours to keep — load from anywhere, save the data or the recipe, undo anything.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV or JSONL, web or CLI</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-undo-redo.svg" data-url="https://zsvedic.github.io/TamedTable/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/LoadSaveReuse-load.svg" alt="Loading, saving and replaying steps"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
             <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
