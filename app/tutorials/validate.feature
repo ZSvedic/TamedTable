@@ -7,7 +7,7 @@ Feature: Row and dataset validation
     Background:
       Given load "datanorm-input.csv"
 
-    @headless @cli @web @tutorial @cat-validate
+    @headless @cli @web @tour @cat-validate
     Scenario: Flag rows with empty Phone
       When query "Validate that Phone is non-empty"
       Then column "_valid" exists in the spec
@@ -55,12 +55,12 @@ Feature: Row and dataset validation
       And the request commits
 
   # #TutorialMode
-  # Marketing "Validate" tours — one per homepage item. Key-free @tutorial tours
+  # Marketing "Validate" tours — one per homepage item. Key-free @tour tours
   # deep-linked from the homepage; each loads its sample, runs the phrase, and
   # replays from validate.json. @cat-validate groups them in the panel.
   Rule: Each Validate tour runs its phrase key-free
 
-    @web @tutorial @cat-validate
+    @web @tour @cat-validate
     Scenario: Flag emails that look fake
       Given the TamedTable web app
       And load "emails.csv"
@@ -68,7 +68,7 @@ Feature: Row and dataset validation
       Then the spec has 1 transformation
       And no toast is shown
 
-    @web @tutorial @cat-validate
+    @web @tour @cat-validate
     Scenario: Flag any impossible birth date
       Given the TamedTable web app
       And load "birthdates.csv"
@@ -76,7 +76,7 @@ Feature: Row and dataset validation
       Then the spec has 1 transformation
       And no toast is shown
 
-    @web @tutorial @cat-validate
+    @web @tour @cat-validate
     Scenario: Check the city matches the country
       Given the TamedTable web app
       And load "citycountry.csv"
@@ -84,7 +84,7 @@ Feature: Row and dataset validation
       Then the spec has 2 transformations
       And no toast is shown
 
-    @web @tutorial @cat-validate
+    @web @tour @cat-validate
     Scenario: Flag prices that seem wrong
       Given the TamedTable web app
       And load "prices.csv"

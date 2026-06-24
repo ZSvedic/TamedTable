@@ -12,7 +12,7 @@ Feature: Multilingual requests
     Background:
       Given load "datanorm-input.csv"
 
-    @headless @web @tutorial @cat-language
+    @headless @web @tour @cat-language
     Scenario: Normalize phone numbers in Spanish
       When query "normaliza los números de teléfono"
       Then a phone-normalization transformation is added

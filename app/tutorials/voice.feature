@@ -89,11 +89,11 @@ Feature: Voice input
   # A runnable, key-free voice tour for the marketing "Speak instead of type"
   # deep link. Run as a plain @web scenario it records/replays voice.json via
   # the `Play voiceover` step (same request the mic release issues); played as a
-  # @tutorial tour it replays that same cassette with no key (see
+  # @tour tour it replays that same cassette with no key (see
   # tutorial.feature). The clip is the committed English "normalize DOB column".
   Rule: A spoken tour normalizes a column key-free
 
-    @web @tutorial @cat-language
+    @web @tour @cat-language
     Scenario: Normalize DOB by voice
       Given the TamedTable web app
       And load "datanorm-input.csv"
