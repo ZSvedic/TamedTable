@@ -11,8 +11,7 @@ Feature: Lookup join
     @headless @cli @web @tour @cat-deterministic
     Scenario: Left join enriches each customer with ISO and Region
       When query "Join with join-country-codes.csv on Country to add ISO and Region"
-      Then column "ISO" exists in the spec
-      And column "Region" exists in the spec
+      Then columns exist in the spec: "ISO", "Region"
       And every row keeps its original FirstName
 
     @headless @cli
@@ -37,8 +36,7 @@ Feature: Lookup join
     Scenario: Right column with the same name as a left column is renamed
       Given the lookup table "join-country-codes.csv" has a column "Country"
       When query "Join with join-country-codes.csv on Country to add ISO"
-      Then column "Country" exists in the spec
-      And column "Country_2" exists in the spec
+      Then columns exist in the spec: "Country", "Country_2"
 
   Rule: Right-side input dispatches on extension
 
