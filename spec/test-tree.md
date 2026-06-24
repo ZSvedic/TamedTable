@@ -11,33 +11,54 @@ App behavior lives in [`test-cases/`](test-cases/); library-package behavior in
 [`packages/`](packages/). This file is maintained by hand — the point is the
 review, not a regenerated listing.
 
+## Keeping `.feature` files small
+
+Four levers, in rough order of safety. The first two are pure wins; the last two
+trade something away — use them only where the note below says it's safe.
+
+1. **Outline identical-shape scenarios.** When N scenarios differ only in inputs
+   and expected values, fold them into one `Scenario Outline` with an `Examples`
+   table (see `multilingual.feature`, `model-config.feature`, the `web.feature`
+   URL-rejection rule). Two hard exceptions: **`@tour` scenarios must stay
+   one-each** (the tour parser skips outlines and the homepage deep-links each by
+   exact name), and an outline over `@web` non-tour scenarios silently drops them
+   from the browser **Dev dropdown** (same parser skip) — acceptable, but note it.
+2. **Use the plural assertion steps.** Replace a ladder of `And column "X" exists
+   in the spec` with `Then columns exist in the spec: "A", "B", …` (and the
+   `columns are absent from the current rows: …` mirror). Column names stay
+   verbatim, so grep still finds them. Defined in `src/tests/common.steps.ts`.
+3. **Combine tiny same-setup scenarios into one walkthrough** — the
+   `loadsave.feature` trick. Safe **only** when assertions read *cumulative*
+   output (e.g. `REPL stdout contains …`) and the session carries **no sticky
+   state** between the merged steps. The four `repl-commands` clusters (`:help`,
+   `:find`, `:load`, `:save`/`:save-flow`) qualify; the stateful ones (`:viewport`
+   pins, `:undo`/`:redo` stack, `:show` viewport cursor) do **not** — leave them.
+4. **Push library behavior down to `packages/*.feature`.** App feature files
+   should keep only a thin integration pass; the exhaustive cases live in the
+   package's own feature (see URL validation: `file-io.feature` owns the matrix,
+   `web.feature` keeps one rejection outline).
+
+**Failure clarity beats raw brevity.** A scenario name should still say what
+broke. A 10-command walkthrough that asserts eight behaviors reports "walkthrough
+failed" and makes you hunt — don't merge past the point where the name stops
+describing the failure.
+
 ## Cross-file observations (DRY)
 
-- **Tour scenarios are intentionally one-each, not collapsible.** The ~28
-  `@tour` scenarios (clean-up, enrich, classify, language-ai, validate, sort,
-  voice, multilingual, filter, dedupe, join, pivot, loadsave) all share the same
-  shape — load a sample → run a phrase → assert `spec has N transformation` +
-  `no toast`. They look like Scenario-Outline bait, but they **must** stay
-  separate: the tour parser skips `Scenario Outline` (see
-  `packages/gherkin-tour/gherkin-tour.feature`), and the homepage "Show me →"
-  deep links key on each scenario's exact name. The repetition is required.
-- **URL validation is covered twice.** `packages/file-io/file-io.feature` tests
-  the library (blank / garbage / non-http / network / HTTP-status); `web.feature`
-  re-tests non-http / invalid / empty through the dialog. The web ones are thin
-  integration checks over the same logic — could shrink to one "an invalid URL
-  surfaces the error" case.
-- **`Export … data` + `Execute saved flow from command line`** repeat across
-  `filter`, `dedupe` (and `datanorm` / `convert` have sibling execute-flow
-  scenarios). Same subset→export→replay pattern per op — fine as per-op proof,
-  but a candidate to fold into one shared "a saved flow round-trips" scenario if
-  it grows.
-- **`exit` vs `:exit`** in `repl-commands.feature` are two scenarios for one
-  behavior reached two ways — trivially mergeable.
-- **`multilingual.feature`** has 1 Spanish text tour + a 4-row text outline +
-  5 voice scenarios. The non-Spanish text variants are now one Scenario Outline;
-  the voice ones each need their own clip and the Chinese one documents a real
-  synthetic-audio gap — those stay separate. (The text outline is invisible to
-  the web Dev dropdown, since `parseTours` skips outlines — an accepted trade.)
+- **Tour scenarios are intentionally one-each, not collapsible** — see lever 1
+  above. The ~27 `@tour` scenarios all share the load → phrase → assert shape but
+  must stay separate (parser skips outlines; homepage deep-links by exact name).
+- **URL validation lives in two layers, by design.**
+  `packages/file-io/file-io.feature` owns the library matrix (blank / garbage /
+  non-http / network / HTTP-status); `web.feature` keeps one `Scenario Outline`
+  as the thin dialog integration pass. Resolved — no further folding.
+- **`Export … data` + `Execute saved flow`** repeat across `filter` / `dedupe`
+  (with sibling execute-flow scenarios in `datanorm` / `convert`). Kept as per-op
+  proof — each op's round-trip is worth its own scenario; fold only if the set
+  grows past one-per-op.
+- **`multilingual.feature`** is now 1 Spanish text tour + a 4-row text outline +
+  5 voice scenarios. The voice ones each need their own clip and the Chinese one
+  documents a real synthetic-audio gap — those stay separate.
 
 # spec/test-cases/ — application behavior
 
@@ -139,16 +160,14 @@ CSV/JSONL via `:save` and batch execute, RFC-4180 quoting, nulls, nested objects
 | [Load JSONL, save CSV](test-cases/convert.feature)<br>`@cli` | JSONL→CSV conversion round-trip | NA |
 
 ### `datanorm.feature` — Data normalization of customer records
-Normalize Phone/Country/DOB with round-trip validation; Outline mutation, composite replace-column, web dialogs, CLI execute. Fixtures: `datanorm-input.csv`, `datanorm-expected.jsonl`.
+Normalize Phone/Country/DOB with round-trip validation; Outline mutation, composite replace-column, CLI execute. Fixtures: `datanorm-input.csv`, `datanorm-expected.jsonl`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
 | [Normalize &lt;column&gt;](test-cases/datanorm.feature)<br>`@headless @cli @web` | Outline (Phone, Country, DOB) each match expected | NA |
 | [Full normalization round-trip](test-cases/datanorm.feature)<br>`@headless @cli @web` | All three normalized → export matches expected (ignoring Notes) | NA |
 | [Replace Country with normalized CountryName and CountryISO](test-cases/datanorm.feature)<br>`@headless @cli` | Country dropped; CountryName + CountryISO added, non-null | NA |
-| [Load CSV via Open File dialog](test-cases/datanorm.feature)<br>`@web` | Dialog → select file → 5+ rows render | overlaps web.feature "Load CSV via the Open File dialog" |
-| [Save flow via Save File dialog](test-cases/datanorm.feature)<br>`@web` | Save dialog → datanorm.flow has steps | overlaps web.feature "Save flow via the Save File dialog" |
-| [Execute saved flow from command line](test-cases/datanorm.feature)<br>`@cli` | `tamedtable execute datanorm.flow` matches expected | NA |
+| [Execute saved flow from command line](test-cases/datanorm.feature)<br>`@cli` | `tamedtable execute datanorm.flow` matches expected; covers the flow round-trip the removed @web dialog pair only partly checked | NA |
 
 ### `debug.feature` — Debug output
 `[debug]` block after NL requests (expression + token usage); suppressed for `:` commands and batch execute.
@@ -165,8 +184,8 @@ Dedupe by column key, export, execute saved flow — parallel to filter.feature.
 | Scenario | What it tests | ToDo |
 |---|---|---|
 | [Drop duplicates by Email](test-cases/dedupe.feature)<br>`@headless @cli @web @tour @cat-deterministic` | Email-keyed dedupe via phrase (3 surfaces) | NA |
-| [Export deduplicated data](test-cases/dedupe.feature)<br>`@headless @cli @web` | Export to JSONL after dedupe | see DRY note (export+execute pattern) |
-| [Execute saved flow from command line](test-cases/dedupe.feature)<br>`@cli` | CLI runs dedupe.flow | see DRY note |
+| [Export deduplicated data](test-cases/dedupe.feature)<br>`@headless @cli @web` | Export to JSONL after dedupe | NA — kept as per-op proof (see DRY note) |
+| [Execute saved flow from command line](test-cases/dedupe.feature)<br>`@cli` | CLI runs dedupe.flow | NA — kept as per-op proof (see DRY note) |
 
 ### `enrich.feature` — Enrich and extract tours
 Marketing tours; each loads a distinct CSV, runs a phrase, replays `enrich.json`.
@@ -184,8 +203,8 @@ Filter by predicate, export, execute saved flow.
 | Scenario | What it tests | ToDo |
 |---|---|---|
 | [Filter by Country](test-cases/filter.feature)<br>`@headless @cli @web @tour @cat-deterministic` | USA filter via phrase (3 surfaces) | NA |
-| [Export filtered data](test-cases/filter.feature)<br>`@headless @cli @web` | Export to JSONL after filtering | see DRY note (export+execute pattern) |
-| [Execute saved flow from command line](test-cases/filter.feature)<br>`@cli` | CLI runs filter.flow | see DRY note |
+| [Export filtered data](test-cases/filter.feature)<br>`@headless @cli @web` | Export to JSONL after filtering | NA — kept as per-op proof (see DRY note) |
+| [Execute saved flow from command line](test-cases/filter.feature)<br>`@cli` | CLI runs filter.flow | NA — kept as per-op proof (see DRY note) |
 
 ### `join.feature` — Lookup join
 Left/inner join enrich; nulls, rename collisions, multi-format inputs, undo. Fixtures: `datanorm-input.csv`, `join-country-codes.{csv,jsonl}`.
@@ -258,37 +277,27 @@ The interactive `:`-commands (undo/redo/history/load/save/save-flow/show/find/sc
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
-| [:help echoes the pinned REPL usage screen in-session](test-cases/repl-commands.feature)<br>`@cli @offline` | Help lists key commands + ANTHROPIC_API_KEY | NA |
-| [:help does not mention CLI batch invocations](test-cases/repl-commands.feature)<br>`@cli @offline` | Help excludes execute / --input / --output | NA |
-| [exit closes the REPL with code 0](test-cases/repl-commands.feature)<br>`@cli @offline` | Bare `exit` returns success | merge with `:exit` (one behavior, two spellings) |
-| [:exit closes the REPL with code 0](test-cases/repl-commands.feature)<br>`@cli @offline` | `:exit` returns success | merge with `exit` |
+| [:help prints the REPL usage screen and omits CLI batch flags](test-cases/repl-commands.feature)<br>`@cli @offline` | Lists key commands + ANTHROPIC_API_KEY; excludes execute / --input / --output (merged two scenarios) | NA |
+| [&lt;cmd&gt; closes the REPL with code 0](test-cases/repl-commands.feature)<br>`@cli @offline` | Outline (`exit`, `:exit`) — both spellings exit 0 | NA |
 | [:undo on a freshly loaded CSV says nothing to undo](test-cases/repl-commands.feature)<br>`@cli @offline` | Undo on empty stack message | NA |
 | [:redo on an empty redo stack says nothing to redo](test-cases/repl-commands.feature)<br>`@cli @offline` | Redo on empty stack message | NA |
-| [:undo then :redo restores the committed state](test-cases/repl-commands.feature)<br>`@cli` | Undo+redo returns to normalized form | NA |
-| [a new NL request clears the redo stack](test-cases/repl-commands.feature)<br>`@cli` | New request after undo empties redo | NA |
+| [:undo then :redo restores the committed state](test-cases/repl-commands.feature)<br>`@cli` | Undo+redo returns to normalized form | NA — stateful (redo stack), not mergeable |
+| [a new NL request clears the redo stack](test-cases/repl-commands.feature)<br>`@cli` | New request after undo empties redo | NA — stateful, not mergeable |
 | [:history lists turns with their commit status](test-cases/repl-commands.feature)<br>`@cli` | History shows turn #, name, [undone] | NA |
 | [:schema prints one line per column](test-cases/repl-commands.feature)<br>`@cli @offline` | Schema lists all columns | NA |
-| [bare :show reprints the current viewport](test-cases/repl-commands.feature)<br>`@cli @offline` | :show shows the default page | NA |
-| [:show rows next advances by one page and shows the top marker](test-cases/repl-commands.feature)<br>`@cli @offline` | Forward paging + "…more rows" marker | NA |
-| [:show rows end jumps to the last page](test-cases/repl-commands.feature)<br>`@cli @offline` | Jump to final rows | NA |
-| [:show rows N snaps to the page containing row N](test-cases/repl-commands.feature)<br>`@cli @offline` | :show rows 15 → that page | NA |
-| [:show rows N clamps when N is out of range](test-cases/repl-commands.feature)<br>`@cli @offline` | :show rows 9999 clamps to last page | NA |
-| [:show cols next advances the column window and shows the left marker](test-cases/repl-commands.feature)<br>`@cli @offline` | Column paging + left marker | NA |
-| [:find substring matches case-insensitively and wraps the match](test-cases/repl-commands.feature)<br>`@cli @offline` | :find canada wraps match in *…* | NA |
-| [:find /regex/ matches by pattern](test-cases/repl-commands.feature)<br>`@cli @offline` | :find /\+44/ by regex | NA |
-| [:find with no match prints no match and does not reprint](test-cases/repl-commands.feature)<br>`@cli @offline` | Failed search: "no match", no reprint | NA |
-| [:find with no argument prints usage](test-cases/repl-commands.feature)<br>`@cli @offline` | :find → "missing pattern" | NA |
+| [bare :show reprints the current viewport](test-cases/repl-commands.feature)<br>`@cli @offline` | :show shows the default page | NA — :show cluster reads "last reprint"; merging needs a per-command capture step |
+| [:show rows next advances by one page and shows the top marker](test-cases/repl-commands.feature)<br>`@cli @offline` | Forward paging + "…more rows" marker | NA — see above |
+| [:show rows end jumps to the last page](test-cases/repl-commands.feature)<br>`@cli @offline` | Jump to final rows | NA — see above |
+| [:show rows N snaps to the page containing row N](test-cases/repl-commands.feature)<br>`@cli @offline` | :show rows 15 → that page | NA — see above |
+| [:show rows N clamps when N is out of range](test-cases/repl-commands.feature)<br>`@cli @offline` | :show rows 9999 clamps to last page | NA — see above |
+| [:show cols next advances the column window and shows the left marker](test-cases/repl-commands.feature)<br>`@cli @offline` | Column paging + left marker | NA — see above |
+| [:find matches by substring and regex, and reports misses and missing args](test-cases/repl-commands.feature)<br>`@cli @offline` | Substring (`canada`→`*Canada*`), regex (`/\+44/`), no-match, missing-pattern (merged four scenarios — cumulative stdout) | NA |
 | [viewport resets to (0,0) after a committed NL request](test-cases/repl-commands.feature)<br>`@cli` | View jumps to top-left after commit | NA |
 | [viewport resets to (0,0) after :load](test-cases/repl-commands.feature)<br>`@cli @offline` | View resets after :load | NA |
-| [:load without a path prints usage](test-cases/repl-commands.feature)<br>`@cli @offline` | :load → "missing path" | NA |
-| [:load with an unknown extension prints unknown file type](test-cases/repl-commands.feature)<br>`@cli @offline` | :load notes.txt rejected | NA |
-| [:load success prints row/col counts](test-cases/repl-commands.feature)<br>`@cli @offline` | :load confirms "20 rows, 6 cols" | NA |
+| [:load reports a missing path, an unknown extension, and a successful load](test-cases/repl-commands.feature)<br>`@cli @offline` | missing-path / unknown-ext / success (merged three scenarios — cumulative stdout) | NA |
 | [:show and :find do not enter the patch journal](test-cases/repl-commands.feature)<br>`@cli @offline` | View commands don't record turns | NA |
-| [:save without a path prints usage](test-cases/repl-commands.feature)<br>`@cli @offline` | :save → "missing path" | NA |
-| [:save writes current rows to a JSONL file](test-cases/repl-commands.feature)<br>`@cli @offline` | :save creates file, confirms saved | NA |
-| [:save-flow without a path prints usage](test-cases/repl-commands.feature)<br>`@cli @offline` | :save-flow → "missing path" | NA |
-| [:save-flow writes a replayable flow file](test-cases/repl-commands.feature)<br>`@cli @offline` | :save-flow creates a .flow | NA |
-| [bare :viewport prints current page size and source](test-cases/repl-commands.feature)<br>`@cli @offline` | :viewport shows size + auto/manual | NA |
+| [:save and :save-flow report missing paths and write their files](test-cases/repl-commands.feature)<br>`@cli @offline` | both missing-path messages + both files written (merged four scenarios) | NA |
+| [bare :viewport prints current page size and source](test-cases/repl-commands.feature)<br>`@cli @offline` | :viewport shows size + auto/manual | NA — :viewport cluster pins sticky state; kept separate |
 | [:viewport with explicit rows and cols shrinks the page](test-cases/repl-commands.feature)<br>`@cli @offline` | :viewport 5 3 limits display + markers | NA |
 | [:viewport pins only rows when cols is auto](test-cases/repl-commands.feature)<br>`@cli @offline` | :viewport 5 auto pins rows | NA |
 | [:viewport pins only cols when rows is auto](test-cases/repl-commands.feature)<br>`@cli @offline` | :viewport auto 3 pins cols | NA |
@@ -349,7 +358,7 @@ The Tours panel: lists `@tour` scenarios grouped by category, replays them key-f
 | [Cancel exits the tutorial](test-cases/tutorial.feature)<br>`@web` | Cancel deactivates | NA |
 | [Play again after cancel restarts at step 1](test-cases/tutorial.feature)<br>`@web` | Re-play resets to step 1 | NA |
 | [Finish after last step returns to the tutorial chooser](test-cases/tutorial.feature)<br>`@web` | Finish reopens panel, deactivates | NA |
-| [Finishing a deep-link tour opens the Tutorial chooser panel](test-cases/tutorial.feature)<br>`@web` | Deep-link finish reopens panel | overlaps "Finish after last step" (panel vs deep-link entry) |
+| [Finishing a deep-link tour opens the Tutorial chooser panel](test-cases/tutorial.feature)<br>`@web` | Deep-link finish reopens panel | NA — kept: a distinct entry path (deep link vs panel play) |
 | [A query step prefills the chat input when highlighted](test-cases/tutorial.feature)<br>`@web` | prefill-chat fills the input | NA |
 | [Running a query step clears the prefilled chat input](test-cases/tutorial.feature)<br>`@web` | Advancing past a query clears the input | NA |
 | [A load-file step loads the fixture on Next](test-cases/tutorial.feature)<br>`@web` | load-file auto-loads the table | NA |
@@ -390,7 +399,7 @@ Mic button (Gemini-only) gating, press-hold-release round-trip, cancel, errors, 
 | [Holding then releasing the mic produces a user bubble and an assistant reply](test-cases/voice.feature)<br>`@web` | Full record→send→reply, 1 transformation | NA |
 | [A spoken "normalize DOB column" request applies a transformation](test-cases/voice.feature)<br>`@web` | Voice normalization; transcript bubble + spec update | NA |
 | [Escape cancels a recording without sending anything](test-cases/voice.feature)<br>`@web` | Escape aborts; no chat/spec change | NA |
-| [Normalize DOB by voice](test-cases/voice.feature)<br>`@web @tour @cat-language` | Tour: key-free voice via cassette | overlaps the press-hold-release scenario (tour vs gesture) |
+| [Normalize DOB by voice](test-cases/voice.feature)<br>`@web @tour @cat-language` | Tour: key-free voice via cassette | NA — `@tour` scenarios stay one-each (see lever 1) |
 | [A model error surfaces a toast and changes nothing](test-cases/voice.feature)<br>`@web` | Bad key → toast + assistant msg, spec untouched | NA |
 
 ### `web.feature` — Web front-end
@@ -401,17 +410,15 @@ Browser-only flows (dialogs, settings, cell edit, reorder, paging, footer) with 
 | [A request without an API key surfaces a toast and changes nothing](test-cases/web.feature)<br>`@web` | Missing key → toast, spec empty | NA |
 | [A text request needs an Anthropic key even when Google is selected](test-cases/web.feature)<br>`@web` | Text still needs Anthropic key | NA |
 | [Saving an API key in the settings panel configures the engine](test-cases/web.feature)<br>`@web` | Settings persists key to engine | NA |
-| [Load CSV via the Open File dialog](test-cases/web.feature)<br>`@web` | Dialog → CSV renders 5+ rows | overlaps datanorm.feature dialog scenario |
+| [Load CSV via the Open File dialog](test-cases/web.feature)<br>`@web` | Dialog → CSV renders 5+ rows | NA — now the sole dialog test (datanorm duplicate removed) |
 | [Opening an empty file yields an empty table without an error](test-cases/web.feature)<br>`@web` | Empty file: 0 rows, no toast | NA |
-| [Save flow via the Save File dialog](test-cases/web.feature)<br>`@web` | Cell edit → save dialog persists flow | overlaps datanorm.feature save scenario |
+| [Save flow via the Save File dialog](test-cases/web.feature)<br>`@web` | Cell edit → save dialog persists flow | NA — now the sole dialog test (datanorm duplicate removed) |
 | [Without File System Access support, saving falls back to a download](test-cases/web.feature)<br>`@web` | Download fallback when FSA absent | NA |
 | [Opening the URL dialog shows it](test-cases/web.feature)<br>`@web` | URL dialog opens | NA |
 | [Closing the URL dialog hides it](test-cases/web.feature)<br>`@web` | URL dialog closes | NA |
 | [Loading a CSV from a URL renders the table](test-cases/web.feature)<br>`@web` | CSV from URL renders | NA |
 | [Loading a JSONL from a URL renders the table](test-cases/web.feature)<br>`@web` | JSONL from URL renders | NA |
-| [A non-http URL is rejected with a clear error](test-cases/web.feature)<br>`@web` | ftp:// rejected with "http" | see DRY note (URL validation dup vs file-io) |
-| [An invalid URL string is rejected with a clear error](test-cases/web.feature)<br>`@web` | Malformed URL rejected | see DRY note |
-| [An empty URL is rejected](test-cases/web.feature)<br>`@web` | Empty URL → "Enter a URL" | see DRY note |
+| [&lt;kind&gt; is rejected with a clear error](test-cases/web.feature)<br>`@web` | Outline (non-http, invalid, empty) — thin dialog pass; library matrix lives in file-io.feature | NA |
 | [Editing a cell appends a mutate transformation](test-cases/web.feature)<br>`@web` | Cell edit → 1 transformation, value persists | NA |
 | [Undo reverts a cell edit](test-cases/web.feature)<br>`@web` | Undo reverts the edit | NA |
 | [Reordering columns by drag updates the column order](test-cases/web.feature)<br>`@web` | Drag → column becomes first | NA |
@@ -430,10 +437,9 @@ Browser-only flows (dialogs, settings, cell edit, reorder, paging, footer) with 
 | [Clicking the Google card expands it and selects Google](test-cases/web.feature)<br>`@web` | Gemini card expands + selects | NA |
 | [Clicking the Google card shows the GEMINI_API_KEY env hint](test-cases/web.feature)<br>`@web` | Gemini card shows env hint | NA |
 | [Clicking a second card collapses the first](test-cases/web.feature)<br>`@web` | Accordion behaviour | NA |
-| [Clicking the OpenAI card shows GPT models without voice tags](test-cases/web.feature)<br>`@web` | OpenAI lists gpt models, voice=false | NA |
+| [Clicking the OpenAI card shows GPT models and the env hint](test-cases/web.feature)<br>`@web` | OpenAI lists gpt models (voice=false) + OPENAI_API_KEY hint (folded in the thin env-hint scenario) | NA |
 | [Clicking an already-open card collapses it](test-cases/web.feature)<br>`@web` | Accordion toggle closes | NA |
-| [Clicking the Anthropic card shows the ANTHROPIC_API_KEY env hint](test-cases/web.feature)<br>`@web` | Anthropic card shows env hint | NA |
-| [Clicking the OpenAI card shows the OPENAI_API_KEY env hint](test-cases/web.feature)<br>`@web` | OpenAI card shows env hint | thin; folds into the OpenAI-models scenario |
+| [Clicking the Anthropic card shows the ANTHROPIC_API_KEY env hint](test-cases/web.feature)<br>`@web` | Anthropic card shows env hint + configured provider | NA |
 | [Settings panel opens with the currently selected provider card expanded](test-cases/web.feature)<br>`@web` | Panel reopens with selected provider expanded | NA |
 | [A Gemini request with a wrong key shows a descriptive error](test-cases/web.feature)<br>`@web` | 401 Gemini → "Invalid API key" toast | NA |
 | [An OpenAI request with a wrong key shows a descriptive error](test-cases/web.feature)<br>`@web` | 401 OpenAI → "Invalid API key" toast | NA |
@@ -464,9 +470,9 @@ Format detection (extension + Content-Type), URL naming, HTTP fetch validation, 
 | [The last path segment becomes the name](packages/file-io/file-io.feature)<br>`@headless` | URL basename → name | NA |
 | [A URL without a path segment falls back to download.&lt;format&gt;](packages/file-io/file-io.feature)<br>`@headless` | Root URL default name | NA |
 | [A fetched CSV comes back as a named picked file](packages/file-io/file-io.feature)<br>`@headless` | Fetch preserves name + content | NA |
-| [Blank input asks for a URL](packages/file-io/file-io.feature)<br>`@headless` | Empty input validation | see DRY note (URL validation) |
-| [Garbage input is rejected as not a URL](packages/file-io/file-io.feature)<br>`@headless` | Malformed URL rejected | see DRY note |
-| [Non-http protocols are rejected](packages/file-io/file-io.feature)<br>`@headless` | Non-HTTP blocked | see DRY note |
+| [Blank input asks for a URL](packages/file-io/file-io.feature)<br>`@headless` | Empty input validation | NA — library-layer matrix, the canonical home (web keeps one thin pass) |
+| [Garbage input is rejected as not a URL](packages/file-io/file-io.feature)<br>`@headless` | Malformed URL rejected | NA — see above |
+| [Non-http protocols are rejected](packages/file-io/file-io.feature)<br>`@headless` | Non-HTTP blocked | NA — see above |
 | [A network failure is rewritten to an actionable message](packages/file-io/file-io.feature)<br>`@headless` | Network error message | NA |
 | [An HTTP error reports the status](packages/file-io/file-io.feature)<br>`@headless` | HTTP status surfaced | NA |
 | [An undetectable format is refused](packages/file-io/file-io.feature)<br>`@headless` | Undetectable format refused | NA |
@@ -492,7 +498,7 @@ Zero-dep parser and driver. Several scenarios feed embedded Gherkin **doc-string
 | [prefill-chat action from query "Y"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses prefill-chat | NA |
 | [play-audio action from Play voiceover: "X"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses play-audio | NA |
 | [the compare step is dropped — it collapses into the terminal stop](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | compare dropped; golden lifted | NA |
-| [Unrecognised (verification) steps are dropped from the tour](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Non-action steps filtered | overlaps "compare step dropped" |
+| [Unrecognised (verification) steps are dropped from the tour](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Non-action steps filtered | NA — kept: distinct contract (generic filtering vs the compare-step collapse) |
 | [the expected output step is lifted onto the scenario, not a step](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | golden lifted to scenario | NA |
 | [Comment lines are skipped](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | # comments ignored | NA |
 | [Scenario Outline is skipped silently](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Outlines ignored | NA |
@@ -501,7 +507,7 @@ Zero-dep parser and driver. Several scenarios feed embedded Gherkin **doc-string
 | [next executes the highlighted step then advances](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | next() runs then advances | NA |
 | [each action dispatches to its own adapter method](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | All action kinds dispatch | NA |
 | [reaching the terminal stop dispatches the scenario's golden file](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Terminal stop → showGolden | NA |
-| [advancing past the last step enters the terminal stop](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | done=true, active=false | overlaps "reaching the terminal stop" |
+| [advancing past the last step enters the terminal stop](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | done=true, active=false | NA — kept: distinct contract (done/active flags vs golden dispatch) |
 | [finishing a tour calls onFinish and ends the tour](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | finish() → onFinish, deactivates | NA |
 
 ### `packages/model-config/model-config.feature` — Model config

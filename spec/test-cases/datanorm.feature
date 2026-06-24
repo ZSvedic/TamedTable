@@ -31,23 +31,9 @@ Feature: Data normalization of customer records
       And column "Country" is absent from the current rows
       And every row has a non-null "CountryName" and "CountryISO"
 
+  # The Open-File / Save-File dialog mechanics are covered once in web.feature;
+  # the flow round-trip is proven end-to-end by the CLI execute scenario below.
   Rule: Surface-specific UX flows
-
-    @web
-    Scenario: Load CSV via Open File dialog
-      Given the TamedTable web app
-      When user says "Load CSV file"
-      Then display Open File dialog
-      When user selects "datanorm-input.csv"
-      Then table displays the header and at least the first 5 rows
-
-    @web
-    Scenario: Save flow via Save File dialog
-      Given Phone, Country, and DOB are normalized
-      When user says "Save flow"
-      Then display Save File dialog
-      When user saves as "datanorm.flow"
-      Then "datanorm.flow" contains normalization steps
 
     @cli
     Scenario: Execute saved flow from command line

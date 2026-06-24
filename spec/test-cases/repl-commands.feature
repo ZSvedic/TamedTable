@@ -7,7 +7,7 @@ Feature: REPL commands
   view/nav (:show, :find), and inspection/session (:schema, :help, :exit).
 
   @cli @offline
-  Scenario: :help echoes the pinned REPL usage screen in-session
+  Scenario: :help prints the REPL usage screen and omits CLI batch flags
     When user enters the REPL with "dedupe-input.csv" and types:
       """
       :help
@@ -21,34 +21,22 @@ Feature: REPL commands
     And REPL stdout contains ":find"
     And REPL stdout contains ":schema"
     And REPL stdout contains "ANTHROPIC_API_KEY"
-
-  @cli @offline
-  Scenario: :help does not mention CLI batch invocations
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
-      :help
-      exit
-      """
-    Then REPL exit code is 0
     And REPL stdout does not contain "execute"
     And REPL stdout does not contain "--input"
     And REPL stdout does not contain "--output"
 
   @cli @offline
-  Scenario: exit closes the REPL with code 0
+  Scenario Outline: <cmd> closes the REPL with code 0
     When user enters the REPL with "dedupe-input.csv" and types:
       """
-      exit
+      <cmd>
       """
     Then REPL exit code is 0
 
-  @cli @offline
-  Scenario: :exit closes the REPL with code 0
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
-      :exit
-      """
-    Then REPL exit code is 0
+    Examples:
+      | cmd   |
+      | exit  |
+      | :exit |
 
   @cli @offline
   Scenario: :undo on a freshly loaded CSV says nothing to undo
@@ -192,43 +180,19 @@ Feature: REPL commands
     And the last REPL table reprint does not contain "FirstName"
 
   @cli @offline
-  Scenario: :find substring matches case-insensitively and wraps the match
+  Scenario: :find matches by substring and regex, and reports misses and missing args
     When user enters the REPL with "datanorm-input.csv" and types:
       """
       :find canada
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains "*Canada*"
-
-  @cli @offline
-  Scenario: :find /regex/ matches by pattern
-    When user enters the REPL with "datanorm-input.csv" and types:
-      """
       :find /\+44/
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains "*+44*"
-
-  @cli @offline
-  Scenario: :find with no match prints no match and does not reprint
-    When user enters the REPL with "datanorm-input.csv" and types:
-      """
       :find xyzzy-no-such-thing
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains "no match"
-
-  @cli @offline
-  Scenario: :find with no argument prints usage
-    When user enters the REPL with "datanorm-input.csv" and types:
-      """
       :find
       exit
       """
     Then REPL exit code is 0
+    And REPL stdout contains "*Canada*"
+    And REPL stdout contains "*+44*"
+    And REPL stdout contains "no match"
     And REPL stdout contains ":find: missing pattern"
 
   @cli
@@ -256,33 +220,17 @@ Feature: REPL commands
     And the last REPL table reprint does not contain "Saudi Arabia"
 
   @cli @offline
-  Scenario: :load without a path prints usage
+  Scenario: :load reports a missing path, an unknown extension, and a successful load
     When user enters the REPL with "dedupe-input.csv" and types:
       """
       :load
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains ":load: missing path"
-
-  @cli @offline
-  Scenario: :load with an unknown extension prints unknown file type
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
       :load notes.txt
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains ":load: unknown file type"
-
-  @cli @offline
-  Scenario: :load success prints row/col counts
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
       :load datanorm-input.csv
       exit
       """
     Then REPL exit code is 0
+    And REPL stdout contains ":load: missing path"
+    And REPL stdout contains ":load: unknown file type"
     And REPL stdout contains "Loaded datanorm-input.csv (20 rows, 6 cols)"
 
   @cli @offline
@@ -298,44 +246,20 @@ Feature: REPL commands
     And the :history output lists no turns
 
   @cli @offline
-  Scenario: :save without a path prints usage
+  Scenario: :save and :save-flow report missing paths and write their files
     When user enters the REPL with "dedupe-input.csv" and types:
       """
       :save
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains ":save: missing path"
-
-  @cli @offline
-  Scenario: :save writes current rows to a JSONL file
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
       :save ../temp/repl-save-output.jsonl
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains "saved"
-    And "../temp/repl-save-output.jsonl" exists
-
-  @cli @offline
-  Scenario: :save-flow without a path prints usage
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
       :save-flow
-      exit
-      """
-    Then REPL exit code is 0
-    And REPL stdout contains ":save-flow: missing path"
-
-  @cli @offline
-  Scenario: :save-flow writes a replayable flow file
-    When user enters the REPL with "dedupe-input.csv" and types:
-      """
       :save-flow ../temp/repl-save-flow-output.flow
       exit
       """
     Then REPL exit code is 0
+    And REPL stdout contains ":save: missing path"
+    And REPL stdout contains "saved"
+    And "../temp/repl-save-output.jsonl" exists
+    And REPL stdout contains ":save-flow: missing path"
     And REPL stdout contains "saved flow"
     And "../temp/repl-save-flow-output.flow" exists
 
