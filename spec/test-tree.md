@@ -11,6 +11,16 @@ App behavior lives in [`test-cases/`](test-cases/); library-package behavior in
 [`packages/`](packages/). This file is maintained by hand — the point is the
 review, not a regenerated listing.
 
+**The default suite runs every feature file.** `src/cucumber.js` globs all of
+`test-cases/` + `packages/`; `TAMEDTABLE_FEATURES=a,b` narrows it for local
+iteration. A scenario that calls the model needs a committed cassette to replay
+offline — one missing its tape is tagged `@needs-recording` and excluded from
+the default run until `bun run test:record` makes the tape (record mode includes
+those scenarios). No scenario carries the tag today; the mechanism is the escape
+hatch for the next one that does. (`datanorm.feature` was removed — its strict
+byte-golden NL assertions were brittle and never recorded, and the normalization
+behavior is covered offline by the clean-up / loadsave / multilingual tours.)
+
 ## Keeping `.feature` files small
 
 Four levers, in rough order of safety. The first two are pure wins; the last two
@@ -158,16 +168,6 @@ CSV/JSONL via `:save` and batch execute, RFC-4180 quoting, nulls, nested objects
 | [Execute fails clearly when --output extension is unknown](test-cases/convert.feature)<br>`@cli` | Unknown output extension error (batch) | NA |
 | [:reorder changes the CSV header order](test-cases/convert.feature)<br>`@cli @offline` | Reorder affects output header | NA |
 | [Load JSONL, save CSV](test-cases/convert.feature)<br>`@cli` | JSONL→CSV conversion round-trip | NA |
-
-### `datanorm.feature` — Data normalization of customer records
-Normalize Phone/Country/DOB with round-trip validation; Outline mutation, composite replace-column, CLI execute. Fixtures: `datanorm-input.csv`, `datanorm-expected.jsonl`.
-
-| Scenario | What it tests | ToDo |
-|---|---|---|
-| [Normalize &lt;column&gt;](test-cases/datanorm.feature)<br>`@headless @cli @web` | Outline (Phone, Country, DOB) each match expected | NA |
-| [Full normalization round-trip](test-cases/datanorm.feature)<br>`@headless @cli @web` | All three normalized → export matches expected (ignoring Notes) | NA |
-| [Replace Country with normalized CountryName and CountryISO](test-cases/datanorm.feature)<br>`@headless @cli` | Country dropped; CountryName + CountryISO added, non-null | NA |
-| [Execute saved flow from command line](test-cases/datanorm.feature)<br>`@cli` | `tamedtable execute datanorm.flow` matches expected; covers the flow round-trip the removed @web dialog pair only partly checked | NA |
 
 ### `debug.feature` — Debug output
 `[debug]` block after NL requests (expression + token usage); suppressed for `:` commands and batch execute.
