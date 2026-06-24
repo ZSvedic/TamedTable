@@ -163,7 +163,7 @@ function makeStep(kind: string, arg: string): TourStep {
 
 Given('a tour with steps:', function (this: DriverWorld, table: DataTable) {
   const steps = table.hashes().map((r) => makeStep(r.kind!, r.arg ?? ''));
-  const tour: TourScenario = { name: 'Test tour', tags: ['@tutorial'], steps };
+  const tour: TourScenario = { name: 'Test tour', tags: ['@tour'], steps };
   const adapter = new FakeAdapter();
   this._driverCtx = { adapter, driver: new TourDriver(adapter), tour };
 });

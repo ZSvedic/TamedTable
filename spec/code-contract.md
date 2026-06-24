@@ -768,7 +768,7 @@ match a tour on `(feature, name)`.
 export interface TutorialManifestEntry {
   name: string;      // scenario name (clickable list / Dev dropdown)
   feature: string;   // source .feature file name — disambiguates a deep link
-  tags: string[];    // e.g. ['@web', '@tutorial']
+  tags: string[];    // e.g. ['@web', '@tour']
 }
 
 export interface TutorialSources {
@@ -790,7 +790,7 @@ middleware (features and fixtures from `spec/test-cases/`, cassettes from
 `src/tests/__cassettes__/`). `loadAudio` fetches the clip's bytes
 (`arrayBuffer`); the other loaders return text. In tests the loaders read the
 same files with `readFileSync` (`loadAudio` returns the raw `Buffer` bytes). The `manifest` is frozen at
-build time by `vite.config.ts` (parsing each `@tutorial`/`@web` feature into
+build time by `vite.config.ts` (parsing each `@tour`/`@web` feature into
 `{ name, feature, tags }`) and exposed as the `__TT_TUTORIAL_MANIFEST__` define
 global.
 
@@ -837,9 +837,9 @@ voice turn and replays key-free.
 |---|---|
 | `openTutorial()` | Sets `tutorialOpen = true`. |
 | `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
-| `tutorialScenarioNames(): string[]` | Names of `@tutorial` tours (flat list). |
-| `tutorialGroups(): { title; names }[]` | `@tutorial` tours grouped by `@cat-…` tag into the seven marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
-| `devScenarioNames(): string[]` | Names of `@web` non-`@tutorial` scenarios (the Dev dropdown). |
+| `tutorialScenarioNames(): string[]` | Names of `@tour` tours (flat list). |
+| `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the seven marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
+| `devScenarioNames(): string[]` | Names of `@web` non-`@tour` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |

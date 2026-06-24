@@ -6,7 +6,7 @@ import { parseTours } from '@tamedtable/gherkin-tour';
 import { TamedTableWorld, runnerOptsFor, TEMP_DIR, SPEC_TC_DIR, CASSETTE_DIR } from './world.ts';
 import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
 
-// The same @tutorial/@web feature files the deployed bundle indexes. Tests read
+// The same @tour/@web feature files the deployed bundle indexes. Tests read
 // the manifest, feature source, fixtures, and cassettes straight from disk —
 // the lazy loaders the browser fetches same-origin.
 const TUTORIAL_FEATURES = [

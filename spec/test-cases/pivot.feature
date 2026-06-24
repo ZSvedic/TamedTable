@@ -8,7 +8,7 @@ Feature: Pivot and unpivot
       Given load "pivot-long-input.csv"
       And the columns are "Region, Quarter, Revenue"
 
-    @headless @cli @web @tutorial @cat-deterministic
+    @headless @cli @web @tour @cat-deterministic
     Scenario: One column per distinct on-value, default agg first
       When query "Pivot Quarter into columns, with Revenue as the value"
       Then column "Q1" exists in the spec

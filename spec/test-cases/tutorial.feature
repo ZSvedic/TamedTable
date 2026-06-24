@@ -1,5 +1,5 @@
 # #TutorialMode
-# Tutorial panel — walk through @tutorial scenarios offline, key-free.
+# Tutorial panel — walk through @tour scenarios offline, key-free.
 # All scenarios are @web; the WebController drives the tour, no browser needed.
 Feature: Tutorial panel
 
@@ -12,7 +12,7 @@ Feature: Tutorial panel
       Then the tutorial panel is shown
 
     @web
-    Scenario: The clickable list shows only @tutorial scenario names
+    Scenario: The clickable list shows only @tour scenario names
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the tutorial list includes "Filter by Country"
@@ -29,7 +29,7 @@ Feature: Tutorial panel
       And the tutorial group "Language" includes "Normalize DOB by voice"
 
     @web
-    Scenario: The Dev dropdown lists @web non-@tutorial scenarios
+    Scenario: The Dev dropdown lists @web non-@tour scenarios
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the dev list includes "Aggregate produces one row per distinct by-tuple"
@@ -156,6 +156,30 @@ Feature: Tutorial panel
       When user plays the whole tutorial
       Then the spec has 1 transformation
       And no toast is shown
+
+  Rule: A lookup-table step is a silent prerequisite, not a tour step
+
+    # `load the lookup table …` writes a file the join query reads; the user never
+    # opens it, so the tour hides it. The tour reads Load → Run query: after one
+    # Next the highlighted step is the query, not a phantom lookup step.
+    @web
+    Scenario: The join tour skips the lookup-table step
+      Given the TamedTable web app
+      And the tutorial "Left join enriches each customer with ISO and Region" is selected
+      And user plays the tutorial
+      When user advances to the next tutorial step
+      Then the chat input is prefilled with "Join with join-country-codes.csv on Country to add ISO and Region"
+
+  Rule: Finishing a tour marks it complete
+
+    @web
+    Scenario: Playing a tour to the end marks it complete
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tour "Flag rows with empty Phone" is not marked complete
+      And the tutorial "Flag rows with empty Phone" is selected
+      When user plays the whole tutorial
+      Then the tour "Flag rows with empty Phone" is marked complete
 
   Rule: A deep link opens, selects, and plays a named tour
 

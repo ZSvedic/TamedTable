@@ -7,14 +7,14 @@
 import { parseTours, TourDriver, type TourAction, type TourScenario } from './index.ts';
 import { TourUi } from './ui.ts';
 
-// The `.feature` whose @tutorial scenario tours this page: load → query → play
+// The `.feature` whose @tour scenario tours this page: load → query → play
 // audio → show a golden. Shown on the page and parsed into the driver.
 const featureText = `Feature: Tour the gherkin-tour demo
 
   Background:
     Given load "people.csv"
 
-  @tutorial
+  @tour
   Scenario: A quick tour of this page
     When query "keep rows where age >= 18"
     And Play voiceover: "chime"
@@ -120,8 +120,8 @@ const adapter = {
 
 // ── Wire the buttons through parseTours → TourDriver → ./ui ───────────────────
 function tour(): TourScenario {
-  const t = parseTours(featureText).find((s) => s.tags.includes('@tutorial'));
-  if (!t) throw new Error('demo feature has no @tutorial scenario');
+  const t = parseTours(featureText).find((s) => s.tags.includes('@tour'));
+  if (!t) throw new Error('demo feature has no @tour scenario');
   return t;
 }
 

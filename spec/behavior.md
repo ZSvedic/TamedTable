@@ -832,7 +832,7 @@ resolves against what the user is looking at.
 
 ## Tutorial mode (#TutorialMode)
 
-Tutorial mode lets a user walk through a `@tutorial`-tagged Gherkin scenario
+Tutorial mode lets a user walk through a `@tour`-tagged Gherkin scenario
 interactively, with **no API key**. The clickable list renders instantly from
 a small bundled index of scenario names; everything heavy — the feature
 source, the input/golden fixtures, and the recorded model responses — loads
@@ -843,17 +843,24 @@ key set can still play a full tour end to end. A miss (no recording for the
 exact request) fails loudly with a toast rather than hanging.
 
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
-the `@tutorial`-tagged scenarios drawn from the bundled feature files, **grouped
+the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
 into the seven marketing feature categories** — Clean up, Enrich & extract,
 Classify, Validate, Language, Deterministic, and Load, save & reuse — numbered
 01–07 to match the homepage sections, in that order. A scenario's group comes
 from its `@cat-…` tag (e.g. `@cat-cleanup`); empty categories are omitted.
-**Clicking a tour starts it immediately** — there is no separate Play step.
+**Clicking a tour starts it immediately** — there is no separate Play step. A
+tour the visitor has played to the end carries a **green checkmark** in the list
+(remembered across reloads), so it is easy to see what is left to try.
 Below the groups, a **Dev** dropdown lists every `@web` scenario that is *not*
-`@tutorial`, so a developer can smoke-test any scenario without opening the
+`@tour`, so a developer can smoke-test any scenario without opening the
 `.feature` file; picking one starts it too. The homepage "Show me →" links
 deep-link into these tours, one per feature item (the Load, save & reuse items
 share a single combined tour).
+
+A `load the lookup table …` step (a join's second input) is a **silent
+prerequisite**, not a tour step: the file is written before the tour starts and
+the step is hidden, so a join tour reads Load → Run query rather than
+spotlighting a button the user never presses.
 
 When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step

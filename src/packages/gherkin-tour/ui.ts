@@ -22,6 +22,8 @@ export interface TourUiTheme {
   /** Popover body + footer text. */        text?: string;
   /** Popover box + control borders. */     border?: string;
   /** Title / emphasis color. */            accent?: string;
+  /** Primary (Next/Done) button fill — defaults to `accent`. */ primaryBg?: string;
+  /** Primary button label color — defaults to `background`. */  primaryText?: string;
 }
 
 export interface TourUiOptions {
@@ -146,10 +148,13 @@ export class TourUi {
     const next = wrapper.querySelector('.driver-popover-next-btn') as HTMLElement | null;
     if (next) {
       next.style.textShadow = 'none';
-      // Accent fill, with the popover background as the contrasting label color.
-      if (theme.accent) next.style.background = theme.accent;
-      if (theme.background) next.style.color = theme.background;
-      if (theme.border) next.style.borderColor = theme.border;
+      // A solid primary button (matches the host's primary button, e.g. "Load"):
+      // a strong fill with a contrasting label, the same color for the border so
+      // it reads as filled — not the low-contrast accent tint that looked disabled.
+      const bg = theme.primaryBg ?? theme.accent;
+      const fg = theme.primaryText ?? theme.background;
+      if (bg) { next.style.background = bg; next.style.borderColor = bg; }
+      if (fg) next.style.color = fg;
     }
     // The arrow's visible side is filled with the popover background; retint just
     // that side so it doesn't stay Driver's default light color on a dark theme.

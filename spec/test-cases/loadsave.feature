@@ -7,7 +7,7 @@ Feature: Load, save and reuse tour
 
   Rule: The combined Load, save and reuse tour runs key-free
 
-    @web @tutorial @cat-loadsave
+    @web @tour @cat-loadsave
     Scenario: Load a file, transform it, then save and reuse
       Given the TamedTable web app
       And load "datanorm-input.csv"
