@@ -180,9 +180,11 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
 /* ---------- Section scaffolding ---------- */
 section { padding: 52px 0; }
 .sec-paper { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.sec-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
+.sec-head { text-align: center; margin: 0 auto 48px; }
 .sec-head h2 { font-size: 36px; font-weight: 600; color: var(--ink); }
-.sec-head p { color: var(--muted); margin-top: 14px; font-size: 17px; }
+/* Cap the readable width of the *subtitle* only — capping the whole header made
+   the heading wrap on wide screens (less room than narrow). */
+.sec-head p { color: var(--muted); margin: 14px auto 0; font-size: 17px; max-width: 640px; }
 
 /* ---------- Value props ---------- */
 .vp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }

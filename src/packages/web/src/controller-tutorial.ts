@@ -19,6 +19,7 @@ import { parseTours, type TourScenario } from '@tamedtable/gherkin-tour';
 import { replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
 import type { TutorialManifestEntry, TutorialSources } from './controller-types.ts';
+import { TUTORIAL_CATEGORIES } from './tutorial-categories.ts';
 
 export class TutorialManager {
   private readonly tutorialSrc: TutorialSources | null;
@@ -65,24 +66,12 @@ export class TutorialManager {
     return this.manifest.filter((t) => t.tags.includes('@tutorial')).map((t) => t.name);
   }
 
-  /** The seven homepage feature sections, in homepage order, each paired with
-   *  the `@cat-…` tag its tours carry. The Tutorial panel renders one group per
-   *  category (plus the trailing Dev dropdown), mirroring the marketing page. */
-  private static readonly CATEGORIES: ReadonlyArray<{ tag: string; title: string }> = [
-    { tag: '@cat-cleanup', title: 'Clean up' },
-    { tag: '@cat-enrich', title: 'Enrich & extract' },
-    { tag: '@cat-classify', title: 'Classify' },
-    { tag: '@cat-validate', title: 'Validate' },
-    { tag: '@cat-language', title: 'Language' },
-    { tag: '@cat-deterministic', title: 'Deterministic' },
-    { tag: '@cat-loadsave', title: 'Load, save & reuse' },
-  ];
-
-  /** `@tutorial` tours grouped by their `@cat-…` category, in homepage order.
-   *  Empty categories are dropped so the panel shows only populated sections. */
+  /** `@tutorial` tours grouped by their `@cat-…` category, in homepage order
+   *  (the seven sections from `TUTORIAL_CATEGORIES`). Empty categories are
+   *  dropped so the panel shows only populated sections. */
   tutorialGroups(): { title: string; names: string[] }[] {
     const tours = this.manifest.filter((t) => t.tags.includes('@tutorial'));
-    return TutorialManager.CATEGORIES.map(({ tag, title }) => ({
+    return TUTORIAL_CATEGORIES.map(({ tag, title }) => ({
       title,
       names: tours.filter((t) => t.tags.includes(tag)).map((t) => t.name),
     })).filter((g) => g.names.length > 0);

@@ -166,7 +166,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: space.px16 }}>
-                      {groups.map((group) => (
+                      {groups.map((group, gi) => (
                         <div key={group.title}>
                           <div
                             style={{
@@ -177,6 +177,10 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                               letterSpacing: '0.06em',
                             }}
                           >
+                            {/* Eyebrow number matches the homepage section (01–07). */}
+                            <span style={{ fontFamily: typography.mono, color: t.ink4, marginRight: space.px8 }}>
+                              {String(gi + 1).padStart(2, '0')}
+                            </span>
                             {group.title}
                           </div>
                           <div role="listbox" aria-label={group.title} style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
