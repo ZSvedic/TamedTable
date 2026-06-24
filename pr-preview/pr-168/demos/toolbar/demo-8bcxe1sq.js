@@ -17787,8 +17787,8 @@ function Toolbar({
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
         onClick: onOpenTutorial,
-        title: "Interactive tutorials — no API key required",
-        children: "Tutorial"
+        title: "Interactive tours — no API key required",
+        children: "Tours"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
