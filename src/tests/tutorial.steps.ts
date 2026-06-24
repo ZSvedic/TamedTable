@@ -77,6 +77,14 @@ Then('the tutorial list includes {string}', function (this: TamedTableWorld, nam
   assert.ok(names.includes(name), `tutorial list should include "${name}"; got: ${JSON.stringify(names)}`);
 });
 
+Then('the tour {string} is marked complete', function (this: TamedTableWorld, name: string) {
+  assert.ok(controller(this).isTourCompleted(name), `tour "${name}" should be marked complete`);
+});
+
+Then('the tour {string} is not marked complete', function (this: TamedTableWorld, name: string) {
+  assert.ok(!controller(this).isTourCompleted(name), `tour "${name}" should not be marked complete`);
+});
+
 Then('the tutorial group {string} includes {string}', function (this: TamedTableWorld, group: string, name: string) {
   const groups = controller(this).tutorialGroups();
   const g = groups.find((x) => x.title === group);

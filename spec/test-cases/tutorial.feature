@@ -157,6 +157,30 @@ Feature: Tutorial panel
       Then the spec has 1 transformation
       And no toast is shown
 
+  Rule: A lookup-table step is a silent prerequisite, not a tour step
+
+    # `load the lookup table …` writes a file the join query reads; the user never
+    # opens it, so the tour hides it. The tour reads Load → Run query: after one
+    # Next the highlighted step is the query, not a phantom lookup step.
+    @web
+    Scenario: The join tour skips the lookup-table step
+      Given the TamedTable web app
+      And the tutorial "Left join enriches each customer with ISO and Region" is selected
+      And user plays the tutorial
+      When user advances to the next tutorial step
+      Then the chat input is prefilled with "Join with join-country-codes.csv on Country to add ISO and Region"
+
+  Rule: Finishing a tour marks it complete
+
+    @web
+    Scenario: Playing a tour to the end marks it complete
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tour "Flag rows with empty Phone" is not marked complete
+      And the tutorial "Flag rows with empty Phone" is selected
+      When user plays the whole tutorial
+      Then the tour "Flag rows with empty Phone" is marked complete
+
   Rule: A deep link opens, selects, and plays a named tour
 
     @web

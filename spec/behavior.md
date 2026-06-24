@@ -848,12 +848,19 @@ into the seven marketing feature categories** — Clean up, Enrich & extract,
 Classify, Validate, Language, Deterministic, and Load, save & reuse — numbered
 01–07 to match the homepage sections, in that order. A scenario's group comes
 from its `@cat-…` tag (e.g. `@cat-cleanup`); empty categories are omitted.
-**Clicking a tour starts it immediately** — there is no separate Play step.
+**Clicking a tour starts it immediately** — there is no separate Play step. A
+tour the visitor has played to the end carries a **green checkmark** in the list
+(remembered across reloads), so it is easy to see what is left to try.
 Below the groups, a **Dev** dropdown lists every `@web` scenario that is *not*
 `@tutorial`, so a developer can smoke-test any scenario without opening the
 `.feature` file; picking one starts it too. The homepage "Show me →" links
 deep-link into these tours, one per feature item (the Load, save & reuse items
 share a single combined tour).
+
+A `load the lookup table …` step (a join's second input) is a **silent
+prerequisite**, not a tour step: the file is written before the tour starts and
+the step is hidden, so a join tour reads Load → Run query rather than
+spotlighting a button the user never presses.
 
 When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step

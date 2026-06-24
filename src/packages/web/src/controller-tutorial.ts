@@ -41,10 +41,36 @@ export class TutorialManager {
   private readonly featureCache = new Map<string, TourScenario[]>();
   private readonly cassetteCache = new Map<string, Cassette>();
 
+  /** Names of tours the visitor has finished (reached the terminal stop). The
+   *  panel marks these with a checkmark. Persisted to localStorage best-effort
+   *  so progress survives reloads; falls back to in-memory when storage is
+   *  unavailable (headless tests, private mode). */
+  private readonly completed = new Set<string>();
+  private static readonly COMPLETED_KEY = 'tt-completed-tours';
+
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
     this.tutorialSrc = host.opts.tutorialSources ?? null;
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(TutorialManager.COMPLETED_KEY) : null;
+      if (raw) for (const n of JSON.parse(raw) as string[]) this.completed.add(n);
+    } catch { /* ignore corrupt/absent storage */ }
+  }
+
+  /** Whether a tour has been finished at least once. */
+  isTourCompleted(name: string): boolean {
+    return this.completed.has(name);
+  }
+
+  private markCompleted(name: string): void {
+    if (!name || this.completed.has(name)) return;
+    this.completed.add(name);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(TutorialManager.COMPLETED_KEY, JSON.stringify([...this.completed]));
+      }
+    } catch { /* ignore storage write failure */ }
   }
 
   private get manifest(): TutorialManifestEntry[] {
@@ -115,12 +141,25 @@ export class TutorialManager {
 
   async playTutorial(): Promise<void> {
     if (!this.selected || !this.tutorialSrc) return;
-    const tour = await this.loadTour(this.selected);
-    if (!tour || tour.steps.length === 0) return;
+    const loaded = await this.loadTour(this.selected);
+    if (!loaded || loaded.steps.length === 0) return;
+    // A `load the lookup table …` step is a silent prerequisite — the join query
+    // reads the file from the work dir, the user never opens it — so it is not a
+    // tour step. Write those files up front and drop them from the visible steps,
+    // leaving a tour that reads Load → Run query (not a phantom "load the lookup"
+    // step that spotlights a button the user doesn't touch).
+    const lookups = loaded.steps.filter((s) => s.action.kind === 'load-lookup');
+    const tour = lookups.length
+      ? { ...loaded, steps: loaded.steps.filter((s) => s.action.kind !== 'load-lookup') }
+      : loaded;
+    if (tour.steps.length === 0) return;
     this.activeTour = tour;
     // Entering replay mode: rebuild the engine pinned to the recording config so
     // the request the tour issues fingerprints identically to what was taped.
     this.host.engine.reset();
+    for (const step of lookups) {
+      if (step.action.kind === 'load-lookup') await this.writeLookup(step.action.filename);
+    }
     this.tutorialStepIndex = 0;
     this.executedThrough = -1;
     this.host.goldenRows = null;
@@ -159,6 +198,7 @@ export class TutorialManager {
       // opens the Tutorial chooser.
       this.tutorialStepIndex = total;
       this.host.tutorialPrefill = '';
+      this.markCompleted(this.activeTour.name);
       await this.surfaceGolden();
       this.host.notify();
     }
@@ -320,6 +360,15 @@ export class TutorialManager {
     }
   }
 
+  /** Write a lookup fixture into the work dir so a join query can read it by
+   *  path. A silent prerequisite of a join tour, not a visible step. */
+  private async writeLookup(filename: string): Promise<void> {
+    const text = await this.loadFixture(filename);
+    if (text === undefined) return;
+    await mkdir(this.host.workDir, { recursive: true });
+    await writeFile(join(this.host.workDir, filename), text, 'utf8');
+  }
+
   /** Fetch an audio clip's raw bytes, surfacing a fetch failure as a toast. */
   private async loadAudio(filename: string): Promise<Uint8Array | undefined> {
     try {
@@ -341,16 +390,11 @@ export class TutorialManager {
         if (text !== undefined) await this.host.files.loadFromText(action.filename, text);
         break;
       }
-      case 'load-lookup': {
-        // Write the lookup file into the in-memory store so the engine can
-        // read it by path when executing the join transformation.
-        const text = await this.loadFixture(action.filename);
-        if (text !== undefined) {
-          await mkdir(this.host.workDir, { recursive: true });
-          await writeFile(join(this.host.workDir, action.filename), text, 'utf8');
-        }
+      case 'load-lookup':
+        // Normally pre-written in playTutorial (lookups are not tour steps), but
+        // kept here for any caller that steps a load-lookup directly.
+        await this.writeLookup(action.filename);
         break;
-      }
       case 'prefill-chat':
         // The query is already typed into the chat box (animated in when this
         // step was highlighted, so the popover could just say "Run the query").

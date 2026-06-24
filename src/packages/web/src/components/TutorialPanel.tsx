@@ -48,7 +48,11 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       // The terminal stop's "Voilà …" celebration, shown after the last real
       // step has run, numbered "N of N" with a Done button.
       doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,
-      theme: { background: t.surface, text: t.ink, border: t.line2, accent: t.accent },
+      theme: {
+        background: t.surface, text: t.ink, border: t.line2, accent: t.accent,
+        // Next/Done as the app's primary button (ink fill, on-ink label).
+        primaryBg: t.ink, primaryText: t.inkOnInk,
+      },
     });
     ui.start();
     return () => { ui.destroy(); };
@@ -185,6 +189,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                           <div role="listbox" aria-label={group.title} style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
                             {group.names.map((name) => {
                               const selected = name === selectedTourName;
+                              const completed = controller.isTourCompleted(name);
                               return (
                                 <button
                                   key={name}
@@ -193,6 +198,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                                   aria-selected={selected}
                                   onClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
                                   style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: space.px8,
                                     textAlign: 'left',
                                     padding: '8px 10px',
                                     border: `1px solid ${selected ? t.accent : t.line2}`,
@@ -205,7 +213,10 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  {name}
+                                  {/* Green check marks a tour the visitor has finished. */}
+                                  <span aria-hidden="true" style={{ width: 14, flex: '0 0 auto', color: completed ? t.ok : 'transparent' }}>✓</span>
+                                  <span style={{ flex: 1 }}>{name}</span>
+                                  {completed && <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>(completed)</span>}
                                 </button>
                               );
                             })}

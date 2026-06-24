@@ -318,6 +318,7 @@ export class WebController implements ControllerHost {
   closeTutorial(): void { this.tutorial.closeTutorial(); }
   tutorialScenarioNames(): string[] { return this.tutorial.tutorialScenarioNames(); }
   tutorialGroups(): { title: string; names: string[] }[] { return this.tutorial.tutorialGroups(); }
+  isTourCompleted(name: string): boolean { return this.tutorial.isTourCompleted(name); }
   devScenarioNames(): string[] { return this.tutorial.devScenarioNames(); }
   selectTutorialScenario(name: string): void { this.tutorial.selectTutorialScenario(name); }
   /** Deep link: open, select by (feature, scenario), and play from step 1. */
