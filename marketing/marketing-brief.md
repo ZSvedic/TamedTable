@@ -1,6 +1,6 @@
 # Marketing brief
 
-The source of truth for TamedTable's message: the tagline, who it's for, and what it does for you. Everything else in this dir — homepage.md, features.md — derives from this, and the landing page is built on the [SaaSify template](https://github.com/prantomollick/saas-landing-page-template). Visuals live in [brand/brand.md](brand/brand.md); product details live in [spec/](../spec/).
+The source of truth for TamedTable's message: the tagline, who it's for, and what it does for you. Derived docs in this dir — like the reworked feature menu in [new-ai-features.md](new-ai-features.md) — build on this, and the landing page is built on the [SaaSify template](https://github.com/prantomollick/saas-landing-page-template). Visuals live in [brand/brand.md](brand/brand.md); product details live in [spec/](../spec/).
 
 ## Taglines
 
@@ -50,7 +50,7 @@ recorded run right in the browser, with **no API key and no signup**:
 |---|---|---|
 | Speak instead of type | tap the mic | [voice.feature](../spec/test-cases/voice.feature) |
 | Ask in your own language | *"normaliza los números de teléfono"* | [multilingual.feature](../spec/test-cases/multilingual.feature) |
-| Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [datanorm.feature](../spec/test-cases/datanorm.feature) |
+| Clean up messy fields — phone numbers, emails, casing | *"normalize the phone numbers"* | [play it](https://zsvedic.github.io/TamedTable/app/?feature=clean-up.feature&scenario=Normalize+the+phone+numbers) |
 | Drop duplicate rows | *"remove duplicate emails"* | [play it](https://zsvedic.github.io/TamedTable/app/?feature=dedupe.feature&scenario=Drop+duplicates+by+Email) |
 | Keep only the rows you care about | *"keep customers in the USA"* | [play it](https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country) |
 | Sort, or keep just the top few | *"sort by revenue, top 10"* | [sort.feature](../spec/test-cases/sort.feature) |

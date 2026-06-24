@@ -7,10 +7,11 @@ Everything the public sees before they open the app: the message, the feature il
 ```
 marketing/
   marketing-brief.md     the message — tagline, audience, what TamedTable does
+  new-ai-features.md     reworked "What you can do" menu, AI features first
   tokens.json            design token master — colors, typography, spacing
   brand/                 marks, favicons, lockups, brand.md
   claude-design-app/     in-browser design canvas (scratch JSX + generated tokens.jsx)
-  illustrations/         10 SVG feature tiles + _gallery.html to preview them
+  illustrations/         SVG feature tiles + gallery.html to preview them (old/ = superseded set)
   web/                   the landing page (index.html + styles.css + main.js)
     favicon-32.png  →    symlink to marketing/brand/favicon-32.png
     illustrations/  →    symlink to marketing/illustrations/

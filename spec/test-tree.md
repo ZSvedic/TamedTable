@@ -56,7 +56,7 @@ describing the failure.
 ## Cross-file observations (DRY)
 
 - **Tour scenarios are intentionally one-each, not collapsible** — see lever 1
-  above. The ~27 `@tour` scenarios all share the load → phrase → assert shape but
+  above. The `@tour` scenarios all share the load → phrase → assert shape but
   must stay separate (parser skips outlines; homepage deep-links by exact name).
 - **URL validation lives in two layers, by design.**
   `packages/file-io/file-io.feature` owns the library matrix (blank / garbage /
