@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TamedTable — AI ETL in Natural Language</title>
+<title>TamedTable — Variant C</title>
 <meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load a spreadsheet, describe what you want, and watch it transform. No formulas, no code. Open source, runs on your own API key.">
 <meta property="og:title" content="TamedTable — AI ETL in Natural Language">
 <meta property="og:description" content="Load a spreadsheet, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load) — no formulas, no code. Open source.">
@@ -25,8 +25,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+  /* Variant C: short label, phrase, then marketing note */
+  .feat-item .fnote { display:block; font-size:12.5px; color: var(--muted); margin-top:4px; }
+  .variant-tag { position:fixed; top:10px; right:10px; z-index:99; background:var(--ink); color:#fff; font:600 12px/1 var(--font-mono); padding:6px 10px; border-radius:8px; }
+</style>
 </head>
 <body>
+<div class="variant-tag">Variant C — label + phrase + note</div>
 
 <!-- ============================ NAV ============================ -->
 <header class="nav">
@@ -166,10 +172,10 @@
           <h2>Clean up</h2>
           <p>Fix messy fields the way a person would — the AI reads each row's context, not just a pattern.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/CLN-phone-numbers.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Normalize phone numbers</span><span class="fcmd">"normalize the phone numbers"</span></button>
-            <button class="feat-item" data-ill="illustrations/CLN-country-names.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Unify country names</span><span class="fcmd">"make the country names consistent"</span></button>
-            <button class="feat-item" data-ill="illustrations/CLN-capitalization.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Fix name capitalization</span><span class="fcmd">"fix the capitalization of names"</span></button>
-            <button class="feat-item" data-ill="illustrations/CLN-birth-dates.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Clean up birth dates</span><span class="fcmd">"clean up the birth dates"</span></button>
+            <button class="feat-item active" data-ill="illustrations/CLN-phone-numbers.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Normalize phone numbers</span><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
+            <button class="feat-item" data-ill="illustrations/CLN-country-names.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Unify country names</span><span class="fcmd">"make the country names consistent"</span><span class="fnote">Folds USA / U.S. / United States into one</span></button>
+            <button class="feat-item" data-ill="illustrations/CLN-capitalization.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Fix name capitalization</span><span class="fcmd">"fix the capitalization of names"</span><span class="fnote">Handles McDonald, van der Berg</span></button>
+            <button class="feat-item" data-ill="illustrations/CLN-birth-dates.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Clean up birth dates</span><span class="fcmd">"clean up the birth dates"</span><span class="fnote">Knows 03/04 is March in the US, April in the EU</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -192,10 +198,10 @@
           <h2>Enrich &amp; extract</h2>
           <p>Add what isn't there yet — the model fills the gaps and pulls structure out of free text.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/ENR-split-address.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Split the address</span><span class="fcmd">"split the address into its parts"</span></button>
-            <button class="feat-item" data-ill="illustrations/ENR-country-from-city.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Country from city</span><span class="fcmd">"fill the country from the city column"</span></button>
-            <button class="feat-item" data-ill="illustrations/ENR-industry.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Industry from company</span><span class="fcmd">"add the industry for each company"</span></button>
-            <button class="feat-item" data-ill="illustrations/ENR-amount-date.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Extract amount &amp; date</span><span class="fcmd">"extract the amount and date from the memo"</span></button>
+            <button class="feat-item active" data-ill="illustrations/ENR-split-address.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Split the address</span><span class="fcmd">"split the address into its parts"</span><span class="fnote">Structures whatever mess they typed</span></button>
+            <button class="feat-item" data-ill="illustrations/ENR-country-from-city.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Country from city</span><span class="fcmd">"fill the country from the city column"</span><span class="fnote">Knows Osaka → Japan</span></button>
+            <button class="feat-item" data-ill="illustrations/ENR-industry.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Industry from company</span><span class="fcmd">"add the industry for each company"</span><span class="fnote">Inferred from company names</span></button>
+            <button class="feat-item" data-ill="illustrations/ENR-amount-date.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Extract amount &amp; date</span><span class="fcmd">"extract the amount and date from the memo"</span><span class="fnote">Pulled from free text</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -218,10 +224,10 @@
           <h2>Classify</h2>
           <p>Sort rows by meaning, not keywords — the AI reads what each row is actually about.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/CLS-ticket-label.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Label support tickets</span><span class="fcmd">"label each ticket as billing, bug, or feature"</span></button>
-            <button class="feat-item" data-ill="illustrations/CLS-sentiment.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Score sentiment</span><span class="fcmd">"score the sentiment of every review"</span></button>
-            <button class="feat-item" data-ill="illustrations/CLS-seniority.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Rank by seniority</span><span class="fcmd">"sort the titles by seniority"</span></button>
-            <button class="feat-item" data-ill="illustrations/CLS-gender.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Infer gender</span><span class="fcmd">"split customers into men, women, and unknown"</span></button>
+            <button class="feat-item active" data-ill="illustrations/CLS-ticket-label.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Label support tickets</span><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
+            <button class="feat-item" data-ill="illustrations/CLS-sentiment.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Score sentiment</span><span class="fcmd">"score the sentiment of every review"</span><span class="fnote">Positive, neutral, or negative</span></button>
+            <button class="feat-item" data-ill="illustrations/CLS-seniority.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Rank by seniority</span><span class="fcmd">"sort the titles by seniority"</span><span class="fnote">Ranks junior → senior</span></button>
+            <button class="feat-item" data-ill="illustrations/CLS-gender.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Infer gender</span><span class="fcmd">"split customers into men, women, and unknown"</span><span class="fnote">Gender inferred from first names</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -244,10 +250,10 @@
           <h2>Validate</h2>
           <p>Catch the wrong-looking rows before anyone else does.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/VAL-fake-emails.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Flag fake emails</span><span class="fcmd">"flag emails that look fake"</span></button>
-            <button class="feat-item" data-ill="illustrations/VAL-impossible-date.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Flag impossible dates</span><span class="fcmd">"flag any impossible birth date"</span></button>
-            <button class="feat-item" data-ill="illustrations/VAL-city-country.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">City matches country</span><span class="fcmd">"check the city matches the country"</span></button>
-            <button class="feat-item" data-ill="illustrations/VAL-wrong-prices.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Flag wrong prices</span><span class="fcmd">"flag prices that seem wrong"</span></button>
+            <button class="feat-item active" data-ill="illustrations/VAL-fake-emails.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Flag fake emails</span><span class="fcmd">"flag emails that look fake"</span><span class="fnote">bill.gates@microsoft.com probably didn't sign up</span></button>
+            <button class="feat-item" data-ill="illustrations/VAL-impossible-date.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Flag impossible dates</span><span class="fcmd">"flag any impossible birth date"</span><span class="fnote">Flags both 1873 and Feb 30th</span></button>
+            <button class="feat-item" data-ill="illustrations/VAL-city-country.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">City matches country</span><span class="fcmd">"check the city matches the country"</span><span class="fnote">Paris, Japan gets a second look</span></button>
+            <button class="feat-item" data-ill="illustrations/VAL-wrong-prices.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Flag wrong prices</span><span class="fcmd">"flag prices that seem wrong"</span><span class="fnote">Catches the missing zero before Reddit does</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -270,10 +276,10 @@
           <h2>Language</h2>
           <p>Summarize, translate, and detect — across any language, asked in any language.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/LNG-summarize.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Summarize each review</span><span class="fcmd">"summarize each review in one line"</span></button>
-            <button class="feat-item" data-ill="illustrations/LNG-translate.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Translate to English</span><span class="fcmd">"translate the comments to English"</span></button>
-            <button class="feat-item" data-ill="illustrations/LNG-detect-language.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Detect the language</span><span class="fcmd">"tag the language of every comment"</span></button>
-            <button class="feat-item" data-ill="illustrations/LNG-multilingual.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Ask in any language</span><span class="fcmd">"normaliza los números de teléfono"</span></button>
+            <button class="feat-item active" data-ill="illustrations/LNG-summarize.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Summarize each review</span><span class="fcmd">"summarize each review in one line"</span><span class="fnote">Even the 500-word rant</span></button>
+            <button class="feat-item" data-ill="illustrations/LNG-translate.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Translate to English</span><span class="fcmd">"translate the comments to English"</span><span class="fnote">From any source language</span></button>
+            <button class="feat-item" data-ill="illustrations/LNG-detect-language.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Detect the language</span><span class="fcmd">"tag the language of every comment"</span><span class="fnote">Language detected per row</span></button>
+            <button class="feat-item" data-ill="illustrations/LNG-multilingual.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Ask in any language</span><span class="fcmd">"normaliza los números de teléfono"</span><span class="fnote">Ask in any language, voice or text</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -296,11 +302,11 @@
           <h2>Deterministic</h2>
           <p>The everyday spreadsheet jobs are still here — exact, repeatable, no guesswork.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/DET-filter.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Keep the rows you want</span><span class="fcmd">"keep only customers in the USA"</span></button>
-            <button class="feat-item" data-ill="illustrations/DET-sort-top.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Sort or top-N</span><span class="fcmd">"sort by revenue, top 10"</span></button>
-            <button class="feat-item" data-ill="illustrations/DET-dedupe.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Remove duplicates</span><span class="fcmd">"remove duplicate emails"</span></button>
-            <button class="feat-item" data-ill="illustrations/DET-pivot.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Pivot tall to wide</span><span class="fcmd">"pivot months into columns"</span></button>
-            <button class="feat-item" data-ill="illustrations/DET-join.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Join two tables</span><span class="fcmd">"add each order's customer name"</span></button>
+            <button class="feat-item active" data-ill="illustrations/DET-filter.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Keep the rows you want</span><span class="fcmd">"keep only customers in the USA"</span><span class="fnote">Filter rows</span></button>
+            <button class="feat-item" data-ill="illustrations/DET-sort-top.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Sort or top-N</span><span class="fcmd">"sort by revenue, top 10"</span><span class="fnote">Sort or top-N</span></button>
+            <button class="feat-item" data-ill="illustrations/DET-dedupe.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Remove duplicates</span><span class="fcmd">"remove duplicate emails"</span><span class="fnote">Dedupe</span></button>
+            <button class="feat-item" data-ill="illustrations/DET-pivot.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Pivot tall to wide</span><span class="fcmd">"pivot months into columns"</span><span class="fnote">Reshape tall to wide</span></button>
+            <button class="feat-item" data-ill="illustrations/DET-join.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Join two tables</span><span class="fcmd">"add each order's customer name"</span><span class="fnote">Join two tables</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -323,11 +329,11 @@
           <h2>Load, save &amp; reuse</h2>
           <p>Your work is yours to keep — load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/LSR-load.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Load a file or URL</span><span class="fcmd">a file or a URL</span></button>
-            <button class="feat-item" data-ill="illustrations/LSR-save-csv.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Save the clean data</span><span class="fcmd">:save clean.csv</span></button>
-            <button class="feat-item" data-ill="illustrations/LSR-save-flow.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Save the recipe</span><span class="fcmd">:save-flow tidy.flow</span></button>
-            <button class="feat-item" data-ill="illustrations/LSR-save-py.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Export to Python</span><span class="fcmd">:save-py tidy.py</span></button>
-            <button class="feat-item" data-ill="illustrations/LSR-undo-redo.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Undo anything</span><span class="fcmd">:undo / :redo</span></button>
+            <button class="feat-item active" data-ill="illustrations/LSR-load.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Load a file or URL</span><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV or JSONL, web or CLI</span></button>
+            <button class="feat-item" data-ill="illustrations/LSR-save-csv.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Save the clean data</span><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
+            <button class="feat-item" data-ill="illustrations/LSR-save-flow.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Save the recipe</span><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
+            <button class="feat-item" data-ill="illustrations/LSR-save-py.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Export to Python</span><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
+            <button class="feat-item" data-ill="illustrations/LSR-undo-redo.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-168/app/" data-label="Show me →"><span class="fname">Undo anything</span><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
           </div>
         </div>
         <div class="feat-visual">
