@@ -1,10 +1,10 @@
 // #Patch — unit tests for the surface-agnostic undo/redo journal.
 import { describe, it, expect } from 'bun:test';
 import { SpecJournal, type JournalEntry } from './journal.ts';
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 
 /** A throwaway spec tagged by a marker column id, so entries are distinguishable. */
-function spec(tag: string): Spec {
+function spec(tag: string): TablePlan {
   return { columns: [{ id: tag }], transformations: [] };
 }
 

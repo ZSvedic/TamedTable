@@ -4,7 +4,7 @@
 // DOM dependency — the browser FilePort implementation lives in the separate
 // ./browser-fs entry point. Spec: spec/packages/file-io/behavior.md.
 
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 
 /** A file the user picked from an Open dialog. */
 export interface PickedFile {
@@ -112,7 +112,7 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
 /** Serialize a spec into the .flow file format: pretty-printed JSON
  *  `{ version: 2, source, spec }` with a trailing newline. `source` is the
  *  basename of `spec.table`, or `input.csv` when the spec has no table. */
-export function serializeFlow(spec: Spec): string {
+export function serializeFlow(spec: TablePlan): string {
   const source = (spec.table ? spec.table.split('/').pop() : '') || 'input.csv';
   return JSON.stringify({ version: 2, source, spec }, null, 2) + '\n';
 }

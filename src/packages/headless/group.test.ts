@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { join } from 'node:path';
 import { createHeadlessRunner } from './index.ts';
-import { validateSpec, type Spec } from '@tamedtable/core';
+import { validateTablePlan, type TablePlan } from '@tamedtable/core';
 
 const CSV = join(import.meta.dir, '../../../spec/test-cases/performance-liked-videos.csv');
 
@@ -14,9 +14,9 @@ const SUM_DURATION_JS =
 const TOTAL_DURATION_SECONDS = 1131455;
 
 describe('group with an empty by — aggregate the whole table', () => {
-  it('validateSpec accepts a group transformation with an empty by array', () => {
+  it('validateTablePlan accepts a group transformation with an empty by array', () => {
     expect(() =>
-      validateSpec({
+      validateTablePlan({
         columns: [{ id: 'total_seconds' }],
         transformations: [
           { kind: 'group', by: [], agg: { total_seconds: { js: SUM_DURATION_JS } } },
@@ -28,7 +28,7 @@ describe('group with an empty by — aggregate the whole table', () => {
   it('collapses every row into a single aggregated row', async () => {
     const runner = createHeadlessRunner({});
     await runner.loadInput(CSV);
-    const spec: Spec = {
+    const spec: TablePlan = {
       columns: [{ id: 'total_seconds' }],
       transformations: [
         { kind: 'group', by: [], agg: { total_seconds: { js: SUM_DURATION_JS } } },
@@ -42,7 +42,7 @@ describe('group with an empty by — aggregate the whole table', () => {
 
   it('still rejects a group that omits the by field entirely', () => {
     expect(() =>
-      validateSpec({
+      validateTablePlan({
         columns: [],
         transformations: [{ kind: 'group', agg: { n: { js: 'rows.length' } } }],
       }),
@@ -52,7 +52,7 @@ describe('group with an empty by — aggregate the whole table', () => {
   it('lets a {sql} aggregate reach the whole table as relation t', async () => {
     const runner = createHeadlessRunner({});
     await runner.loadInput(CSV);
-    const spec: Spec = {
+    const spec: TablePlan = {
       columns: [{ id: 'row_count' }],
       transformations: [
         { kind: 'group', by: [], agg: { row_count: { sql: '(SELECT count(*) FROM t)' } } },
@@ -67,7 +67,7 @@ describe('group with an empty by — aggregate the whole table', () => {
   it('still resolves a {sql} aggregate against relation g', async () => {
     const runner = createHeadlessRunner({});
     await runner.loadInput(CSV);
-    const spec: Spec = {
+    const spec: TablePlan = {
       columns: [{ id: 'row_count' }],
       transformations: [
         { kind: 'group', by: [], agg: { row_count: { sql: 'count(*)' } } },

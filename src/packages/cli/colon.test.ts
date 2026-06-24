@@ -4,7 +4,7 @@ import { readFile, unlink, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createCliRunner, handleColonCommand, type CliRunner } from './index.ts';
-import { loadEnv, readJsonl, validateSpec } from '@tamedtable/core';
+import { loadEnv, readJsonl, validateTablePlan } from '@tamedtable/core';
 
 // This file lives at src/packages/cli/colon.test.ts.
 const REPO_ROOT = join(import.meta.dirname, '../../..');
@@ -101,7 +101,7 @@ describe('handleColonCommand', () => {
   it('on :save-flow writes a flow whose source is relative to the flow file dir', async () => {
     const h = await loadedHarness();
     const flowFixture = JSON.parse(await readFile(tcFixture('dedupe.flow'), 'utf8'));
-    await h.runner.setSpec(validateSpec(flowFixture.spec));
+    await h.runner.setSpec(validateTablePlan(flowFixture.spec));
     const outFlow = tmpPath('flow');
     try {
       expect(await handleColonCommand(`:save-flow ${outFlow}`, h.runner, h.stream)).toBe('handled');
@@ -120,7 +120,7 @@ describe('handleColonCommand', () => {
   it('on :save-flow followed by execute round-trips the same rows', async () => {
     const h = await loadedHarness();
     const flowFixture = JSON.parse(await readFile(tcFixture('dedupe.flow'), 'utf8'));
-    await h.runner.setSpec(validateSpec(flowFixture.spec));
+    await h.runner.setSpec(validateTablePlan(flowFixture.spec));
     const expectedRows = h.runner.currentRows();
     const outFlow = join(TEMP, `repl-save-flow-roundtrip-${process.pid}.flow`);
     const outJsonl = join(TEMP, `repl-save-flow-roundtrip-${process.pid}.jsonl`);
@@ -143,7 +143,7 @@ describe('handleColonCommand', () => {
   it('on :undo after a JS-only setSpec pops the last transformation and reprints', async () => {
     const h = await loadedHarness();
     const flow = JSON.parse(await readFile(tcFixture('dedupe.flow'), 'utf8'));
-    await h.runner.setSpec(validateSpec(flow.spec));
+    await h.runner.setSpec(validateTablePlan(flow.spec));
     const beforeLen = h.runner.currentSpec().transformations.length;
     expect(beforeLen).toBeGreaterThan(0);
     expect(await handleColonCommand(':undo', h.runner, h.stream)).toBe('handled');

@@ -11,11 +11,11 @@ import { fileURLToPath } from 'node:url';
 import {
   loadCsv,
   loadJsonl,
-  validateSpec,
+  validateTablePlan,
   writeRows,
   type Expr,
   type Row,
-  type Spec,
+  type TablePlan,
   type Transformation,
 } from '@tamedtable/core';
 
@@ -51,7 +51,7 @@ export interface RequestDebugInfo {
   elapsedMs: number;
 }
 
-export type PlanItem =
+export type PlanEdit =
   | { kind: 'add-column'; id: string }
   | { kind: 'remove-column'; id: string }
   | { kind: 'reorder-columns'; from: string[]; to: string[] }
@@ -69,7 +69,7 @@ export interface HeadlessRunnerOptions {
   maxRetries?: number;
   rpm?: number;
   onChunk?: (update: ChunkUpdate) => void;
-  onPlan?: (items: PlanItem[]) => void;
+  onPlanEdits?: (items: PlanEdit[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
   signal?: AbortSignal;
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -83,9 +83,9 @@ export type RequestAudio = { data: Uint8Array; mediaType: string };
 export interface HeadlessRunner {
   loadInput(path: string): Promise<void>;
   request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  setSpec(spec: Spec): Promise<void>;
+  setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
-  currentSpec(): Spec;
+  currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
   /** One model call: translate the current flow into a standalone
    *  Python script. Returns the script source. */
@@ -302,7 +302,7 @@ const rateLimiter = (() => {
  *  column in spec.columns that still appears in the rows (preserving the
  *  LLM-chosen order and any label/format), and append new keys the
  *  transformations introduced in first-seen order. */
-function syncColumnsToRows(spec: Spec, rows: Row[]): Spec {
+function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
   if (rows.length === 0) return spec;
   const actualKeys: string[] = [];
   const seen = new Set<string>();
@@ -310,7 +310,7 @@ function syncColumnsToRows(spec: Spec, rows: Row[]): Spec {
     for (const k of Object.keys(row)) if (!seen.has(k)) { seen.add(k); actualKeys.push(k); }
   }
   const byId = new Map(spec.columns.map((c) => [c.id, c]));
-  const next: Spec['columns'] = [];
+  const next: TablePlan['columns'] = [];
   // First, keep existing columns in their declared order if they still exist.
   for (const col of spec.columns) {
     if (seen.has(col.id)) next.push(col);
@@ -638,7 +638,7 @@ const RECOVERY_GUIDANCE = [
   'Do not just retry the same shape with a different literal — the next emission must be measurably more permissive than the one that failed.',
 ].join(' ');
 
-function buildPrompt(text: string, spec: Spec, errPrefix?: string): string {
+function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string {
   // The LLM edits transformations/columns/view-ops — never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
   // model only ever sees the basename.
@@ -648,20 +648,20 @@ function buildPrompt(text: string, spec: Spec, errPrefix?: string): string {
   return `${errPrefix}\n\nCurrent spec:\n${specJson}\n\nOriginal user request: ${text}\n\nEmit a corrected patch.\n\n${RECOVERY_GUIDANCE}`;
 }
 
-type PatchAttempt = { kind: 'ok'; spec: Spec } | { kind: 'err'; message: string };
+type PatchAttempt = { kind: 'ok'; spec: TablePlan } | { kind: 'err'; message: string };
 
 /** @internal — exported for unit tests. Apply an LLM-proposed JSON Patch to
  *  the spec and validate the result. `validateOperation` is on so a malformed
  *  op (bad `op`, missing `path`) surfaces as a clear RFC-6902 message the
  *  recovery loop can feed back — not an opaque internal TypeError. */
 // #Patch
-export function applyAndValidate(currentSpec: Spec, ops: unknown[]): PatchAttempt {
+export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchAttempt {
   try {
     if (ops.length === 0) {
       return { kind: 'err', message: 'You called apply_spec_patch with an empty operations array. Emit at least one operation that fulfills the user request.' };
     }
     const patched = jsonpatch.applyPatch(structuredClone(currentSpec), ops as Operation[], true, false).newDocument as unknown;
-    const validated = validateSpec(patched);
+    const validated = validateTablePlan(patched);
     if (JSON.stringify(validated) === JSON.stringify(currentSpec)) {
       return { kind: 'err', message: 'Your patch applied cleanly but left the spec identical to before. Emit operations that actually modify the spec to fulfill the user request.' };
     }
@@ -677,7 +677,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private opts: HeadlessRunnerOptions;
   private sourceRows: Row[] = [];
   private sourcePath = '';
-  private spec: Spec = { columns: [], transformations: [] };
+  private spec: TablePlan = { columns: [], transformations: [] };
   private derivedRows: Row[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private modelCache: any;
@@ -804,7 +804,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   async loadInput(path: string): Promise<void> {
     const ext = path.slice(path.lastIndexOf('.')).toLowerCase();
-    let result: { spec: Spec; rows: Row[]; sourcePath: string };
+    let result: { spec: TablePlan; rows: Row[]; sourcePath: string };
     if (ext === '.csv') result = await loadCsv(path);
     else if (ext === '.jsonl') result = await loadJsonl(path);
     else throw new Error(`Runner: unknown file type: ${path}`);
@@ -821,7 +821,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   currentRows(): Row[] { this.requireLoaded(); return this.derivedRows; }
-  currentSpec(): Spec { this.requireLoaded(); return this.spec; }
+  currentSpec(): TablePlan { this.requireLoaded(); return this.spec; }
 
   async exportAs(filePath: string): Promise<void> {
     this.requireLoaded();
@@ -853,8 +853,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return text.endsWith('\n') ? text : text + '\n';
   }
 
-  async setSpec(spec: Spec): Promise<void> {
-    const validated = validateSpec(spec);
+  async setSpec(spec: TablePlan): Promise<void> {
+    const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
     const rows = await this.replay(validated, this.sourceRows, undefined, undefined);
     this.spec = syncColumnsToRows(validated, rows);
@@ -865,14 +865,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #MainLoop
   async request(
     text: string,
-    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlan?: (items: PlanItem[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
+    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
   ): Promise<void> {
     this.requireLoaded();
     if (this.busy || this.lingeringSql) throw new Error('Runner: a request is already in progress.');
     this.busy = true;
     const signal = callOpts.signal ?? this.opts.signal;
     const onChunk = callOpts.onChunk ?? this.opts.onChunk;
-    const onPlan = callOpts.onPlan ?? this.opts.onPlan;
+    const onPlanEdits = callOpts.onPlanEdits ?? this.opts.onPlanEdits;
     const turns: RequestDebugTurn[] = [];
     const startedAt = Date.now();
     const specBefore = this.spec;
@@ -903,14 +903,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           continue;
         }
 
-        if (onPlan) {
-          // The plan printer runs inside this callback. A formatting bug in
-          // it must drop a plan line, never fail an otherwise-good request —
-          // so swallow anything computePlan or the callback throws.
+        if (onPlanEdits) {
+          // The edit printer runs inside this callback. A formatting bug in
+          // it must drop an edit line, never fail an otherwise-good request —
+          // so swallow anything diffPlans or the callback throws.
           try {
-            const plan = computePlan(this.spec, tried.spec);
-            if (plan.length) onPlan(plan);
-          } catch { /* plan display is best-effort */ }
+            const edits = diffPlans(this.spec, tried.spec);
+            if (edits.length) onPlanEdits(edits);
+          } catch { /* edit display is best-effort */ }
         }
 
         try {
@@ -919,8 +919,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           this.spec = syncColumnsToRows(tried.spec, newRows);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
-          const expressions = computePlan(specBefore, this.spec)
-            .filter((p): p is Extract<PlanItem, { kind: 'add-transformation' }> => p.kind === 'add-transformation')
+          const expressions = diffPlans(specBefore, this.spec)
+            .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation')
             .flatMap((p) => transformationExpressions(p.transformation));
           this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt));
           return;
@@ -999,7 +999,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   private async replay(
-    spec: Spec,
+    spec: TablePlan,
     sourceRows: Row[],
     signal: AbortSignal | undefined,
     onChunk: ((u: ChunkUpdate) => void) | undefined
@@ -1470,8 +1470,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 }
 
 /** @internal — exported for unit tests. */
-export function computePlan(oldSpec: Spec, newSpec: Spec): PlanItem[] {
-  const items: PlanItem[] = [];
+export function diffPlans(oldSpec: TablePlan, newSpec: TablePlan): PlanEdit[] {
+  const items: PlanEdit[] = [];
   const oldIds = oldSpec.columns.map((c) => c.id);
   const newIds = newSpec.columns.map((c) => c.id);
   const oldSet = new Set(oldIds);

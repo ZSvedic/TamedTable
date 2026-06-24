@@ -7,8 +7,8 @@ import * as path from 'node:path';
 
 export type Row = Record<string, unknown>;
 
-// #SpecSchema
-// ── Spec schema (one schema for every spec — fresh load, patch, replay) ────
+// #TablePlanSchema
+// ── TablePlan schema (one schema for every spec — fresh load, patch, replay) ────
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);
 
@@ -99,7 +99,7 @@ const ColumnSchema = z.object({
   format: z.string().optional(),
 });
 
-export const SpecSchema = z
+export const TablePlanSchema = z
   .object({
     table: z.string().optional(),
     columns: z.array(ColumnSchema),
@@ -115,7 +115,7 @@ export const SpecSchema = z
     transformations: z.array(TransformationUnionSchema),
   })
   .strict();
-export type Spec = z.infer<typeof SpecSchema>;
+export type TablePlan = z.infer<typeof TablePlanSchema>;
 
 function describeZodError(err: z.ZodError): string {
   return err.issues
@@ -123,12 +123,12 @@ function describeZodError(err: z.ZodError): string {
     .join('; ');
 }
 
-export function validateSpec(spec: unknown): Spec {
-  const result = SpecSchema.safeParse(spec);
+export function validateTablePlan(spec: unknown): TablePlan {
+  const result = TablePlanSchema.safeParse(spec);
   if (!result.success) {
     throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
   }
-  return result.data as Spec;
+  return result.data as TablePlan;
 }
 
 async function readText(label: string, path: string): Promise<string> {
@@ -140,7 +140,7 @@ async function readText(label: string, path: string): Promise<string> {
 }
 
 // #IoFormats
-export async function loadCsv(path: string): Promise<{ spec: Spec; rows: Row[]; sourcePath: string }> {
+export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
   const text = await readText('loadCsv', path);
   const records = parse(text, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as Row[];
   const header = parse(text, { to_line: 1, trim: true, bom: true })[0] as string[] | undefined;
@@ -150,7 +150,7 @@ export async function loadCsv(path: string): Promise<{ spec: Spec; rows: Row[]; 
     if (seen.has(id)) throw new Error(`loadCsv: ${path} has duplicate column "${id}"`);
     seen.add(id);
   }
-  const spec: Spec = validateSpec({
+  const spec: TablePlan = validateTablePlan({
     table: path,
     columns: header.map((id) => ({ id })),
     transformations: [],
@@ -170,7 +170,7 @@ export async function readJsonl(path: string): Promise<Row[]> {
   return rows;
 }
 
-export async function loadJsonl(path: string): Promise<{ spec: Spec; rows: Row[]; sourcePath: string }> {
+export async function loadJsonl(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
   const rows = await readJsonl(path);
   const columns: string[] = [];
   const seen = new Set<string>();
@@ -179,7 +179,7 @@ export async function loadJsonl(path: string): Promise<{ spec: Spec; rows: Row[]
       if (!seen.has(key)) { seen.add(key); columns.push(key); }
     }
   }
-  const spec: Spec = validateSpec({
+  const spec: TablePlan = validateTablePlan({
     table: path,
     columns: columns.map((id) => ({ id })),
     transformations: [],

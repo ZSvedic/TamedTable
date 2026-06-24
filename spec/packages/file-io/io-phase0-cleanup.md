@@ -26,19 +26,19 @@ text-only.
 ## Target shape (option D)
 
 `file-io` owns every codec in a registry; `core` calls into it. The cycle that
-blocks this — `file-io` needs the `Spec` type from `core`, `core` would need
+blocks this — `file-io` needs the `TablePlan` type from `core`, `core` would need
 codecs from `file-io` — is cut by moving the model out of `core` into a new
 zero-dependency base package both can import.
 
 ```
-@tamedtable/spec   (new)  Row, Spec, Expr, SpecSchema, validateSpec, FormatCodec
+@tamedtable/table-plan  (new)  Row, TablePlan, Expr, TablePlanSchema, validateTablePlan, FormatCodec
         ▲      ▲
         │      └────────────── @tamedtable/file-io   codec registry, dialogs, fetch
         │                              ▲
         └────────── @tamedtable/core ──┘   engine; byte-acquisition (node:fs) only
 ```
 
-A clean DAG: `core → file-io → spec`, `core → spec`. No cycle.
+A clean DAG: `core → file-io → table-plan`, `core → table-plan`. No cycle.
 
 ### FormatCodec
 
@@ -65,12 +65,12 @@ spec → Gherkin → step defs → red → green, `cd src && bun run test` green
 commit. One PR per step. Steps 1–2 are pure moves (behavior held constant);
 the package-API surface shift is recorded in `spec/code-contract.md`.
 
-1. **Extract `@tamedtable/spec`.** Move `Row`, `Expr`, `Transformation`, their
-   schemas, `Spec`, `SpecSchema`, `validateSpec` out of `core` into the new
-   package. `core` **re-exports** them, so all 26 existing
+1. **Extract `@tamedtable/table-plan`.** Move `Row`, `Expr`, `Transformation`,
+   their schemas, `TablePlan`, `TablePlanSchema`, `validateTablePlan` out of
+   `core` into the new package. `core` **re-exports** them, so all 26 existing
    `from '@tamedtable/core'` imports keep working untouched. `file-io` repoints
-   its `Spec` import to `@tamedtable/spec` and drops its `core` dependency. This
-   alone breaks the cycle structurally.
+   its `TablePlan` import to `@tamedtable/table-plan` and drops its `core`
+   dependency. This alone breaks the cycle structurally.
 
 2. **Move codecs into `file-io`, `core` consumes them.** `core`'s
    `loadCsv`/`writeRows` keep their path signatures and `node:fs`, but delegate
@@ -95,9 +95,10 @@ the package-API surface shift is recorded in `spec/code-contract.md`.
 After step 5, every roadmap format is a pure registry addition: a codec file, a
 `formats/<name>.md`, a registry row.
 
-## One open call
+## Base package name — settled
 
-The base package name. `@tamedtable/spec` matches the `Spec` type but risks
-confusion with the `spec/` docs tree; `@tamedtable/schema` or
-`@tamedtable/model` avoid that. Recommendation: `@tamedtable/spec`, since the
-dominant exports are `Spec` and `SpecSchema`.
+`@tamedtable/table-plan`, exporting `TablePlan` (the declarative table
+definition formerly named `Spec`), `TablePlanSchema`, and `validateTablePlan`.
+The type was renamed away from `Spec` to end the clash with the `spec/` docs
+tree; `table-plan` follows the type. The on-disk `.flow` format is unchanged —
+its wire key stays `spec`, so existing flows keep loading.
