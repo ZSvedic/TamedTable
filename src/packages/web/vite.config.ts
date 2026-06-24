@@ -16,7 +16,7 @@ const shim = (file: string): string => join(here, 'src/shims', file);
 const specTcDir = join(here, '../../../spec/test-cases');
 const cassetteDir = join(here, '../../tests/__cassettes__');
 
-// Tutorial: the @tutorial/@web feature files. We ship only a lightweight
+// Tutorial: the @tour/@web feature files. We ship only a lightweight
 // MANIFEST (scenario name + tags + source file) in the JS bundle; the heavy
 // assets — feature source, input/golden fixtures, and recorded cassettes —
 // load lazily, fetched same-origin from /tutorials/, /samples/, and

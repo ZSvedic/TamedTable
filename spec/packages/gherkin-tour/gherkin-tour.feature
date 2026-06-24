@@ -22,12 +22,12 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @web @tutorial
+          @web @tour
           Scenario: My tour
             Given load "foo.csv"
         """
       When parseTours is called
-      Then scenario 1 is tagged "@tutorial"
+      Then scenario 1 is tagged "@tour"
       And scenario 1 is tagged "@web"
 
     @headless
@@ -39,7 +39,7 @@ Feature: Gherkin Tour parser
           Scenario: First
             Given load "foo.csv"
 
-          @tutorial
+          @tour
           Scenario: Second
             Given load "bar.csv"
         """
@@ -58,7 +58,7 @@ Feature: Gherkin Tour parser
           Background:
             Given load "base.csv"
 
-          @tutorial
+          @tour
           Scenario: With background
             When query "Do something"
         """
@@ -71,7 +71,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: Outside rule
             When query "Top level"
 
@@ -79,7 +79,7 @@ Feature: Gherkin Tour parser
             Background:
               Given load "scoped.csv"
 
-            @tutorial
+            @tour
             Scenario: Inside rule
               When query "Do scoped"
         """
@@ -96,7 +96,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: Load step
             Given load "my-data.csv"
         """
@@ -109,7 +109,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: Lookup step
             Given load the lookup table "codes.csv" with columns "A, B"
         """
@@ -122,7 +122,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: Chat step
             When query "Normalize phone numbers"
         """
@@ -135,7 +135,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: Audio step
             When Play voiceover: "voice-demo.mp3"
         """
@@ -150,7 +150,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: Golden step
             When query "Do it"
             Then compare with the expected output
@@ -164,7 +164,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: With assertions
             Given load "x.csv"
             When query "Do it"
@@ -181,7 +181,7 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario: With golden
             Given load "x.csv"
             And the expected output is "x-expected.jsonl"
@@ -200,7 +200,7 @@ Feature: Gherkin Tour parser
         """
         Feature: Demo
           # This is a comment
-          @tutorial
+          @tour
           Scenario: Commented
             # Another comment
             Given load "x.csv"
@@ -214,14 +214,14 @@ Feature: Gherkin Tour parser
       Given a feature string:
         """
         Feature: Demo
-          @tutorial
+          @tour
           Scenario Outline: Outline tour
             Given load "<file>"
             Examples:
               | file    |
               | a.csv   |
 
-          @tutorial
+          @tour
           Scenario: Regular tour
             Given load "b.csv"
         """

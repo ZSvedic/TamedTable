@@ -1,5 +1,5 @@
 // #TutorialMode
-// Tutorial-panel state: a lightweight manifest of @tutorial/@web scenarios, the
+// Tutorial-panel state: a lightweight manifest of @tour/@web scenarios, the
 // active tour/step cursors, and the per-step side effects (load a file, prefill
 // the chat, surface a golden). Everything heavy — the `.feature` source, the
 // input/golden fixtures, and the recorded cassette — loads lazily through the
@@ -87,27 +87,27 @@ export class TutorialManager {
     this.cancelTutorial();
   }
 
-  /** Names of `@tutorial` tours — the clickable list in the panel. */
+  /** Names of `@tour` tours — the clickable list in the panel. */
   tutorialScenarioNames(): string[] {
-    return this.manifest.filter((t) => t.tags.includes('@tutorial')).map((t) => t.name);
+    return this.manifest.filter((t) => t.tags.includes('@tour')).map((t) => t.name);
   }
 
-  /** `@tutorial` tours grouped by their `@cat-…` category, in homepage order
+  /** `@tour` tours grouped by their `@cat-…` category, in homepage order
    *  (the seven sections from `TUTORIAL_CATEGORIES`). Empty categories are
    *  dropped so the panel shows only populated sections. */
   tutorialGroups(): { title: string; names: string[] }[] {
-    const tours = this.manifest.filter((t) => t.tags.includes('@tutorial'));
+    const tours = this.manifest.filter((t) => t.tags.includes('@tour'));
     return TUTORIAL_CATEGORIES.map(({ tag, title }) => ({
       title,
       names: tours.filter((t) => t.tags.includes(tag)).map((t) => t.name),
     })).filter((g) => g.names.length > 0);
   }
 
-  /** Names of `@web` scenarios that are not `@tutorial` — the trailing "Dev"
+  /** Names of `@web` scenarios that are not `@tour` — the trailing "Dev"
    *  dropdown for smoke-testing a scenario without opening the .feature file. */
   devScenarioNames(): string[] {
     return this.manifest
-      .filter((t) => t.tags.includes('@web') && !t.tags.includes('@tutorial'))
+      .filter((t) => t.tags.includes('@web') && !t.tags.includes('@tour'))
       .map((t) => t.name);
   }
 

@@ -1,5 +1,5 @@
 # #TutorialMode
-# Tutorial panel — walk through @tutorial scenarios offline, key-free.
+# Tutorial panel — walk through @tour scenarios offline, key-free.
 # All scenarios are @web; the WebController drives the tour, no browser needed.
 Feature: Tutorial panel
 
@@ -12,7 +12,7 @@ Feature: Tutorial panel
       Then the tutorial panel is shown
 
     @web
-    Scenario: The clickable list shows only @tutorial scenario names
+    Scenario: The clickable list shows only @tour scenario names
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the tutorial list includes "Filter by Country"
@@ -29,7 +29,7 @@ Feature: Tutorial panel
       And the tutorial group "Language" includes "Normalize DOB by voice"
 
     @web
-    Scenario: The Dev dropdown lists @web non-@tutorial scenarios
+    Scenario: The Dev dropdown lists @web non-@tour scenarios
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the dev list includes "Aggregate produces one row per distinct by-tuple"

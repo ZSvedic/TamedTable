@@ -11,7 +11,7 @@ Three layers, used à la carte:
 
 ## parseTours
 
-Returns **every** scenario (filtering by tag — `@tutorial`, `@web` — is the
+Returns **every** scenario (filtering by tag — `@tour`, `@web` — is the
 consumer's job), each with its tags and a tour-ready step list. Given:
 
 ```gherkin
@@ -20,7 +20,7 @@ Feature: Filter demo
     Given load "filter-input.csv"
     And the expected output is "filter-expected.jsonl"
 
-  @web @tutorial
+  @web @tour
   Scenario: Filter by Country
     When query "Show only customers in the USA"
     Then column "Country" exists in the spec
@@ -32,7 +32,7 @@ the `Filter by Country` scenario parses to:
 ```js
 {
   name: "Filter by Country",
-  tags: ["@web", "@tutorial"],
+  tags: ["@web", "@tour"],
   golden: "filter-expected.jsonl",
   steps: [
     { keyword: "Given", text: 'load "filter-input.csv"',

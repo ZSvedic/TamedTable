@@ -8,7 +8,7 @@ Feature: Lookup join
       Given load "datanorm-input.csv"
       And load the lookup table "join-country-codes.csv" with columns "Country, ISO, Region"
 
-    @headless @cli @web @tutorial @cat-deterministic
+    @headless @cli @web @tour @cat-deterministic
     Scenario: Left join enriches each customer with ISO and Region
       When query "Join with join-country-codes.csv on Country to add ISO and Region"
       Then column "ISO" exists in the spec
