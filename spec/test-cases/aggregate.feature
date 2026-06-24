@@ -8,7 +8,7 @@ Feature: Group and aggregate
       Given load "datanorm-input.csv"
       And the expected output is "aggregate-by-country-expected.jsonl"
 
-    @headless @cli @web @tutorial
+    @headless @cli @web
     Scenario: Count customers per country
       When query "Count customers per Country"
       Then column "Country" exists in the spec

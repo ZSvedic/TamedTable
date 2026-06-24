@@ -65,6 +65,29 @@ export class TutorialManager {
     return this.manifest.filter((t) => t.tags.includes('@tutorial')).map((t) => t.name);
   }
 
+  /** The seven homepage feature sections, in homepage order, each paired with
+   *  the `@cat-…` tag its tours carry. The Tutorial panel renders one group per
+   *  category (plus the trailing Dev dropdown), mirroring the marketing page. */
+  private static readonly CATEGORIES: ReadonlyArray<{ tag: string; title: string }> = [
+    { tag: '@cat-cleanup', title: 'Clean up' },
+    { tag: '@cat-enrich', title: 'Enrich & extract' },
+    { tag: '@cat-classify', title: 'Classify' },
+    { tag: '@cat-validate', title: 'Validate' },
+    { tag: '@cat-language', title: 'Language' },
+    { tag: '@cat-deterministic', title: 'Deterministic' },
+    { tag: '@cat-loadsave', title: 'Load, save & reuse' },
+  ];
+
+  /** `@tutorial` tours grouped by their `@cat-…` category, in homepage order.
+   *  Empty categories are dropped so the panel shows only populated sections. */
+  tutorialGroups(): { title: string; names: string[] }[] {
+    const tours = this.manifest.filter((t) => t.tags.includes('@tutorial'));
+    return TutorialManager.CATEGORIES.map(({ tag, title }) => ({
+      title,
+      names: tours.filter((t) => t.tags.includes(tag)).map((t) => t.name),
+    })).filter((g) => g.names.length > 0);
+  }
+
   /** Names of `@web` scenarios that are not `@tutorial` — the trailing "Dev"
    *  dropdown for smoke-testing a scenario without opening the .feature file. */
   devScenarioNames(): string[] {

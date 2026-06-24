@@ -12,7 +12,9 @@ import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-p
 const TUTORIAL_FEATURES = [
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
-  'voice.feature',
+  'voice.feature', 'sort.feature', 'multilingual.feature',
+  'clean-up.feature', 'enrich.feature', 'classify.feature',
+  'language-ai.feature', 'loadsave.feature',
 ];
 
 /** Build TutorialSources from disk: a lightweight manifest plus on-demand

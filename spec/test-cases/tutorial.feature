@@ -16,15 +16,24 @@ Feature: Tutorial panel
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the tutorial list includes "Filter by Country"
-      And the tutorial list includes "Count customers per country"
+      And the tutorial list includes "Normalize the phone numbers"
       And the tutorial list includes "Left join enriches each customer with ISO and Region"
+
+    @web
+    Scenario: The tutorial list is grouped by feature category
+      Given the TamedTable web app
+      When user opens the tutorial panel
+      Then the tutorial group "Clean up" includes "Normalize the phone numbers"
+      And the tutorial group "Validate" includes "Flag prices that seem wrong"
+      And the tutorial group "Deterministic" includes "Filter by Country"
+      And the tutorial group "Language" includes "Normalize DOB by voice"
 
     @web
     Scenario: The Dev dropdown lists @web non-@tutorial scenarios
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the dev list includes "Aggregate produces one row per distinct by-tuple"
-      And the dev list does not include "Count customers per country"
+      And the dev list does not include "Filter by Country"
 
   Rule: Playing a tutorial walks through steps
 

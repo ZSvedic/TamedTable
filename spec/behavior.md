@@ -843,12 +843,17 @@ key set can still play a full tour end to end. A miss (no recording for the
 exact request) fails loudly with a toast rather than hanging.
 
 A **Tutorial** button in the toolbar opens the Tutorial panel. The panel shows
-a **clickable list** of every `@tutorial`-tagged scenario drawn from the bundled
-feature files; clicking a row selects it (double-click selects and plays).
-Below the list, a **Dev** dropdown lists every `@web` scenario that is *not*
-`@tutorial`, so a developer can smoke-test any scenario without opening the
-`.feature` file. A Play button starts whichever scenario is selected (it is
-disabled until one is).
+the `@tutorial`-tagged scenarios drawn from the bundled feature files, **grouped
+into the seven marketing feature categories** — Clean up, Enrich & extract,
+Classify, Validate, Language, Deterministic, and Load, save & reuse — in that
+order, mirroring the homepage. A scenario's group comes from its `@cat-…` tag
+(e.g. `@cat-cleanup`); empty categories are omitted. Clicking a row selects it
+(double-click selects and plays). Below the groups, a **Dev** dropdown lists
+every `@web` scenario that is *not* `@tutorial`, so a developer can smoke-test
+any scenario without opening the `.feature` file. A Play button starts whichever
+scenario is selected (it is disabled until one is). The homepage "Show me →"
+links deep-link into these tours, one per feature item (the Load, save & reuse
+items share a single combined tour).
 
 When Play is clicked, the Tutorial panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step

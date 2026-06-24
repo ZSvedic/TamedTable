@@ -7,7 +7,7 @@ Feature: Deduplicate customer records
       Given load "dedupe-input.csv"
       And the expected output is "dedupe-expected.jsonl"
 
-    @headless @cli @web @tutorial
+    @headless @cli @web @tutorial @cat-deterministic
     Scenario: Drop duplicates by Email
       When query "Remove duplicate rows by Email"
       Then compare with the expected output

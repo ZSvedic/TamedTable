@@ -7,7 +7,7 @@ Feature: Column split
     Background:
       Given load "colsplit-fullname-input.csv"
 
-    @headless @cli @web @tutorial
+    @headless @cli @web
     Scenario: Split FullName into FirstName and LastName on space
       When query "Split FullName into FirstName and LastName on a single space"
       Then column "FirstName" exists in the spec

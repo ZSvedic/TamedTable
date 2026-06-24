@@ -16,7 +16,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const done = controller.isTutorialDone();
   const stepNum = controller.currentTutorialStepNumber();
   const stepTotal = controller.tutorialStepCount();
-  const names = controller.tutorialScenarioNames();
+  const groups = controller.tutorialGroups();
   const devNames = controller.devScenarioNames();
   const goldenRows = controller.goldenRows;
   const selectedTourName = controller.selectedTourName();
@@ -153,7 +153,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                    tour, so a deep-link visitor never sees this slide-over. */
                 <div>
                   <div style={labelStyle}>Pick a tutorial</div>
-                  {names.length === 0 ? (
+                  {groups.length === 0 ? (
                     <div
                       style={{
                         fontFamily: typography.ui,
@@ -165,34 +165,51 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                       No tutorials available.
                     </div>
                   ) : (
-                    <div role="listbox" style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
-                      {names.map((name) => {
-                        const selected = name === selectedTourName;
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() => { controller.selectTutorialScenario(name); }}
-                            onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: space.px16 }}>
+                      {groups.map((group) => (
+                        <div key={group.title}>
+                          <div
                             style={{
-                              textAlign: 'left',
-                              padding: '8px 10px',
-                              border: `1px solid ${selected ? t.accent : t.line2}`,
-                              borderRadius: space.radiusSm,
-                              background: selected ? t.accentSoft : t.surface2,
-                              color: t.ink,
-                              fontFamily: typography.ui,
-                              fontSize: typography.size.base,
-                              fontWeight: selected ? 600 : 400,
-                              cursor: 'pointer',
+                              ...labelStyle,
+                              color: t.ink3,
+                              fontSize: typography.size.xs,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.06em',
                             }}
                           >
-                            {name}
-                          </button>
-                        );
-                      })}
+                            {group.title}
+                          </div>
+                          <div role="listbox" aria-label={group.title} style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
+                            {group.names.map((name) => {
+                              const selected = name === selectedTourName;
+                              return (
+                                <button
+                                  key={name}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={selected}
+                                  onClick={() => { controller.selectTutorialScenario(name); }}
+                                  onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                                  style={{
+                                    textAlign: 'left',
+                                    padding: '8px 10px',
+                                    border: `1px solid ${selected ? t.accent : t.line2}`,
+                                    borderRadius: space.radiusSm,
+                                    background: selected ? t.accentSoft : t.surface2,
+                                    color: t.ink,
+                                    fontFamily: typography.ui,
+                                    fontSize: typography.size.base,
+                                    fontWeight: selected ? 600 : 400,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 

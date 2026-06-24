@@ -77,6 +77,13 @@ Then('the tutorial list includes {string}', function (this: TamedTableWorld, nam
   assert.ok(names.includes(name), `tutorial list should include "${name}"; got: ${JSON.stringify(names)}`);
 });
 
+Then('the tutorial group {string} includes {string}', function (this: TamedTableWorld, group: string, name: string) {
+  const groups = controller(this).tutorialGroups();
+  const g = groups.find((x) => x.title === group);
+  assert.ok(g, `tutorial group "${group}" not found; got: ${JSON.stringify(groups.map((x) => x.title))}`);
+  assert.ok(g!.names.includes(name), `group "${group}" should include "${name}"; got: ${JSON.stringify(g!.names)}`);
+});
+
 Then('the dev list includes {string}', function (this: TamedTableWorld, name: string) {
   const names = controller(this).devScenarioNames();
   assert.ok(names.includes(name), `dev list should include "${name}"; got: ${JSON.stringify(names)}`);

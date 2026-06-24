@@ -93,7 +93,7 @@ Feature: Voice input
   # tutorial.feature). The clip is the committed English "normalize DOB column".
   Rule: A spoken tour normalizes a column key-free
 
-    @web @tutorial
+    @web @tutorial @cat-language
     Scenario: Normalize DOB by voice
       Given the TamedTable web app
       And load "datanorm-input.csv"
