@@ -28,7 +28,7 @@ type Transformation =
 
 type Row = Record<string, unknown>;
 
-interface Spec {
+interface TablePlan {
   table?: string;
   columns: Array<{ id: string; label?: string; format?: string }>;
   transformations: Transformation[];
@@ -39,7 +39,7 @@ interface Spec {
 }
 ```
 
-A single Zod schema (`validateSpec` / `SpecSchema`) covers the whole type
+A single Zod schema (`validateTablePlan` / `TablePlanSchema`) covers the whole type
 set and runs at three points:
 
 1. When `loadCsv` or `loadJsonl` builds the initial spec.
@@ -63,17 +63,17 @@ Patches: RFC 6902 via `fast-json-patch`; RFC 7396 merge hand-rolled
 → [behavior.md — Core / runner](behavior.md#core--runner)
 
 ```ts
-function loadCsv(path: string):   Promise<{ spec: Spec; rows: Row[]; sourcePath: string }>;
-function loadJsonl(path: string): Promise<{ spec: Spec; rows: Row[]; sourcePath: string }>;
+function loadCsv(path: string):   Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }>;
+function loadJsonl(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }>;
 function readJsonl(path: string): Promise<Row[]>;
 function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<void>;
 
 interface Runner {
   loadInput(path: string): Promise<void>;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  setSpec(spec: Spec): Promise<void>;
+  setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
-  currentSpec(): Spec;
+  currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
 }
 
@@ -129,13 +129,13 @@ interface HeadlessRunnerOptions {
   maxRetries?: number;
   rpm?: number;
   onChunk?: (update: ChunkUpdate) => void;     // #LLMCells
-  onPlan?: (items: PlanItem[]) => void;
+  onPlanEdits?: (items: PlanEdit[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;  // #DebugOut
   signal?: AbortSignal;       // #CancelOp
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;  // #Cassettes
 }
 
-type PlanItem =
+type PlanEdit =
   | { kind: 'add-column'; id: string }
   | { kind: 'remove-column'; id: string }
   | { kind: 'reorder-columns'; from: string[]; to: string[] }
@@ -320,7 +320,7 @@ so callers can decide what to do with a failure.
 {
   "version": 2,
   "source": "datanorm-input.csv",
-  "spec": { /* Spec — see Data model above */ }
+  "spec": { /* TablePlan — see Data model above */ }
 }
 ```
 
@@ -549,11 +549,11 @@ divider, so the pair reads as one control.
 
 → [behavior.md — One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)
 
-### One spec schema
+### One TablePlan schema
 
-`validateSpec` (over `SpecSchema`) is the only spec validator.
+`validateTablePlan` (over `TablePlanSchema`) is the only TablePlan validator.
 `runCli execute` does not branch on `flow.version`: a `version` of `1`
-or `2` both validate through `validateSpec`.
+or `2` both validate through `validateTablePlan`.
 
 ### Sorting by a SQL or AI key
 
@@ -569,9 +569,9 @@ the first N.
 
 ### A formatter bug never fails a request
 
-The `onPlan` callback dispatch in `Runner.request` is wrapped in
-`try/catch`. `computePlan` and the callback can throw without aborting
-the request — the plan line is dropped, the commit proceeds.
+The `onPlanEdits` callback dispatch in `Runner.request` is wrapped in
+`try/catch`. `diffPlans` and the callback can throw without aborting
+the request — the edit line is dropped, the commit proceeds.
 
 ### Export a flow as a Python script (#PyExport)
 

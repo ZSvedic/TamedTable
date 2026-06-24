@@ -5,7 +5,7 @@ import {
   type ITestCaseHookParameter,
 } from '@cucumber/cucumber';
 import { join, basename } from 'node:path';
-import type { Row, Spec } from '@tamedtable/core';
+import type { Row, TablePlan } from '@tamedtable/core';
 import { cassetteFetch, type FetchLike } from './cassette.ts';
 
 // Path anchors, resolved from this file's location so they hold regardless of cwd.
@@ -22,7 +22,7 @@ export interface Runner {
   loadInput(path: string): Promise<void>;
   request(text: string): Promise<void>;
   currentRows(): Row[];
-  currentSpec(): Spec;
+  currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
 }
 
@@ -35,8 +35,8 @@ export interface CapturedInvocation {
 export interface RequestOutcome {
   ok: boolean;
   error?: Error;
-  specBefore: Spec;
-  specAfter?: Spec;
+  specBefore: TablePlan;
+  specAfter?: TablePlan;
 }
 
 // #TestUtils

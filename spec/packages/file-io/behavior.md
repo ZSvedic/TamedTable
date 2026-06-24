@@ -70,7 +70,7 @@ order:
 
 ## Flow serialization
 
-`serializeFlow(spec)` wraps a core `Spec` into the `.flow` file format:
+`serializeFlow(spec)` wraps a core `TablePlan` into the `.flow` file format:
 pretty-printed JSON `{ version: 2, source, spec }` with a trailing newline.
 `source` is the basename of `spec.table`, or `input.csv` when the spec has
 no table.

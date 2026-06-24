@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'bun:test';
 import { applyAndValidate, patchOperationsProperty, decodeOpValues, parseLlmParts } from './index.ts';
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 
-const baseSpec: Spec = { table: 't.csv', columns: [{ id: 'A' }], transformations: [] };
+const baseSpec: TablePlan = { table: 't.csv', columns: [{ id: 'A' }], transformations: [] };
 
 describe('applyAndValidate', () => {
   it('applies a well-formed patch and returns the new spec', () => {

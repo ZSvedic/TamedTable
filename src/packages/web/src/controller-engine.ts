@@ -10,7 +10,7 @@ import {
   type HeadlessRunner,
   type RequestAudio,
 } from '@tamedtable/headless';
-import type { Row, Spec } from '@tamedtable/core';
+import type { Row, TablePlan } from '@tamedtable/core';
 import { defaultModel, defaultCellModel } from '@tamedtable/model-config';
 import type { FetchLike } from '@tamedtable/file-io';
 import type { ControllerHost } from './controller-context.ts';
@@ -101,7 +101,7 @@ export class EngineManager {
 
   /** Rebuild the engine for a model change with a file loaded, reapplying the
    *  current spec onto the freshly-loaded source. */
-  async rebuildForModelChange(spec: Spec): Promise<void> {
+  async rebuildForModelChange(spec: TablePlan): Promise<void> {
     this.headless = undefined;
     const runner = this.ensureHeadless();
     await runner.loadInput(this.host.sourcePath);
@@ -174,7 +174,7 @@ export class EngineManager {
     return this.ensureHeadless().currentRows();
   }
 
-  currentSpec(): Spec {
+  currentSpec(): TablePlan {
     return this.ensureHeadless().currentSpec();
   }
 
@@ -194,7 +194,7 @@ export class EngineManager {
 
   // ── View accessors (never throw — safe before a file is loaded) ───────────
 
-  displaySpec(): Spec {
+  displaySpec(): TablePlan {
     if (!this.host.loaded) return { columns: [], transformations: [] };
     return this.ensureHeadless().currentSpec();
   }

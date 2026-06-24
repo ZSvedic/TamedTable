@@ -61,7 +61,7 @@ Each row is a logical area of the app implementation (core, headless, CLI, web).
 | Step execution | [#StepExec](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23StepExec&type=code) | Per-step runner: resolve, execute, validate result |
 | Web shell | [#WebShell](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebShell&type=code) | The framework-agnostic `WebController` composition shell: composes the headless Runner with the domain managers (engine, patch, files, voice, config, tutorial); no DOM (`src/packages/web/src/controller.ts`) |
 | Test utilities | [#TestUtils](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TestUtils&type=code) | Shared helpers used only in the test suite |
-| Spec schema | [#SpecSchema](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SpecSchema&type=code) | Zod schema definition and validation for the spec object |
+| TablePlan schema | [#TablePlanSchema](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TablePlanSchema&type=code) | Zod schema definition and validation for the TablePlan object |
 | Patch apply | [#Patch](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Patch&type=code) | RFC 6902 patch application, idempotence check, and undo/redo journal |
 | DuckDB layer | [#DuckDB](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DuckDB&type=code) | In-process DuckDB setup, relation registration, and SQL evaluation |
 | CSV serialisation | [#CsvSerialize](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CsvSerialize&type=code) | RFC 4180 CSV output, column ordering, and cell stringification |

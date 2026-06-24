@@ -8,7 +8,7 @@
 // siblings through this `ControllerHost` interface — so no manager imports
 // the WebController class, and the public surface stays on one object.
 import type { RequestDebugInfo } from '@tamedtable/headless';
-import type { Row, Spec } from '@tamedtable/core';
+import type { Row, TablePlan } from '@tamedtable/core';
 import type { Provider, ResolvedConfig } from '@tamedtable/model-config';
 import type { FilePort } from '@tamedtable/file-io';
 import type { EngineManager } from './controller-engine.ts';

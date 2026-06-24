@@ -1,18 +1,18 @@
 // #Patch
-// Surface-agnostic undo/redo journal over whole-Spec snapshots. One entry per
+// Surface-agnostic undo/redo journal over whole-TablePlan snapshots. One entry per
 // spec-changing turn holds the spec before and after, plus a human label. It
 // holds no DOM and no engine reference — applying an entry's spec back to a
 // runner is the caller's job — so any surface (web today, the CLI tomorrow)
 // can reuse it.
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 
 export interface JournalEntry {
   /** Human-readable description of the change (chat text, "reorder columns"). */
   label: string;
-  /** Spec before the change — what undo restores. */
-  prevSpec: Spec;
-  /** Spec after the change — what redo restores. */
-  nextSpec: Spec;
+  /** TablePlan before the change — what undo restores. */
+  prevSpec: TablePlan;
+  /** TablePlan after the change — what redo restores. */
+  nextSpec: TablePlan;
 }
 
 export class SpecJournal {

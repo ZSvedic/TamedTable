@@ -4,7 +4,7 @@
 // manager applies an entry's spec back through the engine and turns cell edits
 // and column reorders into ordinary, replayable spec patches.
 import { SpecJournal, type JournalEntry } from '@tamedtable/headless';
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 import type { ControllerHost } from './controller-context.ts';
 
 export class PatchManager {
@@ -95,13 +95,13 @@ export class PatchManager {
     await this.applySpecChange('reorder columns', (spec) => {
       const byId = new Map(spec.columns.map((c) => [c.id, c]));
       const named = new Set(order);
-      const moved = order.map((id) => byId.get(id)).filter((c): c is Spec['columns'][number] => !!c);
+      const moved = order.map((id) => byId.get(id)).filter((c): c is TablePlan['columns'][number] => !!c);
       const rest = spec.columns.filter((c) => !named.has(c.id));
       return { ...spec, columns: [...moved, ...rest] };
     });
   }
 
-  private async applySpecChange(label: string, build: (spec: Spec) => Spec): Promise<void> {
+  private async applySpecChange(label: string, build: (spec: TablePlan) => TablePlan): Promise<void> {
     const runner = this.host.engine.ensureHeadless();
     if (!this.host.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const prevSpec = structuredClone(runner.currentSpec());

@@ -4,7 +4,7 @@
 // they import nothing from the app harness.
 import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 import {
   detectFormat,
   fetchTable,
@@ -20,11 +20,11 @@ const unescape = (s: string): string => s.replaceAll('\\n', '\n');
 interface FileIoWorld {
   _fio?: {
     fetchStub?: FetchLike;
-    spec?: Spec;
+    spec?: TablePlan;
     format?: 'csv' | 'jsonl' | null;
     name?: string;
     picked?: PickedFile;
-    flow?: { version: number; source: string; spec: Spec };
+    flow?: { version: number; source: string; spec: TablePlan };
     error?: Error;
   };
 }
@@ -138,7 +138,7 @@ Then('fetchTable fails mentioning {string}', function (this: FileIoWorld, fragme
 
 // ── serializeFlow ────────────────────────────────────────────────────────────
 
-const specWithColumns = (table: string | undefined, columns: string): Spec => ({
+const specWithColumns = (table: string | undefined, columns: string): TablePlan => ({
   ...(table === undefined ? {} : { table }),
   columns: columns.split(',').map((c) => ({ id: c.trim() })),
   transformations: [],

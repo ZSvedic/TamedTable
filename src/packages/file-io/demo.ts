@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 // #FileIO demo logic — referenced by demo.html as an external module so
 // `bun build` bundles it (inline scripts are left unbundled and 404 on ./index.ts).
-import type { Spec } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/core';
 import { detectFormat, fetchTable, serializeFlow, type PickedFile } from './index.ts';
 import { BrowserFilePort } from './browser-fs.ts';
 
@@ -59,7 +59,7 @@ $('fio-save').addEventListener('click', async () => {
 
 // A canned spec so serializeFlow output is visible without loading anything.
 // Rendering into #out doubles as the demo smoke test's ready signal.
-const sampleSpec: Spec = {
+const sampleSpec: TablePlan = {
   table: 'data/people.csv',
   columns: [{ id: 'name' }, { id: 'age' }],
   transformations: [],

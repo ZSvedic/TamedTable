@@ -15,7 +15,7 @@
 // one object; each method's contract is documented on the manager it calls.
 
 import type { ChunkUpdate, RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
-import type { Row, Spec } from '@tamedtable/core';
+import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { detectFormat, type FilePort } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
@@ -186,7 +186,7 @@ export class WebController implements ControllerHost {
   }
 
   currentRows(): Row[] { return this.engine.currentRows(); }
-  currentSpec(): Spec { return this.engine.currentSpec(); }
+  currentSpec(): TablePlan { return this.engine.currentSpec(); }
   exportAs(path: string): Promise<void> { return this.engine.exportAs(path); }
 
   // ── Chat ─────────────────────────────────────────────────────────────────
@@ -226,7 +226,7 @@ export class WebController implements ControllerHost {
   // ── View accessors (never throw — safe before a file is loaded) ───────────
 
   isLoaded(): boolean { return this.loaded; }
-  displaySpec(): Spec { return this.engine.displaySpec(); }
+  displaySpec(): TablePlan { return this.engine.displaySpec(); }
   /** Current rows with any in-flight streaming chunks painted on top. */
   displayRows(): Row[] { return this.engine.displayRows(); }
 

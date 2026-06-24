@@ -4,9 +4,9 @@ import { readFile, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import {
   loadEnv,
-  validateSpec,
+  validateTablePlan,
   type Row,
-  type Spec,
+  type TablePlan,
   type Transformation,
 } from '@tamedtable/core';
 import {
@@ -14,7 +14,7 @@ import {
   type ChunkUpdate,
   type HeadlessRunner,
   type HeadlessRunnerOptions,
-  type PlanItem,
+  type PlanEdit,
   type RequestDebugInfo,
 } from '@tamedtable/headless';
 import { resolveConfig } from '@tamedtable/model-config';
@@ -31,9 +31,9 @@ export interface CliRunnerOptions extends HeadlessRunnerOptions {
 export interface CliRunner {
   loadInput(path: string): Promise<void>;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
-  setSpec(spec: Spec): Promise<void>;
+  setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
-  currentSpec(): Spec;
+  currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
   viewportSummary(): string;
 }
@@ -154,7 +154,7 @@ function wrapHighlight(text: string, re: RegExp | undefined): string {
 
 // #FormatOut
 export function renderTable(
-  spec: Spec,
+  spec: TablePlan,
   rows: Row[],
   rowOffset = 0,
   colOffset = 0,
@@ -256,7 +256,7 @@ function describeTransformation(t: Transformation): string {
   }
 }
 
-function formatPlanItem(item: PlanItem): string {
+function formatPlanItem(item: PlanEdit): string {
   switch (item.kind) {
     case 'add-column':           return `add column '${item.id}'`;
     case 'remove-column':        return `remove column '${item.id}'`;
@@ -341,8 +341,8 @@ function renderError(err: Error, stdout: NodeJS.WritableStream): void {
 
 interface JournalEntry {
   request: string;
-  prevSpec: Spec;
-  newSpec: Spec;
+  prevSpec: TablePlan;
+  newSpec: TablePlan;
   status: 'committed' | 'undone';
 }
 
@@ -365,7 +365,7 @@ class CliRunnerImpl implements CliRunner {
     this.headless = createHeadlessRunner({
       ...opts,
       onChunk: opts.onChunk ?? ((u) => this.printChunk(u)),
-      onPlan: opts.onPlan ?? ((items) => this.printPlan(items)),
+      onPlanEdits: opts.onPlanEdits ?? ((items) => this.printPlanEdits(items)),
       onDebug: opts.onDebug ?? ((info) => this.printDebug(info)),
     });
   }
@@ -377,7 +377,7 @@ class CliRunnerImpl implements CliRunner {
     this.stdout.write(`running … row ${u.rowIndex + 1}: ${u.column} "${before}" → "${after}"\n`);
   }
 
-  private printPlan(items: PlanItem[]): void {
+  private printPlanEdits(items: PlanEdit[]): void {
     if (this.quiet || items.length === 0) return;
     this.stdout.write('plan:\n');
     for (const item of items) this.stdout.write(`  • ${formatPlanItem(item)}\n`);
@@ -478,9 +478,9 @@ class CliRunnerImpl implements CliRunner {
     if (!this.quiet) this.printTable();
   }
 
-  async setSpec(spec: Spec): Promise<void> { await this.headless.setSpec(spec); }
+  async setSpec(spec: TablePlan): Promise<void> { await this.headless.setSpec(spec); }
   currentRows(): Row[] { return this.headless.currentRows(); }
-  currentSpec(): Spec { return this.headless.currentSpec(); }
+  currentSpec(): TablePlan { return this.headless.currentSpec(); }
   async exportAs(p: string): Promise<void> { await this.headless.exportAs(p); }
   async exportPython(): Promise<string> { return this.headless.exportPython(); }
 
@@ -768,7 +768,7 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
 
 /** True if any transformation carries an {llm} expression. `:save-py`
  *  refuses such flows — a live AI cell has no deterministic Python form. */
-function specHasLlmCell(spec: Spec): boolean {
+function specHasLlmCell(spec: TablePlan): boolean {
   const isLlm = (e: unknown): boolean =>
     typeof e === 'object' && e !== null && !(e instanceof RegExp) && 'llm' in e;
   for (const t of spec.transformations as Transformation[]) {
@@ -918,9 +918,9 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
     return fail(2, `tamedtable execute: ${flowPath}: version must be 1 or 2 (got ${flow.version ?? 'undefined'})`);
   }
 
-  let spec: Spec;
+  let spec: TablePlan;
   try {
-    spec = validateSpec(flow.spec);
+    spec = validateTablePlan(flow.spec);
   } catch (e) {
     return fail(2, `tamedtable execute: ${flowPath}: ${(e as Error).message}`);
   }

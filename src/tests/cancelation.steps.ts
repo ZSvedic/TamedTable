@@ -125,7 +125,7 @@ Then('Phone column still shows normalized values', function (this: TamedTableWor
     const cols = Array.isArray(t.columns) ? t.columns : t.columns ? [t.columns] : [];
     return cols.includes('Phone') && t.value?.llm !== undefined;
   });
-  assert.ok(has, `Phone normalization transformation was unexpectedly removed. Spec transformations: ${JSON.stringify(spec.transformations)}`);
+  assert.ok(has, `Phone normalization transformation was unexpectedly removed. TablePlan transformations: ${JSON.stringify(spec.transformations)}`);
 });
 
 Then('Country column shows pre-transformation values', async function (this: TamedTableWorld) {
