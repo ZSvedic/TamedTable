@@ -14,7 +14,7 @@ function classify(text) {
     return { kind: "golden-source", filename: golden[1] };
   if (text === "compare with the expected output")
     return { kind: "show-golden" };
-  const audio = text.match(/^play audio "(.+)"$/);
+  const audio = text.match(/^Play voiceover: "(.+)"$/);
   if (audio)
     return { kind: "play-audio", filename: audio[1] };
   return { kind: "display" };
@@ -991,7 +991,7 @@ var featureText = `Feature: Tour the gherkin-tour demo
   @tutorial
   Scenario: A quick tour of this page
     When query "keep rows where age >= 18"
-    And play audio "chime"
+    And Play voiceover: "chime"
     Then the expected output is "adults"
     And compare with the expected output
 `;
