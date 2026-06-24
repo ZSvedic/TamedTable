@@ -47,7 +47,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       doneElementId: 'tutorial-table-view',
       // The terminal stop's "Voilà …" celebration, shown after the last real
       // step has run, numbered "N of N" with a Done button.
-      doneDescription: `Voilà, "${selectedTourName}" is done.`,
+      doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,
       theme: { background: t.surface, text: t.ink, border: t.line2, accent: t.accent },
     });
     ui.start();

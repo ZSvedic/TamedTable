@@ -17,7 +17,7 @@ const featureText = `Feature: Tour the gherkin-tour demo
   @tutorial
   Scenario: A quick tour of this page
     When query "keep rows where age >= 18"
-    And play audio "chime"
+    And Play voiceover: "chime"
     Then the expected output is "adults"
     And compare with the expected output
 `;

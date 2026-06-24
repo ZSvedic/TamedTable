@@ -131,13 +131,13 @@ Feature: Gherkin Tour parser
       And step 1 of scenario 1 has action text "Normalize phone numbers"
 
     @headless
-    Scenario: play-audio action from play audio "X"
+    Scenario: play-audio action from Play voiceover: "X"
       Given a feature string:
         """
         Feature: Demo
           @tutorial
           Scenario: Audio step
-            When play audio "voice-demo.mp3"
+            When Play voiceover: "voice-demo.mp3"
         """
       When parseTours is called
       Then step 1 of scenario 1 has action kind "play-audio"

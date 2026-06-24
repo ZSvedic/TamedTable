@@ -32,7 +32,7 @@ export interface TourUiOptions {
    *  a prefilled chat input) and re-render if a spotlight target appeared. */
   onChange?: () => void;
   /** Terminal-stop text — shown after the last real step has run, e.g.
-   *  `Voilà, "<tour>" is done.`. Defaults to "Done.". */
+   *  `Voilà, the "<tour>" tour is done.`. Defaults to "Done.". */
   doneDescription?: string;
   /** Host theme colors for the popover; omit to keep Driver.js defaults. */
   theme?: TourUiTheme;

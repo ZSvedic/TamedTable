@@ -755,7 +755,7 @@ filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
 holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and
-`play-audio` (matched from `play audio "<clip>"`).
+`play-audio` (matched from `Play voiceover: "<clip>"`).
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename

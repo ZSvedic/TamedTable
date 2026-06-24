@@ -58,7 +58,7 @@ match by `(feature, name)`.
 | `query "Y"` | `prefill-chat` (text `Y`) |
 | `the expected output is "X"` | `golden-source` (filename `X`) |
 | `compare with the expected output` | `show-golden` |
-| `play audio "X"` | `play-audio` (filename `X`) |
+| `Play voiceover: "X"` | `play-audio` (filename `X`) |
 | anything else | `display` |
 
 Only the text matters — the keyword (`Given`/`When`/`Then`/`And`/`But`) does not.
