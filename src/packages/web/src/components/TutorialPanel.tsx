@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from 'react';
 import { TourUi } from '@tamedtable/gherkin-tour/ui';
 import type { TourCursor } from '@tamedtable/gherkin-tour';
 import { space, typography } from '@tamedtable/ui-kit';
-import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
+import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 
@@ -116,7 +116,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                   color: t.ink,
                 }}
               >
-                Tutorial
+                Tours
               </span>
               <span style={{ flex: 1 }} />
               <button
@@ -152,7 +152,6 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                    completion popover, not here — the panel stays closed during a
                    tour, so a deep-link visitor never sees this slide-over. */
                 <div>
-                  <div style={labelStyle}>Pick a tutorial</div>
                   {groups.length === 0 ? (
                     <div
                       style={{
@@ -192,8 +191,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                                   type="button"
                                   role="option"
                                   aria-selected={selected}
-                                  onClick={() => { controller.selectTutorialScenario(name); }}
-                                  onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                                  onClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
                                   style={{
                                     textAlign: 'left',
                                     padding: '8px 10px',
@@ -217,13 +215,19 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                     </div>
                   )}
 
-                  {/* Dev: any @web scenario, for smoke-testing without opening the .feature file. */}
+                  {/* Dev: any @web scenario, for smoke-testing without opening the
+                      .feature file. Picking one starts it immediately. */}
                   {devNames.length > 0 && (
                     <div style={{ marginTop: space.px16 }}>
                       <div style={{ ...labelStyle, color: t.ink3 }}>Dev — run any scenario</div>
                       <select
                         value={devNames.includes(selectedTourName) ? selectedTourName : ''}
-                        onChange={(e) => { if (e.target.value) controller.selectTutorialScenario(e.target.value); }}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            controller.selectTutorialScenario(e.target.value);
+                            void controller.playTutorial();
+                          }
+                        }}
                         style={{
                           width: '100%',
                           padding: '6px 8px',
@@ -244,16 +248,6 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                       </select>
                     </div>
                   )}
-
-                  <div style={{ marginTop: space.px12 }}>
-                    <Button
-                      variant="primary"
-                      onClick={() => { void controller.playTutorial(); }}
-                      disabled={selectedTourName === ''}
-                    >
-                      Play
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 /* Active tour — panel is normally closed during a tour, but may

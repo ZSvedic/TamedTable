@@ -137,8 +137,8 @@ export function Toolbar({
         <Icon name="cog" />
         Settings
       </Button>
-      <Button onClick={onOpenTutorial} title="Interactive tutorials — no API key required">
-        Tutorial
+      <Button onClick={onOpenTutorial} title="Interactive tours — no API key required">
+        Tours
       </Button>
     </header>
   );

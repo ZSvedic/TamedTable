@@ -52,8 +52,8 @@ treated as JSONL) — the badge the dialog shows beside each sample row.
   tutorial target) whose menu carries "Open local…"; "Save data" and "Save
   flow" (disabled until `loaded`); a divider; "Undo" / "Redo" (gated on
   `canUndo` / `canRedo`); a divider; the light/dark toggle (sun on dark,
-  moon on light); "Settings"; and "Tutorial". Every action except the theme
-  toggle, settings, and tutorial is also disabled while `busy`.
+  moon on light); "Settings"; and "Tours". Every action except the theme
+  toggle, settings, and tours is also disabled while `busy`.
 
 ## OpenUrlDialog component
 
