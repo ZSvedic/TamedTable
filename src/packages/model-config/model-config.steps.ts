@@ -58,33 +58,17 @@ When(
   },
 );
 
+// Set an arbitrary subset of provider keys at once — the comma list names the
+// env vars; each gets a placeholder value. Drives the provider-precedence
+// outline, which only asserts which provider wins, not the literal key string.
 When(
-  'resolveConfig is called with env ANTHROPIC_API_KEY={string} and GEMINI_API_KEY={string}',
-  function (this: ModelConfigWorld, anthropicKey: string, geminiKey: string) {
-    ctx(this).resolved = resolveConfig(
-      { ANTHROPIC_API_KEY: anthropicKey, GEMINI_API_KEY: geminiKey },
-      {},
-    );
-  },
-);
-
-When(
-  'resolveConfig is called with env ANTHROPIC_API_KEY={string} and GEMINI_API_KEY={string} and OPENAI_API_KEY={string}',
-  function (this: ModelConfigWorld, anthropicKey: string, geminiKey: string, openaiKey: string) {
-    ctx(this).resolved = resolveConfig(
-      { ANTHROPIC_API_KEY: anthropicKey, GEMINI_API_KEY: geminiKey, OPENAI_API_KEY: openaiKey },
-      {},
-    );
-  },
-);
-
-When(
-  'resolveConfig is called with env ANTHROPIC_API_KEY={string} and OPENAI_API_KEY={string}',
-  function (this: ModelConfigWorld, anthropicKey: string, openaiKey: string) {
-    ctx(this).resolved = resolveConfig(
-      { ANTHROPIC_API_KEY: anthropicKey, OPENAI_API_KEY: openaiKey },
-      {},
-    );
+  'resolveConfig is called with env keys {string}',
+  function (this: ModelConfigWorld, keys: string) {
+    const env: Record<string, string> = {};
+    for (const k of keys.split(',').map((s) => s.trim()).filter(Boolean)) {
+      env[k] = `${k}-value`;
+    }
+    ctx(this).resolved = resolveConfig(env, {});
   },
 );
 
@@ -198,6 +182,16 @@ Then(
   'the resolved openaiKey is null',
   function (this: ModelConfigWorld) {
     assert.equal(ctx(this).resolved?.openaiKey, null);
+  },
+);
+
+// Non-null check on a named resolved key field (geminiKey / openaiKey / …),
+// used by the precedence outline where the winning key varies per row.
+Then(
+  'the resolved {word} is set',
+  function (this: ModelConfigWorld, field: string) {
+    const resolved = ctx(this).resolved as Record<string, unknown> | undefined;
+    assert.ok(resolved && resolved[field] != null, `expected resolved ${field} to be set`);
   },
 );
 

@@ -27,8 +27,7 @@ Feature: Data normalization of customer records
     @headless @cli
     Scenario: Replace Country with normalized CountryName and CountryISO
       When query "Replace Country column with normalized CountryName and CountryISO"
-      Then column "CountryName" exists in the spec
-      And column "CountryISO" exists in the spec
+      Then columns exist in the spec: "CountryName", "CountryISO"
       And column "Country" is absent from the current rows
       And every row has a non-null "CountryName" and "CountryISO"
 

@@ -33,10 +33,11 @@ review, not a regenerated listing.
   it grows.
 - **`exit` vs `:exit`** in `repl-commands.feature` are two scenarios for one
   behavior reached two ways — trivially mergeable.
-- **`multilingual.feature`** has 5 text + 5 voice scenarios, one per language.
-  The four non-Spanish **text** ones (not tours) could be a Scenario Outline; the
-  voice ones each need their own clip and the Chinese one documents a real
-  synthetic-audio gap — keep those.
+- **`multilingual.feature`** has 1 Spanish text tour + a 4-row text outline +
+  5 voice scenarios. The non-Spanish text variants are now one Scenario Outline;
+  the voice ones each need their own clip and the Chinese one documents a real
+  synthetic-audio gap — those stay separate. (The text outline is invisible to
+  the web Dev dropdown, since `parseTours` skips outlines — an accepted trade.)
 
 # spec/test-cases/ — application behavior
 
@@ -221,10 +222,7 @@ Phone-normalization asked in 5 languages, as text and voice; `datanorm-input.csv
 | Scenario | What it tests | ToDo |
 |---|---|---|
 | [Normalize phone numbers in Spanish](test-cases/multilingual.feature)<br>`@headless @web @tour @cat-language` | Spanish text normalizes Phone | NA |
-| [German text request](test-cases/multilingual.feature)<br>`@headless @web` | German text normalizes Phone | 4 non-Spanish text rows → Scenario Outline |
-| [French text request](test-cases/multilingual.feature)<br>`@headless @web` | French text normalizes Phone | see above |
-| [Croatian text request](test-cases/multilingual.feature)<br>`@headless @web` | Croatian text normalizes Phone | see above |
-| [Chinese text request](test-cases/multilingual.feature)<br>`@headless @web` | Chinese text normalizes Phone | see above |
+| [&lt;language&gt; text request](test-cases/multilingual.feature)<br>`@headless @web` | Outline (German, French, Croatian, Chinese) — each text request normalizes Phone | NA |
 | [Spanish voice request](test-cases/multilingual.feature)<br>`@web` | Spanish voice triggers normalization | NA |
 | [German voice request](test-cases/multilingual.feature)<br>`@web` | German voice triggers normalization | NA |
 | [French voice request](test-cases/multilingual.feature)<br>`@web` | French voice triggers normalization | NA |
@@ -515,9 +513,7 @@ Provider/key/model resolution (Anthropic/Gemini/OpenAI) + the ModelChooser compo
 | [ANTHROPIC_API_KEY in env sets provider and key](packages/model-config/model-config.feature)<br>`@headless` | Anthropic key resolves provider | NA |
 | [GEMINI_API_KEY in env sets provider and key](packages/model-config/model-config.feature)<br>`@headless` | Gemini key resolves provider | NA |
 | [OPENAI_API_KEY in env sets provider and key](packages/model-config/model-config.feature)<br>`@headless` | OpenAI key resolves provider | NA |
-| [Both keys in env — Gemini wins](packages/model-config/model-config.feature)<br>`@headless` | Anthropic+Gemini → Gemini | NA |
-| [All three keys in env — Gemini wins](packages/model-config/model-config.feature)<br>`@headless` | All three → Gemini | NA |
-| [ANTHROPIC_API_KEY and OPENAI_API_KEY in env — OpenAI wins](packages/model-config/model-config.feature)<br>`@headless` | Anthropic+OpenAI → OpenAI | the 3 precedence rows could be one Scenario Outline |
+| [&lt;present&gt; in env — &lt;winner&gt; wins over Anthropic](packages/model-config/model-config.feature)<br>`@headless` | Outline (Anthropic+Gemini, all three, Anthropic+OpenAI) — Gemini beats OpenAI beats Anthropic; loser key nulled | NA |
 | [Stored provider=gemini with no env key is used](packages/model-config/model-config.feature)<br>`@headless` | Stored provider used when env empty | NA |
 | [Env values override stored values](packages/model-config/model-config.feature)<br>`@headless` | Env beats stored | NA |
 | [TAMEDTABLE_MODEL in env overrides stored model](packages/model-config/model-config.feature)<br>`@headless` | Env model override | NA |

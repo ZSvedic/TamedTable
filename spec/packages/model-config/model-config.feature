@@ -39,24 +39,21 @@ Feature: Model config
       And the resolved anthropicKey is null
       And the resolved geminiKey is null
 
+    # Precedence: when several provider keys are present, Gemini beats OpenAI
+    # beats Anthropic. Anthropic is present (and loses) in every row, so its key
+    # is nulled each time. Single-key resolution is covered by the scenarios above.
     @headless
-    Scenario: Both keys in env — Gemini wins
-      When resolveConfig is called with env ANTHROPIC_API_KEY="sk-ant-test" and GEMINI_API_KEY="AIza-test"
-      Then the resolved provider is "gemini"
-      And the resolved geminiKey is "AIza-test"
+    Scenario Outline: <present> in env — <winner> wins over Anthropic
+      When resolveConfig is called with env keys "<keys>"
+      Then the resolved provider is "<winner>"
+      And the resolved <winnerKey> is set
       And the resolved anthropicKey is null
 
-    @headless
-    Scenario: All three keys in env — Gemini wins
-      When resolveConfig is called with env ANTHROPIC_API_KEY="sk-ant-test" and GEMINI_API_KEY="AIza-test" and OPENAI_API_KEY="sk-openai-test"
-      Then the resolved provider is "gemini"
-      And the resolved geminiKey is "AIza-test"
-
-    @headless
-    Scenario: ANTHROPIC_API_KEY and OPENAI_API_KEY in env — OpenAI wins
-      When resolveConfig is called with env ANTHROPIC_API_KEY="sk-ant-test" and OPENAI_API_KEY="sk-openai-test"
-      Then the resolved provider is "openai"
-      And the resolved openaiKey is "sk-openai-test"
+      Examples:
+        | present            | keys                                              | winner | winnerKey |
+        | Anthropic + Gemini | ANTHROPIC_API_KEY, GEMINI_API_KEY                 | gemini | geminiKey |
+        | All three          | ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY | gemini | geminiKey |
+        | Anthropic + OpenAI | ANTHROPIC_API_KEY, OPENAI_API_KEY                 | openai | openaiKey |
 
   Rule: resolveConfig respects stored values
 

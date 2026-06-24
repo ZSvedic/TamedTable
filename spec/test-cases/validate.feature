@@ -10,8 +10,7 @@ Feature: Row and dataset validation
     @headless @cli @web @tour @cat-validate
     Scenario: Flag rows with empty Phone
       When query "Validate that Phone is non-empty"
-      Then column "_valid" exists in the spec
-      And column "_validation" exists in the spec
+      Then columns exist in the spec: "_valid", "_validation"
       And every row has a boolean "_valid"
       And rows with empty Phone have _valid equal to false
       And rows with non-empty Phone have _valid equal to true

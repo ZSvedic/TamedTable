@@ -32,8 +32,7 @@ Feature: SQL expressions
     @headless @cli
     Scenario: SQL aggregate inside group
       When query "Group by Country and compute average phone length in SQL"
-      Then column "Country" exists in the spec
-      And column "avg_phone_length" exists in the spec
+      Then columns exist in the spec: "Country", "avg_phone_length"
 
   Rule: DuckDB state lifecycle
 

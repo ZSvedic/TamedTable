@@ -10,8 +10,7 @@ Feature: Column split
     @headless @cli @web
     Scenario: Split FullName into FirstName and LastName on space
       When query "Split FullName into FirstName and LastName on a single space"
-      Then column "FirstName" exists in the spec
-      And column "LastName" exists in the spec
+      Then columns exist in the spec: "FirstName", "LastName"
       And every non-empty row has a non-null "FirstName"
 
     @headless @cli
@@ -30,9 +29,7 @@ Feature: Column split
     Scenario: Split Address into Street, City, Zip on comma-space
       Given load "colsplit-addresses-input.csv"
       When query "Split Address into Street, City, Zip on the regex \", \\s*\""
-      Then column "Street" exists in the spec
-      And column "City" exists in the spec
-      And column "Zip" exists in the spec
+      Then columns exist in the spec: "Street", "City", "Zip"
 
   Rule: Arity mismatch behavior
 

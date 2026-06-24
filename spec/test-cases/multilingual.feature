@@ -17,25 +17,20 @@ Feature: Multilingual requests
       When query "normaliza los números de teléfono"
       Then a phone-normalization transformation is added
 
+    # The non-Spanish text variants share one shape; an outline keeps them
+    # together. (Spanish stays a standalone @tour above — the homepage deep-links
+    # it by exact name, and the tour parser skips outlines.)
     @headless @web
-    Scenario: German text request
-      When query "normalisiere die Telefonnummern"
+    Scenario Outline: <language> text request
+      When query "<phrase>"
       Then a phone-normalization transformation is added
 
-    @headless @web
-    Scenario: French text request
-      When query "normalise les numéros de téléphone"
-      Then a phone-normalization transformation is added
-
-    @headless @web
-    Scenario: Croatian text request
-      When query "normaliziraj telefonske brojeve"
-      Then a phone-normalization transformation is added
-
-    @headless @web
-    Scenario: Chinese text request
-      When query "请规范化电话号码"
-      Then a phone-normalization transformation is added
+      Examples:
+        | language | phrase                             |
+        | German   | normalisiere die Telefonnummern    |
+        | French   | normalise les numéros de téléphone |
+        | Croatian | normaliziraj telefonske brojeve    |
+        | Chinese  | 请规范化电话号码                     |
 
   Rule: A spoken request in any language normalizes the phone column (c2)
 

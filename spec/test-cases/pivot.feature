@@ -11,13 +11,8 @@ Feature: Pivot and unpivot
     @headless @cli @web @tour @cat-deterministic
     Scenario: One column per distinct on-value, default agg first
       When query "Pivot Quarter into columns, with Revenue as the value"
-      Then column "Q1" exists in the spec
-      And column "Q2" exists in the spec
-      And column "Q3" exists in the spec
-      And column "Q4" exists in the spec
-      And column "Region" exists in the spec
-      And column "Quarter" is absent from the current rows
-      And column "Revenue" is absent from the current rows
+      Then columns exist in the spec: "Q1", "Q2", "Q3", "Q4", "Region"
+      And columns are absent from the current rows: "Quarter", "Revenue"
 
     @headless @cli
     Scenario: agg=sum collapses multiple values per index/on cell
@@ -45,13 +40,11 @@ Feature: Pivot and unpivot
     @headless @cli @web
     Scenario: One row per measure per input row
       When query "Unpivot Q1, Q2, Q3, Q4 into name and value columns"
-      Then column "name" exists in the spec
-      And column "value" exists in the spec
+      Then columns exist in the spec: "name", "value"
       And column "Q1" is absent from the current rows
       And the number of output rows equals the input rows times 4
 
     @headless @cli
     Scenario: Custom names_to and values_to
       When query "Unpivot Q1, Q2, Q3, Q4 into Quarter and Revenue"
-      Then column "Quarter" exists in the spec
-      And column "Revenue" exists in the spec
+      Then columns exist in the spec: "Quarter", "Revenue"
