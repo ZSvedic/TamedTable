@@ -990,7 +990,7 @@ var featureText = `Feature: Tour the gherkin-tour demo
   Background:
     Given load "people.csv"
 
-  @tutorial
+  @tour
   Scenario: A quick tour of this page
     When query "keep rows where age >= 18"
     And Play voiceover: "chime"
@@ -1086,9 +1086,9 @@ var adapter = {
   }
 };
 function tour() {
-  const t = parseTours(featureText).find((s2) => s2.tags.includes("@tutorial"));
+  const t = parseTours(featureText).find((s2) => s2.tags.includes("@tour"));
   if (!t)
-    throw new Error("demo feature has no @tutorial scenario");
+    throw new Error("demo feature has no @tour scenario");
   return t;
 }
 function makeUi() {
