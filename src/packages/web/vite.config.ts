@@ -25,7 +25,9 @@ const cassetteDir = join(here, '../../tests/__cassettes__');
 const tutorialFeatureNames = [
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
-  'voice.feature',
+  'voice.feature', 'sort.feature', 'multilingual.feature',
+  'clean-up.feature', 'enrich.feature', 'classify.feature',
+  'language-ai.feature', 'loadsave.feature',
 ];
 
 const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {

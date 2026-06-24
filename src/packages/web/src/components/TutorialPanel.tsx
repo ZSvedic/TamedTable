@@ -3,7 +3,7 @@ import { useEffect, type ReactNode } from 'react';
 import { TourUi } from '@tamedtable/gherkin-tour/ui';
 import type { TourCursor } from '@tamedtable/gherkin-tour';
 import { space, typography } from '@tamedtable/ui-kit';
-import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
+import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 
@@ -16,7 +16,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const done = controller.isTutorialDone();
   const stepNum = controller.currentTutorialStepNumber();
   const stepTotal = controller.tutorialStepCount();
-  const names = controller.tutorialScenarioNames();
+  const groups = controller.tutorialGroups();
   const devNames = controller.devScenarioNames();
   const goldenRows = controller.goldenRows;
   const selectedTourName = controller.selectedTourName();
@@ -47,7 +47,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       doneElementId: 'tutorial-table-view',
       // The terminal stop's "Voilà …" celebration, shown after the last real
       // step has run, numbered "N of N" with a Done button.
-      doneDescription: `Voilà, "${selectedTourName}" is done.`,
+      doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,
       theme: { background: t.surface, text: t.ink, border: t.line2, accent: t.accent },
     });
     ui.start();
@@ -116,7 +116,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                   color: t.ink,
                 }}
               >
-                Tutorial
+                Tours
               </span>
               <span style={{ flex: 1 }} />
               <button
@@ -152,8 +152,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                    completion popover, not here — the panel stays closed during a
                    tour, so a deep-link visitor never sees this slide-over. */
                 <div>
-                  <div style={labelStyle}>Pick a tutorial</div>
-                  {names.length === 0 ? (
+                  {groups.length === 0 ? (
                     <div
                       style={{
                         fontFamily: typography.ui,
@@ -165,44 +164,70 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                       No tutorials available.
                     </div>
                   ) : (
-                    <div role="listbox" style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
-                      {names.map((name) => {
-                        const selected = name === selectedTourName;
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() => { controller.selectTutorialScenario(name); }}
-                            onDoubleClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: space.px16 }}>
+                      {groups.map((group, gi) => (
+                        <div key={group.title}>
+                          <div
                             style={{
-                              textAlign: 'left',
-                              padding: '8px 10px',
-                              border: `1px solid ${selected ? t.accent : t.line2}`,
-                              borderRadius: space.radiusSm,
-                              background: selected ? t.accentSoft : t.surface2,
-                              color: t.ink,
-                              fontFamily: typography.ui,
-                              fontSize: typography.size.base,
-                              fontWeight: selected ? 600 : 400,
-                              cursor: 'pointer',
+                              ...labelStyle,
+                              color: t.ink3,
+                              fontSize: typography.size.xs,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.06em',
                             }}
                           >
-                            {name}
-                          </button>
-                        );
-                      })}
+                            {/* Eyebrow number matches the homepage section (01–07). */}
+                            <span style={{ fontFamily: typography.mono, color: t.ink4, marginRight: space.px8 }}>
+                              {String(gi + 1).padStart(2, '0')}
+                            </span>
+                            {group.title}
+                          </div>
+                          <div role="listbox" aria-label={group.title} style={{ display: 'flex', flexDirection: 'column', gap: space.px4 }}>
+                            {group.names.map((name) => {
+                              const selected = name === selectedTourName;
+                              return (
+                                <button
+                                  key={name}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={selected}
+                                  onClick={() => { controller.selectTutorialScenario(name); void controller.playTutorial(); }}
+                                  style={{
+                                    textAlign: 'left',
+                                    padding: '8px 10px',
+                                    border: `1px solid ${selected ? t.accent : t.line2}`,
+                                    borderRadius: space.radiusSm,
+                                    background: selected ? t.accentSoft : t.surface2,
+                                    color: t.ink,
+                                    fontFamily: typography.ui,
+                                    fontSize: typography.size.base,
+                                    fontWeight: selected ? 600 : 400,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  {/* Dev: any @web scenario, for smoke-testing without opening the .feature file. */}
+                  {/* Dev: any @web scenario, for smoke-testing without opening the
+                      .feature file. Picking one starts it immediately. */}
                   {devNames.length > 0 && (
                     <div style={{ marginTop: space.px16 }}>
                       <div style={{ ...labelStyle, color: t.ink3 }}>Dev — run any scenario</div>
                       <select
                         value={devNames.includes(selectedTourName) ? selectedTourName : ''}
-                        onChange={(e) => { if (e.target.value) controller.selectTutorialScenario(e.target.value); }}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            controller.selectTutorialScenario(e.target.value);
+                            void controller.playTutorial();
+                          }
+                        }}
                         style={{
                           width: '100%',
                           padding: '6px 8px',
@@ -223,16 +248,6 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                       </select>
                     </div>
                   )}
-
-                  <div style={{ marginTop: space.px12 }}>
-                    <Button
-                      variant="primary"
-                      onClick={() => { void controller.playTutorial(); }}
-                      disabled={selectedTourName === ''}
-                    >
-                      Play
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 /* Active tour — panel is normally closed during a tour, but may

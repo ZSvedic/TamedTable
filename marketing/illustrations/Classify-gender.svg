@@ -4,7 +4,7 @@
   <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
   <circle cx="40" cy="36" r="7" fill="#96BED7"/>
   <path d="M37.5 32.5 L43.5 36 L37.5 39.5 Z" fill="#281C60"/>
-  <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="12.5" fill="#281C60">split customers into men, women, and unknown</text>
+  <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#281C60">split customers into men, women, and unknown</text>
   <g>
     <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
     <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">first name</text>

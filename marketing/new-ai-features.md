@@ -26,6 +26,7 @@ short note on the context the LLM uses to answer it.
 | Validate | *"flag any impossible birth date"* | Flags both *1873* and *Feb 30th* |
 | Validate | *"check the city matches the country"* | *Paris, Japan* gets a second look |
 | Validate | *"flag prices that seem wrong"* | Catches the missing zero before Reddit does |
+| Language | *tap the mic* | Say any command out loud, hands-free |
 | Language | *"summarize each review in one line"* | Even the 500-word rant |
 | Language | *"translate the comments to English"* | From any source language |
 | Language | *"tag the language of every comment"* | Language detected per row |

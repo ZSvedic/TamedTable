@@ -19,6 +19,7 @@ import { parseTours, type TourScenario } from '@tamedtable/gherkin-tour';
 import { replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
 import type { TutorialManifestEntry, TutorialSources } from './controller-types.ts';
+import { TUTORIAL_CATEGORIES } from './tutorial-categories.ts';
 
 export class TutorialManager {
   private readonly tutorialSrc: TutorialSources | null;
@@ -63,6 +64,17 @@ export class TutorialManager {
   /** Names of `@tutorial` tours — the clickable list in the panel. */
   tutorialScenarioNames(): string[] {
     return this.manifest.filter((t) => t.tags.includes('@tutorial')).map((t) => t.name);
+  }
+
+  /** `@tutorial` tours grouped by their `@cat-…` category, in homepage order
+   *  (the seven sections from `TUTORIAL_CATEGORIES`). Empty categories are
+   *  dropped so the panel shows only populated sections. */
+  tutorialGroups(): { title: string; names: string[] }[] {
+    const tours = this.manifest.filter((t) => t.tags.includes('@tutorial'));
+    return TUTORIAL_CATEGORIES.map(({ tag, title }) => ({
+      title,
+      names: tours.filter((t) => t.tags.includes(tag)).map((t) => t.name),
+    })).filter((g) => g.names.length > 0);
   }
 
   /** Names of `@web` scenarios that are not `@tutorial` — the trailing "Dev"

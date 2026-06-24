@@ -755,7 +755,7 @@ filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
 holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and
-`play-audio` (matched from `play audio "<clip>"`).
+`play-audio` (matched from `Play voiceover: "<clip>"`).
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename
@@ -837,7 +837,8 @@ voice turn and replays key-free.
 |---|---|
 | `openTutorial()` | Sets `tutorialOpen = true`. |
 | `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
-| `tutorialScenarioNames(): string[]` | Names of `@tutorial` tours (the clickable list). |
+| `tutorialScenarioNames(): string[]` | Names of `@tutorial` tours (flat list). |
+| `tutorialGroups(): { title; names }[]` | `@tutorial` tours grouped by `@cat-…` tag into the seven marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tutorial` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |

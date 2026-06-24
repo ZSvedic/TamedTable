@@ -35,7 +35,19 @@ document.querySelectorAll('[data-feature]').forEach(function (block) {
     dots.forEach(function (d, j) { d.classList.toggle('active', i === j); });
     var item = items[i];
     if (img && item.dataset.ill) { img.src = item.dataset.ill; }
-    if (demo) { demo.href = item.dataset.url; demo.textContent = item.dataset.label; }
+    if (demo) {
+      // "Show me →" opens the web app on a deep link that auto-plays the tour:
+      //   /app/?feature=<file>&scenario=<name>
+      // data-url is the app base (rewritten to the preview prefix at build time);
+      // the tour params are appended here so they survive that rewrite.
+      var url = item.dataset.url;
+      if (item.dataset.feature && item.dataset.scenario) {
+        url += '?feature=' + encodeURIComponent(item.dataset.feature) +
+               '&scenario=' + encodeURIComponent(item.dataset.scenario);
+      }
+      demo.href = url;
+      demo.textContent = item.dataset.label;
+    }
   }
 
   items.forEach(function (item, i) { item.addEventListener('click', function () { activate(i); }); });

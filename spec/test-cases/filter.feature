@@ -7,7 +7,7 @@ Feature: Filter customer records
       Given load "filter-input.csv"
       And the expected output is "filter-expected.jsonl"
 
-    @headless @cli @web @tutorial
+    @headless @cli @web @tutorial @cat-deterministic
     Scenario: Filter by Country
       When query "Show only customers in the USA"
       Then compare with the expected output
