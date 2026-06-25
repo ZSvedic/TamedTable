@@ -9,7 +9,8 @@ export const jsonlCodec: FormatCodec = {
   extensions: ['.jsonl', '.ndjson'],
   contentTypes: ['jsonl', 'ndjson'],
 
-  parse(text: string, name: string): ParsedTable {
+  parse(bytes: Uint8Array, name: string): ParsedTable {
+    const text = new TextDecoder().decode(bytes);
     const rows: Row[] = [];
     text.split('\n').forEach((raw, i) => {
       const line = raw.trim();
@@ -33,7 +34,7 @@ export const jsonlCodec: FormatCodec = {
   // `columns` is optional for JSONL: when omitted, each row is written verbatim
   // in its own key order; when given, keys are emitted in that order (missing
   // ones filled with null) followed by any extra keys not in the list.
-  serialize(rows: Row[], columns?: string[]): string {
+  serialize(rows: Row[], columns?: string[]): Uint8Array {
     const lines = rows
       .map((row) => {
         if (!columns) return JSON.stringify(row);
@@ -43,6 +44,6 @@ export const jsonlCodec: FormatCodec = {
         return JSON.stringify(ordered);
       })
       .join('\n');
-    return lines + (lines.length ? '\n' : '');
+    return new TextEncoder().encode(lines + (lines.length ? '\n' : ''));
   },
 };

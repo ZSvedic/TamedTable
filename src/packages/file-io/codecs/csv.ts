@@ -17,17 +17,18 @@ export const csvCodec: FormatCodec = {
   extensions: ['.csv'],
   contentTypes: ['csv'],
 
-  parse(text: string): ParsedTable {
+  parse(bytes: Uint8Array): ParsedTable {
+    const text = new TextDecoder().decode(bytes);
     const rows = parse(text, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as Row[];
     const header = parse(text, { to_line: 1, trim: true, bom: true })[0] as string[] | undefined;
     return { rows, columns: header ?? [] };
   },
 
-  serialize(rows: Row[], columns: string[]): string {
+  serialize(rows: Row[], columns: string[]): Uint8Array {
     const records = rows.map((row) =>
       columns.map((col) => csvCellString(col in row ? row[col] : null)),
     );
     // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines).
-    return stringify(records, { header: true, columns });
+    return new TextEncoder().encode(stringify(records, { header: true, columns }));
   },
 };

@@ -17,11 +17,11 @@ export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
  *  parses the content, and the plan carries `name` as its table and the codec's
  *  columns. This is the browser's path-free counterpart to core's `loadCsv` —
  *  the web hands the result straight to `Runner.loadParsed`. */
-export async function parseTable(name: string, text: string): Promise<{ rows: Row[]; spec: TablePlan }> {
+export async function parseTable(name: string, bytes: Uint8Array): Promise<{ rows: Row[]; spec: TablePlan }> {
   const id = formatForExtension(name);
   if (!id) throw new Error(`unknown file type: ${name}`);
   const codec = await loadCodec(id);
-  const { rows, columns } = codec.parse(text, name);
+  const { rows, columns } = codec.parse(bytes, name);
   if (id === 'csv') {
     if (columns.length === 0) throw new Error(`${name} has no header row`);
     const seen = new Set<string>();
@@ -34,12 +34,13 @@ export async function parseTable(name: string, text: string): Promise<{ rows: Ro
   return { rows, spec };
 }
 
-/** A file the user picked from an Open dialog. */
+/** A file the user picked from an Open dialog. Carries raw bytes so binary
+ *  formats (Phase 1) work the same as text ones; text codecs decode internally. */
 export interface PickedFile {
   /** The file's display name, e.g. "customers.csv". */
   name: string;
-  /** The full text content of the file. */
-  text: string;
+  /** The file's raw bytes. */
+  bytes: Uint8Array;
 }
 
 /** The result of a Save dialog handshake. */
@@ -59,8 +60,8 @@ export interface FilePort {
   readonly hasFileSystemAccess: boolean;
   /** Show an Open dialog. Resolves with the picked file, or null if cancelled. */
   pickOpen(accept: string[]): Promise<PickedFile | null>;
-  /** Show a Save dialog and write `content` to the chosen destination. */
-  pickSave(suggestedName: string, accept: string[], content: string): Promise<SaveOutcome>;
+  /** Show a Save dialog and write `content` (raw bytes) to the chosen destination. */
+  pickSave(suggestedName: string, accept: string[], content: Uint8Array): Promise<SaveOutcome>;
 }
 
 /** The plain `fetch` call signature a wrapper actually implements. */
@@ -117,8 +118,8 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
     throw new Error('Could not detect format. URL must end in .csv or .jsonl.');
   }
 
-  const text = await response.text();
-  return { name: sampleNameFromUrl(parsed, format), text, format };
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return { name: sampleNameFromUrl(parsed, format), bytes, format };
 }
 
 /** Serialize a spec into the .flow file format: pretty-printed JSON

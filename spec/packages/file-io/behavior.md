@@ -32,11 +32,14 @@ tests supply a stub:
 
 ```
 hasFileSystemAccess: boolean
-pickOpen(accept)                        → PickedFile | null   (null = cancelled)
-pickSave(suggestedName, accept, content) → SaveOutcome
+pickOpen(accept)                              → PickedFile | null   (null = cancelled)
+pickSave(suggestedName, accept, contentBytes) → SaveOutcome
 ```
 
-`PickedFile` is `{ name, text }`. `SaveOutcome` is `{ status: "saved" | "downloaded", name }` or `{ status: "cancelled" }`.
+`PickedFile` is `{ name, bytes }` — the dialog seam carries raw bytes
+(`Uint8Array`), so binary formats work the same as text and the codec decodes
+internally. `pickSave`'s `content` is bytes too. `SaveOutcome` is
+`{ status: "saved" | "downloaded", name }` or `{ status: "cancelled" }`.
 
 `BrowserFilePort` (separate `browser-fs` entry point, DOM required) uses the
 File System Access API where the browser has it. Where it doesn't, `pickOpen`

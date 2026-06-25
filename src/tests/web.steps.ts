@@ -108,8 +108,8 @@ Then('display Save File dialog', function (this: TamedTableWorld) {
 
 When('user selects {string}', async function (this: TamedTableWorld, filename: string) {
   const ctx = ctxOf(this);
-  const text = await readFile(join(SPEC_TC_DIR, filename), 'utf8');
-  await ctx.filePort!.resolveOpen({ name: filename, text });
+  const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
+  await ctx.filePort!.resolveOpen({ name: filename, bytes });
   await ctx.pending;
 });
 

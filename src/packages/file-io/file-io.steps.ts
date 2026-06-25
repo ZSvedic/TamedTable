@@ -120,7 +120,7 @@ Then('the picked file is named {string}', function (this: FileIoWorld, expected:
 });
 
 Then('the picked file text is {string}', function (this: FileIoWorld, expected: string) {
-  assert.equal(ctx(this).picked!.text, unescape(expected));
+  assert.equal(new TextDecoder().decode(ctx(this).picked!.bytes), unescape(expected));
 });
 
 Then('fetchTable fails with {string}', function (this: FileIoWorld, expected: string) {

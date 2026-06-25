@@ -41,6 +41,10 @@ export class WebTestFilePort implements FilePort {
   private saveResolve: ((o: SaveOutcome) => void) | undefined;
   private saveContent = '';
 
+  private static decode(content: Uint8Array): string {
+    return new TextDecoder().decode(content);
+  }
+
   constructor(hasFileSystemAccess: boolean) {
     this.hasFileSystemAccess = hasFileSystemAccess;
   }
@@ -52,10 +56,11 @@ export class WebTestFilePort implements FilePort {
     });
   }
 
-  pickSave(suggestedName: string, _accept: string[], content: string): Promise<SaveOutcome> {
+  pickSave(suggestedName: string, _accept: string[], content: Uint8Array): Promise<SaveOutcome> {
     this.saveCalled = true;
     this.lastSaveSuggestedName = suggestedName;
-    this.saveContent = content;
+    // The seam carries bytes; decode to text so saved-content assertions stay simple.
+    this.saveContent = WebTestFilePort.decode(content);
     return new Promise((resolve) => {
       this.saveResolve = resolve;
     });

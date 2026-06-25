@@ -152,11 +152,12 @@ export interface FormatCodec {
   extensions: string[];
   /** Content-Type fragments that map to this codec (`["csv"]`). */
   contentTypes: string[];
-  /** Parse a file's text into rows + columns. `name` is the source file name,
-   *  used only for error context. (Widened to raw bytes in I/O Phase 0 step 4.) */
-  parse(text: string, name: string): ParsedTable;
-  /** Serialize rows to the format's text, emitting `columns` in order. */
-  serialize(rows: Row[], columns: string[]): string;
+  /** Parse a file's raw bytes into rows + columns. Text codecs decode the
+   *  bytes internally; binary formats (Phase 1) read them directly. `name` is
+   *  the source file name, used only for error context. */
+  parse(bytes: Uint8Array, name: string): ParsedTable;
+  /** Serialize rows to the format's raw bytes, emitting `columns` in order. */
+  serialize(rows: Row[], columns: string[]): Uint8Array;
   /** Optional one-time load of a heavy parser/engine before first `parse`. */
   load?: () => Promise<void>;
 }

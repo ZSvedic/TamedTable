@@ -36,9 +36,9 @@ export class FilesManager {
   }
 
   private async loadFromPicked(picked: PickedFile): Promise<void> {
-    // Parse through the file-io codec registry and load the rows directly — no
-    // filesystem, no path round-trip.
-    const { rows, spec } = await parseTable(picked.name, picked.text);
+    // Parse the raw bytes through the file-io codec registry and load the rows
+    // directly — no filesystem, no path round-trip.
+    const { rows, spec } = await parseTable(picked.name, picked.bytes);
     await this.host.engine.loadParsed(rows, spec);
     this.host.pushMessage(
       'assistant',
@@ -62,8 +62,8 @@ export class FilesManager {
    *  Throws on any failure so the dialog can keep itself open with an
    *  inline error; success closes the dialog at the caller. */
   async loadFromUrl(url: string): Promise<void> {
-    const { name, text } = await fetchTable(url, this.host.opts.fetch);
-    await this.loadFromPicked({ name, text });
+    const { name, bytes } = await fetchTable(url, this.host.opts.fetch);
+    await this.loadFromPicked({ name, bytes });
   }
 
   /** Save the current flow (replayable spec) via the Save dialog. */
@@ -75,7 +75,7 @@ export class FilesManager {
     this.host.dialog = 'save-flow';
     this.host.notify();
     try {
-      const flow = serializeFlow(this.host.engine.currentSpec());
+      const flow = new TextEncoder().encode(serializeFlow(this.host.engine.currentSpec()));
       this.reportSave(await this.host.file.pickSave('flow.flow', ['.flow'], flow));
     } catch (e) {
       this.host.pushToast('error', `Could not save flow: ${(e as Error).message}`);
@@ -122,6 +122,6 @@ export class FilesManager {
 
   /** Public file-load helper (also used by tutorial load-file steps). */
   async loadFromText(name: string, text: string): Promise<void> {
-    await this.loadFromPicked({ name, text });
+    await this.loadFromPicked({ name, bytes: new TextEncoder().encode(text) });
   }
 }

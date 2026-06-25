@@ -365,7 +365,7 @@ export class TutorialManager {
   private async writeLookup(filename: string): Promise<void> {
     const text = await this.loadFixture(filename);
     if (text === undefined) return;
-    const { rows } = await parseTable(filename, text);
+    const { rows } = await parseTable(filename, new TextEncoder().encode(text));
     this.host.engine.registerLookup(filename, rows);
   }
 

@@ -114,13 +114,13 @@ type RequestAudio = { data: Uint8Array; mediaType: string };
 
 `core` owns byte-acquisition (`node:fs`) only; the parse/serialize of each
 format lives in the `file-io` codec registry (see [§ Format codecs](#format-codecs)).
-`loadCsv` reads the file and hands the text to the CSV codec (which parses with
-`csv-parse`, `trim: true` — unquoted leading/trailing whitespace stripped,
-quoted fields verbatim), then builds the initial plan from the codec's columns;
-it still throws `loadCsv: <path> has no header row` / `… duplicate column "…"`.
-`loadJsonl` and `readJsonl` hand the text to the JSONL codec, which derives the
-column list from the union of keys across rows (insertion order from the first
-row each key appears in). `Runner.loadInput` dispatches on file extension — `.csv`
+`loadCsv` reads the file's raw bytes and hands them to the CSV codec (which
+decodes and parses with `csv-parse`, `trim: true` — unquoted leading/trailing
+whitespace stripped, quoted fields verbatim), then builds the initial plan from
+the codec's columns; it still throws `loadCsv: <path> has no header row` /
+`… duplicate column "…"`. `loadJsonl` and `readJsonl` hand the bytes to the
+JSONL codec, which derives the column list from the union of keys across rows
+(insertion order from the first row each key appears in). `Runner.loadInput` dispatches on file extension — `.csv`
 to `loadCsv`, `.jsonl` to `loadJsonl`; any other extension throws with a clear
 *"unknown file type"* error that the REPL surfaces inline. `writeJsonl`
 overwrites the file; the parent directory must already exist. The recovery
@@ -145,8 +145,8 @@ interface FormatCodec {
   id: string;                 // "csv", "jsonl", …
   extensions: string[];       // [".csv"]
   contentTypes: string[];     // ["csv"]
-  parse(text: string, name: string): ParsedTable;
-  serialize(rows: Row[], columns: string[]): string;
+  parse(bytes: Uint8Array, name: string): ParsedTable;   // text codecs decode internally
+  serialize(rows: Row[], columns: string[]): Uint8Array;
   load?: () => Promise<void>; // dynamic import of a heavy parser/engine
 }
 

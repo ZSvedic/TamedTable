@@ -10,9 +10,9 @@ import { loadCodec } from '@tamedtable/file-io';
 // `from '@tamedtable/core'` import keeps working unchanged.
 export * from '@tamedtable/table-plan';
 
-async function readText(label: string, path: string): Promise<string> {
+async function readBytes(label: string, path: string): Promise<Uint8Array> {
   try {
-    return await readFile(path, 'utf8');
+    return await readFile(path);
   } catch (e) {
     throw new Error(`${label}: could not read ${path}: ${(e as Error).message}`);
   }
@@ -20,12 +20,12 @@ async function readText(label: string, path: string): Promise<string> {
 
 // #IoFormats
 // Byte-acquisition (node:fs) lives here; parsing is delegated to the file-io
-// codec registry. core reads the file by path, hands the text to the codec, and
+// codec registry. core reads the file's raw bytes, hands them to the codec, and
 // builds the initial TablePlan from the columns the codec recovers.
 export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
-  const text = await readText('loadCsv', path);
+  const bytes = await readBytes('loadCsv', path);
   const codec = await loadCodec('csv');
-  const { rows, columns } = codec.parse(text, path);
+  const { rows, columns } = codec.parse(bytes, path);
   if (columns.length === 0) throw new Error(`loadCsv: ${path} has no header row`);
   const seen = new Set<string>();
   for (const id of columns) {
@@ -41,15 +41,15 @@ export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Ro
 }
 
 export async function readJsonl(path: string): Promise<Row[]> {
-  const text = await readText('readJsonl', path);
+  const bytes = await readBytes('readJsonl', path);
   const codec = await loadCodec('jsonl');
-  return codec.parse(text, path).rows;
+  return codec.parse(bytes, path).rows;
 }
 
 export async function loadJsonl(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
-  const text = await readText('loadJsonl', path);
+  const bytes = await readBytes('loadJsonl', path);
   const codec = await loadCodec('jsonl');
-  const { rows, columns } = codec.parse(text, path);
+  const { rows, columns } = codec.parse(bytes, path);
   const spec: TablePlan = validateTablePlan({
     table: path,
     columns: columns.map((id) => ({ id })),
@@ -103,7 +103,7 @@ export async function writeJsonl(path: string, rows: Row[], columnOrder?: string
   const codec = await loadCodec('jsonl');
   const body = codec.serialize(rows, columnOrder as string[]);
   try {
-    await writeFile(path, body, 'utf8');
+    await writeFile(path, body);
   } catch (e) {
     throw new Error(`writeJsonl: could not write ${path}: ${(e as Error).message}`);
   }
@@ -114,7 +114,7 @@ export async function writeCsv(filePath: string, rows: Row[], columnOrder: strin
   const codec = await loadCodec('csv');
   const body = codec.serialize(rows, columnOrder);
   try {
-    await writeFile(filePath, body, 'utf8');
+    await writeFile(filePath, body);
   } catch (e) {
     throw new Error(`writeCsv: could not write ${filePath}: ${(e as Error).message}`);
   }
