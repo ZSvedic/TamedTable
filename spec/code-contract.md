@@ -104,12 +104,16 @@ type ChunkUpdate = {
 type RequestAudio = { data: Uint8Array; mediaType: string };
 ```
 
-CSV parsing uses `csv-parse` with `trim: true` (unquoted leading/trailing
-whitespace stripped; quoted fields preserved verbatim). `loadJsonl` reads the file with the same
-streaming reader as `readJsonl` and derives the initial column list from
-the union of keys across rows (insertion order from the first row each key
-appears in). `Runner.loadInput` dispatches on file extension — `.csv` to
-`loadCsv`, `.jsonl` to `loadJsonl`; any other extension throws with a clear
+`core` owns byte-acquisition (`node:fs`) only; the parse/serialize of each
+format lives in the `file-io` codec registry (see [§ Format codecs](#format-codecs)).
+`loadCsv` reads the file and hands the text to the CSV codec (which parses with
+`csv-parse`, `trim: true` — unquoted leading/trailing whitespace stripped,
+quoted fields verbatim), then builds the initial plan from the codec's columns;
+it still throws `loadCsv: <path> has no header row` / `… duplicate column "…"`.
+`loadJsonl` and `readJsonl` hand the text to the JSONL codec, which derives the
+column list from the union of keys across rows (insertion order from the first
+row each key appears in). `Runner.loadInput` dispatches on file extension — `.csv`
+to `loadCsv`, `.jsonl` to `loadJsonl`; any other extension throws with a clear
 *"unknown file type"* error that the REPL surfaces inline. `writeJsonl`
 overwrites the file; the parent directory must already exist. The recovery
 budget is 3 turns; running out throws an error carrying a `debug` field —
@@ -118,6 +122,39 @@ a `RequestDebugInfo` (see Headless).
 `Runner` is the surface step definitions drive ([common.steps.ts](../src/tests/common.steps.ts));
 the CLI and headless packages both return Runners with the same method
 signatures, differing only in what each does under the hood.
+
+## Format codecs
+
+→ [spec/packages/file-io/behavior.md](packages/file-io/behavior.md)
+
+Every table format is a `FormatCodec` (declared in `@tamedtable/table-plan`),
+held in a load-on-demand registry inside `@tamedtable/file-io`:
+
+```ts
+interface ParsedTable { rows: Row[]; columns: string[] }
+
+interface FormatCodec {
+  id: string;                 // "csv", "jsonl", …
+  extensions: string[];       // [".csv"]
+  contentTypes: string[];     // ["csv"]
+  parse(text: string, name: string): ParsedTable;
+  serialize(rows: Row[], columns: string[]): string;
+  load?: () => Promise<void>; // dynamic import of a heavy parser/engine
+}
+
+// file-io registry surface
+function detectFormat(pathname: string, contentType: string | null): 'csv' | 'jsonl' | null;
+function formatForExtension(pathname: string): 'csv' | 'jsonl' | null;
+function loadCodec(id: 'csv' | 'jsonl'): Promise<FormatCodec>;
+```
+
+`detectFormat`/`formatForExtension` read a synchronous descriptor table
+(id + extensions + content types); `loadCodec` pulls the codec — and its
+parser — only on first use, so a run that never touches a format never imports
+its parser. `core`'s `loadCsv`/`loadJsonl`/`readJsonl`/`writeJsonl`/`writeCsv`
+delegate parse/serialize to the registry; `writeRows` dispatches on extension
+and routes `.csv`→`writeCsv`, `.jsonl`→`writeJsonl`. Adding a format is one
+codec file plus one registry row.
 
 ## Headless
 

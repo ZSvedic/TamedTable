@@ -5,6 +5,12 @@
 // ./browser-fs entry point. Spec: spec/packages/file-io/behavior.md.
 
 import type { TablePlan } from '@tamedtable/table-plan';
+import { detectFormat, type FormatId } from './codecs/registry.ts';
+
+// The codec registry: format detection, lazy codec loading, and the
+// FormatCodec interface. `core` and the web app reach every format through it.
+export { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
+export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
 
 /** A file the user picked from an Open dialog. */
 export interface PickedFile {
@@ -41,25 +47,9 @@ export type FetchLike = (
   init?: RequestInit,
 ) => Promise<Response>;
 
-/** Detect the file format from a URL path and (optionally) a Content-Type
- *  header. The path's extension wins; Content-Type only matters when the
- *  URL has no .csv/.jsonl ending (think query-style download URLs). */
-export function detectFormat(
-  pathname: string,
-  contentType: string | null,
-): 'csv' | 'jsonl' | null {
-  const lower = pathname.toLowerCase();
-  if (lower.endsWith('.csv')) return 'csv';
-  if (lower.endsWith('.jsonl') || lower.endsWith('.ndjson')) return 'jsonl';
-  const ct = contentType?.toLowerCase() ?? '';
-  if (ct.includes('csv')) return 'csv';
-  if (ct.includes('jsonl') || ct.includes('ndjson')) return 'jsonl';
-  return null;
-}
-
 /** Derive a friendly file name from a URL — the last path segment, or a
  *  fallback `download.<ext>` for URLs that don't expose one. */
-export function sampleNameFromUrl(url: URL, format: 'csv' | 'jsonl'): string {
+export function sampleNameFromUrl(url: URL, format: FormatId): string {
   const segment = url.pathname.split('/').filter(Boolean).pop() ?? '';
   if (segment) return segment;
   return `download.${format}`;
@@ -67,7 +57,7 @@ export function sampleNameFromUrl(url: URL, format: 'csv' | 'jsonl'): string {
 
 /** A fetched table: a picked file plus the format detection saw — the URL
  *  path's extension, or the response Content-Type when the path has none. */
-export type FetchedTable = PickedFile & { format: 'csv' | 'jsonl' };
+export type FetchedTable = PickedFile & { format: FormatId };
 
 /** Fetch a CSV or JSONL table from `url` and return it as a picked file.
  *  Throws on any failure with a message the host can show as-is, so a

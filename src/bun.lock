@@ -60,9 +60,8 @@
       "name": "@tamedtable/core",
       "version": "0.0.0",
       "dependencies": {
+        "@tamedtable/file-io": "workspace:*",
         "@tamedtable/table-plan": "workspace:*",
-        "csv-parse": "^6.2.1",
-        "csv-stringify": "^6.7.0",
       },
     },
     "packages/file-io": {
@@ -70,6 +69,8 @@
       "version": "0.0.0",
       "dependencies": {
         "@tamedtable/table-plan": "workspace:*",
+        "csv-parse": "^6.2.1",
+        "csv-stringify": "^6.7.0",
       },
       "devDependencies": {
         "@cucumber/cucumber": "^12.8.2",

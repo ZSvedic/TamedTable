@@ -1,9 +1,8 @@
-import { parse } from 'csv-parse/sync';
-import { stringify } from 'csv-stringify/sync';
 import { readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
+import { loadCodec } from '@tamedtable/file-io';
 
 // #TablePlanSchema
 // The TablePlan model now lives in @tamedtable/table-plan (zero-dependency base
@@ -20,45 +19,37 @@ async function readText(label: string, path: string): Promise<string> {
 }
 
 // #IoFormats
+// Byte-acquisition (node:fs) lives here; parsing is delegated to the file-io
+// codec registry. core reads the file by path, hands the text to the codec, and
+// builds the initial TablePlan from the columns the codec recovers.
 export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
   const text = await readText('loadCsv', path);
-  const records = parse(text, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as Row[];
-  const header = parse(text, { to_line: 1, trim: true, bom: true })[0] as string[] | undefined;
-  if (!header || header.length === 0) throw new Error(`loadCsv: ${path} has no header row`);
+  const codec = await loadCodec('csv');
+  const { rows, columns } = codec.parse(text, path);
+  if (columns.length === 0) throw new Error(`loadCsv: ${path} has no header row`);
   const seen = new Set<string>();
-  for (const id of header) {
+  for (const id of columns) {
     if (seen.has(id)) throw new Error(`loadCsv: ${path} has duplicate column "${id}"`);
     seen.add(id);
   }
   const spec: TablePlan = validateTablePlan({
     table: path,
-    columns: header.map((id) => ({ id })),
+    columns: columns.map((id) => ({ id })),
     transformations: [],
   });
-  return { spec, rows: records, sourcePath: path };
+  return { spec, rows, sourcePath: path };
 }
 
 export async function readJsonl(path: string): Promise<Row[]> {
   const text = await readText('readJsonl', path);
-  const rows: Row[] = [];
-  text.split('\n').forEach((raw, i) => {
-    const line = raw.trim();
-    if (line === '') return;
-    try { rows.push(JSON.parse(line) as Row); }
-    catch (e) { throw new Error(`readJsonl: ${path}:${i + 1} malformed JSON: ${(e as Error).message}`); }
-  });
-  return rows;
+  const codec = await loadCodec('jsonl');
+  return codec.parse(text, path).rows;
 }
 
 export async function loadJsonl(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
-  const rows = await readJsonl(path);
-  const columns: string[] = [];
-  const seen = new Set<string>();
-  for (const row of rows) {
-    for (const key of Object.keys(row)) {
-      if (!seen.has(key)) { seen.add(key); columns.push(key); }
-    }
-  }
+  const text = await readText('loadJsonl', path);
+  const codec = await loadCodec('jsonl');
+  const { rows, columns } = codec.parse(text, path);
   const spec: TablePlan = validateTablePlan({
     table: path,
     columns: columns.map((id) => ({ id })),
@@ -109,35 +100,19 @@ function findEnvFile(startDir: string): string | undefined {
 }
 
 export async function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<void> {
-  const lines = rows
-    .map((row) => {
-      if (!columnOrder) return JSON.stringify(row);
-      const ordered: Row = {};
-      for (const col of columnOrder) ordered[col] = col in row ? row[col] : null;
-      for (const k of Object.keys(row)) if (!(k in ordered)) ordered[k] = row[k];
-      return JSON.stringify(ordered);
-    })
-    .join('\n');
+  const codec = await loadCodec('jsonl');
+  const body = codec.serialize(rows, columnOrder as string[]);
   try {
-    await writeFile(path, lines + (lines.length ? '\n' : ''), 'utf8');
+    await writeFile(path, body, 'utf8');
   } catch (e) {
     throw new Error(`writeJsonl: could not write ${path}: ${(e as Error).message}`);
   }
 }
 
-function csvCellString(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
-
 // #IoFormats #CsvSerialize
 export async function writeCsv(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
-  const records = rows.map((row) =>
-    columnOrder.map((col) => csvCellString(col in row ? row[col] : null))
-  );
-  // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines).
-  const body = stringify(records, { header: true, columns: columnOrder });
+  const codec = await loadCodec('csv');
+  const body = codec.serialize(rows, columnOrder);
   try {
     await writeFile(filePath, body, 'utf8');
   } catch (e) {
