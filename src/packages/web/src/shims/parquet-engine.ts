@@ -6,6 +6,7 @@
 // preview build). Writing Parquet from the browser isn't wired (the web "Save
 // data" path writes JSONL); the desktop CLI writes Parquet through node-api.
 import { parquetMetadata, parquetReadObjects, parquetSchema } from 'hyparquet';
+import { parquetWriteBuffer } from 'hyparquet-writer';
 import type { Row } from '@tamedtable/core';
 
 export interface RawTable {
@@ -22,8 +23,15 @@ export async function readParquetBytes(bytes: Uint8Array): Promise<RawTable> {
   return { rows, columns };
 }
 
-export function writeParquetBytes(_rows: Row[], _columns: string[]): Promise<Uint8Array> {
-  return Promise.reject(
-    new Error('Saving Parquet from the browser is not supported — use the CLI (:save out.parquet).'),
-  );
+export function writeParquetBytes(rows: Row[], columns: string[]): Promise<Uint8Array> {
+  // Every column as STRING — string in, string out — matching the Node engine
+  // and the CSV/JSONL/Arrow codecs, so a load→save→load round-trip is stable.
+  const cell = (v: unknown): string | null =>
+    v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);
+  const columnData = columns.map((name) => ({
+    name,
+    data: rows.map((r) => cell(name in r ? r[name] : null)),
+    type: 'STRING' as const,
+  }));
+  return Promise.resolve(new Uint8Array(parquetWriteBuffer({ columnData })));
 }

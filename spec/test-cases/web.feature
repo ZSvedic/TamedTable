@@ -71,6 +71,15 @@ Feature: Web front-end
       And user saves as "customers-output.jsonl"
       Then the file is delivered as a download
 
+    @web
+    Scenario: Save data writes the format the table was loaded as
+      Given the TamedTable web app
+      And load "customers-input.parquet"
+      When user says "Save data"
+      Then the suggested save name ends with ".parquet"
+      When user saves as "out.parquet"
+      Then the status footer reports "saved"
+
   Rule: A URL is a first-class load source
 
     @web

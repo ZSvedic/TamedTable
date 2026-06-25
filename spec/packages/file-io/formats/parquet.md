@@ -14,12 +14,13 @@ implementations; the web build aliases the Node one to the browser one:
   (FORMAT PARQUET)` to a temp file, then read back. node-api is a native addon,
   so it loads through a computed-specifier dynamic import — bundlers never
   follow it into the browser. Reads and writes Parquet offline.
-- **Browser:** [hyparquet](https://github.com/hyparam/hyparquet), a pure-JS
-  reader. duckdb-wasm is *not* used for Parquet because its Parquet support
+- **Browser:** [hyparquet](https://github.com/hyparam/hyparquet) reads and
+  [hyparquet-writer](https://github.com/hyparam/hyparquet-writer) writes — both
+  pure JS. duckdb-wasm is *not* used for Parquet because its Parquet support
   autoloads an extension from `extensions.duckdb.org` at runtime, which fails in
   offline / locked-down environments (including the test and preview builds).
-  hyparquet has no such dependency. Browser-side writing is not wired — the web
-  "Save data" path writes JSONL; Parquet writing is a CLI feature.
+  hyparquet has no such dependency, so the web app's "Save data" can write
+  Parquet client-side.
 
 The codec itself is therefore runtime-agnostic — it just calls the engine.
 

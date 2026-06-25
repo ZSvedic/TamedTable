@@ -119,6 +119,17 @@ When('user saves as {string}', async function (this: TamedTableWorld, filename: 
   await ctx.pending;
 });
 
+Then('the suggested save name ends with {string}', async function (this: TamedTableWorld, ext: string) {
+  const port = ctxOf(this).filePort!;
+  // saveData does async serialization before opening the dialog; wait for it.
+  const start = Date.now();
+  while (!port.saveCalled && Date.now() - start < 5_000) await new Promise((r) => setTimeout(r, 5));
+  assert.ok(
+    port.lastSaveSuggestedName?.endsWith(ext),
+    `suggested save name "${port.lastSaveSuggestedName}" should end with "${ext}"`,
+  );
+});
+
 Then('table displays the header and at least the first {int} rows', function (this: TamedTableWorld, n: number) {
   const c = controller(this);
   assert.ok(c.displaySpec().columns.length > 0, 'table has no header columns');
