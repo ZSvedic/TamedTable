@@ -603,6 +603,65 @@ dialog, the dropdown carries **Open local…**. The two halves render
 inside one rounded shell with a single hover tint and no internal
 divider, so the pair reads as one control.
 
+### Diagnostics log (#Diagnostics)
+
+A bounded ring buffer of recent app events, persisted in the browser
+under the localStorage key `tamedtable.diagnostics` and mirrored in
+memory. It lives in the web package (`controller-diagnostics.ts`); the
+controller composes a `DiagnosticsManager` alongside its other managers.
+
+```ts
+type DiagLevel = 'error' | 'warn' | 'info';
+
+interface DiagEvent {
+  ts: string;          // absolute ISO 8601 timestamp
+  level: DiagLevel;
+  message: string;     // short, already redacted
+  context: Record<string, unknown>;  // structured, already redacted
+}
+
+// caps — evict oldest first when either is exceeded
+const MAX_EVENTS = 50;
+const MAX_BYTES = 256 * 1024;        // ~256 KB of serialized JSON
+const MAX_BODY = 2048;               // request-body truncation, in chars
+
+WebController.diagnosticsEvents(): DiagEvent[];   // newest last
+WebController.diagnosticsReport(): string;        // markdown, newest first
+WebController.copyDiagnosticsReport(): Promise<void>;     // → clipboard
+WebController.bugReportUrl(): string;             // prefilled GitHub new-issue URL
+WebController.sendBugReport(): Promise<void>;     // copy report + open the issue
+WebController.clearDiagnostics(): void;
+```
+
+Pure helpers (unit-tested directly):
+
+```ts
+// strip api-key and auth-header shapes everywhere, drop *Key fields
+function redactValue(value: unknown): unknown;
+// last MAX_EVENTS that also fit MAX_BYTES, oldest dropped first
+function evictEvents(events: DiagEvent[], maxEvents: number, maxBytes: number): DiagEvent[];
+function buildReportMarkdown(version, configSnapshot, events): string;
+```
+
+Every localStorage access is guarded with `typeof localStorage !==
+'undefined'` and wrapped in try/catch, so private-mode and headless/SSR
+hosts fall back to the in-memory mirror and never throw.
+
+Redaction is a hard contract, verified by an `@regression` scenario:
+
+- string values matching `/sk-[A-Za-z0-9_-]+/` or `/AIza[A-Za-z0-9_-]+/`
+  become `[redacted]`;
+- object keys matching `authorization`, `x-api-key`, or any `*Key`
+  (`anthropicKey`, `geminiKey`, `openaiKey`) are dropped whole;
+- the config snapshot is taken with the `*Key` fields already omitted.
+
+Three capture points wire into existing code, no logic duplicated: the
+controller's `pushToast` path records every toast; `EngineManager`'s
+fetch records a failed model request (method, URL, `fingerprint` from
+`@tamedtable/cassette`, and the body truncated to `MAX_BODY`); the same
+fetch records a tutorial replay miss with the active tour, scenario, and
+missing fingerprint.
+
 ## One schema, richer sort keys, and Python export
 
 → [behavior.md — One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)

@@ -17,6 +17,7 @@ export type {
   Toast,
   ChatMessage,
   DialogKind,
+  DiagEvent,
 } from './src/controller.ts';
 export type { FilePort, PickedFile, SaveOutcome, FetchLike } from '@tamedtable/file-io';
 export { buildVoicePrompt } from '@tamedtable/voice-input';

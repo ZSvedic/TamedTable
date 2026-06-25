@@ -67,6 +67,8 @@ export interface Toast {
   id: number;
   kind: 'error' | 'info';
   message: string;
+  /** Optional inline action label (e.g. "Copy report" on an error toast). */
+  action?: string;
 }
 
 export interface ChatMessage {

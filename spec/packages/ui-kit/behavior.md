@@ -60,10 +60,12 @@ All components are pure — props in, callbacks out — and carry stable
   primary half plus a caret that opens a menu of `{ label, onClick, disabled? }`
   items; closes on pick, click-outside, or Escape (`data-uk-split-main`,
   `data-uk-split-caret`, `data-uk-menu-item`).
-- `Toasts({ toasts, onDismiss })` — fixed bottom-right stack of
-  `{ id, kind: "info" | "error", message }` items, each with a dismiss button;
-  renders nothing when the list is empty; ships its own slide-in animation
-  (`data-uk-toast`, `data-uk-toast-dismiss`).
+- `Toasts({ toasts, onDismiss, onAction? })` — fixed bottom-right stack of
+  `{ id, kind: "info" | "error", message, action? }` items, each with a dismiss
+  button; a toast carrying an `action` label also shows an inline action button
+  that calls `onAction(id)` (`data-uk-toast-action`). Renders nothing when the
+  list is empty; ships its own slide-in animation (`data-uk-toast`,
+  `data-uk-toast-dismiss`).
 
 ## Demo page
 

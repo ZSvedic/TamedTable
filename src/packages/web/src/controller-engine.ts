@@ -13,6 +13,7 @@ import {
 import type { Row, TablePlan } from '@tamedtable/core';
 import { defaultModel, defaultCellModel } from '@tamedtable/model-config';
 import type { FetchLike } from '@tamedtable/file-io';
+import { requestBody, requestUrl } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
@@ -46,20 +47,43 @@ export class EngineManager {
    *  Gemini and OpenAI handle auth through the SDK's own mechanisms). The check
    *  is per-call so it tracks replay mode without rebuilding the wrapper. */
   private makeFetch(): FetchLike {
-    return (input, init) => {
+    return async (input, init) => {
+      // The fingerprint inputs the replay layer uses, so a logged miss carries
+      // the same hash the replay error reports.
+      const method = (init?.method ?? 'GET').toUpperCase();
+      const url = requestUrl(input);
+      const body = requestBody(init);
+
       if (this.host.tutorial.isReplaying()) {
-        return this.host.tutorial.replayFetch(input, init);
+        try {
+          return await this.host.tutorial.replayFetch(input, init);
+        } catch (e) {
+          // The original bug: "no recording for this request" on a tour. Log it
+          // with the active tour/scenario and the missing fingerprint.
+          await this.host.diagnostics.recordRequestFailure({ method, url, body, replayMiss: true, error: e });
+          throw e;
+        }
       }
+
       const injected = this.host.opts.fetch;
-      if (injected) return injected(input, init);
       const headers = new Headers(init?.headers);
-      const apiKey = this.host.settingsMgr.activeApiKey();
-      const provider = this.host.config.provider;
-      if (provider === 'anthropic') {
-        if (apiKey) headers.set('x-api-key', apiKey);
-        headers.set('anthropic-dangerous-direct-browser-access', 'true');
+      if (!injected) {
+        const apiKey = this.host.settingsMgr.activeApiKey();
+        if (this.host.config.provider === 'anthropic') {
+          if (apiKey) headers.set('x-api-key', apiKey);
+          headers.set('anthropic-dangerous-direct-browser-access', 'true');
+        }
       }
-      return fetch(input, { ...init, headers });
+      try {
+        const res = injected ? await injected(input, init) : await fetch(input, { ...init, headers });
+        if (!res.ok) {
+          await this.host.diagnostics.recordRequestFailure({ method, url, body, status: res.status });
+        }
+        return res;
+      } catch (e) {
+        await this.host.diagnostics.recordRequestFailure({ method, url, body, error: e });
+        throw e;
+      }
     };
   }
 
