@@ -17538,7 +17538,8 @@ var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
 var SHEET_CSS = "@keyframes uk-sheet-kf { from { opacity: 0; transform: translateY(6px); }" + " to { opacity: 1; transform: translateY(0); } }" + " .uk-sheet { animation: uk-sheet-kf 0.14s ease-out; }";
 function Toasts({
   toasts,
-  onDismiss
+  onDismiss,
+  onAction
 }) {
   const t = useTheme();
   if (toasts.length === 0)
@@ -17589,6 +17590,24 @@ function Toasts({
             /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
               style: { flex: 1 },
               children: toast.message
+            }, undefined, false, undefined, this),
+            toast.action && onAction && /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+              type: "button",
+              "data-uk-toast-action": "",
+              onClick: () => onAction(toast.id),
+              style: {
+                flex: "0 0 auto",
+                background: "transparent",
+                border: 0,
+                padding: space.px2,
+                cursor: "pointer",
+                color: t.accent,
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                fontWeight: 600,
+                textDecoration: "underline"
+              },
+              children: toast.action
             }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
               type: "button",

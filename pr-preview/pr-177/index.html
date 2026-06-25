@@ -101,40 +101,52 @@
       </div>
       <div class="vp-grid">
         <div class="vp-card">
-          <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 9.5V6.5A2.5 2.5 0 0 1 5.5 4H18.5A2.5 2.5 0 0 1 21 6.5V9.5Z" fill="var(--accent)" stroke="none"></path>
-            <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
-            <path d="M3 9.5H21"></path>
-            <path d="M9 9.5V20M15 9.5V20"></path>
-            <path d="M3 14.75H21"></path>
-          </svg>
-          <div>
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 9.5V6.5A2.5 2.5 0 0 1 5.5 4H18.5A2.5 2.5 0 0 1 21 6.5V9.5Z" fill="var(--accent)" stroke="none"></path>
+              <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
+              <path d="M3 9.5H21"></path>
+              <path d="M9 9.5V20M15 9.5V20"></path>
+              <path d="M3 14.75H21"></path>
+            </svg>
             <h3>Reads each row like a person</h3>
-            <p>The AI understands context, so it cleans, enriches, classifies, and validates — things no formula can.</p>
           </div>
+          <p>The AI understands context, so it cleans, enriches, classifies, and validates — things no formula can.</p>
         </div>
         <div class="vp-card">
-          <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M2.5 12C5.5 6.8 18.5 6.8 21.5 12 18.5 17.2 5.5 17.2 2.5 12Z"></path>
-            <circle cx="12" cy="12" r="3.3" fill="var(--accent)"></circle>
-          </svg>
-          <div>
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 12C5.5 6.8 18.5 6.8 21.5 12 18.5 17.2 5.5 17.2 2.5 12Z"></path>
+              <circle cx="12" cy="12" r="3.3" fill="var(--accent)"></circle>
+            </svg>
             <h3>See everything</h3>
-            <p>See changes as they happen. Nothing is hidden: TamedTable is open source, and runs on your own API keys.</p>
           </div>
+          <p>See changes as they happen. Nothing is hidden: TamedTable is open source, and runs on your own API keys.</p>
         </div>
         <div class="vp-card">
-          <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"></path>
-            <path d="M18 2.5V6.3H14.2"></path>
-            <path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"></path>
-            <path d="M6 21.5V17.7H9.8"></path>
-            <circle cx="12" cy="12" r="2" fill="var(--accent)" stroke="none"></circle>
-          </svg>
-          <div>
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"></path>
+              <path d="M18 2.5V6.3H14.2"></path>
+              <path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"></path>
+              <path d="M6 21.5V17.7H9.8"></path>
+              <circle cx="12" cy="12" r="2" fill="var(--accent)" stroke="none"></circle>
+            </svg>
             <h3>Reuse and automate</h3>
-            <p>Every change saves as steps you replay on new data, or export as a Python script. Works in the browser or on the command line.</p>
           </div>
+          <p>Every change saves as steps you replay on new data, or export as a Python script. Works in the browser or on the command line.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7.5C4 6 7.6 5 12 5s8 1 8 2.5"></path>
+              <path d="M4 7.5v9C4 18 7.6 19 12 19s8-1 8-2.5v-9"></path>
+              <path d="M4 12c0 1.5 3.6 2.5 8 2.5s8-1 8-2.5"></path>
+              <circle cx="12" cy="7.5" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Reads many formats</h3>
+          </div>
+          <p>Open CSV, JSONL, Parquet, and Arrow files — local, from a URL, or a bundled sample. Powered by DuckDB, with more formats to come.</p>
         </div>
       </div>
     </div>
@@ -146,7 +158,7 @@
       <div class="sec-head"><h2>How it works</h2></div>
       <div class="steps">
         <div class="step"><div class="num">1</div><h3>Add API keys</h3><p><a href="FAQ.html#byok">Enter API keys</a> the first time you start the app.</p></div>
-        <div class="step"><div class="num">2</div><h3>Open</h3><p>A CSV or JSONL, as an URL or a local file.</p></div>
+        <div class="step"><div class="num">2</div><h3>Open</h3><p>A CSV, JSONL, Parquet or Arrow file, as a URL or a local file.</p></div>
         <div class="step"><div class="num">3</div><h3>Say</h3><p>What you want, in natural language.</p></div>
         <div class="step"><div class="num">4</div><h3>Watch</h3><p>Every row change. Undo anything.</p></div>
         <div class="step"><div class="num">5</div><h3>Automate</h3><p>You just created a recipe, replay it later on new data.</p></div>
@@ -324,7 +336,7 @@
           <h2>Load, save &amp; reuse</h2>
           <p>Your work is yours to keep — load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-177/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV or JSONL, web or CLI</span></button>
+            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-177/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow — web or CLI</span></button>
             <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-177/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
             <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-177/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
             <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg" data-url="https://zsvedic.github.io/TamedTable/pr-preview/pr-177/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>

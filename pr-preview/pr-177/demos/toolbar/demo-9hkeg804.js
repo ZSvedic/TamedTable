@@ -17953,8 +17953,18 @@ function OpenUrlDialog({ open, samples, onSubmit, onClose }) {
                     color: t.ink3,
                     marginBottom: space.px8
                   },
-                  children: "Paste a link to a .csv or .jsonl file. The remote server must allow cross-origin requests."
-                }, undefined, false, undefined, this),
+                  children: [
+                    "Paste a link to a .csv, .jsonl, .parquet, or .arrow file (",
+                    /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("a", {
+                      href: "../FAQ.html#formats",
+                      target: "_blank",
+                      rel: "noopener",
+                      style: { color: t.accent },
+                      children: "all formats ↗"
+                    }, undefined, false, undefined, this),
+                    "). The remote server must allow cross-origin requests."
+                  ]
+                }, undefined, true, undefined, this),
                 /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("input", {
                   ref: inputRef,
                   "data-tb-url-input": "",
