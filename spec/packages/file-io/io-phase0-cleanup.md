@@ -21,7 +21,8 @@ filesystem:
 So a parser that needs no filesystem is reached through a filesystem shim, and
 the package named `file-io` doesn't own file IO. Phase 1 also breaks the current
 seam outright: Parquet, Arrow, Avro are **binary**, but `PickedFile` is
-text-only.
+text-only — and those formats are read through [DuckDB-Wasm](io-roadmap.md), not
+bespoke parsers, so the registry must hand a codec raw **bytes**, not text.
 
 ## Target shape (option D)
 
@@ -42,7 +43,7 @@ A clean DAG: `core → file-io → table-plan`, `core → table-plan`. No cycle.
 
 ### FormatCodec
 
-One stateless object per format, lazy-loaded where the library is heavy:
+One stateless object per format, lazy-loaded where the engine is heavy:
 
 ```
 interface FormatCodec {
@@ -51,12 +52,26 @@ interface FormatCodec {
   contentTypes: string[]     // ["csv"]
   parse(bytes, name)   → { rows: Row[]; columns: string[] }
   serialize(rows, columns) → Uint8Array
-  load?: () => Promise<…>    // dynamic import() of the parser lib
+  load?: () => Promise<…>    // dynamic import() of the parser / engine
 }
 ```
 
+Two codec families share this one interface:
+
+- **Pure-JS** — `csv` / `jsonl`, using `csv-parse` and native `JSON.parse`. The
+  golden path; never pulls wasm.
+- **DuckDB-backed** — Parquet / Arrow / Avro / Excel, delegating `parse` to a
+  shared DuckDB reader (`registerFileBuffer` → `read_parquet`/…). These all
+  share one lazy `load?()` that pulls duckdb-wasm. See
+  [io-roadmap.md](io-roadmap.md).
+
 New format = one codec file + one registry entry. `detectFormat` becomes a
 lookup over the registry instead of a hand-written `if` ladder.
+
+**Scope line:** Phase 0 is behavior-preserving plumbing — it builds the registry,
+the `Uint8Array` seam, and the pure-JS codecs, and it is parser-agnostic.
+*Wiring duckdb-wasm into the browser and registering the DuckDB-backed codecs is
+Phase 1* (it adds a dependency and re-enables web `{sql}`, both user-visible).
 
 ## Steps
 
