@@ -135,6 +135,43 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               )
             }
           />
+
+          {/* #Diagnostics — send the maintainers a redacted bug report */}
+          <div style={{ marginTop: space.px16 }}>
+            <div
+              style={{
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                fontWeight: 600,
+                color: t.ink,
+                marginBottom: space.px8,
+              }}
+            >
+              Diagnostics
+            </div>
+            <div
+              style={{
+                fontFamily: typography.ui,
+                fontSize: typography.size.xs,
+                color: t.ink3,
+                marginBottom: space.px8,
+              }}
+            >
+              Hit a bug? Send the TamedTable maintainers a redacted report (no API keys) so they can
+              reproduce it.
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.px8 }}>
+              <Button variant="primary" onClick={() => void controller.sendBugReport()}>
+                Send a bug report
+              </Button>
+              <Button variant="chrome" onClick={() => void controller.copyDiagnosticsReport()}>
+                Copy diagnostics report
+              </Button>
+              <Button variant="ghost" onClick={() => controller.clearDiagnostics()}>
+                Clear diagnostics
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* footer — Close only (changes are live) */}

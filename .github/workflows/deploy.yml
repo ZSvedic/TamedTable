@@ -40,7 +40,9 @@ jobs:
       - name: Build site
         run: .github/scripts/build-site.sh
         env:
-          SITE_BASE: /TamedTable/
+          # Served at the custom domain root (www.tamedtable.com), so the base
+          # is "/", not "/TamedTable/". App → /app/, demos → /demos/.
+          SITE_BASE: /
           OUT_DIR: _site
       # Smoke-test the demo bundles in headless Chromium before deploying.
       - run: bunx playwright install chromium
@@ -53,3 +55,7 @@ jobs:
           publish_dir: ./_site
           publish_branch: gh-pages
           keep_files: true  # don't wipe pr-preview/ subdirs
+          # Re-assert the custom domain on every deploy so the CNAME file is
+          # never dropped from gh-pages. Change this if the apex domain
+          # (tamedtable.com) becomes primary instead of www.
+          cname: www.tamedtable.com

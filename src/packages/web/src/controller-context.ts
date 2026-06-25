@@ -17,6 +17,7 @@ import type { FilesManager } from './controller-files.ts';
 import type { VoiceManager } from './controller-voice.ts';
 import type { ConfigManager } from './controller-config.ts';
 import type { TutorialManager } from './controller-tutorial.ts';
+import type { DiagnosticsManager } from './controller-diagnostics.ts';
 import type {
   CellRef,
   ChatMessage,
@@ -34,6 +35,7 @@ export interface ControllerHost {
   config: ResolvedConfig;
   loaded: boolean;
   sourcePath: string;
+  messages: ChatMessage[];
   streaming: boolean;
   selection: CellRef | null;
   savedLabel: string | null;
@@ -50,7 +52,7 @@ export interface ControllerHost {
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
-  pushToast(kind: 'info' | 'error', message: string): void;
+  pushToast(kind: 'info' | 'error', message: string, action?: string): void;
   pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo): number;
   updateMessage(id: number, text: string): void;
   fail(message: string, debug?: RequestDebugInfo): void;
@@ -64,4 +66,5 @@ export interface ControllerHost {
   readonly voice: VoiceManager;
   readonly settingsMgr: ConfigManager;
   readonly tutorial: TutorialManager;
+  readonly diagnostics: DiagnosticsManager;
 }
