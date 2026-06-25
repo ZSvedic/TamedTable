@@ -360,9 +360,10 @@ export class WebController implements ControllerHost {
   /** The redacted, pasteable markdown report (newest event first). */
   diagnosticsReport(): string { return this.diagnostics.report(); }
   copyDiagnosticsReport(): Promise<void> { return this.diagnostics.copyReport(); }
-  downloadDiagnosticsReport(format?: 'md' | 'json'): Promise<void> {
-    return this.diagnostics.downloadReport(format);
-  }
+  /** The prefilled GitHub new-issue URL with the redacted report. */
+  bugReportUrl(): string { return this.diagnostics.bugReportUrl(); }
+  /** Copy the report and open a prefilled GitHub issue for the maintainers. */
+  sendBugReport(): Promise<void> { return this.diagnostics.sendBugReport(); }
   clearDiagnostics(): void { this.diagnostics.clear(); }
 }
 

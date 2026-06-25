@@ -628,7 +628,8 @@ const MAX_BODY = 2048;               // request-body truncation, in chars
 WebController.diagnosticsEvents(): DiagEvent[];   // newest last
 WebController.diagnosticsReport(): string;        // markdown, newest first
 WebController.copyDiagnosticsReport(): Promise<void>;     // → clipboard
-WebController.downloadDiagnosticsReport(format?: 'md' | 'json'): Promise<void>;
+WebController.bugReportUrl(): string;             // prefilled GitHub new-issue URL
+WebController.sendBugReport(): Promise<void>;     // copy report + open the issue
 WebController.clearDiagnostics(): void;
 ```
 

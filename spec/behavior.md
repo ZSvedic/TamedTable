@@ -827,11 +827,15 @@ shaped like an API key (`sk-…`, `AIza…`) or an auth header
 (`authorization`, `x-api-key`) is stripped, and the config snapshot drops
 the per-provider key fields outright. A pasted report is safe to share.
 
-Three actions reach the log: **Copy diagnostics report** copies the
-markdown to the clipboard, **Download report** saves it as a file, and
-**Clear diagnostics** empties the log. All three live in Settings; an
-error toast also carries a **Copy report** action so a user can grab the
-report the moment a bug surfaces. The report lists events newest first.
+Three actions live in Settings. **Send a bug report** (the primary
+button) copies the full report to the clipboard and opens a prefilled
+GitHub issue on the maintainers' tracker — the report rides in the issue
+body, truncated to fit the URL, with the clipboard copy as the backstop
+for a long log or a blocked popup. **Copy diagnostics report** copies the
+markdown for pasting anywhere (a Claude chat, a comment). **Clear
+diagnostics** empties the log. An error toast also carries a **Copy
+report** action so a user can grab the report the moment a bug surfaces.
+The report lists events newest first.
 
 → [code-contract.md — Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
 

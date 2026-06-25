@@ -78,6 +78,23 @@ Then('the diagnostics report drops the provider key fields', function (this: Tam
   assert.ok(!report.includes('DEADBEEF'), 'report still contains a secret key value');
 });
 
+Then('the bug report link targets the TamedTable issue tracker', function (this: TamedTableWorld) {
+  const url = controller(this).bugReportUrl();
+  assert.ok(
+    url.includes('github.com/ZSvedic/TamedTable/issues/new'),
+    `bug report link does not target the issue tracker: ${url}`,
+  );
+  assert.ok(url.includes('body='), 'bug report link has no prefilled body');
+});
+
+Then('the bug report link contains no API key', function (this: TamedTableWorld) {
+  const url = decodeURIComponent(controller(this).bugReportUrl());
+  for (const re of KEY_SHAPES) {
+    const hit = url.match(re);
+    assert.ok(!hit, `bug report link leaked an api-key-shaped string: ${hit?.[0]}`);
+  }
+});
+
 Then('the diagnostics report mentions the app version', function (this: TamedTableWorld) {
   const report = controller(this).diagnosticsReport();
   assert.ok(/version/i.test(report), 'report does not mention a version');

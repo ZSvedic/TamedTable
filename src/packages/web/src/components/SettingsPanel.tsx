@@ -136,7 +136,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             }
           />
 
-          {/* #Diagnostics — in-app log export, for pasting a bug report to Claude */}
+          {/* #Diagnostics — send the maintainers a redacted bug report */}
           <div style={{ marginTop: space.px16 }}>
             <div
               style={{
@@ -157,15 +157,15 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
                 marginBottom: space.px8,
               }}
             >
-              Hit a bug? Copy a redacted report ({controller.diagnosticsEvents().length} events) and
-              paste it into a Claude chat.
+              Hit a bug? Send the TamedTable maintainers a redacted report (no API keys) so they can
+              reproduce it.
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.px8 }}>
+              <Button variant="primary" onClick={() => void controller.sendBugReport()}>
+                Send a bug report
+              </Button>
               <Button variant="chrome" onClick={() => void controller.copyDiagnosticsReport()}>
                 Copy diagnostics report
-              </Button>
-              <Button variant="chrome" onClick={() => void controller.downloadDiagnosticsReport('md')}>
-                Download report
               </Button>
               <Button variant="ghost" onClick={() => controller.clearDiagnostics()}>
                 Clear diagnostics

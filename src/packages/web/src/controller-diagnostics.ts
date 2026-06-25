@@ -34,6 +34,13 @@ const MAX_BYTES = 256 * 1024;
 /** Request bodies are truncated to this many characters before logging. */
 const MAX_BODY = 2048;
 
+/** Where a "Send a bug report" lands — the maintainers' issue tracker. */
+const ISSUE_URL = 'https://github.com/ZSvedic/TamedTable/issues/new';
+/** How much of the report rides in the prefilled issue URL. GitHub's
+ *  new-issue link breaks past ~8 KB, so a long log is truncated here and the
+ *  full copy goes to the clipboard instead. */
+const URL_REPORT_BUDGET = 6000;
+
 // ── Pure helpers (unit-tested directly) ─────────────────────────────────────
 
 /** api-key shapes that must never reach the log. */
@@ -197,19 +204,51 @@ export class DiagnosticsManager {
     this.host.pushToast('error', 'Could not copy the report — clipboard access was blocked.');
   }
 
-  /** Save the report through the file dialog as markdown or JSON. */
-  async downloadReport(format: 'md' | 'json' = 'md'): Promise<void> {
-    const content =
-      format === 'json'
-        ? JSON.stringify({ version: appVersion(), config: this.configSnapshot(), events: this.events }, null, 2)
-        : this.report();
-    const name = `tamedtable-diagnostics.${format}`;
-    const accept = format === 'json' ? ['.json'] : ['.md'];
+  /** The prefilled "new issue" URL for the maintainers' tracker: a friendly
+   *  intro plus the redacted report (truncated to fit the URL). Pure — safe to
+   *  call from a test without a browser. */
+  bugReportUrl(): string {
+    const report = this.report();
+    const intro = [
+      '<!-- Describe what you were doing when the bug hit, above this line. -->',
+      '',
+      'Diagnostics (auto-generated, redacted — contains no API keys):',
+      '',
+    ].join('\n');
+    const truncated = report.length > URL_REPORT_BUDGET;
+    const body =
+      intro +
+      (truncated ? report.slice(0, URL_REPORT_BUDGET) : report) +
+      (truncated ? '\n\n_(Report truncated — the full report is on your clipboard; paste it here.)_' : '');
+    const params = new URLSearchParams({ title: 'Bug report', body });
+    return `${ISSUE_URL}?${params.toString()}`;
+  }
+
+  /** Copy the full report to the clipboard, then open a prefilled GitHub issue.
+   *  The clipboard copy is the safety net for a report too long to fit the URL,
+   *  and the fallback when a popup blocker stops the new tab. */
+  async sendBugReport(): Promise<void> {
+    let copied = false;
     try {
-      const outcome = await this.host.file.pickSave(name, accept, new TextEncoder().encode(content));
-      if (outcome.status !== 'cancelled') this.host.pushToast('info', `Saved ${outcome.name}.`);
-    } catch (e) {
-      this.host.pushToast('error', `Could not save the report: ${(e as Error).message}`);
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(this.report());
+        copied = true;
+      }
+    } catch {
+      /* clipboard blocked — the URL still carries a (possibly truncated) copy */
+    }
+    const url = this.bugReportUrl();
+    const opened =
+      typeof window !== 'undefined' && typeof window.open === 'function'
+        ? window.open(url, '_blank', 'noopener')
+        : null;
+    if (!opened) {
+      this.host.pushToast(
+        'info',
+        copied
+          ? 'Could not open GitHub — the report is on your clipboard. Open a new issue and paste it.'
+          : 'Could not open GitHub — copy the report and open a new issue manually.',
+      );
     }
   }
 

@@ -46,6 +46,18 @@ Feature: In-app diagnostics log
       And the diagnostics report contains no API key
       And the diagnostics report drops the provider key fields
 
+    @web @offline @regression
+    # The bug-report link prefills a GitHub issue with the report — it must stay
+    # redacted, since the URL is shared publicly.
+    Scenario: The bug-report link points to GitHub with a redacted report
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the provider "anthropic" has API key "sk-ant-secret-DEADBEEF1234"
+      And the LLM API returns a 401 unauthorized error
+      When user sends the chat message "norm dob col"
+      Then the bug report link targets the TamedTable issue tracker
+      And the bug report link contains no API key
+
   Rule: The report and log are one click away
 
     @web @offline
