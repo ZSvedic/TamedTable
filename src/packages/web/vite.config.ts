@@ -124,8 +124,10 @@ export default defineConfig({
       'node:fs': shim('fs.ts'),
       'node:path': shim('path.ts'),
       'node:url': shim('url.ts'),
-      // DuckDB is a native addon — unavailable in a browser. {sql}
-      // transformations are not part of the V4 web golden path.
+      // The engine's DuckDB import (`@duckdb/node-api`, a native addon) maps to
+      // a duckdb-wasm adapter so {sql} runs in the browser. The adapter pulls
+      // the wasm lazily via a dynamic import(), so the CSV/JSON path never
+      // loads it. See src/shims/duckdb.ts.
       '@duckdb/node-api': shim('duckdb.ts'),
     },
   },

@@ -7,7 +7,12 @@ Feature: SQL expressions
     Background:
       Given load "customers-input.csv"
 
-    @headless @cli
+    # @web too: the web build routes {sql} through duckdb-wasm. The web
+    # cucumber surface runs the controller in Node (real @duckdb/node-api) and
+    # replays the same sql.json cassette — the request body is byte-identical —
+    # so this proves the controller re-enables SQL. The browser wasm path itself
+    # is exercised by web/e2e/sql.e2e.ts.
+    @headless @cli @web
     Scenario: SQL scalar fills a new column
       When query "Add column AgeYears computed in SQL as date_diff('year', DOB::DATE, current_date)"
       Then column "AgeYears" exists in the spec

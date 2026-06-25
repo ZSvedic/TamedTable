@@ -16,6 +16,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "1.32.0",
     "@tamedtable/cassette": "workspace:*",
     "@tamedtable/chat-panel": "workspace:*",
     "@tamedtable/core": "workspace:*",
