@@ -4,7 +4,7 @@
 // DOM dependency — the browser FilePort implementation lives in the separate
 // ./browser-fs entry point. Spec: spec/packages/file-io/behavior.md.
 
-import type { TablePlan } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/table-plan';
 
 /** A file the user picked from an Open dialog. */
 export interface PickedFile {

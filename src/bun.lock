@@ -60,16 +60,16 @@
       "name": "@tamedtable/core",
       "version": "0.0.0",
       "dependencies": {
+        "@tamedtable/table-plan": "workspace:*",
         "csv-parse": "^6.2.1",
         "csv-stringify": "^6.7.0",
-        "zod": "^4.4.3",
       },
     },
     "packages/file-io": {
       "name": "@tamedtable/file-io",
       "version": "0.0.0",
       "dependencies": {
-        "@tamedtable/core": "workspace:*",
+        "@tamedtable/table-plan": "workspace:*",
       },
       "devDependencies": {
         "@cucumber/cucumber": "^12.8.2",
@@ -109,6 +109,13 @@
       },
       "peerDependencies": {
         "react": "^19.0.0",
+      },
+    },
+    "packages/table-plan": {
+      "name": "@tamedtable/table-plan",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.4.3",
       },
     },
     "packages/table-view": {
@@ -422,6 +429,8 @@
     "@tamedtable/headless": ["@tamedtable/headless@workspace:packages/headless"],
 
     "@tamedtable/model-config": ["@tamedtable/model-config@workspace:packages/model-config"],
+
+    "@tamedtable/table-plan": ["@tamedtable/table-plan@workspace:packages/table-plan"],
 
     "@tamedtable/table-view": ["@tamedtable/table-view@workspace:packages/table-view"],
 

@@ -8,6 +8,14 @@ twin.
 
 → [behavior.md — Data model](behavior.md#data-model)
 
+The model below lives in the zero-dependency base package
+`@tamedtable/table-plan`: `Row`, `Expr`, `Transformation` and their schemas,
+`TablePlan`, `TablePlanSchema`, `validateTablePlan`, and the `FormatCodec`
+interface (see [§ Format codecs](#format-codecs)). `@tamedtable/core`
+re-exports the whole surface, so `from '@tamedtable/core'` keeps resolving
+every name. The dependency DAG is `core → file-io → table-plan`,
+`core → table-plan` — no cycle.
+
 ```ts
 type Expr =
   | { js:  string }                              // arrow function BODY

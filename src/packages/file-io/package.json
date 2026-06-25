@@ -13,7 +13,7 @@
     "demo": "bun demo.html"
   },
   "dependencies": {
-    "@tamedtable/core": "workspace:*"
+    "@tamedtable/table-plan": "workspace:*"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2"

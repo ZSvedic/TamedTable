@@ -4,7 +4,7 @@
 // they import nothing from the app harness.
 import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import type { TablePlan } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/table-plan';
 import {
   detectFormat,
   fetchTable,

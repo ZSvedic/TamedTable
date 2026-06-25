@@ -1,0 +1,162 @@
+// #TablePlanSchema
+// The declarative table definition (formerly named `Spec`) plus its Zod schema
+// and validator, and the FormatCodec interface every format plugs into. This is
+// the zero-dependency base package both `core` (engine) and `file-io` (codecs,
+// dialogs, fetch) import — the clean DAG `core → file-io → table-plan` with no
+// cycle. Spec: spec/packages/file-io/io-phase0-cleanup.md.
+
+import { z } from 'zod';
+
+export type Row = Record<string, unknown>;
+
+// ── TablePlan schema (one schema for every plan — fresh load, patch, replay) ──
+
+const ColumnsField = z.union([z.string(), z.array(z.string())]);
+
+export const ExprSchema: z.ZodTypeAny = z.union([
+  z.object({ js: z.string() }).strict(),
+  z.object({ llm: z.string(), model: z.string().optional() }).strict(),
+  z.object({ sql: z.string() }).strict(),
+]);
+
+const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
+
+const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('filter'), pred: ExprSchema }).strict(),
+  z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema }).strict(),
+  z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
+  z.object({
+    kind: z.literal('sort'),
+    by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) })),
+    limit: z.number().int().positive().optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('group'),
+    // An empty `by` aggregates the whole table into a single output row.
+    by: z.array(z.union([z.string(), ExprSchema])),
+    agg: z.record(z.string(), ExprSchema),
+  }).strict(),
+  z.object({
+    kind: z.literal('join'),
+    with: z.string().refine((s) => JsonLikeFileExtRe.test(s), {
+      message: 'join.with: unknown file type (must be .csv or .jsonl)',
+    }),
+    on: ExprSchema,
+    how: z.enum(['inner', 'left']).optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('split'),
+    from: z.string(),
+    into: z.array(z.string()).min(1, 'split.into must be non-empty'),
+    on: z.union([z.string(), z.instanceof(RegExp), ExprSchema]),
+    drop: z.boolean().optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('validate'),
+    pred: ExprSchema,
+    message: ExprSchema.optional(),
+    threshold: z.number().min(0).max(1).optional(),
+  }).strict(),
+  z.object({
+    kind: z.literal('pivot'),
+    index: z.array(z.string()).min(1, 'pivot.index must be non-empty'),
+    on: z.string(),
+    values: z.string(),
+    agg: z.enum(['sum', 'count', 'avg', 'min', 'max', 'first']).optional(),
+  }).strict().refine((p) => !p.index.includes(p.on), { message: 'pivot.on cannot be in pivot.index' }),
+  z.object({
+    kind: z.literal('unpivot'),
+    id: z.array(z.string()),
+    measures: z.array(z.string()),
+    names_to: z.string().optional(),
+    values_to: z.string().optional(),
+  }).strict(),
+]);
+
+// Re-export the transformation union as the default — patches and live plans
+// always validate against this single schema.
+export const TransformationSchema = TransformationUnionSchema;
+
+export type Expr =
+  | { js: string }
+  | { llm: string; model?: string }
+  | { sql: string };
+
+export type Transformation =
+  | { kind: 'filter'; pred: Expr }
+  | { kind: 'mutate'; columns: string | string[]; value: Expr }
+  | { kind: 'select'; columns: string[] }
+  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }>; limit?: number }
+  | { kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> }
+  | { kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' }
+  | { kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }
+  | { kind: 'validate'; pred: Expr; message?: Expr; threshold?: number }
+  | { kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' }
+  | { kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string };
+
+const ColumnSchema = z.object({
+  id: z.string(),
+  label: z.string().optional(),
+  format: z.string().optional(),
+});
+
+export const TablePlanSchema = z
+  .object({
+    table: z.string().optional(),
+    columns: z.array(ColumnSchema),
+    filter: z.unknown().optional(),
+    sort: z.array(z.unknown()).optional(),
+    page: z.object({ size: z.number(), offset: z.number() }).optional(),
+    summary: z
+      .object({
+        groupBy: z.array(z.unknown()),
+        aggregates: z.array(z.unknown()),
+      })
+      .optional(),
+    transformations: z.array(TransformationUnionSchema),
+  })
+  .strict();
+export type TablePlan = z.infer<typeof TablePlanSchema>;
+
+function describeZodError(err: z.ZodError): string {
+  return err.issues
+    .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
+    .join('; ');
+}
+
+export function validateTablePlan(spec: unknown): TablePlan {
+  const result = TablePlanSchema.safeParse(spec);
+  if (!result.success) {
+    throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
+  }
+  return result.data as TablePlan;
+}
+
+// ── FormatCodec ───────────────────────────────────────────────────────────────
+
+/** The rows + column list a codec recovers from a file's content. */
+export interface ParsedTable {
+  rows: Row[];
+  columns: string[];
+}
+
+/** One stateless codec per format. `file-io` owns a load-on-demand registry of
+ *  these; the engine and the web app reach formats only through it. Pure-JS
+ *  codecs (csv, jsonl) implement `parse`/`serialize` directly; codecs whose
+ *  reader is heavy (Phase 1's DuckDB-backed Parquet/Arrow/…) defer the engine
+ *  import to `load`. */
+export interface FormatCodec {
+  /** Stable format id, e.g. "csv", "jsonl". */
+  id: string;
+  /** File extensions this codec claims, lower-case with the dot (`[".csv"]`). */
+  extensions: string[];
+  /** Content-Type fragments that map to this codec (`["csv"]`). */
+  contentTypes: string[];
+  /** Parse a file's text into rows + columns. `name` is the source file name,
+   *  used only for error context. (Widened to raw bytes in I/O Phase 0 step 4.) */
+  parse(text: string, name: string): ParsedTable;
+  /** Serialize rows to the format's text, emitting `columns` in order. */
+  serialize(rows: Row[], columns: string[]): string;
+  /** Optional one-time load of a heavy parser/engine before first `parse`. */
+  load?: () => Promise<void>;
+}

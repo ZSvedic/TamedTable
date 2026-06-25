@@ -1,5 +1,5 @@
 {
-  "name": "@tamedtable/core",
+  "name": "@tamedtable/table-plan",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,6 @@
     ".": "./index.ts"
   },
   "dependencies": {
-    "@tamedtable/table-plan": "workspace:*",
-    "csv-parse": "^6.2.1",
-    "csv-stringify": "^6.7.0"
+    "zod": "^4.4.3"
   }
 }

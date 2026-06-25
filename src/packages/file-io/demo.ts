@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 // #FileIO demo logic — referenced by demo.html as an external module so
 // `bun build` bundles it (inline scripts are left unbundled and 404 on ./index.ts).
-import type { TablePlan } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/table-plan';
 import { detectFormat, fetchTable, serializeFlow, type PickedFile } from './index.ts';
 import { BrowserFilePort } from './browser-fs.ts';
 
