@@ -57,7 +57,7 @@ Then(
     );
     if (r.kind === 'ok') {
       assert.equal(r.spec.transformations.length, 1, 'expected exactly one transformation');
-      assert.equal(r.spec.transformations[0].kind, 'mutate', 'expected a mutate transformation');
+      assert.equal((r.spec.transformations[0] as { kind: string }).kind, 'mutate', 'expected a mutate transformation');
     }
   },
 );
