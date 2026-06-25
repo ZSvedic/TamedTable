@@ -5,7 +5,7 @@ Feature: Lookup join
   Rule: Left join keeps unmatched left rows with null right columns
 
     Background:
-      Given load "datanorm-input.csv"
+      Given load "customers-input.csv"
       And load the lookup table "join-country-codes.csv" with columns "Country, ISO, Region"
 
     @headless @cli @web @tour @cat-deterministic
@@ -48,7 +48,7 @@ Feature: Lookup join
     @headless @cli @offline
     Scenario: join.with with an unknown extension rejects at validation
       Given "join-unknown-ext.flow" exists with join.with = "join-country-codes.parquet"
-      When user runs "tamedtable execute join-unknown-ext.flow --input datanorm-input.csv --output ../temp/join-out.jsonl"
+      When user runs "tamedtable execute join-unknown-ext.flow --input customers-input.csv --output ../temp/join-out.jsonl"
       Then exit code is 2
       And stderr contains "unknown file type"
 
@@ -56,7 +56,7 @@ Feature: Lookup join
 
     @headless @cli
     Scenario: :undo removes the joined columns
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Join with join-country-codes.csv on Country to add ISO and Region
         :undo

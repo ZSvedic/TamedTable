@@ -14,7 +14,7 @@ Feature: Voice input
     Scenario: The mic is hidden when the selected model has no voice support
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user selects the provider "anthropic"
       Then the mic button is hidden
@@ -23,7 +23,7 @@ Feature: Voice input
     Scenario: The mic is hidden when Google has no Gemini key
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When user selects the provider "gemini"
       Then the mic button is hidden
 
@@ -31,7 +31,7 @@ Feature: Voice input
     Scenario: The mic is shown when Google is selected with a Gemini key
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       Then the mic button is shown
 
@@ -39,7 +39,7 @@ Feature: Voice input
     Scenario: The mic is hidden for an OpenAI model even with a key
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "openai" has API key "sk-example-key"
       And the selected model is "gpt-5.5"
       Then the mic button is hidden
@@ -50,7 +50,7 @@ Feature: Voice input
     Scenario: Holding then releasing the mic produces a user bubble and an assistant reply
       Given the TamedTable web app
       And a stub microphone that plays "voice-validate-dob.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
@@ -64,7 +64,7 @@ Feature: Voice input
     Scenario: A spoken "normalize DOB column" request applies a transformation
       Given the TamedTable web app
       And a stub microphone that plays "voice-normalize-dob.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
@@ -77,7 +77,7 @@ Feature: Voice input
     Scenario: Escape cancels a recording without sending anything
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user presses Escape to cancel the recording
@@ -96,7 +96,7 @@ Feature: Voice input
     @web @tour @cat-language
     Scenario: Normalize DOB by voice
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       And Play voiceover: "voice-normalize-dob.m4a"
       Then the spec has 1 transformation
@@ -108,7 +108,7 @@ Feature: Voice input
     Scenario: A model API error shows a toast
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "bad-key"
       And the Gemini endpoint returns an error
       When user presses and holds the mic button

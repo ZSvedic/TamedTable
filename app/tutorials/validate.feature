@@ -5,7 +5,7 @@ Feature: Row and dataset validation
   Rule: validate annotates each row with _valid and _validation
 
     Background:
-      Given load "datanorm-input.csv"
+      Given load "customers-input.csv"
 
     @headless @cli @web @tour @cat-validate
     Scenario: Flag rows with empty Phone
@@ -26,7 +26,7 @@ Feature: Row and dataset validation
 
     @headless @cli
     Scenario: filter on _valid keeps only passing rows
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Validate that Phone is non-empty
         Keep only rows where _valid is true
@@ -95,7 +95,7 @@ Feature: Row and dataset validation
 
     @headless @cli
     Scenario: A second validate replaces the prior _valid and _validation
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Validate that Phone is non-empty
         Validate that DOB is non-empty
