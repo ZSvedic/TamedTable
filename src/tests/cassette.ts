@@ -64,8 +64,8 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
     if (hit) return responseFromEntry(hit);
 
     if (mode === 'replay') {
-      // TEMP DIAGNOSTIC (remove before merge): dump the exact bytes that missed
-      // so a cross-environment fingerprint divergence can be diffed from CI logs.
+      // TEMP DIAGNOSTIC (remove before merge): surface the exact bytes that
+      // missed so a cross-environment fingerprint divergence is visible in CI.
       // eslint-disable-next-line no-console
       console.error(`CASSETTE_MISS ${fp} ${method} ${url} len=${requestBody(init).length}\nBODY_START>>>${requestBody(init)}<<<BODY_END`);
       throw new Error(`no recording for this request: ${fp} (${method} ${url})`);
