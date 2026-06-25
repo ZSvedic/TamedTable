@@ -33,7 +33,7 @@ Feature: Classify tours
     @web @tour @cat-classify
     Scenario: Split customers into men, women, and unknown
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When query "split customers into men, women, and unknown"
       Then the spec has 1 transformation
       And no toast is shown

@@ -10,7 +10,7 @@ Feature: Load, save and reuse tour
     @web @tour @cat-loadsave
     Scenario: Load a file, transform it, then save and reuse
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When query "normalize the phone numbers"
       Then the spec has 1 transformation
       And no toast is shown

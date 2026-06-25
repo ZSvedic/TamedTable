@@ -36,7 +36,7 @@ function fakeTtyReadable(): Readable {
 
 async function loadedRunner(stdout: NodeJS.WritableStream): Promise<CliRunner> {
   const runner = createCliRunner({ stdout, quiet: true });
-  await runner.loadInput(join(SPEC_TC, 'datanorm-input.csv'));
+  await runner.loadInput(join(SPEC_TC, 'customers-input.csv'));
   return runner;
 }
 

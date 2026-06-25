@@ -13,7 +13,7 @@ Feature: Debug output
 
     @cli
     Scenario: Debug block shows the executed expression and a usage summary
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         validate dob is non-empty
         exit
@@ -27,7 +27,7 @@ Feature: Debug output
 
     @cli @offline
     Scenario: REPL ":" commands print no debug block
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         :schema
         :undo

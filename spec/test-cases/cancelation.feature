@@ -3,7 +3,7 @@
 Feature: Cancel long-running LLM transformation
 
   Background:
-    Given load "datanorm-input.csv"
+    Given load "customers-input.csv"
 
   @headless @cli @web
   Scenario: Partial results visible while the LLM transformation runs

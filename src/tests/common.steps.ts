@@ -52,12 +52,12 @@ Then('{string} contains the line {string}', async function (this: TamedTableWorl
 When('query {string}', async function (this: TamedTableWorld, text: string) {
   // Capture the request's outcome rather than throwing, so scenarios that
   // assert failure via `Then the request fails …` can inspect it. Default
-  // to datanorm-input.csv when a Rule lacks a Background that loads input.
+  // to customers-input.csv when a Rule lacks a Background that loads input.
   const runner = this.ensureRunner();
   let specBefore;
   try { specBefore = structuredClone(runner.currentSpec()); }
   catch {
-    this.inputPath = this.inputPath ?? join(SPEC_TC_DIR, 'datanorm-input.csv');
+    this.inputPath = this.inputPath ?? join(SPEC_TC_DIR, 'customers-input.csv');
     await runner.loadInput(this.inputPath);
     specBefore = structuredClone(runner.currentSpec());
   }

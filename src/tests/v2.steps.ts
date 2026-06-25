@@ -289,10 +289,10 @@ Then('the number of output rows equals the input rows times {int}',
 // "the source has N rows and M have empty Phone" rewrites the input in temp/
 // so the validate/threshold scenarios see the exact counts they describe.
 // Some scenarios live under Rules without a Background that loads the input,
-// so default to the canonical datanorm-input.csv when none is set.
+// so default to the canonical customers-input.csv when none is set.
 async function configureSource(world: TamedTableWorld, total: number, emptyPhones: number): Promise<void> {
   const { loadCsv } = await import('@tamedtable/core');
-  const source = world.inputPath ?? join(SPEC_TC_DIR, 'datanorm-input.csv');
+  const source = world.inputPath ?? join(SPEC_TC_DIR, 'customers-input.csv');
   const { rows } = await loadCsv(source);
   assert.equal(rows.length, total, `expected ${total} source rows, got ${rows.length}`);
   const mutated = rows.map((r, i) => ({ ...r, Phone: i < emptyPhones ? '' : r.Phone }));

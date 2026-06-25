@@ -11,7 +11,7 @@ Feature: Web front-end
     @web
     Scenario: A request without an API key surfaces a toast and changes nothing
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the API key has not been set
       When user sends the chat message "Normalize phone numbers"
       Then a toast shows "API key"
@@ -20,7 +20,7 @@ Feature: Web front-end
     @web
     Scenario: A text request needs an Anthropic key even when Google is selected
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       And the API key has not been set
       When user sends the chat message "Normalize phone numbers"
@@ -30,7 +30,7 @@ Feature: Web front-end
     @web
     Scenario: Saving an API key in the settings panel configures the engine
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When user opens the settings panel
       And user saves the API key "sk-ant-example-key"
       Then the configured API key is "sk-ant-example-key"
@@ -42,7 +42,7 @@ Feature: Web front-end
       Given the TamedTable web app
       When user says "Load CSV file"
       Then display Open File dialog
-      When user selects "datanorm-input.csv"
+      When user selects "customers-input.csv"
       Then table displays the header and at least the first 5 rows
 
     @web
@@ -56,19 +56,19 @@ Feature: Web front-end
     @web
     Scenario: Save flow via the Save File dialog
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When user edits cell at row 1 column "Country" to "United States"
       And user says "Save flow"
       Then display Save File dialog
-      When user saves as "datanorm.flow"
-      Then "datanorm.flow" contains a mutate transformation
+      When user saves as "cleanup.flow"
+      Then "cleanup.flow" contains a mutate transformation
 
     @web
     Scenario: Without File System Access support, saving falls back to a download
       Given the TamedTable web app without File System Access support
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When user says "Save data"
-      And user saves as "datanorm-output.jsonl"
+      And user saves as "customers-output.jsonl"
       Then the file is delivered as a download
 
   Rule: A URL is a first-class load source
@@ -89,15 +89,15 @@ Feature: Web front-end
     @web
     Scenario: Loading a CSV from a URL renders the table
       Given the TamedTable web app
-      And the URL "https://example.com/datanorm-input.csv" serves "datanorm-input.csv"
-      When user loads from URL "https://example.com/datanorm-input.csv"
+      And the URL "https://example.com/customers-input.csv" serves "customers-input.csv"
+      When user loads from URL "https://example.com/customers-input.csv"
       Then table displays the header and at least the first 5 rows
 
     @web
     Scenario: Loading a JSONL from a URL renders the table
       Given the TamedTable web app
-      And the URL "https://example.com/datanorm-input.jsonl" serves "datanorm-input.jsonl"
-      When user loads from URL "https://example.com/datanorm-input.jsonl"
+      And the URL "https://example.com/customers-input.jsonl" serves "customers-input.jsonl"
+      When user loads from URL "https://example.com/customers-input.jsonl"
       Then table displays the header and at least the first 5 rows
 
     @web
@@ -119,7 +119,7 @@ Feature: Web front-end
 
     Background:
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
 
     @web
     Scenario: Editing a cell appends a mutate transformation
@@ -178,7 +178,7 @@ Feature: Web front-end
 
     Background:
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
 
     @web
     Scenario: A freshly loaded table is idle with no cell selected
@@ -193,13 +193,13 @@ Feature: Web front-end
     @web
     Scenario: Saving data marks the footer as saved
       When user says "Save data"
-      And user saves as "datanorm-output.jsonl"
+      And user saves as "customers-output.jsonl"
       Then the status footer reports "saved"
 
     @web
     Scenario: Editing a cell returns the footer to idle after a save
       When user says "Save data"
-      And user saves as "datanorm-output.jsonl"
+      And user saves as "customers-output.jsonl"
       And user edits cell at row 1 column "Country" to "United States"
       Then the status footer reports "idle"
 
@@ -213,7 +213,7 @@ Feature: Web front-end
     @web
     Scenario: Choosing a model keeps the loaded table intact
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       When user edits cell at row 1 column "Country" to "United States"
       And user selects the model "claude-haiku-4-5"
       Then the configured model is "claude-haiku-4-5"
@@ -290,7 +290,7 @@ Feature: Web front-end
     @web
     Scenario: A Gemini request with a wrong key shows a descriptive error
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And user clicks the provider card "gemini"
       And the gemini key is set to "bad-key"
       And the LLM API returns a 401 unauthorized error
@@ -300,7 +300,7 @@ Feature: Web front-end
     @web
     Scenario: An OpenAI request with a wrong key shows a descriptive error
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And user clicks the provider card "openai"
       And the openai key is set to "bad-key"
       And the LLM API returns a 401 unauthorized error

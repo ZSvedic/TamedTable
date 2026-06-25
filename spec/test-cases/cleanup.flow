@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "source": "datanorm-input.csv",
+  "source": "customers-input.csv",
   "spec": {
-    "table": "datanorm-input.csv",
+    "table": "customers-input.csv",
     "columns": [
       { "id": "ID" },
       { "id": "FirstName" },

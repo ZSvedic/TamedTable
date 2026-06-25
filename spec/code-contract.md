@@ -319,7 +319,7 @@ so callers can decide what to do with a failure.
 ```json
 {
   "version": 2,
-  "source": "datanorm-input.csv",
+  "source": "customers-input.csv",
   "spec": { /* TablePlan — see Data model above */ }
 }
 ```

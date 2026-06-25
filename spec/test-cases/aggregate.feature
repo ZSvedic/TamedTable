@@ -5,7 +5,7 @@ Feature: Group and aggregate
   Rule: group with count, sum, and avg aggregates
 
     Background:
-      Given load "datanorm-input.csv"
+      Given load "customers-input.csv"
       And the expected output is "aggregate-by-country-expected.jsonl"
 
     @headless @cli @web

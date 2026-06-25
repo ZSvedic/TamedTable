@@ -7,7 +7,7 @@ Feature: Toolbar package
 
     @headless
     Scenario: A .csv sample is labelled CSV, everything else JSONL
-      Then a toolbar sample named "datanorm-input.csv" is labelled "CSV"
+      Then a toolbar sample named "customers-input.csv" is labelled "CSV"
       And a toolbar sample named "videos.jsonl" is labelled "JSONL"
 
   Rule: The demo page exercises the toolbar in a real browser
