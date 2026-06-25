@@ -2,10 +2,12 @@
 # Assemble the GitHub Pages site under $OUT_DIR for the address prefix $SITE_BASE.
 #
 # The prefix is the single knob that distinguishes prod from a PR preview:
-#   prod      SITE_BASE=/TamedTable/                    → served at .../TamedTable/
-#   preview   SITE_BASE=/TamedTable/pr-preview/pr-<N>/  → served at that subdir
-# A preview lives at a different URL, so its baked-in asset links must carry the
-# matching prefix or they 404. Run from anywhere after `bun install` in src/.
+#   prod      SITE_BASE=/                       → served at the domain root
+#   preview   SITE_BASE=/pr-preview/pr-<N>/     → served at that subdir
+# The site is published to the custom domain (www.tamedtable.com), which serves
+# the repo at the root — hence "/" rather than "/TamedTable/". A preview lives at
+# a different URL, so its baked-in asset links must carry the matching prefix or
+# they 404. Run from anywhere after `bun install` in src/.
 #
 # Layout produced (mirrors the live site):
 #   $OUT/            ← marketing/web/ (homepage, root; symlinks dereferenced)
@@ -14,7 +16,7 @@
 set -euo pipefail
 
 # Normalise to exactly one trailing slash so the concatenations below are clean.
-BASE="${SITE_BASE:-/TamedTable/}"
+BASE="${SITE_BASE:-/}"
 BASE="${BASE%/}/"
 OUT="${OUT_DIR:-_site}"
 
@@ -41,11 +43,13 @@ for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-k
 done
 
 # Retarget the marketing pages' absolute links (Open Web App, og:url, feature
-# demos) at the same prefix. For prod (BASE=/TamedTable/) this is a no-op; for a
-# preview it rewrites .../TamedTable/app/ → .../TamedTable/pr-preview/pr-<N>/app/.
-# Anchored on the full Pages origin so github.com/.../TamedTable links are untouched.
+# demos) onto the live custom domain at the current prefix. The source keeps the
+# old github.io URL as a stable placeholder; this rewrites it to
+# https://www.tamedtable.com<BASE>… — prod (BASE=/) → .../app/, a preview
+# (BASE=/pr-preview/pr-<N>/) → .../pr-preview/pr-<N>/app/. Anchored on the full
+# origin so github.com/.../TamedTable repo links are untouched.
 mapfile -t html < <(grep -rl 'https://zsvedic.github.io/TamedTable/' "$OUT" --include='*.html' || true)
 for f in "${html[@]}"; do
   [ -n "$f" ] || continue
-  sed -i "s#https://zsvedic.github.io/TamedTable/#https://zsvedic.github.io${BASE}#g" "$f"
+  sed -i "s#https://zsvedic.github.io/TamedTable/#https://www.tamedtable.com${BASE}#g" "$f"
 done
