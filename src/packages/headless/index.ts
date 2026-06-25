@@ -223,16 +223,34 @@ function patchInputSchema(withTranscript: boolean) {
   });
 }
 
+// JSON's only legal escape sequences: \" \\ \/ \b \f \n \r \t \uXXXX. The model
+// sometimes JSON-encodes a value but escapes an apostrophe in a prompt example
+// as `\'` (e.g. `'O\'BRIEN'`), which is not one of these — so a strict
+// JSON.parse throws and the value would be lost. `repairJsonEscapes` drops the
+// stray backslash from any such escape while leaving valid ones (including `\\`)
+// intact, so the object can still be recovered. See model-resilience.feature.
+const VALID_JSON_ESCAPE = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
+function repairJsonEscapes(s: string): string {
+  return s.replace(/\\([\s\S])/g, (match, ch) => (VALID_JSON_ESCAPE.has(ch) ? match : ch));
+}
+
 /** @internal — exported for unit tests. Decode each op's `value` when it
  *  arrives as a JSON string: the patch schema asks for exactly that encoding.
- *  A string that isn't valid JSON (a plain literal like a column name) is
- *  left as-is, so fast-json-patch always receives the real value. */
+ *  A near-miss encoding — valid JSON but for a stray invalid escape the model
+ *  slipped in — is repaired and retried once before giving up. A string that
+ *  still isn't valid JSON (a plain literal like a column name) is left as-is,
+ *  so fast-json-patch always receives the real value. */
 export function decodeOpValues(ops: unknown[]): unknown[] {
   return ops.map((op) => {
     if (op && typeof op === 'object' && 'value' in op && typeof (op as Record<string, unknown>).value === 'string') {
+      const raw = (op as Record<string, unknown>).value as string;
       try {
-        return { ...op, value: JSON.parse((op as Record<string, unknown>).value as string) };
-      } catch { /* leave as-is if it isn't valid JSON */ }
+        return { ...op, value: JSON.parse(raw) };
+      } catch {
+        try {
+          return { ...op, value: JSON.parse(repairJsonEscapes(raw)) };
+        } catch { /* leave as-is if it still isn't valid JSON */ }
+      }
     }
     return op;
   });

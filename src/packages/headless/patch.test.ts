@@ -56,6 +56,19 @@ describe('decodeOpValues', () => {
     expect((ops[0] as { value: unknown }).value).toBe('FirstName');
   });
 
+  it('repairs an invalid backslash escape the model slipped into a JSON value', () => {
+    // The model JSON-encoded a mutate but escaped apostrophes in its prompt
+    // example as `\'` — invalid JSON, so a strict parse throws. The value must
+    // still decode to the object (regression: broke the capitalization tour).
+    const encoded =
+      `{"kind":"mutate","columns":["FirstName"],"value":{"llm":"e.g. 'O\\'BRIEN' to 'O\\'Brien'"}}`;
+    expect(() => JSON.parse(encoded)).toThrow();
+    const ops = decodeOpValues([{ op: 'add', path: '/transformations/-', value: encoded }]);
+    const value = (ops[0] as { value: { kind: string; value: { llm: string } } }).value;
+    expect(value.kind).toBe('mutate');
+    expect(value.value.llm).toContain("O'BRIEN");
+  });
+
   it('leaves object values and value-less ops untouched', () => {
     const input = [
       { op: 'add', path: '/transformations/-', value: { kind: 'select', columns: ['A'] } },

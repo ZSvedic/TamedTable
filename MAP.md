@@ -14,6 +14,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | Filter rows | [#FilterRows](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FilterRows&type=code) | ✓ | ✓ | ✓ | [filter.feature](spec/test-cases/filter.feature) |
 | Group and aggregate | [#Aggregate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Aggregate&type=code) | ✓ | ✓ | ✓ | [aggregate.feature](spec/test-cases/aggregate.feature) |
 | LLM cell placeholders | [#LLMCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LLMCells&type=code) | ✓ | ✓ | ✓ | [placeholders.feature](spec/test-cases/placeholders.feature) |
+| LLM output resilience | [#LlmLayer](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LlmLayer&type=code) | ✓ | ✓ | ✓ | [model-resilience.feature](spec/test-cases/model-resilience.feature) |
 | Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) |
 | Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) |
 | Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) |

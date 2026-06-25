@@ -70,6 +70,12 @@ If any step throws, the patch rolls back and the error goes to the LLM as the
 next turn's input, up to a 3-turn recovery budget. The call either succeeds
 or throws; the spec is never left halfway between two states.
 
+The runner tolerates a model reply that is *almost* well-formed: a patch
+value the model JSON-encoded but with a stray invalid escape (an apostrophe
+written `\'`, say) is repaired and applied rather than dead-ending. This keeps
+a recoverable model slip from forcing a recovery turn — which, in a key-free
+tour replay, would hit a request that was never recorded.
+
 Loading the same input twice resets the transformations, filter/sort, and
 any cached LLM cell results. Replaying a saved spec (the path the batch CLI
 takes) validates and runs against the source without any LLM call.

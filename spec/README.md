@@ -28,3 +28,7 @@ App-behavior scenarios in [test-cases/](test-cases/) test the TamedTable app thr
 App-behavior step defs live in `src/tests/` and share the app harness (`world.ts`); library-package step defs live in the package itself — see [packages/README.md](packages/README.md).
 
 Edits by the AI to `*-expected.jsonl` golden files are spec changes — review them, don't treat them as routine fixture churn.
+
+## Regression scenarios
+
+A scenario written to lock a fixed bug is a behavior specification like any other, so it lives **with the behavior it describes** — in `test-cases/` (or a package spec), in the feature file for that capability, never in a separate `bug-cases/` tree. A `bug-cases/` split would duplicate the taxonomy, scatter one behavior's spec across two homes, and rot the moment "bug" and "feature" blur. Provenance is metadata, not structure: tag the scenario `@regression` (alongside its execution tags like `@headless`/`@web`) and reference the issue/PR in a comment above it. The tag is filterable (`--tags @regression`) as the count grows; the layout stays organized by capability. A bug that fits no existing feature gets its own capability feature — e.g. [test-cases/model-resilience.feature](test-cases/model-resilience.feature) collects the runner's tolerance of imperfect model output.

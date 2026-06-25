@@ -167,9 +167,14 @@ interface RequestDebugInfo {
 
 Built on the Vercel AI SDK (`ai` + `@ai-sdk/anthropic`). The
 `apply_spec_patch` tool's input schema is a JSON Schema describing the RFC
-6902 operations list. Anthropic prompt caching uses
-`providerOptions.anthropic.cacheControl = { type: 'ephemeral' }` on the
-system-prompt prefix.
+6902 operations list. Each op's `value` is a JSON-encoded **string**;
+the runner decodes it with `JSON.parse`. A near-miss encoding — valid
+JSON but for a stray invalid escape the model slipped in (e.g. an
+apostrophe escaped as `\'`, which JSON does not allow) — is repaired
+(the stray backslash dropped, valid escapes including `\\` kept) and
+parsed once more before the value is left as a plain literal. Anthropic
+prompt caching uses `providerOptions.anthropic.cacheControl =
+{ type: 'ephemeral' }` on the system-prompt prefix.
 
 `onDebug` fires once per `request` — on success and on failure — just
 before the call settles, carrying a `RequestDebugInfo`. The
