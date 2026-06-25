@@ -56,8 +56,11 @@ fresh ── load input ─▶ loaded ─┬─ request ───▶ loaded (com
 ```
 
 A fresh runner has nothing loaded; reading rows or spec throws until input is
-loaded. Once loaded, the runner handles one request at a time — a second
-request while one is running throws.
+loaded. Input arrives one of two ways: by path (the CLI reads a file off disk)
+or as already-parsed rows (the browser parses a picked or fetched file through
+the file-io codec registry and loads the rows directly, with no filesystem).
+Either way the loaded state is the same. Once loaded, the runner handles one
+request at a time — a second request while one is running throws.
 
 On a successful request the runner:
 

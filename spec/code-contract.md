@@ -78,6 +78,14 @@ function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<
 
 interface Runner {
   loadInput(path: string): Promise<void>;
+  // Path-free sibling of loadInput: load already-parsed rows + a fresh-load
+  // plan. The web parses a picked/fetched file through the file-io codec
+  // registry and loads the rows here, so the browser needs no filesystem.
+  loadParsed(rows: Row[], spec: TablePlan): Promise<void>;
+  // Stage a lookup table by name so a `join` whose `with` matches resolves
+  // against these rows instead of reading the file by path — lets joins run
+  // in the browser. An unregistered name falls back to the by-path read.
+  registerLookup(name: string, rows: Row[]): void;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];

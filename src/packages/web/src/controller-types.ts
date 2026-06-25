@@ -56,8 +56,6 @@ export interface WebControllerOptions {
    *  the controller reads from `process.env` (browser/CLI behaviour). Tests
    *  pass `{}` here so real API keys in the shell do not bleed into scenarios. */
   env?: Record<string, string | undefined>;
-  /** Directory used to materialize picked files for the engine to read. */
-  workDir?: string;
   batchSize?: number;
   chunkSize?: number;
   /** Bundled feature + fixture sources for the Tutorial panel. When omitted,

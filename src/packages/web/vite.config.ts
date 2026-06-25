@@ -118,8 +118,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      // Order matters: 'node:fs/promises' must precede the 'node:fs' prefix.
-      'node:fs/promises': shim('fs-promises.ts'),
+      // node:fs (sync) and node:fs/promises (async) both resolve to one shim;
+      // 'node:fs/promises' must precede the 'node:fs' prefix so it matches first.
+      'node:fs/promises': shim('fs.ts'),
       'node:fs': shim('fs.ts'),
       'node:path': shim('path.ts'),
       'node:url': shim('url.ts'),

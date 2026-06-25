@@ -4,13 +4,35 @@
 // DOM dependency — the browser FilePort implementation lives in the separate
 // ./browser-fs entry point. Spec: spec/packages/file-io/behavior.md.
 
-import type { TablePlan } from '@tamedtable/table-plan';
-import { detectFormat, type FormatId } from './codecs/registry.ts';
+import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
+import { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
 
 // The codec registry: format detection, lazy codec loading, and the
 // FormatCodec interface. `core` and the web app reach every format through it.
 export { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
 export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
+
+/** Parse a picked/fetched file's content into rows plus a fresh-load TablePlan,
+ *  with no filesystem: the format is chosen from `name`'s extension, the codec
+ *  parses the content, and the plan carries `name` as its table and the codec's
+ *  columns. This is the browser's path-free counterpart to core's `loadCsv` —
+ *  the web hands the result straight to `Runner.loadParsed`. */
+export async function parseTable(name: string, text: string): Promise<{ rows: Row[]; spec: TablePlan }> {
+  const id = formatForExtension(name);
+  if (!id) throw new Error(`unknown file type: ${name}`);
+  const codec = await loadCodec(id);
+  const { rows, columns } = codec.parse(text, name);
+  if (id === 'csv') {
+    if (columns.length === 0) throw new Error(`${name} has no header row`);
+    const seen = new Set<string>();
+    for (const c of columns) {
+      if (seen.has(c)) throw new Error(`${name} has duplicate column "${c}"`);
+      seen.add(c);
+    }
+  }
+  const spec = validateTablePlan({ table: name, columns: columns.map((id) => ({ id })), transformations: [] });
+  return { rows, spec };
+}
 
 /** A file the user picked from an Open dialog. */
 export interface PickedFile {

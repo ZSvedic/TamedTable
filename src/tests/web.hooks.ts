@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { createWebController, type TutorialSources } from '@tamedtable/web';
 import { parseTours } from '@tamedtable/gherkin-tour';
-import { TamedTableWorld, runnerOptsFor, TEMP_DIR, SPEC_TC_DIR, CASSETTE_DIR } from './world.ts';
+import { TamedTableWorld, runnerOptsFor, SPEC_TC_DIR, CASSETTE_DIR } from './world.ts';
 import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
 
 // The same @tour/@web feature files the deployed bundle indexes. Tests read
@@ -74,7 +74,6 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       config: opts.apiKey ? { anthropicKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,
-      workDir: join(TEMP_DIR, 'web'),
       tutorialSources,
     });
   };
