@@ -4,14 +4,43 @@
 // DOM dependency — the browser FilePort implementation lives in the separate
 // ./browser-fs entry point. Spec: spec/packages/file-io/behavior.md.
 
-import type { TablePlan } from '@tamedtable/core';
+import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
+import { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
 
-/** A file the user picked from an Open dialog. */
+// The codec registry: format detection, lazy codec loading, and the
+// FormatCodec interface. `core` and the web app reach every format through it.
+export { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
+export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
+
+/** Parse a picked/fetched file's content into rows plus a fresh-load TablePlan,
+ *  with no filesystem: the format is chosen from `name`'s extension, the codec
+ *  parses the content, and the plan carries `name` as its table and the codec's
+ *  columns. This is the browser's path-free counterpart to core's `loadCsv` —
+ *  the web hands the result straight to `Runner.loadParsed`. */
+export async function parseTable(name: string, bytes: Uint8Array): Promise<{ rows: Row[]; spec: TablePlan }> {
+  const id = formatForExtension(name);
+  if (!id) throw new Error(`unknown file type: ${name}`);
+  const codec = await loadCodec(id);
+  const { rows, columns } = codec.parse(bytes, name);
+  if (id === 'csv') {
+    if (columns.length === 0) throw new Error(`${name} has no header row`);
+    const seen = new Set<string>();
+    for (const c of columns) {
+      if (seen.has(c)) throw new Error(`${name} has duplicate column "${c}"`);
+      seen.add(c);
+    }
+  }
+  const spec = validateTablePlan({ table: name, columns: columns.map((id) => ({ id })), transformations: [] });
+  return { rows, spec };
+}
+
+/** A file the user picked from an Open dialog. Carries raw bytes so binary
+ *  formats (Phase 1) work the same as text ones; text codecs decode internally. */
 export interface PickedFile {
   /** The file's display name, e.g. "customers.csv". */
   name: string;
-  /** The full text content of the file. */
-  text: string;
+  /** The file's raw bytes. */
+  bytes: Uint8Array;
 }
 
 /** The result of a Save dialog handshake. */
@@ -31,8 +60,8 @@ export interface FilePort {
   readonly hasFileSystemAccess: boolean;
   /** Show an Open dialog. Resolves with the picked file, or null if cancelled. */
   pickOpen(accept: string[]): Promise<PickedFile | null>;
-  /** Show a Save dialog and write `content` to the chosen destination. */
-  pickSave(suggestedName: string, accept: string[], content: string): Promise<SaveOutcome>;
+  /** Show a Save dialog and write `content` (raw bytes) to the chosen destination. */
+  pickSave(suggestedName: string, accept: string[], content: Uint8Array): Promise<SaveOutcome>;
 }
 
 /** The plain `fetch` call signature a wrapper actually implements. */
@@ -41,25 +70,9 @@ export type FetchLike = (
   init?: RequestInit,
 ) => Promise<Response>;
 
-/** Detect the file format from a URL path and (optionally) a Content-Type
- *  header. The path's extension wins; Content-Type only matters when the
- *  URL has no .csv/.jsonl ending (think query-style download URLs). */
-export function detectFormat(
-  pathname: string,
-  contentType: string | null,
-): 'csv' | 'jsonl' | null {
-  const lower = pathname.toLowerCase();
-  if (lower.endsWith('.csv')) return 'csv';
-  if (lower.endsWith('.jsonl') || lower.endsWith('.ndjson')) return 'jsonl';
-  const ct = contentType?.toLowerCase() ?? '';
-  if (ct.includes('csv')) return 'csv';
-  if (ct.includes('jsonl') || ct.includes('ndjson')) return 'jsonl';
-  return null;
-}
-
 /** Derive a friendly file name from a URL — the last path segment, or a
  *  fallback `download.<ext>` for URLs that don't expose one. */
-export function sampleNameFromUrl(url: URL, format: 'csv' | 'jsonl'): string {
+export function sampleNameFromUrl(url: URL, format: FormatId): string {
   const segment = url.pathname.split('/').filter(Boolean).pop() ?? '';
   if (segment) return segment;
   return `download.${format}`;
@@ -67,7 +80,7 @@ export function sampleNameFromUrl(url: URL, format: 'csv' | 'jsonl'): string {
 
 /** A fetched table: a picked file plus the format detection saw — the URL
  *  path's extension, or the response Content-Type when the path has none. */
-export type FetchedTable = PickedFile & { format: 'csv' | 'jsonl' };
+export type FetchedTable = PickedFile & { format: FormatId };
 
 /** Fetch a CSV or JSONL table from `url` and return it as a picked file.
  *  Throws on any failure with a message the host can show as-is, so a
@@ -105,8 +118,8 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
     throw new Error('Could not detect format. URL must end in .csv or .jsonl.');
   }
 
-  const text = await response.text();
-  return { name: sampleNameFromUrl(parsed, format), text, format };
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return { name: sampleNameFromUrl(parsed, format), bytes, format };
 }
 
 /** Serialize a spec into the .flow file format: pretty-printed JSON

@@ -30,6 +30,10 @@ export class EngineManager {
 
   private activeAbort: AbortController | null = null;
 
+  // The freshly-loaded source (rows + base plan), captured on every load so a
+  // model change can rebuild the engine without a filesystem round-trip.
+  private loadedSource: { rows: Row[]; spec: TablePlan } | null = null;
+
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
@@ -100,11 +104,16 @@ export class EngineManager {
   }
 
   /** Rebuild the engine for a model change with a file loaded, reapplying the
-   *  current spec onto the freshly-loaded source. */
+   *  current spec onto the freshly-loaded source. Replays from the cached
+   *  source rows (no filesystem) when present, else re-reads the path. */
   async rebuildForModelChange(spec: TablePlan): Promise<void> {
     this.headless = undefined;
     const runner = this.ensureHeadless();
-    await runner.loadInput(this.host.sourcePath);
+    if (this.loadedSource) {
+      await runner.loadParsed(this.loadedSource.rows, this.loadedSource.spec);
+    } else {
+      await runner.loadInput(this.host.sourcePath);
+    }
     await runner.setSpec(spec);
   }
 
@@ -113,7 +122,31 @@ export class EngineManager {
   async loadInput(path: string): Promise<void> {
     const runner = this.ensureHeadless();
     await runner.loadInput(path);
-    this.host.sourcePath = path;
+    this.afterLoad(runner, path);
+  }
+
+  /** Load an already-parsed table (browser open/fetch/tutorial) — no path,
+   *  no filesystem. The web parses through file-io and hands rows here. */
+  async loadParsed(rows: Row[], spec: TablePlan): Promise<void> {
+    const runner = this.ensureHeadless();
+    await runner.loadParsed(rows, spec);
+    this.afterLoad(runner, spec.table ?? '');
+  }
+
+  /** Stage a lookup table by name so a browser join resolves against its rows
+   *  instead of reading a file by path. */
+  registerLookup(name: string, rows: Row[]): void {
+    this.ensureHeadless().registerLookup(name, rows);
+  }
+
+  /** Shared post-load bookkeeping for loadInput / loadParsed: cache the source
+   *  for model-change rebuilds and reset the per-load view state. */
+  private afterLoad(runner: HeadlessRunner, sourcePath: string): void {
+    this.loadedSource = {
+      rows: runner.currentRows().map((r) => ({ ...r })),
+      spec: structuredClone(runner.currentSpec()),
+    };
+    this.host.sourcePath = sourcePath;
     this.host.loaded = true;
     this.host.patch.clearJournal();
     this.overlay.clear();

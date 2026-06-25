@@ -1,184 +1,55 @@
-import { z } from 'zod';
-import { parse } from 'csv-parse/sync';
-import { stringify } from 'csv-stringify/sync';
 import { readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
-
-export type Row = Record<string, unknown>;
+import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
+import { loadCodec } from '@tamedtable/file-io';
 
 // #TablePlanSchema
-// ── TablePlan schema (one schema for every spec — fresh load, patch, replay) ────
+// The TablePlan model now lives in @tamedtable/table-plan (zero-dependency base
+// package). Core re-exports everything it used to define here, so every existing
+// `from '@tamedtable/core'` import keeps working unchanged.
+export * from '@tamedtable/table-plan';
 
-const ColumnsField = z.union([z.string(), z.array(z.string())]);
-
-export const ExprSchema: z.ZodTypeAny = z.union([
-  z.object({ js: z.string() }).strict(),
-  z.object({ llm: z.string(), model: z.string().optional() }).strict(),
-  z.object({ sql: z.string() }).strict(),
-]);
-
-const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
-
-const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('filter'), pred: ExprSchema }).strict(),
-  z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema }).strict(),
-  z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
-  z.object({
-    kind: z.literal('sort'),
-    by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) })),
-    limit: z.number().int().positive().optional(),
-  }).strict(),
-  z.object({
-    kind: z.literal('group'),
-    // An empty `by` aggregates the whole table into a single output row.
-    by: z.array(z.union([z.string(), ExprSchema])),
-    agg: z.record(z.string(), ExprSchema),
-  }).strict(),
-  z.object({
-    kind: z.literal('join'),
-    with: z.string().refine((s) => JsonLikeFileExtRe.test(s), {
-      message: 'join.with: unknown file type (must be .csv or .jsonl)',
-    }),
-    on: ExprSchema,
-    how: z.enum(['inner', 'left']).optional(),
-  }).strict(),
-  z.object({
-    kind: z.literal('split'),
-    from: z.string(),
-    into: z.array(z.string()).min(1, 'split.into must be non-empty'),
-    on: z.union([z.string(), z.instanceof(RegExp), ExprSchema]),
-    drop: z.boolean().optional(),
-  }).strict(),
-  z.object({
-    kind: z.literal('validate'),
-    pred: ExprSchema,
-    message: ExprSchema.optional(),
-    threshold: z.number().min(0).max(1).optional(),
-  }).strict(),
-  z.object({
-    kind: z.literal('pivot'),
-    index: z.array(z.string()).min(1, 'pivot.index must be non-empty'),
-    on: z.string(),
-    values: z.string(),
-    agg: z.enum(['sum', 'count', 'avg', 'min', 'max', 'first']).optional(),
-  }).strict().refine((p) => !p.index.includes(p.on), { message: 'pivot.on cannot be in pivot.index' }),
-  z.object({
-    kind: z.literal('unpivot'),
-    id: z.array(z.string()),
-    measures: z.array(z.string()),
-    names_to: z.string().optional(),
-    values_to: z.string().optional(),
-  }).strict(),
-]);
-
-// Re-export the transformation union as the default — patches and live specs
-// always validate against this single schema.
-export const TransformationSchema = TransformationUnionSchema;
-
-export type Expr =
-  | { js: string }
-  | { llm: string; model?: string }
-  | { sql: string };
-
-export type Transformation =
-  | { kind: 'filter'; pred: Expr }
-  | { kind: 'mutate'; columns: string | string[]; value: Expr }
-  | { kind: 'select'; columns: string[] }
-  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }>; limit?: number }
-  | { kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> }
-  | { kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' }
-  | { kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }
-  | { kind: 'validate'; pred: Expr; message?: Expr; threshold?: number }
-  | { kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' }
-  | { kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string };
-
-const ColumnSchema = z.object({
-  id: z.string(),
-  label: z.string().optional(),
-  format: z.string().optional(),
-});
-
-export const TablePlanSchema = z
-  .object({
-    table: z.string().optional(),
-    columns: z.array(ColumnSchema),
-    filter: z.unknown().optional(),
-    sort: z.array(z.unknown()).optional(),
-    page: z.object({ size: z.number(), offset: z.number() }).optional(),
-    summary: z
-      .object({
-        groupBy: z.array(z.unknown()),
-        aggregates: z.array(z.unknown()),
-      })
-      .optional(),
-    transformations: z.array(TransformationUnionSchema),
-  })
-  .strict();
-export type TablePlan = z.infer<typeof TablePlanSchema>;
-
-function describeZodError(err: z.ZodError): string {
-  return err.issues
-    .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
-    .join('; ');
-}
-
-export function validateTablePlan(spec: unknown): TablePlan {
-  const result = TablePlanSchema.safeParse(spec);
-  if (!result.success) {
-    throw new Error(`Spec validation failed: ${describeZodError(result.error)}`);
-  }
-  return result.data as TablePlan;
-}
-
-async function readText(label: string, path: string): Promise<string> {
+async function readBytes(label: string, path: string): Promise<Uint8Array> {
   try {
-    return await readFile(path, 'utf8');
+    return await readFile(path);
   } catch (e) {
     throw new Error(`${label}: could not read ${path}: ${(e as Error).message}`);
   }
 }
 
 // #IoFormats
+// Byte-acquisition (node:fs) lives here; parsing is delegated to the file-io
+// codec registry. core reads the file's raw bytes, hands them to the codec, and
+// builds the initial TablePlan from the columns the codec recovers.
 export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
-  const text = await readText('loadCsv', path);
-  const records = parse(text, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as Row[];
-  const header = parse(text, { to_line: 1, trim: true, bom: true })[0] as string[] | undefined;
-  if (!header || header.length === 0) throw new Error(`loadCsv: ${path} has no header row`);
+  const bytes = await readBytes('loadCsv', path);
+  const codec = await loadCodec('csv');
+  const { rows, columns } = codec.parse(bytes, path);
+  if (columns.length === 0) throw new Error(`loadCsv: ${path} has no header row`);
   const seen = new Set<string>();
-  for (const id of header) {
+  for (const id of columns) {
     if (seen.has(id)) throw new Error(`loadCsv: ${path} has duplicate column "${id}"`);
     seen.add(id);
   }
   const spec: TablePlan = validateTablePlan({
     table: path,
-    columns: header.map((id) => ({ id })),
+    columns: columns.map((id) => ({ id })),
     transformations: [],
   });
-  return { spec, rows: records, sourcePath: path };
+  return { spec, rows, sourcePath: path };
 }
 
 export async function readJsonl(path: string): Promise<Row[]> {
-  const text = await readText('readJsonl', path);
-  const rows: Row[] = [];
-  text.split('\n').forEach((raw, i) => {
-    const line = raw.trim();
-    if (line === '') return;
-    try { rows.push(JSON.parse(line) as Row); }
-    catch (e) { throw new Error(`readJsonl: ${path}:${i + 1} malformed JSON: ${(e as Error).message}`); }
-  });
-  return rows;
+  const bytes = await readBytes('readJsonl', path);
+  const codec = await loadCodec('jsonl');
+  return codec.parse(bytes, path).rows;
 }
 
 export async function loadJsonl(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
-  const rows = await readJsonl(path);
-  const columns: string[] = [];
-  const seen = new Set<string>();
-  for (const row of rows) {
-    for (const key of Object.keys(row)) {
-      if (!seen.has(key)) { seen.add(key); columns.push(key); }
-    }
-  }
+  const bytes = await readBytes('loadJsonl', path);
+  const codec = await loadCodec('jsonl');
+  const { rows, columns } = codec.parse(bytes, path);
   const spec: TablePlan = validateTablePlan({
     table: path,
     columns: columns.map((id) => ({ id })),
@@ -229,37 +100,21 @@ function findEnvFile(startDir: string): string | undefined {
 }
 
 export async function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<void> {
-  const lines = rows
-    .map((row) => {
-      if (!columnOrder) return JSON.stringify(row);
-      const ordered: Row = {};
-      for (const col of columnOrder) ordered[col] = col in row ? row[col] : null;
-      for (const k of Object.keys(row)) if (!(k in ordered)) ordered[k] = row[k];
-      return JSON.stringify(ordered);
-    })
-    .join('\n');
+  const codec = await loadCodec('jsonl');
+  const body = codec.serialize(rows, columnOrder as string[]);
   try {
-    await writeFile(path, lines + (lines.length ? '\n' : ''), 'utf8');
+    await writeFile(path, body);
   } catch (e) {
     throw new Error(`writeJsonl: could not write ${path}: ${(e as Error).message}`);
   }
 }
 
-function csvCellString(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
-
 // #IoFormats #CsvSerialize
 export async function writeCsv(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
-  const records = rows.map((row) =>
-    columnOrder.map((col) => csvCellString(col in row ? row[col] : null))
-  );
-  // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines).
-  const body = stringify(records, { header: true, columns: columnOrder });
+  const codec = await loadCodec('csv');
+  const body = codec.serialize(rows, columnOrder);
   try {
-    await writeFile(filePath, body, 'utf8');
+    await writeFile(filePath, body);
   } catch (e) {
     throw new Error(`writeCsv: could not write ${filePath}: ${(e as Error).message}`);
   }

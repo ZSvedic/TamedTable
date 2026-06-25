@@ -9,8 +9,8 @@
 // steps (`prefill-chat`) are served from the tour's recorded cassette fetched
 // same-origin, so a visitor with no API key can run a full tour. See
 // spec/code-contract.md § Tutorial mode.
-import { mkdir, writeFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename } from 'node:path';
+import { parseTable } from '@tamedtable/file-io';
 import type { Row } from '@tamedtable/core';
 import type { RequestAudio } from '@tamedtable/headless';
 import type { Provider } from '@tamedtable/model-config';
@@ -360,13 +360,13 @@ export class TutorialManager {
     }
   }
 
-  /** Write a lookup fixture into the work dir so a join query can read it by
-   *  path. A silent prerequisite of a join tour, not a visible step. */
+  /** Stage a lookup fixture so a join query resolves it by name (no
+   *  filesystem). A silent prerequisite of a join tour, not a visible step. */
   private async writeLookup(filename: string): Promise<void> {
     const text = await this.loadFixture(filename);
     if (text === undefined) return;
-    await mkdir(this.host.workDir, { recursive: true });
-    await writeFile(join(this.host.workDir, filename), text, 'utf8');
+    const { rows } = await parseTable(filename, new TextEncoder().encode(text));
+    this.host.engine.registerLookup(filename, rows);
   }
 
   /** Fetch an audio clip's raw bytes, surfacing a fetch failure as a toast. */

@@ -29,7 +29,6 @@ export interface ControllerHost {
   // ── Construction-time infra ───────────────────────────────────────────────
   readonly opts: WebControllerOptions;
   readonly file: FilePort;
-  readonly workDir: string;
 
   // ── Observable state (declared on WebController, mutated by managers) ──────
   config: ResolvedConfig;

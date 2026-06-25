@@ -82,6 +82,17 @@ export type RequestAudio = { data: Uint8Array; mediaType: string };
 
 export interface HeadlessRunner {
   loadInput(path: string): Promise<void>;
+  /** Load an already-parsed table directly — the path-free sibling of
+   *  loadInput. The web app parses a picked/fetched file through the file-io
+   *  codec registry and loads the rows here, so the browser never needs a
+   *  filesystem. `spec` is the fresh-load TablePlan (table name + columns,
+   *  no transformations). */
+  loadParsed(rows: Row[], spec: TablePlan): Promise<void>;
+  /** Stage a lookup table by name so a `join` whose `with` matches resolves
+   *  against these rows instead of reading the file by path. Lets joins run in
+   *  the browser (no filesystem); an unregistered name falls back to reading
+   *  the file by path as before. */
+  registerLookup(name: string, rows: Row[]): void;
   request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
@@ -578,16 +589,23 @@ function applyUnpivot(rows: Row[], t: Extract<Transformation, { kind: 'unpivot' 
 }
 
 // #LookupJoin
-async function applyJoin(rows: Row[], t: Extract<Transformation, { kind: 'join' }>, baseDir: string): Promise<Row[]> {
+async function applyJoin(
+  rows: Row[],
+  t: Extract<Transformation, { kind: 'join' }>,
+  baseDir: string,
+  lookups?: Map<string, Row[]>,
+): Promise<Row[]> {
   if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
   const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
-  // Resolve the right-table path relative to the spec's working directory.
-  const rightPath = isAbsolute(t.with) ? t.with : join(baseDir, t.with);
-  const ext = t.with.slice(t.with.lastIndexOf('.')).toLowerCase();
-  let right: Row[];
-  if (ext === '.csv') right = (await loadCsv(rightPath)).rows;
-  else if (ext === '.jsonl') right = (await loadJsonl(rightPath)).rows;
-  else throw new Error(`unknown file type: ${t.with}`);
+  // A staged lookup (browser join) wins; otherwise read the right table by path.
+  let right = lookups?.get(t.with);
+  if (!right) {
+    const rightPath = isAbsolute(t.with) ? t.with : join(baseDir, t.with);
+    const ext = t.with.slice(t.with.lastIndexOf('.')).toLowerCase();
+    if (ext === '.csv') right = (await loadCsv(rightPath)).rows;
+    else if (ext === '.jsonl') right = (await loadJsonl(rightPath)).rows;
+    else throw new Error(`unknown file type: ${t.with}`);
+  }
   // Compute right-column names with collision-renaming (Country → Country_2 …).
   const leftCols = rows.length > 0 ? new Set(Object.keys(rows[0]!)) : new Set<string>();
   const rightColMap: Record<string, string> = {};
@@ -697,6 +715,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private sourcePath = '';
   private spec: TablePlan = { columns: [], transformations: [] };
   private derivedRows: Row[] = [];
+  // Lookup tables staged by name (browser joins): a `join` whose `with` matches
+  // a key here uses these rows instead of reading the file by path.
+  private lookupTables = new Map<string, Row[]>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private modelCache: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -826,10 +847,25 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     if (ext === '.csv') result = await loadCsv(path);
     else if (ext === '.jsonl') result = await loadJsonl(path);
     else throw new Error(`Runner: unknown file type: ${path}`);
-    this.sourceRows = result.rows;
-    this.sourcePath = result.sourcePath;
-    this.spec = result.spec;
-    this.derivedRows = result.rows.slice();
+    await this.commitSource(result.rows, result.spec, result.sourcePath);
+  }
+
+  async loadParsed(rows: Row[], spec: TablePlan): Promise<void> {
+    const validated = validateTablePlan(spec);
+    await this.commitSource(rows, validated, validated.table ?? '');
+  }
+
+  registerLookup(name: string, rows: Row[]): void {
+    this.lookupTables.set(name, rows);
+  }
+
+  /** Commit a freshly-loaded source — shared by loadInput (path) and
+   *  loadParsed (rows). Resets derived state and the DuckDB relation. */
+  private async commitSource(rows: Row[], spec: TablePlan, sourcePath: string): Promise<void> {
+    this.sourceRows = rows;
+    this.sourcePath = sourcePath;
+    this.spec = spec;
+    this.derivedRows = rows.slice();
     this.cellResultCache.clear();
     // Reset the DuckDB relation so SQL transformations see the new source.
     if (this.duckConn) {
@@ -1068,7 +1104,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       case 'split':    return this.applySplitT(rows, t, signal);
       case 'pivot':    return applyPivot(rows, t);
       case 'unpivot':  return applyUnpivot(rows, t);
-      case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd());
+      case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd(), this.lookupTables);
     }
   }
 

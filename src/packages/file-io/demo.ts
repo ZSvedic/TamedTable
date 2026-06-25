@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 // #FileIO demo logic — referenced by demo.html as an external module so
 // `bun build` bundles it (inline scripts are left unbundled and 404 on ./index.ts).
-import type { TablePlan } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/table-plan';
 import { detectFormat, fetchTable, serializeFlow, type PickedFile } from './index.ts';
 import { BrowserFilePort } from './browser-fs.ts';
 
@@ -18,7 +18,7 @@ function show(picked: PickedFile, format?: string): void {
   current = picked;
   $('fio-name').textContent = picked.name;
   $('fio-format').textContent = format ?? detectFormat(picked.name, null) ?? 'unknown';
-  $('fio-preview').textContent = picked.text.split('\n').slice(0, 20).join('\n');
+  $('fio-preview').textContent = new TextDecoder().decode(picked.bytes).split('\n').slice(0, 20).join('\n');
   $('fio-error').textContent = '';
   ($('fio-save') as HTMLButtonElement).disabled = false;
 }
@@ -49,7 +49,7 @@ $('fio-fetch').addEventListener('click', async () => {
 $('fio-save').addEventListener('click', async () => {
   if (!current) return;
   try {
-    const outcome = await port.pickSave(current.name, ['.csv', '.jsonl'], current.text);
+    const outcome = await port.pickSave(current.name, ['.csv', '.jsonl'], current.bytes);
     $('fio-outcome').textContent =
       outcome.status === 'cancelled' ? 'cancelled' : `${outcome.status} as ${outcome.name}`;
   } catch (e) {

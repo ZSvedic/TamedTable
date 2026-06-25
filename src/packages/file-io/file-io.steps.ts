@@ -4,7 +4,7 @@
 // they import nothing from the app harness.
 import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import type { TablePlan } from '@tamedtable/core';
+import type { TablePlan } from '@tamedtable/table-plan';
 import {
   detectFormat,
   fetchTable,
@@ -120,7 +120,7 @@ Then('the picked file is named {string}', function (this: FileIoWorld, expected:
 });
 
 Then('the picked file text is {string}', function (this: FileIoWorld, expected: string) {
-  assert.equal(ctx(this).picked!.text, unescape(expected));
+  assert.equal(new TextDecoder().decode(ctx(this).picked!.bytes), unescape(expected));
 });
 
 Then('fetchTable fails with {string}', function (this: FileIoWorld, expected: string) {

@@ -37,7 +37,6 @@ const tutorialSources: TutorialSources = {
 const controller = createWebController({
   file: new BrowserFilePort(),
   voice: browserVoicePort(),
-  workDir: '/tamedtable',
   tutorialSources,
 });
 

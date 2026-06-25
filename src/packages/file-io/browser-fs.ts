@@ -10,7 +10,7 @@ interface FsAccessWindow {
   showOpenFilePicker?: (opts: unknown) => Promise<Array<{ getFile(): Promise<File> }>>;
   showSaveFilePicker?: (opts: unknown) => Promise<{
     name: string;
-    createWritable(): Promise<{ write(data: string): Promise<void>; close(): Promise<void> }>;
+    createWritable(): Promise<{ write(data: Uint8Array): Promise<void>; close(): Promise<void> }>;
   }>;
 }
 
@@ -29,7 +29,7 @@ export class BrowserFilePort implements FilePort {
         });
         if (!handle) return null;
         const file = await handle.getFile();
-        return { name: file.name, text: await file.text() };
+        return { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) };
       } catch (e) {
         if ((e as DOMException).name === 'AbortError') return null;
         throw e;
@@ -51,14 +51,14 @@ export class BrowserFilePort implements FilePort {
           resolve(null);
           return;
         }
-        file.text().then((text) => resolve({ name: file.name, text }), reject);
+        file.arrayBuffer().then((buf) => resolve({ name: file.name, bytes: new Uint8Array(buf) }), reject);
       });
       document.body.appendChild(input);
       input.click();
     });
   }
 
-  async pickSave(suggestedName: string, accept: string[], content: string): Promise<SaveOutcome> {
+  async pickSave(suggestedName: string, accept: string[], content: Uint8Array): Promise<SaveOutcome> {
     if (this.hasFileSystemAccess) {
       try {
         const handle = await fsWindow().showSaveFilePicker!({
@@ -75,7 +75,7 @@ export class BrowserFilePort implements FilePort {
       }
     }
     // Download fallback for browsers without the File System Access API.
-    const url = URL.createObjectURL(new Blob([content], { type: 'application/octet-stream' }));
+    const url = URL.createObjectURL(new Blob([content as BlobPart], { type: 'application/octet-stream' }));
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = suggestedName;

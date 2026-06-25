@@ -66,7 +66,6 @@ const PAGE_SIZE = 20;
 export class WebController implements ControllerHost {
   readonly opts: WebControllerOptions;
   readonly file: FilePort;
-  readonly workDir: string;
 
   // ── Composed domain managers ──────────────────────────────────────────────
   readonly engine: EngineManager;
@@ -115,7 +114,6 @@ export class WebController implements ControllerHost {
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
     this.file = opts.file;
-    this.workDir = opts.workDir ?? 'tamedtable-web-work';
     // In the browser we avoid importing process.env — guard with typeof check.
     // Tests pass opts.env = {} to suppress real API keys from the shell.
     const envVars: Record<string, string | undefined> =
