@@ -200,7 +200,14 @@ Then('the first column is {string}', function (this: TamedTableWorld, column: st
 });
 
 Then('the spec has {int} transformation(s)', function (this: TamedTableWorld, n: number) {
-  assert.equal(controller(this).displaySpec().transformations.length, n);
+  const got = controller(this).displaySpec().transformations.length;
+  const outcome = this.lastRequestOutcome;
+  const toasts = controller(this).toasts.map((t) => `${t.kind}:${t.message}`).join(' | ') || '(none)';
+  assert.equal(
+    got,
+    n,
+    `expected ${n} transformation(s), got ${got}. request ok=${outcome?.ok}; error=${outcome?.error?.message ?? '(none)'}; toasts=${toasts}`,
+  );
 });
 
 // ── Pagination ─────────────────────────────────────────────────────────────
