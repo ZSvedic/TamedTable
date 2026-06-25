@@ -76,9 +76,11 @@ Phase 1* (it adds a dependency and re-enables web `{sql}`, both user-visible).
 ## Steps
 
 Each step follows the [workflow rule](../../../CLAUDE.md#workflow-rule--changing-a-component):
-spec → Gherkin → step defs → red → green, `cd src && bun run test` green before
-commit. One PR per step. Steps 1–2 are pure moves (behavior held constant);
-the package-API surface shift is recorded in `spec/code-contract.md`.
+spec → Gherkin → step defs → red → green. **Land all five steps in a single
+PR** — they build on each other; commit per step for a clean history, but don't
+cut a PR between them. `cd src && bun run test` must be green before opening it.
+Steps 1–2 are pure moves (behavior held constant); the package-API surface
+shift is recorded in `spec/code-contract.md`.
 
 1. **Extract `@tamedtable/table-plan`.** Move `Row`, `Expr`, `Transformation`,
    their schemas, `TablePlan`, `TablePlanSchema`, `validateTablePlan` out of
@@ -107,8 +109,8 @@ the package-API surface shift is recorded in `spec/code-contract.md`.
    stale "does not own engine IO (`loadCsv`/`writeRows` live in core)" line in
    `behavior.md` — after step 2 it's false.
 
-After step 5, every roadmap format is a pure registry addition: a codec file, a
-`formats/<name>.md`, a registry row.
+After the PR lands, every roadmap format is a pure registry addition: a codec
+file, a `formats/<name>.md`, a registry row.
 
 ## Base package name — settled
 
