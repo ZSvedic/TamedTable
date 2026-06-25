@@ -26,7 +26,10 @@ const BUNDLES: duckdb.DuckDBBundles = {
 // before every query, so a fresh connection always sees current state.
 let dbPromise: Promise<duckdb.AsyncDuckDB> | undefined;
 
-function getDb(): Promise<duckdb.AsyncDuckDB> {
+/** The shared wasm instance. Exported so the Parquet engine
+ *  (./parquet-engine.ts) reads file buffers through the same DuckDB the {sql}
+ *  path uses — one wasm worker per page. */
+export function getDb(): Promise<duckdb.AsyncDuckDB> {
   return (dbPromise ??= (async () => {
     const bundle = await duckdb.selectBundle(BUNDLES);
     const worker = new Worker(bundle.mainWorker!);

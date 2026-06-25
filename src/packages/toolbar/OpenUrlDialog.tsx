@@ -183,8 +183,11 @@ export function OpenUrlDialog({ open, samples, onSubmit, onClose }: OpenUrlDialo
                 marginBottom: space.px8,
               }}
             >
-              Paste a link to a .csv or .jsonl file. The remote server must allow
-              cross-origin requests.
+              Paste a link to a .csv, .jsonl, .parquet, or .arrow file (
+              <a href="../FAQ.html#formats" target="_blank" rel="noopener" style={{ color: t.accent }}>
+                all formats ↗
+              </a>
+              ). The remote server must allow cross-origin requests.
             </div>
             <input
               ref={inputRef}

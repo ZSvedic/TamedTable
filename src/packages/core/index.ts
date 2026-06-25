@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
-import { loadCodec } from '@tamedtable/file-io';
+import { formatForExtension, loadCodec } from '@tamedtable/file-io';
 
 // #TablePlanSchema
 // The TablePlan model now lives in @tamedtable/table-plan (zero-dependency base
@@ -25,7 +25,7 @@ async function readBytes(label: string, path: string): Promise<Uint8Array> {
 export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
   const bytes = await readBytes('loadCsv', path);
   const codec = await loadCodec('csv');
-  const { rows, columns } = codec.parse(bytes, path);
+  const { rows, columns } = await codec.parse(bytes, path);
   if (columns.length === 0) throw new Error(`loadCsv: ${path} has no header row`);
   const seen = new Set<string>();
   for (const id of columns) {
@@ -40,16 +40,35 @@ export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Ro
   return { spec, rows, sourcePath: path };
 }
 
+// #IoFormats
+/** Generic load for any registered format (Parquet, Arrow, …): pick the codec
+ *  by extension, parse the bytes, and build a fresh-load TablePlan. CSV/JSONL
+ *  keep their own loaders above (CSV adds header/duplicate-column checks); this
+ *  is the dispatch target for every other format. */
+export async function loadFile(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
+  const id = formatForExtension(path);
+  if (!id) throw new Error(`load: unknown file type: ${path}`);
+  const bytes = await readBytes('load', path);
+  const codec = await loadCodec(id);
+  const { rows, columns } = await codec.parse(bytes, path);
+  const spec: TablePlan = validateTablePlan({
+    table: path,
+    columns: columns.map((id) => ({ id })),
+    transformations: [],
+  });
+  return { spec, rows, sourcePath: path };
+}
+
 export async function readJsonl(path: string): Promise<Row[]> {
   const bytes = await readBytes('readJsonl', path);
   const codec = await loadCodec('jsonl');
-  return codec.parse(bytes, path).rows;
+  return (await codec.parse(bytes, path)).rows;
 }
 
 export async function loadJsonl(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
   const bytes = await readBytes('loadJsonl', path);
   const codec = await loadCodec('jsonl');
-  const { rows, columns } = codec.parse(bytes, path);
+  const { rows, columns } = await codec.parse(bytes, path);
   const spec: TablePlan = validateTablePlan({
     table: path,
     columns: columns.map((id) => ({ id })),
@@ -101,7 +120,7 @@ function findEnvFile(startDir: string): string | undefined {
 
 export async function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<void> {
   const codec = await loadCodec('jsonl');
-  const body = codec.serialize(rows, columnOrder as string[]);
+  const body = await codec.serialize(rows, columnOrder as string[]);
   try {
     await writeFile(path, body);
   } catch (e) {
@@ -112,7 +131,7 @@ export async function writeJsonl(path: string, rows: Row[], columnOrder?: string
 // #IoFormats #CsvSerialize
 export async function writeCsv(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
   const codec = await loadCodec('csv');
-  const body = codec.serialize(rows, columnOrder);
+  const body = await codec.serialize(rows, columnOrder);
   try {
     await writeFile(filePath, body);
   } catch (e) {
@@ -121,11 +140,17 @@ export async function writeCsv(filePath: string, rows: Row[], columnOrder: strin
 }
 
 // #FormatOut
-/** Dispatch on file extension. .jsonl → writeJsonl, .csv → writeCsv. Any other
- *  extension throws an "unknown file type" error that callers surface inline. */
+/** Dispatch on file extension through the codec registry (.jsonl, .csv,
+ *  .parquet, .arrow, …). Any unregistered extension throws an "unknown file
+ *  type" error that callers surface inline. */
 export async function writeRows(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
-  const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
-  if (ext === '.jsonl') return writeJsonl(filePath, rows, columnOrder);
-  if (ext === '.csv') return writeCsv(filePath, rows, columnOrder);
-  throw new Error(`unknown file type: ${filePath}`);
+  const id = formatForExtension(filePath);
+  if (!id) throw new Error(`unknown file type: ${filePath}`);
+  const codec = await loadCodec(id);
+  const body = await codec.serialize(rows, columnOrder);
+  try {
+    await writeFile(filePath, body);
+  } catch (e) {
+    throw new Error(`writeRows: could not write ${filePath}: ${(e as Error).message}`);
+  }
 }

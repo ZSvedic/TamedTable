@@ -68,7 +68,9 @@
       "name": "@tamedtable/file-io",
       "version": "0.0.0",
       "dependencies": {
+        "@duckdb/node-api": "1.5.2-r.1",
         "@tamedtable/table-plan": "workspace:*",
+        "apache-arrow": "^17.0.0",
         "csv-parse": "^6.2.1",
         "csv-stringify": "^6.7.0",
       },
@@ -189,6 +191,7 @@
         "@tamedtable/voice-input": "workspace:*",
         "buffer": "^6.0.3",
         "driver.js": "^1.3.1",
+        "hyparquet": "^1.26.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
       },
@@ -583,6 +586,8 @@
     "has-flag": ["has-flag@4.0.0", "", {}, "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ=="],
 
     "hosted-git-info": ["hosted-git-info@9.0.3", "", { "dependencies": { "lru-cache": "^11.1.0" } }, "sha512-Hc+ghLoSt6QaYZUv0WBiIvmMDZuZZ7oaDvdH8MbfOO4lOsxdXLEvuC6ePoGs9H1X9oCLyq6+NVN0MKqD+ydxyg=="],
+
+    "hyparquet": ["hyparquet@1.26.0", "", {}, "sha512-yxUiViPZ+z5h+xdX4rA1G+k30jXoEsG9I2xEpjaM84imGznbKjZzxuZFsdzqg6C4LxNnnAlDFvzpk4uxQWTbTQ=="],
 
     "ieee754": ["ieee754@1.2.1", "", {}, "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="],
 

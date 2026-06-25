@@ -21,7 +21,7 @@ export async function parseTable(name: string, bytes: Uint8Array): Promise<{ row
   const id = formatForExtension(name);
   if (!id) throw new Error(`unknown file type: ${name}`);
   const codec = await loadCodec(id);
-  const { rows, columns } = codec.parse(bytes, name);
+  const { rows, columns } = await codec.parse(bytes, name);
   if (id === 'csv') {
     if (columns.length === 0) throw new Error(`${name} has no header row`);
     const seen = new Set<string>();
@@ -115,7 +115,7 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
   const contentType = response.headers.get('content-type');
   const format = detectFormat(parsed.pathname, contentType);
   if (!format) {
-    throw new Error('Could not detect format. URL must end in .csv or .jsonl.');
+    throw new Error('Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow.');
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());

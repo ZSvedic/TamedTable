@@ -20,12 +20,13 @@ export class FilesManager {
     this.host = host;
   }
 
-  /** Open the CSV/JSONL Open dialog and load the picked file. */
+  /** Open the file Open dialog and load the picked file (CSV, JSONL, Parquet,
+   *  or Arrow). */
   async openCsv(): Promise<void> {
     this.host.dialog = 'open';
     this.host.notify();
     try {
-      const picked = await this.host.file.pickOpen(['.csv', '.jsonl']);
+      const picked = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow']);
       if (picked) await this.loadFromPicked(picked);
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
@@ -99,7 +100,7 @@ export class FilesManager {
       const rows = this.host.engine.currentRows();
       const columns = this.host.engine.currentSpec().columns.map((c) => c.id);
       const codec = await loadCodec('jsonl');
-      const content = codec.serialize(rows, columns);
+      const content = await codec.serialize(rows, columns);
       this.reportSave(await this.host.file.pickSave('data.jsonl', ['.jsonl'], content));
     } catch (e) {
       this.host.pushToast('error', `Could not save data: ${(e as Error).message}`);

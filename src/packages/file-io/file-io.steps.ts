@@ -11,6 +11,7 @@ import {
   sampleNameFromUrl,
   serializeFlow,
   type FetchLike,
+  type FormatId,
   type PickedFile,
 } from './index.ts';
 
@@ -21,7 +22,7 @@ interface FileIoWorld {
   _fio?: {
     fetchStub?: FetchLike;
     spec?: TablePlan;
-    format?: 'csv' | 'jsonl' | null;
+    format?: FormatId | null;
     name?: string;
     picked?: PickedFile;
     flow?: { version: number; source: string; spec: TablePlan };
@@ -61,7 +62,7 @@ Then('no format is detected', function (this: FileIoWorld) {
 When(
   'sampleNameFromUrl is called with {string} and format {string}',
   function (this: FileIoWorld, url: string, format: string) {
-    ctx(this).name = sampleNameFromUrl(new URL(url), format as 'csv' | 'jsonl');
+    ctx(this).name = sampleNameFromUrl(new URL(url), format as FormatId);
   },
 );
 

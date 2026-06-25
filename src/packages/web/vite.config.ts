@@ -41,8 +41,9 @@ const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {
 // tutorial inputs + goldens), the tutorial feature files, and the recorded
 // cassettes. Each is copied into dist/ at build and served from its source dir
 // by a dev middleware — same pattern, three directories.
+const SAMPLE_EXTS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 const sampleFiles = readdirSync(specTcDir)
-  .filter((name) => name.endsWith('.csv') || name.endsWith('.jsonl'))
+  .filter((name) => SAMPLE_EXTS.some((ext) => name.endsWith(ext)))
   .sort();
 // Voice clips for `play-audio` tour steps — served from /samples/ alongside the
 // CSV/JSONL fixtures, but kept out of __TT_SAMPLE_FILES__ (the Open URL dialog's
@@ -55,6 +56,8 @@ function contentTypeFor(name: string): string {
   if (name.endsWith('.jsonl')) return 'application/x-ndjson; charset=utf-8';
   if (name.endsWith('.json')) return 'application/json; charset=utf-8';
   if (name.endsWith('.m4a')) return 'audio/mp4';
+  if (name.endsWith('.parquet')) return 'application/vnd.apache.parquet';
+  if (name.endsWith('.arrow') || name.endsWith('.feather')) return 'application/vnd.apache.arrow.file';
   return 'text/plain; charset=utf-8';  // .feature
 }
 
@@ -93,8 +96,25 @@ function staticDirPlugin(route: string, srcDir: string, files: string[]): Plugin
   };
 }
 
+// file-io's Parquet codec imports a relative `./parquet-engine.ts` that uses
+// `@duckdb/node-api` + temp files (Node-only). Relative specifiers don't alias
+// cleanly, so redirect that one import to the browser engine (duckdb-wasm) here.
+function parquetEngineShim(): Plugin {
+  return {
+    name: 'tamedtable-parquet-engine-shim',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (source.endsWith('/parquet-engine.ts') || source === './parquet-engine.ts') {
+        if (importer && importer.includes('/file-io/codecs/')) return shim('parquet-engine.ts');
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
+    parquetEngineShim(),
     react(),
     staticDirPlugin('samples', specTcDir, [...sampleFiles, ...audioFiles]),
     staticDirPlugin('tutorials', specTcDir, tutorialFeatureNames),

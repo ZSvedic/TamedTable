@@ -13,7 +13,9 @@
     "demo": "bun demo.html"
   },
   "dependencies": {
+    "@duckdb/node-api": "1.5.2-r.1",
     "@tamedtable/table-plan": "workspace:*",
+    "apache-arrow": "^17.0.0",
     "csv-parse": "^6.2.1",
     "csv-stringify": "^6.7.0"
   },
