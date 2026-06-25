@@ -66,6 +66,8 @@
   }
   .faq-a { margin-top: 14px; }
   .faq-a > p { color: var(--ink); }
+  /* Space stacked answer paragraphs (global reset zeroes <p> margins). */
+  .faq-a > p + p { margin-top: 14px; }
 
   .gotcha {
     margin: 18px 0; padding: 18px 20px;
@@ -124,6 +126,7 @@
     <nav class="faq-index" aria-label="Questions">
       <ul>
         <li><a href="#byok">How to Bring Your Own API Key (BYOK)?</a></li>
+        <li><a href="#formats">What file formats does TamedTable support?</a></li>
         <li><a href="#ai-developed">Is TamedTable developed using AI?</a></li>
         <li><a href="#privacy">Where is the privacy policy and EULA?</a></li>
       </ul>
@@ -174,6 +177,18 @@
         </div>
 
         <p class="closing">Tip: store the key in your browser or a password manager. Clearing your browser data or switching devices means entering it again. Ready? <a href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app ↗</a></p>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Q: File formats ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="formats" class="anchored">
+        What file formats does TamedTable support?
+        <button class="copy-link" data-target="formats" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>You can open <strong>CSV</strong>, <strong>JSONL</strong>, <strong>Parquet</strong>, and <strong>Arrow / Feather</strong> files directly — by local file, URL, or one of the bundled samples. Everything is parsed in your browser; no upload.</p>
+        <p>Transforms run on <a href="https://duckdb.org/" target="_blank" rel="noopener">DuckDB</a>, so once a table is loaded you also have its full SQL engine. You can save back to any of the four formats too: the web app saves in whatever format you opened, and the desktop CLI lets you pick (e.g. <code>:save clean.parquet</code>).</p>
       </div>
     </section>
 
