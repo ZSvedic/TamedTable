@@ -13,6 +13,9 @@ export interface ToastItem {
   id: number;
   kind: 'error' | 'info';
   message: string;
+  /** Optional inline action label (e.g. "Copy report"). Clicking it calls
+   *  `onAction` with this toast's id; omit it for a plain toast. */
+  action?: string;
 }
 
 const SHEET_CSS =
@@ -23,9 +26,12 @@ const SHEET_CSS =
 export function Toasts({
   toasts,
   onDismiss,
+  onAction,
 }: {
   toasts: ToastItem[];
   onDismiss: (id: number) => void;
+  /** Called with a toast's id when its inline `action` label is clicked. */
+  onAction?: (id: number) => void;
 }): ReactNode {
   const t = useTheme();
   if (toasts.length === 0) return null;
@@ -72,6 +78,27 @@ export function Toasts({
               <Icon name={isError ? 'err' : 'ok'} />
             </span>
             <div style={{ flex: 1 }}>{toast.message}</div>
+            {toast.action && onAction && (
+              <button
+                type="button"
+                data-uk-toast-action=""
+                onClick={() => onAction(toast.id)}
+                style={{
+                  flex: '0 0 auto',
+                  background: 'transparent',
+                  border: 0,
+                  padding: space.px2,
+                  cursor: 'pointer',
+                  color: t.accent,
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.sm,
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                }}
+              >
+                {toast.action}
+              </button>
+            )}
             <button
               type="button"
               data-uk-toast-dismiss=""

@@ -187,6 +187,19 @@ Dedupe by column key, export, execute saved flow — parallel to filter.feature.
 | [Export deduplicated data](test-cases/dedupe.feature)<br>`@headless @cli @web` | Export to JSONL after dedupe | NA — kept as per-op proof (see DRY note) |
 | [Execute saved flow from command line](test-cases/dedupe.feature)<br>`@cli` | CLI runs dedupe.flow | NA — kept as per-op proof (see DRY note) |
 
+### `diagnostics.feature` — In-app diagnostics log
+Web-only `#Diagnostics`: the localStorage ring buffer + one-click report. Every
+scenario is `@offline` — a failure is simulated (a 401 mock or a tutorial replay
+miss), so no model call leaves the browser.
+
+| Scenario | What it tests | ToDo |
+|---|---|---|
+| [A failed model request is recorded with its fingerprint and truncated body](test-cases/diagnostics.feature)<br>`@web @offline` | A 401 records method/url/fingerprint/body + provider | NA |
+| [A tutorial replay miss is recorded with the tour scenario and fingerprint](test-cases/diagnostics.feature)<br>`@web @offline` | The original "no recording" bug: off-script query → event names tour + scenario | NA |
+| [The diagnostics report never contains an API key](test-cases/diagnostics.feature)<br>`@web @offline @regression` | Redaction: report holds no `sk-`/`AIza` shape, drops `*Key` fields | NA — regression lock |
+| [The diagnostics report is a self-contained markdown doc](test-cases/diagnostics.feature)<br>`@web @offline` | Report names the app version, lists newest event first | NA |
+| [Clearing diagnostics empties the log](test-cases/diagnostics.feature)<br>`@web @offline` | Clear empties the in-memory + stored log | NA |
+
 ### `enrich.feature` — Enrich and extract tours
 Marketing tours; each loads a distinct CSV, runs a phrase, replays `enrich.json`.
 

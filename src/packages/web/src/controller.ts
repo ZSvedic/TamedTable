@@ -28,6 +28,7 @@ import { FilesManager } from './controller-files.ts';
 import { VoiceManager } from './controller-voice.ts';
 import { ConfigManager } from './controller-config.ts';
 import { TutorialManager } from './controller-tutorial.ts';
+import { DiagnosticsManager, type DiagEvent } from './controller-diagnostics.ts';
 import type {
   ActivityStatus,
   CellRef,
@@ -44,6 +45,7 @@ import type {
 // Public surface re-exports — keep existing imports through this module
 // working without forcing every component to update its import path.
 export { detectFormat, userFacingMessage, summarizeDebug };
+export type { DiagEvent };
 export type {
   ActivityStatus,
   CellRef,
@@ -74,6 +76,7 @@ export class WebController implements ControllerHost {
   readonly voice: VoiceManager;
   readonly settingsMgr: ConfigManager;
   readonly tutorial: TutorialManager;
+  readonly diagnostics: DiagnosticsManager;
 
   private readonly listeners = new Set<() => void>();
   private revision = 0;
@@ -121,6 +124,9 @@ export class WebController implements ControllerHost {
     // Precedence: env vars > opts.config > stored config > defaults.
     this.config = resolveConfig(envVars, { ...readStoredConfig(), ...opts.config });
 
+    // Built first so pushToast can record every toast from the moment the
+    // controller exists.
+    this.diagnostics = new DiagnosticsManager(this);
     this.engine = new EngineManager(this);
     this.patch = new PatchManager(this);
     this.files = new FilesManager(this);
@@ -145,8 +151,11 @@ export class WebController implements ControllerHost {
 
   // ── Notification hub: chat messages + toasts ──────────────────────────────
 
-  pushToast(kind: Toast['kind'], message: string): void {
-    this.toasts = [...this.toasts, { id: ++this.toastSeq, kind, message }];
+  pushToast(kind: Toast['kind'], message: string, action?: string): void {
+    this.toasts = [...this.toasts, { id: ++this.toastSeq, kind, message, action }];
+    // Every toast is a diagnostics event — the user-visible signal that
+    // something happened, captured with whatever context is available.
+    this.diagnostics.recordToast(kind, message);
     this.notify();
   }
 
@@ -168,7 +177,9 @@ export class WebController implements ControllerHost {
   }
 
   fail(message: string, debug?: RequestDebugInfo): void {
-    this.pushToast('error', message);
+    // Every error toast offers a one-click diagnostics report, so a user who
+    // hits a bug can grab the redacted, pasteable report on the spot.
+    this.pushToast('error', message, 'Copy report');
     this.pushMessage('assistant', `Error: ${message}`, debug);
   }
 
@@ -341,6 +352,18 @@ export class WebController implements ControllerHost {
   currentStepDetail(): { keyword: string; text: string } | null { return this.tutorial.currentStepDetail(); }
   /** Driver.js element id for the current step's UI focus target. */
   currentStepElementId(): string | null { return this.tutorial.currentStepElementId(); }
+
+  // ── Diagnostics log (→ diagnostics) ─────────────────────────────────────────
+
+  /** The diagnostics log, chronological (newest last). */
+  diagnosticsEvents(): DiagEvent[] { return this.diagnostics.list(); }
+  /** The redacted, pasteable markdown report (newest event first). */
+  diagnosticsReport(): string { return this.diagnostics.report(); }
+  copyDiagnosticsReport(): Promise<void> { return this.diagnostics.copyReport(); }
+  downloadDiagnosticsReport(format?: 'md' | 'json'): Promise<void> {
+    return this.diagnostics.downloadReport(format);
+  }
+  clearDiagnostics(): void { this.diagnostics.clear(); }
 }
 
 export function createWebController(opts: WebControllerOptions): WebController {

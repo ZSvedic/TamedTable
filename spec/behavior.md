@@ -794,6 +794,47 @@ per column, formatted as `column: "before" → "after"`.
 
 → [code-contract.md — Extended transformations, SQL, and the web UI](code-contract.md#extended-transformations-sql-and-the-web-ui)
 
+### Diagnostics log (#Diagnostics)
+
+When a bug bites in the browser, the user clicks one action and gets a
+self-contained report to paste into a Claude chat — no DOM spelunking, no
+console digging. The app keeps a small rolling log of recent events; the
+report is that log plus the app version and a key-free config snapshot,
+written as a markdown doc.
+
+The app records an event at three moments, each carrying the context that
+explains it:
+
+- every toast the user sees (an error or an info note);
+- every model request that fails — its method, URL, the SHA-256 request
+  fingerprint, and the first 2 KB of the request body;
+- a tutorial replay miss ("no recording for this request") — the active
+  tour and scenario plus the missing fingerprint, the exact pair that
+  turns a long debugging session into a two-minute diagnosis.
+
+Each event also carries whatever context is available: the active
+tutorial feature and scenario, the provider, model, and cell model, how
+many transformations the current spec holds (a count, never the data),
+the last few chat messages, the app version, and the browser's user-agent.
+
+The log is bounded — the newest 50 events and roughly 256 KB, whichever
+bites first, evicting the oldest. It lives in the browser under
+`tamedtable.diagnostics`. Where the browser hides storage (private mode,
+headless tests) the log keeps working in memory and never throws.
+
+**Keys never reach the log.** Before any event is written, anything
+shaped like an API key (`sk-…`, `AIza…`) or an auth header
+(`authorization`, `x-api-key`) is stripped, and the config snapshot drops
+the per-provider key fields outright. A pasted report is safe to share.
+
+Three actions reach the log: **Copy diagnostics report** copies the
+markdown to the clipboard, **Download report** saves it as a file, and
+**Clear diagnostics** empties the log. All three live in Settings; an
+error toast also carries a **Copy report** action so a user can grab the
+report the moment a bug surfaces. The report lists events newest first.
+
+→ [code-contract.md — Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
+
 ## Voice input (#VoiceInput)
 
 Voice input lets the user speak a request instead of typing it. It is a

@@ -8,6 +8,14 @@ import { useController } from '../hooks/useController.ts';
 export function Toasts({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   return (
-    <ToastStack toasts={controller.toasts} onDismiss={(id) => controller.dismissToast(id)} />
+    <ToastStack
+      toasts={controller.toasts}
+      onDismiss={(id) => controller.dismissToast(id)}
+      // The only toast action is "Copy report" on an error toast.
+      onAction={(id) => {
+        controller.dismissToast(id);
+        void controller.copyDiagnosticsReport();
+      }}
+    />
   );
 }
