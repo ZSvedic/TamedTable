@@ -6,6 +6,7 @@
 // only the load/save plumbing.
 import {
   fetchTable,
+  formatForExtension,
   loadCodec,
   parseTable,
   serializeFlow,
@@ -20,12 +21,13 @@ export class FilesManager {
     this.host = host;
   }
 
-  /** Open the CSV/JSONL Open dialog and load the picked file. */
+  /** Open the file Open dialog and load the picked file (CSV, JSONL, Parquet,
+   *  or Arrow). */
   async openCsv(): Promise<void> {
     this.host.dialog = 'open';
     this.host.notify();
     try {
-      const picked = await this.host.file.pickOpen(['.csv', '.jsonl']);
+      const picked = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow']);
       if (picked) await this.loadFromPicked(picked);
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
@@ -85,7 +87,9 @@ export class FilesManager {
     }
   }
 
-  /** Save the current rows as JSONL via the Save dialog. */
+  /** Save the current rows via the Save dialog, in the format the table was
+   *  loaded as — CSV, JSONL, Parquet, or Arrow — so you get back what you
+   *  opened. Falls back to JSONL when the source format is unknown. */
   async saveData(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before saving data.');
@@ -94,13 +98,16 @@ export class FilesManager {
     this.host.dialog = 'save-data';
     this.host.notify();
     try {
-      // Serialize the current rows straight to JSONL through the codec — no
-      // export-to-disk-and-read-back round-trip.
+      const sourceName = this.host.sourcePath || '';
+      const format = formatForExtension(sourceName) ?? 'jsonl';
+      const codec = await loadCodec(format);
+      const ext = codec.extensions[0] ?? '.jsonl';
+      const base = sourceName.split('/').pop() || '';
+      const suggested = formatForExtension(base) ? base : `data${ext}`;
       const rows = this.host.engine.currentRows();
       const columns = this.host.engine.currentSpec().columns.map((c) => c.id);
-      const codec = await loadCodec('jsonl');
-      const content = codec.serialize(rows, columns);
-      this.reportSave(await this.host.file.pickSave('data.jsonl', ['.jsonl'], content));
+      const content = await codec.serialize(rows, columns);
+      this.reportSave(await this.host.file.pickSave(suggested, [ext], content));
     } catch (e) {
       this.host.pushToast('error', `Could not save data: ${(e as Error).message}`);
     } finally {

@@ -14,6 +14,8 @@ Per-format quirks live in their own pages, one per codec:
 
 - [formats/csv.md](formats/csv.md) — CSV (RFC 4180, header handling)
 - [formats/jsonl.md](formats/jsonl.md) — JSONL / NDJSON (one object per line)
+- [formats/parquet.md](formats/parquet.md) — Parquet (DuckDB reader/writer)
+- [formats/arrow.md](formats/arrow.md) — Arrow / Feather (apache-arrow IPC)
 
 ## Worked example
 
@@ -45,11 +47,15 @@ a load-on-demand registry:
 interface ParsedTable { rows; columns }            // columns: string[]
 interface FormatCodec {
   id; extensions; contentTypes                      // synchronous descriptor
-  parse(bytes, name) → ParsedTable                  // text codecs decode internally
-  serialize(rows, columns) → Uint8Array
+  parse(bytes, name) → ParsedTable | Promise<…>     // text codecs decode synchronously
+  serialize(rows, columns) → Uint8Array | Promise<…> // async for DuckDB/Arrow codecs
   load?() → Promise<void>                           // dynamic import of a heavy engine
 }
 ```
+
+`parse`/`serialize` may return a value or a Promise: the pure-JS text codecs
+(CSV, JSONL) stay synchronous, while the binary codecs (Parquet via DuckDB,
+Arrow via apache-arrow) are async. Every caller `await`s, so both shapes work.
 
 The seam carries raw **bytes** (`Uint8Array`), not text, so a binary format
 works the same as a text one — the codec decodes internally. The registry

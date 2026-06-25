@@ -142,9 +142,9 @@ export interface ParsedTable {
 
 /** One stateless codec per format. `file-io` owns a load-on-demand registry of
  *  these; the engine and the web app reach formats only through it. Pure-JS
- *  codecs (csv, jsonl) implement `parse`/`serialize` directly; codecs whose
- *  reader is heavy (Phase 1's DuckDB-backed Parquet/Arrow/…) defer the engine
- *  import to `load`. */
+ *  codecs (csv, jsonl) implement `parse`/`serialize` synchronously; codecs whose
+ *  reader is async (Phase 1's DuckDB-backed Parquet, Arrow via apache-arrow)
+ *  return a Promise — every caller `await`s, so both shapes work. */
 export interface FormatCodec {
   /** Stable format id, e.g. "csv", "jsonl". */
   id: string;
@@ -155,9 +155,9 @@ export interface FormatCodec {
   /** Parse a file's raw bytes into rows + columns. Text codecs decode the
    *  bytes internally; binary formats (Phase 1) read them directly. `name` is
    *  the source file name, used only for error context. */
-  parse(bytes: Uint8Array, name: string): ParsedTable;
+  parse(bytes: Uint8Array, name: string): ParsedTable | Promise<ParsedTable>;
   /** Serialize rows to the format's raw bytes, emitting `columns` in order. */
-  serialize(rows: Row[], columns: string[]): Uint8Array;
+  serialize(rows: Row[], columns: string[]): Uint8Array | Promise<Uint8Array>;
   /** Optional one-time load of a heavy parser/engine before first `parse`. */
   load?: () => Promise<void>;
 }

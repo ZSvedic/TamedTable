@@ -16,6 +16,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "1.32.0",
     "@tamedtable/cassette": "workspace:*",
     "@tamedtable/chat-panel": "workspace:*",
     "@tamedtable/core": "workspace:*",
@@ -25,10 +26,12 @@
     "@tamedtable/model-config": "workspace:*",
     "@tamedtable/table-view": "workspace:*",
     "@tamedtable/toolbar": "workspace:*",
-    "@tamedtable/voice-input": "workspace:*",
     "@tamedtable/ui-kit": "workspace:*",
+    "@tamedtable/voice-input": "workspace:*",
     "buffer": "^6.0.3",
     "driver.js": "^1.3.1",
+    "hyparquet": "^1.26.0",
+    "hyparquet-writer": "^0.15.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

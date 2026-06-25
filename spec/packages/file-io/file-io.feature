@@ -78,7 +78,7 @@ Feature: File IO package
     Scenario: An undetectable format is refused
       Given a stub fetch serving "https://x.test/page" with body "<html>" and content type "text/html"
       When fetchTable is called with "https://x.test/page"
-      Then fetchTable fails with "Could not detect format. URL must end in .csv or .jsonl."
+      Then fetchTable fails with "Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow."
 
   Rule: A .flow file is the replayable spec plus its source name
 

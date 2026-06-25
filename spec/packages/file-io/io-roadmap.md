@@ -36,15 +36,27 @@ Self-describing / schema-on-write: the schema rides in the file, so import needs
 no user input. With DuckDB wired in, each format is a reader call, not a new
 library.
 
-| Format | DuckDB reader | Notes |
-|--------|---------------|-------|
-| [Parquet](https://parquet.apache.org/) | `read_parquet` | bundled/autoloaded extension |
-| [Arrow / Feather](https://arrow.apache.org/) | scan registered Arrow IPC | zero-copy from `registerFileBuffer` |
-| [Avro](https://avro.apache.org/) | `read_avro` (community extension) | schema embedded |
+| Format | Reader | Status |
+|--------|--------|--------|
+| [Parquet](https://parquet.apache.org/) | DuckDB `read_parquet` / `COPY … (FORMAT PARQUET)` | **shipped** — load + save, both runtimes |
+| [Arrow / Feather](https://arrow.apache.org/) | `apache-arrow` IPC (`tableFromIPC` / `tableToIPC`) | **shipped** — load + save, both runtimes |
+| [Avro](https://avro.apache.org/) | `read_avro` (community extension) | pending — see note below |
 
-The work is one-time: add duckdb-wasm to the web bundle, expose a shared reader,
-register a single DuckDB-backed `FormatCodec`, map its result to rows. After
-that, a new self-describing format is a registry row + a `formats/<name>.md`.
+Arrow uses `apache-arrow` rather than DuckDB: DuckDB's Arrow-IPC file reader is a
+community extension that downloads at runtime, which the offline test/preview
+builds can't fetch. apache-arrow is pure JS with no such dependency and reads
+and writes Arrow IPC identically in Node and the browser.
+
+The DuckDB groundwork was one-time: duckdb-wasm in the web bundle, a shared
+Parquet engine (node-api + temp file in Node, `registerFileBuffer` /
+`copyFileToBuffer` in the browser), one `FormatCodec` per format mapping the
+result to rows. After that, a new self-describing format is a registry row + a
+`formats/<name>.md`.
+
+> **Avro:** still pending — the `read_avro` community extension must first be
+> confirmed to load under duckdb-wasm (the offline constraint that pushed Arrow
+> to apache-arrow applies here too). If it can't, the `avsc` browser-only
+> fallback is the alternative.
 
 ## Phase 2 — needs user input or a non-DuckDB parser
 

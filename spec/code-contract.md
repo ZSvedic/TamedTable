@@ -501,7 +501,13 @@ about this so it picks fresh names when possible.
 type SqlExpr = { sql: string };
 ```
 
-DuckDB runs in-process via `@duckdb/node-api`. Module init creates
+DuckDB runs in-process. In Node (CLI / headless) the engine imports
+`@duckdb/node-api`; in the browser the Vite build aliases that import to a
+thin adapter over `@duckdb/duckdb-wasm` (`src/shims/duckdb.ts`) that exposes
+the same `DuckDBInstance.create → connect → run / runAndReadAll` surface the
+engine calls. The adapter pulls the multi-MB wasm payload through a dynamic
+`import()` only when the first connection is created, so a CSV/JSON session
+that never runs `{sql}` never loads it. Module init creates
 a single `Database` and `Connection`, registered as the table-level
 process state alongside the runner. The current rows are registered as
 a relation `t` (`conn.register('t', rows)`) before each
@@ -524,8 +530,8 @@ DuckDB relation `t` is not unregistered on cancel.
 
 | Env var | Default | Effect |
 |---|---|---|
-| `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. |
-| `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. |
+| `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. Node only — the browser is always in-memory. |
+| `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. Node only — the browser wasm build is single-threaded, so the adapter ignores the thread-count setting. |
 
 ### Web UI (#WebUI)
 
@@ -537,6 +543,13 @@ through the same SDK, with the API key read from a per-tab settings
 panel rather than an env var. File-system access uses the File System
 Access API where available, falling back to download/upload for
 browsers that don't support it.
+
+`{sql}` transformations run in the browser too: the build aliases the
+engine's DuckDB import to the `duckdb-wasm` adapter (see [§ `{sql}`
+expression shape](#sql-expression-shape)), so a browser session has the same
+SQL support the CLI does. The wasm loads lazily on the first `{sql}`
+transformation, behind a dynamic `import()` that Vite splits into its own
+chunk — the CSV/JSON golden path never fetches it.
 
 `WebController.request` always sends `config.anthropicKey` as the
 Anthropic `x-api-key` — text requests route through Anthropic whatever

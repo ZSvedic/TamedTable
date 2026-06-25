@@ -6,7 +6,7 @@
 import type { FormatCodec } from '@tamedtable/table-plan';
 
 /** The format ids the registry currently serves. */
-export type FormatId = 'csv' | 'jsonl';
+export type FormatId = 'csv' | 'jsonl' | 'parquet' | 'arrow';
 
 interface CodecDescriptor {
   id: FormatId;
@@ -27,6 +27,21 @@ const DESCRIPTORS: CodecDescriptor[] = [
     extensions: ['.jsonl', '.ndjson'],
     contentTypes: ['jsonl', 'ndjson'],
     load: () => import('./jsonl.ts').then((m) => m.jsonlCodec),
+  },
+  {
+    // Parquet rides the shared DuckDB reader (read_parquet / COPY TO PARQUET);
+    // the heavy engine is pulled only when this codec loads.
+    id: 'parquet',
+    extensions: ['.parquet', '.pq'],
+    contentTypes: ['parquet'],
+    load: () => import('./parquet.ts').then((m) => m.parquetCodec),
+  },
+  {
+    // Arrow IPC / Feather, via apache-arrow (pure JS, no DuckDB extension).
+    id: 'arrow',
+    extensions: ['.arrow', '.feather', '.arrows'],
+    contentTypes: ['arrow', 'feather', 'vnd.apache.arrow'],
+    load: () => import('./arrow.ts').then((m) => m.arrowCodec),
   },
 ];
 

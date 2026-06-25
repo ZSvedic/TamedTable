@@ -702,6 +702,11 @@ them into table updates. A web session does not share state with a
 CLI session; the file dialog handshake takes the place of `:load`,
 and the in-browser tab IS the session.
 
+`{sql}` transformations work in the browser exactly as they do in the
+CLI — the same SQL engine runs client-side. It loads on the first SQL
+request of a session, so a session that only ever loads a CSV or JSONL
+and runs plain transformations never pays for it.
+
 The table view paginates. Rows display one fixed-size page at a time —
 twenty rows — with a pager that jumps to the first, previous, next,
 last, or a numbered page. Paging is a view concern, like the CLI's

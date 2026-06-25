@@ -10,6 +10,7 @@ import { basename, dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   loadCsv,
+  loadFile,
   loadJsonl,
   validateTablePlan,
   writeRows,
@@ -846,7 +847,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     let result: { spec: TablePlan; rows: Row[]; sourcePath: string };
     if (ext === '.csv') result = await loadCsv(path);
     else if (ext === '.jsonl') result = await loadJsonl(path);
-    else throw new Error(`Runner: unknown file type: ${path}`);
+    else result = await loadFile(path); // parquet, arrow, … — registry dispatch
+
     await this.commitSource(result.rows, result.spec, result.sourcePath);
   }
 
