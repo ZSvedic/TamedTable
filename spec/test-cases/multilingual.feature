@@ -10,7 +10,7 @@ Feature: Multilingual requests
   Rule: A text request in any language normalizes the phone column (c1)
 
     Background:
-      Given load "datanorm-input.csv"
+      Given load "customers-input.csv"
 
     @headless @web @tour @cat-language
     Scenario: Normalize phone numbers in Spanish
@@ -38,7 +38,7 @@ Feature: Multilingual requests
     Scenario: Spanish voice request
       Given the TamedTable web app
       And a stub microphone that plays "voice-normalize-phone-es.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
@@ -50,7 +50,7 @@ Feature: Multilingual requests
     Scenario: German voice request
       Given the TamedTable web app
       And a stub microphone that plays "voice-normalize-phone-de.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
@@ -62,7 +62,7 @@ Feature: Multilingual requests
     Scenario: French voice request
       Given the TamedTable web app
       And a stub microphone that plays "voice-normalize-phone-fr.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
@@ -74,7 +74,7 @@ Feature: Multilingual requests
     Scenario: Croatian voice request
       Given the TamedTable web app
       And a stub microphone that plays "voice-normalize-phone-hr.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
@@ -92,7 +92,7 @@ Feature: Multilingual requests
     Scenario: Chinese voice request — pipeline runs, synthetic audio mis-heard
       Given the TamedTable web app
       And a stub microphone that plays "voice-normalize-phone-zh.m4a"
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button

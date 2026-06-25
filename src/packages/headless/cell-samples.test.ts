@@ -78,7 +78,7 @@ describe('RequestDebugInfo.cellSamples', () => {
       fetch: mockFetch(),
       onDebug: (info) => { debugInfo = info; },
     });
-    await runner.loadInput(join(FIXTURES, 'datanorm-input.csv'));
+    await runner.loadInput(join(FIXTURES, 'customers-input.csv'));
     await runner.request('Normalize the Country column using LLM');
   });
 
@@ -103,7 +103,7 @@ describe('RequestDebugInfo.cellSamples', () => {
 
   it('before value is the original cell content', () => {
     const sample = debugInfo!.cellSamples!.find((s) => s.column === 'Country')!;
-    // datanorm-input.csv row 1 Country = "USA"
+    // customers-input.csv row 1 Country = "USA"
     expect(sample.samples[0]!.in).toBe('USA');
   });
 

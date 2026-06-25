@@ -63,7 +63,7 @@ describing the failure.
   non-http / network / HTTP-status); `web.feature` keeps one `Scenario Outline`
   as the thin dialog integration pass. Resolved — no further folding.
 - **`Export … data` + `Execute saved flow`** repeat across `filter` / `dedupe`
-  (with sibling execute-flow scenarios in `datanorm` / `convert`). Kept as per-op
+  (with sibling execute-flow scenarios in `convert`). Kept as per-op
   proof — each op's round-trip is worth its own scenario; fold only if the set
   grows past one-per-op.
 - **`multilingual.feature`** is now 1 Spanish text tour + a 4-row text outline +
@@ -73,7 +73,7 @@ describing the failure.
 # spec/test-cases/ — application behavior
 
 ### `aggregate.feature` — Group and aggregate
-Group-collapse with count/sum/avg; output shape, row-order, LLM aggregation, empty input. Fixtures: `datanorm-input.csv`, `aggregate-by-country-expected.jsonl`, `filter-input.csv`, `aggregate-empty-input.jsonl`.
+Group-collapse with count/sum/avg; output shape, row-order, LLM aggregation, empty input. Fixtures: `customers-input.csv`, `aggregate-by-country-expected.jsonl`, `filter-input.csv`, `aggregate-empty-input.jsonl`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -112,10 +112,10 @@ Marketing tours; each loads a sample, runs a phrase, replays `classify.json`; as
 | [Label each ticket as billing, bug, or feature](test-cases/classify.feature)<br>`@web @tour @cat-classify` | Ticket classification via phrase replay (tickets.csv) | NA |
 | [Score the sentiment of every review](test-cases/classify.feature)<br>`@web @tour @cat-classify` | Sentiment scoring via phrase replay (reviews.csv) | NA |
 | [Sort the titles by seniority](test-cases/classify.feature)<br>`@web @tour @cat-classify` | Title ordering by seniority (titles.csv) | NA |
-| [Split customers into men, women, and unknown](test-cases/classify.feature)<br>`@web @tour @cat-classify` | Gender classification (datanorm-input.csv) | NA |
+| [Split customers into men, women, and unknown](test-cases/classify.feature)<br>`@web @tour @cat-classify` | Gender classification (customers-input.csv) | NA |
 
 ### `clean-up.feature` — Clean up tours
-Marketing tours; each loads `datanorm-input.csv`, runs a phrase, replays `clean-up.json`; asserts 1 transformation + no toast.
+Marketing tours; each loads `customers-input.csv`, runs a phrase, replays `clean-up.json`; asserts 1 transformation + no toast.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -154,7 +154,7 @@ Declarative 1→N split by literal or regex separator; padding, truncation, null
 | [Split with an LLM expression returning an array of parts](test-cases/colsplit.feature)<br>`@headless @cli` | LLM split handles messy international names | NA |
 
 ### `convert.feature` — Tabular format output
-CSV/JSONL via `:save` and batch execute, RFC-4180 quoting, nulls, nested objects, `:reorder`, round-trips. Fixtures: `datanorm-input.{csv,jsonl}`, `datanorm.flow`, `filter-input.csv`.
+CSV/JSONL via `:save` and batch execute, RFC-4180 quoting, nulls, nested objects, `:reorder`, round-trips. Fixtures: `customers-input.{csv,jsonl}`, `cleanup.flow`, `filter-input.csv`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -207,7 +207,7 @@ Filter by predicate, export, execute saved flow.
 | [Execute saved flow from command line](test-cases/filter.feature)<br>`@cli` | CLI runs filter.flow | NA — kept as per-op proof (see DRY note) |
 
 ### `join.feature` — Lookup join
-Left/inner join enrich; nulls, rename collisions, multi-format inputs, undo. Fixtures: `datanorm-input.csv`, `join-country-codes.{csv,jsonl}`.
+Left/inner join enrich; nulls, rename collisions, multi-format inputs, undo. Fixtures: `customers-input.csv`, `join-country-codes.{csv,jsonl}`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -236,7 +236,7 @@ Single combined tour; the homepage save / undo / save-flow / save-py items all d
 | [Load a file, transform it, then save and reuse](test-cases/loadsave.feature)<br>`@web @tour @cat-loadsave` | Load → query → (save/reuse) workflow via replay | NA |
 
 ### `multilingual.feature` — Multilingual requests
-Phone-normalization asked in 5 languages, as text and voice; `datanorm-input.csv` + espeak-ng TTS clips.
+Phone-normalization asked in 5 languages, as text and voice; `customers-input.csv` + espeak-ng TTS clips.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -273,7 +273,7 @@ Runtime `{Column}` / `{*}` substitution in per-row LLM prompts; expansion, error
 | [Cache miss — with {*} two rows with identical primary input call twice](test-cases/placeholders.feature)<br>`@headless @offline` | {*} with differing other cols → 2 calls | NA |
 
 ### `repl-commands.feature` — REPL commands
-The interactive `:`-commands (undo/redo/history/load/save/save-flow/show/find/schema/help/exit/viewport), offline and with one LLM round-trip. Fixtures: `dedupe-input.csv`, `datanorm-input.csv`.
+The interactive `:`-commands (undo/redo/history/load/save/save-flow/show/find/schema/help/exit/viewport), offline and with one LLM round-trip. Fixtures: `dedupe-input.csv`, `customers-input.csv`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -328,7 +328,7 @@ Sort on {js}/{sql}/{llm} keys with optional top-N limit; one marketing tour. Fix
 | [Sort by a {sql} key, descending](test-cases/sort.feature)<br>`@cli @offline` | SQL sort, no limit | NA |
 
 ### `sql.feature` — SQL expressions
-`{sql}` as scalar/predicate/aggregate via DuckDB, plus state and cancellation. Fixtures: `datanorm-input.csv`, `performance-liked-videos.csv`, `filter-input.csv`.
+`{sql}` as scalar/predicate/aggregate via DuckDB, plus state and cancellation. Fixtures: `customers-input.csv`, `performance-liked-videos.csv`, `filter-input.csv`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -372,7 +372,7 @@ The Tours panel: lists `@tour` scenarios grouped by category, replays them key-f
 | [A missing scenario param leaves the panel closed](test-cases/tutorial.feature)<br>`@web` | Empty scenario param: panel closed, inactive | NA |
 
 ### `validate.feature` — Row and dataset validation
-`validate` adds `_valid`/`_validation`; thresholds, additivity, overwrite; 4 marketing tours. Fixtures: `datanorm-input.csv`, `emails.csv`, `birthdates.csv`, `citycountry.csv`, `prices.csv`.
+`validate` adds `_valid`/`_validation`; thresholds, additivity, overwrite; 4 marketing tours. Fixtures: `customers-input.csv`, `emails.csv`, `birthdates.csv`, `citycountry.csv`, `prices.csv`.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -388,7 +388,7 @@ The Tours panel: lists `@tour` scenarios grouped by category, replays them key-f
 | [A second validate replaces the prior _valid and _validation](test-cases/validate.feature)<br>`@headless @cli` | Second validate overwrites reserved columns | NA |
 
 ### `voice.feature` — Voice input
-Mic button (Gemini-only) gating, press-hold-release round-trip, cancel, errors, one tour. Fixtures: `datanorm-input.csv`, `voice-*.m4a`, cassettes.
+Mic button (Gemini-only) gating, press-hold-release round-trip, cancel, errors, one tour. Fixtures: `customers-input.csv`, `voice-*.m4a`, cassettes.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|
@@ -403,7 +403,7 @@ Mic button (Gemini-only) gating, press-hold-release round-trip, cancel, errors, 
 | [A model error surfaces a toast and changes nothing](test-cases/voice.feature)<br>`@web` | Bad key → toast + assistant msg, spec untouched | NA |
 
 ### `web.feature` — Web front-end
-Browser-only flows (dialogs, settings, cell edit, reorder, paging, footer) with no real API calls. Fixtures: `datanorm-input.csv`, `paginate-input.csv`, mock LLM responses.
+Browser-only flows (dialogs, settings, cell edit, reorder, paging, footer) with no real API calls. Fixtures: `customers-input.csv`, `paginate-input.csv`, mock LLM responses.
 
 | Scenario | What it tests | ToDo |
 |---|---|---|

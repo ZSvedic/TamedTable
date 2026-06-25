@@ -60,7 +60,7 @@ Feature: REPL commands
 
   @cli
   Scenario: :undo then :redo restores the committed state
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       Normalize country names
       :undo
@@ -72,7 +72,7 @@ Feature: REPL commands
 
   @cli
   Scenario: a new NL request clears the redo stack
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       Normalize country names
       :undo
@@ -85,7 +85,7 @@ Feature: REPL commands
 
   @cli
   Scenario: :history lists turns with their commit status
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       Normalize country names
       :undo
@@ -98,7 +98,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :schema prints one line per column
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :schema
       exit
@@ -113,7 +113,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: bare :show reprints the current viewport
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show
       exit
@@ -125,7 +125,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :show rows next advances by one page and shows the top marker
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows next
       exit
@@ -138,7 +138,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :show rows end jumps to the last page
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows end
       exit
@@ -148,7 +148,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :show rows N snaps to the page containing row N
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows 15
       exit
@@ -159,7 +159,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :show rows N clamps when N is out of range
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows 9999
       exit
@@ -169,7 +169,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :show cols next advances the column window and shows the left marker
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show cols next
       exit
@@ -181,7 +181,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :find matches by substring and regex, and reports misses and missing args
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :find canada
       :find /\+44/
@@ -197,7 +197,7 @@ Feature: REPL commands
 
   @cli
   Scenario: viewport resets to (0,0) after a committed NL request
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows end
       Normalize country names
@@ -209,10 +209,10 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: viewport resets to (0,0) after :load
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows end
-      :load datanorm-input.csv
+      :load customers-input.csv
       exit
       """
     Then REPL exit code is 0
@@ -225,17 +225,17 @@ Feature: REPL commands
       """
       :load
       :load notes.txt
-      :load datanorm-input.csv
+      :load customers-input.csv
       exit
       """
     Then REPL exit code is 0
     And REPL stdout contains ":load: missing path"
     And REPL stdout contains ":load: unknown file type"
-    And REPL stdout contains "Loaded datanorm-input.csv (20 rows, 6 cols)"
+    And REPL stdout contains "Loaded customers-input.csv (20 rows, 6 cols)"
 
   @cli @offline
   Scenario: :show and :find do not enter the patch journal
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :show rows next
       :find canada
@@ -265,7 +265,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: bare :viewport prints current page size and source
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport
       exit
@@ -277,7 +277,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport with explicit rows and cols shrinks the page
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport 5 3
       exit
@@ -288,7 +288,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport pins only rows when cols is auto
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport 5 auto
       :viewport
@@ -300,7 +300,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport pins only cols when rows is auto
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport auto 3
       :viewport
@@ -312,7 +312,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport auto clears prior pins on both axes
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport 5 3
       :viewport auto
@@ -325,10 +325,10 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport pins survive :load and viewport-cursor resets
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport 5 3
-      :load datanorm-input.csv
+      :load customers-input.csv
       :viewport
       exit
       """
@@ -338,7 +338,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport with a non-positive integer prints invalid size
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport 0 3
       exit
@@ -348,7 +348,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport with malformed args prints usage
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport foo
       exit
@@ -358,7 +358,7 @@ Feature: REPL commands
 
   @cli @offline
   Scenario: :viewport does not enter the patch journal
-    When user enters the REPL with "datanorm-input.csv" and types:
+    When user enters the REPL with "customers-input.csv" and types:
       """
       :viewport 5 3
       :viewport auto

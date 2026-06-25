@@ -6,7 +6,7 @@ import type { ChunkUpdate } from '@tamedtable/headless';
 import { loadCsv } from '@tamedtable/core';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 
-const DEFAULT_INPUT = join(SPEC_TC_DIR, 'datanorm-input.csv');
+const DEFAULT_INPUT = join(SPEC_TC_DIR, 'customers-input.csv');
 
 setDefaultTimeout(600_000);
 

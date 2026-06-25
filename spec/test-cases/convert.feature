@@ -5,35 +5,35 @@ Feature: Tabular format output
   Rule: :save dispatches on extension
 
     Background:
-      Given load "datanorm-input.csv"
+      Given load "customers-input.csv"
 
     @cli @offline
     Scenario: :save writes CSV when the extension is .csv
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
-        :save ../temp/datanorm-output.csv
+        :save ../temp/customers-output.csv
         exit
         """
       Then REPL exit code is 0
       And REPL stdout contains "saved"
-      And "../temp/datanorm-output.csv" exists
-      And the first line of "../temp/datanorm-output.csv" is "ID,FirstName,LastName,DOB,Country,Phone"
+      And "../temp/customers-output.csv" exists
+      And the first line of "../temp/customers-output.csv" is "ID,FirstName,LastName,DOB,Country,Phone"
 
     @cli @offline
     Scenario: :save still writes JSONL when the extension is .jsonl
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
-        :save ../temp/datanorm-output.jsonl
+        :save ../temp/customers-output.jsonl
         exit
         """
       Then REPL exit code is 0
-      And "../temp/datanorm-output.jsonl" exists
+      And "../temp/customers-output.jsonl" exists
 
     @cli @offline
     Scenario: :save rejects an unknown output extension
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
-        :save ../temp/datanorm-output.parquet
+        :save ../temp/customers-output.parquet
         exit
         """
       Then REPL exit code is 0
@@ -63,16 +63,16 @@ Feature: Tabular format output
 
     @cli
     Scenario: Execute saved flow with CSV output
-      Given "datanorm.flow" exists
-      And the expected output is "datanorm-expected.csv"
-      When user runs "tamedtable execute datanorm.flow --input datanorm-input.csv --output ../temp/datanorm-output.csv"
+      Given "cleanup.flow" exists
+      And the expected output is "cleanup-expected.csv"
+      When user runs "tamedtable execute cleanup.flow --input customers-input.csv --output ../temp/cleanup-output.csv"
       Then exit code is 0
-      And "../temp/datanorm-output.csv" matches the expected output
+      And "../temp/cleanup-output.csv" matches the expected output
 
     @cli
     Scenario: Execute fails clearly when --output extension is unknown
-      Given "datanorm.flow" exists
-      When user runs "tamedtable execute datanorm.flow --input datanorm-input.csv --output ../temp/datanorm-output.xml"
+      Given "cleanup.flow" exists
+      When user runs "tamedtable execute cleanup.flow --input customers-input.csv --output ../temp/cleanup-output.xml"
       Then exit code is 4
       And stderr contains "unknown file type"
 
@@ -82,7 +82,7 @@ Feature: Tabular format output
     # new spec field — named columns move to the front, the rest follow.
     @cli @offline
     Scenario: :reorder changes the CSV header order
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         :reorder Country,ID
         :save ../temp/reordered.csv
@@ -96,7 +96,7 @@ Feature: Tabular format output
 
     @cli
     Scenario: Load JSONL, save CSV
-      When user enters the REPL with "datanorm-input.jsonl" and types:
+      When user enters the REPL with "customers-input.jsonl" and types:
         """
         :save ../temp/from-jsonl.csv
         exit

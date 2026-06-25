@@ -65,7 +65,7 @@ Given('a headless runner built with a fetch stub that logs each call', function 
 
 When('a natural-language request runs', async function (this: TamedTableWorld) {
   const s = st(this);
-  await s.runner!.loadInput(join(SPEC_TC_DIR, 'datanorm-input.csv'));
+  await s.runner!.loadInput(join(SPEC_TC_DIR, 'customers-input.csv'));
   try {
     await s.runner!.request('Normalize phone numbers');
   } catch (e) {

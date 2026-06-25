@@ -69,7 +69,7 @@ Optional env vars and defaults if you omit them:
 Interactive REPL — load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:reorder <cols>` sets the column order for the table view and saved files, `:exit` (or bare `exit`) leaves.  
 
 ```
-bun src/packages/cli/index.ts spec/test-cases/datanorm-input.csv
+bun src/packages/cli/index.ts spec/test-cases/customers-input.csv
 ```
 
 ```
@@ -89,8 +89,8 @@ Ctrl-C cancels an in-progress request and rolls back the half-applied transforma
 Batch mode — replay a saved `.flow` against a CSV with no LLM call:
 
 ```
-bun src/packages/cli/index.ts execute spec/test-cases/datanorm.flow \
-    --input spec/test-cases/datanorm-input.csv \
+bun src/packages/cli/index.ts execute spec/test-cases/cleanup.flow \
+    --input spec/test-cases/customers-input.csv \
     --output temp/out.jsonl
 ```
 

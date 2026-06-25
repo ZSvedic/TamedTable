@@ -10,7 +10,7 @@ import type { ToolbarSample } from './index.ts';
 import { Toolbar, OpenUrlDialog } from './components.tsx';
 
 const SAMPLES: ToolbarSample[] = [
-  { name: 'datanorm-input.csv', url: 'https://example.com/datanorm-input.csv' },
+  { name: 'customers-input.csv', url: 'https://example.com/customers-input.csv' },
   { name: 'customers.jsonl', url: 'https://example.com/customers.jsonl' },
 ];
 

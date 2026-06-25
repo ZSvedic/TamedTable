@@ -5,7 +5,7 @@ Feature: SQL expressions
   Rule: {sql} as a scalar in mutate
 
     Background:
-      Given load "datanorm-input.csv"
+      Given load "customers-input.csv"
 
     @headless @cli
     Scenario: SQL scalar fills a new column
@@ -38,7 +38,7 @@ Feature: SQL expressions
 
     @headless @cli
     Scenario: SQL sees the latest committed rows after :undo
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Add column UpperCountry computed in SQL as upper(Country)
         :undo
@@ -51,7 +51,7 @@ Feature: SQL expressions
 
     @headless @cli
     Scenario: Reloading input resets the DuckDB relation
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Add column UpperCountry computed in SQL as upper(Country)
         :load filter-input.csv

@@ -6,7 +6,7 @@ Feature: Export a flow as a Python script
 
     @cli
     Scenario: :save-py exports a deterministic flow as a Python script
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Show only customers in the USA
         :save-py ../temp/save-py-flow.py
@@ -22,7 +22,7 @@ Feature: Export a flow as a Python script
 
     @cli
     Scenario: :save-py refuses a flow that contains an LLM cell
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         Normalize country names
         :save-py ../temp/save-py-llm.py
@@ -35,7 +35,7 @@ Feature: Export a flow as a Python script
 
     @cli @offline
     Scenario: :save-py rejects a non-.py output path
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         :save-py ../temp/save-py-flow.txt
         exit
@@ -45,7 +45,7 @@ Feature: Export a flow as a Python script
 
     @cli @offline
     Scenario: :save-py with no path prints usage
-      When user enters the REPL with "datanorm-input.csv" and types:
+      When user enters the REPL with "customers-input.csv" and types:
         """
         :save-py
         exit

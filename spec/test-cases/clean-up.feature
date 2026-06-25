@@ -9,7 +9,7 @@ Feature: Clean up tours
 
     Background:
       Given the TamedTable web app
-      And load "datanorm-input.csv"
+      And load "customers-input.csv"
 
     @web @tour @cat-cleanup
     Scenario: Normalize the phone numbers
