@@ -238,11 +238,20 @@ export class DiagnosticsManager {
       /* clipboard blocked — the URL still carries a (possibly truncated) copy */
     }
     const url = this.bugReportUrl();
-    const opened =
+    // Note: `window.open(url, '_blank', 'noopener')` returns null even on
+    // success, so we can't tell a real open from a blocked popup. Open without
+    // that flag and null the opener by hand — same security, a usable handle.
+    const win =
       typeof window !== 'undefined' && typeof window.open === 'function'
-        ? window.open(url, '_blank', 'noopener')
+        ? window.open(url, '_blank')
         : null;
-    if (!opened) {
+    if (win) {
+      try {
+        win.opener = null;
+      } catch {
+        /* cross-origin handle — opener already isolated */
+      }
+    } else {
       this.host.pushToast(
         'info',
         copied
