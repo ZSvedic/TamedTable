@@ -111,7 +111,7 @@ Two implementations ship:
 
 | Provider | Key | Browsers | Privacy |
 |---|---|---|---|
-| **Web Speech** (`webspeech.ts`) | none | Chrome/Edge only | audio is routed to Google's servers — document this loudly |
+| **Web Speech** (`webspeech.ts`) | none | Chrome/Edge only | audio goes to a cloud backend — Google in Chrome, Microsoft in Edge (Edge's is flaky, often `network`); document this loudly |
 | **Whisper HTTP** (`whisper.ts`) | user's key (BYOK) | any | each VAD segment is POSTed as WAV to OpenAI `audio/transcriptions` or Groq `whisper-large-v3` |
 
 Web Speech is a special case: it *is* both VAD and STT, so when it is the

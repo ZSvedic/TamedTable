@@ -74,9 +74,14 @@ and `onnxruntime-web/dist/*.wasm` into those paths.
 
 | Browser | VAD + Whisper | Web Speech |
 |---|---|---|
-| Chrome / Edge | ✅ | ✅ |
+| Chrome | ✅ | ✅ (Google backend) |
+| Edge | ✅ | ⚠️ Microsoft backend — often returns `network` even though Chrome works |
 | Safari (16.4+) | ✅ (AudioWorklet + WASM) | ❌ no SpeechRecognition |
 | Firefox | ✅ | ❌ no SpeechRecognition |
+
+Web Speech is the same API across Chrome and Edge but a different cloud service
+behind it: Chrome routes to Google, Edge to Microsoft. Edge's is much flakier, so
+a `network` error there is common — the demo says so and points you to Whisper.
 
 Minimum requirements: `getUserMedia`, WebAssembly, and AudioWorklet for the VAD
 path; Web Speech additionally needs `SpeechRecognition` (Chrome/Edge only). The
@@ -84,8 +89,11 @@ demo's capability panel reports each on load.
 
 ## Known limitations
 
-- **Web Speech privacy.** In Chrome the audio is sent to Google's servers. It is
-  here for zero-setup testing, not as a private or BYOK-fitting option.
+- **Web Speech privacy and reliability.** The audio is sent to a cloud backend —
+  Google in Chrome, Microsoft in Edge — so it is neither private nor BYOK-fitting,
+  it is here for zero-setup testing only. Edge's backend frequently returns a
+  `network` error even where Chrome works; the fix is to use Whisper, not to
+  retry Edge.
 - **Safari and Firefox** have no `SpeechRecognition`, so they are Whisper-only.
 - **No barge-in.** The demo never talks back, so interrupting playback isn't
   handled — a real integration would need it (see SPEC.md risks).

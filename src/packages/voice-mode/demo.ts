@@ -122,7 +122,7 @@ async function turnOn(): Promise<void> {
       let msg = `[${err.stage}] ${err.message}`;
       if (/network/i.test(err.message)) {
         msg +=
-          ' — Web Speech needs Google’s backend, which plain Chromium can’t reach (no API key) and some networks block. Switch to the Whisper provider to test the hands-free loop.';
+          ' — Web Speech uses a cloud backend (Google in Chrome, Microsoft in Edge); a “network” error means the browser couldn’t reach it. Edge’s backend often fails this way even though Chrome works. Switch to the Whisper provider to test the hands-free loop.';
       }
       $('err').textContent = msg;
     },

@@ -73,9 +73,9 @@ export function webSpeechSTT(opts: WebSpeechOptions = {}): STTProvider {
         // 'no-speech' and 'aborted' are routine in a continuous loop — ignore.
         if (e.error === 'no-speech' || e.error === 'aborted') return;
         // 'network' / 'not-allowed' / 'service-not-allowed' are fatal: the engine
-        // can't reach Google's backend (plain Chromium has no key) or was denied.
-        // Restarting would just respin the same error, so stop the loop and
-        // surface it once.
+        // can't reach its cloud speech backend (Google in Chrome, Microsoft in
+        // Edge — and Edge's is markedly flakier) or was denied. Restarting would
+        // just respin the same error, so stop the loop and surface it once.
         if (e.error === 'network' || e.error === 'not-allowed' || e.error === 'service-not-allowed') {
           stopped = true;
         }
