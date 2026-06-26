@@ -682,8 +682,23 @@ shown before any file is loaded mirrors that same split-button, so the
 two surfaces stay in sync. The split-button is rendered as a single
 control — one rounded shell, one shared hover tint, no internal
 divider between the label and the dropdown chevron — so it reads as
-one toolbar item rather than two adjacent menu entries. `.flow` save
-uses a Save File dialog as before.
+one toolbar item rather than two adjacent menu entries.
+
+Saving data mirrors that shape. **Save data** is itself a split-button:
+the primary half writes the rows back in the format the table was
+loaded as (CSV, JSONL, Parquet, or Arrow), suggesting the source file's
+name; its dropdown carries a **Save as <format>…** entry per supported
+format, each of which serializes a copy in that format and opens the
+Save dialog with a matching suggested name, so the user can save a
+different format or rename the file. `.flow` save stays its own button
+and uses a Save File dialog as before.
+
+A save (or any other) notification toast does not wait to be clicked
+shut: it fades on its own after roughly the time it takes to read it,
+so a routine "Saved …" note clears itself. Hovering a toast pauses that
+countdown — long enough to read a longer message or to click an error
+toast's **Copy report** action — and the dismiss button still closes one
+at once.
 
 A URL load is a plain `GET` against the entered address; the format is
 detected from the path extension first and from the `Content-Type`

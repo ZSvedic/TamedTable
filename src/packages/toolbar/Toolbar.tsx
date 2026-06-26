@@ -7,6 +7,13 @@ import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button, SplitButton, Icon } from '@tamedtable/ui-kit/components';
 import { Lockup } from './Brand.tsx';
 
+/** One "Save as <format>…" entry in the Save-data dropdown. The host owns the
+ *  formats (the package knows nothing about CSV/JSONL/Parquet/Arrow). */
+export interface SaveMenuItem {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToolbarProps {
   /** A table is loaded — enables the save buttons and shows the readout. */
   loaded: boolean;
@@ -23,6 +30,8 @@ export interface ToolbarProps {
   onOpenUrl: () => void;
   onOpenLocal: () => void;
   onSaveData: () => void;
+  /** "Save as <format>…" entries for the Save-data dropdown. */
+  saveDataMenu: SaveMenuItem[];
   onSaveFlow: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -43,6 +52,7 @@ export function Toolbar({
   onOpenUrl,
   onOpenLocal,
   onSaveData,
+  saveDataMenu,
   onSaveFlow,
   onUndo,
   onRedo,
@@ -106,10 +116,16 @@ export function Toolbar({
         <Icon name="folder" />
         Open URL…
       </SplitButton>
-      <Button onClick={onSaveData} disabled={!loaded || busy} title="Save the current rows (:save)">
+      <SplitButton
+        onClick={onSaveData}
+        disabled={!loaded || busy}
+        title="Save the current rows (:save)"
+        caretTitle="Save a copy in a different format"
+        menu={saveDataMenu}
+      >
         <Icon name="save" />
         Save data
-      </Button>
+      </SplitButton>
       <Button onClick={onSaveFlow} disabled={!loaded || busy} title="Save the flow as a replayable .flow file (:save-flow)">
         Save flow
       </Button>

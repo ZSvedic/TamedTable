@@ -17,7 +17,7 @@
 import type { ChunkUpdate, RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
-import { detectFormat, type FilePort } from '@tamedtable/file-io';
+import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig } from '@tamedtable/model-config/storage';
 import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
@@ -293,6 +293,7 @@ export class WebController implements ControllerHost {
   loadFromUrl(url: string): Promise<void> { return this.files.loadFromUrl(url); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
   saveData(): Promise<void> { return this.files.saveData(); }
+  saveDataAs(format: FormatId): Promise<void> { return this.files.saveDataAs(format); }
   /** Public file-load helper (also used by tutorial load-file steps). */
   loadFromText(name: string, text: string): Promise<void> { return this.files.loadFromText(name, text); }
 

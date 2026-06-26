@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadCsv } from '@tamedtable/core';
 import type { WebController } from '@tamedtable/web';
+import type { FormatId } from '@tamedtable/file-io';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 import { webScenarios, type WebScenarioCtx } from './web-file-port.ts';
@@ -90,7 +91,9 @@ When('user says {string}', function (this: TamedTableWorld, action: string) {
   if (action === 'Load CSV file') pending = c.openCsv();
   else if (action === 'Save flow') pending = c.saveFlow();
   else if (action === 'Save data') pending = c.saveData();
-  else throw new Error(`unknown web action: "${action}"`);
+  else if (action.startsWith('Save as ')) {
+    pending = c.saveDataAs(action.slice('Save as '.length).toLowerCase() as FormatId);
+  } else throw new Error(`unknown web action: "${action}"`);
   pending.catch(() => {});
   ctx.pending = pending;
 });

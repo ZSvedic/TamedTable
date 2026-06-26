@@ -135,6 +135,16 @@ When('the user clicks the toolbar theme toggle', async function (this: DemoWorld
   await page(this).click('[data-tb-toolbar] button[title*="theme"]');
 });
 
+When('the user opens the toolbar save menu', async function (this: DemoWorld) {
+  // Two split buttons carry a caret — "Open URL…" then "Save data"; the save
+  // menu is the second.
+  await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(1).click();
+});
+
+When('the user picks the toolbar menu item {string}', async function (this: DemoWorld, label: string) {
+  await page(this).click(`[data-uk-menu-item="${label}"]`);
+});
+
 Then('the toolbar event log shows {string}', async function (this: DemoWorld, expected: string) {
   await expectText(page(this), '#out', expected);
 });

@@ -4,6 +4,20 @@
 # light/dark ThemeProvider.
 Feature: UI kit package
 
+  Rule: A toast auto-fades, scaled to how long its message takes to read
+
+    @headless
+    Scenario: A short message stays for the floor duration
+      Then a toast reading "Saved out.csv." stays on screen for 3000 ms
+
+    @headless
+    Scenario: A longer message stays on screen longer
+      Then a toast reading a 100-character message stays on screen for 8000 ms
+
+    @headless
+    Scenario: A very long message is capped at the ceiling
+      Then a toast reading a 300-character message stays on screen for 12000 ms
+
   Rule: The two themes are one shape with different values
 
     @headless
@@ -62,3 +76,10 @@ Feature: UI kit package
       Then an "error" toast is visible
       When the user dismisses the first toast
       Then no toast is visible
+
+    @web
+    Scenario: A toast fades on its own without a click
+      Given the ui-kit demo page
+      When the user adds an "info" toast
+      Then an "info" toast is visible
+      Then the toast fades on its own

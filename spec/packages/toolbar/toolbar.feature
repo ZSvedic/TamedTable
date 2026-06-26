@@ -21,6 +21,13 @@ Feature: Toolbar package
       Then the toolbar event log shows "undo"
 
     @web
+    Scenario: The Save-as menu saves a copy in another format
+      Given the toolbar demo page
+      When the user opens the toolbar save menu
+      And the user picks the toolbar menu item "Save as JSONL…"
+      Then the toolbar event log shows "save as jsonl"
+
+    @web
     Scenario: The theme toggle flips the wrapper
       Given the toolbar demo page
       When the user clicks the toolbar theme toggle

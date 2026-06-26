@@ -80,6 +80,15 @@ Feature: Web front-end
       When user saves as "out.parquet"
       Then the status footer reports "saved"
 
+    @web
+    Scenario: Save as writes a copy in a different format
+      Given the TamedTable web app
+      And load "customers-input.parquet"
+      When user says "Save as JSONL"
+      Then the suggested save name ends with ".jsonl"
+      When user saves as "out.jsonl"
+      Then the status footer reports "saved"
+
   Rule: A URL is a first-class load source
 
     @web
