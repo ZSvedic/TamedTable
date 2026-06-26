@@ -551,13 +551,13 @@ SQL support the CLI does. The wasm loads lazily on the first `{sql}`
 transformation, behind a dynamic `import()` that Vite splits into its own
 chunk — the CSV/JSON golden path never fetches it.
 
-`WebController.request` always sends `config.anthropicKey` as the
-Anthropic `x-api-key` — text requests route through Anthropic whatever
-provider is selected (Google is voice-only here; OpenAI is not wired for
-chat). It rejects
-before any network call when `anthropicKey` is null or empty, surfacing
-the toast `Text requests require an Anthropic API key — open Settings and
-add one.`
+`WebController.sendChat` routes a text request through the selected
+provider: the engine builds the matching SDK client from `config.model`
+and the active provider's key (`config.geminiKey`, `config.openaiKey`, or
+`config.anthropicKey`). It rejects before any network call when the
+*selected provider's* key is null or empty, surfacing a provider-named
+toast such as `Text requests require a Google API key — open Settings and
+add one.` A key for a different provider does not satisfy the check.
 
 Exit codes are CLI-only; web errors surface as toasts inside the
 table view and carry the same error strings the recovery loop

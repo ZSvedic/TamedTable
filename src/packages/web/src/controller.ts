@@ -20,7 +20,7 @@ import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/m
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig } from '@tamedtable/model-config/storage';
-import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
+import { userFacingMessage, summarizeDebug, missingTextKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { EngineManager } from './controller-engine.ts';
 import { PatchManager } from './controller-patch.ts';
@@ -210,13 +210,13 @@ export class WebController implements ControllerHost {
       this.fail('Open a CSV or JSONL file before sending a request.');
       return;
     }
-    // Text requests route through Anthropic whatever provider is selected
-    // (Google is voice-only here; OpenAI is not wired for chat), so a missing
-    // Anthropic key fails fast — before any network call — leaving the table
-    // untouched. A playing tutorial is the exception: it replays from a cassette
-    // and needs no key. See spec/behavior.md § Web UI / settings.
-    if (!this.tutorial.isReplaying() && !this.config.anthropicKey?.trim()) {
-      this.fail('Text requests require an Anthropic API key — open Settings and add one.');
+    // Text requests route through the selected provider, so a missing key for
+    // that provider fails fast — before any network call — leaving the table
+    // untouched. A key for a different provider does not count. A playing
+    // tutorial is the exception: it replays from a cassette and needs no key.
+    // See spec/behavior.md § Web UI / settings.
+    if (!this.tutorial.isReplaying() && !this.settingsMgr.activeApiKey()?.trim()) {
+      this.fail(missingTextKeyMessage(this.config.provider));
       return;
     }
     try {

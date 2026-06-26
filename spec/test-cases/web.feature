@@ -18,13 +18,13 @@ Feature: Web front-end
       And the spec has 0 transformations
 
     @web
-    Scenario: A text request needs an Anthropic key even when Google is selected
+    Scenario: A text request needs the selected provider's key, not Anthropic's
       Given the TamedTable web app
       And load "customers-input.csv"
-      And the provider "gemini" has API key "AIza-example-key"
-      And the API key has not been set
+      And the provider "anthropic" has API key "sk-ant-example-key"
+      And user selects the provider "gemini"
       When user sends the chat message "Normalize phone numbers"
-      Then a toast shows "Text requests require an Anthropic API key"
+      Then a toast shows "Text requests require a Google API key"
       And the spec has 0 transformations
 
     @web
@@ -64,12 +64,12 @@ Feature: Web front-end
       Then "cleanup.flow" contains a mutate transformation
 
     @web
-    Scenario: Save as Python needs an Anthropic API key
+    Scenario: Save as Python needs the selected provider's key
       Given the TamedTable web app
       And load "customers-input.csv"
-      And the API key has not been set
+      And user selects the provider "gemini"
       When user says "Save as Python"
-      Then a toast shows "Anthropic API key"
+      Then a toast shows "Exporting to Python requires a Google API key"
       And the status footer reports "idle"
 
     @web
@@ -323,6 +323,7 @@ Feature: Web front-end
       And the LLM API returns a 401 unauthorized error
       When user sends the chat message "norm dob col"
       Then a toast shows "Invalid API key"
+      And a toast shows "unrestricted keys"
 
     @web
     Scenario: An OpenAI request with a wrong key shows a descriptive error
