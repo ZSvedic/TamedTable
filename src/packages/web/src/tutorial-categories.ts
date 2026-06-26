@@ -14,7 +14,7 @@ export const TUTORIAL_CATEGORIES: readonly TutorialCategory[] = [
   { tag: '@cat-enrich', title: 'Enrich & extract' },
   { tag: '@cat-classify', title: 'Classify' },
   { tag: '@cat-validate', title: 'Validate' },
-  { tag: '@cat-language', title: 'Language' },
-  { tag: '@cat-deterministic', title: 'Deterministic' },
+  { tag: '@cat-language', title: 'Process language' },
+  { tag: '@cat-deterministic', title: 'Be exact' },
   { tag: '@cat-loadsave', title: 'Load, save & reuse' },
 ];

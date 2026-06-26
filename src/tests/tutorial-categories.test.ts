@@ -12,25 +12,18 @@ import { TUTORIAL_CATEGORIES } from '../packages/web/src/tutorial-categories.ts'
 // Repo root is two levels up from src/tests/.
 const homepage = readFileSync(join(import.meta.dir, '../../marketing/web/index.html'), 'utf8');
 
-// Each feature section leads with `<span class="eyebrow">NN</span> … <h2>Title</h2>`.
-function homepageSections(): { num: string; title: string }[] {
-  const re = /<span class="eyebrow">(\d+)<\/span>\s*<h2>([^<]+)<\/h2>/g;
-  const out: { num: string; title: string }[] = [];
+// Each feature section's text column leads with `<div class="feat-text"> … <h2>Title</h2>`.
+function homepageSectionTitles(): string[] {
+  const re = /<div class="feat-text">\s*<h2>([^<]+)<\/h2>/g;
+  const out: string[] = [];
   for (let m = re.exec(homepage); m; m = re.exec(homepage)) {
-    out.push({ num: m[1]!, title: m[2]!.replace(/&amp;/g, '&').trim() });
+    out.push(m[1]!.replace(/&amp;/g, '&').trim());
   }
   return out;
 }
 
 describe('tutorial categories', () => {
   it('match the homepage feature sections in title and order', () => {
-    const sections = homepageSections();
-    expect(sections.map((s) => s.title)).toEqual(TUTORIAL_CATEGORIES.map((c) => c.title));
-  });
-
-  it('are numbered 01..07 on the homepage, matching the panel group order', () => {
-    const nums = homepageSections().map((s) => s.num);
-    const expected = TUTORIAL_CATEGORIES.map((_, i) => String(i + 1).padStart(2, '0'));
-    expect(nums).toEqual(expected);
+    expect(homepageSectionTitles()).toEqual(TUTORIAL_CATEGORIES.map((c) => c.title));
   });
 });

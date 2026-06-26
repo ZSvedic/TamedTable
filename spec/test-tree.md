@@ -364,7 +364,7 @@ The Tours panel: lists `@tour` scenarios grouped by category, replays them key-f
 |---|---|---|
 | [Tutorial button opens the panel](test-cases/tutorial.feature)<br>`@web` | Button shows the panel | NA |
 | [The clickable list shows only @tour scenario names](test-cases/tutorial.feature)<br>`@web` | Lists named @tour tours only | NA |
-| [The tutorial list is grouped by feature category](test-cases/tutorial.feature)<br>`@web` | Tours grouped under Clean up / Validate / Deterministic / Language | NA |
+| [The tutorial list is grouped by feature category](test-cases/tutorial.feature)<br>`@web` | Tours grouped under Clean up / Validate / Be exact / Process language | NA |
 | [The Dev dropdown lists @web non-@tour scenarios](test-cases/tutorial.feature)<br>`@web` | Dev shows @web non-@tour; hides tours | NA |
 | [Play starts the tutorial at step 1](test-cases/tutorial.feature)<br>`@web` | Select + play → step 1 | NA |
 | [Play closes the tutorial panel](test-cases/tutorial.feature)<br>`@web` | Playing hides the panel | NA |

@@ -25,8 +25,8 @@ Feature: Tutorial panel
       When user opens the tutorial panel
       Then the tutorial group "Clean up" includes "Normalize the phone numbers"
       And the tutorial group "Validate" includes "Flag prices that seem wrong"
-      And the tutorial group "Deterministic" includes "Filter by Country"
-      And the tutorial group "Language" includes "Normalize DOB by voice"
+      And the tutorial group "Be exact" includes "Filter by Country"
+      And the tutorial group "Process language" includes "Normalize DOB by voice"
 
     @web
     Scenario: The Dev dropdown lists @web non-@tour scenarios
