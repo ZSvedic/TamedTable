@@ -97,6 +97,8 @@ header.nav {
 .nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; }
 .nav-links a.link { font-size: 15px; font-weight: 500; color: var(--on-dark-muted); text-decoration: none; transition: color .15s; }
 .nav-links a.link:hover { color: var(--on-dark); }
+/* Current page: pure white marks the link for the page you're on. */
+.nav-links a.link[aria-current="page"] { color: #fff; }
 .nav-toggle { display: none; }
 
 /* ---------- Hero (dark zone) ---------- */

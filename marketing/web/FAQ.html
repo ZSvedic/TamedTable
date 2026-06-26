@@ -111,7 +111,11 @@
       </svg>
       <span class="wordmark">TamedTable</span>
     </a>
-    <nav class="nav-links">
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="FAQ.html" aria-current="page">FAQ</a>
       <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
       <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
     </nav>
@@ -238,6 +242,8 @@
   </div>
 </footer>
 
+<!-- Shared nav behavior (mobile menu toggle); same script the homepage uses. -->
+<script src="main.js"></script>
 <script>
   // Copy-link buttons: jump to the section (updates the URL hash) and copy the
   // full section URL to the clipboard. The icon is briefly swapped for a
