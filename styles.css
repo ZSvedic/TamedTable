@@ -217,8 +217,8 @@ section { padding: 52px 0; }
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-head); font-size: 18px; font-weight: 600; color: var(--ink);
 }
-.step h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
-.step p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.step h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--ink); text-wrap: balance; }
+.step p { font-size: 13.5px; color: var(--muted); line-height: 1.5; text-wrap: balance; }
 
 /* ---------- Feature sections ---------- */
 .feature { display: grid; grid-template-columns: 40fr 60fr; gap: 48px; align-items: center; }
