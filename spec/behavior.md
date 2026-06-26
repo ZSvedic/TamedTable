@@ -904,8 +904,8 @@ exact request) fails loudly with a toast rather than hanging.
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
 into the seven marketing feature categories** — Clean up, Enrich & extract,
-Classify, Validate, Language, Deterministic, and Load, save & reuse — numbered
-01–07 to match the homepage sections, in that order. A scenario's group comes
+Classify, Validate, Process language, Be exact, and Load, save & reuse —
+numbered 01–07, in the same order as the homepage sections. A scenario's group comes
 from its `@cat-…` tag (e.g. `@cat-cleanup`); empty categories are omitted.
 **Clicking a tour starts it immediately** — there is no separate Play step. A
 tour the visitor has played to the end carries a **green checkmark** in the list
