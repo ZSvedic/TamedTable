@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
+     the visible URL matches the canonical (GitHub Pages has no server redirects).
+     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
+<script>
+(function(){var p=location.pathname;
+if(p.endsWith('/index.html'))p=p.slice(0,-10);
+else if(p.endsWith('.html'))p=p.slice(0,-5);
+if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
+</script>
+<link rel="canonical" href="https://www.tamedtable.com/">
 <title>TamedTable — AI ETL in Natural Language</title>
 <meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load a spreadsheet, describe what you want, and watch it transform. No formulas, no code. Open source, runs on your own API key.">
 <meta property="og:title" content="TamedTable — AI ETL in Natural Language">
@@ -46,7 +56,7 @@
       <span></span><span></span><span></span>
     </button>
     <nav class="nav-links" id="navLinks">
-      <a class="link" href="FAQ.html">FAQ</a>
+      <a class="link" href="/FAQ">FAQ</a>
       <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
       <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
     </nav>
@@ -157,7 +167,7 @@
     <div class="wrap">
       <div class="sec-head"><h2>How it works</h2></div>
       <div class="steps">
-        <div class="step"><div class="num">1</div><h3><a href="FAQ.html#byok">Add API keys</a></h3><p>Just the first time you start the app.</p></div>
+        <div class="step"><div class="num">1</div><h3><a href="/FAQ#byok">Add API keys</a></h3><p>Just the first time you start the app.</p></div>
         <div class="step"><div class="num">2</div><h3>Open a file</h3><p>CSV, JSONL, Parquet, or Arrow. Local or from a URL.</p></div>
         <div class="step"><div class="num">3</div><h3>Say what you want</h3><p>Works in any language: English, Chinese, etc.</p></div>
         <div class="step"><div class="num">4</div><h3>Watch changes</h3><p>Dislike changes? Undo anything.</p></div>
@@ -348,7 +358,7 @@
   <section class="cta">
     <div class="wrap">
       <h2>Try it in two minutes</h2>
-      <p>Open source. Runs on your <a href="FAQ.html#byok">own API key</a>.</p>
+      <p>Open source. Runs on your <a href="/FAQ#byok">own API key</a>.</p>
       <div class="cta-row">
         <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app</a>
         <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
@@ -373,7 +383,7 @@
       <span class="wordmark">TamedTable</span>
     </a>
     <div class="foot-links">
-      <a href="FAQ.html">FAQ</a>
+      <a href="/FAQ">FAQ</a>
       <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
