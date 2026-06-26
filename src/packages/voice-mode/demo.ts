@@ -119,7 +119,12 @@ async function turnOn(): Promise<void> {
       $('cmd').textContent = applyCommand(t);
     },
     onError: (err) => {
-      $('err').textContent = `[${err.stage}] ${err.message}`;
+      let msg = `[${err.stage}] ${err.message}`;
+      if (/network/i.test(err.message)) {
+        msg +=
+          ' — Web Speech needs Google’s backend, which plain Chromium can’t reach (no API key) and some networks block. Switch to the Whisper provider to test the hands-free loop.';
+      }
+      $('err').textContent = msg;
     },
   });
 
