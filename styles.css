@@ -97,6 +97,8 @@ header.nav {
 .nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; }
 .nav-links a.link { font-size: 15px; font-weight: 500; color: var(--on-dark-muted); text-decoration: none; transition: color .15s; }
 .nav-links a.link:hover { color: var(--on-dark); }
+/* Current page: pure white marks the link for the page you're on. */
+.nav-links a.link[aria-current="page"] { color: #fff; }
 .nav-toggle { display: none; }
 
 /* ---------- Hero (dark zone) ---------- */
@@ -198,8 +200,8 @@ section { padding: 52px 0; }
 /* Icon sits inline with the title so four cards stay narrow yet readable. */
 .vp-head { display: flex; align-items: center; gap: 12px; }
 .vp-ic { flex-shrink: 0; width: 30px; height: 30px; }
-.vp-card h3 { font-size: 17px; font-weight: 600; margin: 0; color: var(--ink); }
-.vp-card p { font-size: 14.5px; color: var(--muted); line-height: 1.55; }
+.vp-card h3 { font-size: 17px; font-weight: 600; margin: 0; color: var(--ink); text-wrap: balance; }
+.vp-card p { font-size: 14.5px; color: var(--muted); line-height: 1.55; text-wrap: balance; }
 @media (max-width: 1080px) { .vp-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* ---------- How it works ---------- */

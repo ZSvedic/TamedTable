@@ -111,7 +111,11 @@
       </svg>
       <span class="wordmark">TamedTable</span>
     </a>
-    <nav class="nav-links">
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="FAQ.html" aria-current="page">FAQ</a>
       <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
       <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
     </nav>
@@ -127,8 +131,10 @@
       <ul>
         <li><a href="#byok">How to Bring Your Own API Key (BYOK)?</a></li>
         <li><a href="#formats">What file formats does TamedTable support?</a></li>
-        <li><a href="#ai-developed">Is TamedTable developed using AI?</a></li>
         <li><a href="#privacy">Where is the privacy policy and EULA?</a></li>
+        <li><a href="#third-party">But isn't my data sent to third-party AI models?</a></li>
+        <li><a href="#ai-developed">Is TamedTable developed using AI?</a></li>
+        <li><a href="#ai-quality">But AI code is not good!</a></li>
       </ul>
     </nav>
 
@@ -192,6 +198,29 @@
       </div>
     </section>
 
+    <!-- ---------------------------- Q: Privacy / EULA ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="privacy" class="anchored">
+        Where is the privacy policy and EULA?
+        <button class="copy-link" data-target="privacy" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>There is no privacy policy because you send us no data. TamedTable is purely client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers — we don't have a server. We don't use cookies and we don't run any analytics. There is simply nothing to regulate.</p>
+        <p>There is no separate EULA either: TamedTable is open source, so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">licence on GitHub</a>.</p>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Q: Third-party AI models ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="third-party" class="anchored">
+        But isn't my data sent to third-party AI models?
+        <button class="copy-link" data-target="third-party" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>Not necessarily. You can run TamedTable on your own internal server and change the code to connect to an LLM that you host yourself.</p>
+      </div>
+    </section>
+
     <!-- ---------------------------- Q: AI-developed ---------------------------- -->
     <section class="faq-q">
       <h2 id="ai-developed" class="anchored">
@@ -203,15 +232,17 @@
       </div>
     </section>
 
-    <!-- ---------------------------- Q: Privacy / EULA ---------------------------- -->
+    <!-- ---------------------------- Q: AI code quality ---------------------------- -->
     <section class="faq-q">
-      <h2 id="privacy" class="anchored">
-        Where is the privacy policy and EULA?
-        <button class="copy-link" data-target="privacy" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      <h2 id="ai-quality" class="anchored">
+        But AI code is not good!
+        <button class="copy-link" data-target="ai-quality" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>There is no privacy policy because you send us no data. TamedTable is purely client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers — we don't have a server. We don't use cookies and we don't run any analytics. There is simply nothing to regulate.</p>
-        <p>There is no separate EULA either: TamedTable is open source, so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">licence on GitHub</a>.</p>
+        <p>Well, you win some, you lose some.</p>
+        <p>Yes, you don't have humans micromanaging every line of code. But:</p>
+        <p><strong>A)</strong> AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">225 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</p>
+        <p><strong>B)</strong> This app was developed in two months by a single person. Without AI, the author would need a team of people: a backend dev, a frontend dev, a designer, etc. Those people need to pay their bills, so this software would be proprietary, paid SaaS. TamedTable is a free, open-source, client app, <em>exactly because of AI</em>.</p>
       </div>
     </section>
   </div>
@@ -238,6 +269,8 @@
   </div>
 </footer>
 
+<!-- Shared nav behavior (mobile menu toggle); same script the homepage uses. -->
+<script src="main.js"></script>
 <script>
   // Copy-link buttons: jump to the section (updates the URL hash) and copy the
   // full section URL to the clipboard. The icon is briefly swapped for a
