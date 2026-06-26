@@ -10,13 +10,18 @@ export function providerLabel(provider?: string): string {
     : 'Anthropic';
 }
 
-/** The "Text requests require …" toast for a provider whose key is missing —
- *  names the selected provider so a user with the wrong provider's key acts on
- *  the right one. `an` for OpenAI/Anthropic, `a` for Google. */
-export function missingTextKeyMessage(provider?: string): string {
+/** A "<lead> … API key — open Settings and add one." toast that names the
+ *  selected provider, so a user holding the wrong provider's key acts on the
+ *  right one. `an` for OpenAI/Anthropic, `a` for Google. */
+export function missingProviderKeyMessage(provider: string | undefined, lead: string): string {
   const label = providerLabel(provider);
   const article = label === 'Google' ? 'a' : 'an';
-  return `Text requests require ${article} ${label} API key — open Settings and add one.`;
+  return `${lead} ${article} ${label} API key — open Settings and add one.`;
+}
+
+/** The missing-key toast for a chat text request. */
+export function missingTextKeyMessage(provider?: string): string {
+  return missingProviderKeyMessage(provider, 'Text requests require');
 }
 
 /** Map an engine error (or its message string) to a sentence a non-technical

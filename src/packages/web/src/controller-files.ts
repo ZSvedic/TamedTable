@@ -15,6 +15,7 @@ import {
   type SaveOutcome,
 } from '@tamedtable/file-io';
 import { specHasLlmCell } from '@tamedtable/headless';
+import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 
 export class FilesManager {
@@ -90,18 +91,19 @@ export class FilesManager {
   }
 
   /** Export the current flow as a standalone Python script — the "Save as
-   *  Python…" entry. Unlike the other saves this is model-backed (the LLM
-   *  translates the flow), so it mirrors :save-py: it needs an Anthropic key and
-   *  refuses a flow with an {llm} cell, which has no deterministic Python form. */
+   *  Python…" entry. Unlike the other saves this is model-backed (the selected
+   *  provider's primary model translates the flow), so it mirrors :save-py: it
+   *  needs that provider's key and refuses a flow with an {llm} cell, which has
+   *  no deterministic Python form. */
   async savePython(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before saving a flow.');
       return;
     }
-    if (!this.host.config.anthropicKey?.trim()) {
+    if (!this.host.settingsMgr.activeApiKey()?.trim()) {
       this.host.pushToast(
         'error',
-        'Exporting to Python requires an Anthropic API key — open Settings and add one.',
+        missingProviderKeyMessage(this.host.config.provider, 'Exporting to Python requires'),
       );
       return;
     }

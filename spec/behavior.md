@@ -696,11 +696,14 @@ different format or rename the file.
 writes the replayable `.flow` file as before; its dropdown carries
 **Save as Flow…** (the same `.flow` save) and **Save as Python…**, which
 translates the flow into a standalone Python script. The Python export is
-model-backed — the LLM does the translation — so unlike every other save
-it needs an Anthropic API key, and it refuses a flow that carries an AI
-cell (which has no deterministic Python form), surfacing a toast that
-points the user to save it as a flow instead. This is the browser's
-counterpart to the CLI's `:save-py`.
+model-backed — the selected provider's primary (patch-turn) model does the
+translation — so unlike every other save it needs a key for the selected
+provider, and a missing key fails fast with a provider-named toast such as
+`Exporting to Python requires a Google API key — open Settings and add one.`
+(or `an OpenAI` / `an Anthropic`). It also refuses a flow that carries an AI
+cell (which has no deterministic Python form), surfacing a toast that points
+the user to save it as a flow instead. This is the browser's counterpart to
+the CLI's `:save-py`.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,
