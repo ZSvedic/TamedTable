@@ -422,7 +422,7 @@ Browser-only flows (dialogs, settings, cell edit, reorder, paging, footer) with 
 | Scenario | What it tests | ToDo |
 |---|---|---|
 | [A request without an API key surfaces a toast and changes nothing](test-cases/web.feature)<br>`@web` | Missing key → toast, spec empty | NA |
-| [A text request needs an Anthropic key even when Google is selected](test-cases/web.feature)<br>`@web` | Text still needs Anthropic key | NA |
+| [A text request needs the selected provider's key, not Anthropic's](test-cases/web.feature)<br>`@web` | Google selected → needs Google key, not Anthropic | NA |
 | [Saving an API key in the settings panel configures the engine](test-cases/web.feature)<br>`@web` | Settings persists key to engine | NA |
 | [Load CSV via the Open File dialog](test-cases/web.feature)<br>`@web` | Dialog → CSV renders 5+ rows | NA — now the sole dialog test (datanorm duplicate removed) |
 | [Opening an empty file yields an empty table without an error](test-cases/web.feature)<br>`@web` | Empty file: 0 rows, no toast | NA |
@@ -455,7 +455,7 @@ Browser-only flows (dialogs, settings, cell edit, reorder, paging, footer) with 
 | [Clicking an already-open card collapses it](test-cases/web.feature)<br>`@web` | Accordion toggle closes | NA |
 | [Clicking the Anthropic card shows the ANTHROPIC_API_KEY env hint](test-cases/web.feature)<br>`@web` | Anthropic card shows env hint + configured provider | NA |
 | [Settings panel opens with the currently selected provider card expanded](test-cases/web.feature)<br>`@web` | Panel reopens with selected provider expanded | NA |
-| [A Gemini request with a wrong key shows a descriptive error](test-cases/web.feature)<br>`@web` | 401 Gemini → "Invalid API key" toast | NA |
+| [A Gemini request with a wrong key shows a descriptive error](test-cases/web.feature)<br>`@web` | 401 Gemini → "Invalid API key" toast + unrestricted-key guidance | NA |
 | [An OpenAI request with a wrong key shows a descriptive error](test-cases/web.feature)<br>`@web` | 401 OpenAI → "Invalid API key" toast | NA |
 
 # spec/packages/ — library packages

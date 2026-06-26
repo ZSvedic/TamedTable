@@ -3,6 +3,22 @@
 
 import type { RequestDebugInfo } from '@tamedtable/headless';
 
+/** The human provider name shown in toasts, keyed off the resolved provider. */
+export function providerLabel(provider?: string): string {
+  return provider === 'gemini' ? 'Google'
+    : provider === 'openai' ? 'OpenAI'
+    : 'Anthropic';
+}
+
+/** The "Text requests require …" toast for a provider whose key is missing —
+ *  names the selected provider so a user with the wrong provider's key acts on
+ *  the right one. `an` for OpenAI/Anthropic, `a` for Google. */
+export function missingTextKeyMessage(provider?: string): string {
+  const label = providerLabel(provider);
+  const article = label === 'Google' ? 'a' : 'an';
+  return `Text requests require ${article} ${label} API key — open Settings and add one.`;
+}
+
 /** Map an engine error (or its message string) to a sentence a non-technical
  *  user can act on. Pass the raw caught error object when available — the
  *  function inspects `statusCode` and `responseBody` on SDK error objects so
@@ -19,26 +35,31 @@ export function userFacingMessage(error: unknown, provider?: string): string {
   if (message === 'Runner: a request is already in progress.')
     return 'A request is already running.';
 
-  const providerLabel =
-    provider === 'gemini' ? 'Google'
-    : provider === 'openai' ? 'OpenAI'
-    : 'Anthropic';
+  const label = providerLabel(provider);
 
   // Inspect AI SDK error properties for structured HTTP errors.
   const statusCode = (error as Record<string, unknown>)?.statusCode as number | undefined;
   const responseBody = String((error as Record<string, unknown>)?.responseBody ?? '');
   const fullText = `${message} ${responseBody}`;
 
-  if (statusCode === 401 || /\b401\b|authentication_error|invalid.*api.{0,5}key|api key not valid|unauthenticated/i.test(fullText))
-    return `Invalid API key. Open Settings to update your ${providerLabel} key.`;
+  if (statusCode === 401 || /\b401\b|authentication_error|invalid.*api.{0,5}key|api key not valid|unauthenticated/i.test(fullText)) {
+    const base = `Invalid API key. Open Settings to update your ${label} key.`;
+    // Google rejects unrestricted keys (policy effective 2026-06-19) with the
+    // same "API key not valid" response a genuinely-wrong key gives, so a user
+    // whose key is fine would otherwise keep re-entering it. Point at the real
+    // fix. See https://ai.google.dev/gemini-api/docs/api-key#secure-unrestricted-keys
+    if (provider === 'gemini')
+      return `${base} If the key is correct, Google now blocks unrestricted keys — add an application restriction in Google AI Studio.`;
+    return base;
+  }
 
   if (statusCode === 404 || /\b404\b|not_found_error|model.*not found/i.test(fullText))
     return 'Model not found. The selected model may be unavailable.';
 
   if (/failed to fetch|network error|cors blocked|connection refused/i.test(fullText))
-    return `Network error. Could not reach the ${providerLabel} API.`;
+    return `Network error. Could not reach the ${label} API.`;
 
-  return message || `An unexpected error occurred reaching the ${providerLabel} API.`;
+  return message || `An unexpected error occurred reaching the ${label} API.`;
 }
 
 /** A one-line-per-expression summary of a committed request, for the chat. */

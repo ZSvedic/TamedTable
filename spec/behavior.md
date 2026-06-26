@@ -757,14 +757,15 @@ with a microphone icon when the provider supports voice input, or grey "No voice
 input" when it does not. Google shows the green badge; OpenAI and Anthropic show
 grey.
 
-Text requests route through Anthropic regardless of the selected provider —
-here Google is wired only for voice input, not text, and OpenAI is not
-wired for chat at all (its key can still be entered for use elsewhere). A
-natural-language chat request therefore needs an Anthropic API key: when none is
-set the request never fires and a toast reads `Text requests require an Anthropic
-API key — open Settings and add one.` So the requirement reads clearly even while
-Google or OpenAI is the selected provider, the Anthropic card's tagline notes it
-is required for text requests.
+Text requests route through the selected provider — pick Google and a text
+request goes to Gemini, pick OpenAI and it goes to OpenAI, pick Anthropic and it
+goes to Anthropic. A natural-language chat request therefore needs a key for the
+selected provider: when that provider's key is missing the request never fires
+and a toast names the provider it needs, e.g. `Text requests require a Google API
+key — open Settings and add one.` (or `an OpenAI` / `an Anthropic`). A key for a
+different provider does not satisfy the requirement — selecting Google still
+needs a Google key even when an Anthropic key is set. This is the same provider
+the voice mic already uses, so text and voice share one key per provider.
 
 When a card is open its body shows an API key field with a show/hide toggle, a
 grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
@@ -786,11 +787,17 @@ preserved and the new model drives the next request. Full detail in
 
 When a request fails because the API key is wrong or missing, the web shell
 surfaces a toast with a sentence the user can act on: "Invalid API key. Open
-Settings to update your Gemini key." (or OpenAI / Anthropic). A model-not-found
-error reads "Model not found. The selected model may be unavailable." A network
-or CORS failure reads "Network error. Could not reach the Gemini API." Errors
-that don't match a known pattern pass through as-is so no information is lost.
-The provider name in the message matches whichever provider card is selected.
+Settings to update your Gemini key." (or OpenAI / Anthropic). For Google the
+toast adds a second sentence — "If the key is correct, Google now blocks
+unrestricted keys — add an application restriction in Google AI Studio." —
+because [Google rejects unrestricted keys](https://ai.google.dev/gemini-api/docs/api-key#secure-unrestricted-keys)
+and the symptom is an indistinguishable "API key not valid" response, so a user
+whose key is genuinely fine is told the real fix rather than re-entering the same
+key. A model-not-found error reads "Model not found. The selected model may be
+unavailable." A network or CORS failure reads "Network error. Could not reach the
+Gemini API." Errors that don't match a known pattern pass through as-is so no
+information is lost. The provider name in the message matches whichever provider
+card is selected.
 
 Toolbar action buttons carry tooltips that name their CLI command
 equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the
