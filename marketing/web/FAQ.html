@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
+     the visible URL matches the canonical (GitHub Pages has no server redirects).
+     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
+<script>
+(function(){var p=location.pathname;
+if(p.endsWith('/index.html'))p=p.slice(0,-10);
+else if(p.endsWith('.html'))p=p.slice(0,-5);
+if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
+</script>
+<link rel="canonical" href="https://www.tamedtable.com/FAQ">
 <title>Frequently Asked Questions — TamedTable</title>
 <meta name="description" content="TamedTable FAQ — how to bring your own API key (BYOK) from Google, OpenAI, or Anthropic, privacy, and other common questions.">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -100,7 +110,7 @@
 <!-- ============================ NAV ============================ -->
 <header class="nav">
   <div class="wrap nav-inner">
-    <a class="brand" href="index.html" aria-label="TamedTable home">
+    <a class="brand" href="/" aria-label="TamedTable home">
       <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
         <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
         <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
@@ -115,7 +125,7 @@
       <span></span><span></span><span></span>
     </button>
     <nav class="nav-links" id="navLinks">
-      <a class="link" href="FAQ.html" aria-current="page">FAQ</a>
+      <a class="link" href="/FAQ" aria-current="page">FAQ</a>
       <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
       <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
     </nav>
@@ -251,7 +261,7 @@
 <!-- ============================ FOOTER ============================ -->
 <footer class="foot">
   <div class="wrap foot-inner">
-    <a class="brand" href="index.html" style="font-size:18px;" aria-label="TamedTable home">
+    <a class="brand" href="/" style="font-size:18px;" aria-label="TamedTable home">
       <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
         <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
         <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
@@ -263,7 +273,7 @@
       <span class="wordmark">TamedTable</span>
     </a>
     <div class="foot-links">
-      <a href="FAQ.html">FAQ</a>
+      <a href="/FAQ">FAQ</a>
       <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
