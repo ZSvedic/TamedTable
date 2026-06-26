@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- #VoiceMode demo — standalone feasibility test of full voice mode.
+     Run: cd src/packages/voice-mode && bun run demo (bun bundles + serves) -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>voice-mode — full voice mode demo</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font: 15px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 50rem; padding: 1.5rem; }
+      h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+      h2 { font-size: 1rem; margin: 1.4rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+      .card { border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 10px; padding: 0.9rem 1rem; }
+      .grid { display: grid; gap: 1rem; }
+      .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+      button { padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+      button.primary { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 600; }
+      button.on { background: #16a34a; border-color: #16a34a; color: #fff; }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      input[type='password'], input[type='text'], select { font: inherit; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+      input[type='password'] { min-width: 18rem; }
+      code, .mono { font-family: ui-monospace, monospace; }
+      .kv { display: grid; grid-template-columns: 11rem 1fr; gap: 0.2rem 0.8rem; }
+      .kv dt { opacity: 0.65; }
+      .kv dd { margin: 0; }
+      .pass { color: #16a34a; font-weight: 600; }
+      .fail { color: #dc2626; font-weight: 600; }
+      ul#list { margin: 0.3rem 0 0; padding-left: 1.2rem; min-height: 1.5rem; }
+      ul#list:empty::after { content: '(empty — say “add milk”)'; opacity: 0.5; padding-left: 0; }
+      .hint { opacity: 0.65; font-size: 0.85rem; margin: 0.2rem 0 0; }
+      .state-badge { font-family: ui-monospace, monospace; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid currentColor; }
+      #whisper-cfg[hidden] { display: none; }
+    </style>
+  <script type="module" crossorigin src="/pr-preview/pr-185/demos/voice-mode/demo-xr198aqs.js"></script></head>
+  <body>
+    <h1>Full Voice Mode</h1>
+    <p class="hint">
+      Hands-free: flip it on and just talk. Client-side VAD decides when each turn
+      ends — no button. Try <em>“add milk”</em>, <em>“remove milk”</em>, <em>“clear the list”</em>.
+    </p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Capabilities</h2>
+        <dl class="kv" id="caps"></dl>
+      </section>
+
+      <section class="card">
+        <h2>Provider</h2>
+        <div class="row">
+          <label><input type="radio" name="provider" value="webspeech" checked /> Web&nbsp;Speech <span class="hint">(no key · Chrome/Edge · audio → Google)</span></label>
+        </div>
+        <div class="row">
+          <label><input type="radio" name="provider" value="whisper" /> Whisper&nbsp;HTTP <span class="hint">(your key · any browser)</span></label>
+        </div>
+        <div id="whisper-cfg" class="row" hidden style="margin-top: 0.6rem">
+          <select id="endpoint">
+            <option value="https://api.openai.com/v1/audio/transcriptions|whisper-1">OpenAI · whisper-1</option>
+            <option value="https://api.groq.com/openai/v1/audio/transcriptions|whisper-large-v3">Groq · whisper-large-v3</option>
+          </select>
+          <input id="apikey" type="password" placeholder="sk-… (kept in this tab only)" autocomplete="off" />
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row">
+          <button id="toggle" class="primary">▶ Turn Full Voice Mode on</button>
+          <span>State: <span id="state" class="state-badge">idle</span></span>
+        </div>
+        <p id="out" class="hint"></p>
+        <p id="err" class="hint" style="color: #dc2626"></p>
+      </section>
+
+      <section class="card">
+        <h2>Live status</h2>
+        <dl class="kv">
+          <dt>Partial transcript</dt><dd id="partial" class="mono">—</dd>
+          <dt>Final transcript</dt><dd id="final" class="mono">—</dd>
+          <dt>Time to transcript</dt><dd id="ttft" class="mono">—</dd>
+          <dt>Last command</dt><dd id="cmd" class="mono">—</dd>
+          <dt>JS heap (Chrome)</dt><dd id="mem" class="mono">—</dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Shopping list <span class="hint">— changes live as you speak</span></h2>
+        <ul id="list"></ul>
+      </section>
+    </div>
+
+    
+  </body>
+</html>
