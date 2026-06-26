@@ -136,9 +136,14 @@ When('the user clicks the toolbar theme toggle', async function (this: DemoWorld
 });
 
 When('the user opens the toolbar save menu', async function (this: DemoWorld) {
-  // Two split buttons carry a caret — "Open URL…" then "Save data"; the save
-  // menu is the second.
+  // Three split buttons carry a caret — "Open URL…", "Save data", "Save flow";
+  // the Save-data menu is the second.
   await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(1).click();
+});
+
+When('the user opens the toolbar save-flow menu', async function (this: DemoWorld) {
+  // The Save-flow split button is the third (after "Open URL…" and "Save data").
+  await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(2).click();
 });
 
 When('the user picks the toolbar menu item {string}', async function (this: DemoWorld, label: string) {

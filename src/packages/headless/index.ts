@@ -1579,6 +1579,30 @@ export function transformationExpressions(t: Transformation): Array<{ label: str
   }
 }
 
+// #PyExport
+/** True if any transformation carries an `{llm}` expression. A live AI cell has
+ *  no deterministic Python form, so the CLI's `:save-py` and the web Python
+ *  export both refuse such a flow before spending a model call on it. */
+export function specHasLlmCell(spec: TablePlan): boolean {
+  const isLlm = (e: unknown): boolean =>
+    typeof e === 'object' && e !== null && !(e instanceof RegExp) && 'llm' in e;
+  for (const t of spec.transformations as Transformation[]) {
+    const exprs: unknown[] = [];
+    switch (t.kind) {
+      case 'filter':                 exprs.push(t.pred); break;
+      case 'validate':               exprs.push(t.pred); if (t.message) exprs.push(t.message); break;
+      case 'mutate':                 exprs.push(t.value); break;
+      case 'sort':                   for (const b of t.by) exprs.push(b.key); break;
+      case 'group':                  exprs.push(...t.by, ...Object.values(t.agg)); break;
+      case 'join':                   exprs.push(t.on); break;
+      case 'split':                  exprs.push(t.on); break;
+      case 'select': case 'pivot': case 'unpivot': break;
+    }
+    if (exprs.some(isLlm)) return true;
+  }
+  return false;
+}
+
 /** @internal — exported for unit tests. */
 export function tryParseBatchResponse(text: string, expectedLen: number): unknown[] | undefined {
   let cleaned = text.trim();

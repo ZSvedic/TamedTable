@@ -6,10 +6,11 @@ load state, the file readout, and the undo/redo flags as props, and hears
 about every button press through callbacks (`onOpenLocal`, `onOpenUrl`,
 `onSaveData`, `onSaveFlow`, `onUndo`, `onRedo`, `onToggleTheme`,
 `onOpenSettings`, `onOpenTutorial`). The "Save as" menu entries are app data
-too — the host passes `saveDataMenu`, a list of `{ label, onClick }` items,
-because the package knows nothing about file formats. The sample-file list and
-their URLs are app data, passed in — the package never reaches for
-`import.meta.env` or `window.location`.
+too — the host passes `saveDataMenu` and `saveFlowMenu`, each a list of
+`{ label, onClick }` items, because the package knows nothing about file
+formats or flow/Python exports. The sample-file list and their URLs are app
+data, passed in — the package never reaches for `import.meta.env` or
+`window.location`.
 
 The `Brand` mark/wordmark/lockup lives inside this package: the toolbar is its
 only consumer, so there is no reason to host it elsewhere or in `ui-kit`.
@@ -54,8 +55,10 @@ treated as JSONL) — the badge the dialog shows beside each sample row.
   tutorial target) whose menu carries "Open local…"; a "Save data" split
   button — the primary half saves in the format the table was loaded as, and
   its caret menu (`saveDataMenu`) lists "Save as <format>…" entries that save a
-  copy in a different format (and let the user rename); "Save flow"; both saves
-  disabled until `loaded`; a divider; "Undo" / "Redo" (gated on `canUndo` /
+  copy in a different format (and let the user rename); a "Save flow" split
+  button on the same pattern — the primary half saves the `.flow`, and its
+  caret menu (`saveFlowMenu`) carries "Save as Flow…" and "Save as Python…";
+  both saves disabled until `loaded`; a divider; "Undo" / "Redo" (gated on `canUndo` /
   `canRedo`); a divider; the light/dark toggle (sun on dark, moon on light);
   "Settings"; and "Tours". Every action except the theme toggle, settings, and
   tours is also disabled while `busy`.

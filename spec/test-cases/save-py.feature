@@ -18,6 +18,18 @@ Feature: Export a flow as a Python script
       And the first line of "../temp/save-py-flow.py" is "#!/usr/bin/env -S uv run --script"
       And "../temp/save-py-flow.py" contains the line "# /// script"
 
+  Rule: The web app exports the same flow through the Save-flow dropdown
+
+    @web
+    Scenario: Save as Python writes a script for a deterministic flow
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user sends the chat message "Show only customers in the USA"
+      And user says "Save as Python"
+      Then the suggested save name ends with ".py"
+      When user saves as "customers-flow.py"
+      Then the status footer reports "saved"
+
   Rule: :save-py refuses a flow that cannot run deterministically
 
     @cli
