@@ -29,6 +29,13 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
     onClick: () => void controller.saveDataAs(f.id),
   }));
 
+  // The flow can be saved as a replayable .flow or translated to a Python
+  // script (model-backed — the controller guards on key / AI cells).
+  const saveFlowMenu: SaveMenuItem[] = [
+    { label: 'Save as Flow…', onClick: () => void controller.saveFlow() },
+    { label: 'Save as Python…', onClick: () => void controller.savePython() },
+  ];
+
   return (
     <ToolbarBar
       openButtonId="tutorial-open-btn"
@@ -44,6 +51,7 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
       onSaveData={() => void controller.saveData()}
       saveDataMenu={saveDataMenu}
       onSaveFlow={() => void controller.saveFlow()}
+      saveFlowMenu={saveFlowMenu}
       onUndo={() => void controller.undo()}
       onRedo={() => void controller.redo()}
       onToggleTheme={toggle}

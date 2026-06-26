@@ -690,8 +690,17 @@ loaded as (CSV, JSONL, Parquet, or Arrow), suggesting the source file's
 name; its dropdown carries a **Save as <format>…** entry per supported
 format, each of which serializes a copy in that format and opens the
 Save dialog with a matching suggested name, so the user can save a
-different format or rename the file. `.flow` save stays its own button
-and uses a Save File dialog as before.
+different format or rename the file.
+
+**Save flow** is a split-button on the same pattern. The primary half
+writes the replayable `.flow` file as before; its dropdown carries
+**Save as Flow…** (the same `.flow` save) and **Save as Python…**, which
+translates the flow into a standalone Python script. The Python export is
+model-backed — the LLM does the translation — so unlike every other save
+it needs an Anthropic API key, and it refuses a flow that carries an AI
+cell (which has no deterministic Python form), surfacing a toast that
+points the user to save it as a flow instead. This is the browser's
+counterpart to the CLI's `:save-py`.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,

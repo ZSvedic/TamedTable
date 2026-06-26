@@ -46,6 +46,10 @@ function Demo(): ReactNode {
           { label: 'Save as Parquet…', onClick: () => report('save as parquet') },
         ]}
         onSaveFlow={() => report('save flow')}
+        saveFlowMenu={[
+          { label: 'Save as Flow…', onClick: () => report('save as flow') },
+          { label: 'Save as Python…', onClick: () => report('save as python') },
+        ]}
         onUndo={() => {
           report('undo');
           setCanUndo(false);

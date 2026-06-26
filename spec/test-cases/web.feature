@@ -64,6 +64,15 @@ Feature: Web front-end
       Then "cleanup.flow" contains a mutate transformation
 
     @web
+    Scenario: Save as Python needs an Anthropic API key
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the API key has not been set
+      When user says "Save as Python"
+      Then a toast shows "Anthropic API key"
+      And the status footer reports "idle"
+
+    @web
     Scenario: Without File System Access support, saving falls back to a download
       Given the TamedTable web app without File System Access support
       And load "customers-input.csv"

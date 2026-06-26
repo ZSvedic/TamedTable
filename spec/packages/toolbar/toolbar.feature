@@ -28,6 +28,13 @@ Feature: Toolbar package
       Then the toolbar event log shows "save as jsonl"
 
     @web
+    Scenario: The Save-flow menu exports the flow to Python
+      Given the toolbar demo page
+      When the user opens the toolbar save-flow menu
+      And the user picks the toolbar menu item "Save as Python…"
+      Then the toolbar event log shows "save as python"
+
+    @web
     Scenario: The theme toggle flips the wrapper
       Given the toolbar demo page
       When the user clicks the toolbar theme toggle

@@ -14,6 +14,7 @@ import {
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
+import { specHasLlmCell } from '@tamedtable/headless';
 import type { ControllerHost } from './controller-context.ts';
 
 export class FilesManager {
@@ -82,6 +83,44 @@ export class FilesManager {
       this.reportSave(await this.host.file.pickSave('flow.flow', ['.flow'], flow));
     } catch (e) {
       this.host.pushToast('error', `Could not save flow: ${(e as Error).message}`);
+    } finally {
+      this.host.dialog = null;
+      this.host.notify();
+    }
+  }
+
+  /** Export the current flow as a standalone Python script — the "Save as
+   *  Python…" entry. Unlike the other saves this is model-backed (the LLM
+   *  translates the flow), so it mirrors :save-py: it needs an Anthropic key and
+   *  refuses a flow with an {llm} cell, which has no deterministic Python form. */
+  async savePython(): Promise<void> {
+    if (!this.host.loaded) {
+      this.host.pushToast('error', 'Load a file before saving a flow.');
+      return;
+    }
+    if (!this.host.config.anthropicKey?.trim()) {
+      this.host.pushToast(
+        'error',
+        'Exporting to Python requires an Anthropic API key — open Settings and add one.',
+      );
+      return;
+    }
+    if (specHasLlmCell(this.host.engine.currentSpec())) {
+      this.host.pushToast(
+        'error',
+        'This flow has AI cells, which have no Python form — save it as a flow instead.',
+      );
+      return;
+    }
+    this.host.dialog = 'save-flow';
+    this.host.notify();
+    try {
+      const script = new TextEncoder().encode(await this.host.engine.exportPython());
+      const base = (this.host.sourcePath || '').split('/').pop() || '';
+      const suggested = `${base.replace(/\.[^.]*$/, '') || 'flow'}.py`;
+      this.reportSave(await this.host.file.pickSave(suggested, ['.py'], script));
+    } catch (e) {
+      this.host.pushToast('error', `Could not export to Python: ${(e as Error).message}`);
     } finally {
       this.host.dialog = null;
       this.host.notify();

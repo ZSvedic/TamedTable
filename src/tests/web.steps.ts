@@ -91,6 +91,8 @@ When('user says {string}', function (this: TamedTableWorld, action: string) {
   if (action === 'Load CSV file') pending = c.openCsv();
   else if (action === 'Save flow') pending = c.saveFlow();
   else if (action === 'Save data') pending = c.saveData();
+  else if (action === 'Save as Flow') pending = c.saveFlow();
+  else if (action === 'Save as Python') pending = c.savePython();
   else if (action.startsWith('Save as ')) {
     pending = c.saveDataAs(action.slice('Save as '.length).toLowerCase() as FormatId);
   } else throw new Error(`unknown web action: "${action}"`);

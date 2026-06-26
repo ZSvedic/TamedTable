@@ -7,8 +7,8 @@ import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button, SplitButton, Icon } from '@tamedtable/ui-kit/components';
 import { Lockup } from './Brand.tsx';
 
-/** One "Save as <format>…" entry in the Save-data dropdown. The host owns the
- *  formats (the package knows nothing about CSV/JSONL/Parquet/Arrow). */
+/** One "Save as …" dropdown entry. The host owns the targets — the package
+ *  knows nothing about CSV/JSONL/Parquet/Arrow formats or flow/Python exports. */
 export interface SaveMenuItem {
   label: string;
   onClick: () => void;
@@ -33,6 +33,8 @@ export interface ToolbarProps {
   /** "Save as <format>…" entries for the Save-data dropdown. */
   saveDataMenu: SaveMenuItem[];
   onSaveFlow: () => void;
+  /** "Save as Flow…" / "Save as Python…" entries for the Save-flow dropdown. */
+  saveFlowMenu: SaveMenuItem[];
   onUndo: () => void;
   onRedo: () => void;
   onToggleTheme: () => void;
@@ -54,6 +56,7 @@ export function Toolbar({
   onSaveData,
   saveDataMenu,
   onSaveFlow,
+  saveFlowMenu,
   onUndo,
   onRedo,
   onToggleTheme,
@@ -126,9 +129,15 @@ export function Toolbar({
         <Icon name="save" />
         Save data
       </SplitButton>
-      <Button onClick={onSaveFlow} disabled={!loaded || busy} title="Save the flow as a replayable .flow file (:save-flow)">
+      <SplitButton
+        onClick={onSaveFlow}
+        disabled={!loaded || busy}
+        title="Save the flow as a replayable .flow file (:save-flow)"
+        caretTitle="Save the flow as a .flow file or a Python script"
+        menu={saveFlowMenu}
+      >
         Save flow
-      </Button>
+      </SplitButton>
 
       {divider}
 

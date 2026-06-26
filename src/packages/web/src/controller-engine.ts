@@ -239,6 +239,11 @@ export class EngineManager {
     await this.ensureHeadless().exportAs(path);
   }
 
+  /** Translate the current flow to a standalone Python script (model-backed). */
+  exportPython(): Promise<string> {
+    return this.ensureHeadless().exportPython();
+  }
+
   // ── Streaming overlay ────────────────────────────────────────────────────
 
   private scheduleOverlayFlush(): void {

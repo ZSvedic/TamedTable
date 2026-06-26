@@ -292,6 +292,7 @@ export class WebController implements ControllerHost {
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
   loadFromUrl(url: string): Promise<void> { return this.files.loadFromUrl(url); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
+  savePython(): Promise<void> { return this.files.savePython(); }
   saveData(): Promise<void> { return this.files.saveData(); }
   saveDataAs(format: FormatId): Promise<void> { return this.files.saveDataAs(format); }
   /** Public file-load helper (also used by tutorial load-file steps). */
