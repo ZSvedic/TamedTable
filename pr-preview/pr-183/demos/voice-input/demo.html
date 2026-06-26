@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- #VoicePort demo — manual, isolated test of the voice-input package.
+     Run: bun packages/voice-input/demo.html -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>voice-input demo</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 60rem; }
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 1rem; margin-top: 1.5rem; }
+    .row { display: flex; gap: .5rem; align-items: center; margin: .5rem 0; }
+    button { padding: .3rem .8rem; }
+    pre { padding: .5rem; background: #f4f4f4; overflow: auto; }
+    #vi-state { font-family: monospace; }
+  </style>
+<script type="module" crossorigin src="/pr-preview/pr-183/demos/voice-input/demo-kwhetntv.js"></script></head>
+<body>
+  <h1>voice-input — record &amp; prompt</h1>
+
+  <h2>Recording (browserVoicePort)</h2>
+  <div class="row">
+    <button id="vi-start">Start recording</button>
+    <button id="vi-stop" disabled>Stop → WAV</button>
+    <button id="vi-cancel" disabled>Cancel</button>
+    <span id="vi-state">idle</span>
+  </div>
+  <div class="row">
+    <span id="vi-result">—</span>
+    <audio id="vi-audio" controls style="display: none;"></audio>
+  </div>
+
+  <h2>buildVoicePrompt — sample context</h2>
+  <pre id="out"></pre>
+
+  
+</body>
+</html>
