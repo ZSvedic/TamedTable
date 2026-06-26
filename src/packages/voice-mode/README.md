@@ -16,18 +16,19 @@ cd src/packages/voice-mode
 bun run demo
 ```
 
-Vite prints a URL (default `http://localhost:5173`). Open it, allow the mic, flip
-**Full Voice Mode on**, and talk: *"add milk"*, *"remove milk"*, *"clear the
-list"*. The list mutates live; the status panel shows state, partial/final
-transcript, and time-to-transcript per turn.
+That runs `bun demo.html` — bun bundles the demo and prints a local URL. Open
+it, allow the mic, flip **Full Voice Mode on**, and talk: *"add milk"*, *"remove
+milk"*, *"clear the list"*. The list mutates live; the status panel shows state,
+partial/final transcript, and time-to-transcript per turn.
 
 - **Web Speech** (default) needs no key but is Chrome/Edge only and routes audio
   to Google.
 - **Whisper** works in any browser — pick it, choose OpenAI or Groq, and paste
   your key (kept in the tab, sent only to that provider).
 
-`bun run build` produces a static bundle; `bun run typecheck` type-checks the
-package on its own.
+The demo uses the same `bun demo.html` setup as every other package here, so the
+deploy workflow bundles it to the Pages site under `demos/voice-mode/`.
+`bun run typecheck` type-checks the package on its own.
 
 ## Using the module
 

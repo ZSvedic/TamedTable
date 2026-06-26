@@ -9,8 +9,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "demo": "vite",
-    "build": "vite build",
+    "demo": "bun demo.html",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
@@ -18,7 +17,6 @@
     "onnxruntime-web": "^1.26.0"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "vite": "^8.0.0"
+    "typescript": "^6.0.3"
   }
 }

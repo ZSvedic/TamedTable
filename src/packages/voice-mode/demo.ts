@@ -10,13 +10,17 @@ import {
   type VoiceSession,
   type VoiceState,
   type STTProvider,
-} from '../src/index.ts';
+} from './src/index.ts';
 
 const $ = (id: string): HTMLElement => document.getElementById(id)!;
 
 // ---- Capability check (PASS/FAIL on load) ---------------------------------
 const support = checkSupport();
 const caps = $('caps');
+// #out is the demo's ready signal — the smoke harness waits for it to fill.
+$('out').textContent = support.getUserMedia
+  ? 'Ready. Pick a provider and turn Full Voice Mode on.'
+  : 'This browser cannot capture the mic (getUserMedia missing).';
 const labels: Record<keyof typeof support, string> = {
   getUserMedia: 'getUserMedia',
   webAssembly: 'WebAssembly',

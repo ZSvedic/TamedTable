@@ -144,9 +144,8 @@ the one that generalizes to Anthropic/OpenRouter keys later.
 ## Dependencies (justification)
 
 - `@ricky0123/vad-web` — the VAD itself; wraps Silero + ONNX runtime. Core.
-- `onnxruntime-web` — its peer dependency; runs the model.
-- Build/serve the demo with Vite (its own setup inside the package), so the
-  worklet/model/wasm assets serve cleanly and the demo launches standalone,
-  independent of the main app's bun build. (This deviates from the repo's
-  `bun demo.html` convention only because vad-web's runtime asset fetching is
-  fiddly under the bun HTML bundler — flagged for review.)
+- `onnxruntime-web` — its dependency; runs the model.
+- No build-tool dependency: the demo is a `demo.html` that bun bundles and serves
+  with `bun run demo`, the same as every other package here, so the deploy
+  workflow picks it up unchanged. bun's bundler handles vad-web's CommonJS and
+  loads the model/wasm from a CDN at runtime — nothing extra to copy.
