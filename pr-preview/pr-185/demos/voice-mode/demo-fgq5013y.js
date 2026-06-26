@@ -11954,6 +11954,9 @@ function webSpeechSTT(opts = {}) {
       rec.onerror = (e) => {
         if (e.error === "no-speech" || e.error === "aborted")
           return;
+        if (e.error === "network" || e.error === "not-allowed" || e.error === "service-not-allowed") {
+          stopped = true;
+        }
         cb.onError?.(new Error(`SpeechRecognition error: ${e.error}`));
       };
       rec.onend = () => {
@@ -12133,7 +12136,11 @@ async function turnOn() {
       $("cmd").textContent = applyCommand(t);
     },
     onError: (err) => {
-      $("err").textContent = `[${err.stage}] ${err.message}`;
+      let msg = `[${err.stage}] ${err.message}`;
+      if (/network/i.test(err.message)) {
+        msg += " — Web Speech needs Google’s backend, which plain Chromium can’t reach (no API key) and some networks block. Switch to the Whisper provider to test the hands-free loop.";
+      }
+      $("err").textContent = msg;
     }
   });
   try {
