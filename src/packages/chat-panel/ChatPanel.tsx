@@ -4,7 +4,7 @@
 // detail panels are open. App copy (empty state, help lines) and the mic
 // button arrive as props, so the panel knows nothing about engines or files.
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
-import { space, typography, type Theme } from '@tamedtable/ui-kit';
+import { space, typography, TYPING_MS_PER_CHAR, type Theme } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { ChatPanelMessage, ChatRequestDetail } from './index.ts';
 
@@ -232,8 +232,9 @@ export function ChatPanel({
   const [helpOpen, setHelpOpen] = useState(false);
 
   // When a prefill arrives (a tutorial prefill-chat step is highlighted), type
-  // it into the draft ~40 ms/char so the learner watches the query appear, the
-  // way a person would type it. An empty prefill clears the box at once.
+  // it into the draft at the shared TYPING_MS_PER_CHAR cadence so the learner
+  // watches the query appear, the way a person would type it. An empty prefill
+  // clears the box at once.
   //
   // Re-entrancy guard: Driver.js re-highlights the step on refresh() (window
   // resize, scroll recalculation), re-firing this effect with the same prefill —
@@ -255,7 +256,7 @@ export function ChatPanel({
       i += 1;
       setDraft(prefill.slice(0, i));
       if (i >= prefill.length && guard.timer) { clearInterval(guard.timer); guard.timer = null; }
-    }, 40);
+    }, TYPING_MS_PER_CHAR);
     return () => { if (guard.timer) { clearInterval(guard.timer); guard.timer = null; } };
   }, [prefill]);
 

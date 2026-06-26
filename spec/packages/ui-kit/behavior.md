@@ -65,7 +65,24 @@ All components are pure — props in, callbacks out — and carry stable
   button; a toast carrying an `action` label also shows an inline action button
   that calls `onAction(id)` (`data-uk-toast-action`). Renders nothing when the
   list is empty; ships its own slide-in animation (`data-uk-toast`,
-  `data-uk-toast-dismiss`).
+  `data-uk-toast-dismiss`). Each toast also **auto-fades** on its own — it
+  schedules `onDismiss(id)` after `toastDurationMs(message)`, fading out
+  (`data-uk-toast-leaving`) just before it goes. Hovering a toast pauses the
+  timer so it stays while the cursor is over it (and while a slow reader needs
+  it), and restarts the full countdown when the cursor leaves. The dismiss
+  button still removes a toast at once. So a routine "Saved …" note clears
+  itself, yet an error a user wants to act on (its `action` button, e.g. "Copy
+  report") survives as long as they hover it.
+
+The timing is a React-free helper in the main entry, so it is unit-testable and
+shared:
+
+- `TYPING_MS_PER_CHAR` — the cadence (ms per character) the app types tutorial
+  queries at, reused as a reading-speed proxy.
+- `toastDurationMs(message)` — the time to read `message` (one character per
+  typing tick) doubled, then clamped between `TOAST_FLOOR_MS` and
+  `TOAST_CEILING_MS` so a terse note still lingers long enough to notice and a
+  long error does not camp on the screen.
 
 ## Demo page
 

@@ -4,7 +4,7 @@
 // spec/packages/README.md); they import nothing from the app harness.
 import { Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { brand, darkTheme, lightTheme } from './index.ts';
+import { brand, darkTheme, lightTheme, toastDurationMs } from './index.ts';
 
 interface UiKitWorld {
   _ukKeys?: { light: string[]; dark: string[] };
@@ -39,3 +39,17 @@ Then('brand accent is {string}', function (expected: string) {
 Then('brand line is {string}', function (expected: string) {
   assert.equal(brand.line, expected);
 });
+
+Then(
+  'a toast reading {string} stays on screen for {int} ms',
+  function (message: string, ms: number) {
+    assert.equal(toastDurationMs(message), ms);
+  },
+);
+
+Then(
+  'a toast reading a {int}-character message stays on screen for {int} ms',
+  function (len: number, ms: number) {
+    assert.equal(toastDurationMs('x'.repeat(len)), ms);
+  },
+);

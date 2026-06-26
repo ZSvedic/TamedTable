@@ -40,6 +40,11 @@ function Demo(): ReactNode {
         }}
         onOpenLocal={() => report('open local')}
         onSaveData={() => report('save data')}
+        saveDataMenu={[
+          { label: 'Save as CSV…', onClick: () => report('save as csv') },
+          { label: 'Save as JSONL…', onClick: () => report('save as jsonl') },
+          { label: 'Save as Parquet…', onClick: () => report('save as parquet') },
+        ]}
         onSaveFlow={() => report('save flow')}
         onUndo={() => {
           report('undo');

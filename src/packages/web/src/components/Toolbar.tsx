@@ -3,9 +3,19 @@
 // controller wiring stays here.
 import type { ReactNode } from 'react';
 import { useThemeControls } from '@tamedtable/ui-kit/components';
-import { Toolbar as ToolbarBar } from '@tamedtable/toolbar/components';
+import { Toolbar as ToolbarBar, type SaveMenuItem } from '@tamedtable/toolbar/components';
+import type { FormatId } from '@tamedtable/file-io';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
+
+// The formats "Save as…" offers, in toolbar order. The label is what the menu
+// shows; the id picks the codec the controller serializes through.
+const SAVE_FORMATS: { id: FormatId; label: string }[] = [
+  { id: 'csv', label: 'CSV' },
+  { id: 'jsonl', label: 'JSONL' },
+  { id: 'parquet', label: 'Parquet' },
+  { id: 'arrow', label: 'Arrow' },
+];
 
 export function Toolbar({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
@@ -13,6 +23,11 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
 
   const spec = controller.displaySpec();
   const fileName = spec.table ? (spec.table.split('/').pop() ?? spec.table) : null;
+
+  const saveDataMenu: SaveMenuItem[] = SAVE_FORMATS.map((f) => ({
+    label: `Save as ${f.label}…`,
+    onClick: () => void controller.saveDataAs(f.id),
+  }));
 
   return (
     <ToolbarBar
@@ -27,6 +42,7 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
       onOpenUrl={() => controller.openUrlDialog()}
       onOpenLocal={() => void controller.openCsv()}
       onSaveData={() => void controller.saveData()}
+      saveDataMenu={saveDataMenu}
       onSaveFlow={() => void controller.saveFlow()}
       onUndo={() => void controller.undo()}
       onRedo={() => void controller.redo()}

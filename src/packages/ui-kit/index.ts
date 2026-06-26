@@ -69,3 +69,23 @@ export const lightTheme = tokens.themes.light as Theme;
 
 // Dark — deep aubergine field. Same density; the accent stays pale sky.
 export const darkTheme = tokens.themes.dark as Theme;
+
+// ── Motion timings ──────────────────────────────────────────────────────────
+
+/** The cadence, in milliseconds per character, the app types tutorial queries
+ *  at (the chat-input prefill animation). One source of truth so the toast
+ *  auto-dismiss timer can reuse it as a reading-speed proxy. */
+export const TYPING_MS_PER_CHAR = 40;
+
+/** Shortest and longest a toast stays before it auto-fades. The floor keeps a
+ *  terse note ("Saved …") on screen long enough to notice; the ceiling stops a
+ *  long error from camping there. */
+export const TOAST_FLOOR_MS = 3000;
+export const TOAST_CEILING_MS = 12000;
+
+/** How long a toast stays before it auto-fades: the time to read `message` —
+ *  one character per typing tick — doubled, then clamped to the floor/ceiling. */
+export function toastDurationMs(message: string): number {
+  const readMs = message.length * TYPING_MS_PER_CHAR;
+  return Math.min(TOAST_CEILING_MS, Math.max(TOAST_FLOOR_MS, readMs * 2));
+}

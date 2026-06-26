@@ -10,6 +10,7 @@ import {
   loadCodec,
   parseTable,
   serializeFlow,
+  type FormatId,
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
@@ -95,15 +96,37 @@ export class FilesManager {
       this.host.pushToast('error', 'Load a file before saving data.');
       return;
     }
+    const format = formatForExtension(this.host.sourcePath || '') ?? 'jsonl';
+    await this.writeData(format, { keepSourceName: true });
+  }
+
+  /** Save a copy of the current rows in a chosen format — the "Save as <format>"
+   *  menu. Same dialog, but the format is the caller's pick, not the source's,
+   *  and the suggested name carries that format's extension so the user gets a
+   *  sensible default they can still rename. */
+  async saveDataAs(format: FormatId): Promise<void> {
+    if (!this.host.loaded) {
+      this.host.pushToast('error', 'Load a file before saving data.');
+      return;
+    }
+    await this.writeData(format, { keepSourceName: false });
+  }
+
+  /** Shared save path: serialize the rows in `format` and open the Save dialog.
+   *  `keepSourceName` reuses the opened file's name when it already matches the
+   *  format (the default save); otherwise the suggested name is the source's
+   *  stem with the format's extension (Save as). */
+  private async writeData(format: FormatId, opts: { keepSourceName: boolean }): Promise<void> {
     this.host.dialog = 'save-data';
     this.host.notify();
     try {
-      const sourceName = this.host.sourcePath || '';
-      const format = formatForExtension(sourceName) ?? 'jsonl';
       const codec = await loadCodec(format);
       const ext = codec.extensions[0] ?? '.jsonl';
-      const base = sourceName.split('/').pop() || '';
-      const suggested = formatForExtension(base) ? base : `data${ext}`;
+      const base = (this.host.sourcePath || '').split('/').pop() || '';
+      const suggested =
+        opts.keepSourceName && formatForExtension(base)
+          ? base
+          : `${base.replace(/\.[^.]*$/, '') || 'data'}${ext}`;
       const rows = this.host.engine.currentRows();
       const columns = this.host.engine.currentSpec().columns.map((c) => c.id);
       const content = await codec.serialize(rows, columns);

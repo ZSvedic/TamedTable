@@ -175,3 +175,9 @@ When('the user dismisses the first toast', async function (this: DemoWorld) {
 Then('no toast is visible', async function (this: DemoWorld) {
   await page(this).waitForSelector('[data-uk-toast]', { state: 'detached' });
 });
+
+Then('the toast fades on its own', async function (this: DemoWorld) {
+  // No click, no hover: the toast schedules its own dismissal. The floored
+  // duration plus the fade-out lands well under this window.
+  await page(this).waitForSelector('[data-uk-toast]', { state: 'detached', timeout: 8_000 });
+});
