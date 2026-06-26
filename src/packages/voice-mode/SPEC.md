@@ -124,9 +124,9 @@ the one that generalizes to Anthropic/OpenRouter keys later.
 
 - **Barge-in.** The demo has no TTS talking back, so barge-in (user interrupts
   playback) is out of scope here. Flagged because real integration needs it.
-- **Silence timeout.** `redemptionFrames` in the VAD decides how long a pause
-  ends a turn; too short clips slow talkers, too long feels laggy. Tunable,
-  default ~8 frames (~0.25 s); demo exposes it.
+- **Silence timeout.** `redemptionMs` in the VAD decides how long a pause ends a
+  turn; too short clips slow talkers, too long feels laggy. Tunable, default
+  ~1.4 s (the library's own); demo exposes it.
 - **WASM + model load cost.** First `start()` downloads the Silero ONNX model
   (~1–2 MB) and ONNX-runtime WASM, then compiles the worklet — a one-time hit of
   a few hundred ms to ~1 s. The demo measures time-to-first-listen.
@@ -136,9 +136,10 @@ the one that generalizes to Anthropic/OpenRouter keys later.
   everywhere; Web Speech additionally needs `SpeechRecognition` (Chrome/Edge).
   Safari has `AudioWorklet` but no `SpeechRecognition`, so Safari is Whisper-only.
 - **Asset serving.** `@ricky0123/vad-web` fetches its worklet, `.onnx` model, and
-  ONNX-runtime `.wasm` at runtime from `baseAssetPath` / `onnxWASMBasePath`. The
-  demo bundles these locally so it runs offline and honors the no-backend rule;
-  CDN is the fallback.
+  ONNX-runtime `.wasm` at runtime from `baseAssetPath` / `onnxWASMBasePath`. Its
+  own default is `/` (self-host expected), which 404s under a bundler, so the
+  package points both at a pinned jsDelivr CDN by default — static files, still
+  no backend. Override them to self-host for a fully offline build.
 
 ## Dependencies (justification)
 
