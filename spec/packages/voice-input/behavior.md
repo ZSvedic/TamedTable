@@ -78,11 +78,21 @@ load from a pinned jsDelivr CDN by default (static files, no backend);
 
 ## Demo page
 
-The demo (`demo.html` + `demo.ts`, deployed under `/demos/voice-input/`)
-renders `buildVoicePrompt` for a sample context into `#out` (the smoke test's
-ready signal) and drives a real `browserVoicePort()`: Start (`#vi-start`)
-asks for the microphone, Stop (`#vi-stop`) shows the WAV's type and byte size
-in `#vi-result` with an `<audio>` element to play it back, Cancel
-(`#vi-cancel`) discards. The state line (`#vi-state`) tracks
-idle/recording/stopped. Automated `@web` scenarios run Chromium with a fake
-microphone; the live page uses the real one.
+The demo (`demo.html` + `demo.ts`, deployed under `/demos/voice-input/`) exercises
+all three jobs by hand — no LLM, so a captured turn is just a clip you can play.
+
+- **buildVoicePrompt** renders for a sample context into `#out` (the smoke test's
+  ready signal).
+- **Press-and-hold** drives a real `browserVoicePort()`: Start (`#vi-start`) asks
+  for the microphone, Stop (`#vi-stop`) shows the WAV's type and byte size in
+  `#vi-result` with an `<audio>` to play it back, Cancel (`#vi-cancel`) discards;
+  `#vi-state` tracks idle/recording/stopped.
+- **Hands-free** drives a real `browserContinuousPort()`: the toggle (`#hf-toggle`)
+  starts/stops listening (`#hf-state`), each detected turn shows its clip size in
+  `#hf-result` with an `<audio>` to play it, and Snappy/Balanced/Relaxed presets
+  plus `redemptionMs` / `minSpeechMs` inputs re-tune the VAD live.
+- A capability panel (`#caps`) reports getUserMedia, WebAssembly, and AudioWorklet.
+
+Automated `@web` scenarios run Chromium with a fake microphone and only drive the
+press-and-hold controls (the VAD's model loads from a CDN); the live page uses the
+real microphone and VAD.
