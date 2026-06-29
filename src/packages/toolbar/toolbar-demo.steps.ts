@@ -136,13 +136,13 @@ When('the user clicks the toolbar theme toggle', async function (this: DemoWorld
 });
 
 When('the user opens the toolbar save menu', async function (this: DemoWorld) {
-  // Three split buttons carry a caret — "Open URL…", "Save data", "Save flow";
+  // Three split buttons carry a caret — "Open sample…", "Save data", "Save flow";
   // the Save-data menu is the second.
   await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(1).click();
 });
 
 When('the user opens the toolbar save-flow menu', async function (this: DemoWorld) {
-  // The Save-flow split button is the third (after "Open URL…" and "Save data").
+  // The Save-flow split button is the third (after "Open sample…" and "Save data").
   await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(2).click();
 });
 
@@ -155,8 +155,20 @@ Then('the toolbar event log shows {string}', async function (this: DemoWorld, ex
 });
 
 When('the user opens the toolbar URL dialog', async function (this: DemoWorld) {
-  await page(this).click('[data-tb-toolbar] button:has-text("Open URL")');
+  // "Open URL…" now lives in the Open split-button's dropdown (the first caret).
+  await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(0).click();
+  await page(this).click('[data-uk-menu-item="Open URL…"]');
   await page(this).waitForSelector('[data-tb-dialog]');
+});
+
+When('the user opens the toolbar sample picker', async function (this: DemoWorld) {
+  // "Open sample…" is the Open split-button's primary half.
+  await page(this).click('[data-tb-toolbar] button:has-text("Open sample")');
+  await page(this).waitForSelector('[data-tb-sample-dialog]');
+});
+
+Then('the toolbar sample picker is closed', async function (this: DemoWorld) {
+  await page(this).waitForSelector('[data-tb-sample-dialog]', { state: 'detached' });
 });
 
 When('the user types {string} into the toolbar URL field', async function (this: DemoWorld, url: string) {

@@ -610,11 +610,17 @@ the message inline and stays open. `WebControllerOptions.fetch`, when
 present, replaces the global `fetch` used here — the same hook the
 engine uses for cassette replay, so URL-load scenarios run offline.
 
-The toolbar's split-button (`SplitButton`) and the empty-state card's
-split-button share one component: the primary action opens the URL
-dialog, the dropdown carries **Open local…**. The two halves render
-inside one rounded shell with a single hover tint and no internal
-divider, so the pair reads as one control.
+The three load sources are first-class actions — **Open sample…**,
+**Open local…**, **Open URL…**. The toolbar renders them as one
+`SplitButton`: the primary action opens the sample picker, the dropdown
+carries **Open local…** and **Open URL…**. The two halves render inside
+one rounded shell with a single hover tint and no internal divider, so
+the pair reads as one control. The empty page stacks the same three as
+separate buttons under the brand mark and the line "What table can I
+tame?". At a viewport width of 768 px and below the app renders a
+table-first dock layout (app bar with pager · table · bottom dock of
+menu/undo/keyboard/voice · left menu drawer · chat composer sheet);
+the controller surface is unchanged — only presentation differs.
 
 ### Diagnostics log (#Diagnostics)
 

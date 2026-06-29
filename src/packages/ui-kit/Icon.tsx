@@ -25,7 +25,11 @@ export type IconName =
   | 'moon'
   | 'mic'
   | 'wave'
-  | 'copy';
+  | 'copy'
+  | 'menu'
+  | 'keyboard'
+  | 'link'
+  | 'sparkle';
 
 const PATHS: Record<IconName, string> = {
   folder:
@@ -50,6 +54,15 @@ const PATHS: Record<IconName, string> = {
   // An audio waveform — five bars of rising/falling height for continuous voice.
   wave: 'M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3',
   copy: 'M6 6h7v7H6Z M10 6V3.5A.5.5 0 0 0 9.5 3h-6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5H6',
+  // Hamburger menu — three rules.
+  menu: 'M2.5 4.5h11 M2.5 8h11 M2.5 11.5h11',
+  // On-screen keyboard — a rounded frame, a row of key dots, and a space bar.
+  keyboard:
+    'M2 4.5h12a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z M4 7v.01 M7 7v.01 M10 7v.01 M12 7v.01 M5 10h6',
+  // Chain link.
+  link: 'M6.6 9.4 9.4 6.6 M7.2 5 8.2 4a2.5 2.5 0 0 1 3.5 3.5l-1 1 M8.8 11l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1',
+  // Four-point sparkle.
+  sparkle: 'M8 2.5 9.2 5.8 12.5 7 9.2 8.2 8 11.5 6.8 8.2 3.5 7 6.8 5.8Z',
 };
 
 /** Every icon name, in catalogue order — the demo's icon grid renders these. */

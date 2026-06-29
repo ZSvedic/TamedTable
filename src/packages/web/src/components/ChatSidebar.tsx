@@ -32,18 +32,25 @@ function EmptyChat(): ReactNode {
         Load a table to begin.
       </span>
       <br />
-      Open a local file, paste a URL, or pick a sample with{' '}
-      <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open URL or sample…</em> — then
+      Pick a sample, open a local file, or paste a URL with{' '}
+      <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open sample…</em> — then
       describe a change in plain English, e.g. “normalize phone numbers” or “drop duplicate
       emails”. Requests are additive; use Undo to revert.
     </p>
   );
 }
 
-export function ChatSidebar({ controller }: { controller: WebController }): ReactNode {
+export function ChatSidebar({
+  controller,
+  fill = false,
+}: {
+  controller: WebController;
+  fill?: boolean;
+}): ReactNode {
   useController(controller);
   return (
     <ChatPanel
+      fill={fill}
       inputId="tutorial-chat-input"
       messages={controller.messages}
       streaming={controller.streaming}

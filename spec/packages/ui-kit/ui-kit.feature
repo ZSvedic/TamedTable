@@ -51,7 +51,7 @@ Feature: UI kit package
     @web
     Scenario: The full icon set renders
       Given the ui-kit demo page
-      Then the demo renders all 20 icon names
+      Then the demo renders every icon name
 
     @web
     Scenario: The theme toggle flips to dark mode and back

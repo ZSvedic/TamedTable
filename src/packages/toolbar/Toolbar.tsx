@@ -27,6 +27,7 @@ export interface ToolbarProps {
   canRedo: boolean;
   /** DOM id for the Open split button — the Driver.js tutorial spotlight. */
   openButtonId?: string;
+  onOpenSample: () => void;
   onOpenUrl: () => void;
   onOpenLocal: () => void;
   onSaveData: () => void;
@@ -51,6 +52,7 @@ export function Toolbar({
   canUndo,
   canRedo,
   openButtonId,
+  onOpenSample,
   onOpenUrl,
   onOpenLocal,
   onSaveData,
@@ -110,14 +112,17 @@ export function Toolbar({
 
       <SplitButton
         id={openButtonId}
-        onClick={onOpenUrl}
+        onClick={onOpenSample}
         disabled={busy}
-        title="Open a CSV or JSONL file from a URL"
+        title="Open a bundled sample file"
         caretTitle="More open options"
-        menu={[{ label: 'Open local…', onClick: onOpenLocal }]}
+        menu={[
+          { label: 'Open local…', onClick: onOpenLocal },
+          { label: 'Open URL…', onClick: onOpenUrl },
+        ]}
       >
         <Icon name="folder" />
-        Open URL…
+        Open sample…
       </SplitButton>
       <SplitButton
         onClick={onSaveData}

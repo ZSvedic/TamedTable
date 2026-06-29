@@ -63,6 +63,18 @@ export class FilesManager {
     this.host.notify();
   }
 
+  /** Show the Open-sample picker dialog. */
+  openSampleDialog(): void {
+    this.host.sampleDialogOpen = true;
+    this.host.notify();
+  }
+
+  /** Hide the Open-sample picker dialog. */
+  closeSampleDialog(): void {
+    this.host.sampleDialogOpen = false;
+    this.host.notify();
+  }
+
   /** Fetch a CSV or JSONL from `url` and render it like a local-file open.
    *  Throws on any failure so the dialog can keep itself open with an
    *  inline error; success closes the dialog at the caller. */

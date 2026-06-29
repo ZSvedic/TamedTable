@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { typography } from '@tamedtable/ui-kit';
 import { ThemeProvider, useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import type { ToolbarSample } from './index.ts';
-import { Toolbar, OpenUrlDialog } from './components.tsx';
+import { Toolbar, OpenUrlDialog, OpenSampleDialog } from './components.tsx';
 
 const SAMPLES: ToolbarSample[] = [
   { name: 'customers-input.csv', url: 'https://example.com/customers-input.csv' },
@@ -18,6 +18,7 @@ function Demo(): ReactNode {
   const t = useTheme();
   const { mode, toggle } = useThemeControls();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sampleOpen, setSampleOpen] = useState(false);
   const [canUndo, setCanUndo] = useState(true);
   const [log, setLog] = useState<string[]>(['ready']);
 
@@ -34,6 +35,10 @@ function Demo(): ReactNode {
         colCount={4}
         canUndo={canUndo}
         canRedo={false}
+        onOpenSample={() => {
+          report('open sample dialog');
+          setSampleOpen(true);
+        }}
         onOpenUrl={() => {
           report('open dialog');
           setDialogOpen(true);
@@ -80,9 +85,15 @@ function Demo(): ReactNode {
         {log.join('\n')}
       </pre>
 
+      <OpenSampleDialog
+        open={sampleOpen}
+        samples={SAMPLES}
+        onPick={(url) => report(`open sample ${url}`)}
+        onClose={() => setSampleOpen(false)}
+      />
+
       <OpenUrlDialog
         open={dialogOpen}
-        samples={SAMPLES}
         onSubmit={async (url) => {
           report(`open url ${url}`);
         }}

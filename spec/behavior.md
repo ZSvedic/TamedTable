@@ -672,17 +672,25 @@ column-reorder happen through normal browser gestures but ultimately
 produce spec patches — the same shape the LLM produces — so undo/redo,
 history, and replay against the source all work unchanged.
 
-A table can be loaded from three sources: a local file, a remote
-`.csv`/`.jsonl` URL, or one of the bundled sample files. The toolbar
-offers one **Open URL or sample…** split-button: the primary click
-opens the URL dialog (which also lists the bundled samples — picking
-one fills the URL field), and the small dropdown reveals **Open
-local…**, which raises the native file picker. The empty-state card
-shown before any file is loaded mirrors that same split-button, so the
-two surfaces stay in sync. The split-button is rendered as a single
-control — one rounded shell, one shared hover tint, no internal
-divider between the label and the dropdown chevron — so it reads as
-one toolbar item rather than two adjacent menu entries.
+A table can be loaded from three sources, and each is its own
+first-class action: **Open sample…**, **Open local…**, and **Open
+URL…**. Samples are no longer buried inside the URL dialog — a user
+looking for a bundled file should not have to guess it lives behind
+"URL". The toolbar surfaces the three as one Open split-button: the
+primary click is **Open sample…** (it raises a small picker of the
+bundled sample files; clicking a sample loads it straight away), and
+the dropdown carries **Open local…** (the native file picker) and
+**Open URL…** (the URL dialog). The split-button is rendered as a
+single control — one rounded shell, one shared hover tint, no internal
+divider between the label and the dropdown chevron — so it reads as one
+toolbar item rather than two adjacent menu entries. The URL dialog is
+now URL-only: it accepts a typed address and no longer lists samples.
+
+Before any file is loaded the table area shows an **empty page**: the
+TamedTable mark, the line **"What table can I tame?"**, and the same
+three open actions stacked as buttons — **Open sample…**, **Open
+local…**, **Open URL…** — so the first run and the toolbar offer the
+identical choices.
 
 Saving data mirrors that shape. **Save data** is itself a split-button:
 the primary half writes the rows back in the format the table was
@@ -830,6 +838,43 @@ evaluation error) followed by the RFC 6902 patch ops JSON for that
 turn. The **cell samples** section — shown only when at least one
 `{llm}` mutate transformation ran — lists up to 3 before→after pairs
 per column, formatted as `column: "before" → "after"`.
+
+#### Narrow viewport (mobile)
+
+At a phone-width viewport (768 px and below) the side-by-side
+sidebar-and-table layout does not fit, so the app switches to a
+table-first **dock layout**. The same controller drives both — only the
+chrome differs; nothing about loading, transforming, saving, undo/redo,
+or the engine changes.
+
+- The desktop top bar collapses to a compact **app bar**: the brand
+  mark, the file name, and — when the table spans more than one page — a
+  `‹ page / total ›` pager with prev/next buttons (the same paging the
+  desktop pagination bar drives).
+- The table fills the screen below the app bar and scrolls in both
+  directions; its header row and row-index column stay frozen.
+- A persistent **bottom dock** carries four buttons — **menu**,
+  **undo**, **keyboard**, and **voice**. Undo is a one-tap button (it
+  greys when there is nothing to undo). Keyboard and voice are disabled
+  until a table is loaded, matching the empty page; **menu stays live**
+  so Settings, Tours, and the open actions are reachable even before a
+  file is loaded.
+- **Menu** opens a left **drawer** with the actions that live in the
+  desktop toolbar: the three Open actions, Save data (and Save as…),
+  Save flow (and Save as Python…), a dark-mode toggle, Settings, and
+  Tours.
+- **Keyboard** raises the chat composer as a bottom **sheet** above the
+  dock, so the table stays in view while the user types a request;
+  sending or dismissing lowers it. **Voice** raises the same chat sheet
+  with the microphone ready. Both reuse the desktop chat panel and its
+  voice plumbing unchanged.
+- The settings panel, the URL dialog, the sample picker, and the Tours
+  panel open as full-width sheets rather than centered desktop cards.
+
+The empty page, the dialogs, and every transformation behave
+identically to the desktop app; the dock layout is purely a
+presentation choice keyed off viewport width and flips live as the
+window (or device) is resized.
 
 → [code-contract.md — Extended transformations, SQL, and the web UI](code-contract.md#extended-transformations-sql-and-the-web-ui)
 

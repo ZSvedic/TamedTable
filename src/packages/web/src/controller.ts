@@ -96,6 +96,8 @@ export class WebController implements ControllerHost {
   dialog: DialogKind = null;
   /** Whether the Open URL modal dialog is showing. */
   urlDialogOpen = false;
+  /** Whether the Open-sample picker dialog is showing. */
+  sampleDialogOpen = false;
   streaming = false;
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
@@ -294,6 +296,8 @@ export class WebController implements ControllerHost {
   openCsv(): Promise<void> { return this.files.openCsv(); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
+  openSampleDialog(): void { this.files.openSampleDialog(); }
+  closeSampleDialog(): void { this.files.closeSampleDialog(); }
   loadFromUrl(url: string): Promise<void> { return this.files.loadFromUrl(url); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
   savePython(): Promise<void> { return this.files.savePython(); }

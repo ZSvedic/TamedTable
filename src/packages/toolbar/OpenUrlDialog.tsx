@@ -1,22 +1,19 @@
 // #Toolbar
-// The "Open from URL" modal — pure props in, callbacks out. The host supplies
-// the sample list (filenames + composed URLs) and the submit/close handlers;
-// the dialog owns only its draft URL plus the in-flight/error state.
+// The "Open from URL" modal — pure props in, callbacks out. URL-only: samples
+// have their own picker (OpenSampleDialog), so this dialog owns just its draft
+// URL plus the in-flight/error state.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
-import { sampleKind, type ToolbarSample } from './index.ts';
 
 export interface OpenUrlDialogProps {
   open: boolean;
-  /** Bundled sample files — the host composes each full URL. */
-  samples: ReadonlyArray<ToolbarSample>;
   /** Load the URL; reject to surface an error and keep the dialog open. */
   onSubmit: (url: string) => Promise<void>;
   onClose: () => void;
 }
 
-export function OpenUrlDialog({ open, samples, onSubmit, onClose }: OpenUrlDialogProps): ReactNode {
+export function OpenUrlDialog({ open, onSubmit, onClose }: OpenUrlDialogProps): ReactNode {
   const t = useTheme();
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -55,16 +52,6 @@ export function OpenUrlDialog({ open, samples, onSubmit, onClose }: OpenUrlDialo
     } finally {
       setLoading(false);
     }
-  };
-
-  // Picking a sample fills the URL field rather than auto-submitting. That
-  // way the user sees the URL they're about to load (and can edit it) — and
-  // one consistent action ("Load") submits, whether the URL was typed or
-  // picked.
-  const pickSample = (sampleUrl: string): void => {
-    setUrl(sampleUrl);
-    setError(null);
-    inputRef.current?.focus();
   };
 
   const onKeyDown = (e: React.KeyboardEvent): void => {
@@ -226,62 +213,6 @@ export function OpenUrlDialog({ open, samples, onSubmit, onClose }: OpenUrlDialo
             )}
           </div>
 
-          <div>
-            <div
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.sm,
-                fontWeight: 600,
-                color: t.ink,
-                marginBottom: space.px4,
-              }}
-            >
-              Or pick a sample file
-            </div>
-            <div
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                lineHeight: 1.55,
-                color: t.ink3,
-                marginBottom: space.px8,
-              }}
-            >
-              Shipped with TamedTable. Picking one fills the URL field — press
-              Load to fetch.
-            </div>
-            <div
-              role="listbox"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                maxHeight: 240,
-                overflowY: 'auto',
-                border: `1px solid ${t.line2}`,
-                borderRadius: space.radius,
-                background: t.surface2,
-                padding: space.px4,
-              }}
-            >
-              {samples.length === 0 && (
-                <div
-                  style={{
-                    padding: '8px 10px',
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.sm,
-                    color: t.ink3,
-                  }}
-                >
-                  No sample files bundled.
-                </div>
-              )}
-              {samples.map((sample) => (
-                <SampleRow key={sample.name} sample={sample} onPick={() => pickSample(sample.url)} />
-              ))}
-            </div>
-          </div>
-
           {error && (
             <div
               role="alert"
@@ -329,48 +260,5 @@ export function OpenUrlDialog({ open, samples, onSubmit, onClose }: OpenUrlDialo
         </div>
       </div>
     </div>
-  );
-}
-
-function SampleRow({ sample, onPick }: { sample: ToolbarSample; onPick: () => void }): ReactNode {
-  const t = useTheme();
-  const [hover, setHover] = useState(false);
-  return (
-    <button
-      type="button"
-      data-tb-sample=""
-      onClick={onPick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      title={`Use ${sample.name}`}
-      style={{
-        textAlign: 'left',
-        background: hover ? t.surface3 : 'transparent',
-        border: 0,
-        borderRadius: space.radiusSm,
-        padding: '6px 8px',
-        cursor: 'pointer',
-        color: t.ink,
-        fontFamily: typography.mono,
-        fontSize: typography.size.sm,
-        display: 'flex',
-        alignItems: 'center',
-        gap: space.px8,
-      }}
-    >
-      <span
-        style={{
-          fontFamily: typography.ui,
-          fontSize: typography.size.xs,
-          color: t.ink3,
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
-          minWidth: 36,
-        }}
-      >
-        {sampleKind(sample.name)}
-      </span>
-      <span>{sample.name}</span>
-    </button>
   );
 }

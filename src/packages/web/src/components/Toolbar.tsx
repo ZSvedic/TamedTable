@@ -46,6 +46,7 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
       colCount={spec.columns.length}
       canUndo={controller.canUndo()}
       canRedo={controller.canRedo()}
+      onOpenSample={() => controller.openSampleDialog()}
       onOpenUrl={() => controller.openUrlDialog()}
       onOpenLocal={() => void controller.openCsv()}
       onSaveData={() => void controller.saveData()}
