@@ -11797,6 +11797,41 @@ var DEFAULT_TUNING = {
   baseAssetPath: `https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@${VAD_VERSION}/dist/`,
   onnxWASMBasePath: `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`
 };
+async function createVad(cb, tuning) {
+  const vad = await import_vad_web.MicVAD.new({
+    model: "v5",
+    startOnLoad: false,
+    positiveSpeechThreshold: tuning.positiveSpeechThreshold,
+    negativeSpeechThreshold: tuning.negativeSpeechThreshold,
+    redemptionMs: tuning.redemptionMs,
+    minSpeechMs: tuning.minSpeechMs,
+    preSpeechPadMs: tuning.preSpeechPadMs,
+    baseAssetPath: tuning.baseAssetPath,
+    onnxWASMBasePath: tuning.onnxWASMBasePath,
+    onSpeechStart: () => cb.onSpeechStart(),
+    onSpeechEnd: (audio) => cb.onSpeechEnd(audio),
+    onVADMisfire: () => cb.onMisfire?.()
+  });
+  return {
+    start: () => vad.start(),
+    pause: () => vad.pause(),
+    destroy: () => vad.destroy(),
+    setOptions: (opts) => {
+      const fp = {};
+      if (typeof opts.positiveSpeechThreshold === "number")
+        fp.positiveSpeechThreshold = opts.positiveSpeechThreshold;
+      if (typeof opts.negativeSpeechThreshold === "number")
+        fp.negativeSpeechThreshold = opts.negativeSpeechThreshold;
+      if (typeof opts.redemptionMs === "number")
+        fp.redemptionMs = opts.redemptionMs;
+      if (typeof opts.minSpeechMs === "number")
+        fp.minSpeechMs = opts.minSpeechMs;
+      if (typeof opts.preSpeechPadMs === "number")
+        fp.preSpeechPadMs = opts.preSpeechPadMs;
+      vad.setOptions(fp);
+    }
+  };
+}
 // packages/voice-input/index.ts
 function buildVoicePrompt(ctx) {
   const lines = [
@@ -11900,13 +11935,80 @@ function browserVoicePort() {
   };
 }
 
+// packages/voice-input/wav.ts
+function encodeWav(pcm, sampleRate) {
+  const bytesPerSample = 2;
+  const buffer = new ArrayBuffer(44 + pcm.length * bytesPerSample);
+  const view = new DataView(buffer);
+  const writeStr = (offset2, s) => {
+    for (let i = 0;i < s.length; i++)
+      view.setUint8(offset2 + i, s.charCodeAt(i));
+  };
+  const dataSize = pcm.length * bytesPerSample;
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * bytesPerSample, true);
+  view.setUint16(32, bytesPerSample, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+  let offset = 44;
+  for (let i = 0;i < pcm.length; i++) {
+    const s = Math.max(-1, Math.min(1, pcm[i]));
+    view.setInt16(offset, s < 0 ? s * 32768 : s * 32767, true);
+    offset += bytesPerSample;
+  }
+  return buffer;
+}
+
+// packages/voice-input/browser-vad.ts
+function browserContinuousPort(tuning = {}) {
+  let vad = null;
+  return {
+    async start(h) {
+      vad = await createVad({
+        onSpeechStart: () => h.onSpeechStart?.(),
+        onSpeechEnd: (pcm) => {
+          const wav = encodeWav(pcm, 16000);
+          h.onSegment(new Blob([wav], { type: "audio/wav" }));
+        }
+      }, { ...DEFAULT_TUNING, ...tuning });
+      await vad.start();
+    },
+    stop() {
+      vad?.destroy();
+      vad = null;
+    },
+    setTuning(t) {
+      vad?.setOptions(t);
+    }
+  };
+}
+
 // packages/voice-input/demo.ts
 var $ = (id) => document.getElementById(id);
+$("out").textContent = buildVoicePrompt({
+  filename: "people.csv",
+  columns: ["name", "phone", "country"],
+  selectedCell: { col: "phone", row: 2, value: "555-0199" }
+});
+var caps = {
+  getUserMedia: typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia,
+  WebAssembly: typeof WebAssembly !== "undefined",
+  AudioWorklet: typeof AudioContext !== "undefined" && "audioWorklet" in AudioContext.prototype
+};
+$("caps").innerHTML = Object.entries(caps).map(([k, v]) => `<dt>${k}</dt><dd class="${v ? "pass" : "fail"}">${v ? "PASS" : "FAIL"}</dd>`).join("");
 var startBtn = $("vi-start");
 var stopBtn = $("vi-stop");
 var cancelBtn = $("vi-cancel");
 var port = browserVoicePort();
-function setState(state) {
+function setRecState(state) {
   $("vi-state").textContent = state;
   startBtn.disabled = state === "recording";
   stopBtn.disabled = state !== "recording";
@@ -11915,7 +12017,7 @@ function setState(state) {
 startBtn.addEventListener("click", async () => {
   try {
     await port.startRecording();
-    setState("recording");
+    setRecState("recording");
   } catch (e) {
     $("vi-result").textContent = e.message;
   }
@@ -11927,19 +12029,79 @@ stopBtn.addEventListener("click", async () => {
     const audio = $("vi-audio");
     audio.src = URL.createObjectURL(blob);
     audio.style.display = "";
-    setState("stopped");
+    setRecState("stopped");
   } catch (e) {
     $("vi-result").textContent = e.message;
-    setState("idle");
+    setRecState("idle");
   }
 });
 cancelBtn.addEventListener("click", () => {
   port.cancelRecording();
   $("vi-result").textContent = "cancelled";
-  setState("idle");
+  setRecState("idle");
 });
-$("out").textContent = buildVoicePrompt({
-  filename: "people.csv",
-  columns: ["name", "phone", "country"],
-  selectedCell: { col: "phone", row: 2, value: "555-0199" }
+setRecState("idle");
+var PRESETS = {
+  snappy: { redemptionMs: 300, minSpeechMs: 200 },
+  balanced: { redemptionMs: 700, minSpeechMs: 300 },
+  relaxed: { redemptionMs: 1400, minSpeechMs: 400 }
+};
+var cont = null;
+var turns = 0;
+function readTuning() {
+  return {
+    redemptionMs: Number($("redemptionMs").value),
+    minSpeechMs: Number($("minSpeechMs").value)
+  };
+}
+function setHfState(listening) {
+  $("hf-state").textContent = listening ? "listening" : "idle";
+  const btn = $("hf-toggle");
+  btn.textContent = listening ? "■ Stop hands-free" : "▶ Start hands-free";
+  btn.classList.toggle("on", listening);
+}
+function applyPreset(name) {
+  const p = PRESETS[name];
+  $("redemptionMs").value = String(p.redemptionMs);
+  $("minSpeechMs").value = String(p.minSpeechMs);
+  cont?.setTuning?.(readTuning());
+}
+document.querySelectorAll("button[data-preset]").forEach((b) => {
+  b.addEventListener("click", () => applyPreset(b.dataset.preset));
+});
+["redemptionMs", "minSpeechMs"].forEach((id) => {
+  $(id).addEventListener("change", () => cont?.setTuning?.(readTuning()));
+});
+applyPreset("balanced");
+$("hf-toggle").addEventListener("click", async () => {
+  if (cont) {
+    cont.stop();
+    cont = null;
+    setHfState(false);
+    return;
+  }
+  $("hf-err").textContent = "";
+  cont = browserContinuousPort(readTuning());
+  try {
+    await cont.start({
+      onSpeechStart: () => {
+        $("hf-result").textContent = "… speaking …";
+      },
+      onSegment: (clip) => {
+        turns++;
+        $("hf-result").textContent = `turn ${turns}: ${clip.type} · ${clip.size.toLocaleString("en-US")} bytes`;
+        const audio = $("hf-audio");
+        audio.src = URL.createObjectURL(clip);
+        audio.style.display = "";
+      },
+      onError: (e) => {
+        $("hf-err").textContent = e.message;
+      }
+    });
+    setHfState(true);
+  } catch (e) {
+    $("hf-err").textContent = e.message;
+    cont = null;
+    setHfState(false);
+  }
 });
