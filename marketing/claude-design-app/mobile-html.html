@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TamedTable — Mobile UX Wireframe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d1d1b;
+    --mid:#6f6f6a;
+    --faint:#a6a6a0;
+    --line:#cfcfc8;
+    --line2:#e3e3dd;
+    --fill:#e9e9e4;
+    --fill2:#dddcd5;
+    --fill3:#cfcec7;
+    --bg:#efeee9;
+    --panel:#f7f6f2;
+    --white:#ffffff;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Space Grotesk", system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .hand{ font-family:"Caveat", cursive; }
+
+  /* ── top header ── */
+  header.top{
+    display:flex; align-items:center; justify-content:space-between; gap:18px;
+    padding:15px 30px; background:var(--bg); border-bottom:1px solid var(--line);
+  }
+  .top .brand{ display:flex; align-items:center; gap:13px; }
+  .markmini{ width:30px; height:20px; }
+  .top h1{ font-size:20px; font-weight:600; margin:0; letter-spacing:-.2px; }
+  .top .sub{ font-size:13px; color:var(--mid); margin-top:1px; }
+  main{ max-width:1320px; margin:0 auto; padding:12px 30px 50px; }
+
+  /* ── intro ── */
+  .intro{ display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; margin-bottom:8px; }
+  .intro .blurb{ flex:1 1 460px; }
+  .intro h2{ font-size:27px; font-weight:600; margin:0 0 8px; letter-spacing:-.5px; }
+  .intro p{ font-size:15px; line-height:1.55; color:var(--mid); margin:0; max-width:66ch; }
+  .intro p b{ color:var(--ink); font-weight:600; }
+  .legend{ flex:0 0 auto; border:1px solid var(--line); border-radius:12px; background:var(--white); padding:14px 16px; }
+  .legend b{ font-size:13px; }
+  .legend ul{ list-style:none; margin:9px 0 0; padding:0; display:grid; gap:7px; }
+  .legend li{ display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--mid); }
+  .sw{ width:26px; height:15px; border:1px solid var(--ink); border-radius:2px; flex:0 0 auto; }
+  .sw.grid{ background:repeating-linear-gradient(var(--fill2) 0 4px,transparent 4px 5px),repeating-linear-gradient(90deg,var(--fill2) 0 4px,transparent 4px 5px); }
+  .sw.fill{ background:var(--fill2); }
+  .sw.ann{ border:none; font-family:"Caveat"; font-size:18px; color:var(--mid); width:auto; height:auto; }
+
+  /* ── version section ── */
+  .ver{ margin-top:50px; padding-top:30px; border-top:2px solid var(--ink); }
+  .ver:first-child{ margin-top:8px; }
+  .ver-head{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .ver-tag{ font-size:13px; font-weight:700; letter-spacing:1.5px; color:var(--mid); }
+  .ver-head h3{ font-size:25px; font-weight:600; margin:0; letter-spacing:-.4px; }
+  .ver-head .one{ font-size:15px; color:var(--mid); }
+  .ver-desc{ font-size:14.5px; line-height:1.55; color:var(--mid); margin:9px 0 4px; max-width:92ch; }
+  .ver-desc b{ color:var(--ink); font-weight:600; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 26px; }
+  .chip{ border:1px solid var(--ink); border-radius:16px; padding:4px 12px; font-size:12.5px; background:var(--white); }
+  .chip.key{ background:var(--ink); color:var(--white); }
+
+  .rail{ display:flex; flex-wrap:wrap; gap:30px 26px; margin-top:24px; }
+  .cell-fig{ display:flex; flex-direction:column; gap:11px; width:248px; }
+  .cap{ font-size:13px; color:var(--mid); line-height:1.45; }
+  .cap b{ color:var(--ink); font-weight:600; }
+
+  /* ── phone shell ── */
+  .phone{ width:248px; height:516px; border:2px solid var(--ink); border-radius:32px; padding:7px;
+          background:var(--white); position:relative; box-shadow:5px 7px 0 rgba(29,29,27,.08); }
+  .screen{ width:100%; height:100%; border:1px solid var(--line); border-radius:25px; overflow:hidden;
+           display:flex; flex-direction:column; background:var(--white); position:relative; }
+  .status{ height:24px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 16px; }
+  .status .time{ font-size:10px; font-weight:600; color:var(--mid); }
+  .status .sig{ display:flex; gap:3px; }
+  .status .sig i{ width:4px; height:4px; border-radius:50%; background:var(--faint); display:block; }
+
+  /* icons */
+  .ic{ width:22px; height:22px; flex:0 0 auto; color:var(--ink); }
+  .ic.sm{ width:18px; height:18px; }
+  .ic.mid{ color:var(--mid); }
+  .iconbtn{ width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .iconbtn.bd{ border:1.5px solid var(--ink); }
+  .iconbtn.solid{ background:var(--ink); }
+  .iconbtn.solid .ic{ color:var(--white); }
+
+  /* top app bar */
+  .appbar{ height:44px; flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:0 10px; border-bottom:1px solid var(--ink); }
+  .appbar .fname{ font-size:13px; font-weight:600; }
+  .appbar .pager{ font-size:11px; color:var(--mid); }
+  .grow{ flex:1 1 auto; }
+
+  /* table grid */
+  .grid{ flex:1 1 auto; display:flex; flex-direction:column; overflow:hidden; }
+  .ghead,.grow-r{ display:grid; grid-template-columns:24px 1fr 1fr .9fr 18px; align-items:center; height:30px; flex:0 0 auto; }
+  .ghead{ background:var(--fill); border-bottom:1.5px solid var(--ink); }
+  .ghead span{ font-size:10.5px; font-weight:600; padding:0 6px; border-right:1px solid var(--line); height:100%; display:flex; align-items:center; }
+  .ghead span:last-child{ border-right:0; justify-content:center; color:var(--mid); }
+  .ghead .gx{ background:var(--fill2); }
+  .grow-r{ border-bottom:1px solid var(--line2); }
+  .grow-r span{ padding:0 6px; border-right:1px solid var(--line2); height:100%; display:flex; align-items:center; }
+  .grow-r span:last-child{ border-right:0; }
+  .gx{ justify-content:center !important; padding:0 !important; font-size:9.5px; color:var(--mid); background:var(--panel); border-right:1px solid var(--line) !important; }
+  .ctext{ font-size:11px; }
+  .bar{ height:7px; border-radius:4px; background:var(--fill2); width:78%; }
+  .bar.s{ width:55%; } .bar.l{ width:90%; } .bar.xs{ width:38%; }
+  .bar.live{ background:repeating-linear-gradient(90deg,var(--fill3) 0 3px,transparent 3px 6px); border:1px dashed var(--faint); width:70%; }
+  .scrollnote{ position:absolute; left:50%; top:46%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:2px; font-family:"Caveat"; font-size:15px; color:var(--faint); text-align:center; max-width:150px; line-height:1.12; pointer-events:none; }
+  .scrollnote svg{ width:22px; height:22px; color:var(--faint); }
+  .gfill{ flex:1 1 auto; min-height:0; background-image:
+      repeating-linear-gradient(transparent 0 29px, var(--line2) 29px 30px),
+      linear-gradient(90deg, transparent 0 23px, var(--line) 23px 24px, transparent 24px),
+      linear-gradient(90deg, var(--panel) 0 24px, transparent 24px);
+    background-repeat:repeat, no-repeat, no-repeat; }
+
+  /* generic bottom dock / bars */
+  .dock{ height:60px; flex:0 0 auto; border-top:1px solid var(--ink); display:flex; align-items:center; justify-content:space-around; padding:0 10px; background:var(--panel); }
+  .composer{ height:54px; flex:0 0 auto; border-top:1px solid var(--ink); display:flex; align-items:center; gap:8px; padding:0 10px; background:var(--panel); }
+  .field{ flex:1 1 auto; height:34px; border:1.5px solid var(--line); border-radius:18px; display:flex; align-items:center; padding:0 13px; font-size:12px; color:var(--faint); background:var(--white); }
+  .field.active{ border-color:var(--ink); color:var(--ink); }
+  .caret{ width:1.5px; height:16px; background:var(--ink); margin-left:1px; animation:bl 1s steps(1) infinite; }
+  @keyframes bl{ 50%{ opacity:0; } }
+
+  /* keyboard */
+  .kb{ flex:0 0 auto; background:var(--fill); padding:7px 5px 9px; display:flex; flex-direction:column; gap:5px; border-top:1px solid var(--line); }
+  .kbrow{ display:flex; gap:4px; justify-content:center; }
+  .key{ height:26px; flex:1; max-width:22px; background:var(--white); border:1px solid var(--line); border-radius:4px; }
+  .key.w{ max-width:none; flex:2; }
+  .key.space{ max-width:none; flex:6; }
+
+  /* voice recording bar (sketch state) */
+  .rec{ flex:0 0 auto; border-top:1.5px solid var(--ink); background:var(--panel); padding:11px 12px 13px; display:flex; flex-direction:column; gap:9px; }
+  .rec .rtext{ font-size:12.5px; font-weight:500; }
+  .rec .rtext .ph{ color:var(--faint); }
+  .wave{ height:26px; width:100%; color:var(--ink); }
+  .recctl{ display:flex; align-items:center; gap:10px; }
+
+  /* overlay (menu / history) */
+  .dim{ position:absolute; inset:0; background:rgba(29,29,27,.30); }
+  .sheet{ position:absolute; left:0; right:0; bottom:0; background:var(--white); border-top:2px solid var(--ink);
+          border-radius:18px 18px 0 0; padding:8px 0 14px; box-shadow:0 -8px 20px rgba(0,0,0,.12); }
+  .handlebar{ width:42px; height:5px; border-radius:3px; background:var(--fill3); margin:6px auto 10px; }
+  .drawer{ position:absolute; top:0; bottom:0; left:0; width:74%; background:var(--white); border-right:2px solid var(--ink);
+           padding:16px 0; box-shadow:8px 0 20px rgba(0,0,0,.12); display:flex; flex-direction:column; overflow-y:auto; }
+  .mtitle{ font-size:12px; font-weight:700; letter-spacing:.6px; color:var(--mid); padding:0 18px 8px; }
+  .mitem{ display:flex; align-items:center; gap:12px; padding:8.5px 18px; font-size:13px; }
+  .mitem .ic{ color:var(--mid); }
+  .mitem.on{ background:var(--fill); font-weight:600; }
+  .msep{ flex:0 0 auto; height:1px; background:var(--faint); margin:7px 0; }
+
+  /* history list */
+  .hpanel{ display:flex; flex-direction:column; padding:0 0 4px; }
+  .hstep{ display:flex; align-items:center; gap:11px; padding:10px 18px; font-size:12.5px; border-bottom:1px solid var(--line2); }
+  .hstep .tick{ width:11px; height:11px; border-radius:50%; border:1.5px solid var(--faint); flex:0 0 auto; }
+  .hstep.cur .tick{ background:var(--ink); border-color:var(--ink); }
+  .hstep.cur{ font-weight:600; }
+  .hstep.undone{ color:var(--faint); }
+  .hstep.undone .tick{ border-style:dashed; }
+  .htime{ margin-left:auto; font-size:10px; color:var(--faint); }
+
+  /* empty state */
+  .empty{ flex:1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:26px; text-align:center; }
+  .empty .big{ font-size:15px; font-weight:600; }
+  .empty .muted{ font-size:12px; color:var(--mid); }
+  .dropzone{ width:150px; height:96px; border:2px dashed var(--faint); border-radius:14px; display:flex; align-items:center; justify-content:center; color:var(--faint); }
+  .btn{ border:1.5px solid var(--ink); border-radius:20px; padding:9px 16px; font-size:12.5px; font-weight:500; display:inline-flex; align-items:center; gap:7px; }
+  .btn.solid{ background:var(--ink); color:var(--white); }
+  .opt{ width:100%; display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:11px; padding:11px 13px; font-size:12.5px; }
+  .opt .ic{ color:var(--mid); }
+
+  /* FAB */
+  .fab{ position:absolute; right:14px; bottom:16px; width:52px; height:52px; border-radius:50%; background:var(--ink);
+        display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,.25); }
+  .fab .ic{ color:var(--white); width:24px; height:24px; }
+
+  /* annotations */
+  .annot{ font-family:"Caveat"; font-weight:600; font-size:15px; color:var(--mid); line-height:1.15; }
+  .annot.tag{ display:inline-flex; align-items:flex-start; gap:5px; }
+  .annot.tag::before{ content:"↳"; color:var(--faint); }
+  .notes{ display:flex; flex-direction:column; gap:4px; margin-top:5px; }
+
+  .verdict{ margin-top:16px; display:flex; gap:22px; flex-wrap:wrap; }
+  .verdict div{ font-size:13.5px; color:var(--mid); max-width:44ch; }
+  .verdict b{ color:var(--ink); font-weight:600; }
+
+  footer.foot{ margin-top:60px; padding-top:22px; border-top:1px solid var(--line); font-size:14px; color:var(--mid); line-height:1.6; }
+  footer.foot b{ color:var(--ink); font-weight:600; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg class="markmini" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+      <rect x="0" y="0" width="9" height="1" fill="#1d1d1b"/><rect x="4" y="0" width="1" height="1" fill="#a6a6a0"/>
+      <rect x="1" y="1" width="1" height="4" fill="#1d1d1b"/><rect x="7" y="1" width="1" height="4" fill="#1d1d1b"/>
+      <rect x="3" y="2" width="3" height="1" fill="#1d1d1b"/><rect x="3" y="4" width="3" height="1" fill="#1d1d1b"/>
+    </svg>
+    <div>
+      <h1>TamedTable — Mobile UX Wireframes</h1>
+      <div class="sub">Low-fi wireframe · responsive web at phone width</div>
+    </div>
+  </div>
+</header>
+
+<!-- ICON DEFS -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7L4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-1"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7l5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h1"/></symbol>
+  <symbol id="i-kb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="14" y2="10"/><line x1="18" y1="10" x2="18" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l13 6-13 6 3-6z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+  <symbol id="i-cl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-cr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M15 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6z"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 120 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12 L9 12 L13 4 L17 20 L21 7 L25 17 L29 3 L33 21 L37 9 L41 12 L47 12 L51 6 L55 18 L59 4 L63 20 L67 8 L71 16 L75 5 L79 19 L83 11 L89 12 L93 7 L97 17 L101 3 L105 21 L109 9 L113 14 L117 12"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4"/><rect x="8" y="13" width="8" height="5"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 8l-4 4 4 4"/><path d="M15 8l4 4-4 4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14a8 8 0 1 1-9-9 6.5 6.5 0 0 0 9 9z"/></symbol>
+  <symbol id="i-tour" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M15 9l-2 5-4 1 2-5z"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></symbol>
+</defs></svg>
+
+<main>
+  <!-- ════════════════════════ THE WIREFRAME ════════════════════════ -->
+  <section class="ver">
+    <div class="ver-head">
+      <span class="ver-tag">LAYOUT</span>
+      <h3>Action dock</h3>
+      <span class="one">— your sketch, literal</span>
+    </div>
+    <p class="ver-desc">A persistent <b>four-button dock</b> (menu · undo · keyboard · voice) under the table, exactly as drawn.
+    Keyboard and voice rise as sheets <b>above</b> the dock, so the table stays in view. Undo is a one-tap button; long-press opens history.</p>
+    <div class="rail">
+      <!-- V1 · Table -->
+      <div class="cell-fig">
+        <div class="phone"><div class="screen">
+          <div class="status"><span class="time">9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+          <div class="appbar">
+            <div class="iconbtn"><svg class="ic mid"><use href="#i-cl"/></svg></div>
+            <span class="grow" style="text-align:center"><span class="fname">customers.csv</span> <span class="pager">· 1/23</span></span>
+            <div class="iconbtn"><svg class="ic mid"><use href="#i-cr"/></svg></div>
+          </div>
+          <div class="grid">
+            <div class="ghead"><span class="gx"></span><span>First</span><span>Last</span><span>DOB</span><span>⋯</span></div>
+            <div class="grow-r"><span class="gx">1</span><span class="ctext">Joe</span><span class="ctext">Doe</span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">2</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">3</span><span><span class="bar s"></span></span><span><span class="bar"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">4</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">5</span><span><span class="bar s"></span></span><span><span class="bar l"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">6</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">7</span><span><span class="bar s"></span></span><span><span class="bar"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">8</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <span class="scrollnote"><svg class="ic"><use href="#i-move"/></svg>drag to move/scroll in any direction</span>
+            <div class="gfill"></div>
+          </div>
+          <div class="dock">
+            <div class="iconbtn bd"><svg class="ic"><use href="#i-menu"/></svg></div>
+            <div class="iconbtn bd"><svg class="ic"><use href="#i-undo"/></svg></div>
+            <div class="iconbtn bd"><svg class="ic"><use href="#i-kb"/></svg></div>
+            <div class="iconbtn solid"><svg class="ic"><use href="#i-mic"/></svg></div>
+          </div>
+        </div></div>
+        <div class="cap"><b>Table</b> — frozen header + row-index column. Dock is always present.</div>
+      </div>
+
+      <!-- V1 · Keyboard -->
+      <div class="cell-fig">
+        <div class="phone"><div class="screen">
+          <div class="status"><span class="time">9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+          <div class="appbar"><div class="iconbtn"><svg class="ic mid"><use href="#i-cl"/></svg></div><span class="grow" style="text-align:center"><span class="fname">customers.csv</span></span><div class="iconbtn"><svg class="ic mid"><use href="#i-cr"/></svg></div></div>
+          <div class="grid">
+            <div class="ghead"><span class="gx"></span><span>First</span><span>Last</span><span>DOB</span><span>⋯</span></div>
+            <div class="grow-r"><span class="gx">1</span><span class="ctext">Joe</span><span class="ctext">Doe</span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">2</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">3</span><span><span class="bar s"></span></span><span><span class="bar"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">4</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">5</span><span><span class="bar s"></span></span><span><span class="bar l"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">6</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">7</span><span><span class="bar s"></span></span><span><span class="bar"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="gfill"></div>
+          </div>
+          <div class="composer">
+            <div class="field active">add a country column<span class="caret"></span></div>
+            <div class="iconbtn solid"><svg class="ic"><use href="#i-send"/></svg></div>
+          </div>
+          <div class="kb">
+            <div class="kbrow"><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span></div>
+            <div class="kbrow"><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span></div>
+            <div class="kbrow"><span class="key w"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key"></span><span class="key w"></span></div>
+            <div class="kbrow"><span class="key w"></span><span class="key space"></span><span class="key w"></span></div>
+          </div>
+        </div></div>
+        <div class="cap"><b>Keyboard</b> — messaging-style field; <span class="annot">▷ sends &amp; closes</span></div>
+      </div>
+
+      <!-- V1 · Voice (sketch state) -->
+      <div class="cell-fig">
+        <div class="phone"><div class="screen">
+          <div class="status"><span class="time">9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+          <div class="appbar"><div class="iconbtn"><svg class="ic mid"><use href="#i-cl"/></svg></div><span class="grow" style="text-align:center"><span class="fname">customers.csv</span></span><div class="iconbtn"><svg class="ic mid"><use href="#i-cr"/></svg></div></div>
+          <div class="grid">
+            <div class="ghead"><span class="gx"></span><span>First</span><span>Last</span><span>DOB</span><span>⋯</span></div>
+            <div class="grow-r"><span class="gx">1</span><span class="ctext">Joe</span><span class="ctext">Doe</span><span><span class="bar live"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">2</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar live"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">3</span><span><span class="bar s"></span></span><span><span class="bar"></span></span><span><span class="bar live"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">4</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar live"></span></span><span></span></div>
+            <div class="gfill"></div>
+          </div>
+          <div class="rec">
+            <div class="rtext">Normalize DOB column<span class="caret"></span></div>
+            <svg class="wave"><use href="#i-wave"/></svg>
+            <div class="recctl">
+              <div class="iconbtn bd"><svg class="ic"><use href="#i-x"/></svg></div>
+              <span class="annot" style="font-size:13px">cancel · recording…</span>
+              <span class="grow"></span>
+              <div class="iconbtn solid"><svg class="ic"><use href="#i-stop"/></svg></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="cap"><b>Voice</b> — press mic to start; <span class="annot">⏹ stops &amp; sends</span>. Long-hold = hold-to-talk.</div>
+      </div>
+
+      <!-- V1 · Menu -->
+      <div class="cell-fig">
+        <div class="phone"><div class="screen">
+          <div class="status"><span class="time">9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+          <div class="appbar"><div class="iconbtn"><svg class="ic mid"><use href="#i-cl"/></svg></div><span class="grow" style="text-align:center"><span class="fname">customers.csv</span></span><div class="iconbtn"><svg class="ic mid"><use href="#i-cr"/></svg></div></div>
+          <div class="grid">
+            <div class="ghead"><span class="gx"></span><span>First</span><span>Last</span><span>DOB</span><span>⋯</span></div>
+            <div class="grow-r"><span class="gx">1</span><span class="ctext">Joe</span><span class="ctext">Doe</span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">2</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">3</span><span><span class="bar s"></span></span><span><span class="bar"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="gfill"></div>
+          </div>
+          <div class="dim"></div>
+          <div class="drawer">
+            <div class="mtitle">MENU</div>
+            <div class="mitem"><svg class="ic"><use href="#i-spark"/></svg> Open sample…</div>
+            <div class="mitem"><svg class="ic"><use href="#i-folder"/></svg> Open local…</div>
+            <div class="mitem"><svg class="ic"><use href="#i-link"/></svg> Open URL…</div>
+            <div class="msep"></div>
+            <div class="mitem"><svg class="ic"><use href="#i-save"/></svg> Save data</div>
+            <div class="mitem"><svg class="ic"><use href="#i-save"/></svg> Save data as…</div>
+            <div class="msep"></div>
+            <div class="mitem"><svg class="ic"><use href="#i-file"/></svg> Save recipe…</div>
+            <div class="mitem"><svg class="ic"><use href="#i-code"/></svg> Save recipe as Python…</div>
+            <div class="msep"></div>
+            <div class="mitem"><svg class="ic"><use href="#i-moon"/></svg> Dark mode: off</div>
+            <div class="mitem"><svg class="ic"><use href="#i-gear"/></svg> Settings…</div>
+            <div class="mitem"><svg class="ic"><use href="#i-tour"/></svg> Tours…</div>
+          </div>
+        </div></div>
+        <div class="cap"><b>Menu</b> — the ☰ button opens a side drawer from the left.</div>
+      </div>
+
+      <!-- V1 · Undo history -->
+      <div class="cell-fig">
+        <div class="phone"><div class="screen">
+          <div class="status"><span class="time">9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+          <div class="appbar"><div class="iconbtn"><svg class="ic mid"><use href="#i-cl"/></svg></div><span class="grow" style="text-align:center"><span class="fname">customers.csv</span></span><div class="iconbtn"><svg class="ic mid"><use href="#i-cr"/></svg></div></div>
+          <div class="grid">
+            <div class="ghead"><span class="gx"></span><span>First</span><span>Last</span><span>DOB</span><span>⋯</span></div>
+            <div class="grow-r"><span class="gx">1</span><span class="ctext">Joe</span><span class="ctext">Doe</span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="grow-r"><span class="gx">2</span><span><span class="bar"></span></span><span><span class="bar s"></span></span><span><span class="bar xs"></span></span><span></span></div>
+            <div class="gfill"></div>
+          </div>
+          <div class="dim"></div>
+          <div class="sheet">
+            <div class="handlebar"></div>
+            <div class="mtitle" style="display:flex; align-items:center; gap:8px; padding-right:16px;">HISTORY <span class="grow"></span>
+              <div class="iconbtn bd" style="width:28px;height:28px"><svg class="ic sm"><use href="#i-undo"/></svg></div>
+              <div class="iconbtn bd" style="width:28px;height:28px"><svg class="ic sm"><use href="#i-redo"/></svg></div>
+            </div>
+            <div class="hpanel">
+              <div class="hstep undone"><span class="tick"></span> Normalize DOB column <span class="htime">now</span></div>
+              <div class="hstep cur"><span class="tick"></span> Add Country column <span class="htime">2m</span></div>
+              <div class="hstep"><span class="tick"></span> Trim whitespace · Email <span class="htime">5m</span></div>
+              <div class="hstep"><span class="tick"></span> Remove 3 duplicate rows <span class="htime">8m</span></div>
+              <div class="hstep"><span class="tick"></span> Import customers.csv <span class="htime">12m</span></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="cap"><b>Undo history</b> — long-press undo. Step back/forward through many edits.</div>
+      </div>
+
+      <!-- V1 · Empty -->
+      <div class="cell-fig">
+        <div class="phone"><div class="screen">
+          <div class="status"><span class="time">9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+          <div class="appbar"><span class="grow" style="text-align:center"><span class="fname">No file open</span></span></div>
+          <div class="empty">
+            <svg class="markmini" style="width:54px;height:36px" viewBox="0 0 9 5" shape-rendering="crispEdges"><rect x="0" y="0" width="9" height="1" fill="#1d1d1b"/><rect x="4" y="0" width="1" height="1" fill="#a6a6a0"/><rect x="1" y="1" width="1" height="4" fill="#1d1d1b"/><rect x="7" y="1" width="1" height="4" fill="#1d1d1b"/><rect x="3" y="2" width="3" height="1" fill="#1d1d1b"/><rect x="3" y="4" width="3" height="1" fill="#1d1d1b"/></svg>
+            <div class="big">What table can I tame?</div>
+            <div class="opt"><svg class="ic"><use href="#i-spark"/></svg> Open sample…</div>
+            <div class="opt"><svg class="ic"><use href="#i-folder"/></svg> Open local…</div>
+            <div class="opt"><svg class="ic"><use href="#i-link"/></svg> Open URL…</div>
+          </div>
+          <div class="dock">
+            <div class="iconbtn bd" style="opacity:.35"><svg class="ic"><use href="#i-menu"/></svg></div>
+            <div class="iconbtn bd" style="opacity:.35"><svg class="ic"><use href="#i-undo"/></svg></div>
+            <div class="iconbtn bd" style="opacity:.35"><svg class="ic"><use href="#i-kb"/></svg></div>
+            <div class="iconbtn bd" style="opacity:.35"><svg class="ic"><use href="#i-mic"/></svg></div>
+          </div>
+        </div></div>
+        <div class="cap"><b>Empty / first run</b> — dock disabled until a table is loaded.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#efeee9"/>
+    <rect x="22" y="16" width="22" height="68" rx="5" fill="none" stroke="#1d1d1b" stroke-width="2.5"/>
+    <rect x="56" y="16" width="22" height="68" rx="5" fill="none" stroke="#1d1d1b" stroke-width="2.5"/>
+    <line x1="22" y1="30" x2="44" y2="30" stroke="#1d1d1b" stroke-width="2"/>
+    <line x1="56" y1="30" x2="78" y2="30" stroke="#1d1d1b" stroke-width="2"/>
+    <line x1="22" y1="40" x2="44" y2="40" stroke="#bbb" stroke-width="1.5"/>
+    <line x1="22" y1="48" x2="44" y2="48" stroke="#bbb" stroke-width="1.5"/>
+  </svg>
+</template>
+</body>
+</html>
