@@ -189,6 +189,12 @@ published per-model rates, including prompt-cache writes (1.25×) and reads
 undercount badly. A and B make no model call, so their token and cost columns
 are zero.
 
+Pick the models with the usual env vars — e.g.
+`TAMEDTABLE_MODEL=gemini-3.5-flash TAMEDTABLE_CELL_MODEL=gemini-3.1-flash-lite bun run bench:live`
+benchmarks group C on Gemini instead of the Anthropic defaults. The token tally
+reads Anthropic, Google, and OpenAI usage shapes, so cost is attributed per
+model for any provider.
+
 Tokens and cost are real in every mode (the cassette stores the live usage). But
 **timing for C is real only with `bun run bench:live`** — offline, C's time is
 the cassette-replay time, not API latency (a recorded live run took ~145 s for

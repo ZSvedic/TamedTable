@@ -23,6 +23,14 @@ const PRICING: Record<string, { in: number; out: number }> = {
   'claude-sonnet-4-6': { in: 3, out: 15 },
   'claude-sonnet-4-5': { in: 3, out: 15 },
   'claude-haiku-4-5': { in: 1, out: 5 },
+  // Gemini — representative Flash-tier rates (the catalogue IDs track the Flash
+  // and Flash-Lite tiers); adjust if Google publishes different numbers.
+  'gemini-3.1-pro-preview': { in: 1.25, out: 10 },
+  'gemini-3.5-flash': { in: 0.3, out: 2.5 },
+  'gemini-3.1-flash-lite': { in: 0.1, out: 0.4 },
+  // OpenAI — representative flagship/mini rates.
+  'gpt-5.5': { in: 1.25, out: 10 },
+  'gpt-5.4-mini': { in: 0.25, out: 2 },
 };
 const FALLBACK_PRICE = { in: 3, out: 15 };
 
@@ -38,26 +46,59 @@ const CACHE_READ_MULT = 0.1;
 // Reset before each scenario; written by the fetch wrapper installed in Before
 // (so live and cassette-replay runs are measured identically), read by the When
 // steps that finalise the scenario's metric.
-interface AnthropicUsage {
-  input_tokens?: number;
-  output_tokens?: number;
-  cache_creation_input_tokens?: number;
-  cache_read_input_tokens?: number;
-}
-interface ModelTally { calls: number; inTokens: number; cacheWrite: number; cacheRead: number; outTokens: number }
+interface NormUsage { inTokens: number; cacheWrite: number; cacheRead: number; outTokens: number }
+interface ModelTally extends NormUsage { calls: number }
 let tally = new Map<string, ModelTally>();
 
 function resetTally(): void {
   tally = new Map();
 }
 
-function addUsage(model: string, u: AnthropicUsage): void {
+// Normalise a raw provider response body into uncached-input / cache-write /
+// cache-read / output token counts. Handles all three providers the app speaks:
+//   Anthropic  → usage.{input_tokens, output_tokens, cache_*_input_tokens}
+//   Google     → usageMetadata.{promptTokenCount (incl. cached), candidatesTokenCount, thoughtsTokenCount, cachedContentTokenCount}
+//   OpenAI     → usage.{prompt_tokens, completion_tokens, prompt_tokens_details.cached_tokens}
+function normalizeUsage(data: unknown): NormUsage | null {
+  const d = data as Record<string, unknown>;
+  const u = d?.usage as Record<string, number> | undefined;
+  const g = d?.usageMetadata as Record<string, number> | undefined;
+  if (u && typeof u.input_tokens === 'number') {
+    return {
+      inTokens: u.input_tokens ?? 0,
+      cacheWrite: u.cache_creation_input_tokens ?? 0,
+      cacheRead: u.cache_read_input_tokens ?? 0,
+      outTokens: u.output_tokens ?? 0,
+    };
+  }
+  if (g && typeof g.promptTokenCount === 'number') {
+    const cached = g.cachedContentTokenCount ?? 0;
+    return {
+      inTokens: Math.max(0, (g.promptTokenCount ?? 0) - cached),
+      cacheWrite: 0, // Gemini caching is implicit; no separate write count in usageMetadata
+      cacheRead: cached,
+      outTokens: (g.candidatesTokenCount ?? 0) + (g.thoughtsTokenCount ?? 0),
+    };
+  }
+  if (u && typeof u.prompt_tokens === 'number') {
+    const cached = (u.prompt_tokens_details as unknown as Record<string, number> | undefined)?.cached_tokens ?? 0;
+    return {
+      inTokens: Math.max(0, (u.prompt_tokens ?? 0) - cached),
+      cacheWrite: 0,
+      cacheRead: cached,
+      outTokens: u.completion_tokens ?? 0,
+    };
+  }
+  return null;
+}
+
+function addUsage(model: string, n: NormUsage): void {
   const t = tally.get(model) ?? { calls: 0, inTokens: 0, cacheWrite: 0, cacheRead: 0, outTokens: 0 };
   t.calls += 1;
-  t.inTokens += u.input_tokens ?? 0;
-  t.cacheWrite += u.cache_creation_input_tokens ?? 0;
-  t.cacheRead += u.cache_read_input_tokens ?? 0;
-  t.outTokens += u.output_tokens ?? 0;
+  t.inTokens += n.inTokens;
+  t.cacheWrite += n.cacheWrite;
+  t.cacheRead += n.cacheRead;
+  t.outTokens += n.outTokens;
   tally.set(model, t);
 }
 
@@ -115,9 +156,13 @@ Before({ tags: '@perf' }, function (this: TamedTableWorld, scenario: ITestCaseHo
     const res = await base(input, init);
     try {
       const body = typeof init?.body === 'string' ? init.body : '';
-      const model = body ? (JSON.parse(body) as { model?: string }).model : undefined;
-      const data = (await res.clone().json()) as { usage?: AnthropicUsage };
-      if (model && data?.usage) addUsage(model, data.usage);
+      // Model id lives in the JSON body (Anthropic, OpenAI) or the URL path
+      // (Google: …/models/<id>:generateContent).
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+      const model = (body ? (JSON.parse(body) as { model?: string }).model : undefined)
+        ?? url?.match(/models\/([^:?/]+)/)?.[1];
+      const usage = normalizeUsage(await res.clone().json());
+      if (model && usage) addUsage(model, usage);
     } catch { /* non-JSON or non-message endpoint — ignore */ }
     return res;
   };
