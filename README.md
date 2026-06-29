@@ -177,29 +177,55 @@ of **total time, tokens used, and estimated cost** per scenario, in three groups
 - **B — SQL operations** (sort, filter) over every row (engine execution, no model call).
 - **C — natural-language cell fills** — e.g. *"Add a boolean column Music that is true for music videos"* — which the weaker cell model answers over `N / TAMEDTABLE_BATCH_SIZE` turns. This is where tokens and cost accrue.
 
-| Command | What it does |
-|---|---|
-| `bun run bench` | Offline, no API key. Runs all three groups; C replays a committed cassette. |
-| `bun run bench:record` | Re-records C against the live API (needs `ANTHROPIC_API_KEY`) and refreshes the committed cassette. |
-| `bun run bench:live` | Runs every group straight against the live API. Needs a key; rate-limited. |
+### Offline vs online
 
-Cost is computed from each call's recorded (or live) token usage at the
-published per-model rates, including prompt-cache writes (1.25×) and reads
-(0.1×) — most input tokens are cached, so counting only `input_tokens` would
-undercount badly. A and B make no model call, so their token and cost columns
-are zero.
+| Command | Network | Needs a key | What it does |
+|---|---|---|---|
+| `bun run bench` | **Offline** | No | Runs all three groups; group C replays the committed cassette (Anthropic Sonnet). |
+| `bun run bench:record` | Online | Yes | Re-records group C against the live API and refreshes the committed cassette. |
+| `bun run bench:live` | Online | Yes | Runs every group straight against the live API — no cassette read or written. |
 
-Pick the models with the usual env vars — e.g.
-`TAMEDTABLE_MODEL=gemini-3.5-flash TAMEDTABLE_CELL_MODEL=gemini-3.1-flash-lite bun run bench:live`
-benchmarks group C on Gemini instead of the Anthropic defaults. The token tally
-reads Anthropic, Google, and OpenAI usage shapes, so cost is attributed per
-model for any provider.
+Tokens and cost are real in every mode (the cassette stores the live token
+usage). Only group C's *timing* differs: offline it is the cassette-replay time,
+not API latency, so use `bun run bench:live` for true end-to-end timing. A and B
+never call the model — their timing, and their zero token/cost, are the same
+in every mode. All `bench` commands run from `src/` (like every other `bun`
+command).
 
-Tokens and cost are real in every mode (the cassette stores the live usage). But
-**timing for C is real only with `bun run bench:live`** — offline, C's time is
-the cassette-replay time, not API latency (a recorded live run took ~145 s for
-the 1,820-row classify). A and B never call the model, so their timing is real
-offline. All `bench` commands run from `src/` (like every other `bun` command).
+### Choosing the provider and models
+
+The benchmark uses the same model env vars as the rest of the app
+([Setup](#setup)): `TAMEDTABLE_MODEL` (the patch-turn model) and
+`TAMEDTABLE_CELL_MODEL` (the per-row cell model). Run **online** to benchmark a
+provider other than the committed Anthropic cassette, with that provider's key
+in `.env` (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY` — the
+runtime picks the provider from the model id):
+
+```
+# Gemini: stronger model for the patch turn, cheapest for the cells
+TAMEDTABLE_MODEL=gemini-3.5-flash TAMEDTABLE_CELL_MODEL=gemini-3.1-flash-lite bun run bench:live
+
+# OpenAI
+TAMEDTABLE_MODEL=gpt-5.5 TAMEDTABLE_CELL_MODEL=gpt-5.4-mini bun run bench:live
+```
+
+`bun run bench` (offline) only covers the committed Anthropic cassette; any other
+combination needs an online run. The token tally reads Anthropic, Google, and
+OpenAI usage shapes, so per-model cost is attributed correctly for any provider.
+
+### Cost accounting and results
+
+Cost is each call's token usage priced at the published per-model rates in
+`PRICING` (see [`src/tests/performance.steps.ts`](src/tests/performance.steps.ts)) —
+Anthropic from the model reference, [Gemini](https://ai.google.dev/gemini-api/docs/pricing)
+and [OpenAI](https://developers.openai.com/api/docs/pricing) at their Flash /
+Flash-Lite / Pro and flagship / mini tiers. Prompt-cache writes are billed at
+1.25× and reads at 0.1× of the input rate (Anthropic figures), because most
+input tokens are cached and counting only `input_tokens` would undercount badly.
+
+Recorded results for specific model combinations live in
+[`process/journal/`](process/journal/) (e.g. the dated
+`*-performance-benchmark-results.md` report), not next to the test fixtures.
 
 ## Iterate on the spec with WoZ and SCRIBE
 
