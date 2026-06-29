@@ -14,6 +14,9 @@
     "test:web": "cucumber-js --profile web",
     "test:smoke": "SMOKE=1 bun test tests/demo.smoke.test.ts",
     "test:record": "TAMEDTABLE_CASSETTE=record bun run test:headless ; TAMEDTABLE_CASSETTE=record bun run test:cli",
+    "bench": "cucumber-js --profile perf",
+    "bench:record": "TAMEDTABLE_CASSETTE=record TAMEDTABLE_BENCH_ALL=1 cucumber-js --profile perf",
+    "bench:live": "TAMEDTABLE_CASSETTE=off TAMEDTABLE_BENCH_LIVE=1 TAMEDTABLE_BENCH_ALL=1 cucumber-js --profile perf",
     "sync:tokens": "bun run packages/ui-kit/sync-tokens.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p packages/web/tsconfig.json"
   },

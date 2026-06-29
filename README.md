@@ -164,6 +164,30 @@ bun run test:record      # needs ANTHROPIC_API_KEY (see Setup above)
 
 For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
 
+## Performance benchmark
+
+A standalone benchmark measures how the engine behaves on a large table — the
+committed 1,820-row [`spec/test-cases/performance-liked-videos.csv`](spec/test-cases/performance-liked-videos.csv).
+It is separate from `bun run test`: the scenarios in
+[`spec/test-cases/performance.feature`](spec/test-cases/performance.feature) carry only the
+`@perf` tag, so the regular profiles skip them. Each run prints a summary table
+of **total time, tokens used, and estimated cost** per scenario, in three groups:
+
+- **A — load** the file (pure I/O, no model call).
+- **B — SQL operations** (sort, filter) over every row (engine execution, no model call).
+- **C — natural-language cell fills** — e.g. *"Add a boolean column Music that is true for music videos"* — which the weaker cell model answers over `N / TAMEDTABLE_BATCH_SIZE` turns. This is where tokens and cost accrue.
+
+| Command | What it does |
+|---|---|
+| `bun run bench` | Offline. Runs A and B with real numbers; runs C too once its cassette exists, else skips it. No API key. |
+| `bun run bench:record` | Records C against the live API (needs `ANTHROPIC_API_KEY`), then later `bun run bench` replays it offline. |
+| `bun run bench:live` | Runs every group straight against the live API — true end-to-end time, tokens, and cost. Needs a key; rate-limited. |
+
+Cost is computed from each call's recorded (or live) token usage at the
+published per-model rates; A and B make no model call, so their token and cost
+columns are zero. All `bench` commands run from `src/` (like every other `bun`
+command).
+
 ## Iterate on the spec with WoZ and SCRIBE
 
 WoZ (Wizard-of-Oz) and SCRIBE let you iterate TamedTable's behavior interactively without running the implementation. WoZ simulates what TamedTable would do from `spec/behavior.md` only; when WoZ reveals a gap or surprise, SCRIBE updates the spec.
