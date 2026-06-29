@@ -1,19 +1,21 @@
 # voice-mode — spec
 
 This package owns hands-free continuous voice: the microphone stays open, the
-user just talks, and each spoken turn is detected, transcribed, and handed to a
-callback — no button. It does **not** own anything app-specific: no table, no
-ETL pipeline, no LLM. It is a standalone, reusable module plus a throwaway demo
-for judging feasibility, memory, and browser support before we decide whether to
-wire it into TamedTable.
+user just talks, and each spoken turn is detected, transcribed by Gemini Flash,
+and handed to a callback — no button. It does **not** own anything app-specific:
+no table, no ETL pipeline, no command parsing. It is a standalone, reusable
+module plus a throwaway demo for judging feasibility, memory, and browser support
+before we decide whether to wire it into TamedTable.
 
 ## Worked example
 
 ```ts
 const session = createVoiceSession({
-  stt: webSpeechSTT(),                    // or whisperSTT({ apiKey, endpoint })
+  stt: geminiSTT({                        // audio → Gemini Flash, biased by keywords
+    apiKey,
+    context: () => 'milk, eggs, bread, add, remove, clear',
+  }),
   onStateChange: (s) => render(s),        // idle → listening → speech → transcribing → listening
-  onPartialTranscript: (t) => preview(t), // live, may be wrong (Web Speech only)
   onTranscript: (t) => applyCommand(t),   // final text for one spoken turn
 });
 
@@ -31,13 +33,13 @@ boundaries** that the button used to draw.
 
 ## Why client-side VAD, not a realtime API
 
-We will not use OpenAI's Realtime API (or any vendor duplex voice socket).
-TamedTable is bring-your-own-key across Anthropic, OpenAI, and OpenRouter, and
-**Anthropic has no equivalent duplex voice API** — building on one vendor's
-socket would break BYOK and force a token-minting backend. So turn detection
-runs 100% in the browser, provider-agnostic, with no backend and no
-ephemeral-token server. The only network calls are the STT requests the user's
-own key pays for (and Web Speech needs none).
+We will not use a vendor duplex voice socket (OpenAI Realtime, Gemini Live).
+TamedTable is bring-your-own-key across Anthropic, OpenAI, OpenRouter, and Google,
+and those sockets need ephemeral tokens minted by a backend — and **Anthropic has
+no equivalent duplex voice API** at all. So turn detection runs 100% in the
+browser with no backend and no token server. The VAD draws the turn boundary the
+button used to; the only network call per turn is the transcription the user's
+own key pays for.
 
 ## Architecture
 
@@ -45,15 +47,16 @@ own key pays for (and Web Speech needs none).
 getUserMedia ──▶ VAD (@ricky0123/vad-web: Silero model, ONNX, WASM, AudioWorklet)
                   │  onSpeechStart            onSpeechEnd(Float32Array @ 16 kHz)
                   ▼                            ▼
-             state: speech            encode WAV ──▶ STTProvider.transcribe(audio)
-                                                          ▼
-                                                   onTranscript(text)
+             state: speech     encode WAV ──▶ STTProvider.transcribe(audio)
+                                                  │  (Gemini Flash + keyword context)
+                                                  ▼
+                                           onTranscript(text)
 ```
 
 The VAD wrapper (`vad.ts`) hides `@ricky0123/vad-web` behind two events: speech
 started, speech ended (with the captured PCM). The session (`session.ts`) owns
-the state machine and routes each ended segment to whichever STT provider was
-plugged in. STT is the only swappable network step.
+the state machine and hands each ended segment to the transcriber. Transcription
+is the only network step.
 
 ## Public API
 
@@ -63,10 +66,9 @@ function createVoiceSession(opts: VoiceSessionOptions): VoiceSession;
 interface VoiceSessionOptions {
   stt: STTProvider;
   onTranscript: (text: string) => void;       // final text, one per turn
-  onPartialTranscript?: (text: string) => void;// interim guess, Web Speech only
   onStateChange?: (state: VoiceState) => void;
   onError?: (err: VoiceError) => void;
-  vad?: Partial<VadTuning>;                     // thresholds, silence frames
+  vad?: Partial<VadTuning>;                     // thresholds, silence timeout
 }
 
 interface VoiceSession {
@@ -93,32 +95,35 @@ idle ──start()──▶ listening ──speech detected──▶ speech
 `stop()` returns to `idle` from any state. Mid-turn audio at `stop()` is dropped,
 not transcribed.
 
-## STT provider interface
+## Transcriber interface
 
 ```ts
 interface STTProvider {
   readonly name: string;
-  readonly partial: boolean;                 // does it emit interim text?
   transcribe(audio: AudioSegment): Promise<string>;
-  // Web Speech drives its own recognition; the session calls listen() instead
-  listen?(cb: { onPartial; onFinal; onError }): { stop(): void };
 }
 
 interface AudioSegment { pcm: Float32Array; sampleRate: 16000; }
 ```
 
-Two implementations ship:
+One implementation ships — **Gemini Flash** (`gemini.ts`). Each VAD segment is
+encoded to WAV and sent as inline base64 audio on a `generateContent` call with
+the user's own Google key (BYOK), so there is no separate speech-to-text vendor
+and no backend.
 
-| Provider | Key | Browsers | Privacy |
-|---|---|---|---|
-| **Web Speech** (`webspeech.ts`) | none | Chrome/Edge only | audio goes to a cloud backend — Google in Chrome, Microsoft in Edge (Edge's is flaky, often `network`); document this loudly |
-| **Whisper HTTP** (`whisper.ts`) | user's key (BYOK) | any | each VAD segment is POSTed as WAV to OpenAI `audio/transcriptions` or Groq `whisper-large-v3` |
+The reason to transcribe through an LLM rather than a plain STT API is the
+**recognition context**. `geminiSTT` takes a `context: () => string` callback,
+pulled fresh each turn, and asks the model to prefer those spellings:
 
-Web Speech is a special case: it *is* both VAD and STT, so when it is the
-provider the session leans on its native `onresult`/`onend` events through the
-optional `listen()` path and skips `@ricky0123/vad-web` entirely. The Whisper
-path is the one that exercises the full mic → VAD → encode → POST loop, and is
-the one that generalizes to Anthropic/OpenRouter keys later.
+```ts
+geminiSTT({ apiKey, model: 'gemini-2.5-flash', context: () => columns.join(', ') });
+```
+
+So domain words — a column name like `DOB`, an odd brand, "bananas" — come back
+right instead of mis-spelled. A plain STT engine can't be steered this way; the
+browser's own Web Speech can't either (its grammar API was removed). Pulling the
+context per turn means it tracks the live table (selected cell, current columns)
+as it changes.
 
 ## Open questions / risks
 
@@ -132,9 +137,13 @@ the one that generalizes to Anthropic/OpenRouter keys later.
   a few hundred ms to ~1 s. The demo measures time-to-first-listen.
 - **Memory footprint.** ONNX runtime + model + audio worklet sit resident while
   listening. The demo shows `performance.memory` (Chrome) so we can watch it.
-- **Browser support.** Needs `getUserMedia`, WebAssembly, and `AudioWorklet`
-  everywhere; Web Speech additionally needs `SpeechRecognition` (Chrome/Edge).
-  Safari has `AudioWorklet` but no `SpeechRecognition`, so Safari is Whisper-only.
+- **Browser support.** Needs `getUserMedia`, WebAssembly, and `AudioWorklet` —
+  all present in current Chrome, Edge, Safari 16.4+, and Firefox. No browser
+  speech API is involved, so there is no Chrome-only gap.
+- **Cost and misfires.** Every detected turn is a billed Gemini call. A VAD
+  false-trigger (a cough, background talk) spends one. In a real integration each
+  turn would also mutate the table, so continuous mode needs a confirm/guard the
+  demo doesn't.
 - **Asset serving.** `@ricky0123/vad-web` fetches its worklet, `.onnx` model, and
   ONNX-runtime `.wasm` at runtime from `baseAssetPath` / `onnxWASMBasePath`. Its
   own default is `/` (self-host expected), which 404s under a bundler, so the

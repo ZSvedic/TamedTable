@@ -4,12 +4,10 @@
 // proves the hands-free loop in isolation.
 import {
   createVoiceSession,
-  webSpeechSTT,
-  whisperSTT,
+  geminiSTT,
   checkSupport,
   type VoiceSession,
   type VoiceState,
-  type STTProvider,
 } from './src/index.ts';
 
 const $ = (id: string): HTMLElement => document.getElementById(id)!;
@@ -19,13 +17,12 @@ const support = checkSupport();
 const caps = $('caps');
 // #out is the demo's ready signal — the smoke harness waits for it to fill.
 $('out').textContent = support.getUserMedia
-  ? 'Ready. Pick a provider and turn Full Voice Mode on.'
+  ? 'Ready. Paste a Gemini key and turn Full Voice Mode on.'
   : 'This browser cannot capture the mic (getUserMedia missing).';
 const labels: Record<keyof typeof support, string> = {
   getUserMedia: 'getUserMedia',
   webAssembly: 'WebAssembly',
   audioWorklet: 'AudioWorklet',
-  speechRecognition: 'SpeechRecognition',
 };
 caps.innerHTML = (Object.keys(labels) as (keyof typeof support)[])
   .map((k) => {
@@ -69,19 +66,7 @@ function applyCommand(textRaw: string): string {
 
 // ---- Session wiring --------------------------------------------------------
 let session: VoiceSession | null = null;
-let speechStartAt = 0;
 let speechEndAt = 0;
-
-function buildProvider(): STTProvider {
-  const which = (document.querySelector('input[name="provider"]:checked') as HTMLInputElement).value;
-  if (which === 'whisper') {
-    const [baseUrl, model] = ($('endpoint') as HTMLSelectElement).value.split('|');
-    const apiKey = ($('apikey') as HTMLInputElement).value.trim();
-    if (!apiKey) throw new Error('Paste an API key for the Whisper provider first.');
-    return whisperSTT({ apiKey, baseUrl, model });
-  }
-  return webSpeechSTT();
-}
 
 function setStateBadge(s: VoiceState): void {
   $('state').textContent = s;
@@ -89,42 +74,29 @@ function setStateBadge(s: VoiceState): void {
 
 async function turnOn(): Promise<void> {
   $('err').textContent = '';
-  let provider: STTProvider;
-  try {
-    provider = buildProvider();
-  } catch (e) {
-    $('err').textContent = (e as Error).message;
+  const apiKey = ($('apikey') as HTMLInputElement).value.trim();
+  if (!apiKey) {
+    $('err').textContent = 'Paste your Gemini API key first.';
     return;
   }
+  const model = ($('model') as HTMLInputElement).value.trim();
 
   session = createVoiceSession({
-    stt: provider,
+    // The context is pulled fresh each turn, so editing the keyword box takes
+    // effect on the very next thing you say.
+    stt: geminiSTT({ apiKey, model, context: () => ($('context') as HTMLTextAreaElement).value }),
     onStateChange: (s) => {
       setStateBadge(s);
-      if (s === 'speech') {
-        speechStartAt = performance.now();
-        speechEndAt = 0;
-      } else if (s === 'transcribing') {
-        speechEndAt = performance.now();
-      }
-    },
-    onPartialTranscript: (t) => {
-      $('partial').textContent = t;
+      if (s === 'transcribing') speechEndAt = performance.now();
     },
     onTranscript: (t) => {
-      const ref = speechEndAt || speechStartAt || performance.now();
+      const ref = speechEndAt || performance.now();
       $('ttft').textContent = `${Math.round(performance.now() - ref)} ms`;
       $('final').textContent = t;
-      $('partial').textContent = '—';
       $('cmd').textContent = applyCommand(t);
     },
     onError: (err) => {
-      let msg = `[${err.stage}] ${err.message}`;
-      if (/network/i.test(err.message)) {
-        msg +=
-          ' — Web Speech uses a cloud backend (Google in Chrome, Microsoft in Edge); a “network” error means the browser couldn’t reach it. Edge’s backend often fails this way even though Chrome works. Switch to the Whisper provider to test the hands-free loop.';
-      }
-      $('err').textContent = msg;
+      $('err').textContent = `[${err.stage}] ${err.message}`;
     },
   });
 
@@ -150,23 +122,15 @@ function setToggle(on: boolean): void {
   const btn = $('toggle') as HTMLButtonElement;
   btn.textContent = on ? '■ Turn Full Voice Mode off' : '▶ Turn Full Voice Mode on';
   btn.classList.toggle('on', on);
-  // Lock the provider choice while running.
-  document.querySelectorAll<HTMLInputElement>('input[name="provider"], #endpoint, #apikey').forEach((el) => {
-    el.disabled = on;
-  });
+  // Lock the key and model while running; the context box stays editable so you
+  // can change keywords live.
+  ($('apikey') as HTMLInputElement).disabled = on;
+  ($('model') as HTMLInputElement).disabled = on;
 }
 
 $('toggle').addEventListener('click', () => {
   if (session) turnOff();
   else void turnOn();
-});
-
-// Show the Whisper key/endpoint inputs only when that provider is picked.
-document.querySelectorAll<HTMLInputElement>('input[name="provider"]').forEach((el) => {
-  el.addEventListener('change', () => {
-    const whisper = (document.querySelector('input[name="provider"]:checked') as HTMLInputElement).value === 'whisper';
-    ($('whisper-cfg') as HTMLElement).hidden = !whisper;
-  });
 });
 
 // ---- Memory readout (Chrome only) -----------------------------------------

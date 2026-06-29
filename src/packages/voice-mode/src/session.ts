@@ -1,18 +1,16 @@
 // #VoiceMode
 // The orchestrator. It owns the state machine and routes each detected turn to
-// whichever STT provider was plugged in. Two wirings, picked by the provider:
-//
-//   selfDriven (Web Speech) : listening ⇄ speech, the engine emits final text
-//   segment    (Whisper)    : listening → speech → transcribing → (emit) → listening
+// the transcriber. One wiring now: the VAD draws turn boundaries, each finished
+// clip goes to the provider, the text comes back.
 //
 //        idle ──start()──▶ listening ──speech start──▶ speech
 //          ▲                   ▲                          │ speech end
 //          │                   │                          ▼
 //          └── destroy()       └──── onTranscript ── transcribing
-//                                  (stt fails: → error → listening)
+//                                  (transcribe fails: → error → listening)
 
 import { createVad, DEFAULT_TUNING, type VadTuning, type VadHandle } from './vad.ts';
-import type { STTProvider, STTListenHandle } from './stt/types.ts';
+import type { STTProvider } from './stt/types.ts';
 
 export type VoiceState = 'idle' | 'listening' | 'speech' | 'transcribing' | 'error';
 
@@ -27,17 +25,15 @@ export interface VoiceSessionOptions {
   stt: STTProvider;
   /** Final text for one finished turn. The heart of the loop. */
   onTranscript: (text: string) => void;
-  /** Interim guess while the user is still talking (Web Speech only). */
-  onPartialTranscript?: (text: string) => void;
   onStateChange?: (state: VoiceState) => void;
   onError?: (err: VoiceError) => void;
-  /** VAD knob overrides, merged onto the defaults. Ignored for Web Speech. */
+  /** VAD knob overrides, merged onto the defaults. */
   vad?: Partial<VadTuning>;
 }
 
 export interface VoiceSession {
-  /** Asks for the mic and (for the VAD path) loads the model, then listens.
-   *  Rejects if the mic is denied or the browser can't run the provider. */
+  /** Asks for the mic and loads the VAD model, then listens. Rejects if the mic
+   *  is denied or the browser can't run the VAD. */
   start(): Promise<void>;
   /** Stops listening but keeps a loaded VAD model warm for a quick restart. */
   stop(): void;
@@ -49,7 +45,6 @@ export interface VoiceSession {
 export function createVoiceSession(opts: VoiceSessionOptions): VoiceSession {
   let state: VoiceState = 'idle';
   let vad: VadHandle | null = null;
-  let listenHandle: STTListenHandle | null = null;
   let destroyed = false;
 
   const setState = (next: VoiceState): void => {
@@ -62,24 +57,7 @@ export function createVoiceSession(opts: VoiceSessionOptions): VoiceSession {
     opts.onError?.(err);
   };
 
-  async function startSelfDriven(): Promise<void> {
-    // Web Speech does its own mic + turn detection; we just relay its events.
-    listenHandle = opts.stt.listen!({
-      onPartial: (t) => {
-        setState('speech');
-        opts.onPartialTranscript?.(t);
-      },
-      onFinal: (t) => {
-        opts.onTranscript(t);
-        setState('listening');
-      },
-      onError: (e) => fail({ stage: 'stt', message: e.message, cause: e }),
-    });
-    setState('listening');
-  }
-
-  async function startSegment(): Promise<void> {
-    // VAD draws the turn boundaries; each finished clip goes to transcribe().
+  async function startVad(): Promise<void> {
     const tuning: VadTuning = { ...DEFAULT_TUNING, ...opts.vad };
     try {
       vad = await createVad(
@@ -88,7 +66,7 @@ export function createVoiceSession(opts: VoiceSessionOptions): VoiceSession {
           onSpeechEnd: (pcm) => {
             setState('transcribing');
             opts.stt
-              .transcribe!({ pcm, sampleRate: 16000 })
+              .transcribe({ pcm, sampleRate: 16000 })
               .then((text) => {
                 if (destroyed) return;
                 if (text) opts.onTranscript(text);
@@ -118,8 +96,7 @@ export function createVoiceSession(opts: VoiceSessionOptions): VoiceSession {
       if (destroyed) throw new Error('Session has been destroyed.');
       if (state !== 'idle' && state !== 'error') return; // already running
       try {
-        if (opts.stt.selfDriven) await startSelfDriven();
-        else await startSegment();
+        await startVad();
       } catch (e) {
         const ve = (e as VoiceError).stage
           ? (e as VoiceError)
@@ -129,15 +106,11 @@ export function createVoiceSession(opts: VoiceSessionOptions): VoiceSession {
       }
     },
     stop(): void {
-      listenHandle?.stop();
-      listenHandle = null;
       vad?.pause();
       setState('idle');
     },
     destroy(): void {
       destroyed = true;
-      listenHandle?.stop();
-      listenHandle = null;
       vad?.destroy();
       vad = null;
       setState('idle');

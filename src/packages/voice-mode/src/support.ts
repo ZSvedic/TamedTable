@@ -4,31 +4,25 @@
 // detection — no permissions are requested, nothing is started.
 
 export interface SupportReport {
-  /** Mic capture. Required by every provider. */
+  /** Mic capture. Required to hear anything. */
   getUserMedia: boolean;
-  /** Runs the Silero VAD model. Required by the Whisper (VAD-driven) path. */
+  /** Runs the Silero VAD model. Required by the VAD. */
   webAssembly: boolean;
-  /** Hosts the VAD's audio processing off the main thread. Required by the VAD path. */
+  /** Hosts the VAD's audio processing off the main thread. Required by the VAD. */
   audioWorklet: boolean;
-  /** The browser's own recognizer. Required only by the Web Speech provider. */
-  speechRecognition: boolean;
 }
 
 export function checkSupport(): SupportReport {
-  const w = globalThis as unknown as Record<string, unknown>;
   const hasMedia =
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices &&
     typeof navigator.mediaDevices.getUserMedia === 'function';
   const hasWorklet =
-    typeof (w.AudioWorkletNode ?? (w.AudioContext as object | undefined)) !== 'undefined' &&
-    typeof AudioContext !== 'undefined' &&
-    'audioWorklet' in AudioContext.prototype;
+    typeof AudioContext !== 'undefined' && 'audioWorklet' in AudioContext.prototype;
 
   return {
     getUserMedia: hasMedia,
     webAssembly: typeof WebAssembly !== 'undefined',
     audioWorklet: hasWorklet,
-    speechRecognition: 'SpeechRecognition' in w || 'webkitSpeechRecognition' in w,
   };
 }
