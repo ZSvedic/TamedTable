@@ -26,3 +26,7 @@ export interface ChatPanelMessage {
 
 /** Mic button state — drives the red ring (recording) and spinner (sending). */
 export type VoiceButtonStatus = 'idle' | 'recording' | 'sending';
+
+/** Continuous (hands-free) voice button state — drives the pulsing bars
+ *  (listening) and spinner (a detected turn is being sent). */
+export type ContinuousButtonStatus = 'idle' | 'listening' | 'sending';

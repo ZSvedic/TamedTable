@@ -5,7 +5,7 @@
 
 import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { FetchLike, FilePort } from '@tamedtable/file-io';
-import type { VoicePort } from '@tamedtable/voice-input';
+import type { VoicePort, ContinuousVoicePort } from '@tamedtable/voice-input';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 
 export type { ResolvedConfig };
@@ -50,6 +50,10 @@ export interface WebControllerOptions {
   /** Microphone recording port. The browser passes browserVoicePort(); tests
    *  inject a stub returning a fixed Blob. Voice input is disabled when unset. */
   voice?: VoicePort;
+  /** Continuous (hands-free) voice port. The browser passes
+   *  browserContinuousPort(); tests inject a stub that emits a fixture clip.
+   *  The waveform button is hidden when unset. */
+  continuousVoice?: ContinuousVoicePort;
   /** Initial config (tests inject keys; the browser leaves it for the settings panel). */
   config?: Partial<ResolvedConfig>;
   /** Environment variables used to resolve the initial config. When omitted
@@ -92,5 +96,10 @@ export type ActivityStatus = 'idle' | 'running' | 'saved';
 
 /** Microphone state — drives the MicButton's ring and spinner. */
 export type VoiceStatus = 'idle' | 'recording' | 'sending';
+
+/** Continuous (hands-free) voice state — drives the WaveButton's pulse and
+ *  spinner. `listening` while the VAD is open, `sending` while a detected turn
+ *  is being applied. */
+export type ContinuousStatus = 'idle' | 'listening' | 'sending';
 
 export type DialogKind = 'open' | 'save-flow' | 'save-data' | null;

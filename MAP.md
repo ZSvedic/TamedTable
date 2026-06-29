@@ -29,7 +29,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | SQL expressions | [#SqlExpr](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SqlExpr&type=code) | ✓ | ✓ | ✓ | [sql.feature](spec/test-cases/sql.feature) |
 | Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) |
 | Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) |
-| Voice input | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) |
+| Voice input (press-and-hold + hands-free) | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) |
 | Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
 
 ## Library packages
@@ -48,6 +48,7 @@ Each row is a self-contained library package with its own spec under `spec/packa
 | Toolbar | [#Toolbar](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Toolbar&type=code) | Top bar (brand lockup, file readout, action buttons) and the Open-from-URL dialog with sample quick-picks (`src/packages/toolbar/`, spec at `spec/packages/toolbar/`) |
 | UI kit | [#UiKit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23UiKit&type=code) | Brand design tokens plus the primitive React components — `Button`, `Icon`, `SplitButton`, `Toasts`, `ThemeProvider` (`src/packages/ui-kit/`, spec at `spec/packages/ui-kit/`) |
 | Voice recording | [#VoicePort](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoicePort&type=code) | `VoicePort`, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt` (`src/packages/voice-input/`, spec at `spec/packages/voice-input/`) |
+| Hands-free voice capture | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | `ContinuousVoicePort` + the `@ricky0123/vad-web` VAD wrapper (`vad.ts`, `browser-vad.ts` in `src/packages/voice-input/`) and the chat-panel `WaveButton` |
 
 ## App code areas
 

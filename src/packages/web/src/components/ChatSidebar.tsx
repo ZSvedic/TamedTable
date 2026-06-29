@@ -5,7 +5,7 @@
 import type { ReactNode } from 'react';
 import { typography } from '@tamedtable/ui-kit';
 import { useTheme } from '@tamedtable/ui-kit/components';
-import { ChatPanel, MicButton } from '@tamedtable/chat-panel/components';
+import { ChatPanel, MicButton, WaveButton } from '@tamedtable/chat-panel/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 
@@ -55,12 +55,20 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
       helpLines={HELP_LINES}
       micButton={
         controller.voiceAvailable() ? (
-          <MicButton
-            status={controller.voiceStatus}
-            onStart={() => void controller.startVoice()}
-            onStop={() => void controller.stopVoice()}
-            onCancel={() => controller.cancelVoice()}
-          />
+          <>
+            <MicButton
+              status={controller.voiceStatus}
+              onStart={() => void controller.startVoice()}
+              onStop={() => void controller.stopVoice()}
+              onCancel={() => controller.cancelVoice()}
+            />
+            {controller.continuousAvailable() ? (
+              <WaveButton
+                status={controller.continuousStatus}
+                onToggle={() => void controller.toggleContinuous()}
+              />
+            ) : null}
+          </>
         ) : null
       }
     />

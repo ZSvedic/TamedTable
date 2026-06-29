@@ -4,6 +4,7 @@ import { createWebController } from './controller.ts';
 import type { TutorialSources, TutorialManifestEntry } from './controller.ts';
 import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
 import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
+import { browserContinuousPort } from '@tamedtable/voice-input/browser-vad';
 import { App } from './App.tsx';
 import './index.css';
 
@@ -37,6 +38,9 @@ const tutorialSources: TutorialSources = {
 const controller = createWebController({
   file: new BrowserFilePort(),
   voice: browserVoicePort(),
+  // Hands-free mode starts at the Balanced tuning (snappier than the library
+  // default 1.4 s) so a turn is sent ~0.7 s after you stop.
+  continuousVoice: browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 }),
   tutorialSources,
 });
 

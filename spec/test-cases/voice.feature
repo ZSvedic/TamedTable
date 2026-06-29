@@ -1,11 +1,15 @@
 # #VoiceInput
-# Voice input — a web-only mic button. The recorded audio rides along on the
-# ordinary patch turn: one Gemini call carries the audio, the table context,
-# and the spec-editing instructions, and returns the spec patch directly — no
-# transcription step. The same call also returns a verbatim transcript, which
-# replaces the placeholder user bubble. The stub microphone plays committed
-# voice-*.m4a clips (real recordings); each firing scenario replays a cassette
-# holding that one Gemini patch response. The rest are offline.
+# Voice input — web-only, two buttons sharing one patch turn. Press-and-hold the
+# mic to record once; toggle the waveform button for hands-free continuous voice,
+# where a client-side VAD cuts each spoken turn with no button. Either way the
+# audio rides along on the ordinary patch turn: one Gemini call carries the audio,
+# the table context, and the spec-editing instructions, and returns the spec
+# patch directly — no separate transcription step. The same call also returns a
+# verbatim transcript, which replaces the placeholder user bubble. The stub
+# microphone plays committed voice-*.m4a clips (real recordings); each firing
+# scenario replays a cassette holding that one Gemini patch response — and a
+# continuous turn reuses the very same clip, so it replays the same cassette. The
+# rest are offline.
 Feature: Voice input
 
   Rule: The mic button appears only for voice-capable models with a key
@@ -84,6 +88,43 @@ Feature: Voice input
       Then the mic status is "idle"
       And no chat message is shown
       And the spec has 0 transformations
+
+  Rule: The waveform button mirrors the mic for voice-capable models
+
+    @web
+    Scenario: The waveform button is shown when Google is selected with a Gemini key
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And a stub continuous mic
+      And load "customers-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      Then the waveform button is shown
+
+    @web
+    Scenario: The waveform button is hidden when no continuous port is wired
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And load "customers-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      Then the waveform button is hidden
+
+  Rule: Continuous voice applies each detected turn hands-free
+
+    @web
+    Scenario: A detected turn normalizes a column with no button
+      Given the TamedTable web app
+      And a stub continuous mic that emits "voice-normalize-dob.m4a"
+      And load "customers-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      When user turns continuous voice on
+      Then the continuous status is "listening"
+      When a voice turn is detected
+      Then a user bubble shows "🎙 normalize DOB column"
+      And an assistant bubble is shown
+      And the spec has 1 transformation
+      And the continuous status is "listening"
+      When user turns continuous voice off
+      Then the continuous status is "idle"
 
   # #TutorialMode
   # A runnable, key-free voice tour for the marketing "Speak instead of type"

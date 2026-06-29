@@ -33,6 +33,7 @@ import type {
   ActivityStatus,
   CellRef,
   ChatMessage,
+  ContinuousStatus,
   DialogKind,
   Toast,
   TutorialManifestEntry,
@@ -50,6 +51,7 @@ export type {
   ActivityStatus,
   CellRef,
   ChatMessage,
+  ContinuousStatus,
   DialogKind,
   ResolvedConfig,
   Toast,
@@ -104,6 +106,8 @@ export class WebController implements ControllerHost {
   selection: CellRef | null = null;
   /** Microphone state — drives the MicButton's red ring and spinner. */
   voiceStatus: VoiceStatus = 'idle';
+  /** Continuous voice state — drives the WaveButton's pulse and spinner. */
+  continuousStatus: ContinuousStatus = 'idle';
   /** 1-based page index over the derived rows, clamped on read. */
   pageNum = 1;
   /** Filename of the most recent save, cleared by the next state change. */
@@ -304,6 +308,8 @@ export class WebController implements ControllerHost {
   startVoice(): Promise<void> { return this.voice.startVoice(); }
   stopVoice(): Promise<void> { return this.voice.stopVoice(); }
   cancelVoice(): void { this.voice.cancelVoice(); }
+  continuousAvailable(): boolean { return this.voice.continuousAvailable(); }
+  toggleContinuous(): Promise<void> { return this.voice.toggleContinuous(); }
 
   // ── Settings / config (→ config) ───────────────────────────────────────────
 

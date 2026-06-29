@@ -1,12 +1,15 @@
 # Voice input
 
-The `@tamedtable/voice-input` package owns recording a spoken request: the
+The `@tamedtable/voice-input` package owns capturing a spoken request in two
+shapes: press-and-hold and hands-free. For press-and-hold it owns the
 `VoicePort` recording interface, the browser implementation that captures
 microphone audio and re-encodes it to WAV, and `buildVoicePrompt` — the
-deterministic instruction text sent next to the audio. It owns no UI (the mic
-button lives in chat-panel) and makes no network calls: there is no
-transcription step — the audio rides along on the ordinary patch turn, so a
-voice request costs exactly as many model calls as a typed one.
+deterministic instruction text sent next to the audio. For hands-free it owns
+the `ContinuousVoicePort` interface and a browser implementation backed by a
+client-side voice-activity detector (VAD) that cuts each spoken turn into a WAV
+clip with no button. It owns no UI (the buttons live in chat-panel) and assembles
+no transcription step: every captured clip rides along on the ordinary patch
+turn, so a voice request costs exactly as many model calls as a typed one.
 
 ## Worked example
 
@@ -50,13 +53,46 @@ call, and appends the table context so spoken references ("this column",
 - When a cell is selected, a `Selected cell:` line adds its column, 1-based
   row, and JSON-quoted value; with no selection the line is absent.
 
+## ContinuousVoicePort
+
+Hands-free capture. The host injects a port; the browser implementation
+(`browserContinuousPort`, separate `browser-vad` entry point — DOM and WASM
+required) wraps `@ricky0123/vad-web`, the Silero VAD running on ONNX in an
+AudioWorklet.
+
+```
+start(handlers)  → Promise<void>   // ask for the mic, load the VAD, listen
+stop()           → void            // stop listening, release the mic
+setTuning(t?)    → void            // re-tune turn detection while running
+```
+
+Once started, the VAD watches the live microphone entirely in the browser — no
+audio leaves the machine to find turn boundaries. When the speaker pauses, it
+cuts that stretch into 16 kHz mono PCM, which the port encodes to a WAV `Blob`
+and hands to `handlers.onSegment`. The app sends that clip on the ordinary patch
+turn, exactly as a mic release does. `VadTuning` carries the knobs in
+milliseconds — `redemptionMs` (silence before a turn closes; the felt delay),
+`minSpeechMs`, the speech thresholds, and the asset paths. The model and wasm
+load from a pinned jsDelivr CDN by default (static files, no backend);
+`baseAssetPath` / `onnxWASMBasePath` override to self-host for offline use.
+
 ## Demo page
 
-The demo (`demo.html` + `demo.ts`, deployed under `/demos/voice-input/`)
-renders `buildVoicePrompt` for a sample context into `#out` (the smoke test's
-ready signal) and drives a real `browserVoicePort()`: Start (`#vi-start`)
-asks for the microphone, Stop (`#vi-stop`) shows the WAV's type and byte size
-in `#vi-result` with an `<audio>` element to play it back, Cancel
-(`#vi-cancel`) discards. The state line (`#vi-state`) tracks
-idle/recording/stopped. Automated `@web` scenarios run Chromium with a fake
-microphone; the live page uses the real one.
+The demo (`demo.html` + `demo.ts`, deployed under `/demos/voice-input/`) exercises
+all three jobs by hand — no LLM, so a captured turn is just a clip you can play.
+
+- **buildVoicePrompt** renders for a sample context into `#out` (the smoke test's
+  ready signal).
+- **Press-and-hold** drives a real `browserVoicePort()`: Start (`#vi-start`) asks
+  for the microphone, Stop (`#vi-stop`) shows the WAV's type and byte size in
+  `#vi-result` with an `<audio>` to play it back, Cancel (`#vi-cancel`) discards;
+  `#vi-state` tracks idle/recording/stopped.
+- **Hands-free** drives a real `browserContinuousPort()`: the toggle (`#hf-toggle`)
+  starts/stops listening (`#hf-state`), each detected turn shows its clip size in
+  `#hf-result` with an `<audio>` to play it, and Snappy/Balanced/Relaxed presets
+  plus `redemptionMs` / `minSpeechMs` inputs re-tune the VAD live.
+- A capability panel (`#caps`) reports getUserMedia, WebAssembly, and AudioWorklet.
+
+Automated `@web` scenarios run Chromium with a fake microphone and only drive the
+press-and-hold controls (the VAD's model loads from a CDN); the live page uses the
+real microphone and VAD.

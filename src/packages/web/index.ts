@@ -21,4 +21,9 @@ export type {
 } from './src/controller.ts';
 export type { FilePort, PickedFile, SaveOutcome, FetchLike } from '@tamedtable/file-io';
 export { buildVoicePrompt } from '@tamedtable/voice-input';
-export type { VoiceContext, VoicePort } from '@tamedtable/voice-input';
+export type {
+  VoiceContext,
+  VoicePort,
+  ContinuousVoicePort,
+  ContinuousVoiceHandlers,
+} from '@tamedtable/voice-input';
