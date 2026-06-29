@@ -44,7 +44,7 @@ Feature: Performance benchmark on large tables
 
   Rule: C — Natural-language cell operations (weaker model, N/batch-size turns)
 
-    @perf @bench-nl @needs-recording
+    @perf @bench-nl
     Scenario: Add a boolean Music column classifying each video
       Given a fresh benchmark runner
       And the benchmark has loaded "performance-liked-videos.csv"

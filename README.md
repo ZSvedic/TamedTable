@@ -179,14 +179,21 @@ of **total time, tokens used, and estimated cost** per scenario, in three groups
 
 | Command | What it does |
 |---|---|
-| `bun run bench` | Offline. Runs A and B with real numbers; runs C too once its cassette exists, else skips it. No API key. |
-| `bun run bench:record` | Records C against the live API (needs `ANTHROPIC_API_KEY`), then later `bun run bench` replays it offline. |
-| `bun run bench:live` | Runs every group straight against the live API — true end-to-end time, tokens, and cost. Needs a key; rate-limited. |
+| `bun run bench` | Offline, no API key. Runs all three groups; C replays a committed cassette. |
+| `bun run bench:record` | Re-records C against the live API (needs `ANTHROPIC_API_KEY`) and refreshes the committed cassette. |
+| `bun run bench:live` | Runs every group straight against the live API. Needs a key; rate-limited. |
 
 Cost is computed from each call's recorded (or live) token usage at the
-published per-model rates; A and B make no model call, so their token and cost
-columns are zero. All `bench` commands run from `src/` (like every other `bun`
-command).
+published per-model rates, including prompt-cache writes (1.25×) and reads
+(0.1×) — most input tokens are cached, so counting only `input_tokens` would
+undercount badly. A and B make no model call, so their token and cost columns
+are zero.
+
+Tokens and cost are real in every mode (the cassette stores the live usage). But
+**timing for C is real only with `bun run bench:live`** — offline, C's time is
+the cassette-replay time, not API latency (a recorded live run took ~145 s for
+the 1,820-row classify). A and B never call the model, so their timing is real
+offline. All `bench` commands run from `src/` (like every other `bun` command).
 
 ## Iterate on the spec with WoZ and SCRIBE
 

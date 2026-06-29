@@ -26,34 +26,53 @@ const PRICING: Record<string, { in: number; out: number }> = {
 };
 const FALLBACK_PRICE = { in: 3, out: 15 };
 
+// Prompt-cache multipliers on the input rate: a cache write costs 1.25×, a
+// cache read 0.1×. The runtime sends each cell/patch prompt with an ephemeral
+// cache breakpoint, so most input tokens land in the cache fields rather than
+// `input_tokens` — counting only `input_tokens` would wildly undercount both
+// tokens and cost.
+const CACHE_WRITE_MULT = 1.25;
+const CACHE_READ_MULT = 0.1;
+
 // ── Per-model usage tally ────────────────────────────────────────────────────
 // Reset before each scenario; written by the fetch wrapper installed in Before
 // (so live and cassette-replay runs are measured identically), read by the When
 // steps that finalise the scenario's metric.
-interface ModelTally { calls: number; inTokens: number; outTokens: number }
+interface AnthropicUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+interface ModelTally { calls: number; inTokens: number; cacheWrite: number; cacheRead: number; outTokens: number }
 let tally = new Map<string, ModelTally>();
 
 function resetTally(): void {
   tally = new Map();
 }
 
-function addUsage(model: string, inTokens: number, outTokens: number): void {
-  const t = tally.get(model) ?? { calls: 0, inTokens: 0, outTokens: 0 };
+function addUsage(model: string, u: AnthropicUsage): void {
+  const t = tally.get(model) ?? { calls: 0, inTokens: 0, cacheWrite: 0, cacheRead: 0, outTokens: 0 };
   t.calls += 1;
-  t.inTokens += inTokens;
-  t.outTokens += outTokens;
+  t.inTokens += u.input_tokens ?? 0;
+  t.cacheWrite += u.cache_creation_input_tokens ?? 0;
+  t.cacheRead += u.cache_read_input_tokens ?? 0;
+  t.outTokens += u.output_tokens ?? 0;
   tally.set(model, t);
 }
 
+// Total input includes cached tokens; cost prices each input class at its own
+// cache-adjusted rate plus output at the output rate.
 function summariseTally(): { calls: number; inTokens: number; outTokens: number; costUsd: number; models: string } {
   let calls = 0, inTokens = 0, outTokens = 0, costUsd = 0;
   const models: string[] = [];
   for (const [model, t] of tally) {
     const price = PRICING[model] ?? FALLBACK_PRICE;
     calls += t.calls;
-    inTokens += t.inTokens;
+    inTokens += t.inTokens + t.cacheWrite + t.cacheRead;
     outTokens += t.outTokens;
-    costUsd += (t.inTokens / 1e6) * price.in + (t.outTokens / 1e6) * price.out;
+    costUsd += ((t.inTokens + t.cacheWrite * CACHE_WRITE_MULT + t.cacheRead * CACHE_READ_MULT) / 1e6) * price.in
+      + (t.outTokens / 1e6) * price.out;
     models.push(`${model}×${t.calls}`);
   }
   return { calls, inTokens, outTokens, costUsd, models: models.join(', ') || '—' };
@@ -97,8 +116,8 @@ Before({ tags: '@perf' }, function (this: TamedTableWorld, scenario: ITestCaseHo
     try {
       const body = typeof init?.body === 'string' ? init.body : '';
       const model = body ? (JSON.parse(body) as { model?: string }).model : undefined;
-      const data = (await res.clone().json()) as { usage?: { input_tokens?: number; output_tokens?: number } };
-      if (model && data?.usage) addUsage(model, data.usage.input_tokens ?? 0, data.usage.output_tokens ?? 0);
+      const data = (await res.clone().json()) as { usage?: AnthropicUsage };
+      if (model && data?.usage) addUsage(model, data.usage);
     } catch { /* non-JSON or non-message endpoint — ignore */ }
     return res;
   };
