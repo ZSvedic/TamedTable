@@ -8,6 +8,7 @@ import {
   checkSupport,
   type VoiceSession,
   type VoiceState,
+  type VadTuning,
 } from './src/index.ts';
 
 const $ = (id: string): HTMLElement => document.getElementById(id)!;
@@ -64,8 +65,39 @@ function applyCommand(textRaw: string): string {
   return `(no command matched)`;
 }
 
+// ---- VAD tuning panel ------------------------------------------------------
+let session: VoiceSession | null = null; // declared here so the preset below can re-tune a running session
+type VadField = 'redemptionMs' | 'minSpeechMs' | 'positiveSpeechThreshold' | 'negativeSpeechThreshold';
+const VAD_FIELDS: VadField[] = ['redemptionMs', 'minSpeechMs', 'positiveSpeechThreshold', 'negativeSpeechThreshold'];
+
+const PRESETS: Record<string, Record<VadField, number>> = {
+  // redemptionMs is the felt delay; snappier presets cut it hard.
+  snappy: { redemptionMs: 300, minSpeechMs: 200, positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35 },
+  balanced: { redemptionMs: 700, minSpeechMs: 300, positiveSpeechThreshold: 0.4, negativeSpeechThreshold: 0.3 },
+  relaxed: { redemptionMs: 1400, minSpeechMs: 400, positiveSpeechThreshold: 0.3, negativeSpeechThreshold: 0.25 },
+};
+
+function readVad(): Partial<VadTuning> {
+  const out: Partial<VadTuning> = {};
+  for (const f of VAD_FIELDS) out[f] = Number(($(f) as HTMLInputElement).value);
+  return out;
+}
+
+function applyPreset(name: keyof typeof PRESETS): void {
+  const p = PRESETS[name]!;
+  for (const f of VAD_FIELDS) ($(f) as HTMLInputElement).value = String(p[f]);
+  session?.updateVad(readVad()); // live if running
+}
+
+document.querySelectorAll<HTMLButtonElement>('button[data-preset]').forEach((btn) => {
+  btn.addEventListener('click', () => applyPreset(btn.dataset.preset as keyof typeof PRESETS));
+});
+VAD_FIELDS.forEach((f) => {
+  $(f).addEventListener('change', () => session?.updateVad(readVad()));
+});
+applyPreset('balanced'); // start snappier than the library default
+
 // ---- Session wiring --------------------------------------------------------
-let session: VoiceSession | null = null;
 let speechEndAt = 0;
 
 function setStateBadge(s: VoiceState): void {
@@ -85,6 +117,8 @@ async function turnOn(): Promise<void> {
     // The context is pulled fresh each turn, so editing the keyword box takes
     // effect on the very next thing you say.
     stt: geminiSTT({ apiKey, model, context: () => ($('context') as HTMLTextAreaElement).value }),
+    vad: readVad(), // current panel values; live-tuned afterwards via session.updateVad
+
     onStateChange: (s) => {
       setStateBadge(s);
       if (s === 'transcribing') speechEndAt = performance.now();

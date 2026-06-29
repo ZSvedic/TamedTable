@@ -39,6 +39,9 @@ export interface VoiceSession {
   stop(): void;
   /** Releases the mic, worklet, and model. The session can't be restarted. */
   destroy(): void;
+  /** Re-tune the VAD while it runs — e.g. shorten redemptionMs for snappier
+   *  turn-ends. No-op before start() or after destroy(). */
+  updateVad(opts: Partial<VadTuning>): void;
   readonly state: VoiceState;
 }
 
@@ -114,6 +117,9 @@ export function createVoiceSession(opts: VoiceSessionOptions): VoiceSession {
       vad?.destroy();
       vad = null;
       setState('idle');
+    },
+    updateVad(opts: Partial<VadTuning>): void {
+      vad?.setOptions(opts);
     },
     get state() {
       return state;

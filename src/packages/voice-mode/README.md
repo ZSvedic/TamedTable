@@ -39,7 +39,7 @@ import { createVoiceSession, geminiSTT } from '@tamedtable/voice-mode';
 const session = createVoiceSession({
   stt: geminiSTT({
     apiKey,
-    model: 'gemini-2.5-flash',                 // optional; this is the default
+    model: 'gemini-3.5-flash',                 // optional; this is the default
     context: () => columns.join(', '),         // pulled fresh each turn to bias recognition
   }),
   onTranscript: (text) => doSomething(text),

@@ -75,6 +75,7 @@ interface VoiceSession {
   start(): Promise<void>;   // mic + model load; rejects if denied/unsupported
   stop(): void;             // stop listening, keep model in memory
   destroy(): void;          // release everything
+  updateVad(o: Partial<VadTuning>): void; // re-tune while running (e.g. redemptionMs)
   readonly state: VoiceState;
 }
 
@@ -116,7 +117,7 @@ The reason to transcribe through an LLM rather than a plain STT API is the
 pulled fresh each turn, and asks the model to prefer those spellings:
 
 ```ts
-geminiSTT({ apiKey, model: 'gemini-2.5-flash', context: () => columns.join(', ') });
+geminiSTT({ apiKey, model: 'gemini-3.5-flash', context: () => columns.join(', ') });
 ```
 
 So domain words — a column name like `DOB`, an odd brand, "bananas" — come back

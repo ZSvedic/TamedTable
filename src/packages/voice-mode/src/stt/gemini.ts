@@ -15,7 +15,7 @@ import { encodeWav, bytesToBase64 } from '../wav.ts';
 export interface GeminiOptions {
   /** Google AI (Gemini) API key. Stays in the browser; sent only to Google. */
   apiKey: string;
-  /** Model id. Defaults to gemini-2.5-flash; override to match your access. */
+  /** Model id. Defaults to gemini-3.5-flash; override to match your access. */
   model?: string;
   /** Called once per turn to build the recognition context — a list of words
    *  the speaker is likely to use. Returned fresh each turn so it can track the
@@ -25,7 +25,7 @@ export interface GeminiOptions {
   baseUrl?: string;
 }
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-3.5-flash';
 const DEFAULT_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 export function geminiSTT(opts: GeminiOptions): STTProvider {

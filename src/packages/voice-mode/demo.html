@@ -54,7 +54,7 @@
         <h2>Gemini Flash <span class="hint">— audio goes straight to the model (BYOK)</span></h2>
         <div class="row" style="margin-bottom: 0.6rem">
           <input id="apikey" type="password" placeholder="Gemini API key (kept in this tab only)" autocomplete="off" />
-          <input id="model" type="text" value="gemini-2.5-flash" size="20" aria-label="Gemini model" />
+          <input id="model" type="text" value="gemini-3.5-flash" size="20" aria-label="Gemini model" />
         </div>
         <label class="field">
           <span>Recognition context — words the model should prefer (edit me)</span>
@@ -80,6 +80,25 @@
           <dt>Last command</dt><dd id="cmd" class="mono">—</dd>
           <dt>JS heap (Chrome)</dt><dd id="mem" class="mono">—</dd>
         </dl>
+      </section>
+
+      <section class="card">
+        <h2>VAD tuning <span class="hint">— how fast a turn is sent</span></h2>
+        <div class="row">
+          <strong style="opacity:.7">Presets:</strong>
+          <button data-preset="snappy">Snappy</button>
+          <button data-preset="balanced">Balanced</button>
+          <button data-preset="relaxed">Relaxed (default)</button>
+        </div>
+        <div class="row" style="margin-top:.6rem">
+          <label class="field"><span>redemptionMs — silence before send</span><input id="redemptionMs" type="number" min="100" max="3000" step="50" /></label>
+          <label class="field"><span>minSpeechMs — ignore blips shorter than</span><input id="minSpeechMs" type="number" min="0" max="2000" step="50" /></label>
+        </div>
+        <div class="row" style="margin-top:.4rem">
+          <label class="field"><span>positiveSpeechThreshold — start</span><input id="positiveSpeechThreshold" type="number" min="0" max="1" step="0.05" /></label>
+          <label class="field"><span>negativeSpeechThreshold — end</span><input id="negativeSpeechThreshold" type="number" min="0" max="1" step="0.05" /></label>
+        </div>
+        <p class="hint"><strong>redemptionMs</strong> is the big lever for the delay you feel — it's the silence the VAD waits before deciding you stopped and sending the clip. Lower = snappier, but it may cut you off at a natural pause. Changes apply live while running.</p>
       </section>
 
       <section class="card">

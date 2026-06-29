@@ -13,6 +13,7 @@
 // version, since vad-web bundles the matching ORT glue code.
 
 import { MicVAD } from '@ricky0123/vad-web';
+import type { FrameProcessorOptions } from '@ricky0123/vad-web';
 
 const VAD_VERSION = '0.0.30';
 const ORT_VERSION = '1.26.0';
@@ -59,6 +60,9 @@ export interface VadHandle {
   start(): Promise<void>;
   pause(): Promise<void>;
   destroy(): Promise<void>;
+  /** Change turn-detection knobs on a running VAD — no reload. Only the
+   *  frame-processor fields apply live; asset paths are fixed at load. */
+  setOptions(opts: Partial<VadTuning>): void;
 }
 
 /** Build and load the VAD. The returned handle is not listening until you call
@@ -84,5 +88,14 @@ export async function createVad(cb: VadCallbacks, tuning: VadTuning): Promise<Va
     start: () => vad.start(),
     pause: () => vad.pause(),
     destroy: () => vad.destroy(),
+    setOptions: (opts: Partial<VadTuning>) => {
+      const fp: Partial<FrameProcessorOptions> = {};
+      if (typeof opts.positiveSpeechThreshold === 'number') fp.positiveSpeechThreshold = opts.positiveSpeechThreshold;
+      if (typeof opts.negativeSpeechThreshold === 'number') fp.negativeSpeechThreshold = opts.negativeSpeechThreshold;
+      if (typeof opts.redemptionMs === 'number') fp.redemptionMs = opts.redemptionMs;
+      if (typeof opts.minSpeechMs === 'number') fp.minSpeechMs = opts.minSpeechMs;
+      if (typeof opts.preSpeechPadMs === 'number') fp.preSpeechPadMs = opts.preSpeechPadMs;
+      vad.setOptions(fp);
+    },
   };
 }
