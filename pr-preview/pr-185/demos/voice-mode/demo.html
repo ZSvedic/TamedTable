@@ -18,8 +18,11 @@
       button.primary { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 600; }
       button.on { background: #16a34a; border-color: #16a34a; color: #fff; }
       button:disabled { opacity: 0.4; cursor: not-allowed; }
-      input[type='password'], input[type='text'], select { font: inherit; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
-      input[type='password'] { min-width: 18rem; }
+      input, select, textarea { font: inherit; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+      input[type='password'] { min-width: 20rem; }
+      label.field { display: grid; gap: 0.2rem; }
+      label.field > span { opacity: 0.65; font-size: 0.85rem; }
+      textarea#context { width: 100%; min-height: 3.2rem; resize: vertical; }
       code, .mono { font-family: ui-monospace, monospace; }
       .kv { display: grid; grid-template-columns: 11rem 1fr; gap: 0.2rem 0.8rem; }
       .kv dt { opacity: 0.65; }
@@ -30,14 +33,15 @@
       ul#list:empty::after { content: '(empty — say “add milk”)'; opacity: 0.5; padding-left: 0; }
       .hint { opacity: 0.65; font-size: 0.85rem; margin: 0.2rem 0 0; }
       .state-badge { font-family: ui-monospace, monospace; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid currentColor; }
-      #whisper-cfg[hidden] { display: none; }
     </style>
-  <script type="module" crossorigin src="/pr-preview/pr-185/demos/voice-mode/demo-z1rtvnny.js"></script></head>
+  <script type="module" crossorigin src="/pr-preview/pr-185/demos/voice-mode/demo-mahz0mqa.js"></script></head>
   <body>
     <h1>Full Voice Mode</h1>
     <p class="hint">
-      Hands-free: flip it on and just talk. Client-side VAD decides when each turn
-      ends — no button. Try <em>“add milk”</em>, <em>“remove milk”</em>, <em>“clear the list”</em>.
+      Hands-free: flip it on and just talk. A client-side VAD decides when each
+      turn ends — no button — and sends the clip to Gemini Flash, which transcribes
+      it using your keyword context. Try <em>“add milk”</em>, <em>“remove milk”</em>,
+      <em>“clear the list”</em>.
     </p>
 
     <div class="grid">
@@ -47,20 +51,16 @@
       </section>
 
       <section class="card">
-        <h2>Provider</h2>
-        <div class="row">
-          <label><input type="radio" name="provider" value="webspeech" checked /> Web&nbsp;Speech <span class="hint">(no key · Chrome/Edge · audio → Google)</span></label>
+        <h2>Gemini Flash <span class="hint">— audio goes straight to the model (BYOK)</span></h2>
+        <div class="row" style="margin-bottom: 0.6rem">
+          <input id="apikey" type="password" placeholder="Gemini API key (kept in this tab only)" autocomplete="off" />
+          <input id="model" type="text" value="gemini-2.5-flash" size="20" aria-label="Gemini model" />
         </div>
-        <div class="row">
-          <label><input type="radio" name="provider" value="whisper" /> Whisper&nbsp;HTTP <span class="hint">(your key · any browser)</span></label>
-        </div>
-        <div id="whisper-cfg" class="row" hidden style="margin-top: 0.6rem">
-          <select id="endpoint">
-            <option value="https://api.openai.com/v1/audio/transcriptions|whisper-1">OpenAI · whisper-1</option>
-            <option value="https://api.groq.com/openai/v1/audio/transcriptions|whisper-large-v3">Groq · whisper-large-v3</option>
-          </select>
-          <input id="apikey" type="password" placeholder="sk-… (kept in this tab only)" autocomplete="off" />
-        </div>
+        <label class="field">
+          <span>Recognition context — words the model should prefer (edit me)</span>
+          <textarea id="context">milk, eggs, bread, butter, bananas, coffee, yogurt, spinach, add, remove, delete, clear the list</textarea>
+        </label>
+        <p class="hint">These keywords ride along with the audio so terms like a column name or an odd brand come back spelled right.</p>
       </section>
 
       <section class="card">
@@ -75,7 +75,6 @@
       <section class="card">
         <h2>Live status</h2>
         <dl class="kv">
-          <dt>Partial transcript</dt><dd id="partial" class="mono">—</dd>
           <dt>Final transcript</dt><dd id="final" class="mono">—</dd>
           <dt>Time to transcript</dt><dd id="ttft" class="mono">—</dd>
           <dt>Last command</dt><dd id="cmd" class="mono">—</dd>

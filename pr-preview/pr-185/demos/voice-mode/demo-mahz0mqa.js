@@ -11823,7 +11823,6 @@ async function createVad(cb, tuning) {
 function createVoiceSession(opts) {
   let state = "idle";
   let vad = null;
-  let listenHandle = null;
   let destroyed = false;
   const setState = (next) => {
     if (state === next)
@@ -11835,21 +11834,7 @@ function createVoiceSession(opts) {
     setState("error");
     opts.onError?.(err);
   };
-  async function startSelfDriven() {
-    listenHandle = opts.stt.listen({
-      onPartial: (t) => {
-        setState("speech");
-        opts.onPartialTranscript?.(t);
-      },
-      onFinal: (t) => {
-        opts.onTranscript(t);
-        setState("listening");
-      },
-      onError: (e) => fail({ stage: "stt", message: e.message, cause: e })
-    });
-    setState("listening");
-  }
-  async function startSegment() {
+  async function startVad() {
     const tuning = { ...DEFAULT_TUNING, ...opts.vad };
     try {
       vad = await createVad({
@@ -11885,10 +11870,7 @@ function createVoiceSession(opts) {
       if (state !== "idle" && state !== "error")
         return;
       try {
-        if (opts.stt.selfDriven)
-          await startSelfDriven();
-        else
-          await startSegment();
+        await startVad();
       } catch (e) {
         const ve = e.stage ? e : { stage: "mic", message: errMsg(e), cause: e };
         fail(ve);
@@ -11896,15 +11878,11 @@ function createVoiceSession(opts) {
       }
     },
     stop() {
-      listenHandle?.stop();
-      listenHandle = null;
       vad?.pause();
       setState("idle");
     },
     destroy() {
       destroyed = true;
-      listenHandle?.stop();
-      listenHandle = null;
       vad?.destroy();
       vad = null;
       setState("idle");
@@ -11920,89 +11898,7 @@ function errMsg(e) {
 function isNotAllowed(e) {
   return typeof e === "object" && e !== null && e.name === "NotAllowedError";
 }
-// packages/voice-mode/src/stt/webspeech.ts
-function recognitionCtor() {
-  const w = globalThis;
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-function webSpeechSTT(opts = {}) {
-  return {
-    name: "web-speech",
-    partial: true,
-    selfDriven: true,
-    listen(cb) {
-      const Ctor = recognitionCtor();
-      if (!Ctor)
-        throw new Error("SpeechRecognition is not available in this browser.");
-      const rec = new Ctor;
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.lang = opts.lang ?? "en-US";
-      let stopped = false;
-      rec.onresult = (e) => {
-        for (let i = e.resultIndex;i < e.results.length; i++) {
-          const result = e.results[i];
-          const text = result[0].transcript.trim();
-          if (!text)
-            continue;
-          if (result.isFinal)
-            cb.onFinal(text);
-          else
-            cb.onPartial?.(text);
-        }
-      };
-      rec.onerror = (e) => {
-        if (e.error === "no-speech" || e.error === "aborted")
-          return;
-        if (e.error === "network" || e.error === "not-allowed" || e.error === "service-not-allowed") {
-          stopped = true;
-        }
-        cb.onError?.(new Error(`SpeechRecognition error: ${e.error}`));
-      };
-      rec.onend = () => {
-        if (!stopped)
-          rec.start();
-      };
-      rec.start();
-      return {
-        stop() {
-          stopped = true;
-          rec.abort();
-        }
-      };
-    }
-  };
-}
-// packages/voice-mode/src/stt/whisper.ts
-var OPENAI_URL = "https://api.openai.com/v1/audio/transcriptions";
-function whisperSTT(opts) {
-  const baseUrl = opts.baseUrl ?? OPENAI_URL;
-  const model = opts.model ?? "whisper-1";
-  return {
-    name: "whisper",
-    partial: false,
-    selfDriven: false,
-    async transcribe(audio) {
-      const wav = encodeWav(audio.pcm, audio.sampleRate);
-      const form = new FormData;
-      form.append("file", new Blob([wav], { type: "audio/wav" }), "turn.wav");
-      form.append("model", model);
-      form.append("response_format", "text");
-      if (opts.language)
-        form.append("language", opts.language);
-      const res = await fetch(baseUrl, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${opts.apiKey}` },
-        body: form
-      });
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        throw new Error(`Transcription failed (${res.status}): ${detail.slice(0, 200)}`);
-      }
-      return (await res.text()).trim();
-    }
-  };
-}
+// packages/voice-mode/src/wav.ts
 function encodeWav(pcm, sampleRate) {
   const bytesPerSample = 2;
   const buffer = new ArrayBuffer(44 + pcm.length * bytesPerSample);
@@ -12033,28 +11929,73 @@ function encodeWav(pcm, sampleRate) {
   }
   return buffer;
 }
+function bytesToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 32768;
+  for (let i = 0;i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+// packages/voice-mode/src/stt/gemini.ts
+var DEFAULT_MODEL = "gemini-2.5-flash";
+var DEFAULT_BASE = "https://generativelanguage.googleapis.com/v1beta";
+function geminiSTT(opts) {
+  const model = opts.model?.trim() || DEFAULT_MODEL;
+  const base = opts.baseUrl ?? DEFAULT_BASE;
+  return {
+    name: "gemini-flash",
+    async transcribe(audio) {
+      const b64 = bytesToBase64(encodeWav(audio.pcm, audio.sampleRate));
+      const keywords = opts.context?.().trim();
+      const instruction = [
+        "You are the speech-to-text engine of a voice-controlled app.",
+        "Transcribe the spoken command in the audio verbatim, as plain lowercase text.",
+        keywords ? `The speaker is likely to use these words — prefer these spellings: ${keywords}.` : "",
+        "Output only the transcript: no quotes, no labels, no extra words."
+      ].filter(Boolean).join(" ");
+      const url = `${base}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(opts.apiKey)}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            { parts: [{ text: instruction }, { inline_data: { mime_type: "audio/wav", data: b64 } }] }
+          ],
+          generationConfig: { temperature: 0 }
+        })
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        throw new Error(`Gemini transcription failed (${res.status}): ${detail.slice(0, 200)}`);
+      }
+      const json = await res.json();
+      const text = (json.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
+      return text;
+    }
+  };
+}
 // packages/voice-mode/src/support.ts
 function checkSupport() {
-  const w = globalThis;
   const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function";
-  const hasWorklet = typeof (w.AudioWorkletNode ?? w.AudioContext) !== "undefined" && typeof AudioContext !== "undefined" && "audioWorklet" in AudioContext.prototype;
+  const hasWorklet = typeof AudioContext !== "undefined" && "audioWorklet" in AudioContext.prototype;
   return {
     getUserMedia: hasMedia,
     webAssembly: typeof WebAssembly !== "undefined",
-    audioWorklet: hasWorklet,
-    speechRecognition: "SpeechRecognition" in w || "webkitSpeechRecognition" in w
+    audioWorklet: hasWorklet
   };
 }
 // packages/voice-mode/demo.ts
 var $ = (id) => document.getElementById(id);
 var support = checkSupport();
 var caps = $("caps");
-$("out").textContent = support.getUserMedia ? "Ready. Pick a provider and turn Full Voice Mode on." : "This browser cannot capture the mic (getUserMedia missing).";
+$("out").textContent = support.getUserMedia ? "Ready. Paste a Gemini key and turn Full Voice Mode on." : "This browser cannot capture the mic (getUserMedia missing).";
 var labels = {
   getUserMedia: "getUserMedia",
   webAssembly: "WebAssembly",
-  audioWorklet: "AudioWorklet",
-  speechRecognition: "SpeechRecognition"
+  audioWorklet: "AudioWorklet"
 };
 caps.innerHTML = Object.keys(labels).map((k) => {
   const ok = support[k];
@@ -12089,58 +12030,33 @@ function applyCommand(textRaw) {
   return `(no command matched)`;
 }
 var session = null;
-var speechStartAt = 0;
 var speechEndAt = 0;
-function buildProvider() {
-  const which = document.querySelector('input[name="provider"]:checked').value;
-  if (which === "whisper") {
-    const [baseUrl, model] = $("endpoint").value.split("|");
-    const apiKey = $("apikey").value.trim();
-    if (!apiKey)
-      throw new Error("Paste an API key for the Whisper provider first.");
-    return whisperSTT({ apiKey, baseUrl, model });
-  }
-  return webSpeechSTT();
-}
 function setStateBadge(s) {
   $("state").textContent = s;
 }
 async function turnOn() {
   $("err").textContent = "";
-  let provider;
-  try {
-    provider = buildProvider();
-  } catch (e) {
-    $("err").textContent = e.message;
+  const apiKey = $("apikey").value.trim();
+  if (!apiKey) {
+    $("err").textContent = "Paste your Gemini API key first.";
     return;
   }
+  const model = $("model").value.trim();
   session = createVoiceSession({
-    stt: provider,
+    stt: geminiSTT({ apiKey, model, context: () => $("context").value }),
     onStateChange: (s) => {
       setStateBadge(s);
-      if (s === "speech") {
-        speechStartAt = performance.now();
-        speechEndAt = 0;
-      } else if (s === "transcribing") {
+      if (s === "transcribing")
         speechEndAt = performance.now();
-      }
-    },
-    onPartialTranscript: (t) => {
-      $("partial").textContent = t;
     },
     onTranscript: (t) => {
-      const ref = speechEndAt || speechStartAt || performance.now();
+      const ref = speechEndAt || performance.now();
       $("ttft").textContent = `${Math.round(performance.now() - ref)} ms`;
       $("final").textContent = t;
-      $("partial").textContent = "—";
       $("cmd").textContent = applyCommand(t);
     },
     onError: (err) => {
-      let msg = `[${err.stage}] ${err.message}`;
-      if (/network/i.test(err.message)) {
-        msg += " — Web Speech uses a cloud backend (Google in Chrome, Microsoft in Edge); a “network” error means the browser couldn’t reach it. Edge’s backend often fails this way even though Chrome works. Switch to the Whisper provider to test the hands-free loop.";
-      }
-      $("err").textContent = msg;
+      $("err").textContent = `[${err.stage}] ${err.message}`;
     }
   });
   try {
@@ -12163,21 +12079,14 @@ function setToggle(on) {
   const btn = $("toggle");
   btn.textContent = on ? "■ Turn Full Voice Mode off" : "▶ Turn Full Voice Mode on";
   btn.classList.toggle("on", on);
-  document.querySelectorAll('input[name="provider"], #endpoint, #apikey').forEach((el) => {
-    el.disabled = on;
-  });
+  $("apikey").disabled = on;
+  $("model").disabled = on;
 }
 $("toggle").addEventListener("click", () => {
   if (session)
     turnOff();
   else
     turnOn();
-});
-document.querySelectorAll('input[name="provider"]').forEach((el) => {
-  el.addEventListener("change", () => {
-    const whisper = document.querySelector('input[name="provider"]:checked').value === "whisper";
-    $("whisper-cfg").hidden = !whisper;
-  });
 });
 var perfMem = performance.memory;
 if (perfMem) {
