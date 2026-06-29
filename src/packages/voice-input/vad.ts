@@ -1,16 +1,17 @@
-// #VoiceMode
-// The button replacement. This wraps @ricky0123/vad-web (Silero VAD running on
-// ONNX in an AudioWorklet) and hands the session just two events: a turn
-// started, a turn ended with its captured PCM. Everything ONNX/WASM/worklet
-// lives behind this file so the rest of the package never imports the VAD lib.
+// #VoiceInput
+// The button replacement for continuous voice. Wraps @ricky0123/vad-web (Silero
+// VAD on ONNX in an AudioWorklet) and hands the caller two events: a turn
+// started, a turn ended with its captured PCM. All the ONNX/WASM/worklet detail
+// lives behind this file. DOM-free at import time — the mic is only touched in
+// createVad(), which only browser-vad.ts calls, so the Node test build never
+// loads it.
 //
-// @ricky0123/vad-web fetches three assets at runtime — the worklet bundle, the
-// Silero .onnx model, and onnxruntime-web's .wasm. Its own default base path is
-// `/` (it expects you to self-host), which 404s under a bundler, so we point
-// both paths at a pinned jsDelivr CDN by default. They are static files, so this
-// keeps the no-backend promise; override them to self-host for a fully offline
-// build. The onnxruntime-web version below must track this package's installed
-// version, since vad-web bundles the matching ORT glue code.
+// @ricky0123/vad-web fetches its worklet, the Silero .onnx model, and
+// onnxruntime-web's .wasm at runtime. Its own default base path is `/` (it
+// expects you to self-host), which 404s under a bundler, so we point both paths
+// at a pinned jsDelivr CDN by default — static files, so no backend. Override to
+// self-host for a fully offline build. The onnxruntime-web version below must
+// track this package's installed version, since vad-web bundles the matching glue.
 
 import { MicVAD } from '@ricky0123/vad-web';
 import type { FrameProcessorOptions } from '@ricky0123/vad-web';
@@ -19,8 +20,8 @@ const VAD_VERSION = '0.0.30';
 const ORT_VERSION = '1.26.0';
 
 /** Turn-detection knobs, in milliseconds to match @ricky0123/vad-web's own
- *  options. The demo exposes redemptionMs so you can feel how pause length maps
- *  to turn-end latency. Defaults are the library's, tuned for conversation. */
+ *  options. redemptionMs is the lever for the delay before a turn is sent.
+ *  Defaults are the library's, tuned for conversation. */
 export interface VadTuning {
   /** Frame score above this starts a turn. 0..1. */
   positiveSpeechThreshold: number;
@@ -65,9 +66,9 @@ export interface VadHandle {
   setOptions(opts: Partial<VadTuning>): void;
 }
 
-/** Build and load the VAD. The returned handle is not listening until you call
- *  start(). Loading touches the mic (getUserMedia) and downloads the model, so
- *  this rejects on mic denial or a failed asset fetch. */
+/** Build and load the VAD. Not listening until you call start(). Loading
+ *  touches the mic (getUserMedia) and downloads the model, so this rejects on
+ *  mic denial or a failed asset fetch. */
 export async function createVad(cb: VadCallbacks, tuning: VadTuning): Promise<VadHandle> {
   const vad = await MicVAD.new({
     model: 'v5',

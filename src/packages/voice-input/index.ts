@@ -40,6 +40,13 @@ export function audioMediaType(filename: string): string {
   }
 }
 
+// Continuous (hands-free) voice — the VAD-driven port that turns the mic into a
+// stream of spoken turns. The browser implementation lives in the DOM-bound
+// `browser-vad` entry; the types and tuning are re-exported here.
+export type { ContinuousVoicePort, ContinuousVoiceHandlers } from './continuous.ts';
+export type { VadTuning } from './vad.ts';
+export { DEFAULT_TUNING } from './vad.ts';
+
 /** Build the deterministic instruction text sent next to the audio on the
  *  patch turn. Pure — no network, no DOM — so it is unit- and
  *  Gherkin-testable. */

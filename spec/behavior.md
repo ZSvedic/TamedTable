@@ -921,6 +921,27 @@ column names, and — when a cell is selected — includes that cell's column,
 row, and value, so a request like "round this column" or "fix this cell"
 resolves against what the user is looking at.
 
+### Hands-free continuous voice
+
+A second button — a waveform icon, next to the mic — turns voice fully
+hands-free. Where the mic is press-and-hold for one request, the waveform button
+is a toggle: click it once and the app listens continuously, click again to
+stop. While listening, the button's bars pulse. It appears under the same
+conditions as the mic (a voice-capable model plus a key) and is hidden when
+hands-free voice isn't wired.
+
+The difference is who decides a turn is over. A client-side voice-activity
+detector runs entirely in the browser — no audio leaves the machine to find turn
+boundaries — and watches the live microphone. When the user stops talking, it
+cuts that stretch of speech into one clip and sends it on the very same patch
+turn the mic button uses: one model call carrying the audio and the table
+context, returning the spec patch and a transcript. So each spoken turn applies a
+transformation and shows its "🎙 …" bubble with no button press between turns;
+the user just keeps talking. While a turn is being applied the button shows a
+spinner, then returns to listening. A turn that arrives while the previous one is
+still applying is dropped, so two transformations never overlap. Every applied
+turn is reversible with Undo. Stopping releases the microphone.
+
 → [code-contract.md — Voice input](code-contract.md#voice-input)
 
 ## Tutorial mode (#TutorialMode)

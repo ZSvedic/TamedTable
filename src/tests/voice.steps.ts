@@ -3,7 +3,7 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { WebController, VoicePort } from '@tamedtable/web';
+import type { WebController, VoicePort, ContinuousVoicePort } from '@tamedtable/web';
 import { audioMediaType } from '@tamedtable/voice-input';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 import { webScenarios } from './web-file-port.ts';
@@ -39,6 +39,32 @@ function stubVoicePort(clip: string): VoicePort {
 Given('a stub microphone that plays {string}', function (this: TamedTableWorld, clip: string) {
   // Must be set before the controller builds lazily on the next "load".
   ctxOf(this).voicePort = stubVoicePort(clip);
+});
+
+// A stub continuous (hands-free) port: start() captures the segment handler and
+// parks an emitter on the scenario context, so a later step can fire one
+// "detected turn" with a committed clip — same bytes the mic stub plays, so the
+// patch turn fingerprints identically and the same cassette replays it.
+function stubContinuousPort(world: TamedTableWorld, clip: string): ContinuousVoicePort {
+  return {
+    start(handlers) {
+      ctxOf(world).continuousEmit = () => Promise.resolve(handlers.onSegment(fixtureAudio(clip)));
+      return Promise.resolve();
+    },
+    stop() {
+      ctxOf(world).continuousEmit = undefined;
+    },
+    setTuning() {},
+  };
+}
+
+Given('a stub continuous mic that emits {string}', function (this: TamedTableWorld, clip: string) {
+  ctxOf(this).continuousPort = stubContinuousPort(this, clip);
+});
+
+Given('a stub continuous mic', function (this: TamedTableWorld) {
+  // Visibility/toggle scenarios never fire a turn; any committed clip works.
+  ctxOf(this).continuousPort = stubContinuousPort(this, 'voice-validate-dob.m4a');
 });
 
 Given('a stub microphone that returns recorded audio', function (this: TamedTableWorld) {
@@ -84,12 +110,38 @@ When('user presses Escape to cancel the recording', function (this: TamedTableWo
   controller(this).cancelVoice();
 });
 
+When('user turns continuous voice on', async function (this: TamedTableWorld) {
+  await controller(this).toggleContinuous();
+});
+
+When('user turns continuous voice off', async function (this: TamedTableWorld) {
+  await controller(this).toggleContinuous();
+});
+
+When('a voice turn is detected', async function (this: TamedTableWorld) {
+  const emit = ctxOf(this).continuousEmit;
+  if (!emit) throw new Error('continuous voice is not listening — turn it on first');
+  await emit();
+});
+
 Then('the mic button is shown', function (this: TamedTableWorld) {
   assert.equal(controller(this).voiceAvailable(), true, 'expected the mic button to be shown');
 });
 
 Then('the mic button is hidden', function (this: TamedTableWorld) {
   assert.equal(controller(this).voiceAvailable(), false, 'expected the mic button to be hidden');
+});
+
+Then('the waveform button is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).continuousAvailable(), true, 'expected the waveform button to be shown');
+});
+
+Then('the waveform button is hidden', function (this: TamedTableWorld) {
+  assert.equal(controller(this).continuousAvailable(), false, 'expected the waveform button to be hidden');
+});
+
+Then('the continuous status is {string}', function (this: TamedTableWorld, status: string) {
+  assert.equal(controller(this).continuousStatus, status);
 });
 
 Then('the mic status is {string}', function (this: TamedTableWorld, status: string) {

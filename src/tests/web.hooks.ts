@@ -68,6 +68,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
     return createWebController({
       file: port,
       voice: ctx.voicePort,
+      continuousVoice: ctx.continuousPort,
       fetch: compositeFetch,
       // Suppress real shell API keys — tests set keys explicitly via steps.
       env: {},

@@ -167,21 +167,12 @@
       "name": "@tamedtable/voice-input",
       "version": "0.0.0",
       "dependencies": {
-        "@tamedtable/model-config": "workspace:*",
-      },
-      "devDependencies": {
-        "@cucumber/cucumber": "^12.8.2",
-      },
-    },
-    "packages/voice-mode": {
-      "name": "@tamedtable/voice-mode",
-      "version": "0.0.0",
-      "dependencies": {
         "@ricky0123/vad-web": "^0.0.30",
+        "@tamedtable/model-config": "workspace:*",
         "onnxruntime-web": "^1.26.0",
       },
       "devDependencies": {
-        "typescript": "^6.0.3",
+        "@cucumber/cucumber": "^12.8.2",
       },
     },
     "packages/web": {
@@ -480,8 +471,6 @@
     "@tamedtable/ui-kit": ["@tamedtable/ui-kit@workspace:packages/ui-kit"],
 
     "@tamedtable/voice-input": ["@tamedtable/voice-input@workspace:packages/voice-input"],
-
-    "@tamedtable/voice-mode": ["@tamedtable/voice-mode@workspace:packages/voice-mode"],
 
     "@tamedtable/web": ["@tamedtable/web@workspace:packages/web"],
 

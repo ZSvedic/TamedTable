@@ -831,6 +831,46 @@ turn start as the placeholder `🎙 Voice request` and are replaced by
 fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
 `browserVoicePort()` in `main.tsx`.
 
+### Continuous voice
+
+Hands-free mode adds a second injected port and a second chat-panel button
+(`WaveButton`), sharing the same patch-turn path.
+
+```ts
+interface ContinuousVoiceHandlers {
+  onSegment: (clip: Blob) => void | Promise<void>;  // one finished turn, WAV
+  onSpeechStart?: () => void;
+  onError?: (err: Error) => void;
+}
+interface ContinuousVoicePort {
+  start(handlers: ContinuousVoiceHandlers): Promise<void>;
+  stop(): void;
+  setTuning?(tuning: Partial<VadTuning>): void;      // re-tune while running
+}
+```
+
+`browserContinuousPort()` (separate `browser-vad` entry point, DOM + WASM
+required) wraps `@ricky0123/vad-web` — the Silero VAD on ONNX in an
+AudioWorklet. Its `onSpeechEnd` Float32 PCM is encoded to a 16 kHz WAV `Blob`
+and handed to `onSegment`. `VadTuning` exposes the turn-detection knobs in
+milliseconds (`redemptionMs` is the silence before a turn closes — the felt
+delay; the browser wires Balanced ≈ 700 ms, snappier than the library's 1.4 s
+default). The VAD model/wasm load from a pinned jsDelivr CDN by default (static
+files, no backend); `baseAssetPath` / `onnxWASMBasePath` override to self-host.
+Tests inject a stub `ContinuousVoicePort` that emits a committed clip, so a
+continuous turn issues a request byte-identical to the mic's and replays the
+same cassette.
+
+`WebController` adds `continuousStatus: 'idle' | 'listening' | 'sending'`,
+`continuousAvailable()` (same gate as the mic plus a wired port), and
+`toggleContinuous()`. Toggling on calls `port.start`, routing each `onSegment`
+clip through the same `sendAudioRequest` the mic uses — one patch turn per
+spoken turn, table context and cost identical. A clip that lands while a turn is
+still applying is dropped, so patch turns never overlap; toggling off calls
+`port.stop`. `WebControllerOptions.continuousVoice` supplies the port; the
+browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })`
+in `main.tsx`.
+
 `WebController` adds `voiceStatus: 'idle' | 'recording' | 'sending'` and three
 methods: `startVoice()` begins recording (auto-stopping after 30 s),
 `stopVoice()` ends it and delegates to `sendAudioRequest(audio, signal)`, which

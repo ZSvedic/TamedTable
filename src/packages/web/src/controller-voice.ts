@@ -6,7 +6,12 @@
 import { basename } from 'node:path';
 import type { RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
 import { ALL_MODELS } from '@tamedtable/model-config';
-import { buildVoicePrompt, type VoiceContext, type VoicePort } from '@tamedtable/voice-input';
+import {
+  buildVoicePrompt,
+  type VoiceContext,
+  type VoicePort,
+  type ContinuousVoicePort,
+} from '@tamedtable/voice-input';
 import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 
@@ -16,13 +21,18 @@ const VOICE_REQUEST_LABEL = '\u{1F399} Voice request';
 
 export class VoiceManager {
   private readonly voice: VoicePort | undefined;
+  private readonly continuous: ContinuousVoicePort | undefined;
   private voiceAbort: AbortController | null = null;
   private voiceTimer: ReturnType<typeof setTimeout> | undefined;
+  /** True while a continuous turn is being applied — so a second detected turn
+   *  that lands mid-request is dropped rather than overlapping the first. */
+  private continuousBusy = false;
 
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
     this.voice = host.opts.voice;
+    this.continuous = host.opts.continuousVoice;
   }
 
   /** True when the mic button should show: the selected model accepts voice
@@ -127,6 +137,78 @@ export class VoiceManager {
     }
     this.host.voiceStatus = 'idle';
     this.host.notify();
+  }
+
+  // ── Continuous (hands-free) voice ─────────────────────────────────────────
+
+  /** Same gate as the mic button, but for the continuous port: a voice-capable
+   *  model, a key for its provider, and a continuous port wired. */
+  continuousAvailable(): boolean {
+    if (this.continuous === undefined) return false;
+    const model = ALL_MODELS.find((m) => m.id === this.host.config.model);
+    return !!model?.voiceInput && !!this.host.settingsMgr.activeApiKey();
+  }
+
+  /** One toggle: start listening if idle, stop if already running. */
+  async toggleContinuous(): Promise<void> {
+    if (this.host.continuousStatus === 'idle') await this.startContinuous();
+    else this.stopContinuous();
+  }
+
+  /** Open the mic and start the VAD. Each detected turn flows to
+   *  onContinuousSegment → the ordinary audio patch turn. */
+  async startContinuous(): Promise<void> {
+    if (!this.continuous || this.host.continuousStatus !== 'idle') return;
+    if (!this.continuousAvailable()) return;
+    try {
+      await this.continuous.start({
+        onSegment: (clip) => this.onContinuousSegment(clip),
+        onError: (e) => this.host.pushToast('error', `Voice error: ${e.message}`),
+      });
+    } catch (e) {
+      this.host.pushToast('error', `Could not start hands-free voice: ${(e as Error).message}`);
+      return;
+    }
+    this.host.continuousStatus = 'listening';
+    this.host.notify();
+  }
+
+  /** Stop listening and release the mic. */
+  stopContinuous(): void {
+    if (this.host.continuousStatus === 'idle') return;
+    try {
+      this.continuous?.stop();
+    } catch {
+      // A teardown failure must not strand the button in a listening state.
+    }
+    this.host.continuousStatus = 'idle';
+    this.host.notify();
+  }
+
+  /** Apply one detected turn through the ordinary audio patch turn — the same
+   *  call the mic release makes, so context and cost match. A turn that arrives
+   *  while one is still applying is dropped, so two patch turns never overlap. */
+  private async onContinuousSegment(clip: Blob): Promise<void> {
+    if (this.continuousBusy || this.host.continuousStatus === 'idle') return;
+    this.continuousBusy = true;
+    this.host.continuousStatus = 'sending';
+    this.host.notify();
+    try {
+      const audio: RequestAudio = {
+        data: new Uint8Array(await clip.arrayBuffer()),
+        mediaType: clip.type || 'audio/wav',
+      };
+      await this.sendAudioRequest(audio);
+    } finally {
+      this.continuousBusy = false;
+      // Back to listening unless the user stopped mid-request. The cast defeats
+      // TS narrowing: stopContinuous() may have flipped the status during the
+      // await above, which control-flow analysis can't see.
+      if ((this.host.continuousStatus as string) !== 'idle') {
+        this.host.continuousStatus = 'listening';
+        this.host.notify();
+      }
+    }
   }
 
   private clearVoiceTimer(): void {

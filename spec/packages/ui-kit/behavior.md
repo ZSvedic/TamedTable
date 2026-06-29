@@ -52,7 +52,7 @@ All components are pure — props in, callbacks out — and carry stable
   mode state (default light), paints the page background, and notifies the
   host on toggle; the host persists the mode. `useTheme()` / `useThemeControls()`
   throw outside the provider.
-- `Icon({ name, size? })` — inline 16×16 SVG, `currentColor` stroke, 19 names
+- `Icon({ name, size? })` — inline 16×16 SVG, `currentColor` stroke, 20 names
   (`data-uk-icon`).
 - `Button({ children, onClick?, disabled?, variant?, title? })` — variants
   `ghost` (default), `chrome`, `primary`, `danger` (`data-uk-button`).

@@ -21,6 +21,7 @@ import type { DiagnosticsManager } from './controller-diagnostics.ts';
 import type {
   CellRef,
   ChatMessage,
+  ContinuousStatus,
   DialogKind,
   VoiceStatus,
   WebControllerOptions,
@@ -44,6 +45,7 @@ export interface ControllerHost {
   settingsOpen: boolean;
   expandedProvider: Provider | null;
   voiceStatus: VoiceStatus;
+  continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;
   tutorialOpen: boolean;
   goldenRows: Row[] | null;

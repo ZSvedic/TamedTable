@@ -36,7 +36,7 @@ cp -rL marketing/web/. "$OUT/"
 cp -r src/packages/web/dist/. "$OUT/app/"
 
 # Standalone module demos under /demos/<name>/.
-for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-kit voice-input voice-mode; do
+for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-kit voice-input; do
   ( cd src && bun build "packages/$name/demo.html" \
       --outdir "$OUT/demos/$name" \
       --public-path="${BASE}demos/$name/" )

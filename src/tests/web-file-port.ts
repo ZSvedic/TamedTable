@@ -5,13 +5,24 @@
 // two-phase Gherkin handshake ("user says Load CSV file" … "user selects X")
 // maps cleanly onto the controller's async dialog calls.
 
-import type { FilePort, PickedFile, SaveOutcome, VoicePort } from '@tamedtable/web';
+import type {
+  FilePort,
+  PickedFile,
+  SaveOutcome,
+  VoicePort,
+  ContinuousVoicePort,
+} from '@tamedtable/web';
 
 export interface WebScenarioCtx {
   /** Set by the "without File System Access support" Given before the runner builds. */
   noFsa: boolean;
   /** Stub microphone, set before the controller builds (#VoiceInput scenarios). */
   voicePort?: VoicePort;
+  /** Stub continuous (hands-free) voice port, set before the controller builds. */
+  continuousPort?: ContinuousVoicePort;
+  /** Emits one detected turn into the running continuous session. Set by the
+   *  stub port's start(), cleared on stop() — so a step can fire a turn. */
+  continuousEmit?: () => Promise<void>;
   /** The port the runner factory built for this scenario. */
   filePort?: WebTestFilePort;
   /** An in-flight dialog action (openCsv / saveFlow / saveData) awaiting a step. */

@@ -1,6 +1,7 @@
-// #VoiceMode
-// Turn the raw PCM a VAD segment carries into the WAV bytes (and base64) that
-// audio APIs accept. Pure, DOM-free, no deps — shared by any transcriber.
+// #VoiceInput
+// Turn the raw PCM a VAD turn carries into WAV bytes the patch turn can send.
+// Pure, no deps. (Press-and-hold goes MediaRecorder → model-config's blobToWav;
+// continuous voice starts from Float32 PCM, so it needs this.)
 
 /** Float32 PCM (-1..1) → 16-bit PCM WAV bytes. Mono, caller's sample rate. */
 export function encodeWav(pcm: Float32Array, sampleRate: number): ArrayBuffer {
@@ -34,16 +35,4 @@ export function encodeWav(pcm: Float32Array, sampleRate: number): ArrayBuffer {
     offset += bytesPerSample;
   }
   return buffer;
-}
-
-/** Bytes → base64, chunked so a long clip doesn't blow the call-stack the way
- *  String.fromCharCode(...wholeArray) would. */
-export function bytesToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
 }
