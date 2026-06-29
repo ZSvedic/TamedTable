@@ -12,17 +12,16 @@ import type { TablePlan } from '@tamedtable/core';
 import { TamedTableWorld, runnerOptsFor, SPEC_TC_DIR } from './world.ts';
 
 // ── Pricing ──────────────────────────────────────────────────────────────────
-// USD per million tokens (input / output), at each model's published tier.
-// Sources:
-//   Anthropic — the claude-api model reference (Opus 5/25, Sonnet 3/15,
-//               Haiku 1/5, Fable 10/50).
+// USD per million tokens (input / output), Standard paid tier, for each exact
+// model id. Sources (verified against the published tables):
+//   Anthropic — claude-api model reference (Opus 5/25, Sonnet 3/15, Haiku 1/5,
+//               Fable 10/50).
 //   Gemini    — https://ai.google.dev/gemini-api/docs/pricing
 //   OpenAI    — https://developers.openai.com/api/docs/pricing
-// The catalogue's Gemini/OpenAI ids are version-bumped placeholders, so each is
-// priced at its tier on those pages: Gemini Pro 1.25/10, Flash 0.30/2.50,
-// Flash-Lite 0.10/0.40; OpenAI flagship 1.25/10, mini 0.25/2. Update a row if a
-// provider publishes a different number for that exact id. Unknown ids fall back
-// to the Sonnet rate so a model swap never crashes the report — only skews cost.
+// Cache-read is 0.1x of input on all three providers (Gemini Flash 0.15/1.50,
+// OpenAI cached 0.50/5.00), so CACHE_READ_MULT below applies universally. Update
+// a row if a provider revises that id. Unknown ids fall back to the Sonnet rate
+// so a model swap never crashes the report — only skews cost.
 const PRICING: Record<string, { in: number; out: number }> = {
   'claude-fable-5': { in: 10, out: 50 },
   'claude-opus-4-8': { in: 5, out: 25 },
@@ -31,11 +30,11 @@ const PRICING: Record<string, { in: number; out: number }> = {
   'claude-sonnet-4-6': { in: 3, out: 15 },
   'claude-sonnet-4-5': { in: 3, out: 15 },
   'claude-haiku-4-5': { in: 1, out: 5 },
-  'gemini-3.1-pro-preview': { in: 1.25, out: 10 }, // Gemini Pro tier
-  'gemini-3.5-flash': { in: 0.3, out: 2.5 },       // Gemini Flash tier
-  'gemini-3.1-flash-lite': { in: 0.1, out: 0.4 },  // Gemini Flash-Lite tier
-  'gpt-5.5': { in: 1.25, out: 10 },                // OpenAI flagship tier
-  'gpt-5.4-mini': { in: 0.25, out: 2 },            // OpenAI mini tier
+  'gemini-3.1-pro-preview': { in: 2, out: 12 },      // <=200k prompt tier
+  'gemini-3.5-flash': { in: 1.5, out: 9 },
+  'gemini-3.1-flash-lite': { in: 0.25, out: 1.5 },   // text/image/video input
+  'gpt-5.5': { in: 5, out: 30 },                      // <272k context tier
+  'gpt-5.4-mini': { in: 0.75, out: 4.5 },
 };
 const FALLBACK_PRICE = { in: 3, out: 15 };
 

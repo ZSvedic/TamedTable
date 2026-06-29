@@ -36,9 +36,10 @@ Live run (`bun run bench:live`); not cassetted (it would clobber the Anthropic t
 | A load | Load 1,820-row CSV | 1,821 | 0.05s | 0 | 0 | 0 | — |
 | B sql | Sort by channel | 1,821 | 0.01s | 0 | 0 | 0 | — |
 | B sql | Filter to one channel | 3 | 0.13s | 0 | 0 | 0 | — |
-| C nl | Add bool `Music` column | 1,821 | 128.81s | 93 | 172,267 | 6,441 | **$0.0227** |
+| C nl | Add bool `Music` column | 1,821 | 129.61s | 93 | 172,267 | 6,441 | **$0.0647** |
 
-Calls: `gemini-3.5-flash×1`, `gemini-3.1-flash-lite×92`.
+Calls: `gemini-3.5-flash×1`, `gemini-3.1-flash-lite×92`. Priced at the Standard
+paid tier (Flash $1.50/$9.00, Flash-Lite $0.25/$1.50 per 1M in/out).
 
 ## Takeaways
 
@@ -50,7 +51,7 @@ Calls: `gemini-3.5-flash×1`, `gemini-3.1-flash-lite×92`.
   watch as tables grow: it scales with row count, batch size, and chunk
   concurrency, and is bounded by `TAMEDTABLE_RPM`.
 - **Model choice dominates C's cost.** Same work, same ~93 calls: Gemini
-  Flash/Flash-Lite ran C for **$0.0227** vs Anthropic Sonnet's **$0.8447** —
-  ~37× cheaper — at comparable wall-clock (~129 s vs ~146 s).
+  Flash/Flash-Lite ran C for **$0.0647** vs Anthropic Sonnet's **$0.8447** —
+  ~13× cheaper — at comparable wall-clock (~130 s vs ~146 s).
 - Token counts are exact (from each call's reported usage); dollar figures apply
   the per-tier rates in `PRICING` (`src/tests/performance.steps.ts`).
