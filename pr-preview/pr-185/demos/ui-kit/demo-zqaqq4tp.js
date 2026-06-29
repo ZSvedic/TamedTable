@@ -17114,8 +17114,8 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
   }
 });
 
-// packages/table-view/demo.tsx
-var import_react6 = __toESM(require_react(), 1);
+// packages/ui-kit/demo.tsx
+var import_react5 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 // packages/ui-kit/tokens.json
 var tokens_default = {
@@ -17231,6 +17231,13 @@ var typography = tokens_default.typography;
 var space = tokens_default.space;
 var lightTheme = tokens_default.themes.light;
 var darkTheme = tokens_default.themes.dark;
+var TYPING_MS_PER_CHAR = 40;
+var TOAST_FLOOR_MS = 3000;
+var TOAST_CEILING_MS = 12000;
+function toastDurationMs(message) {
+  const readMs = message.length * TYPING_MS_PER_CHAR;
+  return Math.min(TOAST_CEILING_MS, Math.max(TOAST_FLOOR_MS, readMs * 2));
+}
 
 // packages/ui-kit/ThemeProvider.tsx
 var import_react = __toESM(require_react(), 1);
@@ -17267,6 +17274,12 @@ function useTheme() {
     throw new Error("useTheme must be used within a ThemeProvider");
   return ctx.theme;
 }
+function useThemeControls() {
+  const ctx = import_react.useContext(ThemeContext);
+  if (!ctx)
+    throw new Error("useThemeControls must be used within a ThemeProvider");
+  return { mode: ctx.mode, toggle: ctx.toggle };
+}
 // packages/ui-kit/Icon.tsx
 var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
 var PATHS = {
@@ -17288,6 +17301,7 @@ var PATHS = {
   sun: "M8 5.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z M8 1.4v1.8 M8 12.8v1.8 M1.4 8h1.8 M12.8 8h1.8 M3.4 3.4l1.3 1.3 M11.3 11.3l1.3 1.3 M3.4 12.6l1.3-1.3 M11.3 4.7l1.3-1.3",
   moon: "M13.2 9.4A5.5 5.5 0 0 1 6.6 2.8 5.5 5.5 0 1 0 13.2 9.4Z",
   mic: "M8 2.5a2 2 0 0 1 2 2v3.5a2 2 0 0 1-4 0V4.5a2 2 0 0 1 2-2Z M4.5 8a3.5 3.5 0 0 0 7 0 M8 11.5V14 M6 14h4",
+  wave: "M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3",
   copy: "M6 6h7v7H6Z M10 6V3.5A.5.5 0 0 0 9.5 3h-6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5H6"
 };
 var ICON_NAMES = Object.keys(PATHS);
@@ -17363,571 +17377,485 @@ function Button({
 // packages/ui-kit/SplitButton.tsx
 var import_react3 = __toESM(require_react(), 1);
 var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
+function SplitButton({
+  children,
+  onClick,
+  menu,
+  disabled,
+  title,
+  caretTitle,
+  id
+}) {
+  const t = useTheme();
+  const [open, setOpen] = import_react3.useState(false);
+  const [hover, setHover] = import_react3.useState(false);
+  const rootRef = import_react3.useRef(null);
+  import_react3.useEffect(() => {
+    if (!open)
+      return;
+    const onDoc = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target))
+        setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape")
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const tinted = !disabled && (hover || open);
+  const baseHalf = {
+    height: 28,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: space.px6,
+    background: "transparent",
+    color: t.ink2,
+    border: 0,
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 500,
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+    cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.4 : 1
+  };
+  const mainStyle = {
+    ...baseHalf,
+    padding: "0 4px 0 10px",
+    borderTopLeftRadius: space.radiusSm,
+    borderBottomLeftRadius: space.radiusSm
+  };
+  const caretStyle = {
+    ...baseHalf,
+    padding: "0 6px 0 2px",
+    color: t.ink3,
+    borderTopRightRadius: space.radiusSm,
+    borderBottomRightRadius: space.radiusSm
+  };
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+    ref: rootRef,
+    id,
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    style: { position: "relative", display: "inline-flex" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          borderRadius: space.radiusSm,
+          background: tinted ? t.surface3 : "transparent",
+          transition: "background .12s"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            "data-uk-split-main": "",
+            title,
+            disabled,
+            onClick,
+            style: mainStyle,
+            children
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            "data-uk-split-caret": "",
+            title: caretTitle,
+            "aria-haspopup": "menu",
+            "aria-expanded": open,
+            disabled,
+            onClick: () => setOpen((v) => !v),
+            style: caretStyle,
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
+              name: "chevron",
+              size: 12
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      open && !disabled && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        role: "menu",
+        style: {
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          marginTop: 4,
+          minWidth: "100%",
+          background: t.surface,
+          border: `1px solid ${t.line2}`,
+          borderRadius: space.radius,
+          boxShadow: t.shadow,
+          padding: space.px4,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          zIndex: 50
+        },
+        children: menu.map((item) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(MenuItemButton, {
+          label: item.label,
+          disabled: item.disabled,
+          onClick: () => {
+            setOpen(false);
+            if (!item.disabled)
+              item.onClick();
+          }
+        }, item.label, false, undefined, this))
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+function MenuItemButton({
+  label,
+  onClick,
+  disabled
+}) {
+  const t = useTheme();
+  const [hover, setHover] = import_react3.useState(false);
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+    type: "button",
+    role: "menuitem",
+    "data-uk-menu-item": label,
+    disabled,
+    onClick,
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    style: {
+      textAlign: "left",
+      border: 0,
+      background: !disabled && hover ? t.surface3 : "transparent",
+      borderRadius: space.radiusSm,
+      padding: "6px 10px",
+      cursor: disabled ? "default" : "pointer",
+      color: t.ink,
+      fontFamily: typography.ui,
+      fontSize: typography.size.sm,
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.4 : 1
+    },
+    children: label
+  }, undefined, false, undefined, this);
+}
 // packages/ui-kit/Toasts.tsx
 var import_react4 = __toESM(require_react(), 1);
 var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
 var FADE_MS = 320;
 var SHEET_CSS = "@keyframes uk-sheet-kf { from { opacity: 0; transform: translateY(6px); }" + " to { opacity: 1; transform: translateY(0); } }" + " .uk-sheet { animation: uk-sheet-kf 0.14s ease-out; }" + ` @keyframes uk-fade-kf { to { opacity: 0; transform: translateY(6px); } }` + ` .uk-sheet-leaving { animation: uk-fade-kf ${FADE_MS}ms ease-in forwards; }`;
-// packages/table-view/index.ts
-function clampPage(page, pageCount) {
-  const count = Math.max(1, Math.floor(pageCount) || 1);
-  if (!Number.isFinite(page))
-    return 1;
-  return Math.min(Math.max(1, Math.floor(page)), count);
+function Toasts({
+  toasts,
+  onDismiss,
+  onAction
+}) {
+  if (toasts.length === 0)
+    return null;
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+    style: {
+      position: "fixed",
+      right: space.px16,
+      bottom: space.px16,
+      display: "flex",
+      flexDirection: "column",
+      gap: space.px8,
+      zIndex: 200,
+      maxWidth: 380
+    },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("style", {
+        children: SHEET_CSS
+      }, undefined, false, undefined, this),
+      toasts.map((toast) => /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(ToastRow, {
+        toast,
+        onDismiss,
+        onAction
+      }, toast.id, false, undefined, this))
+    ]
+  }, undefined, true, undefined, this);
 }
-function pageCountFor(totalRows, pageSize) {
-  return Math.max(1, Math.ceil(totalRows / pageSize));
-}
-function pageSlice(rows, page, pageSize) {
-  const current = clampPage(page, pageCountFor(rows.length, pageSize));
-  const start = (current - 1) * pageSize;
-  return rows.slice(start, start + pageSize);
-}
-function buildPageList(current, total) {
-  if (total <= 7)
-    return Array.from({ length: Math.max(0, total) }, (_, i) => i + 1);
-  const wanted = new Set([1, total, current - 1, current, current + 1]);
-  if (current <= 4)
-    for (const n of [2, 3, 4, 5])
-      wanted.add(n);
-  if (current >= total - 3)
-    for (const n of [total - 1, total - 2, total - 3, total - 4])
-      wanted.add(n);
-  const sorted = [...wanted].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
-  const out = [];
-  for (let i = 0;i < sorted.length; i++) {
-    if (i > 0 && sorted[i] - sorted[i - 1] > 1)
-      out.push("…");
-    out.push(sorted[i]);
-  }
-  return out;
-}
-
-// packages/table-view/TableView.tsx
-var import_react5 = __toESM(require_react(), 1);
-
-// packages/table-view/Pagination.tsx
-var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
-function Pagination({
-  page,
-  pageCount,
-  onPageChange
+function ToastRow({
+  toast,
+  onDismiss,
+  onAction
 }) {
   const t = useTheme();
-  const pages = buildPageList(page, pageCount);
-  const cell = {
-    height: 24,
-    minWidth: 24,
-    padding: `0 ${space.px6}px`,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: space.radiusSm,
-    border: "1px solid transparent",
-    background: "transparent",
-    fontFamily: typography.ui,
-    fontSize: typography.size.sm,
-    fontVariantNumeric: "tabular-nums"
+  const isError = toast.kind === "error";
+  const [leaving, setLeaving] = import_react4.useState(false);
+  const timers = import_react4.useRef({
+    dismiss: null,
+    remove: null
+  });
+  const fadeOut = () => {
+    setLeaving(true);
+    timers.current.remove = setTimeout(() => onDismiss(toast.id), FADE_MS);
   };
-  const nav = (dir) => {
-    const disabled = dir === "prev" ? page <= 1 : page >= pageCount;
-    const target = dir === "prev" ? page - 1 : page + 1;
-    return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-      type: "button",
-      "data-tv-prev": dir === "prev" ? "" : undefined,
-      "data-tv-next": dir === "next" ? "" : undefined,
-      title: dir === "prev" ? "Previous page" : "Next page",
-      disabled,
-      onClick: () => onPageChange(target),
-      style: {
-        ...cell,
-        color: disabled ? t.ink4 : t.ink2,
-        cursor: disabled ? "default" : "pointer"
-      },
-      children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+  const arm = () => {
+    if (timers.current.dismiss)
+      clearTimeout(timers.current.dismiss);
+    timers.current.dismiss = setTimeout(fadeOut, toastDurationMs(toast.message));
+  };
+  const pause = () => {
+    if (timers.current.dismiss) {
+      clearTimeout(timers.current.dismiss);
+      timers.current.dismiss = null;
+    }
+  };
+  import_react4.useEffect(() => {
+    arm();
+    return () => {
+      if (timers.current.dismiss)
+        clearTimeout(timers.current.dismiss);
+      if (timers.current.remove)
+        clearTimeout(timers.current.remove);
+    };
+  }, []);
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+    className: leaving ? "uk-sheet uk-sheet-leaving" : "uk-sheet",
+    "data-uk-toast": toast.kind,
+    "data-uk-toast-leaving": leaving ? "" : undefined,
+    onMouseEnter: pause,
+    onMouseLeave: () => {
+      if (!leaving)
+        arm();
+    },
+    style: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: space.px10,
+      minWidth: 280,
+      padding: "10px 12px",
+      borderRadius: space.radius,
+      background: t.surface,
+      color: t.ink,
+      border: `1px solid ${isError ? t.err : t.line2}`,
+      borderLeft: `3px solid ${isError ? t.err : t.ok}`,
+      boxShadow: t.shadowLg,
+      fontFamily: typography.ui,
+      fontSize: typography.size.sm,
+      lineHeight: 1.5
+    },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+        style: { flex: "0 0 auto", marginTop: 1, color: isError ? t.err : t.ok },
+        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(Icon, {
+          name: isError ? "err" : "ok"
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+        style: { flex: 1 },
+        children: toast.message
+      }, undefined, false, undefined, this),
+      toast.action && onAction && /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+        type: "button",
+        "data-uk-toast-action": "",
+        onClick: () => onAction(toast.id),
         style: {
-          display: "inline-flex",
-          transform: dir === "prev" ? "rotate(90deg)" : "rotate(-90deg)"
+          flex: "0 0 auto",
+          background: "transparent",
+          border: 0,
+          padding: space.px2,
+          cursor: "pointer",
+          color: t.accent,
+          fontFamily: typography.ui,
+          fontSize: typography.size.sm,
+          fontWeight: 600,
+          textDecoration: "underline"
         },
-        children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-          name: "chevron",
+        children: toast.action
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+        type: "button",
+        "data-uk-toast-dismiss": "",
+        onClick: () => onDismiss(toast.id),
+        title: "Dismiss",
+        style: {
+          background: "transparent",
+          border: 0,
+          padding: space.px2,
+          cursor: "pointer",
+          color: t.ink3,
+          display: "flex"
+        },
+        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(Icon, {
+          name: "x",
           size: 12
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this)
-    }, undefined, false, undefined, this);
-  };
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-    style: { display: "flex", alignItems: "center", gap: 2 },
-    children: [
-      nav("prev"),
-      pages.map((p, i) => p === "…" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-        style: { ...cell, color: t.ink3 },
-        children: "…"
-      }, `e${i}`, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-        type: "button",
-        "data-tv-page": p,
-        onClick: () => onPageChange(p),
-        "aria-current": p === page ? "page" : undefined,
-        style: {
-          ...cell,
-          cursor: "pointer",
-          color: p === page ? t.ink : t.ink2,
-          fontWeight: p === page ? 600 : 500,
-          borderColor: p === page ? t.line2 : "transparent",
-          background: p === page ? t.surface : "transparent"
-        },
-        children: p
-      }, p, false, undefined, this)),
-      nav("next")
     ]
   }, undefined, true, undefined, this);
 }
-
-// packages/table-view/TableView.tsx
-var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
-function cellText(value) {
-  return value === null || value === undefined ? "" : String(value);
-}
-var STATUS_LABEL = {
-  idle: "Idle",
-  running: "Running",
-  saved: "Saved"
-};
-var TV_CSS = "@keyframes tv-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .tv-pulse { animation: tv-pulse-kf 1.2s ease-in-out infinite; }" + " .tv-th .tv-grip { opacity: 0; transition: opacity 0.15s; }" + " .tv-th:hover .tv-grip { opacity: 1; }";
-function TableView({
-  id,
-  columns,
-  rows,
-  pageStart,
-  totalRows,
-  page,
-  pageCount,
-  onPageChange,
-  selection,
-  onSelectCell,
-  onEditCell,
-  onReorderColumns,
-  streaming,
-  status
-}) {
+// packages/ui-kit/demo.tsx
+var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
+function Demo() {
   const t = useTheme();
-  const [editing, setEditing] = import_react5.useState(null);
-  const [draft, setDraft] = import_react5.useState("");
-  const [dragCol, setDragCol] = import_react5.useState(null);
-  const firstRow = totalRows === 0 ? 0 : pageStart + 1;
-  const lastRow = pageStart + rows.length;
-  const commitEdit = () => {
-    if (!editing)
-      return;
-    const { row, col } = editing;
-    setEditing(null);
-    onEditCell(row, col, draft);
+  const { mode, toggle } = useThemeControls();
+  const [log, setLog] = import_react5.useState(["ready"]);
+  const [toasts, setToasts] = import_react5.useState([]);
+  const [toastSeq, setToastSeq] = import_react5.useState(0);
+  const report = (event) => setLog((l) => [...l, event]);
+  const addToast = (kind) => {
+    setToasts((list) => [
+      ...list,
+      { id: toastSeq, kind, message: `Sample ${kind} toast #${toastSeq}` }
+    ]);
+    setToastSeq((n) => n + 1);
   };
-  const dropOn = (target) => {
-    if (!dragCol || dragCol === target) {
-      setDragCol(null);
-      return;
-    }
-    const order = columns.slice();
-    const from = order.indexOf(dragCol);
-    const to = order.indexOf(target);
-    if (from < 0 || to < 0) {
-      setDragCol(null);
-      return;
-    }
-    order.splice(from, 1);
-    order.splice(to, 0, dragCol);
-    setDragCol(null);
-    onReorderColumns(order);
-  };
-  const headerCell = {
-    position: "sticky",
-    top: 0,
-    zIndex: 1,
-    background: t.surface2,
-    color: t.ink2,
-    textAlign: "left",
-    padding: `0 ${space.px10}px`,
-    height: space.headerH,
-    borderBottom: `1px solid ${t.line2}`,
-    borderRight: `1px solid ${t.line}`,
-    userSelect: "none",
-    fontFamily: typography.ui,
-    fontSize: typography.size.sm,
-    fontWeight: 600,
-    whiteSpace: "nowrap"
-  };
-  const bodyCell = {
-    padding: `0 ${space.px10}px`,
-    height: space.rowH,
-    borderBottom: `1px solid ${t.line}`,
-    borderRight: `1px solid ${t.line}`,
-    color: t.ink,
-    maxWidth: 320,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
-  };
-  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-    id,
-    style: {
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      minWidth: 0,
-      background: t.surface
-    },
+  const section = { margin: "1rem 0" };
+  const heading = { font: `600 14px/1.4 ${typography.ui}`, color: t.ink, margin: "0 0 .5rem" };
+  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+    "data-uk-mode": mode,
+    style: { color: t.ink, fontFamily: typography.ui },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("style", {
-        children: TV_CSS
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("h1", {
+        style: { font: `600 18px/1.4 ${typography.ui}`, margin: 0 },
+        children: "ui-kit — tokens & primitives"
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-        style: { flex: 1, overflow: "auto" },
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
         children: [
-          streaming && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-            "data-tv-streaming": "",
-            style: {
-              position: "sticky",
-              top: 0,
-              zIndex: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: space.px8,
-              padding: `${space.px6}px ${space.px12}px`,
-              background: t.accentSoft,
-              color: t.ink,
-              fontFamily: typography.ui,
-              fontSize: typography.size.sm,
-              borderBottom: `1px solid ${t.line}`
-            },
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Buttons"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", gap: 8 },
             children: [
-              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                className: "tv-pulse",
-                style: { width: 6, height: 6, borderRadius: 3, background: t.accent }
-              }, undefined, false, undefined, this),
-              "Streaming results…"
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("table", {
-            style: {
-              borderCollapse: "collapse",
-              fontFamily: typography.mono,
-              fontSize: typography.size.sm,
-              fontVariantNumeric: "tabular-nums"
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("thead", {
-                children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
-                  children: [
-                    /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
-                      style: {
-                        ...headerCell,
-                        textAlign: "right",
-                        color: t.ink4,
-                        fontFamily: typography.mono,
-                        fontWeight: 400
-                      },
-                      children: "#"
-                    }, undefined, false, undefined, this),
-                    columns.map((col) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
-                      className: "tv-th",
-                      "data-tv-header": col,
-                      draggable: true,
-                      onDragStart: () => setDragCol(col),
-                      onDragOver: (e) => e.preventDefault(),
-                      onDrop: () => dropOn(col),
-                      title: "Drag to reorder",
-                      style: {
-                        ...headerCell,
-                        cursor: "grab",
-                        background: dragCol === col ? t.accentSoft : t.surface2
-                      },
-                      children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                        style: { display: "inline-flex", alignItems: "center", gap: space.px6 },
-                        children: [
-                          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                            className: "tv-grip",
-                            style: { color: t.ink4 },
-                            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-                              name: "grip",
-                              size: 12
-                            }, undefined, false, undefined, this)
-                          }, undefined, false, undefined, this),
-                          col
-                        ]
-                      }, undefined, true, undefined, this)
-                    }, col, false, undefined, this))
-                  ]
-                }, undefined, true, undefined, this)
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tbody", {
-                children: rows.map((row, ri) => {
-                  const absRow = pageStart + ri;
-                  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
-                    children: [
-                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
-                        style: {
-                          ...bodyCell,
-                          color: t.ink4,
-                          textAlign: "right",
-                          background: t.surface2
-                        },
-                        children: absRow + 1
-                      }, undefined, false, undefined, this),
-                      columns.map((col) => {
-                        const isEditing = editing?.row === absRow && editing.col === col;
-                        const isSelected = selection?.row === absRow && selection.column === col;
-                        return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
-                          "data-tv-cell": `${absRow}:${col}`,
-                          title: "Click to select · double-click to edit",
-                          onClick: () => onSelectCell(absRow, col),
-                          onDoubleClick: () => {
-                            setEditing({ row: absRow, col });
-                            setDraft(cellText(row?.[col]));
-                          },
-                          style: {
-                            ...bodyCell,
-                            padding: isEditing ? 0 : bodyCell.padding,
-                            background: isSelected && !isEditing ? t.accentSoft : undefined,
-                            boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : undefined
-                          },
-                          children: isEditing ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("input", {
-                            autoFocus: true,
-                            "data-tv-edit": "",
-                            value: draft,
-                            onChange: (e) => setDraft(e.target.value),
-                            onBlur: commitEdit,
-                            onKeyDown: (e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                commitEdit();
-                              } else if (e.key === "Escape") {
-                                setEditing(null);
-                              }
-                            },
-                            style: {
-                              width: "100%",
-                              boxSizing: "border-box",
-                              fontFamily: typography.mono,
-                              fontSize: typography.size.sm,
-                              background: t.surface,
-                              color: t.ink,
-                              border: "none",
-                              outline: "none",
-                              padding: `0 ${space.px10}px`,
-                              height: space.rowH
-                            }
-                          }, undefined, false, undefined, this) : cellText(row?.[col])
-                        }, col, false, undefined, this);
-                      })
-                    ]
-                  }, absRow, true, undefined, this);
-                })
+              ["ghost", "chrome", "primary", "danger"].map((variant) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant,
+                onClick: () => report(`${variant} clicked`),
+                children: variant
+              }, variant, false, undefined, this)),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "chrome",
+                disabled: true,
+                children: "disabled"
               }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          rows.length === 0 && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-            style: {
-              padding: space.px16,
-              color: t.ink3,
-              fontFamily: typography.ui,
-              fontSize: typography.size.sm
-            },
-            children: "This table has 0 rows."
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-        style: {
-          flex: "0 0 auto",
-          height: space.topbarH,
-          display: "flex",
-          alignItems: "center",
-          gap: space.px12,
-          padding: `0 ${space.px10}px 0 ${space.px14}px`,
-          borderTop: `1px solid ${t.line}`,
-          background: t.surface2
-        },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            "data-tv-range": "",
-            style: {
-              fontFamily: typography.mono,
-              fontSize: typography.size.xs,
-              color: t.ink3
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                style: { color: t.ink2 },
-                children: [
-                  firstRow,
-                  "–",
-                  lastRow
-                ]
-              }, undefined, true, undefined, this),
-              " ",
-              "of ",
-              totalRows,
-              " rows"
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            style: { flex: 1 }
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Pagination, {
-            page,
-            pageCount,
-            onPageChange
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-        style: {
-          flex: "0 0 auto",
-          height: 24,
-          display: "flex",
-          alignItems: "center",
-          gap: space.px10,
-          padding: `0 ${space.px12}px`,
-          borderTop: `1px solid ${t.line}`,
-          background: t.surface2,
-          fontFamily: typography.mono,
-          fontSize: typography.size.xs,
-          color: t.ink3
-        },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            "data-tv-selection": "",
-            style: { color: selection ? t.ink2 : t.ink4 },
-            children: selection ? `R${selection.row + 1} · ${selection.column}` : "no selection"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            style: { color: t.ink4 },
-            children: "·"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            children: "UTF-8"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            style: { flex: 1 }
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-            "data-tv-status": status,
-            style: { display: "inline-flex", alignItems: "center", gap: space.px6 },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                className: status === "running" ? "tv-pulse" : undefined,
-                style: {
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: status === "running" ? t.accent : status === "saved" ? t.ok : t.ink4
-                }
-              }, undefined, false, undefined, this),
-              STATUS_LABEL[status]
             ]
           }, undefined, true, undefined, this)
         ]
-      }, undefined, true, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-// packages/table-view/demo.tsx
-var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
-var PAGE_SIZE = 10;
-var CITIES = ["Zagreb", "Lisbon", "Osaka", "Quito", "Tallinn"];
-function sampleRows() {
-  return Array.from({ length: 95 }, (_, i) => ({
-    ID: i + 1,
-    name: `Person ${i + 1}`,
-    age: 20 + i * 7 % 50,
-    city: CITIES[i % CITIES.length]
-  }));
-}
-function Demo() {
-  const t = useTheme();
-  const [rows, setRows] = import_react6.useState(sampleRows);
-  const [columns, setColumns] = import_react6.useState(["ID", "name", "age", "city"]);
-  const [page, setPage] = import_react6.useState(1);
-  const [selection, setSelection] = import_react6.useState(null);
-  const [streaming, setStreaming] = import_react6.useState(false);
-  const [log, setLog] = import_react6.useState(["ready"]);
-  const report = (event) => setLog((l) => [...l, event]);
-  const pageCount = pageCountFor(rows.length, PAGE_SIZE);
-  const current = clampPage(page, pageCount);
-  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-    style: { height: "100vh", display: "flex", flexDirection: "column" },
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "8px 12px",
-          borderBottom: `1px solid ${t.line}`,
-          background: t.surface2,
-          color: t.ink,
-          font: `600 14px/1.4 ${typography.ui}`
-        },
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
         children: [
-          "table-view — 95 sample rows, page size ",
-          PAGE_SIZE,
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-            style: { flex: 1 }
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Theme"
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
             variant: "chrome",
-            onClick: () => setStreaming((v) => !v),
-            children: "Toggle streaming"
+            onClick: toggle,
+            title: "Toggle light/dark",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                name: mode === "dark" ? "sun" : "moon"
+              }, undefined, false, undefined, this),
+              " ",
+              mode,
+              " → toggle"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Icons"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", flexWrap: "wrap", gap: 12 },
+            children: ICON_NAMES.map((name) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+              style: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                  name
+                }, undefined, false, undefined, this),
+                " ",
+                name
+              ]
+            }, name, true, undefined, this))
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(TableView, {
-        columns,
-        rows: pageSlice(rows, current, PAGE_SIZE),
-        pageStart: (current - 1) * PAGE_SIZE,
-        totalRows: rows.length,
-        page: current,
-        pageCount,
-        onPageChange: (p) => {
-          setPage(p);
-          report(`page ${p}`);
-        },
-        selection,
-        onSelectCell: (row, column) => {
-          setSelection({ row, column });
-          report(`select ${row}:${column}`);
-        },
-        onEditCell: (row, column, value) => {
-          setRows((all) => all.map((r, i) => i === row ? { ...r, [column]: value } : r));
-          report(`edit ${row}:${column}=${value}`);
-        },
-        onReorderColumns: (order) => {
-          setColumns(order);
-          report(`reorder ${order.join(",")}`);
-        },
-        streaming,
-        status: streaming ? "running" : "idle"
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("pre", {
-        id: "out",
-        style: {
-          flex: "0 0 auto",
-          maxHeight: "18vh",
-          overflow: "auto",
-          margin: 0,
-          padding: ".5rem .75rem",
-          font: `11px/1.5 ${typography.mono}`,
-          background: t.surface2,
-          color: t.ink2,
-          borderTop: `1px solid ${t.line}`
-        },
-        children: log.join(`
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Split button"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(SplitButton, {
+            onClick: () => report("Save clicked"),
+            menu: [
+              { label: "Save as flow", onClick: () => report("Save as flow clicked") },
+              { label: "Save as data", onClick: () => report("Save as data clicked") },
+              { label: "Disabled item", onClick: () => report("never"), disabled: true }
+            ],
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                name: "save"
+              }, undefined, false, undefined, this),
+              " Save"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Toasts"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", gap: 8 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => addToast("info"),
+                children: "Add info toast"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "danger",
+                onClick: () => addToast("error"),
+                children: "Add error toast"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Event log"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("pre", {
+            id: "out",
+            style: {
+              font: `12px/1.5 ${typography.mono}`,
+              background: t.surface2,
+              border: `1px solid ${t.line}`,
+              padding: ".5rem",
+              borderRadius: 6
+            },
+            children: log.join(`
 `)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Toasts, {
+        toasts,
+        onDismiss: (id) => setToasts((l) => l.filter((x) => x.id !== id))
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime8.jsxDEV(ThemeProvider, {
-  children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Demo, {}, undefined, false, undefined, this)
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime6.jsxDEV(ThemeProvider, {
+  children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Demo, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));

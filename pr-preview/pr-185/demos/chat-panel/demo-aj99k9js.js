@@ -17289,6 +17289,7 @@ var PATHS = {
   sun: "M8 5.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z M8 1.4v1.8 M8 12.8v1.8 M1.4 8h1.8 M12.8 8h1.8 M3.4 3.4l1.3 1.3 M11.3 11.3l1.3 1.3 M3.4 12.6l1.3-1.3 M11.3 4.7l1.3-1.3",
   moon: "M13.2 9.4A5.5 5.5 0 0 1 6.6 2.8 5.5 5.5 0 1 0 13.2 9.4Z",
   mic: "M8 2.5a2 2 0 0 1 2 2v3.5a2 2 0 0 1-4 0V4.5a2 2 0 0 1 2-2Z M4.5 8a3.5 3.5 0 0 0 7 0 M8 11.5V14 M6 14h4",
+  wave: "M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3",
   copy: "M6 6h7v7H6Z M10 6V3.5A.5.5 0 0 0 9.5 3h-6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5H6"
 };
 var ICON_NAMES = Object.keys(PATHS);
@@ -17951,8 +17952,10 @@ function MicButton({
     ]
   }, undefined, true, undefined, this);
 }
-// packages/chat-panel/demo.tsx
+// packages/chat-panel/WaveButton.tsx
 var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
+// packages/chat-panel/demo.tsx
+var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
 var SAMPLE_DETAIL = {
   userRequest: "normalize the phone column",
   modelCalls: [{ model: "claude-sonnet-4-6", calls: 2 }],
@@ -17983,10 +17986,10 @@ function Demo() {
     setMessages((list) => [...list, ...items.map((m, i) => ({ ...m, id: seq + i }))]);
     setSeq((n) => n + items.length);
   };
-  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
+  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
     style: { height: "100vh", display: "flex" },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(ChatPanel, {
+      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ChatPanel, {
         inputId: "demo-chat-input",
         messages,
         streaming,
@@ -18000,12 +18003,12 @@ function Demo() {
           report("cancel");
           setStreaming(false);
         },
-        emptyState: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("p", {
+        emptyState: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("p", {
           style: { margin: 0, color: t.ink3, fontFamily: typography.ui, fontSize: 13 },
           children: "No messages yet — send one below, or use the buttons on the right."
         }, undefined, false, undefined, this),
         helpLines: HELP_LINES,
-        micButton: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(MicButton, {
+        micButton: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(MicButton, {
           status: voiceStatus,
           onStart: () => {
             report("voice start");
@@ -18022,35 +18025,35 @@ function Demo() {
           }
         }, undefined, false, undefined, this)
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
+      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
         style: { flex: 1, display: "flex", flexDirection: "column", background: t.bg },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
+          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
             style: { display: "flex", flexWrap: "wrap", gap: 8, padding: 12 },
             children: [
-              /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
                 variant: "chrome",
                 onClick: () => append({ role: "assistant", text: "Error: Something broke while applying the change." }),
                 children: "Add error reply"
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
                 variant: "chrome",
                 onClick: () => append({ role: "assistant", text: "Normalized 12 phone numbers.", debug: SAMPLE_DETAIL }),
                 children: "Add reply with detail"
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
                 variant: "chrome",
                 onClick: () => setStreaming((v) => !v),
                 children: "Toggle streaming"
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
                 variant: "chrome",
                 onClick: () => setPrefill("Keep rows where age >= 18"),
                 children: "Prefill draft"
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("pre", {
+          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("pre", {
             id: "out",
             style: {
               flex: 1,
@@ -18072,6 +18075,6 @@ function Demo() {
     ]
   }, undefined, true, undefined, this);
 }
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime8.jsxDEV(ThemeProvider, {
-  children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Demo, {}, undefined, false, undefined, this)
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ThemeProvider, {
+  children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Demo, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));

@@ -11784,7 +11784,7 @@ var require_dist = __commonJS((exports) => {
   } });
 });
 
-// packages/voice-mode/src/vad.ts
+// packages/voice-input/vad.ts
 var import_vad_web = __toESM(require_dist(), 1);
 var VAD_VERSION = "0.0.30";
 var ORT_VERSION = "1.26.0";
@@ -11797,350 +11797,149 @@ var DEFAULT_TUNING = {
   baseAssetPath: `https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@${VAD_VERSION}/dist/`,
   onnxWASMBasePath: `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`
 };
-async function createVad(cb, tuning) {
-  const vad = await import_vad_web.MicVAD.new({
-    model: "v5",
-    startOnLoad: false,
-    positiveSpeechThreshold: tuning.positiveSpeechThreshold,
-    negativeSpeechThreshold: tuning.negativeSpeechThreshold,
-    redemptionMs: tuning.redemptionMs,
-    minSpeechMs: tuning.minSpeechMs,
-    preSpeechPadMs: tuning.preSpeechPadMs,
-    baseAssetPath: tuning.baseAssetPath,
-    onnxWASMBasePath: tuning.onnxWASMBasePath,
-    onSpeechStart: () => cb.onSpeechStart(),
-    onSpeechEnd: (audio) => cb.onSpeechEnd(audio),
-    onVADMisfire: () => cb.onMisfire?.()
-  });
-  return {
-    start: () => vad.start(),
-    pause: () => vad.pause(),
-    destroy: () => vad.destroy(),
-    setOptions: (opts) => {
-      const fp = {};
-      if (typeof opts.positiveSpeechThreshold === "number")
-        fp.positiveSpeechThreshold = opts.positiveSpeechThreshold;
-      if (typeof opts.negativeSpeechThreshold === "number")
-        fp.negativeSpeechThreshold = opts.negativeSpeechThreshold;
-      if (typeof opts.redemptionMs === "number")
-        fp.redemptionMs = opts.redemptionMs;
-      if (typeof opts.minSpeechMs === "number")
-        fp.minSpeechMs = opts.minSpeechMs;
-      if (typeof opts.preSpeechPadMs === "number")
-        fp.preSpeechPadMs = opts.preSpeechPadMs;
-      vad.setOptions(fp);
-    }
-  };
+// packages/voice-input/index.ts
+function buildVoicePrompt(ctx) {
+  const lines = [
+    "The user's request is spoken in the attached audio clip. Listen to it",
+    "and carry out that request directly — there is no written request text.",
+    "Also set the `transcript` argument of apply_spec_patch to a verbatim",
+    "transcript of the audio.",
+    "",
+    "Current table context:",
+    `- File: ${ctx.filename}`,
+    `- Columns: ${ctx.columns.join(", ")}`
+  ];
+  if (ctx.selectedCell) {
+    const { col, row, value } = ctx.selectedCell;
+    lines.push(`- Selected cell: column "${col}", row ${row + 1}, value ${JSON.stringify(value)}`);
+  }
+  return lines.join(`
+`);
 }
 
-// packages/voice-mode/src/session.ts
-function createVoiceSession(opts) {
-  let state = "idle";
-  let vad = null;
-  let destroyed = false;
-  const setState = (next) => {
-    if (state === next)
-      return;
-    state = next;
-    opts.onStateChange?.(state);
-  };
-  const fail = (err) => {
-    setState("error");
-    opts.onError?.(err);
-  };
-  async function startVad() {
-    const tuning = { ...DEFAULT_TUNING, ...opts.vad };
-    try {
-      vad = await createVad({
-        onSpeechStart: () => setState("speech"),
-        onSpeechEnd: (pcm) => {
-          setState("transcribing");
-          opts.stt.transcribe({ pcm, sampleRate: 16000 }).then((text) => {
-            if (destroyed)
-              return;
-            if (text)
-              opts.onTranscript(text);
-            setState("listening");
-          }).catch((e) => {
-            if (destroyed)
-              return;
-            fail({ stage: "stt", message: errMsg(e), cause: e });
-            setState("listening");
-          });
-        },
-        onMisfire: () => setState("listening")
-      }, tuning);
-    } catch (e) {
-      const denied = errMsg(e).toLowerCase().includes("denied") || isNotAllowed(e);
-      throw { stage: denied ? "mic" : "vad-load", message: errMsg(e), cause: e };
-    }
-    await vad.start();
-    setState("listening");
+// packages/model-config/audio-wav.ts
+async function blobToWavBytes(blob) {
+  const rate = 16000;
+  const ctx = new OfflineAudioContext(1, 1, rate);
+  const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+  const mono = new Float32Array(decoded.length);
+  for (let ch = 0;ch < decoded.numberOfChannels; ch++) {
+    const data = decoded.getChannelData(ch);
+    for (let i = 0;i < decoded.length; i++)
+      mono[i] += data[i] / decoded.numberOfChannels;
   }
-  return {
-    async start() {
-      if (destroyed)
-        throw new Error("Session has been destroyed.");
-      if (state !== "idle" && state !== "error")
-        return;
-      try {
-        await startVad();
-      } catch (e) {
-        const ve = e.stage ? e : { stage: "mic", message: errMsg(e), cause: e };
-        fail(ve);
-        throw e;
-      }
-    },
-    stop() {
-      vad?.pause();
-      setState("idle");
-    },
-    destroy() {
-      destroyed = true;
-      vad?.destroy();
-      vad = null;
-      setState("idle");
-    },
-    updateVad(opts2) {
-      vad?.setOptions(opts2);
-    },
-    get state() {
-      return state;
-    }
-  };
-}
-function errMsg(e) {
-  return e instanceof Error ? e.message : String(e);
-}
-function isNotAllowed(e) {
-  return typeof e === "object" && e !== null && e.name === "NotAllowedError";
-}
-// packages/voice-mode/src/wav.ts
-function encodeWav(pcm, sampleRate) {
-  const bytesPerSample = 2;
-  const buffer = new ArrayBuffer(44 + pcm.length * bytesPerSample);
-  const view = new DataView(buffer);
-  const writeStr = (offset2, s) => {
+  const out = new DataView(new ArrayBuffer(44 + mono.length * 2));
+  const ascii = (off, s) => {
     for (let i = 0;i < s.length; i++)
-      view.setUint8(offset2 + i, s.charCodeAt(i));
+      out.setUint8(off + i, s.charCodeAt(i));
   };
-  const dataSize = pcm.length * bytesPerSample;
-  writeStr(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeStr(8, "WAVE");
-  writeStr(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * bytesPerSample, true);
-  view.setUint16(32, bytesPerSample, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, "data");
-  view.setUint32(40, dataSize, true);
-  let offset = 44;
-  for (let i = 0;i < pcm.length; i++) {
-    const s = Math.max(-1, Math.min(1, pcm[i]));
-    view.setInt16(offset, s < 0 ? s * 32768 : s * 32767, true);
-    offset += bytesPerSample;
+  ascii(0, "RIFF");
+  out.setUint32(4, 36 + mono.length * 2, true);
+  ascii(8, "WAVE");
+  ascii(12, "fmt ");
+  out.setUint32(16, 16, true);
+  out.setUint16(20, 1, true);
+  out.setUint16(22, 1, true);
+  out.setUint32(24, decoded.sampleRate, true);
+  out.setUint32(28, decoded.sampleRate * 2, true);
+  out.setUint16(32, 2, true);
+  out.setUint16(34, 16, true);
+  ascii(36, "data");
+  out.setUint32(40, mono.length * 2, true);
+  for (let i = 0;i < mono.length; i++) {
+    const s = Math.max(-1, Math.min(1, mono[i]));
+    out.setInt16(44 + i * 2, s < 0 ? s * 32768 : s * 32767, true);
   }
-  return buffer;
-}
-function bytesToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunk = 32768;
-  for (let i = 0;i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
+  return new Uint8Array(out.buffer);
 }
 
-// packages/voice-mode/src/stt/gemini.ts
-var DEFAULT_MODEL = "gemini-3.5-flash";
-var DEFAULT_BASE = "https://generativelanguage.googleapis.com/v1beta";
-function geminiSTT(opts) {
-  const model = opts.model?.trim() || DEFAULT_MODEL;
-  const base = opts.baseUrl ?? DEFAULT_BASE;
+// packages/voice-input/browser-voice.ts
+function browserVoicePort() {
+  let recorder = null;
+  let stream = null;
+  let chunks = [];
+  const teardown = () => {
+    stream?.getTracks().forEach((track) => track.stop());
+    stream = null;
+    recorder = null;
+    chunks = [];
+  };
   return {
-    name: "gemini-flash",
-    async transcribe(audio) {
-      const b64 = bytesToBase64(encodeWav(audio.pcm, audio.sampleRate));
-      const keywords = opts.context?.().trim();
-      const instruction = [
-        "You are the speech-to-text engine of a voice-controlled app.",
-        "Transcribe the spoken command in the audio verbatim, as plain lowercase text.",
-        keywords ? `The speaker is likely to use these words — prefer these spellings: ${keywords}.` : "",
-        "Output only the transcript: no quotes, no labels, no extra words."
-      ].filter(Boolean).join(" ");
-      const url = `${base}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(opts.apiKey)}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { parts: [{ text: instruction }, { inline_data: { mime_type: "audio/wav", data: b64 } }] }
-          ],
-          generationConfig: { temperature: 0 }
-        })
+    async startRecording() {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = [];
+      recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0)
+          chunks.push(e.data);
+      };
+      recorder.start();
+    },
+    stopRecording() {
+      return new Promise((resolve, reject) => {
+        const rec = recorder;
+        if (!rec) {
+          reject(new Error("No recording in progress."));
+          return;
+        }
+        rec.onstop = () => {
+          const recorded = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+          teardown();
+          blobToWavBytes(recorded).then((wav) => resolve(new Blob([wav], { type: "audio/wav" })), reject);
+        };
+        rec.stop();
       });
-      if (!res.ok) {
-        const detail = await res.text().catch(() => "");
-        throw new Error(`Gemini transcription failed (${res.status}): ${detail.slice(0, 200)}`);
+    },
+    cancelRecording() {
+      if (recorder && recorder.state !== "inactive") {
+        recorder.onstop = null;
+        recorder.stop();
       }
-      const json = await res.json();
-      const text = (json.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
-      return text;
+      teardown();
     }
   };
 }
-// packages/voice-mode/src/support.ts
-function checkSupport() {
-  const hasMedia = typeof navigator !== "undefined" && !!navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function";
-  const hasWorklet = typeof AudioContext !== "undefined" && "audioWorklet" in AudioContext.prototype;
-  return {
-    getUserMedia: hasMedia,
-    webAssembly: typeof WebAssembly !== "undefined",
-    audioWorklet: hasWorklet
-  };
-}
-// packages/voice-mode/demo.ts
+
+// packages/voice-input/demo.ts
 var $ = (id) => document.getElementById(id);
-var support = checkSupport();
-var caps = $("caps");
-$("out").textContent = support.getUserMedia ? "Ready. Paste a Gemini key and turn Full Voice Mode on." : "This browser cannot capture the mic (getUserMedia missing).";
-var labels = {
-  getUserMedia: "getUserMedia",
-  webAssembly: "WebAssembly",
-  audioWorklet: "AudioWorklet"
-};
-caps.innerHTML = Object.keys(labels).map((k) => {
-  const ok = support[k];
-  return `<dt>${labels[k]}</dt><dd class="${ok ? "pass" : "fail"}">${ok ? "PASS" : "FAIL"}</dd>`;
-}).join("");
-var list = [];
-function renderList() {
-  $("list").innerHTML = list.map((x) => `<li>${escapeHtml(x)}</li>`).join("");
+var startBtn = $("vi-start");
+var stopBtn = $("vi-stop");
+var cancelBtn = $("vi-cancel");
+var port = browserVoicePort();
+function setState(state) {
+  $("vi-state").textContent = state;
+  startBtn.disabled = state === "recording";
+  stopBtn.disabled = state !== "recording";
+  cancelBtn.disabled = state !== "recording";
 }
-function applyCommand(textRaw) {
-  const text = textRaw.trim().toLowerCase().replace(/[.!?]+$/, "");
-  if (/^(clear|empty|reset)( (the|everything|all|list|the list))?$/.test(text)) {
-    list = [];
-    renderList();
-    return "cleared the list";
-  }
-  let m = text.match(/^(?:add|put|buy)\s+(.+?)(?:\s+to(?:\s+the)?\s+list)?$/);
-  if (m) {
-    const item = m[1].trim();
-    list.push(item);
-    renderList();
-    return `added “${item}”`;
-  }
-  m = text.match(/^(?:remove|delete|drop|take off)\s+(.+?)(?:\s+from(?:\s+the)?\s+list)?$/);
-  if (m) {
-    const item = m[1].trim();
-    const before = list.length;
-    list = list.filter((x) => x.toLowerCase() !== item);
-    renderList();
-    return before === list.length ? `“${item}” not on the list` : `removed “${item}”`;
-  }
-  return `(no command matched)`;
-}
-var session = null;
-var VAD_FIELDS = ["redemptionMs", "minSpeechMs", "positiveSpeechThreshold", "negativeSpeechThreshold"];
-var PRESETS = {
-  snappy: { redemptionMs: 300, minSpeechMs: 200, positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35 },
-  balanced: { redemptionMs: 700, minSpeechMs: 300, positiveSpeechThreshold: 0.4, negativeSpeechThreshold: 0.3 },
-  relaxed: { redemptionMs: 1400, minSpeechMs: 400, positiveSpeechThreshold: 0.3, negativeSpeechThreshold: 0.25 }
-};
-function readVad() {
-  const out = {};
-  for (const f of VAD_FIELDS)
-    out[f] = Number($(f).value);
-  return out;
-}
-function applyPreset(name) {
-  const p = PRESETS[name];
-  for (const f of VAD_FIELDS)
-    $(f).value = String(p[f]);
-  session?.updateVad(readVad());
-}
-document.querySelectorAll("button[data-preset]").forEach((btn) => {
-  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
-});
-VAD_FIELDS.forEach((f) => {
-  $(f).addEventListener("change", () => session?.updateVad(readVad()));
-});
-applyPreset("balanced");
-var speechEndAt = 0;
-function setStateBadge(s) {
-  $("state").textContent = s;
-}
-async function turnOn() {
-  $("err").textContent = "";
-  const apiKey = $("apikey").value.trim();
-  if (!apiKey) {
-    $("err").textContent = "Paste your Gemini API key first.";
-    return;
-  }
-  const model = $("model").value.trim();
-  session = createVoiceSession({
-    stt: geminiSTT({ apiKey, model, context: () => $("context").value }),
-    vad: readVad(),
-    onStateChange: (s) => {
-      setStateBadge(s);
-      if (s === "transcribing")
-        speechEndAt = performance.now();
-    },
-    onTranscript: (t) => {
-      const ref = speechEndAt || performance.now();
-      $("ttft").textContent = `${Math.round(performance.now() - ref)} ms`;
-      $("final").textContent = t;
-      $("cmd").textContent = applyCommand(t);
-    },
-    onError: (err) => {
-      $("err").textContent = `[${err.stage}] ${err.message}`;
-    }
-  });
+startBtn.addEventListener("click", async () => {
   try {
-    await session.start();
-    setToggle(true);
+    await port.startRecording();
+    setState("recording");
   } catch (e) {
-    $("err").textContent = e.message ?? String(e);
-    session?.destroy();
-    session = null;
-    setToggle(false);
+    $("vi-result").textContent = e.message;
   }
-}
-function turnOff() {
-  session?.destroy();
-  session = null;
-  setStateBadge("idle");
-  setToggle(false);
-}
-function setToggle(on) {
-  const btn = $("toggle");
-  btn.textContent = on ? "■ Turn Full Voice Mode off" : "▶ Turn Full Voice Mode on";
-  btn.classList.toggle("on", on);
-  $("apikey").disabled = on;
-  $("model").disabled = on;
-}
-$("toggle").addEventListener("click", () => {
-  if (session)
-    turnOff();
-  else
-    turnOn();
 });
-var perfMem = performance.memory;
-if (perfMem) {
-  const fmt = (n) => `${(n / 1048576).toFixed(1)} MB`;
-  setInterval(() => {
-    $("mem").textContent = `${fmt(perfMem.usedJSHeapSize)} used / ${fmt(perfMem.totalJSHeapSize)} total`;
-  }, 1000);
-} else {
-  $("mem").textContent = "unavailable (Chrome-only)";
-}
-function escapeHtml(s) {
-  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-}
-renderList();
+stopBtn.addEventListener("click", async () => {
+  try {
+    const blob = await port.stopRecording();
+    $("vi-result").textContent = `${blob.type} · ${blob.size.toLocaleString("en-US")} bytes`;
+    const audio = $("vi-audio");
+    audio.src = URL.createObjectURL(blob);
+    audio.style.display = "";
+    setState("stopped");
+  } catch (e) {
+    $("vi-result").textContent = e.message;
+    setState("idle");
+  }
+});
+cancelBtn.addEventListener("click", () => {
+  port.cancelRecording();
+  $("vi-result").textContent = "cancelled";
+  setState("idle");
+});
+$("out").textContent = buildVoicePrompt({
+  filename: "people.csv",
+  columns: ["name", "phone", "country"],
+  selectedCell: { col: "phone", row: 2, value: "555-0199" }
+});
