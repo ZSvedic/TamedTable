@@ -11815,7 +11815,21 @@ async function createVad(cb, tuning) {
   return {
     start: () => vad.start(),
     pause: () => vad.pause(),
-    destroy: () => vad.destroy()
+    destroy: () => vad.destroy(),
+    setOptions: (opts) => {
+      const fp = {};
+      if (typeof opts.positiveSpeechThreshold === "number")
+        fp.positiveSpeechThreshold = opts.positiveSpeechThreshold;
+      if (typeof opts.negativeSpeechThreshold === "number")
+        fp.negativeSpeechThreshold = opts.negativeSpeechThreshold;
+      if (typeof opts.redemptionMs === "number")
+        fp.redemptionMs = opts.redemptionMs;
+      if (typeof opts.minSpeechMs === "number")
+        fp.minSpeechMs = opts.minSpeechMs;
+      if (typeof opts.preSpeechPadMs === "number")
+        fp.preSpeechPadMs = opts.preSpeechPadMs;
+      vad.setOptions(fp);
+    }
   };
 }
 
@@ -11887,6 +11901,9 @@ function createVoiceSession(opts) {
       vad = null;
       setState("idle");
     },
+    updateVad(opts2) {
+      vad?.setOptions(opts2);
+    },
     get state() {
       return state;
     }
@@ -11940,7 +11957,7 @@ function bytesToBase64(buffer) {
 }
 
 // packages/voice-mode/src/stt/gemini.ts
-var DEFAULT_MODEL = "gemini-2.5-flash";
+var DEFAULT_MODEL = "gemini-3.5-flash";
 var DEFAULT_BASE = "https://generativelanguage.googleapis.com/v1beta";
 function geminiSTT(opts) {
   const model = opts.model?.trim() || DEFAULT_MODEL;
@@ -12030,6 +12047,31 @@ function applyCommand(textRaw) {
   return `(no command matched)`;
 }
 var session = null;
+var VAD_FIELDS = ["redemptionMs", "minSpeechMs", "positiveSpeechThreshold", "negativeSpeechThreshold"];
+var PRESETS = {
+  snappy: { redemptionMs: 300, minSpeechMs: 200, positiveSpeechThreshold: 0.5, negativeSpeechThreshold: 0.35 },
+  balanced: { redemptionMs: 700, minSpeechMs: 300, positiveSpeechThreshold: 0.4, negativeSpeechThreshold: 0.3 },
+  relaxed: { redemptionMs: 1400, minSpeechMs: 400, positiveSpeechThreshold: 0.3, negativeSpeechThreshold: 0.25 }
+};
+function readVad() {
+  const out = {};
+  for (const f of VAD_FIELDS)
+    out[f] = Number($(f).value);
+  return out;
+}
+function applyPreset(name) {
+  const p = PRESETS[name];
+  for (const f of VAD_FIELDS)
+    $(f).value = String(p[f]);
+  session?.updateVad(readVad());
+}
+document.querySelectorAll("button[data-preset]").forEach((btn) => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+});
+VAD_FIELDS.forEach((f) => {
+  $(f).addEventListener("change", () => session?.updateVad(readVad()));
+});
+applyPreset("balanced");
 var speechEndAt = 0;
 function setStateBadge(s) {
   $("state").textContent = s;
@@ -12044,6 +12086,7 @@ async function turnOn() {
   const model = $("model").value.trim();
   session = createVoiceSession({
     stt: geminiSTT({ apiKey, model, context: () => $("context").value }),
+    vad: readVad(),
     onStateChange: (s) => {
       setStateBadge(s);
       if (s === "transcribing")
