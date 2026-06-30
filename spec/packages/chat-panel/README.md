@@ -1,6 +1,6 @@
 # chat-panel
 
-The chat sidebar: request/reply message list with expandable request detail, the input row with send/stop, and the press-and-hold `MicButton`.
+The chat sidebar: request/reply message list with expandable request detail, the input row with send/stop, and the hold-or-tap `MicButton`.
 
 | What | Where |
 |---|---|

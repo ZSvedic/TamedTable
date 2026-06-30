@@ -59,6 +59,7 @@ export function ChatSidebar({ controller }: { controller: WebController }): Reac
             <MicButton
               status={controller.voiceStatus}
               onStart={() => void controller.startVoice()}
+              onLatch={() => controller.latchVoice()}
               onStop={() => void controller.stopVoice()}
               onCancel={() => controller.cancelVoice()}
             />

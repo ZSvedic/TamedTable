@@ -2,7 +2,7 @@
 
 The `@tamedtable/chat-panel` package owns the chat sidebar's look and feel:
 the message list (user bubbles, assistant replies, expandable request
-detail), the input row with its send/stop button, and the press-and-hold
+detail), the input row with its send/stop button, and the hold-or-tap
 `MicButton`. It owns no conversation state and no engine wiring — the host
 holds the messages and hears about every action through callbacks. Turning
 engine errors into user-facing copy (`userFacingMessage`) stays in the app:
@@ -58,12 +58,22 @@ plus the app's existing `data-testid="mic-button"` / `"copy-debug"`.
 
 ## MicButton component
 
-`MicButton({ status, onStart, onStop, onCancel, size? })` — hold to record:
-pointer-down fires `onStart` (red fill + pulsing ring), release fires
-`onStop`, Escape or pointer-cancel fires `onCancel`. While `status` is
-`sending` the button shows a spinner and ignores presses. Whether the button
-appears at all is the host's call (the app hides it when the selected model
-takes no audio). Ring and spinner animations ship inside the component.
+`MicButton({ status, onStart, onLatch, onStop, onCancel, size? })` supports the
+two recording gestures voice chat apps use, so holders and tappers both work:
+
+- **Press and hold** — pointer-down fires `onStart` (red fill + pulsing ring);
+  releasing *after* the hold threshold fires `onStop` (push-to-talk send).
+- **Quick tap** — a pointer-down/up shorter than the threshold fires `onLatch`
+  instead. The button swaps to two explicit controls — cancel (`✕`,
+  `data-testid="mic-cancel"`) firing `onCancel`, and send (`✓`,
+  `data-testid="mic-send"`) firing `onStop` — beside a pulsing dot, so a quick
+  click latches recording hands-free rather than sending an empty clip.
+
+Escape or pointer-cancel fires `onCancel` in either mode. While `status` is
+`sending` the button shows a spinner and ignores presses; `latched` shows the
+cancel/send controls. Whether the button appears at all is the host's call (the
+app hides it when the selected model takes no audio). Ring and spinner
+animations ship inside the component.
 
 ## Demo page
 

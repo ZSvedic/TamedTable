@@ -133,8 +133,8 @@ Then('the demo prompt mentions {string}', async function (this: DemoWorld, expec
 When('the user starts recording', { timeout: 30_000 }, async function (this: DemoWorld) {
   const p = page(this);
   await p.click('#vi-start');
-  // Reaching the 'recording' state means getUserMedia resolved and the Web Audio
-  // capture graph started — slow to spin up the first time under a full-suite
+  // Reaching the 'recording' state means getUserMedia resolved and the
+  // MediaRecorder started — slow to spin up the first time under a full-suite
   // load, so allow more than the 10s page default (matches the stop/result
   // steps below). The work succeeds; it is just not instant on a busy machine.
   await p.waitForFunction(
@@ -165,18 +165,6 @@ Then(
     } catch {
       assert.fail(`expected the result to show "${expected}"; it shows: ${await p.textContent('#vi-result')}`);
     }
-  },
-);
-
-// The result reads "<type> · <n> bytes" (demo.ts). Parse the byte count and
-// assert the recording carried real samples — an empty capture would have
-// rejected before any result, and a header-only clip would be ≤ 44 bytes.
-Then(
-  'the recording carries more than {int} bytes',
-  async function (this: DemoWorld, min: number) {
-    const text = (await page(this).textContent('#vi-result')) ?? '';
-    const bytes = Number(text.replace(/[^0-9]/g, ''));
-    assert.ok(bytes > min, `expected more than ${min} bytes; result shows: ${text}`);
   },
 );
 

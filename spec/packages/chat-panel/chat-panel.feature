@@ -1,6 +1,6 @@
 # #ChatPanel
 # The chat sidebar package: message list with expandable request detail, the
-# input row with send/stop, and the press-and-hold MicButton.
+# input row with send/stop, and the hold-or-tap MicButton.
 Feature: Chat panel package
 
   Rule: The demo page exercises the panel in a real browser
@@ -44,7 +44,22 @@ Feature: Chat panel package
     @web
     Scenario: Holding the mic records, releasing sends
       Given the chat-panel demo page
-      When the user presses the mic button
+      When the user presses and holds the mic button
       Then the chat event log shows "voice start"
-      When the user releases the mic button
+      When the user releases the held mic button
       Then the chat event log shows "voice stop"
+
+    @web
+    Scenario: Tapping the mic latches recording with cancel and send controls
+      Given the chat-panel demo page
+      When the user taps the mic button
+      Then the chat event log shows "voice latch"
+      When the user clicks the recording send control
+      Then the chat event log shows "voice stop"
+
+    @web
+    Scenario: Tapping the mic then cancelling discards the recording
+      Given the chat-panel demo page
+      When the user taps the mic button
+      And the user clicks the recording cancel control
+      Then the chat event log shows "voice cancel"

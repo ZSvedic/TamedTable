@@ -59,10 +59,20 @@ export class VoiceManager {
     this.host.notify();
   }
 
-  /** Release: stop recording and run the ordinary patch turn with the audio
-   *  riding along as a file part — one model call, no transcription step. */
-  async stopVoice(): Promise<void> {
+  /** Quick tap (released before it counts as a hold): keep recording, but
+   *  hands-free — the button swaps to explicit cancel (✕) / send (✓) controls.
+   *  No-op unless a press-and-hold recording is currently live. */
+  latchVoice(): void {
     if (!this.voice || this.host.voiceStatus !== 'recording') return;
+    this.host.voiceStatus = 'latched';
+    this.host.notify();
+  }
+
+  /** Release (or the ✓ control on a latched recording): stop recording and run
+   *  the ordinary patch turn with the audio riding along as a file part — one
+   *  model call, no transcription step. */
+  async stopVoice(): Promise<void> {
+    if (!this.voice || (this.host.voiceStatus !== 'recording' && this.host.voiceStatus !== 'latched')) return;
     this.clearVoiceTimer();
     this.host.voiceStatus = 'sending';
     this.voiceAbort = new AbortController();
