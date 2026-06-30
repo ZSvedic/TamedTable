@@ -853,23 +853,36 @@ or the engine changes.
   desktop pagination bar drives).
 - The table fills the screen below the app bar and scrolls in both
   directions; its header row and row-index column stay frozen.
-- A persistent **bottom dock** carries four buttons — **menu**,
-  **undo**, **keyboard**, and **voice**. Undo is a one-tap button (it
-  greys when there is nothing to undo). Keyboard and voice are disabled
-  until a table is loaded, matching the empty page; **menu stays live**
-  so Settings, Tours, and the open actions are reachable even before a
-  file is loaded.
+- A persistent **bottom dock** carries five buttons — **Menu**,
+  **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
+  icons in both themes. Undo is a one-tap button (it greys when there is
+  nothing to undo). Undo, History, Type, and Speak are disabled until a
+  table is loaded; **Menu stays live** so Settings, Tours, and the open
+  actions are reachable even before a file is loaded.
 - **Menu** opens a left **drawer** with the actions that live in the
   desktop toolbar: the three Open actions, Save data (and Save as…),
-  Save flow (and Save as Python…), a dark-mode toggle, Settings, and
+  Save recipe (and Save as Python…), a dark-mode toggle, Settings, and
   Tours.
-- **Keyboard** raises the chat composer as a bottom **sheet** above the
-  dock, so the table stays in view while the user types a request;
-  sending or dismissing lowers it. **Voice** raises the same chat sheet
-  with the microphone ready. Both reuse the desktop chat panel and its
-  voice plumbing unchanged.
+- **Type**, **Speak**, and **History** each raise a **sheet** that takes
+  the dock's place at the bottom, so the table stays in view above it:
+  - **Type** is a composer — a one-line field with a send button and a
+    row of tap-to-fill suggestion chips. The phone's own keyboard does
+    the typing. Sending runs the request and lowers the sheet; the
+    chevron-down button lowers it without sending.
+  - **Speak** records (a live waveform, nothing recognized yet); the send
+    button stops recording, transcribes, runs the request, and lowers the
+    sheet on its own. Cancel discards.
+  - **History** shows the undo timeline — newest at the top, the current
+    point highlighted, already-undone steps dimmed below it, a relative
+    time per step. Tapping a step jumps straight to it; **Undo** / **Redo**
+    step one at a time. It reads the same journal the desktop Undo/Redo
+    buttons walk, shown whole.
 - The settings panel, the URL dialog, the sample picker, and the Tours
   panel open as full-width sheets rather than centered desktop cards.
+- A tour runs on mobile through the same engine as the desktop. A step
+  that highlights the chat input opens the Type sheet so the spotlight
+  lands on the visible composer; a step that highlights the open control
+  points at the Menu button, and a table step points at the grid.
 
 The empty page, the dialogs, and every transformation behave
 identically to the desktop app; the dock layout is purely a

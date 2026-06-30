@@ -10,7 +10,7 @@ import { OpenUrlDialog } from './components/OpenUrlDialog.tsx';
 import { OpenSampleDialog } from './components/OpenSampleDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
 import { TutorialPanel } from './components/TutorialPanel.tsx';
-import { MobileShell } from './components/MobileShell.tsx';
+import { MobileShell } from './components/mobile/MobileShell.tsx';
 import { useIsMobile } from './hooks/useIsMobile.ts';
 
 // The desktop layout: top toolbar over a chat sidebar beside the table.

@@ -52,6 +52,13 @@ export class TourUi {
   // cleanup) — suppresses the spurious cancel that onDestroyStarted would fire.
   private silentDestroy = false;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
+  // Some hosts mount a step's target lazily — the mobile composer rises only
+  // when the tour reaches a chat step, a render after the cursor advanced. When
+  // the target isn't there yet, re-attempt the spotlight for a short while
+  // rather than leaving the popover stuck on the previous step.
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private retryFor: string | null = null;
+  private retries = 0;
 
   constructor(tour: TourCursor, opts: TourUiOptions) {
     this.tour = tour;
@@ -71,6 +78,7 @@ export class TourUi {
     const active = this.tour.isActive();
     const done = this.tour.isDone();
     if (!active && !done) {
+      this.clearRetry();
       this.destroyOverlay();
       this.opts.onChange?.();
       return;
@@ -80,7 +88,13 @@ export class TourUi {
     // host's stable fallback element instead.
     const elementId = done ? this.opts.doneElementId : this.tour.currentStepElementId();
     const el = elementId ? document.getElementById(elementId) : null;
-    if (!el) return; // target not mounted yet; the host re-renders once it is
+    if (!el) {
+      // Target not mounted yet (a lazily-opened sheet). Re-attempt briefly; the
+      // host's own re-render will also call render() once it mounts.
+      this.scheduleRetry(elementId);
+      return;
+    }
+    this.clearRetry();
 
     this.destroyOverlay();
 
@@ -123,8 +137,34 @@ export class TourUi {
 
   /** Tear the overlay down and detach the keyboard handler. */
   destroy(): void {
+    this.clearRetry();
     this.destroyOverlay();
     this.detachKeyboard();
+  }
+
+  // Re-attempt render() until the step's target mounts, capped so a target that
+  // never appears stops spinning (the popover then stays on the prior step).
+  private scheduleRetry(elementId: string | null): void {
+    if (this.retryFor !== elementId) {
+      this.retryFor = elementId;
+      this.retries = 0;
+    }
+    if (this.retries >= 25) return; // ~2s of 80ms ticks, then give up
+    this.retries += 1;
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      this.render();
+    }, 80);
+  }
+
+  private clearRetry(): void {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    this.retryFor = null;
+    this.retries = 0;
   }
 
   // Paint the popover box, description, and Driver's footer controls with the

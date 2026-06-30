@@ -617,10 +617,45 @@ carries **Open local…** and **Open URL…**. The two halves render inside
 one rounded shell with a single hover tint and no internal divider, so
 the pair reads as one control. The empty page stacks the same three as
 separate buttons under the brand mark and the line "What table can I
-tame?". At a viewport width of 768 px and below the app renders a
-table-first dock layout (app bar with pager · table · bottom dock of
-menu/undo/keyboard/voice · left menu drawer · chat composer sheet);
-the controller surface is unchanged — only presentation differs.
+tame?".
+
+At a viewport width of 768 px and below `AppShell` renders
+`<MobileShell>` (a `useIsMobile()` media-query hook flips it live on
+resize) instead of the desktop sidebar-plus-table tree. Both take the
+same `WebController`. The mobile components live in
+`src/packages/web/src/components/mobile/`: `MobileShell` composes the app
+bar, `MobileTable` (frozen header + row-index column), the five-action
+`Dock` (Menu · Undo · History · Type · Speak), one bottom sheet
+(`KeyboardSheet` | `VoiceSheet` | `HistorySheet`), and `MenuDrawer`. The
+Settings panel, Open-sample / Open-URL dialogs, Toasts, and the
+`TutorialPanel`/`TourUi` overlays render in both layouts. The mobile
+table carries `id="tutorial-table-view"`, the Menu dock button carries
+`id="tutorial-open-btn"`, and the composer textarea carries
+`id="tutorial-chat-input"`, so the Driver.js tour targets resolve on
+mobile; `MobileShell` opens the Type sheet whenever the active tour
+step's element id is the chat input.
+
+The History sheet reads a timeline the journal now exposes:
+
+```ts
+interface TimelineStep { label: string; time: number; } // time: epoch ms
+// SpecJournal
+timeline(): { steps: TimelineStep[]; cursor: number }; // cursor: index of current step, -1 before the first
+jumpTo(index: number): TablePlan | undefined;          // moves the cursor; returns the spec to apply
+// WebController
+historyTimeline(): { steps: TimelineStep[]; cursor: number };
+jumpToHistory(index: number): Promise<void>;
+```
+
+`steps` is the full timeline oldest-first (the undo stack, then the redo
+stack in chronological order); `cursor` marks the current point (`-1`
+before the first step). `jumpTo` walks the stacks to the target, leaving
+undo/redo consistent, and returns the whole-spec snapshot to apply
+(`index = -1` returns the pre-first-step state). `jumpToHistory` applies
+it through the engine, so one tap moves the table the way the desktop
+Undo/Redo buttons do. `TourUi.render()` retries briefly when a step's
+target isn't mounted yet, so a lazily-opened sheet (the mobile composer)
+still gets its spotlight.
 
 ### Diagnostics log (#Diagnostics)
 

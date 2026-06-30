@@ -33,6 +33,37 @@ body {
   animation: tt-sheet-kf 0.14s ease-out;
 }
 
+/* Mobile streaming pulse, voice spinner, and voice waveform. */
+@keyframes tt-pulse-kf {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.tt-pulse {
+  animation: tt-pulse-kf 1.2s ease-in-out infinite;
+}
+@keyframes tt-spin-kf {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tt-spin {
+  animation: tt-spin-kf 0.7s linear infinite;
+}
+@keyframes tt-wave {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 /* Driver.js adds .driver-active to <body> and sets pointer-events:none on
    all descendants. Re-enable pointer events for the Tutorial panel so its
    Prev / Next / Cancel buttons remain clickable during a spotlight. */

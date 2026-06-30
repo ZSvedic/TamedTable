@@ -13,6 +13,14 @@ export interface JournalEntry {
   prevSpec: TablePlan;
   /** TablePlan after the change — what redo restores. */
   nextSpec: TablePlan;
+  /** When the change landed (epoch ms). Stamped at record time if omitted. */
+  time?: number;
+}
+
+/** One row of the history timeline — what the mobile History sheet shows. */
+export interface TimelineStep {
+  label: string;
+  time: number;
 }
 
 export class SpecJournal {
@@ -22,7 +30,7 @@ export class SpecJournal {
   /** Record a committed change. Clears the redo stack — a new edit forks the
    *  timeline, so previously-undone steps are no longer reachable. */
   record(entry: JournalEntry): void {
-    this.undoStack.push(entry);
+    this.undoStack.push({ ...entry, time: entry.time ?? Date.now() });
     this.redoStack = [];
   }
 
@@ -60,6 +68,34 @@ export class SpecJournal {
   /** Recorded changes, oldest first — the history readout. */
   entries(): Array<{ label: string }> {
     return this.undoStack.map((e) => ({ label: e.label }));
+  }
+
+  /** The full timeline, oldest first — the undo stack, then the undone (redo)
+   *  steps in chronological order — plus the cursor index of the current step
+   *  (`-1` when every step has been undone). Drives the mobile History sheet. */
+  timeline(): { steps: TimelineStep[]; cursor: number } {
+    const steps: TimelineStep[] = [
+      ...this.undoStack,
+      ...this.redoStack.slice().reverse(),
+    ].map((e) => ({ label: e.label, time: e.time ?? 0 }));
+    return { steps, cursor: this.undoStack.length - 1 };
+  }
+
+  /** Move the cursor to `index` in timeline space — walking the undo/redo
+   *  stacks so they stay consistent — and return the whole-spec snapshot to
+   *  apply. `index = -1` returns the pre-first-step state. Undefined on an
+   *  empty journal. */
+  jumpTo(index: number): TablePlan | undefined {
+    const total = this.undoStack.length + this.redoStack.length;
+    if (total === 0) return undefined;
+    const target = Math.max(-1, Math.min(index, total - 1));
+    while (this.undoStack.length - 1 > target) this.takeUndo();
+    while (this.undoStack.length - 1 < target) this.takeRedo();
+    const current = this.undoStack[this.undoStack.length - 1];
+    if (current) return current.nextSpec;
+    // target === -1: the state before the first step is its prevSpec, and that
+    // first step now sits on top of the redo stack.
+    return this.redoStack[this.redoStack.length - 1]?.prevSpec;
   }
 
   /** Drop all history — a fresh file load starts clean. */
