@@ -634,8 +634,8 @@ interface DiagEvent {
 }
 
 // caps — evict oldest first when either is exceeded
-const MAX_EVENTS = 50;
-const MAX_BYTES = 256 * 1024;        // ~256 KB of serialized JSON
+const MAX_EVENTS = 20;
+const MAX_BYTES = 64 * 1024;         // ~64 KB of serialized JSON
 const MAX_BODY = 2048;               // request-body truncation, in chars
 
 WebController.diagnosticsEvents(): DiagEvent[];   // newest last

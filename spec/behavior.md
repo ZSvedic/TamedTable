@@ -856,10 +856,12 @@ tutorial feature and scenario, the provider, model, and cell model, how
 many transformations the current spec holds (a count, never the data),
 the last few chat messages, the app version, and the browser's user-agent.
 
-The log is bounded — the newest 50 events and roughly 256 KB, whichever
+The log is bounded — the newest 20 events and roughly 64 KB, whichever
 bites first, evicting the oldest. It lives in the browser under
-`tamedtable.diagnostics`. Where the browser hides storage (private mode,
-headless tests) the log keeps working in memory and never throws.
+`tamedtable.diagnostics` and persists across file loads and sessions, so a
+report gathered after a bug still carries the events that led up to it. Where
+the browser hides storage (private mode, headless tests) the log keeps working
+in memory and never throws.
 
 **Keys never reach the log.** Before any event is written, anything
 shaped like an API key (`sk-…`, `AIza…`) or an auth header
