@@ -37,10 +37,15 @@ cancelRecording() → void              // discard, never resolves stop
 ```
 
 `browserVoicePort()` (separate `browser-voice` entry point, DOM required)
-wraps MediaRecorder. `stopRecording` re-encodes the captured audio (webm/opus
-or mp4/aac, browser-dependent) to 16 kHz mono PCM16 WAV — the one format
-every voice-capable provider accepts — via model-config's `audio-wav` helper.
-Cancelling stops the recorder and releases the microphone without resolving.
+records the live microphone through the Web Audio graph — an `AudioContext`
+(asked for 16 kHz) feeding a capture node that accumulates raw mono PCM, just
+like the hands-free VAD path. `stopRecording` wraps that PCM in a 16 kHz mono
+PCM16 WAV — the one format every voice-capable provider accepts. There is no
+`MediaRecorder` and no decode step: capturing PCM directly avoids the
+empty/undecodable clip MediaRecorder hands back on some setups (which surfaced
+as "Unable to decode audio data"), so the mic matches the waveform button.
+An empty capture rejects with a clear message rather than a decode error.
+Cancelling disconnects the graph and releases the microphone without resolving.
 
 ## buildVoicePrompt
 
