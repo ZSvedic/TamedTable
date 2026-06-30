@@ -20,7 +20,10 @@ const SUGGESTIONS = [
 
 const sheetBase = (t: Theme): React.CSSProperties => ({
   flex: '0 0 auto',
-  height: SHEET_H,
+  // Grow by the home-indicator inset and pad it back, so the sheet keeps its
+  // content height and nothing sits under the iOS home indicator.
+  height: `calc(${SHEET_H}px + env(safe-area-inset-bottom))`,
+  paddingBottom: 'env(safe-area-inset-bottom)',
   boxSizing: 'border-box',
   display: 'flex',
   flexDirection: 'column',
@@ -119,6 +122,9 @@ export function KeyboardSheet({
             <textarea
               id={inputId}
               ref={ref}
+              // autoFocus + the mount focus below give iOS the best chance to
+              // raise the native keyboard when the Type sheet opens.
+              autoFocus
               value={draft}
               rows={1}
               placeholder="Describe a transformation…"
@@ -210,7 +216,7 @@ export function VoiceSheet({
   const recording = status === 'recording';
   const sending = status === 'sending';
   return (
-    <div className="tt-sheet" data-mob-sheet="voice" style={{ ...sheetBase(t), padding: '16px 16px 18px' }}>
+    <div className="tt-sheet" data-mob-sheet="voice" style={{ ...sheetBase(t), padding: '16px 16px calc(18px + env(safe-area-inset-bottom))' }}>
       <div
         style={{
           flex: 1,

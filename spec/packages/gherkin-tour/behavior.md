@@ -131,9 +131,10 @@ package customizes, and why it differs from a plain Driver.js tour:
   `doneDescription` — the app passes `Voilà, "<tour>" is done.` — numbered "N of
   N", with the Done button.
 - **Instruction text.** The Gherkin keyword is dropped and the first letter
-  capitalized (`load "x.csv"` → `Load "x.csv"`). A `query "…"` step is special:
-  its text is typed into the host's chat input when highlighted, so the popover
-  reads just **"Run the query"**.
+  capitalized. Two steps name their UI action instead of echoing the verb: a
+  `load "x.csv"` step reads **"Open the sample"** (it drives the host's "Open
+  sample…" action), and a `query "…"` step — whose text is typed into the
+  host's chat input when highlighted — reads just **"Run the query"**.
 - **Theming.** `TourUi` ships no color literals. Pass an optional `theme`
   (`background`, `text`, `border`, `accent`) to tint the popover box,
   description, progress, and Next button to the host's palette; omit it to keep

@@ -44,7 +44,7 @@ function DockButton({ a, fg }: { a: DockAction; fg: string }): ReactNode {
         transition: 'opacity .12s',
       }}
     >
-      <Icon name={a.icon} size={26} />
+      <Icon name={a.icon} size={28} strokeWidth={1.15} />
       <span style={{ fontFamily: typography.ui, fontSize: 9.5, fontWeight: 600, letterSpacing: 0.2, lineHeight: 1 }}>
         {a.label}
       </span>
@@ -59,6 +59,8 @@ export function Dock({ t, actions }: { t: Theme; actions: DockAction[] }): React
       style={{
         flex: '0 0 auto',
         height: 80,
+        // Clear the iOS home indicator / Safari toolbar so the dock isn't cramped.
+        paddingBottom: 'env(safe-area-inset-bottom)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',

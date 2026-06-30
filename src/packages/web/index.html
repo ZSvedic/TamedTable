@@ -2,9 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>TamedTable</title>
     <meta name="theme-color" content="#281C60" />
+    <!-- Added to the home screen, the app runs full-screen — no browser bars.
+         In a normal tab the browser chrome stays; the layout fits 100svh. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TamedTable" />
     <!-- White-on-dark favicons so the app tab is distinct from the marketing
          homepage tab (dark-on-white). See marketing/brand/brand.md § Favicons. -->
     <link rel="icon" type="image/svg+xml" href="/icon-square-ink-crisp.svg" />

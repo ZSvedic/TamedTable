@@ -11,6 +11,14 @@ body,
   height: 100%;
 }
 
+/* Mobile browsers keep their toolbars shown when the page can't scroll (our
+   table-first layout never scrolls the document), so size the app to the
+   small viewport — the area left with the chrome visible — and the bottom
+   dock is never hidden behind it. Falls back to the 100% above on old engines. */
+#root {
+  height: 100svh;
+}
+
 body {
   margin: 0;
   font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

@@ -881,8 +881,9 @@ or the engine changes.
   panel open as full-width sheets rather than centered desktop cards.
 - A tour runs on mobile through the same engine as the desktop. A step
   that highlights the chat input opens the Type sheet so the spotlight
-  lands on the visible composer; a step that highlights the open control
-  points at the Menu button, and a table step points at the grid.
+  lands on the visible composer; the load step (shown as **"Open the
+  sample"**) points at the empty page's **Open sample…** button, and a
+  table step points at the grid.
 
 The empty page, the dialogs, and every transformation behave
 identically to the desktop app; the dock layout is purely a

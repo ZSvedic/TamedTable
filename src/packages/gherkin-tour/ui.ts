@@ -267,5 +267,9 @@ export class TourUi {
 // learner to run what they can already see in the input.
 function asInstruction(text: string): string {
   if (/^query "(.+)"$/.test(text)) return 'Run the query';
+  // The load step opens a bundled sample (the UI's "Open sample…" action), so
+  // the instruction names that action rather than echoing the Gherkin verb —
+  // "Load" reads as confusing next to an "Open sample…" button.
+  if (/^load "(.+)"$/.test(text)) return 'Open the sample';
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }

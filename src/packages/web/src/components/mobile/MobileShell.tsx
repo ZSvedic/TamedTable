@@ -60,6 +60,7 @@ function AppBar({
   );
   return (
     <div
+      id="tutorial-mobile-top"
       data-mob-appbar=""
       style={{
         height: 46,
@@ -99,10 +100,11 @@ function EmptyState({
   onOpenLocal: () => void;
   onOpenUrl: () => void;
 }): ReactNode {
-  const opt = (icon: 'sparkle' | 'folder' | 'link', label: string, on: () => void): ReactNode => (
+  const opt = (icon: 'sparkle' | 'folder' | 'link', label: string, on: () => void, id?: string): ReactNode => (
     <button
       key={label}
       type="button"
+      id={id}
       data-mob-open={label}
       onClick={on}
       style={{
@@ -145,7 +147,8 @@ function EmptyState({
         What table can I tame?
       </div>
       <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: space.px8 }}>
-        {opt('sparkle', 'Open sample…', onOpenSample)}
+        {/* The tour's load step spotlights this Open sample… button. */}
+        {opt('sparkle', 'Open sample…', onOpenSample, 'tutorial-open-btn')}
         {opt('folder', 'Open local…', onOpenLocal)}
         {opt('link', 'Open URL…', onOpenUrl)}
       </div>
@@ -237,7 +240,6 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
       key: 'menu',
       icon: 'menu',
       label: 'Menu',
-      id: 'tutorial-open-btn',
       disabled: false,
       onClick: () => setDrawerOpen(true),
     },
@@ -274,7 +276,18 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   const timeline = controller.historyTimeline();
 
   return (
-    <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column', background: t.surface }}>
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        background: t.surface,
+        // Clear the iOS status bar / notch (mainly when added to the home screen).
+        paddingTop: 'env(safe-area-inset-top)',
+      }}
+    >
       {loaded ? (
         <>
           <AppBar
