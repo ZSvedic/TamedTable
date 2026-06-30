@@ -634,8 +634,8 @@ interface DiagEvent {
 }
 
 // caps — evict oldest first when either is exceeded
-const MAX_EVENTS = 50;
-const MAX_BYTES = 256 * 1024;        // ~256 KB of serialized JSON
+const MAX_EVENTS = 20;
+const MAX_BYTES = 64 * 1024;         // ~64 KB of serialized JSON
 const MAX_BODY = 2048;               // request-body truncation, in chars
 
 WebController.diagnosticsEvents(): DiagEvent[];   // newest last
@@ -827,8 +827,9 @@ turn start as the placeholder `🎙 Voice request` and are replaced by
 `🎙 <transcript>` when the model returns one.
 
 `VoicePort` is the recording surface. The browser implementation
-(`browserVoicePort`) wraps `MediaRecorder`; tests inject a stub returning a
-fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
+(`browserVoicePort`) captures the microphone as raw PCM through the Web Audio
+graph (no `MediaRecorder`, no decode); tests inject a stub returning a fixed
+`Blob`. `WebControllerOptions.voice` supplies it; the browser passes
 `browserVoicePort()` in `main.tsx`.
 
 ### Continuous voice
@@ -885,9 +886,11 @@ key-free. Request failures go through the same `fail()` path a
 typed request uses — error toast plus an `Error: Voice input failed: …`
 assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` discards the recording. The mic button is
 gated on the selected model's `voiceInput` flag plus a key for the selected
-provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
-mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`) —
-the only provider wired for voice. The engine routes OpenAI models through the
+provider. `browserVoicePort` captures the mic as raw PCM through an
+`AudioContext` and wraps it in a 16 kHz mono PCM16 WAV before resolving, so the
+bytes work for Gemini (`inlineData`) — the only provider wired for voice.
+Capturing PCM directly (rather than recording with `MediaRecorder` and decoding
+it back) avoids the empty/undecodable clip that broke the mic on some setups. The engine routes OpenAI models through the
 Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
 compatibility.
 
