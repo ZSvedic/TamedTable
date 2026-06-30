@@ -827,9 +827,8 @@ turn start as the placeholder `🎙 Voice request` and are replaced by
 `🎙 <transcript>` when the model returns one.
 
 `VoicePort` is the recording surface. The browser implementation
-(`browserVoicePort`) captures the microphone as raw PCM through the Web Audio
-graph (no `MediaRecorder`, no decode); tests inject a stub returning a fixed
-`Blob`. `WebControllerOptions.voice` supplies it; the browser passes
+(`browserVoicePort`) wraps `MediaRecorder`; tests inject a stub returning a
+fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
 `browserVoicePort()` in `main.tsx`.
 
 ### Continuous voice
@@ -872,9 +871,12 @@ still applying is dropped, so patch turns never overlap; toggling off calls
 browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })`
 in `main.tsx`.
 
-`WebController` adds `voiceStatus: 'idle' | 'recording' | 'sending'` and three
-methods: `startVoice()` begins recording (auto-stopping after 30 s),
-`stopVoice()` ends it and delegates to `sendAudioRequest(audio, signal)`, which
+`WebController` adds `voiceStatus: 'idle' | 'recording' | 'latched' | 'sending'`
+and four methods: `startVoice()` begins recording (auto-stopping after 30 s),
+`latchVoice()` switches a live press-and-hold recording to hands-free `latched`
+(a quick tap; recording continues under the explicit cancel/send controls, and
+it is a no-op unless currently `recording`), `stopVoice()` ends recording from
+either `recording` or `latched` and delegates to `sendAudioRequest(audio, signal)`, which
 builds a `VoiceContext` from `currentSpec()` and `selection` and runs the
 ordinary `request` with the recorded bytes as the `audio` option — one patch
 turn, no transcription call. It posts a `🎙 Voice request` placeholder user
@@ -886,11 +888,9 @@ key-free. Request failures go through the same `fail()` path a
 typed request uses — error toast plus an `Error: Voice input failed: …`
 assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` discards the recording. The mic button is
 gated on the selected model's `voiceInput` flag plus a key for the selected
-provider. `browserVoicePort` captures the mic as raw PCM through an
-`AudioContext` and wraps it in a 16 kHz mono PCM16 WAV before resolving, so the
-bytes work for Gemini (`inlineData`) — the only provider wired for voice.
-Capturing PCM directly (rather than recording with `MediaRecorder` and decoding
-it back) avoids the empty/undecodable clip that broke the mic on some setups. The engine routes OpenAI models through the
+provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
+mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`) —
+the only provider wired for voice. The engine routes OpenAI models through the
 Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
 compatibility.
 

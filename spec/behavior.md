@@ -900,12 +900,20 @@ no key for the provider, the button is hidden. The recording is converted to
 WAV in the browser before sending, the one audio format every voice-capable
 provider accepts.
 
-The button is press-and-hold: pressing and holding it starts recording, and a
-red ring animates around it while the microphone is live. Recording stops when
-the user releases the button, and a recording that reaches thirty seconds stops
-on its own. Pressing Escape while recording cancels it — nothing is sent and
-the table is untouched. Releasing sends the audio; the button shows a spinner
-until the round trip returns.
+The mic supports both ways people use a voice button, so no one has to know
+which it is up front:
+
+- **Press and hold** — hold the button to record (a red ring animates while the
+  microphone is live) and release to send. This is the push-to-talk feel.
+- **Quick tap** — a quick click latches recording hands-free: the button gives
+  way to a cancel (✕) and a send (✓) control with a pulsing dot, and recording
+  keeps going until the user picks one. This is what saves the common
+  first-time mistake of clicking once and releasing — instead of sending an
+  empty clip, the recording simply waits for the explicit send.
+
+A recording that reaches thirty seconds stops and sends on its own. Pressing
+Escape while recording (held or latched) cancels it — nothing is sent and the
+table is untouched. Sending shows a spinner until the round trip returns.
 
 Releasing the button posts a user bubble reading "🎙 Voice request" as a
 placeholder. As soon as the model responds, the placeholder is replaced with
@@ -926,7 +934,8 @@ resolves against what the user is looking at.
 ### Hands-free continuous voice
 
 A second button — a waveform icon, next to the mic — turns voice fully
-hands-free. Where the mic is press-and-hold for one request, the waveform button
+hands-free. Where the mic records one request (held or tap-latched), the
+waveform button
 is a toggle: click it once and the app listens continuously, click again to
 stop. While listening, the button's bars pulse. It appears under the same
 conditions as the mic (a voice-capable model plus a key) and is hidden when

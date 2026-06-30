@@ -192,10 +192,27 @@ Then('the chat input contains {string}', async function (this: DemoWorld, expect
   );
 });
 
-When('the user presses the mic button', async function (this: DemoWorld) {
+When('the user presses and holds the mic button', async function (this: DemoWorld) {
   await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerdown');
 });
 
-When('the user releases the mic button', async function (this: DemoWorld) {
+When('the user releases the held mic button', async function (this: DemoWorld) {
+  // Wait past the tap/hold threshold so the release counts as a hold (send),
+  // not a tap (latch).
+  await page(this).waitForTimeout(350);
   await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerup');
+});
+
+When('the user taps the mic button', async function (this: DemoWorld) {
+  // Down then straight back up — under the hold threshold, so it latches.
+  await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerdown');
+  await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerup');
+});
+
+When('the user clicks the recording send control', async function (this: DemoWorld) {
+  await page(this).click('[data-testid="mic-send"]');
+});
+
+When('the user clicks the recording cancel control', async function (this: DemoWorld) {
+  await page(this).click('[data-testid="mic-cancel"]');
 });

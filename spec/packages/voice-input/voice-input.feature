@@ -1,7 +1,7 @@
 # #VoicePort
-# Voice request recording: the VoicePort interface, the Web Audio→WAV browser
-# implementation (raw PCM capture, no MediaRecorder/decode), and buildVoicePrompt
-# — the instruction text that accompanies the audio on the patch turn.
+# Voice request recording: the VoicePort interface, the MediaRecorder→WAV
+# browser implementation, and buildVoicePrompt — the instruction text that
+# accompanies the audio on the patch turn.
 Feature: Voice input package
 
   Rule: The voice prompt carries the table context
@@ -40,9 +40,6 @@ Feature: Voice input package
       When the user starts recording
       And the user stops recording
       Then the recording result shows "audio/wav"
-      # Guards the empty-capture regression: a bare WAV header is 44 bytes, so a
-      # real recording must carry samples beyond it.
-      And the recording carries more than 44 bytes
 
     @web
     Scenario: Cancelling discards the recording

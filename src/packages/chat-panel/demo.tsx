@@ -77,6 +77,10 @@ function Demo(): ReactNode {
               report('voice start');
               setVoiceStatus('recording');
             }}
+            onLatch={() => {
+              report('voice latch');
+              setVoiceStatus('latched');
+            }}
             onStop={() => {
               report('voice stop');
               setVoiceStatus('sending');
