@@ -17190,7 +17190,10 @@ var tokens_default = {
       cellHi: "oklch(0.86 0.08 240)",
       cellHi2: "oklch(0.93 0.04 240)",
       shadow: "0 1px 2px rgba(40,28,96,.05), 0 4px 16px rgba(40,28,96,.07)",
-      shadowLg: "0 10px 32px rgba(40,28,96,.14), 0 1px 0 rgba(40,28,96,.04)"
+      shadowLg: "0 10px 32px rgba(40,28,96,.14), 0 1px 0 rgba(40,28,96,.04)",
+      dockBg: "oklch(0.26 0.13 287)",
+      dockInk: "oklch(1 0 0 / 0.86)",
+      dockBorder: "oklch(0.26 0.13 287)"
     },
     dark: {
       name: "dark",
@@ -17220,7 +17223,10 @@ var tokens_default = {
       cellHi: "oklch(0.46 0.10 240)",
       cellHi2: "oklch(0.34 0.07 240)",
       shadow: "0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.40)",
-      shadowLg: "0 12px 40px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04)"
+      shadowLg: "0 12px 40px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04)",
+      dockBg: "#0c0c11",
+      dockInk: "#ffffff",
+      dockBorder: "oklch(1 0 0 / 0.10)"
     }
   }
 };
@@ -17306,10 +17312,18 @@ var PATHS = {
   menu: "M2.5 4.5h11 M2.5 8h11 M2.5 11.5h11",
   keyboard: "M2 4.5h12a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z M4 7v.01 M7 7v.01 M10 7v.01 M12 7v.01 M5 10h6",
   link: "M6.6 9.4 9.4 6.6 M7.2 5 8.2 4a2.5 2.5 0 0 1 3.5 3.5l-1 1 M8.8 11l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1",
-  sparkle: "M8 2.5 9.2 5.8 12.5 7 9.2 8.2 8 11.5 6.8 8.2 3.5 7 6.8 5.8Z"
+  sparkle: "M8 2.5 9.2 5.8 12.5 7 9.2 8.2 8 11.5 6.8 8.2 3.5 7 6.8 5.8Z",
+  clock: "M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M8 5.3V8l2 1.3",
+  play: "M5 3.4 12.5 8 5 12.6Z",
+  file: "M9 2H4.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5z M9 2v3h3",
+  code: "M6 5 3 8l3 3 M10 5l3 3-3 3",
+  tour: "M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M10.3 5.7 9 9 5.7 10.3 7 7z",
+  check: "m3 8 3.5 3.5L13 5",
+  chevLeft: "M10 4 6 8l4 4",
+  chevRight: "M6 4l4 4-4 4"
 };
 var ICON_NAMES = Object.keys(PATHS);
-var FILLED = new Set(["stop"]);
+var FILLED = new Set(["stop", "play"]);
 function Icon({ name, size = 14 }) {
   return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
     "data-uk-icon": name,

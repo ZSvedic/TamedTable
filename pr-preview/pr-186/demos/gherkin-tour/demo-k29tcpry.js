@@ -829,6 +829,9 @@ class TourUi {
   d = null;
   silentDestroy = false;
   keyHandler = null;
+  retryTimer = null;
+  retryFor = null;
+  retries = 0;
   constructor(tour, opts) {
     this.tour = tour;
     this.opts = opts;
@@ -841,14 +844,18 @@ class TourUi {
     const active = this.tour.isActive();
     const done = this.tour.isDone();
     if (!active && !done) {
+      this.clearRetry();
       this.destroyOverlay();
       this.opts.onChange?.();
       return;
     }
     const elementId = done ? this.opts.doneElementId : this.tour.currentStepElementId();
     const el = elementId ? document.getElementById(elementId) : null;
-    if (!el)
+    if (!el) {
+      this.scheduleRetry(elementId);
       return;
+    }
+    this.clearRetry();
     this.destroyOverlay();
     const total = this.tour.stepCount();
     const num = done ? total : this.tour.currentStepNumber() ?? 1;
@@ -891,8 +898,32 @@ class TourUi {
     this.opts.onChange?.();
   }
   destroy() {
+    this.clearRetry();
     this.destroyOverlay();
     this.detachKeyboard();
+  }
+  scheduleRetry(elementId) {
+    if (this.retryFor !== elementId) {
+      this.retryFor = elementId;
+      this.retries = 0;
+    }
+    if (this.retries >= 25)
+      return;
+    this.retries += 1;
+    if (this.retryTimer)
+      clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      this.render();
+    }, 80);
+  }
+  clearRetry() {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    this.retryFor = null;
+    this.retries = 0;
   }
   applyTheme(wrapper) {
     const theme = this.opts.theme;
