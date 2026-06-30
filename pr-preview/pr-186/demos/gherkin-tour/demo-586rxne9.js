@@ -1012,6 +1012,8 @@ class TourUi {
 function asInstruction(text) {
   if (/^query "(.+)"$/.test(text))
     return "Run the query";
+  if (/^load "(.+)"$/.test(text))
+    return "Open the sample";
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }
 

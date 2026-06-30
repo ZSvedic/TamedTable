@@ -17114,8 +17114,8 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
   }
 });
 
-// packages/chat-panel/demo.tsx
-var import_react7 = __toESM(require_react(), 1);
+// packages/ui-kit/demo.tsx
+var import_react5 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 // packages/ui-kit/tokens.json
 var tokens_default = {
@@ -17238,6 +17238,12 @@ var space = tokens_default.space;
 var lightTheme = tokens_default.themes.light;
 var darkTheme = tokens_default.themes.dark;
 var TYPING_MS_PER_CHAR = 40;
+var TOAST_FLOOR_MS = 3000;
+var TOAST_CEILING_MS = 12000;
+function toastDurationMs(message) {
+  const readMs = message.length * TYPING_MS_PER_CHAR;
+  return Math.min(TOAST_CEILING_MS, Math.max(TOAST_FLOOR_MS, readMs * 2));
+}
 
 // packages/ui-kit/ThemeProvider.tsx
 var import_react = __toESM(require_react(), 1);
@@ -17274,6 +17280,12 @@ function useTheme() {
     throw new Error("useTheme must be used within a ThemeProvider");
   return ctx.theme;
 }
+function useThemeControls() {
+  const ctx = import_react.useContext(ThemeContext);
+  if (!ctx)
+    throw new Error("useThemeControls must be used within a ThemeProvider");
+  return { mode: ctx.mode, toggle: ctx.toggle };
+}
 // packages/ui-kit/Icon.tsx
 var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
 var PATHS = {
@@ -17298,7 +17310,7 @@ var PATHS = {
   wave: "M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3",
   copy: "M6 6h7v7H6Z M10 6V3.5A.5.5 0 0 0 9.5 3h-6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5H6",
   menu: "M2.5 4.5h11 M2.5 8h11 M2.5 11.5h11",
-  keyboard: "M2 4.5h12a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z M4 7v.01 M7 7v.01 M10 7v.01 M12 7v.01 M5 10h6",
+  keyboard: "M2 4.75h12A1.25 1.25 0 0 1 15.25 6v4A1.25 1.25 0 0 1 14 11.25H2A1.25 1.25 0 0 1 .75 10V6A1.25 1.25 0 0 1 2 4.75Z M3.4 7.4h.01 M5.7 7.4h.01 M8 7.4h.01 M10.3 7.4h.01 M12.6 7.4h.01 M5.2 9.6h5.6",
   link: "M6.6 9.4 9.4 6.6 M7.2 5 8.2 4a2.5 2.5 0 0 1 3.5 3.5l-1 1 M8.8 11l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1",
   sparkle: "M8 2.5 9.2 5.8 12.5 7 9.2 8.2 8 11.5 6.8 8.2 3.5 7 6.8 5.8Z",
   clock: "M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M8 5.3V8l2 1.3",
@@ -17312,7 +17324,11 @@ var PATHS = {
 };
 var ICON_NAMES = Object.keys(PATHS);
 var FILLED = new Set(["stop", "play"]);
-function Icon({ name, size = 14 }) {
+function Icon({
+  name,
+  size = 14,
+  strokeWidth = 1.5
+}) {
   return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
     "data-uk-icon": name,
     width: size,
@@ -17320,7 +17336,7 @@ function Icon({ name, size = 14 }) {
     viewBox: "0 0 16 16",
     fill: FILLED.has(name) ? "currentColor" : "none",
     stroke: "currentColor",
-    strokeWidth: "1.5",
+    strokeWidth,
     strokeLinecap: "round",
     strokeLinejoin: "round",
     style: { flex: "0 0 auto", display: "block" },
@@ -17383,788 +17399,486 @@ function Button({
 // packages/ui-kit/SplitButton.tsx
 var import_react3 = __toESM(require_react(), 1);
 var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
+function SplitButton({
+  children,
+  onClick,
+  menu,
+  disabled,
+  title,
+  caretTitle,
+  id
+}) {
+  const t = useTheme();
+  const [open, setOpen] = import_react3.useState(false);
+  const [hover, setHover] = import_react3.useState(false);
+  const rootRef = import_react3.useRef(null);
+  import_react3.useEffect(() => {
+    if (!open)
+      return;
+    const onDoc = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target))
+        setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape")
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const tinted = !disabled && (hover || open);
+  const baseHalf = {
+    height: 28,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: space.px6,
+    background: "transparent",
+    color: t.ink2,
+    border: 0,
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 500,
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+    cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.4 : 1
+  };
+  const mainStyle = {
+    ...baseHalf,
+    padding: "0 4px 0 10px",
+    borderTopLeftRadius: space.radiusSm,
+    borderBottomLeftRadius: space.radiusSm
+  };
+  const caretStyle = {
+    ...baseHalf,
+    padding: "0 6px 0 2px",
+    color: t.ink3,
+    borderTopRightRadius: space.radiusSm,
+    borderBottomRightRadius: space.radiusSm
+  };
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+    ref: rootRef,
+    id,
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    style: { position: "relative", display: "inline-flex" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          borderRadius: space.radiusSm,
+          background: tinted ? t.surface3 : "transparent",
+          transition: "background .12s"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            "data-uk-split-main": "",
+            title,
+            disabled,
+            onClick,
+            style: mainStyle,
+            children
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+            type: "button",
+            "data-uk-split-caret": "",
+            title: caretTitle,
+            "aria-haspopup": "menu",
+            "aria-expanded": open,
+            disabled,
+            onClick: () => setOpen((v) => !v),
+            style: caretStyle,
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
+              name: "chevron",
+              size: 12
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      open && !disabled && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        role: "menu",
+        style: {
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          marginTop: 4,
+          minWidth: "100%",
+          background: t.surface,
+          border: `1px solid ${t.line2}`,
+          borderRadius: space.radius,
+          boxShadow: t.shadow,
+          padding: space.px4,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          zIndex: 50
+        },
+        children: menu.map((item) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(MenuItemButton, {
+          label: item.label,
+          disabled: item.disabled,
+          onClick: () => {
+            setOpen(false);
+            if (!item.disabled)
+              item.onClick();
+          }
+        }, item.label, false, undefined, this))
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+function MenuItemButton({
+  label,
+  onClick,
+  disabled
+}) {
+  const t = useTheme();
+  const [hover, setHover] = import_react3.useState(false);
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+    type: "button",
+    role: "menuitem",
+    "data-uk-menu-item": label,
+    disabled,
+    onClick,
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    style: {
+      textAlign: "left",
+      border: 0,
+      background: !disabled && hover ? t.surface3 : "transparent",
+      borderRadius: space.radiusSm,
+      padding: "6px 10px",
+      cursor: disabled ? "default" : "pointer",
+      color: t.ink,
+      fontFamily: typography.ui,
+      fontSize: typography.size.sm,
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.4 : 1
+    },
+    children: label
+  }, undefined, false, undefined, this);
+}
 // packages/ui-kit/Toasts.tsx
 var import_react4 = __toESM(require_react(), 1);
 var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
 var FADE_MS = 320;
 var SHEET_CSS = "@keyframes uk-sheet-kf { from { opacity: 0; transform: translateY(6px); }" + " to { opacity: 1; transform: translateY(0); } }" + " .uk-sheet { animation: uk-sheet-kf 0.14s ease-out; }" + ` @keyframes uk-fade-kf { to { opacity: 0; transform: translateY(6px); } }` + ` .uk-sheet-leaving { animation: uk-fade-kf ${FADE_MS}ms ease-in forwards; }`;
-// packages/chat-panel/ChatPanel.tsx
-var import_react5 = __toESM(require_react(), 1);
-var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
-var CP_CSS = "@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }";
-function UserBubble({ t, children }) {
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-    style: { display: "flex", justifyContent: "flex-end" },
-    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-      "data-cp-message": "user",
-      style: {
-        maxWidth: "88%",
-        background: t.accentSoft,
-        color: t.ink,
-        border: `1px solid ${t.line}`,
-        borderRadius: space.radius,
-        padding: "6px 10px",
-        fontFamily: typography.ui,
-        fontSize: typography.size.base,
-        lineHeight: 1.5,
-        whiteSpace: "pre-wrap",
-        wordBreak: "break-word"
-      },
-      children
-    }, undefined, false, undefined, this)
-  }, undefined, false, undefined, this);
-}
-function debugDetailText(debug) {
-  return [
-    "── request ──────────────────────────",
-    debug.userRequest,
-    `${debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(", ")} · ${(debug.inputTokens + debug.outputTokens).toLocaleString("en-US")} tokens · ${(debug.elapsedMs / 1000).toFixed(1)}s`,
-    "",
-    "── response ─────────────────────────",
-    ...debug.turns.flatMap((turn, i) => [
-      `turn ${i + 1}: ${turn.outcome}`,
-      JSON.stringify(turn.ops, null, 2)
-    ]),
-    ...debug.cellSamples.length > 0 ? [
-      "",
-      "── cell samples (up to 3 per column) ──",
-      ...debug.cellSamples.flatMap((s) => s.samples.map((p) => `${s.column}: ${JSON.stringify(p.in)} → ${JSON.stringify(p.out)}`))
-    ] : []
-  ].join(`
-`);
-}
-function AssistantMessage({ t, message }) {
-  const [open, setOpen] = import_react5.useState(false);
-  const [copied, setCopied] = import_react5.useState(false);
-  const isError = message.text.startsWith("Error:");
-  const body = isError ? message.text.replace(/^Error:\s*/, "") : message.text;
-  const copyDetail = () => {
-    if (!message.debug)
-      return;
-    navigator.clipboard?.writeText(debugDetailText(message.debug)).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-    style: { display: "flex", flexDirection: "column" },
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        "data-cp-message": "assistant",
-        "data-cp-error": isError ? "" : undefined,
-        style: {
-          display: "flex",
-          alignItems: "flex-start",
-          gap: space.px8,
-          color: isError ? t.err : t.ink2,
-          fontFamily: typography.ui,
-          fontSize: typography.size.base,
-          lineHeight: 1.5
-        },
-        children: [
-          isError ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: { flex: "0 0 auto", marginTop: 2, color: t.err },
-            children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-              name: "err"
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: {
-              flex: "0 0 auto",
-              marginTop: 6,
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              background: t.ok
-            }
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: { flex: 1, whiteSpace: "pre-wrap", wordBreak: "break-word" },
-            children: body
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      message.debug && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(jsx_dev_runtime6.Fragment, {
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: {
-              marginTop: space.px4,
-              marginLeft: space.px14,
-              alignSelf: "flex-start",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: space.px8
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-detail-toggle": "",
-                onClick: () => setOpen((o) => !o),
-                style: {
-                  background: "transparent",
-                  border: 0,
-                  padding: 0,
-                  cursor: "pointer",
-                  color: t.ink3,
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.xs,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: space.px4
-                },
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-                    style: {
-                      display: "inline-flex",
-                      transition: "transform .15s",
-                      transform: open ? "rotate(0deg)" : "rotate(-90deg)"
-                    },
-                    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                      name: "chevron",
-                      size: 12
-                    }, undefined, false, undefined, this)
-                  }, undefined, false, undefined, this),
-                  "request detail"
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                onClick: copyDetail,
-                title: copied ? "Copied" : "Copy request detail",
-                "aria-label": copied ? "Copied" : "Copy request detail",
-                "data-testid": "copy-debug",
-                style: {
-                  background: "transparent",
-                  border: 0,
-                  padding: 0,
-                  cursor: "pointer",
-                  color: copied ? t.ok : t.ink3,
-                  display: "inline-flex",
-                  alignItems: "center"
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "copy",
-                  size: 12
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          open && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("pre", {
-            "data-cp-detail": "",
-            style: {
-              margin: `${space.px6}px 0 0 ${space.px14}px`,
-              padding: "8px 10px",
-              background: t.surface3,
-              color: t.ink3,
-              fontFamily: typography.mono,
-              fontSize: typography.size.xs,
-              lineHeight: 1.55,
-              borderRadius: space.radiusSm,
-              border: `1px solid ${t.line}`,
-              whiteSpace: "pre-wrap",
-              overflow: "auto",
-              maxHeight: 320
-            },
-            children: debugDetailText(message.debug)
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-function ChatPanel({
-  messages,
-  streaming,
-  requestCount,
-  prefill = null,
-  onSend,
-  onCancel,
-  inputId,
-  emptyState,
-  helpLines = [],
-  micButton,
-  fill = false
+function Toasts({
+  toasts,
+  onDismiss,
+  onAction
 }) {
-  const t = useTheme();
-  const [draft, setDraft] = import_react5.useState("");
-  const [focused, setFocused] = import_react5.useState(false);
-  const [helpOpen, setHelpOpen] = import_react5.useState(false);
-  const typing = import_react5.useRef({
-    typed: null,
-    timer: null
-  });
-  import_react5.useEffect(() => {
-    if (prefill === null)
-      return;
-    const guard = typing.current;
-    if (prefill === guard.typed)
-      return;
-    guard.typed = prefill;
-    if (guard.timer) {
-      clearInterval(guard.timer);
-      guard.timer = null;
-    }
-    if (prefill === "") {
-      setDraft("");
-      return;
-    }
-    let i = 0;
-    setDraft("");
-    guard.timer = setInterval(() => {
-      i += 1;
-      setDraft(prefill.slice(0, i));
-      if (i >= prefill.length && guard.timer) {
-        clearInterval(guard.timer);
-        guard.timer = null;
-      }
-    }, TYPING_MS_PER_CHAR);
-    return () => {
-      if (guard.timer) {
-        clearInterval(guard.timer);
-        guard.timer = null;
-      }
-    };
-  }, [prefill]);
-  const send = () => {
-    const text = draft.trim();
-    if (!text || streaming)
-      return;
-    setDraft("");
-    onSend(text);
-  };
-  const hasDraft = draft.trim() !== "";
-  const sendBtn = {
-    height: 30,
-    width: 30,
-    flex: "0 0 auto",
-    borderRadius: space.radiusSm,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer"
-  };
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("aside", {
+  if (toasts.length === 0)
+    return null;
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
     style: {
-      width: fill ? "100%" : 360,
-      height: fill ? "100%" : undefined,
-      flex: fill ? "1 1 auto" : "0 0 auto",
-      minHeight: 0,
+      position: "fixed",
+      right: space.px16,
+      bottom: space.px16,
       display: "flex",
       flexDirection: "column",
-      background: t.surface2,
-      borderRight: fill ? "none" : `1px solid ${t.line}`
+      gap: space.px8,
+      zIndex: 200,
+      maxWidth: 380
     },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("style", {
-        children: CP_CSS
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("style", {
+        children: SHEET_CSS
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        style: {
-          height: space.headerH,
-          flex: "0 0 auto",
-          display: "flex",
-          alignItems: "center",
-          padding: `0 ${space.px12}px`,
-          borderBottom: `1px solid ${t.line}`,
-          fontFamily: typography.ui,
-          fontSize: typography.size.xs,
-          fontWeight: 600,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-          color: t.ink3
-        },
-        children: [
-          "Requests",
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: { flex: 1 }
-          }, undefined, false, undefined, this),
-          requestCount > 0 && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: {
-              fontFamily: typography.mono,
-              fontSize: typography.size.xs,
-              fontWeight: 400,
-              letterSpacing: 0,
-              textTransform: "none",
-              color: t.ink3
-            },
-            children: [
-              requestCount,
-              " transformation",
-              requestCount === 1 ? "" : "s",
-              streaming && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(jsx_dev_runtime6.Fragment, {
-                children: " · running"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          helpLines.length > 0 && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: { position: "relative", marginLeft: space.px6 },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                onMouseEnter: () => setHelpOpen(true),
-                onMouseLeave: () => setHelpOpen(false),
-                onClick: () => setHelpOpen((o) => !o),
-                style: {
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: t.ink3,
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.xs,
-                  fontWeight: 600,
-                  padding: "2px 4px",
-                  lineHeight: 1,
-                  textTransform: "none",
-                  letterSpacing: 0,
-                  borderRadius: space.radiusSm
-                },
-                children: "?"
-              }, undefined, false, undefined, this),
-              helpOpen && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-                style: {
-                  position: "absolute",
-                  top: "100%",
-                  right: 0,
-                  marginTop: 4,
-                  background: t.surface,
-                  border: `1px solid ${t.line}`,
-                  borderRadius: space.radius,
-                  padding: "8px 10px",
-                  boxShadow: t.shadow,
-                  whiteSpace: "nowrap",
-                  zIndex: 100,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  textTransform: "none",
-                  letterSpacing: 0,
-                  fontWeight: 400
-                },
-                children: helpLines.map((line) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-                  style: {
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.xs,
-                    color: t.ink2,
-                    lineHeight: 1.5
-                  },
-                  children: line
-                }, line, false, undefined, this))
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        style: {
-          flex: 1,
-          overflowY: "auto",
-          padding: space.px14,
-          display: "flex",
-          flexDirection: "column",
-          gap: space.px12
-        },
-        children: [
-          messages.length === 0 && emptyState,
-          messages.map((m) => m.role === "user" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(UserBubble, {
-            t,
-            children: m.text
-          }, m.id, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(AssistantMessage, {
-            t,
-            message: m
-          }, m.id, false, undefined, this)),
-          streaming && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            "data-cp-running": "",
-            style: {
-              display: "flex",
-              alignItems: "center",
-              gap: space.px8,
-              color: t.ink2,
-              fontFamily: typography.ui,
-              fontSize: typography.size.sm
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-                className: "cp-pulse",
-                style: { width: 6, height: 6, borderRadius: 3, background: t.accent }
-              }, undefined, false, undefined, this),
-              "Running…"
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        style: {
-          flex: "0 0 auto",
-          borderTop: `1px solid ${t.line}`,
-          padding: space.px10
-        },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: {
-              background: t.surface,
-              border: `1px solid ${focused ? t.accent : t.line2}`,
-              boxShadow: focused ? `0 0 0 3px ${t.ring}` : "none",
-              borderRadius: space.radius,
-              padding: "8px 8px 6px 10px",
-              display: "flex",
-              alignItems: "flex-end",
-              gap: space.px8,
-              transition: "border-color .12s, box-shadow .12s"
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("textarea", {
-                id: inputId,
-                value: draft,
-                onChange: (e) => setDraft(e.target.value),
-                onFocus: () => setFocused(true),
-                onBlur: () => setFocused(false),
-                onKeyDown: (e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                },
-                placeholder: "Describe a transformation…",
-                rows: 3,
-                style: {
-                  flex: 1,
-                  resize: "none",
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.base,
-                  lineHeight: 1.5,
-                  color: t.ink
-                }
-              }, undefined, false, undefined, this),
-              micButton,
-              streaming ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-stop": "",
-                onClick: onCancel,
-                title: "Stop the running request",
-                style: {
-                  ...sendBtn,
-                  border: `1px solid ${t.err}`,
-                  background: "transparent",
-                  color: t.err
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "stop"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-send": "",
-                onClick: send,
-                disabled: !hasDraft,
-                title: "Send (Enter)",
-                style: {
-                  ...sendBtn,
-                  border: "none",
-                  background: hasDraft ? t.accent : t.surface3,
-                  color: hasDraft ? t.inkOnAcc : t.ink3,
-                  cursor: hasDraft ? "pointer" : "default"
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "send"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: {
-              marginTop: space.px6,
-              fontFamily: typography.ui,
-              fontSize: typography.size.micro,
-              color: t.ink4,
-              letterSpacing: 0.3
-            },
-            children: "↵ to send · ⇧↵ for newline"
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
+      toasts.map((toast) => /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(ToastRow, {
+        toast,
+        onDismiss,
+        onAction
+      }, toast.id, false, undefined, this))
     ]
   }, undefined, true, undefined, this);
 }
-// packages/chat-panel/MicButton.tsx
-var import_react6 = __toESM(require_react(), 1);
-var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
-var HOLD_MS = 250;
-var micCss = (rec) => `@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 55%, transparent); }` + ` 70% { box-shadow: 0 0 0 7px color-mix(in srgb, ${rec} 0%, transparent); }` + ` 100% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 0%, transparent); } }` + " .cp-rec-ring { animation: cp-rec-kf 1.1s ease-out infinite; }" + " @keyframes cp-spin-kf { to { transform: rotate(360deg); } }" + " .cp-spin { animation: cp-spin-kf 0.7s linear infinite; }";
-var DEFAULT_SIZE = {
-  height: 30,
-  width: 30,
-  flex: "0 0 auto",
-  borderRadius: 4,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center"
-};
-function MicButton({
-  status,
-  onStart,
-  onLatch,
-  onStop,
-  onCancel,
-  size = DEFAULT_SIZE
+function ToastRow({
+  toast,
+  onDismiss,
+  onAction
 }) {
   const t = useTheme();
-  const recording = status === "recording";
-  const latched = status === "latched";
-  const sending = status === "sending";
-  const pressedRef = import_react6.useRef(false);
-  const pressTimeRef = import_react6.useRef(0);
-  import_react6.useEffect(() => {
-    if (!recording && !latched)
-      return;
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
+  const isError = toast.kind === "error";
+  const [leaving, setLeaving] = import_react4.useState(false);
+  const timers = import_react4.useRef({
+    dismiss: null,
+    remove: null
+  });
+  const fadeOut = () => {
+    setLeaving(true);
+    timers.current.remove = setTimeout(() => onDismiss(toast.id), FADE_MS);
+  };
+  const arm = () => {
+    if (timers.current.dismiss)
+      clearTimeout(timers.current.dismiss);
+    timers.current.dismiss = setTimeout(fadeOut, toastDurationMs(toast.message));
+  };
+  const pause = () => {
+    if (timers.current.dismiss) {
+      clearTimeout(timers.current.dismiss);
+      timers.current.dismiss = null;
+    }
+  };
+  import_react4.useEffect(() => {
+    arm();
+    return () => {
+      if (timers.current.dismiss)
+        clearTimeout(timers.current.dismiss);
+      if (timers.current.remove)
+        clearTimeout(timers.current.remove);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [recording, latched, onCancel]);
-  const press = (e) => {
-    if (sending)
-      return;
-    e.preventDefault();
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
-    pressedRef.current = true;
-    pressTimeRef.current = Date.now();
-    onStart();
-  };
-  const release = () => {
-    if (!pressedRef.current)
-      return;
-    pressedRef.current = false;
-    if (Date.now() - pressTimeRef.current >= HOLD_MS)
-      onStop();
-    else
-      onLatch();
-  };
-  const pointerCancel = () => {
-    pressedRef.current = false;
-    onCancel();
-  };
-  if (latched) {
-    return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-      style: { display: "flex", alignItems: "center", gap: 6 },
-      children: [
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("style", {
-          children: micCss(t.rec)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-          "aria-hidden": true,
-          className: "cp-rec-ring",
-          style: { width: 10, height: 10, borderRadius: "50%", background: t.rec, flex: "0 0 auto" }
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-          type: "button",
-          onClick: onCancel,
-          title: "Cancel recording",
-          "aria-label": "Cancel recording",
-          "data-testid": "mic-cancel",
-          style: {
-            ...size,
-            border: `1px solid ${t.line2}`,
-            background: "transparent",
-            color: t.ink2,
-            cursor: "pointer"
-          },
-          children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "x"
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-          type: "button",
-          onClick: onStop,
-          title: "Send recording",
-          "aria-label": "Send recording",
-          "data-testid": "mic-send",
-          style: {
-            ...size,
-            border: `1px solid ${t.accent}`,
-            background: t.accent,
-            color: t.inkOnInk,
-            cursor: "pointer"
-          },
-          children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "ok"
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this)
-      ]
-    }, undefined, true, undefined, this);
-  }
-  const title = recording ? "Release to send · tap for hands-free · Esc to cancel" : sending ? "Transcribing…" : "Hold to record, or tap for hands-free";
-  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-    type: "button",
-    className: recording ? "cp-rec-ring" : undefined,
-    onPointerDown: press,
-    onPointerUp: release,
-    onPointerCancel: pointerCancel,
-    disabled: sending,
-    title,
-    "aria-label": title,
-    "data-testid": "mic-button",
+  }, []);
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+    className: leaving ? "uk-sheet uk-sheet-leaving" : "uk-sheet",
+    "data-uk-toast": toast.kind,
+    "data-uk-toast-leaving": leaving ? "" : undefined,
+    onMouseEnter: pause,
+    onMouseLeave: () => {
+      if (!leaving)
+        arm();
+    },
     style: {
-      ...size,
-      border: `1px solid ${recording ? t.rec : t.line2}`,
-      background: recording ? t.rec : "transparent",
-      color: recording ? t.onRec : sending ? t.ink3 : t.ink2,
-      cursor: sending ? "default" : "pointer",
-      touchAction: "none"
+      display: "flex",
+      alignItems: "flex-start",
+      gap: space.px10,
+      minWidth: 280,
+      padding: "10px 12px",
+      borderRadius: space.radius,
+      background: t.surface,
+      color: t.ink,
+      border: `1px solid ${isError ? t.err : t.line2}`,
+      borderLeft: `3px solid ${isError ? t.err : t.ok}`,
+      boxShadow: t.shadowLg,
+      fontFamily: typography.ui,
+      fontSize: typography.size.sm,
+      lineHeight: 1.5
     },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("style", {
-        children: micCss(t.rec)
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+        style: { flex: "0 0 auto", marginTop: 1, color: isError ? t.err : t.ok },
+        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(Icon, {
+          name: isError ? "err" : "ok"
+        }, undefined, false, undefined, this)
       }, undefined, false, undefined, this),
-      sending ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-        className: "cp-spin",
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+        style: { flex: 1 },
+        children: toast.message
+      }, undefined, false, undefined, this),
+      toast.action && onAction && /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+        type: "button",
+        "data-uk-toast-action": "",
+        onClick: () => onAction(toast.id),
         style: {
-          width: 14,
-          height: 14,
-          borderRadius: "50%",
-          border: `2px solid ${t.line2}`,
-          borderTopColor: t.ink2,
-          display: "block"
-        }
-      }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-        name: "mic"
+          flex: "0 0 auto",
+          background: "transparent",
+          border: 0,
+          padding: space.px2,
+          cursor: "pointer",
+          color: t.accent,
+          fontFamily: typography.ui,
+          fontSize: typography.size.sm,
+          fontWeight: 600,
+          textDecoration: "underline"
+        },
+        children: toast.action
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+        type: "button",
+        "data-uk-toast-dismiss": "",
+        onClick: () => onDismiss(toast.id),
+        title: "Dismiss",
+        style: {
+          background: "transparent",
+          border: 0,
+          padding: space.px2,
+          cursor: "pointer",
+          color: t.ink3,
+          display: "flex"
+        },
+        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(Icon, {
+          name: "x",
+          size: 12
+        }, undefined, false, undefined, this)
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-// packages/chat-panel/WaveButton.tsx
-var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
-// packages/chat-panel/demo.tsx
-var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
-var SAMPLE_DETAIL = {
-  userRequest: "normalize the phone column",
-  modelCalls: [{ model: "claude-sonnet-4-6", calls: 2 }],
-  inputTokens: 1843,
-  outputTokens: 412,
-  elapsedMs: 5300,
-  turns: [
-    { outcome: "committed", ops: [{ op: "add", path: "/transformations/-", value: { kind: "mutate" } }] }
-  ],
-  cellSamples: [
-    { column: "phone", samples: [{ in: "555 0199", out: "+1-555-0199" }] }
-  ]
-};
-var HELP_LINES = [
-  "Double-click a cell to edit it",
-  "Type :undo or :redo in the chat"
-];
+// packages/ui-kit/demo.tsx
+var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
 function Demo() {
   const t = useTheme();
-  const [messages, setMessages] = import_react7.useState([]);
-  const [streaming, setStreaming] = import_react7.useState(false);
-  const [prefill, setPrefill] = import_react7.useState(null);
-  const [voiceStatus, setVoiceStatus] = import_react7.useState("idle");
-  const [seq, setSeq] = import_react7.useState(0);
-  const [log, setLog] = import_react7.useState(["ready"]);
+  const { mode, toggle } = useThemeControls();
+  const [log, setLog] = import_react5.useState(["ready"]);
+  const [toasts, setToasts] = import_react5.useState([]);
+  const [toastSeq, setToastSeq] = import_react5.useState(0);
   const report = (event) => setLog((l) => [...l, event]);
-  const append = (...items) => {
-    setMessages((list) => [...list, ...items.map((m, i) => ({ ...m, id: seq + i }))]);
-    setSeq((n) => n + items.length);
+  const addToast = (kind) => {
+    setToasts((list) => [
+      ...list,
+      { id: toastSeq, kind, message: `Sample ${kind} toast #${toastSeq}` }
+    ]);
+    setToastSeq((n) => n + 1);
   };
-  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-    style: { height: "100vh", display: "flex" },
+  const section = { margin: "1rem 0" };
+  const heading = { font: `600 14px/1.4 ${typography.ui}`, color: t.ink, margin: "0 0 .5rem" };
+  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+    "data-uk-mode": mode,
+    style: { color: t.ink, fontFamily: typography.ui },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ChatPanel, {
-        inputId: "demo-chat-input",
-        messages,
-        streaming,
-        requestCount: messages.filter((m) => m.role === "user").length,
-        prefill,
-        onSend: (text) => {
-          report(`send ${text}`);
-          append({ role: "user", text }, { role: "assistant", text: `Did: ${text}` });
-        },
-        onCancel: () => {
-          report("cancel");
-          setStreaming(false);
-        },
-        emptyState: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("p", {
-          style: { margin: 0, color: t.ink3, fontFamily: typography.ui, fontSize: 13 },
-          children: "No messages yet — send one below, or use the buttons on the right."
-        }, undefined, false, undefined, this),
-        helpLines: HELP_LINES,
-        micButton: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(MicButton, {
-          status: voiceStatus,
-          onStart: () => {
-            report("voice start");
-            setVoiceStatus("recording");
-          },
-          onLatch: () => {
-            report("voice latch");
-            setVoiceStatus("latched");
-          },
-          onStop: () => {
-            report("voice stop");
-            setVoiceStatus("sending");
-            setTimeout(() => setVoiceStatus("idle"), 800);
-          },
-          onCancel: () => {
-            report("voice cancel");
-            setVoiceStatus("idle");
-          }
-        }, undefined, false, undefined, this)
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("h1", {
+        style: { font: `600 18px/1.4 ${typography.ui}`, margin: 0 },
+        children: "ui-kit — tokens & primitives"
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-        style: { flex: 1, display: "flex", flexDirection: "column", background: t.bg },
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
         children: [
-          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-            style: { display: "flex", flexWrap: "wrap", gap: 8, padding: 12 },
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Buttons"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", gap: 8 },
             children: [
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
+              ["ghost", "chrome", "primary", "danger"].map((variant) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant,
+                onClick: () => report(`${variant} clicked`),
+                children: variant
+              }, variant, false, undefined, this)),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
                 variant: "chrome",
-                onClick: () => append({ role: "assistant", text: "Error: Something broke while applying the change." }),
-                children: "Add error reply"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => append({ role: "assistant", text: "Normalized 12 phone numbers.", debug: SAMPLE_DETAIL }),
-                children: "Add reply with detail"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => setStreaming((v) => !v),
-                children: "Toggle streaming"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => setPrefill("Keep rows where age >= 18"),
-                children: "Prefill draft"
+                disabled: true,
+                children: "disabled"
               }, undefined, false, undefined, this)
             ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("pre", {
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Theme"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+            variant: "chrome",
+            onClick: toggle,
+            title: "Toggle light/dark",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                name: mode === "dark" ? "sun" : "moon"
+              }, undefined, false, undefined, this),
+              " ",
+              mode,
+              " → toggle"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Icons"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            "data-icon-count": ICON_NAMES.length,
+            style: { display: "flex", flexWrap: "wrap", gap: 12 },
+            children: ICON_NAMES.map((name) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+              style: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                  name
+                }, undefined, false, undefined, this),
+                " ",
+                name
+              ]
+            }, name, true, undefined, this))
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Split button"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(SplitButton, {
+            onClick: () => report("Save clicked"),
+            menu: [
+              { label: "Save as flow", onClick: () => report("Save as flow clicked") },
+              { label: "Save as data", onClick: () => report("Save as data clicked") },
+              { label: "Disabled item", onClick: () => report("never"), disabled: true }
+            ],
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                name: "save"
+              }, undefined, false, undefined, this),
+              " Save"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Toasts"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", gap: 8 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => addToast("info"),
+                children: "Add info toast"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "danger",
+                onClick: () => addToast("error"),
+                children: "Add error toast"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Event log"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("pre", {
             id: "out",
             style: {
-              flex: 1,
-              overflow: "auto",
-              margin: 12,
-              marginTop: 0,
-              padding: ".5rem .75rem",
-              font: `11px/1.5 ${typography.mono}`,
+              font: `12px/1.5 ${typography.mono}`,
               background: t.surface2,
-              color: t.ink2,
               border: `1px solid ${t.line}`,
+              padding: ".5rem",
               borderRadius: 6
             },
             children: log.join(`
 `)
           }, undefined, false, undefined, this)
         ]
-      }, undefined, true, undefined, this)
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Toasts, {
+        toasts,
+        onDismiss: (id) => setToasts((l) => l.filter((x) => x.id !== id))
+      }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ThemeProvider, {
-  children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Demo, {}, undefined, false, undefined, this)
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime6.jsxDEV(ThemeProvider, {
+  children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Demo, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));
