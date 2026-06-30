@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- #ModelConfig demo — the real ModelChooser component over local React
+     state, with the resolveConfig result shown live.
+     Run: bun packages/model-config/demo.html
+     (env.ts is Node-only and intentionally not used here.) -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>model-config demo</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 30rem; }
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 1rem; margin-top: 1.5rem; }
+    pre { padding: .5rem; background: #f4f4f4; overflow-x: auto; }
+  </style>
+<script type="module" crossorigin src="/pr-preview/pr-189/demos/model-config/demo-szcpzvm5.js"></script></head>
+<body>
+  <h1>model-config — ModelChooser &amp; resolveConfig</h1>
+  <p>Expand a provider, type a key, pick a model; the resolved config updates live.
+     Config is shared with the main app via localStorage. The test-call box at the
+     bottom issues a real call to the selected model.</p>
+  <div id="root"></div>
+  
+</body>
+</html>
