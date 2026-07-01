@@ -106,6 +106,19 @@ When('user releases the mic button', async function (this: TamedTableWorld) {
   await controller(this).stopVoice();
 });
 
+// A quick tap: recording starts and then latches (instead of a hold-release),
+// so the recording keeps running under the explicit cancel/send controls.
+When('user taps the mic button', async function (this: TamedTableWorld) {
+  await controller(this).startVoice();
+  controller(this).latchVoice();
+});
+
+// The send (✓) control on a latched recording — stops and sends, same path as a
+// hold-release.
+When('user sends the latched recording', async function (this: TamedTableWorld) {
+  await controller(this).stopVoice();
+});
+
 When('user presses Escape to cancel the recording', function (this: TamedTableWorld) {
   controller(this).cancelVoice();
 });

@@ -94,8 +94,11 @@ export interface CellRef {
 /** What the engine is doing, for the status footer. */
 export type ActivityStatus = 'idle' | 'running' | 'saved';
 
-/** Microphone state — drives the MicButton's ring and spinner. */
-export type VoiceStatus = 'idle' | 'recording' | 'sending';
+/** Microphone state — drives the MicButton's ring, controls, and spinner.
+ *  `recording` while the button is held (push-to-talk); `latched` after a quick
+ *  tap turned recording on hands-free, showing the cancel (✕) / send (✓)
+ *  controls until the user chooses. */
+export type VoiceStatus = 'idle' | 'recording' | 'latched' | 'sending';
 
 /** Continuous (hands-free) voice state — drives the WaveButton's pulse and
  *  spinner. `listening` while the VAD is open, `sending` while a detected turn

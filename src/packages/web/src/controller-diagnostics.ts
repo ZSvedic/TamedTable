@@ -28,9 +28,9 @@ export interface DiagEvent {
 /** localStorage key for the persisted ring buffer. */
 const STORAGE_KEY = 'tamedtable.diagnostics';
 /** Keep the newest this-many events … */
-const MAX_EVENTS = 50;
+const MAX_EVENTS = 20;
 /** … and at most this-many bytes of serialized JSON, oldest dropped first. */
-const MAX_BYTES = 256 * 1024;
+const MAX_BYTES = 64 * 1024;
 /** Request bodies are truncated to this many characters before logging. */
 const MAX_BODY = 2048;
 

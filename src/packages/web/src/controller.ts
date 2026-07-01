@@ -314,6 +314,7 @@ export class WebController implements ControllerHost {
 
   voiceAvailable(): boolean { return this.voice.voiceAvailable(); }
   startVoice(): Promise<void> { return this.voice.startVoice(); }
+  latchVoice(): void { this.voice.latchVoice(); }
   stopVoice(): Promise<void> { return this.voice.stopVoice(); }
   cancelVoice(): void { this.voice.cancelVoice(); }
   continuousAvailable(): boolean { return this.voice.continuousAvailable(); }

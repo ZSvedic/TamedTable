@@ -1,6 +1,7 @@
 [
   { "id": "gemini-3.5-flash",      "name": "Gemini 3.5 Flash", "desc": "Google's fast, capable model — the Google default.", "provider": "gemini",    "voiceInput": true,  "default": true, "secondaryDefault": true },
   { "id": "gemini-3.1-pro-preview","name": "Gemini 3.1 Pro",   "desc": "Most capable Gemini model (preview).",               "provider": "gemini",    "voiceInput": true  },
+  { "id": "gemini-3.1-flash-lite", "name": "Gemini 3.1 Flash-Lite", "desc": "Cheapest, fastest Gemini — good for per-row cells.", "provider": "gemini", "voiceInput": false },
 
   { "id": "gpt-5.5",               "name": "GPT-5.5",          "desc": "OpenAI's flagship model — the OpenAI default.",      "provider": "openai",    "voiceInput": false, "default": true },
   { "id": "gpt-5.4-mini",          "name": "GPT-5.4 Mini",     "desc": "Fast and cheap OpenAI model.",                       "provider": "openai",    "voiceInput": false, "secondaryDefault": true },

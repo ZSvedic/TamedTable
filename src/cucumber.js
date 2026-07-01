@@ -73,3 +73,14 @@ export const web = {
   tags: tagsFor('web'),
   worldParameters: { surface: 'web' },
 };
+
+// #BenchPerf — standalone performance benchmark profile (`bun run bench`).
+// Selects only @perf scenarios, so it never overlaps the surface profiles above
+// and `bun run test` never runs it. By default it drops @needs-recording (the
+// model-calling group C, which has no committed cassette); set
+// TAMEDTABLE_BENCH_ALL=1 (the record/live scripts do) to include it.
+export const perf = {
+  ...common,
+  tags: process.env.TAMEDTABLE_BENCH_ALL ? '@perf' : '@perf and not @needs-recording',
+  worldParameters: { surface: 'headless' },
+};

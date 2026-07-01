@@ -16,6 +16,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | Group and aggregate | [#Aggregate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Aggregate&type=code) | ✓ | ✓ | ✓ | [aggregate.feature](spec/test-cases/aggregate.feature) |
 | LLM cell placeholders | [#LLMCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LLMCells&type=code) | ✓ | ✓ | ✓ | [placeholders.feature](spec/test-cases/placeholders.feature) |
 | LLM output resilience | [#LlmLayer](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LlmLayer&type=code) | ✓ | ✓ | ✓ | [model-resilience.feature](spec/test-cases/model-resilience.feature) |
+| Performance benchmark | [#BenchPerf](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BenchPerf&type=code) | ✓ | - | - | [performance.feature](spec/test-cases/performance.feature) |
 | Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) |
 | Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) |
 | Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) |
@@ -29,7 +30,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | SQL expressions | [#SqlExpr](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SqlExpr&type=code) | ✓ | ✓ | ✓ | [sql.feature](spec/test-cases/sql.feature) |
 | Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) |
 | Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) |
-| Voice input (press-and-hold + hands-free) | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) |
+| Voice input (hold-or-tap + hands-free) | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) |
 | Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
 
 ## Library packages
@@ -39,7 +40,7 @@ Each row is a self-contained library package with its own spec under `spec/packa
 | Area | ID | Description |
 |---|---|---|
 | Cassette replay | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | Shared fingerprint + replay primitives used by the test recorder and the browser tutorial player — no Node deps, browser-safe (`src/packages/cassette/`) |
-| Chat panel | [#ChatPanel](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ChatPanel&type=code) | Chat sidebar with request detail, send/stop input row, and the press-and-hold `MicButton` (`src/packages/chat-panel/`, spec at `spec/packages/chat-panel/`) |
+| Chat panel | [#ChatPanel](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ChatPanel&type=code) | Chat sidebar with request detail, send/stop input row, and the hold-or-tap `MicButton` (`src/packages/chat-panel/`, spec at `spec/packages/chat-panel/`) |
 | File IO | [#FileIO](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FileIO&type=code) | Format codec registry (parse/serialize behind a load-on-demand `FormatCodec`, bytes seam), format detection, file open/save dialogs (`FilePort`), URL fetch, `.flow` serialization (`src/packages/file-io/`, spec at `spec/packages/file-io/`) |
 | Table plan | [#TablePlanSchema](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TablePlanSchema&type=code) | Zero-dependency base package: the `TablePlan` model + Zod schema (`validateTablePlan`), `Row`/`Expr`/`Transformation`, and the `FormatCodec` interface. Imported by both `core` and `file-io`; `core` re-exports it (`src/packages/table-plan/`) |
 | Gherkin Tour parser + driver | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser (`parseTours`) plus a host-agnostic `TourDriver` + `TourAdapter` that runs the tour flow; the `./ui` export adds a Driver.js spotlight (the only `driver.js`-dependent entry point). `demo.html` tours itself through it (`src/packages/gherkin-tour/`, spec at `spec/packages/gherkin-tour/`) |

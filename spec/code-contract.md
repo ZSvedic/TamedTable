@@ -676,8 +676,8 @@ interface DiagEvent {
 }
 
 // caps — evict oldest first when either is exceeded
-const MAX_EVENTS = 50;
-const MAX_BYTES = 256 * 1024;        // ~256 KB of serialized JSON
+const MAX_EVENTS = 20;
+const MAX_BYTES = 64 * 1024;         // ~64 KB of serialized JSON
 const MAX_BODY = 2048;               // request-body truncation, in chars
 
 WebController.diagnosticsEvents(): DiagEvent[];   // newest last
@@ -913,9 +913,12 @@ still applying is dropped, so patch turns never overlap; toggling off calls
 browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })`
 in `main.tsx`.
 
-`WebController` adds `voiceStatus: 'idle' | 'recording' | 'sending'` and three
-methods: `startVoice()` begins recording (auto-stopping after 30 s),
-`stopVoice()` ends it and delegates to `sendAudioRequest(audio, signal)`, which
+`WebController` adds `voiceStatus: 'idle' | 'recording' | 'latched' | 'sending'`
+and four methods: `startVoice()` begins recording (auto-stopping after 30 s),
+`latchVoice()` switches a live press-and-hold recording to hands-free `latched`
+(a quick tap; recording continues under the explicit cancel/send controls, and
+it is a no-op unless currently `recording`), `stopVoice()` ends recording from
+either `recording` or `latched` and delegates to `sendAudioRequest(audio, signal)`, which
 builds a `VoiceContext` from `currentSpec()` and `selection` and runs the
 ordinary `request` with the recorded bytes as the `audio` option — one patch
 turn, no transcription call. It posts a `🎙 Voice request` placeholder user

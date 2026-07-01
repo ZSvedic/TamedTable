@@ -67,6 +67,7 @@ export function ChatSidebar({
               id="tutorial-speak"
               status={controller.voiceStatus}
               onStart={() => void controller.startVoice()}
+              onLatch={() => controller.latchVoice()}
               onStop={() => void controller.stopVoice()}
               onCancel={() => controller.cancelVoice()}
             />

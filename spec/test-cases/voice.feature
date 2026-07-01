@@ -89,6 +89,36 @@ Feature: Voice input
       And no chat message is shown
       And the spec has 0 transformations
 
+  Rule: A quick tap latches recording with explicit send and cancel controls
+
+    @web
+    Scenario: Tapping the mic latches recording, then send applies the request
+      Given the TamedTable web app
+      And a stub microphone that plays "voice-normalize-dob.m4a"
+      And load "customers-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      When user taps the mic button
+      Then the mic status is "latched"
+      And no chat message is shown
+      When user sends the latched recording
+      Then a user bubble shows "🎙 normalize DOB column"
+      And an assistant bubble is shown
+      And the spec has 1 transformation
+      And the mic status is "idle"
+
+    @web
+    Scenario: Tapping the mic then cancelling discards the recording
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And load "customers-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      When user taps the mic button
+      Then the mic status is "latched"
+      When user presses Escape to cancel the recording
+      Then the mic status is "idle"
+      And no chat message is shown
+      And the spec has 0 transformations
+
   Rule: The waveform button mirrors the mic for voice-capable models
 
     @web
