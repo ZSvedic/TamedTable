@@ -1061,14 +1061,16 @@ step maps to one of five actions:
 
 - **load-file** — the controller loads the named fixture into the in-memory
   store and calls `loadInput`, replacing the current dataset. The open-file
-  button is highlighted. No dialog opens.
+  button is highlighted and the popover names the sample being opened —
+  **Open sample "customers-input.csv"**. No dialog opens.
 - **load-lookup** — the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
   No dataset is replaced. The open-file button is highlighted.
 - **prefill-chat** — the chat input is filled with the step's request text the
-  moment the step is **highlighted**, so the popover reads simply **"Run the
-  query"** instead of repeating it. Clicking **Next** submits the request
-  (`sendChat`) and clears the input. The chat input is highlighted.
+  moment the step is **highlighted**, so the popover reads simply **"Type and
+  run the query"** instead of repeating it. Clicking **Next** submits the request
+  (`sendChat`) and clears the input. The chat input is highlighted (on the phone
+  the Type sheet opens so the composer the spotlight lands on is on screen).
 - **show-golden** — the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
@@ -1077,7 +1079,9 @@ step maps to one of five actions:
   build the same spoken request the microphone would, and runs it through the
   engine in replay mode — so a voice tour transforms the table from the recorded
   cassette with **no API key**, exactly like a `prefill-chat` step does for typed
-  requests. The table view is highlighted.
+  requests. The **Speak** control is highlighted — the mic button on desktop, the
+  **Speak** dock button on the phone — and the popover reads **"Speak and run the
+  query"**. The clip plays for you; nothing is recorded.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its

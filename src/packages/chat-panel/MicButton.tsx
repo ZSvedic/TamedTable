@@ -35,12 +35,15 @@ export function MicButton({
   onStop,
   onCancel,
   size = DEFAULT_SIZE,
+  id,
 }: {
   status: VoiceButtonStatus;
   onStart: () => void;
   onStop: () => void;
   onCancel: () => void;
   size?: CSSProperties;
+  /** DOM id (e.g. for a Driver.js tour spotlight on the voice control). */
+  id?: string;
 }): ReactNode {
   const t = useTheme();
   const recording = status === 'recording';
@@ -83,6 +86,7 @@ export function MicButton({
   return (
     <button
       type="button"
+      id={id}
       className={recording ? 'cp-rec-ring' : undefined}
       onPointerDown={press}
       onPointerUp={release}

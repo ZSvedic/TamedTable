@@ -510,7 +510,7 @@ Zero-dep parser and driver. Several scenarios feed embedded Gherkin **doc-string
 | [load-file action from load "X"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses load-file | NA |
 | [load-lookup action from load the lookup table "X"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses load-lookup | NA |
 | [prefill-chat action from query "Y"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses prefill-chat | NA |
-| [play-audio action from Play voiceover: "X"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses play-audio | NA |
+| [play-audio action from speak "X"](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Parses play-audio | NA |
 | [the compare step is dropped — it collapses into the terminal stop](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | compare dropped; golden lifted | NA |
 | [Unrecognised (verification) steps are dropped from the tour](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | Non-action steps filtered | NA — kept: distinct contract (generic filtering vs the compare-step collapse) |
 | [the expected output step is lifted onto the scenario, not a step](packages/gherkin-tour/gherkin-tour.feature)<br>`@headless` | golden lifted to scenario | NA |

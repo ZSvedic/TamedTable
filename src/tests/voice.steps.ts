@@ -87,12 +87,12 @@ Given('the Gemini endpoint returns an error', function (this: TamedTableWorld) {
     );
 });
 
-// The tour `Play voiceover: "X"` step, exercised here as a plain @web scenario so
-// the recorder taps the cassette: it builds the same RequestAudio the mic release
+// The tour `speak "X"` step, exercised here as a plain @web scenario so the
+// recorder taps the cassette: it builds the same RequestAudio the mic release
 // would and runs it through the shared voice patch-turn path. Played as a
 // @tour tour, TutorialManager.executeTutorialStep drives the identical
 // request and replays this same recording, key-free.
-When('Play voiceover: {string}', async function (this: TamedTableWorld, clip: string) {
+When('speak {string}', async function (this: TamedTableWorld, clip: string) {
   const blob = fixtureAudio(clip);
   const audio = { data: new Uint8Array(await blob.arrayBuffer()), mediaType: blob.type };
   await controller(this).voice.sendAudioRequest(audio);

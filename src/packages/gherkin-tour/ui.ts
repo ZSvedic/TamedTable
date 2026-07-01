@@ -264,12 +264,17 @@ export class TourUi {
 //
 // A `query "…"` step is special: its text is typed into the chat box when the
 // step is highlighted, so the popover doesn't repeat it — it just tells the
-// learner to run what they can already see in the input.
+// learner to type-and-run what they can already see in the input. A `speak "…"`
+// step is the voice analogue: the clip plays for the learner, who watches the
+// Speak control it highlights.
 function asInstruction(text: string): string {
-  if (/^query "(.+)"$/.test(text)) return 'Run the query';
+  if (/^query "(.+)"$/.test(text)) return 'Type and run the query';
+  if (/^speak "(.+)"$/.test(text)) return 'Speak and run the query';
   // The load step opens a bundled sample (the UI's "Open sample…" action), so
   // the instruction names that action rather than echoing the Gherkin verb —
-  // "Load" reads as confusing next to an "Open sample…" button.
-  if (/^load "(.+)"$/.test(text)) return 'Open the sample';
+  // "Load" reads as confusing next to an "Open sample…" button — and names the
+  // file so the learner sees which sample opens.
+  const load = text.match(/^load "(.+)"$/);
+  if (load) return `Open sample "${load[1]}"`;
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }

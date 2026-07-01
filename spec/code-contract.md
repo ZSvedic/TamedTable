@@ -629,11 +629,12 @@ bar, `MobileTable` (frozen header + row-index column), the five-action
 (`KeyboardSheet` | `VoiceSheet` | `HistorySheet`), and `MenuDrawer`. The
 Settings panel, Open-sample / Open-URL dialogs, Toasts, and the
 `TutorialPanel`/`TourUi` overlays render in both layouts. The mobile
-table carries `id="tutorial-table-view"`, the Menu dock button carries
-`id="tutorial-open-btn"`, and the composer textarea carries
-`id="tutorial-chat-input"`, so the Driver.js tour targets resolve on
-mobile; `MobileShell` opens the Type sheet whenever the active tour
-step's element id is the chat input.
+table carries `id="tutorial-table-view"`, the empty-page **Open sample…**
+button carries `id="tutorial-open-btn"`, the composer textarea carries
+`id="tutorial-chat-input"`, and the **Speak** dock button carries
+`id="tutorial-speak"` (the desktop mic button carries the same id), so the
+Driver.js tour targets resolve in both layouts; `MobileShell` opens the
+Type sheet whenever the active tour step's element id is the chat input.
 
 The History sheet reads a timeline the journal now exposes:
 
@@ -966,7 +967,7 @@ filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
 holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and
-`play-audio` (matched from `Play voiceover: "<clip>"`).
+`play-audio` (matched from `speak "<clip>"`).
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename
@@ -1064,7 +1065,7 @@ voice turn and replays key-free.
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
-| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn`, `tutorial-chat-input`, or `tutorial-table-view`. |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), or `tutorial-table-view` (show-golden / display). |
 | `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing

@@ -268,6 +268,9 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
       key: 'speak',
       icon: 'mic',
       label: 'Speak',
+      // The voice tour's `speak` step spotlights this button (same id the
+      // desktop mic button carries), so the highlight resolves in both layouts.
+      id: 'tutorial-speak',
       disabled: !loaded || busy || !controller.voiceAvailable(),
       onClick: startVoice,
     },

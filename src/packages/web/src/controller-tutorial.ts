@@ -321,7 +321,7 @@ export class TutorialManager {
       case 'load-file':
       case 'load-lookup': return 'tutorial-open-btn';
       case 'prefill-chat': return 'tutorial-chat-input';
-      case 'play-audio':
+      case 'play-audio': return 'tutorial-speak';
       case 'show-golden':
       case 'golden-source':
       case 'display': return 'tutorial-table-view';

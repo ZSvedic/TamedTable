@@ -388,14 +388,18 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   );
 }
 
-// Tour steps read as imperative instructions ("load …", "query …", "compare
-// …"). The Gherkin keyword (Given/When/Then) is test-suite structure, not
-// something a learner needs — so the tour drops it and just capitalizes the
-// step text for display. A `query "…"` step's text is prefilled into the chat
-// box, so the instruction just tells the learner to run it.
+// Tour steps read as imperative instructions ("load …", "query …", "speak …").
+// The Gherkin keyword (Given/When/Then) is test-suite structure, not something a
+// learner needs — so the tour drops it and just capitalizes the step text for
+// display. This mirrors the popover copy the shared `TourUi` renders (gherkin-
+// tour/ui.ts). A `query "…"` step's text is prefilled into the chat box and a
+// `speak "…"` step plays its clip, so those instructions name the action.
 function asInstruction(text: string): string {
-  if (/^query "(.+)"$/.test(text)) return 'Run the query';
-  // The load step opens a bundled sample (matches the UI's "Open sample…").
-  if (/^load "(.+)"$/.test(text)) return 'Open the sample';
+  if (/^query "(.+)"$/.test(text)) return 'Type and run the query';
+  if (/^speak "(.+)"$/.test(text)) return 'Speak and run the query';
+  // The load step opens a bundled sample (matches the UI's "Open sample…"),
+  // named so the learner sees which file opens.
+  const load = text.match(/^load "(.+)"$/);
+  if (load) return `Open sample "${load[1]}"`;
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }

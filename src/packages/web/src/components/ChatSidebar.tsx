@@ -64,6 +64,7 @@ export function ChatSidebar({
         controller.voiceAvailable() ? (
           <>
             <MicButton
+              id="tutorial-speak"
               status={controller.voiceStatus}
               onStart={() => void controller.startVoice()}
               onStop={() => void controller.stopVoice()}
