@@ -17673,6 +17673,7 @@ function Toolbar({
   canUndo,
   canRedo,
   openButtonId,
+  condensed = false,
   onOpenSample,
   onOpenUrl,
   onOpenLocal,
@@ -17709,7 +17710,7 @@ function Toolbar({
         color: t.ink,
         dark
       }, undefined, false, undefined, this),
-      loaded && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+      loaded && !condensed && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
         "data-tb-info": "",
         style: {
           fontFamily: typography.mono,
@@ -17718,7 +17719,10 @@ function Toolbar({
           marginLeft: space.px6,
           paddingLeft: space.px10,
           borderLeft: `1px solid ${t.line}`,
-          whiteSpace: "nowrap"
+          whiteSpace: "nowrap",
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis"
         },
         children: [
           fileName && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
@@ -17755,7 +17759,7 @@ function Toolbar({
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
             name: "folder"
           }, undefined, false, undefined, this),
-          "Open sample…"
+          !condensed && "Open sample…"
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(SplitButton, {
@@ -17768,7 +17772,7 @@ function Toolbar({
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
             name: "save"
           }, undefined, false, undefined, this),
-          "Save data"
+          !condensed && "Save data"
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(SplitButton, {
@@ -17777,7 +17781,9 @@ function Toolbar({
         title: "Save the flow as a replayable .flow file (:save-flow)",
         caretTitle: "Save the flow as a .flow file or a Python script",
         menu: saveFlowMenu,
-        children: "Save flow"
+        children: condensed ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+          name: "code"
+        }, undefined, false, undefined, this) : "Save flow"
       }, undefined, false, undefined, this),
       divider,
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
@@ -17788,7 +17794,7 @@ function Toolbar({
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
             name: "undo"
           }, undefined, false, undefined, this),
-          "Undo"
+          !condensed && "Undo"
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
@@ -17799,7 +17805,7 @@ function Toolbar({
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
             name: "redo"
           }, undefined, false, undefined, this),
-          "Redo"
+          !condensed && "Redo"
         ]
       }, undefined, true, undefined, this),
       divider,
@@ -17817,13 +17823,15 @@ function Toolbar({
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
             name: "cog"
           }, undefined, false, undefined, this),
-          "Settings"
+          !condensed && "Settings"
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
         onClick: onOpenTutorial,
         title: "Interactive tours — no API key required",
-        children: "Tours"
+        children: condensed ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+          name: "tour"
+        }, undefined, false, undefined, this) : "Tours"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
