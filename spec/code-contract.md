@@ -622,7 +622,11 @@ tame?".
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on
 resize) instead of the desktop sidebar-plus-table tree. Both take the
-same `WebController`. The mobile components live in
+same `WebController`. Above that, a second hook `useIsNarrow()`
+(`max-width: NARROW_MAX_WIDTH`) drives the desktop `Toolbar`'s
+`condensed` prop: when true the toolbar hides the file readout and
+renders every action icon-only (tooltip retained), so the row fits
+without overflowing between the phone breakpoint and full desktop width. The mobile components live in
 `src/packages/web/src/components/mobile/`: `MobileShell` composes the app
 bar, `MobileTable` (frozen header + row-index column), the five-action
 `Dock` (Menu · Undo · History · Type · Speak), one bottom sheet

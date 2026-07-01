@@ -17,7 +17,13 @@ const SAVE_FORMATS: { id: FormatId; label: string }[] = [
   { id: 'arrow', label: 'Arrow' },
 ];
 
-export function Toolbar({ controller }: { controller: WebController }): ReactNode {
+export function Toolbar({
+  controller,
+  condensed = false,
+}: {
+  controller: WebController;
+  condensed?: boolean;
+}): ReactNode {
   useController(controller);
   const { toggle } = useThemeControls();
 
@@ -39,6 +45,7 @@ export function Toolbar({ controller }: { controller: WebController }): ReactNod
   return (
     <ToolbarBar
       openButtonId="tutorial-open-btn"
+      condensed={condensed}
       loaded={controller.isLoaded()}
       busy={controller.streaming}
       fileName={fileName}

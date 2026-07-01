@@ -839,6 +839,16 @@ turn. The **cell samples** section — shown only when at least one
 `{llm}` mutate transformation ran — lists up to 3 before→after pairs
 per column, formatted as `column: "before" → "after"`.
 
+#### Condensed toolbar (medium width)
+
+Between the full desktop width and the phone breakpoint there is a band where
+the top bar cannot fit all its labelled buttons in one row. Rather than let the
+bar overflow the viewport, the toolbar **condenses**: the file readout is
+hidden and every action button drops its text for an icon (the tooltip still
+names it), so Open, Save data, Save flow, Undo, Redo, the theme toggle,
+Settings, and Tours stay on one line that fits. Mobile-friendliness means the
+app never scrolls sideways at any width — the row condenses instead of spilling.
+
 #### Narrow viewport (mobile)
 
 At a phone-width viewport (768 px and below) the side-by-side

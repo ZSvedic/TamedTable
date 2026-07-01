@@ -5,9 +5,23 @@
 // switch, the dock, the menu drawer, the History/Type sheets, and the tour
 // running on a phone can only be seen here.
 import { test, expect } from '@playwright/test';
+import { NARROW_MAX_WIDTH } from '../src/hooks/useIsNarrow.ts';
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
+
+/** How far the document (or an element) scrolls past its own width — > 0 means
+ *  horizontal overflow, which a mobile-friendly layout must never have. */
+async function overflow(page: import('@playwright/test').Page): Promise<{ doc: number; bar: number }> {
+  return page.evaluate(() => {
+    const el = document.documentElement;
+    const bar = document.querySelector('[data-tb-toolbar=""]');
+    return {
+      doc: el.scrollWidth - el.clientWidth,
+      bar: bar ? bar.scrollWidth - bar.clientWidth : 0,
+    };
+  });
+}
 
 test.describe('phone width', () => {
   test.use({ viewport: PHONE });
@@ -93,5 +107,61 @@ test.describe('desktop width', () => {
     await page.goto('/TamedTable/app/');
     await expect(page.locator('[data-tb-toolbar=""]')).toBeVisible();
     await expect(page.locator('[data-mob-dock=""]')).toHaveCount(0);
+  });
+});
+
+// #Toolbar — the medium band between the phone breakpoint and full desktop
+// width: the toolbar must condense so the page never scrolls sideways.
+test.describe('medium width — the toolbar condenses instead of overflowing', () => {
+  // Every width above the phone breakpoint up to the condense threshold shows
+  // the (condensed) desktop toolbar and must not overflow.
+  for (const width of [780, 850, 940, 1024, NARROW_MAX_WIDTH]) {
+    test(`no horizontal overflow at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/TamedTable/app/');
+      await expect(page.locator('[data-tb-toolbar=""]')).toBeVisible();
+      const { doc, bar } = await overflow(page);
+      expect(doc, 'document must not scroll horizontally').toBeLessThanOrEqual(0);
+      expect(bar, 'toolbar must not overflow its width').toBeLessThanOrEqual(0);
+    });
+  }
+
+  // Rule out an overflow band *above* the threshold: at threshold+1px the
+  // toolbar first shows full labels (condensed turns off) — it must still fit.
+  // If this fails, the full-label toolbar needs more room: raise NARROW_MAX_WIDTH.
+  test(`no overflow just above the threshold at ${NARROW_MAX_WIDTH + 1}px (full labels)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: NARROW_MAX_WIDTH + 1, height: 800 });
+    await page.goto('/TamedTable/app/');
+    await expect(page.locator('[data-tb-toolbar=""]')).toBeVisible();
+    const { doc, bar } = await overflow(page);
+    expect(doc, 'document must not scroll horizontally').toBeLessThanOrEqual(0);
+    expect(bar, 'full-label toolbar must fit at threshold+1').toBeLessThanOrEqual(0);
+  });
+
+  // With a file loaded the toolbar also shows the file readout (which the
+  // condensed bar hides). The readout shrinks/truncates rather than spilling, so
+  // the toolbar itself never overflows at any width.
+  // (The desktop table's own horizontal scroll is a separate concern — a wide
+  // table scrolls the content area, not tracked by this toolbar test.)
+  test('the toolbar never overflows across the band with a file loaded', async ({ page }) => {
+    await page.setViewportSize({ width: DESKTOP.width, height: 800 });
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-tb-toolbar=""] [data-uk-split-main]').first().click();
+    const picker = page.locator('[data-tb-sample-dialog]');
+    await expect(picker).toBeVisible();
+    await picker.locator('[data-tb-sample]', { hasText: 'customers-input.csv' }).first().click();
+    await expect(page.locator('[data-tb-info]')).toContainText('rows', { timeout: 30_000 });
+
+    for (const width of [780, 960, NARROW_MAX_WIDTH + 1, DESKTOP.width]) {
+      await page.setViewportSize({ width, height: 800 });
+      // Wait for the condense re-render to settle before measuring: the readout
+      // is hidden when condensed (≤ threshold), shown otherwise.
+      const condensed = width <= NARROW_MAX_WIDTH;
+      await expect(page.locator('[data-tb-info]')).toHaveCount(condensed ? 0 : 1);
+      const { bar } = await overflow(page);
+      expect(bar, `toolbar must not overflow at ${width}px (loaded)`).toBeLessThanOrEqual(0);
+    }
   });
 });
