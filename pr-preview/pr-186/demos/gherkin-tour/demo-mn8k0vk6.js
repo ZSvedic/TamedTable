@@ -14,7 +14,7 @@ function classify(text) {
     return { kind: "golden-source", filename: golden[1] };
   if (text === "compare with the expected output")
     return { kind: "show-golden" };
-  const audio = text.match(/^Play voiceover: "(.+)"$/);
+  const audio = text.match(/^speak "(.+)"$/);
   if (audio)
     return { kind: "play-audio", filename: audio[1] };
   return { kind: "display" };
@@ -1011,9 +1011,12 @@ class TourUi {
 }
 function asInstruction(text) {
   if (/^query "(.+)"$/.test(text))
-    return "Run the query";
-  if (/^load "(.+)"$/.test(text))
-    return "Open the sample";
+    return "Type and run the query";
+  if (/^speak "(.+)"$/.test(text))
+    return "Speak and run the query";
+  const load = text.match(/^load "(.+)"$/);
+  if (load)
+    return `Open sample "${load[1]}"`;
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -1026,7 +1029,7 @@ var featureText = `Feature: Tour the gherkin-tour demo
   @tour
   Scenario: A quick tour of this page
     When query "keep rows where age >= 18"
-    And Play voiceover: "chime"
+    And speak "chime"
     Then the expected output is "adults"
     And compare with the expected output
 `;

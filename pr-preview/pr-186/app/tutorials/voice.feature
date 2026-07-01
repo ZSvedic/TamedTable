@@ -159,7 +159,7 @@ Feature: Voice input
   # #TutorialMode
   # A runnable, key-free voice tour for the marketing "Speak instead of type"
   # deep link. Run as a plain @web scenario it records/replays voice.json via
-  # the `Play voiceover` step (same request the mic release issues); played as a
+  # the `speak` step (same request the mic release issues); played as a
   # @tour tour it replays that same cassette with no key (see
   # tutorial.feature). The clip is the committed English "normalize DOB column".
   Rule: A spoken tour normalizes a column key-free
@@ -169,7 +169,7 @@ Feature: Voice input
       Given the TamedTable web app
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
-      And Play voiceover: "voice-normalize-dob.m4a"
+      And speak "voice-normalize-dob.m4a"
       Then the spec has 1 transformation
       And an assistant bubble is shown
 

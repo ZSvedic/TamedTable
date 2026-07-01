@@ -17910,7 +17910,8 @@ function MicButton({
   onLatch,
   onStop,
   onCancel,
-  size = DEFAULT_SIZE
+  size = DEFAULT_SIZE,
+  id
 }) {
   const t = useTheme();
   const recording = status === "recording";
@@ -18006,6 +18007,7 @@ function MicButton({
   const title = recording ? "Release to send · tap for hands-free · Esc to cancel" : sending ? "Transcribing…" : "Hold to record, or tap for hands-free";
   return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
     type: "button",
+    id,
     className: recording ? "cp-rec-ring" : undefined,
     onPointerDown: press,
     onPointerUp: release,
