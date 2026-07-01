@@ -32,6 +32,13 @@ Feature: UI kit package
       And brand accent is "#96BED7"
       And brand line is "#DCDCDC"
 
+    @headless
+    Scenario: Every on-color is readable on its surface in both themes
+      # inkOnInk on ink (primary button), inkOnAcc on accent — a mistuned token
+      # (e.g. an on-color left equal to its surface in dark mode) reads as
+      # white-on-white.
+      Then every on-color clearly contrasts with its surface in both themes
+
   Rule: The demo page exercises every component in a real browser
 
     @web
