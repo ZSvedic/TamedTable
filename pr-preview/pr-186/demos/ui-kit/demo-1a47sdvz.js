@@ -17207,7 +17207,7 @@ var tokens_default = {
       ink3: "oklch(0.62 0.020 240)",
       ink4: "oklch(0.48 0.025 240)",
       inkOnAcc: "oklch(0.26 0.13 287)",
-      inkOnInk: "oklch(0.96 0.010 89)",
+      inkOnInk: "oklch(0.26 0.13 287)",
       line: "oklch(0.32 0.05 287)",
       line2: "oklch(0.38 0.06 287)",
       ring: "oklch(0.77 0.06 240 / 0.65)",
