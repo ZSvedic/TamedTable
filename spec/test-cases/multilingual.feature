@@ -37,7 +37,7 @@ Feature: Multilingual requests
     @web
     Scenario: Spanish voice request
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-phone-es.m4a"
+      And a stub microphone that records "voice-normalize-phone-es.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
@@ -49,7 +49,7 @@ Feature: Multilingual requests
     @web
     Scenario: German voice request
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-phone-de.m4a"
+      And a stub microphone that records "voice-normalize-phone-de.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
@@ -61,7 +61,7 @@ Feature: Multilingual requests
     @web
     Scenario: French voice request
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-phone-fr.m4a"
+      And a stub microphone that records "voice-normalize-phone-fr.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
@@ -73,7 +73,7 @@ Feature: Multilingual requests
     @web
     Scenario: Croatian voice request
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-phone-hr.m4a"
+      And a stub microphone that records "voice-normalize-phone-hr.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
@@ -91,7 +91,7 @@ Feature: Multilingual requests
     @web
     Scenario: Chinese voice request — pipeline runs, synthetic audio mis-heard
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-phone-zh.m4a"
+      And a stub microphone that records "voice-normalize-phone-zh.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button

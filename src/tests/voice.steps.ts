@@ -36,7 +36,7 @@ function stubVoicePort(clip: string): VoicePort {
   };
 }
 
-Given('a stub microphone that plays {string}', function (this: TamedTableWorld, clip: string) {
+Given('a stub microphone that records {string}', function (this: TamedTableWorld, clip: string) {
   // Must be set before the controller builds lazily on the next "load".
   ctxOf(this).voicePort = stubVoicePort(clip);
 });

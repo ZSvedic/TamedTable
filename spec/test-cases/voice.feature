@@ -53,7 +53,7 @@ Feature: Voice input
     @web
     Scenario: Holding then releasing the mic produces a user bubble and an assistant reply
       Given the TamedTable web app
-      And a stub microphone that plays "voice-validate-dob.m4a"
+      And a stub microphone that records "voice-validate-dob.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
@@ -67,7 +67,7 @@ Feature: Voice input
     @web
     Scenario: A spoken "normalize DOB column" request applies a transformation
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-dob.m4a"
+      And a stub microphone that records "voice-normalize-dob.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
