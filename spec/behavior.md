@@ -1046,6 +1046,14 @@ prerequisite**, not a tour step: the file is written before the tour starts and
 the step is hidden, so a join tour reads Load → Run query rather than
 spotlighting a button the user never presses.
 
+When a tour starts, the app **returns to the empty state** — the current table
+is cleared — so the first step (always a Load) can spotlight the Open control
+the empty page shows. This matters on the phone, where the Open button only
+exists in the empty state: without the reset, starting a tour while a file was
+open would spotlight a button that isn't on screen, leaving a blank overlay
+instead of the first step. The tour then loads its own sample when the user
+advances.
+
 When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
 instruction, the **← Prev**, **Next →** and close (**×**) buttons, and a subtle

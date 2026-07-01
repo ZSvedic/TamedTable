@@ -115,6 +115,10 @@ Then('the table is loaded', function (this: TamedTableWorld) {
   assert.ok(rows.length > 0, 'table should have rows after load-file step');
 });
 
+Then('no table is loaded', function (this: TamedTableWorld) {
+  assert.equal(controller(this).isLoaded(), false, 'app should be in the empty state');
+});
+
 Then('the golden rows are available', function (this: TamedTableWorld) {
   assert.notEqual(controller(this).goldenRows, null, 'goldenRows should not be null');
 });
