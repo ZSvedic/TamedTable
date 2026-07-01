@@ -98,6 +98,21 @@ Feature: Web front-end
       When user saves as "out.jsonl"
       Then the status footer reports "saved"
 
+  Rule: Samples have their own picker, separate from the URL dialog
+
+    @web
+    Scenario: Opening the sample picker shows it
+      Given the TamedTable web app
+      When user opens the sample picker
+      Then the sample picker is shown
+
+    @web
+    Scenario: Closing the sample picker hides it
+      Given the TamedTable web app
+      And the sample picker is already open
+      When user closes the sample picker
+      Then the sample picker is hidden
+
   Rule: A URL is a first-class load source
 
     @web

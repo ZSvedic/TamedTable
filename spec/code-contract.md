@@ -610,11 +610,57 @@ the message inline and stays open. `WebControllerOptions.fetch`, when
 present, replaces the global `fetch` used here — the same hook the
 engine uses for cassette replay, so URL-load scenarios run offline.
 
-The toolbar's split-button (`SplitButton`) and the empty-state card's
-split-button share one component: the primary action opens the URL
-dialog, the dropdown carries **Open local…**. The two halves render
-inside one rounded shell with a single hover tint and no internal
-divider, so the pair reads as one control.
+The three load sources are first-class actions — **Open sample…**,
+**Open local…**, **Open URL…**. The toolbar renders them as one
+`SplitButton`: the primary action opens the sample picker, the dropdown
+carries **Open local…** and **Open URL…**. The two halves render inside
+one rounded shell with a single hover tint and no internal divider, so
+the pair reads as one control. The empty page stacks the same three as
+separate buttons under the brand mark and the line "What table can I
+tame?".
+
+At a viewport width of 768 px and below `AppShell` renders
+`<MobileShell>` (a `useIsMobile()` media-query hook flips it live on
+resize) instead of the desktop sidebar-plus-table tree. Both take the
+same `WebController`. Above that, a second hook `useIsNarrow()`
+(`max-width: NARROW_MAX_WIDTH`) drives the desktop `Toolbar`'s
+`condensed` prop: when true the toolbar hides the file readout and
+renders every action icon-only (tooltip retained), so the row fits
+without overflowing between the phone breakpoint and full desktop width. The mobile components live in
+`src/packages/web/src/components/mobile/`: `MobileShell` composes the app
+bar, `MobileTable` (frozen header + row-index column), the five-action
+`Dock` (Menu · Undo · History · Type · Speak), one bottom sheet
+(`KeyboardSheet` | `VoiceSheet` | `HistorySheet`), and `MenuDrawer`. The
+Settings panel, Open-sample / Open-URL dialogs, Toasts, and the
+`TutorialPanel`/`TourUi` overlays render in both layouts. The mobile
+table carries `id="tutorial-table-view"`, the empty-page **Open sample…**
+button carries `id="tutorial-open-btn"`, the composer textarea carries
+`id="tutorial-chat-input"`, and the **Speak** dock button carries
+`id="tutorial-speak"` (the desktop mic button carries the same id), so the
+Driver.js tour targets resolve in both layouts; `MobileShell` opens the
+Type sheet whenever the active tour step's element id is the chat input.
+
+The History sheet reads a timeline the journal now exposes:
+
+```ts
+interface TimelineStep { label: string; time: number; } // time: epoch ms
+// SpecJournal
+timeline(): { steps: TimelineStep[]; cursor: number }; // cursor: index of current step, -1 before the first
+jumpTo(index: number): TablePlan | undefined;          // moves the cursor; returns the spec to apply
+// WebController
+historyTimeline(): { steps: TimelineStep[]; cursor: number };
+jumpToHistory(index: number): Promise<void>;
+```
+
+`steps` is the full timeline oldest-first (the undo stack, then the redo
+stack in chronological order); `cursor` marks the current point (`-1`
+before the first step). `jumpTo` walks the stacks to the target, leaving
+undo/redo consistent, and returns the whole-spec snapshot to apply
+(`index = -1` returns the pre-first-step state). `jumpToHistory` applies
+it through the engine, so one tap moves the table the way the desktop
+Undo/Redo buttons do. `TourUi.render()` retries briefly when a step's
+target isn't mounted yet, so a lazily-opened sheet (the mobile composer)
+still gets its spotlight.
 
 ### Diagnostics log (#Diagnostics)
 
@@ -928,7 +974,7 @@ filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
 holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and
-`play-audio` (matched from `Play voiceover: "<clip>"`).
+`play-audio` (matched from `speak "<clip>"`).
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename
@@ -1026,7 +1072,7 @@ voice turn and replays key-free.
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
-| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn`, `tutorial-chat-input`, or `tutorial-table-view`. |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), or `tutorial-table-view` (show-golden / display). |
 | `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing

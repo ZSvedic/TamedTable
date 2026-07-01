@@ -30,7 +30,7 @@ function classify(text: string): TourAction {
 
   if (text === 'compare with the expected output') return { kind: 'show-golden' };
 
-  const audio = text.match(/^Play voiceover: "(.+)"$/);
+  const audio = text.match(/^speak "(.+)"$/);
   if (audio) return { kind: 'play-audio', filename: audio[1]! };
 
   return { kind: 'display' };

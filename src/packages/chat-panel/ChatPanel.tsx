@@ -212,6 +212,9 @@ export interface ChatPanelProps {
   helpLines?: string[];
   /** The host's mic button (or null when voice is unavailable). */
   micButton?: ReactNode;
+  /** Fill the parent (width + height 100%) instead of the fixed 360px sidebar
+   *  width — used when the panel rises as a mobile bottom sheet. */
+  fill?: boolean;
 }
 
 export function ChatPanel({
@@ -225,6 +228,7 @@ export function ChatPanel({
   emptyState,
   helpLines = [],
   micButton,
+  fill = false,
 }: ChatPanelProps): ReactNode {
   const t = useTheme();
   const [draft, setDraft] = useState('');
@@ -283,12 +287,14 @@ export function ChatPanel({
   return (
     <aside
       style={{
-        width: 360,
-        flex: '0 0 auto',
+        width: fill ? '100%' : 360,
+        height: fill ? '100%' : undefined,
+        flex: fill ? '1 1 auto' : '0 0 auto',
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         background: t.surface2,
-        borderRight: `1px solid ${t.line}`,
+        borderRight: fill ? 'none' : `1px solid ${t.line}`,
       }}
     >
       <style>{CP_CSS}</style>

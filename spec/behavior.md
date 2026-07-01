@@ -672,17 +672,25 @@ column-reorder happen through normal browser gestures but ultimately
 produce spec patches — the same shape the LLM produces — so undo/redo,
 history, and replay against the source all work unchanged.
 
-A table can be loaded from three sources: a local file, a remote
-`.csv`/`.jsonl` URL, or one of the bundled sample files. The toolbar
-offers one **Open URL or sample…** split-button: the primary click
-opens the URL dialog (which also lists the bundled samples — picking
-one fills the URL field), and the small dropdown reveals **Open
-local…**, which raises the native file picker. The empty-state card
-shown before any file is loaded mirrors that same split-button, so the
-two surfaces stay in sync. The split-button is rendered as a single
-control — one rounded shell, one shared hover tint, no internal
-divider between the label and the dropdown chevron — so it reads as
-one toolbar item rather than two adjacent menu entries.
+A table can be loaded from three sources, and each is its own
+first-class action: **Open sample…**, **Open local…**, and **Open
+URL…**. Samples are no longer buried inside the URL dialog — a user
+looking for a bundled file should not have to guess it lives behind
+"URL". The toolbar surfaces the three as one Open split-button: the
+primary click is **Open sample…** (it raises a small picker of the
+bundled sample files; clicking a sample loads it straight away), and
+the dropdown carries **Open local…** (the native file picker) and
+**Open URL…** (the URL dialog). The split-button is rendered as a
+single control — one rounded shell, one shared hover tint, no internal
+divider between the label and the dropdown chevron — so it reads as one
+toolbar item rather than two adjacent menu entries. The URL dialog is
+now URL-only: it accepts a typed address and no longer lists samples.
+
+Before any file is loaded the table area shows an **empty page**: the
+TamedTable mark, the line **"What table can I tame?"**, and the same
+three open actions stacked as buttons — **Open sample…**, **Open
+local…**, **Open URL…** — so the first run and the toolbar offer the
+identical choices.
 
 Saving data mirrors that shape. **Save data** is itself a split-button:
 the primary half writes the rows back in the format the table was
@@ -830,6 +838,67 @@ evaluation error) followed by the RFC 6902 patch ops JSON for that
 turn. The **cell samples** section — shown only when at least one
 `{llm}` mutate transformation ran — lists up to 3 before→after pairs
 per column, formatted as `column: "before" → "after"`.
+
+#### Condensed toolbar (medium width)
+
+Between the full desktop width and the phone breakpoint there is a band where
+the top bar cannot fit all its labelled buttons in one row. Rather than let the
+bar overflow the viewport, the toolbar **condenses**: the file readout is
+hidden and every action button drops its text for an icon (the tooltip still
+names it), so Open, Save data, Save flow, Undo, Redo, the theme toggle,
+Settings, and Tours stay on one line that fits. Mobile-friendliness means the
+app never scrolls sideways at any width — the row condenses instead of spilling.
+
+#### Narrow viewport (mobile)
+
+At a phone-width viewport (768 px and below) the side-by-side
+sidebar-and-table layout does not fit, so the app switches to a
+table-first **dock layout**. The same controller drives both — only the
+chrome differs; nothing about loading, transforming, saving, undo/redo,
+or the engine changes.
+
+- The desktop top bar collapses to a compact **app bar**: the brand
+  mark, the file name, and — when the table spans more than one page — a
+  `‹ page / total ›` pager with prev/next buttons (the same paging the
+  desktop pagination bar drives).
+- The table fills the screen below the app bar and scrolls in both
+  directions; its header row and row-index column stay frozen.
+- A persistent **bottom dock** carries five buttons — **Menu**,
+  **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
+  icons in both themes. Undo is a one-tap button (it greys when there is
+  nothing to undo). Undo, History, Type, and Speak are disabled until a
+  table is loaded; **Menu stays live** so Settings, Tours, and the open
+  actions are reachable even before a file is loaded.
+- **Menu** opens a left **drawer** with the actions that live in the
+  desktop toolbar: the three Open actions, Save data (and Save as…),
+  Save recipe (and Save as Python…), a dark-mode toggle, Settings, and
+  Tours.
+- **Type**, **Speak**, and **History** each raise a **sheet** that takes
+  the dock's place at the bottom, so the table stays in view above it:
+  - **Type** is a composer — a one-line field with a send button and a
+    row of tap-to-fill suggestion chips. The phone's own keyboard does
+    the typing. Sending runs the request and lowers the sheet; the
+    chevron-down button lowers it without sending.
+  - **Speak** records (a live waveform, nothing recognized yet); the send
+    button stops recording, transcribes, runs the request, and lowers the
+    sheet on its own. Cancel discards.
+  - **History** shows the undo timeline — newest at the top, the current
+    point highlighted, already-undone steps dimmed below it, a relative
+    time per step. Tapping a step jumps straight to it; **Undo** / **Redo**
+    step one at a time. It reads the same journal the desktop Undo/Redo
+    buttons walk, shown whole.
+- The settings panel, the URL dialog, the sample picker, and the Tours
+  panel open as full-width sheets rather than centered desktop cards.
+- A tour runs on mobile through the same engine as the desktop. A step
+  that highlights the chat input opens the Type sheet so the spotlight
+  lands on the visible composer; the load step (shown as **"Open the
+  sample"**) points at the empty page's **Open sample…** button, and a
+  table step points at the grid.
+
+The empty page, the dialogs, and every transformation behave
+identically to the desktop app; the dock layout is purely a
+presentation choice keyed off viewport width and flips live as the
+window (or device) is resized.
 
 → [code-contract.md — Extended transformations, SQL, and the web UI](code-contract.md#extended-transformations-sql-and-the-web-ui)
 
@@ -987,6 +1056,14 @@ prerequisite**, not a tour step: the file is written before the tour starts and
 the step is hidden, so a join tour reads Load → Run query rather than
 spotlighting a button the user never presses.
 
+When a tour starts, the app **returns to the empty state** — the current table
+is cleared — so the first step (always a Load) can spotlight the Open control
+the empty page shows. This matters on the phone, where the Open button only
+exists in the empty state: without the reset, starting a tour while a file was
+open would spotlight a button that isn't on screen, leaving a blank overlay
+instead of the first step. The tour then loads its own sample when the user
+advances.
+
 When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
 instruction, the **← Prev**, **Next →** and close (**×**) buttons, and a subtle
@@ -1013,14 +1090,16 @@ step maps to one of five actions:
 
 - **load-file** — the controller loads the named fixture into the in-memory
   store and calls `loadInput`, replacing the current dataset. The open-file
-  button is highlighted. No dialog opens.
+  button is highlighted and the popover names the sample being opened —
+  **Open sample "customers-input.csv"**. No dialog opens.
 - **load-lookup** — the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
   No dataset is replaced. The open-file button is highlighted.
 - **prefill-chat** — the chat input is filled with the step's request text the
-  moment the step is **highlighted**, so the popover reads simply **"Run the
-  query"** instead of repeating it. Clicking **Next** submits the request
-  (`sendChat`) and clears the input. The chat input is highlighted.
+  moment the step is **highlighted**, so the popover reads simply **"Type and
+  run the query"** instead of repeating it. Clicking **Next** submits the request
+  (`sendChat`) and clears the input. The chat input is highlighted (on the phone
+  the Type sheet opens so the composer the spotlight lands on is on screen).
 - **show-golden** — the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
@@ -1029,7 +1108,9 @@ step maps to one of five actions:
   build the same spoken request the microphone would, and runs it through the
   engine in replay mode — so a voice tour transforms the table from the recorded
   cassette with **no API key**, exactly like a `prefill-chat` step does for typed
-  requests. The table view is highlighted.
+  requests. The **Speak** control is highlighted — the mic button on desktop, the
+  **Speak** dock button on the phone — and the popover reads **"Speak and run the
+  query"**. The clip plays for you; nothing is recorded.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its

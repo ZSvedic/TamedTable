@@ -7,11 +7,32 @@ import { ChatSidebar } from './components/ChatSidebar.tsx';
 import { TableView } from './components/TableView.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { OpenUrlDialog } from './components/OpenUrlDialog.tsx';
+import { OpenSampleDialog } from './components/OpenSampleDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
 import { TutorialPanel } from './components/TutorialPanel.tsx';
+import { MobileShell } from './components/mobile/MobileShell.tsx';
+import { useIsMobile } from './hooks/useIsMobile.ts';
+import { useIsNarrow } from './hooks/useIsNarrow.ts';
+
+// The desktop layout: top toolbar over a chat sidebar beside the table. On the
+// medium band (wider than the phone breakpoint but too narrow for full button
+// labels) the toolbar condenses to icons so it never overflows.
+function DesktopShell({ controller }: { controller: WebController }): ReactNode {
+  const condensed = useIsNarrow();
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Toolbar controller={controller} condensed={condensed} />
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <ChatSidebar controller={controller} />
+        <TableView controller={controller} />
+      </div>
+    </div>
+  );
+}
 
 function AppShell({ controller }: { controller: WebController }): ReactNode {
   const t = useTheme();
+  const isMobile = useIsMobile();
   return (
     <div
       style={{
@@ -23,13 +44,15 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
         fontFamily: typography.ui,
       }}
     >
-      <Toolbar controller={controller} />
-      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <ChatSidebar controller={controller} />
-        <TableView controller={controller} />
-      </div>
+      {isMobile ? (
+        <MobileShell controller={controller} />
+      ) : (
+        <DesktopShell controller={controller} />
+      )}
+      {/* Shared overlays — fixed-position modals, identical on both layouts. */}
       <SettingsPanel controller={controller} />
       <TutorialPanel controller={controller} />
+      <OpenSampleDialog controller={controller} />
       <OpenUrlDialog controller={controller} />
       <Toasts controller={controller} />
     </div>

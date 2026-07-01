@@ -156,7 +156,13 @@ export class TutorialManager {
     this.activeTour = tour;
     // Entering replay mode: rebuild the engine pinned to the recording config so
     // the request the tour issues fingerprints identically to what was taped.
+    // Return to the empty state (like cancelTutorial) so the first step — always
+    // a Load — spotlights the Open control the empty page shows. On the phone the
+    // Open button exists only in the empty state, so without this a tour started
+    // over a loaded file would spotlight nothing and show a blank overlay.
     this.host.engine.reset();
+    this.host.loaded = false;
+    this.host.sourcePath = '';
     for (const step of lookups) {
       if (step.action.kind === 'load-lookup') await this.writeLookup(step.action.filename);
     }
@@ -321,7 +327,7 @@ export class TutorialManager {
       case 'load-file':
       case 'load-lookup': return 'tutorial-open-btn';
       case 'prefill-chat': return 'tutorial-chat-input';
-      case 'play-audio':
+      case 'play-audio': return 'tutorial-speak';
       case 'show-golden':
       case 'golden-source':
       case 'display': return 'tutorial-table-view';

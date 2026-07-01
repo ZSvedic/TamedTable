@@ -62,6 +62,10 @@ export interface Theme {
   cellHi2: string;
   shadow: string;
   shadowLg: string;
+  // mobile action dock — a dark bar with white icons in both themes
+  dockBg: string;
+  dockInk: string;
+  dockBorder: string;
 }
 
 // Light — cool pale-blue Mist ground, Aubergine ink. The default theme.

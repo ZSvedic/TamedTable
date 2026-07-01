@@ -53,6 +53,18 @@ Feature: Tutorial panel
       Then the tutorial panel is not shown
 
     @web
+    Scenario: Starting a tour from a loaded file returns to the empty state
+      # The first step spotlights the Open control, which on the phone exists only
+      # in the empty state — so a tour started over a loaded file must clear it,
+      # or the spotlight lands on nothing and the step shows a blank overlay.
+      Given the TamedTable web app
+      And load "filter-input.csv"
+      And the tutorial "Filter by Country" is selected
+      When user plays the tutorial
+      Then no table is loaded
+      And the tutorial is at step 1
+
+    @web
     Scenario: Next executes the current step and advances
       Given the TamedTable web app
       And the tutorial "Filter by Country" is selected

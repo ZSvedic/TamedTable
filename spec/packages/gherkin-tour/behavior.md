@@ -58,7 +58,7 @@ match by `(feature, name)`.
 | `query "Y"` | `prefill-chat` (text `Y`) |
 | `the expected output is "X"` | `golden-source` (filename `X`) |
 | `compare with the expected output` | `show-golden` |
-| `Play voiceover: "X"` | `play-audio` (filename `X`) |
+| `speak "X"` | `play-audio` (filename `X`) |
 | anything else | `display` |
 
 Only the text matters — the keyword (`Given`/`When`/`Then`/`And`/`But`) does not.
@@ -131,9 +131,12 @@ package customizes, and why it differs from a plain Driver.js tour:
   `doneDescription` — the app passes `Voilà, "<tour>" is done.` — numbered "N of
   N", with the Done button.
 - **Instruction text.** The Gherkin keyword is dropped and the first letter
-  capitalized (`load "x.csv"` → `Load "x.csv"`). A `query "…"` step is special:
-  its text is typed into the host's chat input when highlighted, so the popover
-  reads just **"Run the query"**.
+  capitalized. Three steps name their UI action instead of echoing the verb: a
+  `load "x.csv"` step reads **`Open sample "x.csv"`** (it drives the host's "Open
+  sample…" action, naming the file); a `query "…"` step — whose text is typed
+  into the host's chat input when highlighted — reads just **"Type and run the
+  query"**; and a `speak "…"` step reads **"Speak and run the query"** (the clip
+  plays for the learner).
 - **Theming.** `TourUi` ships no color literals. Pass an optional `theme`
   (`background`, `text`, `border`, `accent`) to tint the popover box,
   description, progress, and Next button to the host's palette; omit it to keep

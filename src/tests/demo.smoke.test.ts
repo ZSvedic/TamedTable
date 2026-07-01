@@ -171,7 +171,10 @@ describe.skipIf(skip)('demo smoke', () => {
       `(document.querySelector('#out')?.textContent ?? '').includes('save data')`,
     );
 
-    await page.click('[data-tb-toolbar] button:has-text("Open URL")');
+    // Open URL moved into the Open split button's dropdown menu: click the
+    // first split button's caret, then the "Open URL…" menu item.
+    await page.locator('[data-tb-toolbar] [data-uk-split-caret]').first().click();
+    await page.click('[data-uk-menu-item="Open URL…"]');
     await page.waitForSelector('[data-tb-dialog]');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);

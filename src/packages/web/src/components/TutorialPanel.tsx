@@ -6,10 +6,12 @@ import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
+import { useIsMobile } from '../hooks/useIsMobile.ts';
 
 export function TutorialPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
+  const isMobile = useIsMobile();
 
   const open = controller.tutorialOpen;
   const active = controller.isTutorialActive();
@@ -43,8 +45,10 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       cancel:               () => { controller.cancelTutorial(); },
     };
     const ui = new TourUi(cursor, {
-      // On the terminal stop the step's own target may be gone — anchor to the table.
-      doneElementId: 'tutorial-table-view',
+      // On the terminal stop the step's own target may be gone — anchor to the
+      // table on desktop, but on mobile the table fills the screen and the
+      // popover lands mid-data, so anchor to the compact app bar at the top.
+      doneElementId: isMobile ? 'tutorial-mobile-top' : 'tutorial-table-view',
       // The terminal stop's "Voilà …" celebration, shown after the last real
       // step has run, numbered "N of N" with a Done button.
       doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,
@@ -384,12 +388,18 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   );
 }
 
-// Tour steps read as imperative instructions ("load …", "query …", "compare
-// …"). The Gherkin keyword (Given/When/Then) is test-suite structure, not
-// something a learner needs — so the tour drops it and just capitalizes the
-// step text for display. A `query "…"` step's text is prefilled into the chat
-// box, so the instruction just tells the learner to run it.
+// Tour steps read as imperative instructions ("load …", "query …", "speak …").
+// The Gherkin keyword (Given/When/Then) is test-suite structure, not something a
+// learner needs — so the tour drops it and just capitalizes the step text for
+// display. This mirrors the popover copy the shared `TourUi` renders (gherkin-
+// tour/ui.ts). A `query "…"` step's text is prefilled into the chat box and a
+// `speak "…"` step plays its clip, so those instructions name the action.
 function asInstruction(text: string): string {
-  if (/^query "(.+)"$/.test(text)) return 'Run the query';
+  if (/^query "(.+)"$/.test(text)) return 'Type and run the query';
+  if (/^speak "(.+)"$/.test(text)) return 'Speak and run the query';
+  // The load step opens a bundled sample (matches the UI's "Open sample…"),
+  // named so the learner sees which file opens.
+  const load = text.match(/^load "(.+)"$/);
+  if (load) return `Open sample "${load[1]}"`;
   return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }

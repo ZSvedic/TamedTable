@@ -1,6 +1,6 @@
 # #Toolbar
-# The top-bar package: brand lockup, file readout, action buttons, and the
-# "Open from URL" dialog with sample-file quick-picks.
+# The top-bar package: brand lockup, file readout, action buttons, the
+# sample picker, and the "Open from URL" dialog.
 Feature: Toolbar package
 
   Rule: Sample-file labels come from the filename extension
@@ -50,8 +50,9 @@ Feature: Toolbar package
       And the toolbar URL dialog is closed
 
     @web
-    Scenario: Picking a sample fills the URL field
+    Scenario: Picking a sample loads it straight away
       Given the toolbar demo page
-      When the user opens the toolbar URL dialog
+      When the user opens the toolbar sample picker
       And the user picks the first toolbar sample
-      Then the toolbar URL field is not empty
+      Then the toolbar event log shows "open sample https://example.com/customers-input.csv"
+      And the toolbar sample picker is closed

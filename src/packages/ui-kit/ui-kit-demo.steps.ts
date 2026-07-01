@@ -133,11 +133,17 @@ Then('the demo log shows {string}', async function (this: DemoWorld, expected: s
   }
 });
 
-Then('the demo renders all 20 icon names', async function (this: DemoWorld) {
-  const distinct = await page(this).evaluate(
-    `new Set([...document.querySelectorAll('[data-uk-icon]')].map((el) => el.getAttribute('data-uk-icon'))).size`,
-  );
-  assert.equal(distinct, 20);
+Then('the demo renders every icon name', async function (this: DemoWorld) {
+  // The demo exposes the catalogue size on the icon grid, so this stays correct
+  // as icons are added without re-hardcoding a count here.
+  const { distinct, expected } = (await page(this).evaluate(
+    `(() => ({
+       distinct: new Set([...document.querySelectorAll('[data-uk-icon]')].map((el) => el.getAttribute('data-uk-icon'))).size,
+       expected: Number(document.querySelector('[data-icon-count]')?.getAttribute('data-icon-count')),
+     }))()`,
+  )) as { distinct: number; expected: number };
+  assert.ok(expected >= 24, `expected at least 24 icons, demo reports ${expected}`);
+  assert.equal(distinct, expected);
 });
 
 When('the user clicks the theme toggle', async function (this: DemoWorld) {

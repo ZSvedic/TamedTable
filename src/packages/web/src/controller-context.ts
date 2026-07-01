@@ -42,6 +42,7 @@ export interface ControllerHost {
   savedLabel: string | null;
   dialog: DialogKind;
   urlDialogOpen: boolean;
+  sampleDialogOpen: boolean;
   settingsOpen: boolean;
   expandedProvider: Provider | null;
   voiceStatus: VoiceStatus;

@@ -36,7 +36,10 @@ const TT_LIGHT = {
   "cellHi": "oklch(0.86 0.08 240)",
   "cellHi2": "oklch(0.93 0.04 240)",
   "shadow": "0 1px 2px rgba(40,28,96,.05), 0 4px 16px rgba(40,28,96,.07)",
-  "shadowLg": "0 10px 32px rgba(40,28,96,.14), 0 1px 0 rgba(40,28,96,.04)"
+  "shadowLg": "0 10px 32px rgba(40,28,96,.14), 0 1px 0 rgba(40,28,96,.04)",
+  "dockBg": "oklch(0.26 0.13 287)",
+  "dockInk": "oklch(1 0 0 / 0.86)",
+  "dockBorder": "oklch(0.26 0.13 287)"
 };
 const TT_DARK = {
   "name": "dark",
@@ -50,7 +53,7 @@ const TT_DARK = {
   "ink3": "oklch(0.62 0.020 240)",
   "ink4": "oklch(0.48 0.025 240)",
   "inkOnAcc": "oklch(0.26 0.13 287)",
-  "inkOnInk": "oklch(0.96 0.010 89)",
+  "inkOnInk": "oklch(0.26 0.13 287)",
   "line": "oklch(0.32 0.05 287)",
   "line2": "oklch(0.38 0.06 287)",
   "ring": "oklch(0.77 0.06 240 / 0.65)",
@@ -66,7 +69,10 @@ const TT_DARK = {
   "cellHi": "oklch(0.46 0.10 240)",
   "cellHi2": "oklch(0.34 0.07 240)",
   "shadow": "0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.40)",
-  "shadowLg": "0 12px 40px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04)"
+  "shadowLg": "0 12px 40px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04)",
+  "dockBg": "#0c0c11",
+  "dockInk": "#ffffff",
+  "dockBorder": "oklch(1 0 0 / 0.10)"
 };
 const TT_TYPE = {
   "ui": "\"Inter\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",

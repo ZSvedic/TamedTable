@@ -65,7 +65,7 @@ function Demo(): ReactNode {
 
       <div style={section}>
         <p style={heading}>Icons</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+        <div data-icon-count={ICON_NAMES.length} style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {ICON_NAMES.map((name) => (
             <span
               key={name}

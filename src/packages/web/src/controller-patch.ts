@@ -3,7 +3,7 @@
 // (the surface-agnostic snapshot stack) lives in @tamedtable/headless; this
 // manager applies an entry's spec back through the engine and turns cell edits
 // and column reorders into ordinary, replayable spec patches.
-import { SpecJournal, type JournalEntry } from '@tamedtable/headless';
+import { SpecJournal, type JournalEntry, type TimelineStep } from '@tamedtable/headless';
 import type { TablePlan } from '@tamedtable/core';
 import type { ControllerHost } from './controller-context.ts';
 
@@ -41,6 +41,23 @@ export class PatchManager {
   /** The undo journal, oldest first — one entry per spec-changing turn. */
   history(): Array<{ label: string }> {
     return this.journal.entries();
+  }
+
+  /** The full history timeline (done + undone) and the current cursor — the
+   *  mobile History sheet reads this. */
+  timeline(): { steps: TimelineStep[]; cursor: number } {
+    return this.journal.timeline();
+  }
+
+  /** Jump straight to a timeline step (the History sheet's tap-to-jump). Walks
+   *  the journal to `index` and applies the resulting spec in one move. */
+  async jumpTo(index: number): Promise<void> {
+    const spec = this.journal.jumpTo(index);
+    if (!spec) return;
+    await this.host.engine.ensureHeadless().setSpec(spec);
+    this.host.savedLabel = null;
+    this.host.selection = null;
+    this.host.notify();
   }
 
   // ── Undo / redo ──────────────────────────────────────────────────────────

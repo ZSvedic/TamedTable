@@ -300,6 +300,28 @@ Then('the URL dialog is hidden', function (this: TamedTableWorld) {
   assert.equal(controller(this).urlDialogOpen, false);
 });
 
+// ── Sample picker ────────────────────────────────────────────────────────────
+
+When('user opens the sample picker', function (this: TamedTableWorld) {
+  controller(this).openSampleDialog();
+});
+
+When('user closes the sample picker', function (this: TamedTableWorld) {
+  controller(this).closeSampleDialog();
+});
+
+Given('the sample picker is already open', function (this: TamedTableWorld) {
+  controller(this).openSampleDialog();
+});
+
+Then('the sample picker is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).sampleDialogOpen, true);
+});
+
+Then('the sample picker is hidden', function (this: TamedTableWorld) {
+  assert.equal(controller(this).sampleDialogOpen, false);
+});
+
 Given(
   'the URL {string} serves {string}',
   async function (this: TamedTableWorld, url: string, fixture: string) {

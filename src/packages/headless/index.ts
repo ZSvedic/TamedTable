@@ -20,7 +20,7 @@ import {
   type Transformation,
 } from '@tamedtable/core';
 
-export { SpecJournal, type JournalEntry } from './journal.ts';
+export { SpecJournal, type JournalEntry, type TimelineStep } from './journal.ts';
 
 export type ChunkUpdate = {
   transformationIndex: number;

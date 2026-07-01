@@ -4,4 +4,5 @@
 
 export { Toolbar, type ToolbarProps, type SaveMenuItem } from './Toolbar.tsx';
 export { OpenUrlDialog, type OpenUrlDialogProps } from './OpenUrlDialog.tsx';
+export { OpenSampleDialog, type OpenSampleDialogProps } from './OpenSampleDialog.tsx';
 export { Mark, Wordmark, Lockup } from './Brand.tsx';

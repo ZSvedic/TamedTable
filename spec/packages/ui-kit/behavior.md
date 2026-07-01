@@ -38,6 +38,13 @@ exporting the brand system as plain objects — no React:
 - `lightTheme` / `darkTheme` — two `Theme` objects sharing one shape: surfaces,
   ink levels, lines, accent + semantic colors, highlights, shadows
 
+Each **on-color** names the label to place on a matching filled surface —
+`inkOnInk` on an `ink` fill (the primary button), `inkOnAcc` on an `accent`
+fill. In **both** themes an on-color must contrast with its surface: their
+`oklch` lightness differs by a clear margin, so a primary button is never, say,
+near-white text on a near-white fill. A guard test enforces this — it is how a
+mistuned token (an on-color left equal to its surface in one theme) is caught.
+
 Components read the active theme through `useTheme()` and never hard-code a
 color, so the visual design lives in this one package. Other library packages
 keep their namespaced CSS custom properties; the host sets those variables

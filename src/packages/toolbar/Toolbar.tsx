@@ -27,6 +27,10 @@ export interface ToolbarProps {
   canRedo: boolean;
   /** DOM id for the Open split button — the Driver.js tutorial spotlight. */
   openButtonId?: string;
+  /** Medium width: hide the file readout and drop button labels to icons
+   *  (tooltips retained) so the row fits instead of overflowing. */
+  condensed?: boolean;
+  onOpenSample: () => void;
   onOpenUrl: () => void;
   onOpenLocal: () => void;
   onSaveData: () => void;
@@ -51,6 +55,8 @@ export function Toolbar({
   canUndo,
   canRedo,
   openButtonId,
+  condensed = false,
+  onOpenSample,
   onOpenUrl,
   onOpenLocal,
   onSaveData,
@@ -88,7 +94,7 @@ export function Toolbar({
     >
       <Lockup size={typography.size.md} color={t.ink} dark={dark} />
 
-      {loaded && (
+      {loaded && !condensed && (
         <span
           data-tb-info=""
           style={{
@@ -99,6 +105,9 @@ export function Toolbar({
             paddingLeft: space.px10,
             borderLeft: `1px solid ${t.line}`,
             whiteSpace: 'nowrap',
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
         >
           {fileName && <>{fileName} <span style={{ color: t.ink4 }}>·</span> </>}
@@ -110,14 +119,17 @@ export function Toolbar({
 
       <SplitButton
         id={openButtonId}
-        onClick={onOpenUrl}
+        onClick={onOpenSample}
         disabled={busy}
-        title="Open a CSV or JSONL file from a URL"
+        title="Open a bundled sample file"
         caretTitle="More open options"
-        menu={[{ label: 'Open local…', onClick: onOpenLocal }]}
+        menu={[
+          { label: 'Open local…', onClick: onOpenLocal },
+          { label: 'Open URL…', onClick: onOpenUrl },
+        ]}
       >
         <Icon name="folder" />
-        Open URL…
+        {!condensed && 'Open sample…'}
       </SplitButton>
       <SplitButton
         onClick={onSaveData}
@@ -127,7 +139,7 @@ export function Toolbar({
         menu={saveDataMenu}
       >
         <Icon name="save" />
-        Save data
+        {!condensed && 'Save data'}
       </SplitButton>
       <SplitButton
         onClick={onSaveFlow}
@@ -136,18 +148,18 @@ export function Toolbar({
         caretTitle="Save the flow as a .flow file or a Python script"
         menu={saveFlowMenu}
       >
-        Save flow
+        {condensed ? <Icon name="code" /> : 'Save flow'}
       </SplitButton>
 
       {divider}
 
       <Button onClick={onUndo} disabled={!canUndo || busy} title="Undo (:undo)">
         <Icon name="undo" />
-        Undo
+        {!condensed && 'Undo'}
       </Button>
       <Button onClick={onRedo} disabled={!canRedo || busy} title="Redo (:redo)">
         <Icon name="redo" />
-        Redo
+        {!condensed && 'Redo'}
       </Button>
 
       {divider}
@@ -160,10 +172,10 @@ export function Toolbar({
       </Button>
       <Button onClick={onOpenSettings} title="API key and settings">
         <Icon name="cog" />
-        Settings
+        {!condensed && 'Settings'}
       </Button>
       <Button onClick={onOpenTutorial} title="Interactive tours — no API key required">
-        Tours
+        {condensed ? <Icon name="tour" /> : 'Tours'}
       </Button>
     </header>
   );

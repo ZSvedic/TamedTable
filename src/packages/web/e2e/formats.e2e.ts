@@ -13,7 +13,8 @@ for (const { label, file } of [
 ]) {
   test(`${label} loads in the browser and renders the table`, async ({ page }) => {
     await page.goto('/TamedTable/app/');
-    await page.locator('button[title="Open a CSV or JSONL file from a URL"]').click();
+    await page.locator('[data-uk-split-caret]').first().click();
+  await page.locator('[data-uk-menu-item="Open URL…"]').click();
     const dialog = page.locator('[data-tb-dialog]');
     await dialog.locator('[data-tb-url-input]').fill(`${BASE}/samples/${file}`);
     await dialog.getByRole('button', { name: 'Load' }).click();
@@ -41,7 +42,8 @@ test('Save data writes a real Parquet in the browser (hyparquet-writer)', async 
   });
   await page.goto('/TamedTable/app/');
   // Load the Parquet sample.
-  await page.locator('button[title="Open a CSV or JSONL file from a URL"]').click();
+  await page.locator('[data-uk-split-caret]').first().click();
+  await page.locator('[data-uk-menu-item="Open URL…"]').click();
   const dialog = page.locator('[data-tb-dialog]');
   await dialog.locator('[data-tb-url-input]').fill(`${BASE}/samples/customers-input.parquet`);
   await dialog.getByRole('button', { name: 'Load' }).click();

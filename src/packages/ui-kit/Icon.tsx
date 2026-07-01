@@ -25,7 +25,19 @@ export type IconName =
   | 'moon'
   | 'mic'
   | 'wave'
-  | 'copy';
+  | 'copy'
+  | 'menu'
+  | 'keyboard'
+  | 'link'
+  | 'sparkle'
+  | 'clock'
+  | 'play'
+  | 'file'
+  | 'code'
+  | 'tour'
+  | 'check'
+  | 'chevLeft'
+  | 'chevRight';
 
 const PATHS: Record<IconName, string> = {
   folder:
@@ -50,14 +62,49 @@ const PATHS: Record<IconName, string> = {
   // An audio waveform — five bars of rising/falling height for continuous voice.
   wave: 'M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3',
   copy: 'M6 6h7v7H6Z M10 6V3.5A.5.5 0 0 0 9.5 3h-6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5H6',
+  // Hamburger menu — three rules.
+  menu: 'M2.5 4.5h11 M2.5 8h11 M2.5 11.5h11',
+  // On-screen keyboard — wider rounded frame, five evenly-spaced key dots, and a
+  // space bar (the mobile prototype's glyph — reads crisp at the dock's 28px).
+  keyboard:
+    'M2 4.75h12A1.25 1.25 0 0 1 15.25 6v4A1.25 1.25 0 0 1 14 11.25H2A1.25 1.25 0 0 1 .75 10V6A1.25 1.25 0 0 1 2 4.75Z M3.4 7.4h.01 M5.7 7.4h.01 M8 7.4h.01 M10.3 7.4h.01 M12.6 7.4h.01 M5.2 9.6h5.6',
+  // Chain link.
+  link: 'M6.6 9.4 9.4 6.6 M7.2 5 8.2 4a2.5 2.5 0 0 1 3.5 3.5l-1 1 M8.8 11l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1',
+  // Four-point sparkle.
+  sparkle: 'M8 2.5 9.2 5.8 12.5 7 9.2 8.2 8 11.5 6.8 8.2 3.5 7 6.8 5.8Z',
+  // Clock — the undo-history dock action.
+  clock: 'M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M8 5.3V8l2 1.3',
+  // Filled play triangle — the voice-sheet send control.
+  play: 'M5 3.4 12.5 8 5 12.6Z',
+  // Document — Save recipe.
+  file: 'M9 2H4.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5z M9 2v3h3',
+  // Angle brackets — Save recipe as Python.
+  code: 'M6 5 3 8l3 3 M10 5l3 3-3 3',
+  // Compass — Tours.
+  tour: 'M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M10.3 5.7 9 9 5.7 10.3 7 7z',
+  // Check — the selected sample/option.
+  check: 'm3 8 3.5 3.5L13 5',
+  // Left / right chevrons — the app-bar pager.
+  chevLeft: 'M10 4 6 8l4 4',
+  chevRight: 'M6 4l4 4-4 4',
 };
 
 /** Every icon name, in catalogue order — the demo's icon grid renders these. */
 export const ICON_NAMES = Object.keys(PATHS) as IconName[];
 
-const FILLED: ReadonlySet<IconName> = new Set<IconName>(['stop']);
+const FILLED: ReadonlySet<IconName> = new Set<IconName>(['stop', 'play']);
 
-export function Icon({ name, size = 14 }: { name: IconName; size?: number }): ReactNode {
+export function Icon({
+  name,
+  size = 14,
+  strokeWidth = 1.5,
+}: {
+  name: IconName;
+  size?: number;
+  /** Stroke weight. The default suits 14–20px; the mobile dock renders larger
+   *  glyphs (28px) at a thinner ~1.15 so they read crisp, not chunky. */
+  strokeWidth?: number;
+}): ReactNode {
   return (
     <svg
       data-uk-icon={name}
@@ -66,7 +113,7 @@ export function Icon({ name, size = 14 }: { name: IconName; size?: number }): Re
       viewBox="0 0 16 16"
       fill={FILLED.has(name) ? 'currentColor' : 'none'}
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ flex: '0 0 auto', display: 'block' }}

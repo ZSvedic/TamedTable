@@ -14,7 +14,7 @@
 // see controller-context.ts. The delegating methods keep the public surface on
 // one object; each method's contract is documented on the manager it calls.
 
-import type { ChunkUpdate, RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
+import type { ChunkUpdate, RequestAudio, RequestDebugInfo, TimelineStep } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
@@ -96,6 +96,8 @@ export class WebController implements ControllerHost {
   dialog: DialogKind = null;
   /** Whether the Open URL modal dialog is showing. */
   urlDialogOpen = false;
+  /** Whether the Open-sample picker dialog is showing. */
+  sampleDialogOpen = false;
   streaming = false;
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
@@ -282,6 +284,10 @@ export class WebController implements ControllerHost {
   canRedo(): boolean { return this.patch.canRedo(); }
   /** The undo journal, oldest first — one entry per spec-changing turn. */
   history(): Array<{ label: string }> { return this.patch.history(); }
+  /** The full history timeline (done + undone) plus the current cursor. */
+  historyTimeline(): { steps: TimelineStep[]; cursor: number } { return this.patch.timeline(); }
+  /** Jump straight to a timeline step (mobile History sheet tap-to-jump). */
+  jumpToHistory(index: number): Promise<void> { return this.patch.jumpTo(index); }
   undo(): Promise<void> { return this.patch.undo(); }
   redo(): Promise<void> { return this.patch.redo(); }
   editCell(rowIndex: number, column: string, value: string): Promise<void> {
@@ -294,6 +300,8 @@ export class WebController implements ControllerHost {
   openCsv(): Promise<void> { return this.files.openCsv(); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
+  openSampleDialog(): void { this.files.openSampleDialog(); }
+  closeSampleDialog(): void { this.files.closeSampleDialog(); }
   loadFromUrl(url: string): Promise<void> { return this.files.loadFromUrl(url); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
   savePython(): Promise<void> { return this.files.savePython(); }
