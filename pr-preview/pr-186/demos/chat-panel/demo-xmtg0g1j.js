@@ -17994,7 +17994,7 @@ function MicButton({
             ...size,
             border: `1px solid ${t.accent}`,
             background: t.accent,
-            color: t.inkOnInk,
+            color: t.inkOnAcc,
             cursor: "pointer"
           },
           children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {

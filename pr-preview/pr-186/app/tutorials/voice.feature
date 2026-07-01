@@ -94,7 +94,7 @@ Feature: Voice input
     @web
     Scenario: Tapping the mic latches recording, then send applies the request
       Given the TamedTable web app
-      And a stub microphone that plays "voice-normalize-dob.m4a"
+      And a stub microphone that records "voice-normalize-dob.m4a"
       And load "customers-input.csv"
       And the provider "gemini" has API key "AIza-example-key"
       When user taps the mic button
