@@ -11,3 +11,4 @@ temp/*
 .claude/worktrees/
 src/packages/web/test-results/
 src/packages/web/playwright-report/
+marketing/video/out/

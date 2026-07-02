@@ -1,0 +1,311 @@
+<!doctype html>
+<!-- TamedTable demo-video timeline. Deterministic: window.seek(ms) draws the
+     exact frame at time ms. Params: ?ratio=16x9|9x16 picks the framing,
+     ?lang=en|es picks the caption/voiceover language. One world (a vertical
+     filmstrip: brand open -> app -> brand close); a virtual camera pans and
+     zooms across it. 20 seconds. See demo-video-plan.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --ink:#281C60; --accent:#96BED7; --grid:#DCDCDC; --linen:#F6F2EB; --white:#fff;
+    --sans:"Inter",ui-sans-serif,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --brand:"Outfit",ui-sans-serif,system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#000}
+  #stage{position:relative;overflow:hidden;background:var(--linen)}
+  #world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+
+  .panel{position:absolute;width:1200px;display:flex;flex-direction:column;
+         align-items:center;justify-content:center;gap:22px}
+  .mark{position:relative}
+  .cell{position:absolute}
+  .wordmark{font-family:var(--brand);font-weight:500;font-variant-caps:small-caps;
+            letter-spacing:.01em;color:var(--ink);font-size:66px;line-height:1}
+  .tagline{font-family:var(--sans);font-weight:600;color:var(--ink);font-size:40px}
+  .url{font-family:var(--mono);color:var(--ink);font-size:26px;opacity:.9}
+  .sub{font-family:var(--sans);color:var(--ink);font-size:22px;opacity:.65}
+
+  #app{position:absolute;left:60px;top:1350px;width:1080px;height:760px;
+       background:var(--white);border:1px solid var(--grid);border-radius:22px;
+       box-shadow:0 24px 60px rgba(40,28,96,.10);overflow:hidden}
+  #toolbar{position:absolute;left:0;top:0;width:100%;height:64px;
+           border-bottom:1px solid var(--grid);display:flex;align-items:center;
+           padding:0 20px;gap:12px;background:#fbfaf7}
+  #toolbar .brand{font-family:var(--brand);font-weight:500;font-variant-caps:small-caps;
+                  color:var(--ink);font-size:22px;margin-right:auto}
+  .tbtn{font-family:var(--sans);font-weight:500;font-size:16px;color:var(--ink);
+        border:1px solid var(--grid);border-radius:9px;padding:8px 14px;background:#fff;
+        position:relative;white-space:nowrap}
+  .pill{position:absolute;top:-11px;right:-8px;background:var(--accent);color:var(--ink);
+        font-family:var(--sans);font-weight:600;font-size:12px;border-radius:9px;
+        padding:2px 7px;opacity:0}
+
+  #chat{position:absolute;left:0;top:64px;width:360px;height:696px;
+        border-right:1px solid var(--grid);padding:24px 18px;background:#fcfbf9}
+  #chip{background:#EFEBF7;border:1px solid #D8D0EC;border-radius:16px;
+        padding:12px 14px;min-height:48px;display:flex;align-items:center;gap:10px}
+  #chip .dot{width:14px;height:14px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+  #chip .txt{font-family:var(--mono);font-size:16px;color:var(--ink)}
+  .caret{display:inline-block;width:2px;height:18px;background:var(--ink);
+         vertical-align:-3px;margin-left:1px}
+  #run{margin-top:16px;width:132px;height:40px;border-radius:10px;background:var(--ink);
+       color:#fff;font-family:var(--sans);font-weight:600;font-size:15px;
+       display:flex;align-items:center;justify-content:center;gap:8px}
+  #run.pulse{box-shadow:0 0 0 6px rgba(150,190,215,.5)}
+  .ghost{margin-top:14px;height:14px;border-radius:7px;background:#eee7f4}
+
+  #grid{position:absolute;left:360px;top:64px;right:0;height:696px;padding:22px}
+  table{border-collapse:separate;border-spacing:0;width:100%;
+        border:1px solid var(--grid);border-radius:10px;overflow:hidden}
+  th{font-family:var(--sans);font-weight:600;font-size:17px;color:#fff;background:var(--ink);
+     text-align:left;padding:14px 16px}
+  td{font-family:var(--mono);font-size:18px;color:var(--ink);padding:14px 16px;
+     border-top:1px solid var(--grid)}
+  tr:nth-child(odd) td{background:#fff}
+  tr:nth-child(even) td{background:var(--linen)}
+  td.hl{border-radius:6px;box-shadow:inset 0 0 0 2px var(--accent);background:#E7F1F8!important}
+
+  #cap{position:absolute;left:0;right:0;display:flex;justify-content:center;
+       pointer-events:none;padding:0 6%}
+  #cap .band{font-family:var(--sans);font-weight:600;color:#fff;background:rgba(40,28,96,.92);
+             border-radius:12px;padding:12px 20px;text-align:center;line-height:1.25}
+  #callout{position:absolute;pointer-events:none;font-family:var(--sans);font-weight:700;
+           color:var(--ink);background:rgba(150,190,215,.28);border:1px solid var(--accent);
+           border-radius:999px;padding:8px 16px;opacity:0}
+
+  .r16 #cap{bottom:42px}          .r16 #cap .band{font-size:29px;max-width:80%}
+  .r16 #callout{top:34px;left:40px;font-size:22px}
+  .r9  #cap{top:150px}            .r9  #cap .band{font-size:33px;max-width:88%}
+  .r9  #callout{bottom:120px;left:50%;transform:translateX(-50%);font-size:24px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="world">
+    <div class="panel" id="open" style="left:0;top:0;height:820px">
+      <div class="mark" id="markOpen"></div>
+      <div class="wordmark">TamedTable</div>
+      <div class="tagline" id="tagOpen" style="opacity:0"></div>
+    </div>
+
+    <div id="app">
+      <div id="toolbar">
+        <div class="brand">TamedTable</div>
+        <div class="tbtn">Save flow<span class="pill" id="pill1">saved ✓</span></div>
+        <div class="tbtn">Save as Python<span class="pill" id="pill2">.py ✓</span></div>
+      </div>
+      <div id="chat">
+        <div id="chip"><span class="dot"></span><span class="txt" id="chipTxt"></span></div>
+        <div id="run">▸ Run</div>
+        <div class="ghost" style="width:82%"></div>
+        <div class="ghost" style="width:64%"></div>
+      </div>
+      <div id="grid">
+        <table>
+          <thead><tr><th>country</th><th>phone</th></tr></thead>
+          <tbody>
+            <tr><td>USA</td><td id="p0"></td></tr>
+            <tr><td>Germany</td><td id="p1"></td></tr>
+            <tr><td>China</td><td id="p2"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="close" style="left:0;top:2260px;height:820px">
+      <div class="mark" id="markClose"></div>
+      <div class="wordmark">TamedTable</div>
+      <div class="tagline" id="tagClose" style="opacity:0"></div>
+      <div class="url" id="urlClose" style="opacity:0">tamedtable.com</div>
+      <div class="sub" id="subClose" style="opacity:0"></div>
+    </div>
+  </div>
+
+  <div id="cap"><div class="band" id="capTxt"></div></div>
+  <div id="callout"></div>
+</div>
+
+<script>
+const DUR = 20000;
+const params = new URLSearchParams(location.search);
+const ratio = params.get('ratio') === '9x16' ? '9x16' : '16x9';
+const lang = params.get('lang') === 'es' ? 'es' : 'en';
+const SW = ratio === '9x16' ? 720 : 1280;
+const SH = ratio === '9x16' ? 1280 : 720;
+const stage = document.getElementById('stage');
+stage.style.width = SW + 'px'; stage.style.height = SH + 'px';
+document.body.className = ratio === '9x16' ? 'r9' : 'r16';
+
+// --- per-language text (no em dashes: they read as AI tells) ---
+const LANG = {
+  en: {
+    prompt: 'normalize the phone numbers',
+    other: 'normaliza los números de teléfono',
+    tagline: 'Talk to your data.',
+    sub: 'open in your browser, no install',
+    caps: [[0,''],
+      [2000,'Real data is messy. Phones need to be normalized based on the country.'],
+      [6500,'Just say what you want.'],
+      [9000,'Watch every row change, right in front of you.'],
+      [13500,'Ask in any language. Same result.'],
+      [16000,'Keep the steps. Replay them free, or export to Python.'],
+      [18500,'']],
+    callouts: [[6800,8800,'Say what you want'],[13700,15800,'Any language'],
+               [16200,18300,'Save, replay, Python']],
+  },
+  es: {
+    prompt: 'normaliza los números de teléfono',
+    other: 'normalize the phone numbers',
+    tagline: 'Habla con tus datos.',
+    sub: 'ábrelo en tu navegador, sin instalar',
+    caps: [[0,''],
+      [2000,'Los datos reales son un desastre. Los teléfonos se normalizan según el país.'],
+      [6500,'Solo di lo que quieres.'],
+      [9000,'Mira cambiar cada fila, ante tus ojos.'],
+      [13500,'Pregunta en cualquier idioma. El mismo resultado.'],
+      [16000,'Guarda los pasos. Repítelos gratis, o expórtalos a Python.'],
+      [18500,'']],
+    callouts: [[6800,8800,'Di lo que quieres'],[13700,15800,'Cualquier idioma'],
+               [16200,18300,'Guardar, repetir, Python']],
+  },
+};
+const L = LANG[lang];
+document.getElementById('tagOpen').textContent = L.tagline;
+document.getElementById('tagClose').textContent = L.tagline;
+document.getElementById('subClose').textContent = L.sub;
+
+// --- brand mark (9x5, overhanging eaves; accent at row0,col4) ---
+const INK = [[0,0],[0,1],[0,2],[0,3],[0,5],[0,6],[0,7],[0,8],[1,1],[1,7],
+  [2,1],[2,3],[2,4],[2,5],[2,7],[3,1],[3,7],[4,1],[4,3],[4,4],[4,5],[4,7]];
+const ACCENT = [0,4];
+function buildMark(host){
+  const S = 26, g = 3;
+  host.style.width = 9*S + 'px'; host.style.height = 5*S + 'px';
+  const all = [...INK.map(p=>({p,accent:false})), {p:ACCENT,accent:true}]
+    .sort((a,b)=> (a.p[0]*9+a.p[1]) - (b.p[0]*9+b.p[1]));
+  all.forEach((c,i)=>{
+    const d = document.createElement('div'); d.className='cell';
+    d.style.left = c.p[1]*S + 'px'; d.style.top = c.p[0]*S + 'px';
+    d.style.width = (S-g)+'px'; d.style.height=(S-g)+'px';
+    d.style.background = c.accent ? 'var(--accent)' : 'var(--ink)';
+    d.dataset.i = i; host.appendChild(d);
+  });
+  return all.length;
+}
+const NCELLS = buildMark(document.getElementById('markOpen'));
+buildMark(document.getElementById('markClose'));
+
+// --- camera: named focus boxes per ratio, keyframed over time ---
+const BOX = {
+  '16x9': {
+    open:{cx:600,cy:410,w:1160,h:760}, table:{cx:790,cy:1580,w:720,h:360},
+    chip:{cx:250,cy:1500,w:470,h:250}, toolbar:{cx:820,cy:1410,w:640,h:210},
+    close:{cx:600,cy:2670,w:1160,h:760},
+  },
+  '9x16': {
+    open:{cx:600,cy:430,w:680,h:940}, table:{cx:780,cy:1570,w:730,h:640},
+    chip:{cx:240,cy:1490,w:390,h:640}, toolbar:{cx:905,cy:1460,w:450,h:760},
+    close:{cx:600,cy:2670,w:680,h:980},
+  },
+};
+const KEYS = [
+  [0,'open'],[1600,'open'],[2000,'table'],[6300,'table'],
+  [6700,'chip'],[8800,'chip'],[9200,'table'],[13300,'table'],
+  [13700,'chip'],[15800,'chip'],[16200,'toolbar'],[18300,'toolbar'],
+  [18600,'close'],[20000,'close'],
+];
+const easeIO = x => x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2;
+const lerp = (a,b,p)=>a+(b-a)*p;
+function camBox(t){
+  const B = BOX[ratio];
+  let i=0; while(i<KEYS.length-1 && t>=KEYS[i+1][0]) i++;
+  const [t0,n0]=KEYS[i], [t1,n1]=KEYS[Math.min(i+1,KEYS.length-1)];
+  const p = t1>t0 ? easeIO(Math.min(1,(t-t0)/(t1-t0))) : 0;
+  const a=B[n0], b=B[n1];
+  return {cx:lerp(a.cx,b.cx,p),cy:lerp(a.cy,b.cy,p),
+          w:lerp(a.w,b.w,p),h:lerp(a.h,b.h,p)};
+}
+function applyCamera(t){
+  const bx = camBox(t);
+  const s = Math.min(SW/bx.w, SH/bx.h);
+  const tx = SW/2 - s*bx.cx, ty = SH/2 - s*bx.cy;
+  document.getElementById('world').style.transform =
+    `translate(${tx}px,${ty}px) scale(${s})`;
+}
+
+// --- content state ---
+const MESSY=['555-123-4567','(030) 5556789','86 555 1234'];
+const CLEAN=['+15551234567','+49305556789','+8655551234'];
+const ROWT=[9500,10100,10700];            // per-row rewrite (0.6s apart, quick)
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const fade=(t,a,b)=>Math.max(0,Math.min(1,(t-a)/(b-a)));
+
+function seek(t){
+  t = Math.max(0, Math.min(DUR-1, t));
+  applyCamera(t);
+
+  // brand marks draw on (open 200..1500, close 18600..19300)
+  const revealMark=(host,start,span)=>{
+    host.querySelectorAll('.cell').forEach(d=>{
+      const th = start + (+d.dataset.i)*(span/NCELLS);
+      d.style.opacity = t>=th ? 1 : 0;
+    });
+  };
+  revealMark(document.getElementById('markOpen'),200,1300);
+  revealMark(document.getElementById('markClose'),18600,700);
+  document.getElementById('tagOpen').style.opacity = fade(t,800,1600);
+  document.getElementById('tagClose').style.opacity = fade(t,18700,19300);
+  document.getElementById('urlClose').style.opacity = fade(t,19000,19600);
+  document.getElementById('subClose').style.opacity = fade(t,19300,19900);
+
+  // prompt chip typewriter (primary 6800..7900, other language 13800..14900)
+  const blink = Math.floor(t/500)%2===0 ? '<span class="caret"></span>' : '';
+  let txt='';
+  if(t<6800) txt='';
+  else if(t<13700){ const n=Math.round(L.prompt.length*fade(t,6800,7900)); txt=esc(L.prompt.slice(0,n)); }
+  else { const n=Math.round(L.other.length*fade(t,13800,14900)); txt=esc(L.other.slice(0,n)); }
+  document.getElementById('chipTxt').innerHTML = txt + (t>=6800?blink:'');
+
+  const run=document.getElementById('run');
+  run.classList.toggle('pulse', (t>=7700&&t<8100)||(t>=14700&&t<15100));
+
+  // rows: messy -> clean, per-row, with a quick accent flash
+  for(let r=0;r<3;r++){
+    const cell=document.getElementById('p'+r);
+    const changed = t>=ROWT[r];
+    cell.textContent = changed ? CLEAN[r] : MESSY[r];
+    const since = t-ROWT[r];
+    const otherFlash = t>=15000 && t<15600;
+    cell.classList.toggle('hl', (changed && since<650) || otherFlash);
+  }
+
+  // toolbar "saved" pills
+  document.getElementById('pill1').style.opacity = fade(t,16700,17100);
+  document.getElementById('pill2').style.opacity = fade(t,17300,17700);
+
+  // captions (only during the app beats; the panels carry the tagline)
+  let cap=''; for(const [ts,s] of L.caps){ if(t>=ts) cap=s; }
+  const capEl=document.getElementById('capTxt');
+  capEl.textContent = cap; capEl.style.display = cap ? '' : 'none';
+
+  // callouts
+  const co=document.getElementById('callout'); co.style.opacity=0; co.textContent='';
+  for(const [a,b,s] of L.callouts){ if(t>=a&&t<b){ co.textContent=s;
+    co.style.opacity = Math.min(fade(t,a,a+300), 1-fade(t,b-300,b)); } }
+}
+window.seek = seek;
+
+if(!params.has('capture')){
+  let start=null;
+  const loop=ts=>{ if(start==null) start=ts;
+    seek(((ts-start)) % DUR); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+} else { seek(0); }
+</script>
+</body>
+</html>

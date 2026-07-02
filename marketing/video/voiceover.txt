@@ -1,0 +1,20 @@
+# TamedTable demo voiceover — English, 20 seconds.
+# The spoken lines are short so each fits its beat at natural pace (no speed-up).
+# The on-screen captions carry the fuller wording; the voiceover is punchier.
+#
+# audio.mjs synthesizes these with OpenAI TTS as an interim voice. For a better
+# voice, use voiceover.ssml in Azure/Google/Polly (or a script tool like
+# ElevenLabs), export one 20s track to out/voiceover-en.wav, and re-run
+# `node audio.mjs` — it muxes that file verbatim instead of calling OpenAI.
+#
+# start → spoken line                                  (delivery note)
+0.0s   Talk to your data.                              (warm open, land on "data")
+2.0s   Real data is messy. Formats vary by country.    (a touch wry on "messy")
+6.5s   Just say what you want.                         (light lift on "say")
+9.0s   Watch every row change, right in front of you.  (emphasis "every row")
+13.5s  Ask in any language.                            (emphasis "any")
+16.0s  Keep the steps, or export to Python.            (confident close)
+
+# The one Spanish moment is visual, not spoken: in the "any language" beat the
+# prompt chip types "normaliza los números de teléfono" while the caption reads
+# "Ask in any language."

@@ -8,6 +8,8 @@ Everything the public sees before they open the app: the message, the feature il
 marketing/
   marketing-brief.md     the message — tagline, audience, what TamedTable does
   new-ai-features.md     reworked "What you can do" menu, AI features first
+  video/                 storyboard + render plan (demo-video-plan.md) for the 30s
+                         README/homepage video; source + rendered output land here
   tokens.json            design token master — colors, typography, spacing
   brand/                 marks, favicons, lockups, brand.md
   claude-design-app/     in-browser design canvas (scratch JSX + generated tokens.jsx)
