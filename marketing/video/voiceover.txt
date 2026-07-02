@@ -1,11 +1,23 @@
-# TamedTable demo voiceover — ~55 words, ~28s with pacing.
-# One line per beat; timings match timeline.html / demo-video-plan.md.
-# Generate to voiceover.wav with a warm, unhurried TTS voice and mux at encode.
+# TamedTable demo voiceover — 20 seconds, one line per beat.
+# The spoken text also appears as burned-in captions (timeline.html), so the
+# clip works with sound off. audio.mjs synthesizes these with OpenAI TTS
+# (voice "nova"), time-fits each line to its beat, and muxes both languages.
+# No em dashes: they read as an AI tell.
 
-[0.0s]  Talk to your data.
-[3.0s]  This is your data. Messy.
-[7.0s]  Just say what you want.
-[11.0s] Watch every row change — right in front of you.
-[18.0s] Ask in any language. Same result.
-[22.0s] Keep the steps. Replay them free — or hand them off as Python.
-[26.0s] TamedTable. Talk to your data.
+## English  (start → line)
+0.0s   Talk to your data.
+2.0s   Real data is messy. Phones need to be normalized based on the country.
+6.5s   Just say what you want.
+9.0s   Watch every row change, right in front of you.
+13.5s  Ask in any language. Same result.
+16.0s  Keep the steps. Replay them free, or export to Python.
+18.5s  TamedTable.
+
+## Español  (inicio → línea)
+0.0s   Habla con tus datos.
+2.0s   Los datos reales son un desastre. Los teléfonos deben normalizarse según el país.
+6.5s   Solo di lo que quieres.
+9.0s   Mira cambiar cada fila, ante tus ojos.
+13.5s  Pregunta en cualquier idioma. El mismo resultado.
+16.0s  Guarda los pasos. Repítelos gratis, o expórtalos a Python.
+18.5s  TamedTable.

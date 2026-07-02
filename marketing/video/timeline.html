@@ -1,8 +1,9 @@
 <!doctype html>
 <!-- TamedTable demo-video timeline. Deterministic: window.seek(ms) draws the
-     exact frame at time ms. ?ratio=16x9|9x16 picks the framing. One world (a
-     vertical filmstrip: brand open -> app -> brand close); a virtual camera
-     pans and zooms across it. See demo-video-plan.md. -->
+     exact frame at time ms. Params: ?ratio=16x9|9x16 picks the framing,
+     ?lang=en|es picks the caption/voiceover language. One world (a vertical
+     filmstrip: brand open -> app -> brand close); a virtual camera pans and
+     zooms across it. 20 seconds. See demo-video-plan.md. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -20,7 +21,6 @@
   #stage{position:relative;overflow:hidden;background:var(--linen)}
   #world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 
-  /* ---- panels (open / close) ---- */
   .panel{position:absolute;width:1200px;display:flex;flex-direction:column;
          align-items:center;justify-content:center;gap:22px}
   .mark{position:relative}
@@ -31,7 +31,6 @@
   .url{font-family:var(--mono);color:var(--ink);font-size:26px;opacity:.9}
   .sub{font-family:var(--sans);color:var(--ink);font-size:22px;opacity:.65}
 
-  /* ---- app card ---- */
   #app{position:absolute;left:60px;top:1350px;width:1080px;height:760px;
        background:var(--white);border:1px solid var(--grid);border-radius:22px;
        box-shadow:0 24px 60px rgba(40,28,96,.10);overflow:hidden}
@@ -67,12 +66,11 @@
   th{font-family:var(--sans);font-weight:600;font-size:17px;color:#fff;background:var(--ink);
      text-align:left;padding:14px 16px}
   td{font-family:var(--mono);font-size:18px;color:var(--ink);padding:14px 16px;
-     border-top:1px solid var(--grid);transition:none}
+     border-top:1px solid var(--grid)}
   tr:nth-child(odd) td{background:#fff}
   tr:nth-child(even) td{background:var(--linen)}
   td.hl{border-radius:6px;box-shadow:inset 0 0 0 2px var(--accent);background:#E7F1F8!important}
 
-  /* ---- overlays fixed to the frame (not the world) ---- */
   #cap{position:absolute;left:0;right:0;display:flex;justify-content:center;
        pointer-events:none;padding:0 6%}
   #cap .band{font-family:var(--sans);font-weight:600;color:#fff;background:rgba(40,28,96,.92);
@@ -81,24 +79,21 @@
            color:var(--ink);background:rgba(150,190,215,.28);border:1px solid var(--accent);
            border-radius:999px;padding:8px 16px;opacity:0}
 
-  /* ratio-specific overlay placement */
-  .r16 #cap{bottom:42px}          .r16 #cap .band{font-size:30px;max-width:78%}
+  .r16 #cap{bottom:42px}          .r16 #cap .band{font-size:29px;max-width:80%}
   .r16 #callout{top:34px;left:40px;font-size:22px}
-  .r9  #cap{top:150px}            .r9  #cap .band{font-size:34px;max-width:88%}
+  .r9  #cap{top:150px}            .r9  #cap .band{font-size:33px;max-width:88%}
   .r9  #callout{bottom:120px;left:50%;transform:translateX(-50%);font-size:24px}
 </style>
 </head>
 <body>
 <div id="stage">
   <div id="world">
-    <!-- OPEN -->
     <div class="panel" id="open" style="left:0;top:0;height:820px">
       <div class="mark" id="markOpen"></div>
       <div class="wordmark">TamedTable</div>
-      <div class="tagline" id="tagOpen" style="opacity:0">Talk to your data.</div>
+      <div class="tagline" id="tagOpen" style="opacity:0"></div>
     </div>
 
-    <!-- APP -->
     <div id="app">
       <div id="toolbar">
         <div class="brand">TamedTable</div>
@@ -123,13 +118,12 @@
       </div>
     </div>
 
-    <!-- CLOSE -->
     <div class="panel" id="close" style="left:0;top:2260px;height:820px">
       <div class="mark" id="markClose"></div>
       <div class="wordmark">TamedTable</div>
-      <div class="tagline" id="tagClose" style="opacity:0">Talk to your data.</div>
+      <div class="tagline" id="tagClose" style="opacity:0"></div>
       <div class="url" id="urlClose" style="opacity:0">tamedtable.com</div>
-      <div class="sub" id="subClose" style="opacity:0">open in your browser — no install</div>
+      <div class="sub" id="subClose" style="opacity:0"></div>
     </div>
   </div>
 
@@ -138,14 +132,53 @@
 </div>
 
 <script>
-const DUR = 30000;
+const DUR = 20000;
 const params = new URLSearchParams(location.search);
 const ratio = params.get('ratio') === '9x16' ? '9x16' : '16x9';
+const lang = params.get('lang') === 'es' ? 'es' : 'en';
 const SW = ratio === '9x16' ? 720 : 1280;
 const SH = ratio === '9x16' ? 1280 : 720;
 const stage = document.getElementById('stage');
 stage.style.width = SW + 'px'; stage.style.height = SH + 'px';
 document.body.className = ratio === '9x16' ? 'r9' : 'r16';
+
+// --- per-language text (no em dashes: they read as AI tells) ---
+const LANG = {
+  en: {
+    prompt: 'normalize the phone numbers',
+    other: 'normaliza los números de teléfono',
+    tagline: 'Talk to your data.',
+    sub: 'open in your browser, no install',
+    caps: [[0,''],
+      [2000,'Real data is messy. Phones need to be normalized based on the country.'],
+      [6500,'Just say what you want.'],
+      [9000,'Watch every row change, right in front of you.'],
+      [13500,'Ask in any language. Same result.'],
+      [16000,'Keep the steps. Replay them free, or export to Python.'],
+      [18500,'']],
+    callouts: [[6800,8800,'Say what you want'],[13700,15800,'Any language'],
+               [16200,18300,'Save, replay, Python']],
+  },
+  es: {
+    prompt: 'normaliza los números de teléfono',
+    other: 'normalize the phone numbers',
+    tagline: 'Habla con tus datos.',
+    sub: 'ábrelo en tu navegador, sin instalar',
+    caps: [[0,''],
+      [2000,'Los datos reales son un desastre. Los teléfonos se normalizan según el país.'],
+      [6500,'Solo di lo que quieres.'],
+      [9000,'Mira cambiar cada fila, ante tus ojos.'],
+      [13500,'Pregunta en cualquier idioma. El mismo resultado.'],
+      [16000,'Guarda los pasos. Repítelos gratis, o expórtalos a Python.'],
+      [18500,'']],
+    callouts: [[6800,8800,'Di lo que quieres'],[13700,15800,'Cualquier idioma'],
+               [16200,18300,'Guardar, repetir, Python']],
+  },
+};
+const L = LANG[lang];
+document.getElementById('tagOpen').textContent = L.tagline;
+document.getElementById('tagClose').textContent = L.tagline;
+document.getElementById('subClose').textContent = L.sub;
 
 // --- brand mark (9x5, overhanging eaves; accent at row0,col4) ---
 const INK = [[0,0],[0,1],[0,2],[0,3],[0,5],[0,6],[0,7],[0,8],[1,1],[1,7],
@@ -176,18 +209,16 @@ const BOX = {
     close:{cx:600,cy:2670,w:1160,h:760},
   },
   '9x16': {
-    // portrait: fit table WIDTH (crop the chat sidebar) so both columns stay
-    // legible; the chip/toolbar beats zoom into their own side of the card.
     open:{cx:600,cy:430,w:680,h:940}, table:{cx:780,cy:1570,w:730,h:640},
     chip:{cx:240,cy:1490,w:390,h:640}, toolbar:{cx:905,cy:1460,w:450,h:760},
     close:{cx:600,cy:2670,w:680,h:980},
   },
 };
 const KEYS = [
-  [0,'open'],[2600,'open'],[3400,'table'],[7000,'table'],
-  [7400,'chip'],[10600,'chip'],[11000,'table'],[17600,'table'],
-  [18000,'chip'],[21600,'chip'],[22000,'toolbar'],[25400,'toolbar'],
-  [26000,'close'],[30000,'close'],
+  [0,'open'],[1600,'open'],[2000,'table'],[6300,'table'],
+  [6700,'chip'],[8800,'chip'],[9200,'table'],[13300,'table'],
+  [13700,'chip'],[15800,'chip'],[16200,'toolbar'],[18300,'toolbar'],
+  [18600,'close'],[20000,'close'],
 ];
 const easeIO = x => x<.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2;
 const lerp = (a,b,p)=>a+(b-a)*p;
@@ -209,83 +240,67 @@ function applyCamera(t){
 }
 
 // --- content state ---
-const EN='normalize the phone numbers', ES='normaliza los números de teléfono';
 const MESSY=['555-123-4567','(030) 5556789','86 555 1234'];
 const CLEAN=['+15551234567','+49305556789','+8655551234'];
-const ROWT=[11600,13400,15200];           // per-row rewrite times
+const ROWT=[9500,10100,10700];            // per-row rewrite (0.6s apart, quick)
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-function fade(t,a,b){ return Math.max(0,Math.min(1,(t-a)/(b-a))); }
-
-// captions run only during the app beats; the brand open/close carry the
-// tagline in-panel, so a duplicate caption there would just be noise.
-const CAPS=[
-  [0,''],[3000,'This is your data. Messy.'],
-  [7000,'Just say what you want.'],[11000,'Watch every row change — right in front of you.'],
-  [18000,'Ask in any language. Same result.'],
-  [22000,'Keep the steps. Replay free — or export Python.'],
-  [26000,''],
-];
-const CALLOUTS=[[7200,10600,'Say what you want'],[18000,21600,'Any language'],
-                [22200,25400,'Save · Replay · Python']];
+const fade=(t,a,b)=>Math.max(0,Math.min(1,(t-a)/(b-a)));
 
 function seek(t){
   t = Math.max(0, Math.min(DUR-1, t));
   applyCamera(t);
 
-  // brand marks draw on (open 200..2200, close 26200..27400)
+  // brand marks draw on (open 200..1500, close 18600..19300)
   const revealMark=(host,start,span)=>{
     host.querySelectorAll('.cell').forEach(d=>{
       const th = start + (+d.dataset.i)*(span/NCELLS);
       d.style.opacity = t>=th ? 1 : 0;
     });
   };
-  revealMark(document.getElementById('markOpen'),200,2000);
-  revealMark(document.getElementById('markClose'),26200,1200);
-  document.getElementById('tagOpen').style.opacity = fade(t,1300,2400);
-  document.getElementById('tagClose').style.opacity = fade(t,26500,27600);
-  document.getElementById('urlClose').style.opacity = fade(t,27000,28000);
-  document.getElementById('subClose').style.opacity = fade(t,27600,28600);
+  revealMark(document.getElementById('markOpen'),200,1300);
+  revealMark(document.getElementById('markClose'),18600,700);
+  document.getElementById('tagOpen').style.opacity = fade(t,800,1600);
+  document.getElementById('tagClose').style.opacity = fade(t,18700,19300);
+  document.getElementById('urlClose').style.opacity = fade(t,19000,19600);
+  document.getElementById('subClose').style.opacity = fade(t,19300,19900);
 
-  // prompt chip typewriter (EN 7200..9000, ES 18200..19800)
+  // prompt chip typewriter (primary 6800..7900, other language 13800..14900)
   const blink = Math.floor(t/500)%2===0 ? '<span class="caret"></span>' : '';
   let txt='';
-  if(t<7200) txt='';
-  else if(t<18000){ const n=Math.round(EN.length*fade(t,7200,9000)); txt=esc(EN.slice(0,n)); }
-  else { const n=Math.round(ES.length*fade(t,18200,19800)); txt=esc(ES.slice(0,n)); }
-  document.getElementById('chipTxt').innerHTML = txt + (t>=7200?blink:'');
+  if(t<6800) txt='';
+  else if(t<13700){ const n=Math.round(L.prompt.length*fade(t,6800,7900)); txt=esc(L.prompt.slice(0,n)); }
+  else { const n=Math.round(L.other.length*fade(t,13800,14900)); txt=esc(L.other.slice(0,n)); }
+  document.getElementById('chipTxt').innerHTML = txt + (t>=6800?blink:'');
 
   const run=document.getElementById('run');
-  run.classList.toggle('pulse', (t>=8800&&t<9300)||(t>=19600&&t<20100));
+  run.classList.toggle('pulse', (t>=7700&&t<8100)||(t>=14700&&t<15100));
 
-  // rows: messy -> clean, per-row, with an accent flash
+  // rows: messy -> clean, per-row, with a quick accent flash
   for(let r=0;r<3;r++){
     const cell=document.getElementById('p'+r);
     const changed = t>=ROWT[r];
     cell.textContent = changed ? CLEAN[r] : MESSY[r];
     const since = t-ROWT[r];
-    const spanishFlash = t>=20200 && t<21000;
-    const flashing = (changed && since<1100) || spanishFlash;
-    cell.classList.toggle('hl', flashing);
+    const otherFlash = t>=15000 && t<15600;
+    cell.classList.toggle('hl', (changed && since<650) || otherFlash);
   }
 
   // toolbar "saved" pills
-  const pv = fade(t,23000,23400);
-  document.getElementById('pill1').style.opacity = pv;
-  document.getElementById('pill2').style.opacity = fade(t,23600,24000);
+  document.getElementById('pill1').style.opacity = fade(t,16700,17100);
+  document.getElementById('pill2').style.opacity = fade(t,17300,17700);
 
-  // captions
-  let cap=''; for(const [ts,s] of CAPS){ if(t>=ts) cap=s; }
+  // captions (only during the app beats; the panels carry the tagline)
+  let cap=''; for(const [ts,s] of L.caps){ if(t>=ts) cap=s; }
   const capEl=document.getElementById('capTxt');
   capEl.textContent = cap; capEl.style.display = cap ? '' : 'none';
 
   // callouts
   const co=document.getElementById('callout'); co.style.opacity=0; co.textContent='';
-  for(const [a,b,s] of CALLOUTS){ if(t>=a&&t<b){ co.textContent=s;
+  for(const [a,b,s] of L.callouts){ if(t>=a&&t<b){ co.textContent=s;
     co.style.opacity = Math.min(fade(t,a,a+300), 1-fade(t,b-300,b)); } }
 }
 window.seek = seek;
 
-// live preview when opened without a captured clock
 if(!params.has('capture')){
   let start=null;
   const loop=ts=>{ if(start==null) start=ts;

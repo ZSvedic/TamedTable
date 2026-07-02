@@ -1,11 +1,12 @@
 # Demo video plan
 
-A plan for a 30-second demo that ships in **two shapes** — horizontal 16:9 for
+A plan for a 20-second demo that ships in **two shapes** — horizontal 16:9 for
 desktop (the README and the homepage hero box) and vertical 9:16 for phones —
-each with a real-sounding voiceover **and** baked-in text, so it lands whether
-the sound is on or off. This doc owns the storyboard, the look, and how to
-render it; it does not own the message ([marketing-brief.md](../marketing-brief.md))
-or the palette ([brand/brand.md](../brand/brand.md)).
+each in **English and Spanish**, with a real-sounding voiceover **and** baked-in
+text, so it lands whether the sound is on or off (four files: ratio × language).
+This doc owns the storyboard, the look, and how to render it; it does not own the
+message ([marketing-brief.md](../marketing-brief.md)) or the palette
+([brand/brand.md](../brand/brand.md)).
 
 Two rules shape everything below:
 
@@ -21,49 +22,49 @@ for 16:9, the app's own **mobile dock layout** for 9:16. Both run the same
 deterministic, key-free tours, so both are captured the same way at two
 viewport sizes.
 
-## The 30 seconds, shot by shot
+## The 20 seconds, shot by shot
 
 Seven beats. The **camera** column says what fills the frame and how it moves —
-the same content, cropped for each ratio. The live cells come from the
-`clean-up` phone-normalize tour, which replays from a cassette with no API key.
+the same content, cropped for each ratio. Times below; the voiceover line is the
+English one (Spanish mirrors it). The intro and outro logo animations are short
+so the app beats keep the room.
 
-| Time | Beat | Camera (what's in frame, how it moves) | Voiceover |
+| Time | Beat | Camera (what's in frame, how it moves) | Voiceover (EN) |
 |---|---|---|---|
-| 0.0–3.0 | **Open** | Brand mark draws on Linen, wordmark + **"Talk to your data."** Full-bleed, no app yet | *"Talk to your data."* |
-| 3.0–7.0 | **The mess** | Push in on the `phone` column only — three rows, three different formats | *"This is your data. Messy."* |
-| 7.0–11.0 | **Say it** | Pan up to the prompt chip; it types `normalize the phone numbers`; run button pulses | *"Just say what you want."* |
-| 11.0–18.0 | **Watch it** | Pan back down to the rows; cells rewrite top-to-bottom, each landing in a Pale-Sky flash | *"Watch every row change — right in front of you."* |
-| 18.0–22.0 | **Any language** | Chip swaps to `normaliza los números de teléfono`; same result flashes | *"Ask in any language. Same result."* |
-| 22.0–26.0 | **Keep it** | Pan to the toolbar; `Save flow` and `Save as Python` glyphs slide into a "saved" pill | *"Keep the steps. Replay them free — or hand them off as Python."* |
-| 26.0–30.0 | **Close** | Pull back to mark + tagline + `tamedtable.com` + `open in your browser — no install` | *"TamedTable. Talk to your data."* |
+| 0.0–2.0 | **Open** | Brand mark draws on Linen, wordmark + tagline. Full-bleed, no app yet | *"Talk to your data."* |
+| 2.0–6.5 | **The mess** | Push in on the table — three rows, three phone formats. Longer beat, more to read | *"Real data is messy. Phones need to be normalized based on the country."* |
+| 6.5–9.0 | **Say it** | Pan to the prompt chip; it types `normalize the phone numbers`; run button pulses | *"Just say what you want."* |
+| 9.0–13.5 | **Watch it** | Pan to the rows; cells rewrite top-to-bottom (~0.6s apart), each in a Pale-Sky flash | *"Watch every row change, right in front of you."* |
+| 13.5–16.0 | **Any language** | Chip swaps to the other language (ES→EN or EN→ES); same result flashes | *"Ask in any language. Same result."* |
+| 16.0–18.5 | **Keep it** | Pan to the toolbar; `Save flow` / `Save as Python` gain a "saved ✓" pill | *"Keep the steps. Replay them free, or export to Python."* |
+| 18.5–20.0 | **Close** | Pull back to mark + tagline + `tamedtable.com` + `open in your browser, no install` | *"TamedTable."* |
 
 Notes that keep it honest and readable small:
 
-- **The middle beat is the pitch.** "Watch it" gets 7 seconds — the row-by-row
-  rewrite is what nobody else shows. Do not rush it.
+- **The middle beat is the pitch.** "Watch it" gets the row-by-row rewrite that
+  nobody else shows; the flash is quick but each row still lands one at a time.
 - **One accent, one focus.** Only the changing cells wear Pale Sky (`#96BED7`),
   same rule as the illustration tiles.
 - **Loopable.** The last frame settles on the mark and tagline, the open's end
   state, so an autoplay loop has no visible seam.
-- **Legible-small test.** Every frame must be readable at the size of a phone
-  screen or a hero box — roughly 360px wide. If a slice fails that, zoom in
-  more or split it into two pans.
+- **No em dashes in on-screen or spoken text.** They read as an AI tell; the
+  captions and voiceover use periods and commas instead.
 
 ## Audio and text — both, every cut
 
 Autoplay is muted on the web, so **the video must work silent**; the voiceover
 is a bonus for anyone with sound on and for the social/YouTube cut.
 
-- **Voiceover** — the seven lines above, ~55 words, ~28 seconds with pacing.
-  Generate with a real-sounding TTS voice (warm, unhurried); render it once and
-  reuse the same track for both ratios. Keep the script in
-  `marketing/video/voiceover.txt` so a re-render is one command.
-- **Captions** — the same lines as burned-in subtitles, lower third on 16:9,
-  upper-middle on 9:16 (clear of the phone's dock). Ship a `.vtt` alongside for
-  the accessible/`<track>` path too.
-- **Key-phrase call-outs** — two or three of the beats also stamp a short
-  phrase in Ink (`Say what you want`, `Any language`, `Save · Replay · Python`)
-  in the brand type, separate from the running captions.
+- **Voiceover** — the seven lines per language, synthesized with OpenAI TTS
+  (voice "nova") by `audio.mjs`, which time-fits each line to its beat so lines
+  never overlap, then muxes the track into both ratios as Opus. The script lives
+  in `voiceover.txt`; a re-render is one command.
+- **Captions** — the same lines burned in, lower third on 16:9, upper area on
+  9:16. English and Spanish are separate renders (the caption text is baked in),
+  so the `lang` param drives both the captions and which voiceover is muxed.
+- **Key-phrase call-outs** — a few beats also stamp a short phrase in Ink
+  (`Say what you want`, `Any language`, `Save, replay, Python`) in the brand
+  type, separate from the running captions.
 
 ## The look — locked to the brand
 
@@ -107,12 +108,18 @@ CSS-timeline approach fights back.
 
 ## What ships, and where
 
+Files are named `hero-<ratio>-<lang>.webm`, so language and shape both pick from
+the same set.
+
 | Target | File | Format |
 |---|---|---|
-| Homepage hero, desktop | `hero-16x9.webm` + `.mp4` | `<video autoplay muted loop playsinline>` |
-| Homepage hero, phone | `hero-9x16.webm` + `.mp4` | swapped in by a CSS media query / `<source media>` |
-| README (inline) | `hero-16x9.gif` **or** `poster-16x9.png` → linked MP4 | GitHub markdown won't autoplay a committed `<video>`; a GIF loops inline, a poster+link stays small |
+| Homepage hero, desktop | `hero-16x9-<lang>.webm` (+ `.mp4`) | `<video autoplay muted loop playsinline>` |
+| Homepage hero, phone | `hero-9x16-<lang>.webm` (+ `.mp4`) | swapped in by a CSS media query / `<source media>` |
+| README (inline) | `hero-16x9-en.gif` **or** `poster-16x9-en.png` → linked MP4 | GitHub markdown won't autoplay a committed `<video>`; a GIF loops inline, a poster+link stays small |
 | Social / YouTube (later) | the 9:16 and 16:9 MP4s, sound on | out of scope this pass; the masters already cover it |
+
+Which language the homepage serves can key off the visitor's locale, or ship
+English by default with a language toggle.
 
 ## Where everything goes
 
@@ -122,13 +129,13 @@ both belong there — one directory, one source of truth:
 ```
 marketing/video/
   demo-video-plan.md      this doc
-  timeline.html + .css    the animated scene (camera, captions, call-outs)
-  capture.ts              drives Playwright: tour slices + frame render, per ratio
-  voiceover.txt           the TTS script
-  captions.vtt            subtitle track (also burned in)
-  out/
-    hero-16x9.{webm,mp4,gif}   poster-16x9.png
-    hero-9x16.{webm,mp4}       voiceover.wav
+  timeline.html           the animated scene (camera, captions, call-outs); ?ratio & ?lang
+  capture.mjs             drives Playwright -> silent-<ratio>-<lang>.webm
+  audio.mjs               OpenAI TTS + mux -> hero-<ratio>-<lang>.webm
+  voiceover.txt           the TTS script (EN + ES)
+  out/                    git-ignored renders
+    hero-16x9-en.webm  hero-16x9-es.webm
+    hero-9x16-en.webm  hero-9x16-es.webm
 ```
 
 Two small touches **outside** that dir are unavoidable, because the homepage is
@@ -155,30 +162,37 @@ So: **yes, everything can live in `marketing/video/`** — plus one symlink unde
 
 ## Prototype status
 
-A first rough pass exists in this dir — `timeline.html` (the animated scene and
-camera) and `capture.mjs` (renders both ratios). Run it from here:
+A working rough pass lives in this dir. Two steps produce four files:
 
 ```
-node capture.mjs        # writes out/hero-16x9.webm and out/hero-9x16.webm
+node capture.mjs        # 4 silent renders: out/silent-<ratio>-<lang>.webm
+node audio.mjs          # TTS + mux -> out/hero-<ratio>-<lang>.webm  (needs OPENAI_API_KEY)
 ```
 
-`out/` is git-ignored — the renders regenerate from source, so they aren't
-committed. What the rough pass already does: both ratios, 30s, all seven beats
-synced, brand colors and fonts, the row-by-row rewrite with the accent flash,
-captions and call-outs, and portrait framing that fits the table width.
+`capture.mjs` drives `timeline.html` (the animated scene + camera) with
+Playwright; `audio.mjs` synthesizes the voiceover (OpenAI TTS) and muxes it with
+a full ffmpeg from the `imageio-ffmpeg` pip package (this env's bundled ffmpeg is
+video-only). `out/` is git-ignored — the renders regenerate from source.
+
+What the rough pass already does: **four videos** (16:9 and 9:16, each English
+and Spanish), 20s, all seven beats synced, brand colors and fonts, the row-by-row
+rewrite with the accent flash, burned-in captions and call-outs, portrait framing
+that fits the table width, and a real TTS voiceover time-fit to the beats.
 
 What it still fakes or skips, to close before it ships:
 
 - **The app is a mock, not the real thing.** The table, chat, and toolbar are
   hand-built HTML. Swap in captured slices of the real app driven by the
   deep-linked clean-up tour (deterministic, key-free) so the footage is genuine.
-- **No audio yet.** Silent. Generate `voiceover.wav` from `voiceover.txt` and
-  mux it at encode.
-- **WebM only in this environment.** The bundled ffmpeg encodes VP8/WebM and
-  nothing else; the MP4 fallback and the README GIF/poster need a fuller ffmpeg.
+- **WebM only so far.** `audio.mjs` outputs WebM (VP8 + Opus). The same
+  `imageio-ffmpeg` binary has libx264, so an MP4 fallback and the README
+  GIF/poster are a small addition, not yet wired.
 - **Font pre-roll.** Google Fonts load over the network (~14s headless); the
   script trims that pre-roll automatically, but bundling the fonts would make
-  the render faster and fully offline.
+  the render faster, fully offline, and immune to the flush timing the trim now
+  guards against.
+- **TTS voice is a first pick** (`nova`). Worth auditioning voices, and the
+  Spanish lines are a first translation pass to proofread.
 
 ## Definition of done
 
