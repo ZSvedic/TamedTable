@@ -17258,6 +17258,7 @@ function ModelChooser({
   keys,
   expandedProvider,
   byokHelpUrl,
+  changeModelsHelpUrl,
   onProviderClick,
   onKeyChange
 }) {
@@ -17301,6 +17302,21 @@ function ModelChooser({
     },
     children: "\uD83C\uDF99 voice"
   }, undefined, false, undefined, this) : null;
+  const helpLink = (attr, href, label) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
+    ...{ [attr]: "" },
+    href,
+    target: "_blank",
+    rel: "noopener",
+    style: {
+      fontFamily: fontUi,
+      fontSize: 11.5,
+      fontWeight: 500,
+      color: accent,
+      textDecoration: "none",
+      alignSelf: "flex-start"
+    },
+    children: label
+  }, undefined, false, undefined, this);
   const radioKnob = (selected) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
     "aria-hidden": "true",
     style: {
@@ -17485,6 +17501,7 @@ function ModelChooser({
           " fills per-row AI cells with a cheaper model for bulk work."
         ]
       }, undefined, true, undefined, this),
+      byokHelpUrl && helpLink("data-mc-byok", byokHelpUrl, "New here? How to get an API key ↗"),
       PROVIDERS.map((meta) => {
         const isSelected = provider === meta.id;
         const isExpanded = expandedProvider === meta.id;
@@ -17540,21 +17557,7 @@ function ModelChooser({
           ]
         }, meta.id, true, undefined, this);
       }),
-      byokHelpUrl && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
-        "data-mc-byok": true,
-        href: byokHelpUrl,
-        target: "_blank",
-        rel: "noopener",
-        style: {
-          fontFamily: fontUi,
-          fontSize: 11.5,
-          fontWeight: 500,
-          color: accent,
-          textDecoration: "none",
-          alignSelf: "flex-start"
-        },
-        children: "New here? How to get an API key ↗"
-      }, undefined, false, undefined, this)
+      changeModelsHelpUrl && helpLink("data-mc-changemodels", changeModelsHelpUrl, "How to change primary and secondary models? ↗")
     ]
   }, undefined, true, undefined, this);
 }
@@ -17829,6 +17832,7 @@ function Demo() {
         keys,
         expandedProvider: expanded,
         byokHelpUrl: "/TamedTable/BYOK-setup.html",
+        changeModelsHelpUrl: "../../FAQ.html#change-models",
         onProviderClick: (p) => {
           if (expanded === p) {
             setExpanded(null);
