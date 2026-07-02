@@ -11,12 +11,32 @@ body,
   height: 100%;
 }
 
-/* Mobile browsers keep their toolbars shown when the page can't scroll (our
-   table-first layout never scrolls the document), so size the app to the
-   small viewport — the area left with the chrome visible — and the bottom
-   dock is never hidden behind it. Falls back to the 100% above on old engines. */
+/* Size the app to the small viewport — the area left with the browser bars
+   visible — so the bottom dock is never hidden behind them. Falls back to the
+   100% above on old engines. */
 #root {
   height: 100svh;
+}
+
+/* #MobileShell — browser-bar auto-hide, the CSS half (the scrollTo nudge lives
+   in hide-browser-bars.ts). Phone browsers only slide their bars away when the
+   document scrolls, and our table-first layout never scrolls it. On touch
+   devices, give the body 1px of scroll room past the large viewport (bars
+   hidden) so a scroll is always possible, pin #root to the visual viewport so
+   that scroll is invisible, and size it dynamically so the app grows into the
+   space the bars vacate. Touch browsers use overlay scrollbars, so the slack
+   never draws a scrollbar. */
+@media (pointer: coarse) {
+  body {
+    min-height: calc(100lvh + 1px);
+  }
+  #root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100dvh;
+  }
 }
 
 body {

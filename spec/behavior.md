@@ -893,7 +893,19 @@ or the engine changes.
   that highlights the chat input opens the Type sheet so the spotlight
   lands on the visible composer; the load step (shown as **"Open the
   sample"**) points at the empty page's **Open sample…** button, and a
-  table step points at the grid.
+  table step points at the grid. The closing **"Voilà"** step highlights
+  the table — the same anchor the desktop tour uses.
+
+In a normal browser tab the phone browser draws its own bars — the
+address bar on top, on some browsers a navigation bar at the bottom —
+which shrink the app. On touch devices the app leaves the page one
+pixel of scroll room and nudges it (`window.scrollTo`) on load and
+after each touch, so Chrome on Android and Safari on iOS can slide
+their bars away; the layout tracks the dynamic viewport, growing into
+the reclaimed space, and the dock is never covered by the bottom bar.
+Added to the home screen the app already runs full-screen and the nudge
+changes nothing. On a desktop (mouse) browser nothing changes either —
+no scroll room, no nudge.
 
 The empty page, the dialogs, and every transformation behave
 identically to the desktop app; the dock layout is purely a

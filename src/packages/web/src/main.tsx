@@ -6,6 +6,7 @@ import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
 import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
 import { browserContinuousPort } from '@tamedtable/voice-input/browser-vad';
 import { App } from './App.tsx';
+import { installBrowserBarAutoHide } from './hide-browser-bars.ts';
 import './index.css';
 
 // Lightweight tutorial scenario index, frozen into the bundle by vite.config.
@@ -54,6 +55,9 @@ controller.subscribe(() => {
 // controller. Unmatched/missing params boot normally — the controller no-ops.
 const params = new URLSearchParams(window.location.search);
 void controller.openTutorialFromLink(params.get('feature'), params.get('scenario'));
+
+// On phones, nudge the page so the browser's own bars slide away.
+installBrowserBarAutoHide();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('TamedTable: #root element is missing from index.html');
