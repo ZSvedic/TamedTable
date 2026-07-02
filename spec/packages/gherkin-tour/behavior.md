@@ -130,6 +130,12 @@ package customizes, and why it differs from a plain Driver.js tour:
   host-named `doneElementId` (the step's own target may be gone) and shows
   `doneDescription` — the app passes `Voilà, "<tour>" is done.` — numbered "N of
   N", with the Done button.
+- **Viewport-sized spotlight.** A target can be larger than the screen — the
+  app's table fills it. A cutout that big leaves the popover nowhere to sit,
+  and Driver's scroll-into-view yanks the page. When the target's box is
+  taller than ~55% of the viewport or wider than it, the spotlight clamps to
+  a fixed box over the target's visible top region instead, so the cutout and
+  the popover below it always fit on screen together.
 - **Instruction text.** The Gherkin keyword is dropped and the first letter
   capitalized. Three steps name their UI action instead of echoing the verb: a
   `load "x.csv"` step reads **`Open sample "x.csv"`** (it drives the host's "Open

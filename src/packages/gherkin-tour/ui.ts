@@ -59,6 +59,8 @@ export class TourUi {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private retryFor: string | null = null;
   private retries = 0;
+  // Fixed stand-in box for an oversized target (see spotlightTarget).
+  private proxy: HTMLElement | null = null;
 
   constructor(tour: TourCursor, opts: TourUiOptions) {
     this.tour = tour;
@@ -117,7 +119,7 @@ export class TourUi {
     this.d = d;
 
     d.highlight({
-      element: `#${elementId}`,
+      element: this.spotlightTarget(el),
       popover: {
         description,
         side: 'bottom',
@@ -227,11 +229,52 @@ export class TourUi {
     this.detachKeyboard();
   }
 
+  // A target can be larger than the screen — the app's table fills it. A
+  // cutout that big leaves the popover nowhere to sit, and Driver's
+  // scroll-into-view yanks the page. Spotlight a fixed stand-in box clamped
+  // to the target's visible top region instead, so the cutout and the popover
+  // below it always fit on screen together. Small targets pass through and
+  // keep Driver's own scroll-into-view behavior.
+  private spotlightTarget(el: HTMLElement): HTMLElement {
+    this.removeProxy();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const maxH = vh * 0.55;
+    let rect = el.getBoundingClientRect();
+    if (rect.height <= maxH && rect.width <= vw) return el;
+
+    // The visible slice of the target; if it is (almost) fully off screen,
+    // bring it on first so the clamp has something to cover.
+    if (Math.min(rect.bottom, vh) - Math.max(rect.top, 0) < 40) {
+      el.scrollIntoView({ block: 'nearest' });
+      rect = el.getBoundingClientRect();
+    }
+    const top = Math.max(rect.top, 0);
+    const left = Math.max(rect.left, 0);
+    const width = Math.min(rect.right, vw) - left;
+    const height = Math.min(Math.min(rect.bottom, vh) - top, maxH);
+
+    const proxy = document.createElement('div');
+    proxy.setAttribute('data-gt-spotlight-proxy', '');
+    proxy.style.cssText =
+      `position:fixed;top:${top}px;left:${left}px;width:${width}px;height:${height}px;` +
+      'pointer-events:none;';
+    document.body.appendChild(proxy);
+    this.proxy = proxy;
+    return proxy;
+  }
+
+  private removeProxy(): void {
+    this.proxy?.remove();
+    this.proxy = null;
+  }
+
   private destroyOverlay(): void {
     this.silentDestroy = true;
     this.d?.destroy();
     this.d = null;
     this.silentDestroy = false;
+    this.removeProxy();
   }
 
   // Driver binds its arrow keys only in multi-step drive mode; we drive single

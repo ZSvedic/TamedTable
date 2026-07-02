@@ -98,12 +98,37 @@ test.describe('phone width', () => {
     await expect(page.locator('[data-mob-sheet="keyboard"]')).toBeVisible();
     await expect(page.locator('#tutorial-chat-input')).not.toHaveValue('');
 
-    // The terminal "Voilà" step highlights the table, as on desktop — not the
-    // app bar (the filename/pager strip on top).
+    // The terminal "Voilà" step spotlights the table — clamped to the table's
+    // visible top region, because a cutout as tall as the full-height table
+    // leaves the popover nowhere to sit and breaks the layout.
     await page.locator('.driver-popover-next-btn').click();
     await expect(progress).toHaveText('3 of 3');
     await expect(page.locator('.driver-popover')).toContainText('Voilà');
-    await expect(page.locator('#tutorial-table-view')).toHaveClass(/driver-active-element/);
+    const fit = await page.evaluate(() => {
+      const spot = document.querySelector('.driver-active-element')!.getBoundingClientRect();
+      const pop = document.querySelector('.driver-popover')!.getBoundingClientRect();
+      const table = document.getElementById('tutorial-table-view')!.getBoundingClientRect();
+      return {
+        spotTop: Math.round(spot.top),
+        spotBottom: Math.round(spot.bottom),
+        spotH: Math.round(spot.height),
+        popTop: Math.round(pop.top),
+        popBottom: Math.round(pop.bottom),
+        coversTable: spot.top >= table.top - 1 && spot.left >= table.left - 1,
+        vh: window.innerHeight,
+      };
+    });
+    expect(fit.spotH, 'the spotlight must be clamped to fit the screen').toBeLessThanOrEqual(fit.vh * 0.6);
+    expect(fit.spotTop, 'the spotlight must start on screen').toBeGreaterThanOrEqual(0);
+    expect(fit.coversTable, 'the spotlight must sit over the table region').toBe(true);
+    expect(fit.popBottom, 'the popover must stay on screen').toBeLessThanOrEqual(fit.vh + 1);
+    expect(fit.popTop, 'the popover must sit below the cutout').toBeGreaterThanOrEqual(fit.spotBottom - 20);
+  });
+
+  test('the empty page links to the tours', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-open-tours]').click();
+    await expect(page.getByTestId('tutorial-panel')).toBeVisible();
   });
 });
 
@@ -114,6 +139,12 @@ test.describe('desktop width', () => {
     await page.goto('/TamedTable/app/');
     await expect(page.locator('[data-tb-toolbar=""]')).toBeVisible();
     await expect(page.locator('[data-mob-dock=""]')).toHaveCount(0);
+  });
+
+  test('the desktop empty page links to the tours', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-tv-empty] [data-open-tours]').click();
+    await expect(page.getByTestId('tutorial-panel')).toBeVisible();
   });
 
   test('desktop Settings has no Add to home screen section', async ({ page }) => {

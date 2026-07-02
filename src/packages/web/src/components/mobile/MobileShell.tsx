@@ -22,6 +22,7 @@ import { Dock, type DockAction } from './Dock.tsx';
 import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
 import { KeyboardSheet, VoiceSheet, HistorySheet } from './sheets.tsx';
+import { ToursLink } from '../ToursLink.tsx';
 import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
@@ -111,12 +112,14 @@ function EmptyState({
   onOpenSample,
   onOpenLocal,
   onOpenUrl,
+  onOpenTours,
 }: {
   t: Theme;
   dark: boolean;
   onOpenSample: () => void;
   onOpenLocal: () => void;
   onOpenUrl: () => void;
+  onOpenTours: () => void;
 }): ReactNode {
   const opt = (icon: 'sparkle' | 'folder' | 'link', label: string, on: () => void, id?: string): ReactNode => (
     <button
@@ -170,6 +173,7 @@ function EmptyState({
         {opt('folder', 'Open local…', onOpenLocal)}
         {opt('link', 'Open URL…', onOpenUrl)}
       </div>
+      <ToursLink t={t} onOpen={onOpenTours} />
     </div>
   );
 }
@@ -344,6 +348,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
             onOpenSample={() => controller.openSampleDialog()}
             onOpenLocal={() => void controller.openCsv()}
             onOpenUrl={() => controller.openUrlDialog()}
+            onOpenTours={() => controller.openTutorial()}
           />
         </>
       )}

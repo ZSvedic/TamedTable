@@ -5,7 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/TamedTable/app/');
-  await page.getByRole('button', { name: 'Tours' }).waitFor();
+  await page.getByRole('button', { name: 'Tours', exact: true }).waitFor();
 });
 
 /** Scoped to the TutorialPanel element so Driver.js popover text doesn't collide. */
@@ -15,7 +15,7 @@ function panel(page: Page) {
 
 /** Open the Tours panel and click a tour — clicking an option starts it. */
 async function startTour(page: Page, name: string | RegExp) {
-  await page.getByRole('button', { name: 'Tours' }).click();
+  await page.getByRole('button', { name: 'Tours', exact: true }).click();
   await panel(page).getByRole('option', { name }).click();
 }
 
@@ -31,7 +31,7 @@ function nextBtn(page: Page) {
 }
 
 test('Tours button opens the panel with scenario names', async ({ page }) => {
-  await page.getByRole('button', { name: 'Tours' }).click();
+  await page.getByRole('button', { name: 'Tours', exact: true }).click();
   const p = panel(page);
   await expect(p.getByRole('option', { name: 'Filter by Country' })).toBeAttached();
   await expect(p.getByRole('option', { name: 'Count customers per country' })).toBeAttached();
