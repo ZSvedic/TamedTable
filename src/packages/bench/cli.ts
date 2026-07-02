@@ -108,11 +108,12 @@ async function cmdSweep(models: string[], batches: number[], out: string): Promi
   }
   const configs = grid(models, batches);
   console.log(`Running ${configs.length} configs (${models.length} models × ${batches.length} batch sizes)…`);
-  // Cell calls resolve their key from the same env the runner reads; pass the
-  // primary provider's key so the patch turn authenticates too.
+  // Do NOT pin a single apiKey — a sweep can span providers. Leaving apiKey
+  // undefined lets each runner resolve its own provider's key from env
+  // (GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY), which bun loads from
+  // .env. The pre-flight check above guarantees each is present.
   const results: SweepResult[] = await runSweep(configs, {
     inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels,
-    apiKey: keyFor(providerFor(models[0]!)),
   });
   mkdirSync(RESULTS_DIR, { recursive: true });
   const file = join(RESULTS_DIR, `${out}.jsonl`);
