@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="540" viewBox="0 0 640 540" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
 <rect width="640" height="540" fill="#ffffff"/>
 <text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — gemini-3.1-pro-preview</text>
-<text x="64" y="42" font-size="11" fill="#888888">Gemini · 120-row subset · labels: gemini-2.5-pro · single run</text>
+<text x="64" y="42" font-size="11" fill="#888888">120-row subset · labels: gemini-2.5-pro · single run · OpenAI scored vs a Gemini labeller</text>
 <text x="64" y="54" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
 <line x1="64" y1="60" x2="616" y2="60" stroke="#e5e5e5"/>
 <line x1="64" y1="180" x2="616" y2="180" stroke="#e5e5e5"/>
