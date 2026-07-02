@@ -4,9 +4,7 @@ TamedTable is an AI ETL tool you drive with natural language. Load a CSV, type *
 
 [Run the live app](https://www.tamedtable.com/app/) directly in the browser, no install needed. 
 
-<video src="https://github.com/ZSvedic/TamedTable/raw/main/marketing/video/demo-16x9.mp4" poster="https://github.com/ZSvedic/TamedTable/raw/main/marketing/video/demo-poster-16x9.png" controls muted loop width="720"></video>
-
-> 20-second demo — if the player doesn't load, [watch demo-16x9.mp4](marketing/video/demo-16x9.mp4).
+https://github.com/user-attachments/assets/800d4bbd-efd9-4ce2-b32d-70f24683a75a
 
 ## Project layout
 
