@@ -179,11 +179,19 @@ provider's key page, opening in a new tab:
 - OpenAI → `https://platform.openai.com/api-keys`
 - Anthropic → `https://console.anthropic.com/settings/keys`
 
-These URLs are provider metadata baked into the component. When the optional
-`byokHelpUrl` prop is set, a single **"How to get an API key ↗"** link to that
-URL renders below the cards (also new-tab); the host supplies the path so the
-component stays free of any site-specific URL. The web app points it at the
-BYOK setup guide.
+These URLs are provider metadata baked into the component. Two optional host-
+supplied help links frame the cards, both opening in a new tab; the host
+supplies each path so the component stays free of any site-specific URL:
+
+- `byokHelpUrl` → a **"New here? How to get an API key ↗"** link rendered at the
+  **top**, directly below the role explainer. The web app points it at the BYOK
+  setup guide.
+- `changeModelsHelpUrl` → a **"How to change primary and secondary models? ↗"**
+  link rendered at the **bottom**, below the cards. It points at the FAQ entry
+  explaining that the defaults are edited in `models.json`. The web app points
+  it at `FAQ.html#change-models`.
+
+Either link is omitted when its prop is unset.
 
 The component is pure — props in, callbacks out — and holds no state except
 the per-provider reveal toggle. It never touches storage or the network:
@@ -194,6 +202,7 @@ the per-provider reveal toggle. It never touches storage or the network:
 - `primaryModel`, `secondaryModel` — the provider's two default model ids,
   shown read-only
 - `expandedProvider` — which card shows its body, or null
+- `byokHelpUrl`, `changeModelsHelpUrl` — the two optional help-link URLs above
 - `onProviderClick(p)` — a card header was clicked
 - `onKeyChange(p, value)` — the user typed in a key field
 
@@ -241,5 +250,5 @@ setting the variables on any wrapping element: `--mc-ink`, `--mc-ink3`,
 For tests, each element carries a stable data attribute:
 `data-mc-card`, `data-mc-key`, `data-mc-reveal`, `data-mc-keyurl` (all keyed by
 provider id), each read-only default row `data-mc-model` (keyed by model id)
-plus `data-mc-role` (`"primary"` or `"secondary"`), and `data-mc-byok` on the
-general BYOK help link.
+plus `data-mc-role` (`"primary"` or `"secondary"`), `data-mc-byok` on the
+top BYOK help link, and `data-mc-changemodels` on the bottom FAQ link.

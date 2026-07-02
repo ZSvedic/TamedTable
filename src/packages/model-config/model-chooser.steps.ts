@@ -229,6 +229,20 @@ Then(
 );
 
 Then(
+  'the chooser shows a change-models help link to {string} in a new tab',
+  async function (this: DemoWorld, url: string) {
+    const p = page(this);
+    await p.waitForSelector('[data-mc-changemodels]', { timeout: 5_000 });
+    assert.ok(
+      (await p.getAttribute('[data-mc-changemodels]', 'href'))?.includes(url),
+      `expected the change-models help link href to include "${url}"`,
+    );
+    assert.equal(await p.getAttribute('[data-mc-changemodels]', 'target'), '_blank');
+    assert.match(await p.getAttribute('[data-mc-changemodels]', 'rel') ?? '', /noopener/);
+  },
+);
+
+Then(
   'the demo shows resolved provider {string}',
   async function (this: DemoWorld, expected: string) {
     await expectResolved(page(this), 'provider', expected);

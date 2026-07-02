@@ -248,17 +248,25 @@ Feature: Web front-end
   Rule: The settings panel selects the engine model
 
     @web
-    Scenario: The web app defaults to the Sonnet model
+    Scenario: The web app defaults to the Sonnet primary and Haiku cell model
       Given the TamedTable web app
       Then the configured model is "claude-sonnet-4-6"
+      And the configured cellModel is "claude-haiku-4-5"
 
     @web
-    Scenario: Choosing a model keeps the loaded table intact
+    Scenario: Selecting a provider pins its fixed default models
+      Given the TamedTable web app
+      When user selects the provider "gemini"
+      Then the configured model is "gemini-3.5-flash"
+      And the configured cellModel is "gemini-3.1-flash-lite"
+
+    @web
+    Scenario: Switching provider keeps the loaded table intact
       Given the TamedTable web app
       And load "customers-input.csv"
       When user edits cell at row 1 column "Country" to "United States"
-      And user selects the model "claude-haiku-4-5"
-      Then the configured model is "claude-haiku-4-5"
+      And user selects the provider "gemini"
+      Then the configured model is "gemini-3.5-flash"
       And cell at row 1 column "Country" shows "United States"
       And the spec has 1 transformation
 

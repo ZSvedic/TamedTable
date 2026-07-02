@@ -3,7 +3,14 @@
 // state and expanded provider card, and the persistence + engine-rebuild that
 // a config change triggers. The config object itself lives on the host (the
 // React panel reads it directly); this owns the transitions.
-import { resolveConfig, keyFor, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
+import {
+  resolveConfig,
+  keyFor,
+  defaultModel,
+  defaultCellModel,
+  type Provider,
+  type ResolvedConfig,
+} from '@tamedtable/model-config';
 import { writeStoredConfig } from '@tamedtable/model-config/storage';
 import { userFacingMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
@@ -37,9 +44,14 @@ export class ConfigManager {
       this.host.expandedProvider = null;
     } else {
       this.host.expandedProvider = provider;
-      // Selecting a card selects the provider and resets the model to that
-      // provider's default only if the current model doesn't match the provider.
-      await this.setConfig({ provider });
+      // The user picks a provider, not individual models — so selecting a card
+      // always pins that provider's fixed primary + secondary defaults, even if
+      // a stale model from an older build is still stored.
+      await this.setConfig({
+        provider,
+        model: defaultModel(provider),
+        cellModel: defaultCellModel(provider),
+      });
     }
     this.host.notify();
   }

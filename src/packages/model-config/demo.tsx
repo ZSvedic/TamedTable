@@ -139,6 +139,7 @@ function Demo() {
         keys={keys}
         expandedProvider={expanded}
         byokHelpUrl="/TamedTable/BYOK-setup.html"
+        changeModelsHelpUrl="../../FAQ.html#change-models"
         onProviderClick={(p) => {
           // Same semantics as WebController.clickProviderCard: expanding a
           // card selects that provider; collapsing changes nothing. A stale

@@ -271,6 +271,11 @@ Feature: Model config
       Then the chooser shows a BYOK help link to "BYOK-setup.html" in a new tab
 
     @web
+    Scenario: The chooser links to the FAQ on changing the default models
+      Given the model-config demo page
+      Then the chooser shows a change-models help link to "FAQ.html#change-models" in a new tab
+
+    @web
     Scenario: A typed API key stays masked until the eye toggle reveals it
       Given the model-config demo page
       When the user clicks the "Anthropic" provider card

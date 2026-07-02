@@ -21,9 +21,14 @@ export interface ModelChooserProps {
   secondaryModel: string;
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
-  /** Optional URL for a general "how to get an API key" help link below the
-   * cards. The host supplies the path so the component carries no site URL. */
+  /** Optional URL for a general "how to get an API key" help link, shown at the
+   * top below the explainer. The host supplies the path so the component
+   * carries no site URL. */
   byokHelpUrl?: string;
+  /** Optional URL for a "how to change the default models" help link, shown at
+   * the bottom below the cards. Points at the FAQ entry that explains editing
+   * models.json. The host supplies the path. */
+  changeModelsHelpUrl?: string;
   onProviderClick: (p: Provider) => void;
   onKeyChange: (p: Provider, value: string) => void;
 }
@@ -123,6 +128,7 @@ export function ModelChooser({
   keys,
   expandedProvider,
   byokHelpUrl,
+  changeModelsHelpUrl,
   onProviderClick,
   onKeyChange,
 }: ModelChooserProps): ReactNode {
@@ -178,6 +184,27 @@ export function ModelChooser({
         🎙 voice
       </span>
     ) : null;
+
+  // A small accent-coloured, new-tab help link. `attr` is the stable data
+  // attribute the tests hook onto (data-mc-byok / data-mc-changemodels).
+  const helpLink = (attr: string, href: string, label: string): ReactNode => (
+    <a
+      {...{ [attr]: '' }}
+      href={href}
+      target="_blank"
+      rel="noopener"
+      style={{
+        fontFamily: fontUi,
+        fontSize: 11.5,
+        fontWeight: 500,
+        color: accent,
+        textDecoration: 'none',
+        alignSelf: 'flex-start',
+      }}
+    >
+      {label}
+    </a>
+  );
 
   const radioKnob = (selected: boolean): ReactNode => (
     <span
@@ -360,6 +387,8 @@ export function ModelChooser({
         handles voice input; <b style={{ color: ink }}>Secondary</b> fills per-row
         AI cells with a cheaper model for bulk work.
       </p>
+      {/* General "how to get an API key" help link — top, below the explainer. */}
+      {byokHelpUrl && helpLink('data-mc-byok', byokHelpUrl, 'New here? How to get an API key ↗')}
       {PROVIDERS.map((meta) => {
         const isSelected = provider === meta.id;
         const isExpanded = expandedProvider === meta.id;
@@ -417,25 +446,13 @@ export function ModelChooser({
           </div>
         );
       })}
-      {/* General "how to get an API key" help link — host-supplied URL. */}
-      {byokHelpUrl && (
-        <a
-          data-mc-byok
-          href={byokHelpUrl}
-          target="_blank"
-          rel="noopener"
-          style={{
-            fontFamily: fontUi,
-            fontSize: 11.5,
-            fontWeight: 500,
-            color: accent,
-            textDecoration: 'none',
-            alignSelf: 'flex-start',
-          }}
-        >
-          New here? How to get an API key ↗
-        </a>
-      )}
+      {/* "How to change the default models" FAQ link — bottom, below the cards. */}
+      {changeModelsHelpUrl &&
+        helpLink(
+          'data-mc-changemodels',
+          changeModelsHelpUrl,
+          'How to change primary and secondary models? ↗',
+        )}
     </div>
   );
 }

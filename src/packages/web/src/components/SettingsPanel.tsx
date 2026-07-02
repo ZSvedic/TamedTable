@@ -130,13 +130,9 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             keys={keys}
             expandedProvider={controller.expandedProvider}
             byokHelpUrl="../BYOK-setup.html"
+            changeModelsHelpUrl="../FAQ.html#change-models"
             onProviderClick={(p) => void controller.clickProviderCard(p)}
             onKeyChange={handleKeyChange}
-            onSelectModel={(role, modelId) =>
-              void controller.setConfig(
-                role === 'primary' ? { model: modelId } : { cellModel: modelId },
-              )
-            }
           />
 
           {/* #Diagnostics — send the maintainers a redacted bug report */}
