@@ -690,7 +690,10 @@ Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
 three open actions stacked as buttons — **Open sample…**, **Open
 local…**, **Open URL…** — so the first run and the toolbar offer the
-identical choices.
+identical choices. Below the buttons a line reads **"Or start one of
+the tours"** — a link that opens the Tours panel, so a first-time
+visitor finds the guided path without hunting for the toolbar button.
+The same line appears on the phone's empty page.
 
 Saving data mirrors that shape. **Save data** is itself a split-button:
 the primary half writes the rows back in the format the table was
@@ -1091,9 +1094,11 @@ When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
 instruction, the **← Prev**, **Next →** and close (**×**) buttons, and a subtle
 keyboard-shortcut hint **below the buttons** (**← Prev**, **→** / **Space**
-next, **Esc** cancel). Each step is **highlighted first** and **executed only
-when the user clicks Next** — the action runs as the tour advances, not at the
-moment the step appears. A step's action runs **once**: stepping back with Prev
+next, **Esc** cancel). A spotlight never exceeds the screen: a target larger
+than the viewport (the table) is highlighted by its visible top region, so the
+popover always has room below it. Each step is **highlighted first** and
+**executed only when the user clicks Next** — the action runs as the tour
+advances, not at the moment the step appears. A step's action runs **once**: stepping back with Prev
 and forward again with Next re-highlights the step but does **not** re-run it —
 the file stays loaded and the query is not re-sent (a re-sent request would miss
 the cassette and fail with a toast).

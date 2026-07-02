@@ -8,6 +8,7 @@ import { Mark } from '@tamedtable/toolbar/components';
 import { TableView as TableGrid } from '@tamedtable/table-view/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
+import { ToursLink } from './ToursLink.tsx';
 
 // The three open actions — the same trio the toolbar and the mobile drawer
 // offer, here stacked as the first-run choices.
@@ -106,6 +107,7 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
             <OptionRow key={o.label} icon={o.icon} label={o.label} onClick={o.onClick} t={t} />
           ))}
         </div>
+        <ToursLink t={t} onOpen={() => controller.openTutorial()} />
       </div>
     </div>
   );
