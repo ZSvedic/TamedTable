@@ -9,8 +9,10 @@
     <title>TamedTable</title>
     <meta name="theme-color" content="#281C60" />
     <!-- Added to the home screen, the app runs full-screen — no browser bars.
-         In a normal tab, hide-browser-bars.ts nudges the page so the browser
-         slides its bars away; the layout starts at 100svh and grows. -->
+         In a normal tab, the phone layout lets the page itself scroll the
+         table, so a swipe hides the bars (see MobileShell). The manifest makes
+         Android's install open standalone; Settings offers the prompt. -->
+    <link rel="manifest" href="/pr-preview/pr-190/app/manifest.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -29,8 +31,8 @@
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/pr-preview/pr-190/app/assets/index-BjjbvqSt.js"></script>
-    <link rel="stylesheet" crossorigin href="/pr-preview/pr-190/app/assets/index-CdsAW43R.css">
+    <script type="module" crossorigin src="/pr-preview/pr-190/app/assets/index-D4dRmYkJ.js"></script>
+    <link rel="stylesheet" crossorigin href="/pr-preview/pr-190/app/assets/index-Bptf7r91.css">
   </head>
   <body>
     <div id="root"></div>
