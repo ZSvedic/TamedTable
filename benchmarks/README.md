@@ -84,7 +84,15 @@ Two views, both slices of the same `SweepResult[]`:
 
 Colours are the Okabe-Ito colourblind-safe palette, keyed by provider.
 
-> **The committed charts are illustrative.** They render from
-> `results/illustrative-example.jsonl` — **placeholder numbers, not measured** —
-> to show the format. Real charts land once the live sweep runs (see the "Phase
-> 2" note in the session that built this).
+## Results so far
+
+- **Gemini** — real run committed: `results/phase2-gemini.jsonl` and the charts.
+  Findings and the per-config table:
+  [`process/journal/2026-07-02-model-batch-sweep-gemini.md`](../process/journal/2026-07-02-model-batch-sweep-gemini.md).
+  Headline: accuracy is flat 93–97% across all three Gemini models and every
+  batch size, so `gemini-3.1-flash-lite` wins on value (~10× cheaper, same
+  accuracy), and batching ≥10 cuts cost/time sharply for free.
+- **OpenAI & Anthropic** — not yet run. They need an environment with the
+  catalogue's OpenAI ids (`gpt-5.5` / `gpt-5.4-mini`) reachable and an
+  `ANTHROPIC_API_KEY` set. Re-run `bun run bench:sweep` there; results append to
+  the same table and charts.
