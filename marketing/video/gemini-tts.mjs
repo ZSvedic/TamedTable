@@ -6,7 +6,7 @@
 // Produces out/voice-<VOICE>.wav (raw read) and hero-<ratio>-en.webm.
 // Needs GEMINI_API_KEY. Usage: node gemini-tts.mjs
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -118,10 +118,14 @@ function alignedTrack(cont, dest) {
 
 mkdirSync(tmp, { recursive: true });
 const cont = path.join(out, `voice-${VOICE}.wav`);
-await continuousWav(cont);
-console.log(`✓ continuous read: ${cont} (${dur(cont).toFixed(1)}s)`);
+if (existsSync(cont)) {                 // reuse the approved read; don't re-roll
+  console.log(`↺ reusing existing read: ${cont} (${dur(cont).toFixed(1)}s)`);
+} else {
+  await continuousWav(cont);
+  console.log(`✓ continuous read: ${cont} (${dur(cont).toFixed(1)}s)`);
+}
 
-const track = path.join(tmp, 'track.wav');
+const track = path.join(out, 'track-algieba.wav');   // persisted for reuse (real cut)
 alignedTrack(cont, track);
 for (const ratio of RATIOS) {
   const silent = path.join(out, `silent-${ratio}-en.webm`);
