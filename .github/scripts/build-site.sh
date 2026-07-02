@@ -35,8 +35,9 @@ mkdir -p "$OUT/app"
 cp -rL marketing/web/. "$OUT/"
 cp -r src/packages/web/dist/. "$OUT/app/"
 
-# Standalone module demos under /demos/<name>/.
-for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-kit voice-input; do
+# Standalone module demos under /demos/<name>/. scroll-demo is a temporary
+# test bench for the mobile browser-bar tricks — remove with its package.
+for name in chat-panel file-io gherkin-tour model-config scroll-demo table-view toolbar ui-kit voice-input; do
   ( cd src && bun build "packages/$name/demo.html" \
       --outdir "$OUT/demos/$name" \
       --public-path="${BASE}demos/$name/" )
