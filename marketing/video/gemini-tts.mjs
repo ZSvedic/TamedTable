@@ -6,7 +6,7 @@
 // Produces out/voice-<VOICE>.wav (raw read) and hero-<ratio>-en.webm.
 // Needs GEMINI_API_KEY. Usage: node gemini-tts.mjs
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 

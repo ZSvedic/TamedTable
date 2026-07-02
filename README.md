@@ -4,6 +4,10 @@ A CLI ETL tool you drive with natural language. Load a CSV, type *"normalize pho
 
 **Live:** [zsvedic.github.io/TamedTable](https://zsvedic.github.io/TamedTable/) — landing page · [Open Web App](https://zsvedic.github.io/TamedTable/app/) — runs directly in the browser, no install needed.
 
+<video src="https://github.com/ZSvedic/TamedTable/raw/main/marketing/video/demo-16x9.mp4" poster="https://github.com/ZSvedic/TamedTable/raw/main/marketing/video/demo-poster-16x9.png" controls muted loop width="720"></video>
+
+> 20-second demo — if the player doesn't load, [watch demo-16x9.mp4](marketing/video/demo-16x9.mp4).
+
 ## Project layout
 
 Organized by **lifecycle**, not by file type:

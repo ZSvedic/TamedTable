@@ -182,9 +182,9 @@ serve the full-quality MP4/WebM.
 So: **yes, everything can live in `marketing/video/`** — plus one symlink under
 `marketing/web/` and one line in the deploy workflow when the assets first land.
 
-## Prototype status
+## How to regenerate
 
-A working rough pass lives in this dir. Three steps produce every deliverable:
+Three steps produce the video from source:
 
 ```
 node capture.mjs        # silent renders: out/silent-<ratio>-en.webm  (Playwright)
@@ -193,57 +193,26 @@ node encode.mjs         # -> out/hero-<ratio>-en.mp4, hero-16x9-en.gif, poster-1
 ```
 
 `capture.mjs` drives `timeline.html` (the animated scene + camera) with
-Playwright; `gemini-tts.mjs` makes the voiceover and muxes it; `encode.mjs`
-derives the MP4/GIF/poster. All muxing/encoding uses a full ffmpeg from the
-`imageio-ffmpeg` pip package (this env's bundled ffmpeg is video-only). `out/`
-is git-ignored — everything regenerates from source. (`audio.mjs` is the OpenAI
-alternative and the external-WAV muxer, kept for A/B.)
+Playwright; `gemini-tts.mjs` reads `timeline.html`'s beats, synthesizes the
+voiceover (one continuous Gemini read, voice **Algieba**, laid onto the beats),
+and muxes it; `encode.mjs` derives the MP4/GIF/poster. All muxing/encoding uses a
+full ffmpeg from the `imageio-ffmpeg` pip package (this env's bundled ffmpeg is
+video-only). Fonts are bundled as data-URIs in `fonts.css`, so renders load
+instantly and offline. `out/` is git-ignored — everything regenerates from
+source; the committed **`demo-16x9.mp4`** is the 16:9 render embedded in the
+repo README.
 
-What the rough pass already does: **both ratios** in **WebM and MP4**, plus a
-README **GIF and poster**; 20s; all seven beats synced; brand colors and fonts;
-the row-by-row rewrite with the accent flash; burned-in captions and call-outs;
-portrait framing that fits the table width; the Spanish-prompt moment; and a
-continuous Gemini voiceover (voice **Algieba**) placed at the beats.
+Run the render scripts plainly (`node capture.mjs`) — do NOT prefix with a
+`pkill` matching the chromium path, which would kill the run's own browser.
 
-### Real-footage cut
+The result: both ratios in WebM and MP4, plus a README GIF and poster; 20s; all
+seven beats synced; brand colors and bundled fonts; the row-by-row rewrite with
+the accent flash; burned-in captions and call-outs; portrait framing that fits
+the table width; the Spanish-prompt moment; and the Algieba voiceover.
 
-There are now two versions of the app beats — the **mock** (hand-built HTML,
-`timeline.html`) and **real footage** (the actual web app, `realtimeline.html`).
-The mock renders stay as `hero-<ratio>-en.*`; the real cut is
-`hero-<ratio>-en-real.*`. Both share the brand open/close, the camera, the
-captions/call-outs, and the Algieba voiceover.
-
-Real footage pipeline:
-
-```
-# 1. serve the app locally (localhost dodges the egress proxy)
-cd src/packages/web && TAMEDTABLE_WEB_BASE=/ bun run dev
-# 2. record the real phone-normalize tour (key-free cassette) -> out/realapp-flow.webm
-node capture-realapp.mjs
-# 3. composite it into the branded timeline + encode webm/mp4/gif/poster
-node realcapture.mjs
-```
-
-`capture-realapp.mjs` drives the deep-linked clean-up tour with the Driver.js
-overlay hidden, so the app reads clean, and trims the flow. `realtimeline.html`
-plays that clip inside the same camera/captions/voice as the mock, scrubbing it
-frame-accurately so the streaming lands on the "watch" beat. The live app can't
-be captured through the proxy (github.io's HSTS/CT resets Chromium), so it must
-be served locally.
-
-Fonts are **bundled** as data-URIs in `fonts.css` (built once from Google
-Fonts), so every render loads instantly and offline — no network pre-roll.
-
-Still to close before it ships:
-
-- **Real cut is 16:9 only** so far, at 15fps. The vertical 9:16 real cut needs
-  the app's mobile dock layout captured at phone size; and 24–30fps is smoother
-  for the pans (the render loop works now, just more frames).
-- **Real "say it" beat** shows the chat a beat before the request bubble lands;
-  worth nudging the clip map or re-recording with a typing pause.
-- **Voice can still be upgraded.** Algieba (Gemini) is the current pick; a paid
-  ElevenLabs/Azure read would be more expressive. Drop a 20s WAV at
-  `out/voiceover-en.wav` and re-mux.
+Room to grow: bump the frame rate for smoother pans, wire the homepage `<video>`
+(the *What ships* section below), or swap in a more expressive paid voiceover
+(ElevenLabs / Azure) in place of the Gemini read the mux step muxes.
 
 ## Definition of done
 
