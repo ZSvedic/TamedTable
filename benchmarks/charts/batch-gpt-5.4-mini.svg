@@ -1,48 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="540" viewBox="0 0 640 540" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
-<rect width="640" height="540" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="528" viewBox="0 0 640 528" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<rect width="640" height="528" fill="#ffffff"/>
 <text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — gpt-5.4-mini</text>
-<text x="64" y="42" font-size="11" fill="#888888">120-row subset · labels: gemini-2.5-pro · single run · OpenAI scored vs a Gemini labeller</text>
-<text x="64" y="54" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
-<line x1="64" y1="60" x2="616" y2="60" stroke="#e5e5e5"/>
-<line x1="64" y1="180" x2="616" y2="180" stroke="#e5e5e5"/>
-<text x="56" y="64" font-size="10" text-anchor="end" fill="#222222">100%</text>
-<text x="56" y="184" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,74.0 91.9,73.0 126.9,73.0 196.8,73.0 336.5,79.0 616.0,71.0" fill="none" stroke="#009E73" stroke-width="2"/>
-<circle cx="64.0" cy="74.0" r="3.5" fill="#009E73"/>
-<circle cx="91.9" cy="73.0" r="3.5" fill="#009E73"/>
-<circle cx="126.9" cy="73.0" r="3.5" fill="#009E73"/>
-<circle cx="196.8" cy="73.0" r="3.5" fill="#009E73"/>
-<circle cx="336.5" cy="79.0" r="3.5" fill="#009E73"/>
-<circle cx="616.0" cy="71.0" r="3.5" fill="#009E73"/>
-<text x="64" y="214" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
-<line x1="64" y1="220" x2="616" y2="220" stroke="#e5e5e5"/>
-<line x1="64" y1="340" x2="616" y2="340" stroke="#e5e5e5"/>
-<text x="56" y="224" font-size="10" text-anchor="end" fill="#222222">$0.1000</text>
-<text x="56" y="344" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,273.2 91.9,318.3 126.9,304.6 196.8,324.7 336.5,316.0 616.0,290.1" fill="none" stroke="#009E73" stroke-width="2"/>
-<circle cx="64.0" cy="273.2" r="3.5" fill="#009E73"/>
-<circle cx="91.9" cy="318.3" r="3.5" fill="#009E73"/>
-<circle cx="126.9" cy="304.6" r="3.5" fill="#009E73"/>
-<circle cx="196.8" cy="324.7" r="3.5" fill="#009E73"/>
-<circle cx="336.5" cy="316.0" r="3.5" fill="#009E73"/>
-<circle cx="616.0" cy="290.1" r="3.5" fill="#009E73"/>
-<text x="64" y="374" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
-<line x1="64" y1="380" x2="616" y2="380" stroke="#e5e5e5"/>
-<line x1="64" y1="500" x2="616" y2="500" stroke="#e5e5e5"/>
-<text x="56" y="384" font-size="10" text-anchor="end" fill="#222222">200s</text>
-<text x="56" y="504" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,381.0 91.9,486.3 126.9,490.2 196.8,481.4 336.5,496.0 616.0,455.3" fill="none" stroke="#009E73" stroke-width="2"/>
-<circle cx="64.0" cy="381.0" r="3.5" fill="#009E73"/>
-<circle cx="91.9" cy="486.3" r="3.5" fill="#009E73"/>
-<circle cx="126.9" cy="490.2" r="3.5" fill="#009E73"/>
-<circle cx="196.8" cy="481.4" r="3.5" fill="#009E73"/>
-<circle cx="336.5" cy="496.0" r="3.5" fill="#009E73"/>
-<circle cx="616.0" cy="455.3" r="3.5" fill="#009E73"/>
-<text x="64.0" y="520" font-size="11" text-anchor="middle" fill="#222222">1</text>
-<text x="91.9" y="520" font-size="11" text-anchor="middle" fill="#222222">5</text>
-<text x="126.9" y="520" font-size="11" text-anchor="middle" fill="#222222">10</text>
-<text x="196.8" y="520" font-size="11" text-anchor="middle" fill="#222222">20</text>
-<text x="336.5" y="520" font-size="11" text-anchor="middle" fill="#222222">40</text>
-<text x="616.0" y="520" font-size="11" text-anchor="middle" fill="#222222">80</text>
-<text x="340" y="540" font-size="12" text-anchor="middle" fill="#222222">Batch size (rows per model call)</text>
+<text x="64" y="42" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
+<line x1="64" y1="48" x2="616" y2="48" stroke="#e5e5e5"/>
+<line x1="64" y1="168" x2="616" y2="168" stroke="#e5e5e5"/>
+<text x="56" y="52" font-size="10" text-anchor="end" fill="#222222">100%</text>
+<text x="56" y="172" font-size="10" text-anchor="end" fill="#222222">0</text>
+<polyline points="64.0,62.0 91.9,61.0 126.9,61.0 196.8,61.0 336.5,67.0 616.0,59.0" fill="none" stroke="#009E73" stroke-width="2"/>
+<circle cx="64.0" cy="62.0" r="3.5" fill="#009E73"/>
+<circle cx="91.9" cy="61.0" r="3.5" fill="#009E73"/>
+<circle cx="126.9" cy="61.0" r="3.5" fill="#009E73"/>
+<circle cx="196.8" cy="61.0" r="3.5" fill="#009E73"/>
+<circle cx="336.5" cy="67.0" r="3.5" fill="#009E73"/>
+<circle cx="616.0" cy="59.0" r="3.5" fill="#009E73"/>
+<text x="64" y="202" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
+<line x1="64" y1="208" x2="616" y2="208" stroke="#e5e5e5"/>
+<line x1="64" y1="328" x2="616" y2="328" stroke="#e5e5e5"/>
+<text x="56" y="212" font-size="10" text-anchor="end" fill="#222222">$0.1000</text>
+<text x="56" y="332" font-size="10" text-anchor="end" fill="#222222">0</text>
+<polyline points="64.0,261.2 91.9,306.3 126.9,292.6 196.8,312.7 336.5,304.0 616.0,278.1" fill="none" stroke="#009E73" stroke-width="2"/>
+<circle cx="64.0" cy="261.2" r="3.5" fill="#009E73"/>
+<circle cx="91.9" cy="306.3" r="3.5" fill="#009E73"/>
+<circle cx="126.9" cy="292.6" r="3.5" fill="#009E73"/>
+<circle cx="196.8" cy="312.7" r="3.5" fill="#009E73"/>
+<circle cx="336.5" cy="304.0" r="3.5" fill="#009E73"/>
+<circle cx="616.0" cy="278.1" r="3.5" fill="#009E73"/>
+<text x="64" y="362" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
+<line x1="64" y1="368" x2="616" y2="368" stroke="#e5e5e5"/>
+<line x1="64" y1="488" x2="616" y2="488" stroke="#e5e5e5"/>
+<text x="56" y="372" font-size="10" text-anchor="end" fill="#222222">200s</text>
+<text x="56" y="492" font-size="10" text-anchor="end" fill="#222222">0</text>
+<polyline points="64.0,369.0 91.9,474.3 126.9,478.2 196.8,469.4 336.5,484.0 616.0,443.3" fill="none" stroke="#009E73" stroke-width="2"/>
+<circle cx="64.0" cy="369.0" r="3.5" fill="#009E73"/>
+<circle cx="91.9" cy="474.3" r="3.5" fill="#009E73"/>
+<circle cx="126.9" cy="478.2" r="3.5" fill="#009E73"/>
+<circle cx="196.8" cy="469.4" r="3.5" fill="#009E73"/>
+<circle cx="336.5" cy="484.0" r="3.5" fill="#009E73"/>
+<circle cx="616.0" cy="443.3" r="3.5" fill="#009E73"/>
+<text x="64.0" y="508" font-size="11" text-anchor="middle" fill="#222222">1</text>
+<text x="91.9" y="508" font-size="11" text-anchor="middle" fill="#222222">5</text>
+<text x="126.9" y="508" font-size="11" text-anchor="middle" fill="#222222">10</text>
+<text x="196.8" y="508" font-size="11" text-anchor="middle" fill="#222222">20</text>
+<text x="336.5" y="508" font-size="11" text-anchor="middle" fill="#222222">40</text>
+<text x="616.0" y="508" font-size="11" text-anchor="middle" fill="#222222">80</text>
+<text x="340" y="528" font-size="12" text-anchor="middle" fill="#222222">Batch size (rows per model call)</text>
 </svg>
