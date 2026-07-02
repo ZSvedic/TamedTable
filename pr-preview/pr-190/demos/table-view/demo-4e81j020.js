@@ -17114,8 +17114,8 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
   }
 });
 
-// packages/chat-panel/demo.tsx
-var import_react7 = __toESM(require_react(), 1);
+// packages/table-view/demo.tsx
+var import_react6 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 // packages/ui-kit/tokens.json
 var tokens_default = {
@@ -17237,7 +17237,6 @@ var typography = tokens_default.typography;
 var space = tokens_default.space;
 var lightTheme = tokens_default.themes.light;
 var darkTheme = tokens_default.themes.dark;
-var TYPING_MS_PER_CHAR = 40;
 
 // packages/ui-kit/ThemeProvider.tsx
 var import_react = __toESM(require_react(), 1);
@@ -17281,7 +17280,7 @@ var PATHS = {
   save: "M3 3h7l3 3v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M5 3v3h5V3 M5 13v-4h6v4",
   undo: "M5 5 2.5 7.5 5 10 M2.5 7.5h7.5a3.5 3.5 0 1 1 0 7H7",
   redo: "m11 5 2.5 2.5L11 10 M13.5 7.5H6a3.5 3.5 0 1 0 0 7h3",
-  cog: "M8 5.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z M8 2v1.5 M8 12.5V14 M2 8h1.5 M12.5 8H14 M3.5 3.5l1.1 1.1 M11.4 11.4l1.1 1.1 M3.5 12.5l1.1-1.1 M11.4 4.6l1.1-1.1",
+  wrench: "M9.8 4.2a.67.67 0 0 0 0 .94l1.06 1.06a.67.67 0 0 0 .94 0l2.51-2.51a4 4 0 0 1-5.29 5.29l-4.61 4.61a1.41 1.41 0 0 1-2-2l4.61-4.61a4 4 0 0 1 5.29-5.29L9.8 4.2Z",
   send: "m2.5 8 11-5-3 12-3-5-5-2Z",
   stop: "M5 5h6v6H5z",
   chevron: "m4 6 4 4 4-4",
@@ -17392,785 +17391,566 @@ var import_react4 = __toESM(require_react(), 1);
 var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
 var FADE_MS = 320;
 var SHEET_CSS = "@keyframes uk-sheet-kf { from { opacity: 0; transform: translateY(6px); }" + " to { opacity: 1; transform: translateY(0); } }" + " .uk-sheet { animation: uk-sheet-kf 0.14s ease-out; }" + ` @keyframes uk-fade-kf { to { opacity: 0; transform: translateY(6px); } }` + ` .uk-sheet-leaving { animation: uk-fade-kf ${FADE_MS}ms ease-in forwards; }`;
-// packages/chat-panel/ChatPanel.tsx
+// packages/table-view/index.ts
+function clampPage(page, pageCount) {
+  const count = Math.max(1, Math.floor(pageCount) || 1);
+  if (!Number.isFinite(page))
+    return 1;
+  return Math.min(Math.max(1, Math.floor(page)), count);
+}
+function pageCountFor(totalRows, pageSize) {
+  return Math.max(1, Math.ceil(totalRows / pageSize));
+}
+function pageSlice(rows, page, pageSize) {
+  const current = clampPage(page, pageCountFor(rows.length, pageSize));
+  const start = (current - 1) * pageSize;
+  return rows.slice(start, start + pageSize);
+}
+function buildPageList(current, total) {
+  if (total <= 7)
+    return Array.from({ length: Math.max(0, total) }, (_, i) => i + 1);
+  const wanted = new Set([1, total, current - 1, current, current + 1]);
+  if (current <= 4)
+    for (const n of [2, 3, 4, 5])
+      wanted.add(n);
+  if (current >= total - 3)
+    for (const n of [total - 1, total - 2, total - 3, total - 4])
+      wanted.add(n);
+  const sorted = [...wanted].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0;i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1)
+      out.push("…");
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+// packages/table-view/TableView.tsx
 var import_react5 = __toESM(require_react(), 1);
+
+// packages/table-view/Pagination.tsx
 var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
-var CP_CSS = "@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }";
-function UserBubble({ t, children }) {
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-    style: { display: "flex", justifyContent: "flex-end" },
-    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-      "data-cp-message": "user",
-      style: {
-        maxWidth: "88%",
-        background: t.accentSoft,
-        color: t.ink,
-        border: `1px solid ${t.line}`,
-        borderRadius: space.radius,
-        padding: "6px 10px",
-        fontFamily: typography.ui,
-        fontSize: typography.size.base,
-        lineHeight: 1.5,
-        whiteSpace: "pre-wrap",
-        wordBreak: "break-word"
-      },
-      children
-    }, undefined, false, undefined, this)
-  }, undefined, false, undefined, this);
-}
-function debugDetailText(debug) {
-  return [
-    "── request ──────────────────────────",
-    debug.userRequest,
-    `${debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(", ")} · ${(debug.inputTokens + debug.outputTokens).toLocaleString("en-US")} tokens · ${(debug.elapsedMs / 1000).toFixed(1)}s`,
-    "",
-    "── response ─────────────────────────",
-    ...debug.turns.flatMap((turn, i) => [
-      `turn ${i + 1}: ${turn.outcome}`,
-      JSON.stringify(turn.ops, null, 2)
-    ]),
-    ...debug.cellSamples.length > 0 ? [
-      "",
-      "── cell samples (up to 3 per column) ──",
-      ...debug.cellSamples.flatMap((s) => s.samples.map((p) => `${s.column}: ${JSON.stringify(p.in)} → ${JSON.stringify(p.out)}`))
-    ] : []
-  ].join(`
-`);
-}
-function AssistantMessage({ t, message }) {
-  const [open, setOpen] = import_react5.useState(false);
-  const [copied, setCopied] = import_react5.useState(false);
-  const isError = message.text.startsWith("Error:");
-  const body = isError ? message.text.replace(/^Error:\s*/, "") : message.text;
-  const copyDetail = () => {
-    if (!message.debug)
-      return;
-    navigator.clipboard?.writeText(debugDetailText(message.debug)).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-    style: { display: "flex", flexDirection: "column" },
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        "data-cp-message": "assistant",
-        "data-cp-error": isError ? "" : undefined,
-        style: {
-          display: "flex",
-          alignItems: "flex-start",
-          gap: space.px8,
-          color: isError ? t.err : t.ink2,
-          fontFamily: typography.ui,
-          fontSize: typography.size.base,
-          lineHeight: 1.5
-        },
-        children: [
-          isError ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: { flex: "0 0 auto", marginTop: 2, color: t.err },
-            children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-              name: "err"
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: {
-              flex: "0 0 auto",
-              marginTop: 6,
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              background: t.ok
-            }
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: { flex: 1, whiteSpace: "pre-wrap", wordBreak: "break-word" },
-            children: body
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      message.debug && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(jsx_dev_runtime6.Fragment, {
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: {
-              marginTop: space.px4,
-              marginLeft: space.px14,
-              alignSelf: "flex-start",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: space.px8
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-detail-toggle": "",
-                onClick: () => setOpen((o) => !o),
-                style: {
-                  background: "transparent",
-                  border: 0,
-                  padding: 0,
-                  cursor: "pointer",
-                  color: t.ink3,
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.xs,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: space.px4
-                },
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-                    style: {
-                      display: "inline-flex",
-                      transition: "transform .15s",
-                      transform: open ? "rotate(0deg)" : "rotate(-90deg)"
-                    },
-                    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                      name: "chevron",
-                      size: 12
-                    }, undefined, false, undefined, this)
-                  }, undefined, false, undefined, this),
-                  "request detail"
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                onClick: copyDetail,
-                title: copied ? "Copied" : "Copy request detail",
-                "aria-label": copied ? "Copied" : "Copy request detail",
-                "data-testid": "copy-debug",
-                style: {
-                  background: "transparent",
-                  border: 0,
-                  padding: 0,
-                  cursor: "pointer",
-                  color: copied ? t.ok : t.ink3,
-                  display: "inline-flex",
-                  alignItems: "center"
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "copy",
-                  size: 12
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          open && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("pre", {
-            "data-cp-detail": "",
-            style: {
-              margin: `${space.px6}px 0 0 ${space.px14}px`,
-              padding: "8px 10px",
-              background: t.surface3,
-              color: t.ink3,
-              fontFamily: typography.mono,
-              fontSize: typography.size.xs,
-              lineHeight: 1.55,
-              borderRadius: space.radiusSm,
-              border: `1px solid ${t.line}`,
-              whiteSpace: "pre-wrap",
-              overflow: "auto",
-              maxHeight: 320
-            },
-            children: debugDetailText(message.debug)
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-function ChatPanel({
-  messages,
-  streaming,
-  requestCount,
-  prefill = null,
-  onSend,
-  onCancel,
-  inputId,
-  emptyState,
-  helpLines = [],
-  micButton,
-  fill = false
+function Pagination({
+  page,
+  pageCount,
+  onPageChange
 }) {
   const t = useTheme();
-  const [draft, setDraft] = import_react5.useState("");
-  const [focused, setFocused] = import_react5.useState(false);
-  const [helpOpen, setHelpOpen] = import_react5.useState(false);
-  const typing = import_react5.useRef({
-    typed: null,
-    timer: null
-  });
-  import_react5.useEffect(() => {
-    if (prefill === null)
-      return;
-    const guard = typing.current;
-    if (prefill === guard.typed)
-      return;
-    guard.typed = prefill;
-    if (guard.timer) {
-      clearInterval(guard.timer);
-      guard.timer = null;
-    }
-    if (prefill === "") {
-      setDraft("");
-      return;
-    }
-    let i = 0;
-    setDraft("");
-    guard.timer = setInterval(() => {
-      i += 1;
-      setDraft(prefill.slice(0, i));
-      if (i >= prefill.length && guard.timer) {
-        clearInterval(guard.timer);
-        guard.timer = null;
-      }
-    }, TYPING_MS_PER_CHAR);
-    return () => {
-      if (guard.timer) {
-        clearInterval(guard.timer);
-        guard.timer = null;
-      }
-    };
-  }, [prefill]);
-  const send = () => {
-    const text = draft.trim();
-    if (!text || streaming)
-      return;
-    setDraft("");
-    onSend(text);
-  };
-  const hasDraft = draft.trim() !== "";
-  const sendBtn = {
-    height: 30,
-    width: 30,
-    flex: "0 0 auto",
-    borderRadius: space.radiusSm,
-    display: "flex",
+  const pages = buildPageList(page, pageCount);
+  const cell = {
+    height: 24,
+    minWidth: 24,
+    padding: `0 ${space.px6}px`,
+    display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    cursor: "pointer"
+    borderRadius: space.radiusSm,
+    border: "1px solid transparent",
+    background: "transparent",
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontVariantNumeric: "tabular-nums"
   };
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("aside", {
-    style: {
-      width: fill ? "100%" : 360,
-      height: fill ? "100%" : undefined,
-      flex: fill ? "1 1 auto" : "0 0 auto",
-      minHeight: 0,
-      display: "flex",
-      flexDirection: "column",
-      background: t.surface2,
-      borderRight: fill ? "none" : `1px solid ${t.line}`
-    },
+  const nav = (dir) => {
+    const disabled = dir === "prev" ? page <= 1 : page >= pageCount;
+    const target = dir === "prev" ? page - 1 : page + 1;
+    return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+      type: "button",
+      "data-tv-prev": dir === "prev" ? "" : undefined,
+      "data-tv-next": dir === "next" ? "" : undefined,
+      title: dir === "prev" ? "Previous page" : "Next page",
+      disabled,
+      onClick: () => onPageChange(target),
+      style: {
+        ...cell,
+        color: disabled ? t.ink4 : t.ink2,
+        cursor: disabled ? "default" : "pointer"
+      },
+      children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+        style: {
+          display: "inline-flex",
+          transform: dir === "prev" ? "rotate(90deg)" : "rotate(-90deg)"
+        },
+        children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+          name: "chevron",
+          size: 12
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this)
+    }, undefined, false, undefined, this);
+  };
+  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+    style: { display: "flex", alignItems: "center", gap: 2 },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("style", {
-        children: CP_CSS
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+      nav("prev"),
+      pages.map((p, i) => p === "…" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+        style: { ...cell, color: t.ink3 },
+        children: "…"
+      }, `e${i}`, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+        type: "button",
+        "data-tv-page": p,
+        onClick: () => onPageChange(p),
+        "aria-current": p === page ? "page" : undefined,
         style: {
-          height: space.headerH,
-          flex: "0 0 auto",
-          display: "flex",
-          alignItems: "center",
-          padding: `0 ${space.px12}px`,
-          borderBottom: `1px solid ${t.line}`,
-          fontFamily: typography.ui,
-          fontSize: typography.size.xs,
-          fontWeight: 600,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-          color: t.ink3
+          ...cell,
+          cursor: "pointer",
+          color: p === page ? t.ink : t.ink2,
+          fontWeight: p === page ? 600 : 500,
+          borderColor: p === page ? t.line2 : "transparent",
+          background: p === page ? t.surface : "transparent"
         },
-        children: [
-          "Requests",
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: { flex: 1 }
-          }, undefined, false, undefined, this),
-          requestCount > 0 && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: {
-              fontFamily: typography.mono,
-              fontSize: typography.size.xs,
-              fontWeight: 400,
-              letterSpacing: 0,
-              textTransform: "none",
-              color: t.ink3
-            },
-            children: [
-              requestCount,
-              " transformation",
-              requestCount === 1 ? "" : "s",
-              streaming && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(jsx_dev_runtime6.Fragment, {
-                children: " · running"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          helpLines.length > 0 && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-            style: { position: "relative", marginLeft: space.px6 },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                onMouseEnter: () => setHelpOpen(true),
-                onMouseLeave: () => setHelpOpen(false),
-                onClick: () => setHelpOpen((o) => !o),
-                style: {
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: t.ink3,
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.xs,
-                  fontWeight: 600,
-                  padding: "2px 4px",
-                  lineHeight: 1,
-                  textTransform: "none",
-                  letterSpacing: 0,
-                  borderRadius: space.radiusSm
-                },
-                children: "?"
-              }, undefined, false, undefined, this),
-              helpOpen && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-                style: {
-                  position: "absolute",
-                  top: "100%",
-                  right: 0,
-                  marginTop: 4,
-                  background: t.surface,
-                  border: `1px solid ${t.line}`,
-                  borderRadius: space.radius,
-                  padding: "8px 10px",
-                  boxShadow: t.shadow,
-                  whiteSpace: "nowrap",
-                  zIndex: 100,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  textTransform: "none",
-                  letterSpacing: 0,
-                  fontWeight: 400
-                },
-                children: helpLines.map((line) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-                  style: {
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.xs,
-                    color: t.ink2,
-                    lineHeight: 1.5
-                  },
-                  children: line
-                }, line, false, undefined, this))
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        style: {
-          flex: 1,
-          overflowY: "auto",
-          padding: space.px14,
-          display: "flex",
-          flexDirection: "column",
-          gap: space.px12
-        },
-        children: [
-          messages.length === 0 && emptyState,
-          messages.map((m) => m.role === "user" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(UserBubble, {
-            t,
-            children: m.text
-          }, m.id, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(AssistantMessage, {
-            t,
-            message: m
-          }, m.id, false, undefined, this)),
-          streaming && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            "data-cp-running": "",
-            style: {
-              display: "flex",
-              alignItems: "center",
-              gap: space.px8,
-              color: t.ink2,
-              fontFamily: typography.ui,
-              fontSize: typography.size.sm
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-                className: "cp-pulse",
-                style: { width: 6, height: 6, borderRadius: 3, background: t.accent }
-              }, undefined, false, undefined, this),
-              "Running…"
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-        style: {
-          flex: "0 0 auto",
-          borderTop: `1px solid ${t.line}`,
-          padding: space.px10
-        },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: {
-              background: t.surface,
-              border: `1px solid ${focused ? t.accent : t.line2}`,
-              boxShadow: focused ? `0 0 0 3px ${t.ring}` : "none",
-              borderRadius: space.radius,
-              padding: "8px 8px 6px 10px",
-              display: "flex",
-              alignItems: "flex-end",
-              gap: space.px8,
-              transition: "border-color .12s, box-shadow .12s"
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("textarea", {
-                id: inputId,
-                value: draft,
-                onChange: (e) => setDraft(e.target.value),
-                onFocus: () => setFocused(true),
-                onBlur: () => setFocused(false),
-                onKeyDown: (e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                },
-                placeholder: "Describe a transformation…",
-                rows: 3,
-                style: {
-                  flex: 1,
-                  resize: "none",
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.base,
-                  lineHeight: 1.5,
-                  color: t.ink
-                }
-              }, undefined, false, undefined, this),
-              micButton,
-              streaming ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-stop": "",
-                onClick: onCancel,
-                title: "Stop the running request",
-                style: {
-                  ...sendBtn,
-                  border: `1px solid ${t.err}`,
-                  background: "transparent",
-                  color: t.err
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "stop"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-send": "",
-                onClick: send,
-                disabled: !hasDraft,
-                title: "Send (Enter)",
-                style: {
-                  ...sendBtn,
-                  border: "none",
-                  background: hasDraft ? t.accent : t.surface3,
-                  color: hasDraft ? t.inkOnAcc : t.ink3,
-                  cursor: hasDraft ? "pointer" : "default"
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "send"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
-            style: {
-              marginTop: space.px6,
-              fontFamily: typography.ui,
-              fontSize: typography.size.micro,
-              color: t.ink4,
-              letterSpacing: 0.3
-            },
-            children: "↵ to send · ⇧↵ for newline"
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
+        children: p
+      }, p, false, undefined, this)),
+      nav("next")
     ]
   }, undefined, true, undefined, this);
 }
-// packages/chat-panel/MicButton.tsx
-var import_react6 = __toESM(require_react(), 1);
+
+// packages/table-view/TableView.tsx
 var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
-var HOLD_MS = 250;
-var micCss = (rec) => `@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 55%, transparent); }` + ` 70% { box-shadow: 0 0 0 7px color-mix(in srgb, ${rec} 0%, transparent); }` + ` 100% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 0%, transparent); } }` + " .cp-rec-ring { animation: cp-rec-kf 1.1s ease-out infinite; }" + " @keyframes cp-spin-kf { to { transform: rotate(360deg); } }" + " .cp-spin { animation: cp-spin-kf 0.7s linear infinite; }";
-var DEFAULT_SIZE = {
-  height: 30,
-  width: 30,
-  flex: "0 0 auto",
-  borderRadius: 4,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center"
+function cellText(value) {
+  return value === null || value === undefined ? "" : String(value);
+}
+var STATUS_LABEL = {
+  idle: "Idle",
+  running: "Running",
+  saved: "Saved"
 };
-function MicButton({
-  status,
-  onStart,
-  onLatch,
-  onStop,
-  onCancel,
-  size = DEFAULT_SIZE,
-  id
+var TV_CSS = "@keyframes tv-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .tv-pulse { animation: tv-pulse-kf 1.2s ease-in-out infinite; }" + " .tv-th .tv-grip { opacity: 0; transition: opacity 0.15s; }" + " .tv-th:hover .tv-grip { opacity: 1; }";
+function TableView({
+  id,
+  columns,
+  rows,
+  pageStart,
+  totalRows,
+  page,
+  pageCount,
+  onPageChange,
+  selection,
+  onSelectCell,
+  onEditCell,
+  onReorderColumns,
+  streaming,
+  status
 }) {
   const t = useTheme();
-  const recording = status === "recording";
-  const latched = status === "latched";
-  const sending = status === "sending";
-  const pressedRef = import_react6.useRef(false);
-  const pressTimeRef = import_react6.useRef(0);
-  import_react6.useEffect(() => {
-    if (!recording && !latched)
+  const [editing, setEditing] = import_react5.useState(null);
+  const [draft, setDraft] = import_react5.useState("");
+  const [dragCol, setDragCol] = import_react5.useState(null);
+  const firstRow = totalRows === 0 ? 0 : pageStart + 1;
+  const lastRow = pageStart + rows.length;
+  const commitEdit = () => {
+    if (!editing)
       return;
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [recording, latched, onCancel]);
-  const press = (e) => {
-    if (sending)
+    const { row, col } = editing;
+    setEditing(null);
+    onEditCell(row, col, draft);
+  };
+  const dropOn = (target) => {
+    if (!dragCol || dragCol === target) {
+      setDragCol(null);
       return;
-    e.preventDefault();
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
-    pressedRef.current = true;
-    pressTimeRef.current = Date.now();
-    onStart();
-  };
-  const release = () => {
-    if (!pressedRef.current)
+    }
+    const order = columns.slice();
+    const from = order.indexOf(dragCol);
+    const to = order.indexOf(target);
+    if (from < 0 || to < 0) {
+      setDragCol(null);
       return;
-    pressedRef.current = false;
-    if (Date.now() - pressTimeRef.current >= HOLD_MS)
-      onStop();
-    else
-      onLatch();
+    }
+    order.splice(from, 1);
+    order.splice(to, 0, dragCol);
+    setDragCol(null);
+    onReorderColumns(order);
   };
-  const pointerCancel = () => {
-    pressedRef.current = false;
-    onCancel();
+  const headerCell = {
+    position: "sticky",
+    top: 0,
+    zIndex: 1,
+    background: t.surface2,
+    color: t.ink2,
+    textAlign: "left",
+    padding: `0 ${space.px10}px`,
+    height: space.headerH,
+    borderBottom: `1px solid ${t.line2}`,
+    borderRight: `1px solid ${t.line}`,
+    userSelect: "none",
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 600,
+    whiteSpace: "nowrap"
   };
-  if (latched) {
-    return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-      style: { display: "flex", alignItems: "center", gap: 6 },
-      children: [
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("style", {
-          children: micCss(t.rec)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-          "aria-hidden": true,
-          className: "cp-rec-ring",
-          style: { width: 10, height: 10, borderRadius: "50%", background: t.rec, flex: "0 0 auto" }
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-          type: "button",
-          onClick: onCancel,
-          title: "Cancel recording",
-          "aria-label": "Cancel recording",
-          "data-testid": "mic-cancel",
-          style: {
-            ...size,
-            border: `1px solid ${t.line2}`,
-            background: "transparent",
-            color: t.ink2,
-            cursor: "pointer"
-          },
-          children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "x"
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-          type: "button",
-          onClick: onStop,
-          title: "Send recording",
-          "aria-label": "Send recording",
-          "data-testid": "mic-send",
-          style: {
-            ...size,
-            border: `1px solid ${t.accent}`,
-            background: t.accent,
-            color: t.inkOnAcc,
-            cursor: "pointer"
-          },
-          children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "ok"
-          }, undefined, false, undefined, this)
-        }, undefined, false, undefined, this)
-      ]
-    }, undefined, true, undefined, this);
-  }
-  const title = recording ? "Release to send · tap for hands-free · Esc to cancel" : sending ? "Transcribing…" : "Hold to record, or tap for hands-free";
-  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-    type: "button",
+  const bodyCell = {
+    padding: `0 ${space.px10}px`,
+    height: space.rowH,
+    borderBottom: `1px solid ${t.line}`,
+    borderRight: `1px solid ${t.line}`,
+    color: t.ink,
+    maxWidth: 320,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap"
+  };
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
     id,
-    className: recording ? "cp-rec-ring" : undefined,
-    onPointerDown: press,
-    onPointerUp: release,
-    onPointerCancel: pointerCancel,
-    disabled: sending,
-    title,
-    "aria-label": title,
-    "data-testid": "mic-button",
     style: {
-      ...size,
-      border: `1px solid ${recording ? t.rec : t.line2}`,
-      background: recording ? t.rec : "transparent",
-      color: recording ? t.onRec : sending ? t.ink3 : t.ink2,
-      cursor: sending ? "default" : "pointer",
-      touchAction: "none"
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      minWidth: 0,
+      background: t.surface
     },
     children: [
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("style", {
-        children: micCss(t.rec)
+        children: TV_CSS
       }, undefined, false, undefined, this),
-      sending ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-        className: "cp-spin",
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        style: { flex: 1, overflow: "auto" },
+        children: [
+          streaming && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            "data-tv-streaming": "",
+            style: {
+              position: "sticky",
+              top: 0,
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: space.px8,
+              padding: `${space.px6}px ${space.px12}px`,
+              background: t.accentSoft,
+              color: t.ink,
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm,
+              borderBottom: `1px solid ${t.line}`
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                className: "tv-pulse",
+                style: { width: 6, height: 6, borderRadius: 3, background: t.accent }
+              }, undefined, false, undefined, this),
+              "Streaming results…"
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("table", {
+            style: {
+              borderCollapse: "collapse",
+              fontFamily: typography.mono,
+              fontSize: typography.size.sm,
+              fontVariantNumeric: "tabular-nums"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("thead", {
+                children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
+                  children: [
+                    /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
+                      style: {
+                        ...headerCell,
+                        textAlign: "right",
+                        color: t.ink4,
+                        fontFamily: typography.mono,
+                        fontWeight: 400
+                      },
+                      children: "#"
+                    }, undefined, false, undefined, this),
+                    columns.map((col) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
+                      className: "tv-th",
+                      "data-tv-header": col,
+                      draggable: true,
+                      onDragStart: () => setDragCol(col),
+                      onDragOver: (e) => e.preventDefault(),
+                      onDrop: () => dropOn(col),
+                      title: "Drag to reorder",
+                      style: {
+                        ...headerCell,
+                        cursor: "grab",
+                        background: dragCol === col ? t.accentSoft : t.surface2
+                      },
+                      children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                        style: { display: "inline-flex", alignItems: "center", gap: space.px6 },
+                        children: [
+                          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                            className: "tv-grip",
+                            style: { color: t.ink4 },
+                            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+                              name: "grip",
+                              size: 12
+                            }, undefined, false, undefined, this)
+                          }, undefined, false, undefined, this),
+                          col
+                        ]
+                      }, undefined, true, undefined, this)
+                    }, col, false, undefined, this))
+                  ]
+                }, undefined, true, undefined, this)
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tbody", {
+                children: rows.map((row, ri) => {
+                  const absRow = pageStart + ri;
+                  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
+                        style: {
+                          ...bodyCell,
+                          color: t.ink4,
+                          textAlign: "right",
+                          background: t.surface2
+                        },
+                        children: absRow + 1
+                      }, undefined, false, undefined, this),
+                      columns.map((col) => {
+                        const isEditing = editing?.row === absRow && editing.col === col;
+                        const isSelected = selection?.row === absRow && selection.column === col;
+                        return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
+                          "data-tv-cell": `${absRow}:${col}`,
+                          title: "Click to select · double-click to edit",
+                          onClick: () => onSelectCell(absRow, col),
+                          onDoubleClick: () => {
+                            setEditing({ row: absRow, col });
+                            setDraft(cellText(row?.[col]));
+                          },
+                          style: {
+                            ...bodyCell,
+                            padding: isEditing ? 0 : bodyCell.padding,
+                            background: isSelected && !isEditing ? t.accentSoft : undefined,
+                            boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : undefined
+                          },
+                          children: isEditing ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("input", {
+                            autoFocus: true,
+                            "data-tv-edit": "",
+                            value: draft,
+                            onChange: (e) => setDraft(e.target.value),
+                            onBlur: commitEdit,
+                            onKeyDown: (e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                commitEdit();
+                              } else if (e.key === "Escape") {
+                                setEditing(null);
+                              }
+                            },
+                            style: {
+                              width: "100%",
+                              boxSizing: "border-box",
+                              fontFamily: typography.mono,
+                              fontSize: typography.size.sm,
+                              background: t.surface,
+                              color: t.ink,
+                              border: "none",
+                              outline: "none",
+                              padding: `0 ${space.px10}px`,
+                              height: space.rowH
+                            }
+                          }, undefined, false, undefined, this) : cellText(row?.[col])
+                        }, col, false, undefined, this);
+                      })
+                    ]
+                  }, absRow, true, undefined, this);
+                })
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          rows.length === 0 && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: {
+              padding: space.px16,
+              color: t.ink3,
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm
+            },
+            children: "This table has 0 rows."
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
         style: {
-          width: 14,
-          height: 14,
-          borderRadius: "50%",
-          border: `2px solid ${t.line2}`,
-          borderTopColor: t.ink2,
-          display: "block"
-        }
-      }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-        name: "mic"
+          flex: "0 0 auto",
+          height: space.topbarH,
+          display: "flex",
+          alignItems: "center",
+          gap: space.px12,
+          padding: `0 ${space.px10}px 0 ${space.px14}px`,
+          borderTop: `1px solid ${t.line}`,
+          background: t.surface2
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            "data-tv-range": "",
+            style: {
+              fontFamily: typography.mono,
+              fontSize: typography.size.xs,
+              color: t.ink3
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                style: { color: t.ink2 },
+                children: [
+                  firstRow,
+                  "–",
+                  lastRow
+                ]
+              }, undefined, true, undefined, this),
+              " ",
+              "of ",
+              totalRows,
+              " rows"
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { flex: 1 }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Pagination, {
+            page,
+            pageCount,
+            onPageChange
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        style: {
+          flex: "0 0 auto",
+          height: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: space.px10,
+          padding: `0 ${space.px12}px`,
+          borderTop: `1px solid ${t.line}`,
+          background: t.surface2,
+          fontFamily: typography.mono,
+          fontSize: typography.size.xs,
+          color: t.ink3
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            "data-tv-selection": "",
+            style: { color: selection ? t.ink2 : t.ink4 },
+            children: selection ? `R${selection.row + 1} · ${selection.column}` : "no selection"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { color: t.ink4 },
+            children: "·"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            children: "UTF-8"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { flex: 1 }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            "data-tv-status": status,
+            style: { display: "inline-flex", alignItems: "center", gap: space.px6 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                className: status === "running" ? "tv-pulse" : undefined,
+                style: {
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  background: status === "running" ? t.accent : status === "saved" ? t.ok : t.ink4
+                }
+              }, undefined, false, undefined, this),
+              STATUS_LABEL[status]
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+// packages/table-view/demo.tsx
+var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
+var PAGE_SIZE = 10;
+var CITIES = ["Zagreb", "Lisbon", "Osaka", "Quito", "Tallinn"];
+function sampleRows() {
+  return Array.from({ length: 95 }, (_, i) => ({
+    ID: i + 1,
+    name: `Person ${i + 1}`,
+    age: 20 + i * 7 % 50,
+    city: CITIES[i % CITIES.length]
+  }));
+}
+function Demo() {
+  const t = useTheme();
+  const [rows, setRows] = import_react6.useState(sampleRows);
+  const [columns, setColumns] = import_react6.useState(["ID", "name", "age", "city"]);
+  const [page, setPage] = import_react6.useState(1);
+  const [selection, setSelection] = import_react6.useState(null);
+  const [streaming, setStreaming] = import_react6.useState(false);
+  const [log, setLog] = import_react6.useState(["ready"]);
+  const report = (event) => setLog((l) => [...l, event]);
+  const pageCount = pageCountFor(rows.length, PAGE_SIZE);
+  const current = clampPage(page, pageCount);
+  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
+    style: { height: "100vh", display: "flex", flexDirection: "column" },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 12px",
+          borderBottom: `1px solid ${t.line}`,
+          background: t.surface2,
+          color: t.ink,
+          font: `600 14px/1.4 ${typography.ui}`
+        },
+        children: [
+          "table-view — 95 sample rows, page size ",
+          PAGE_SIZE,
+          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
+            style: { flex: 1 }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
+            variant: "chrome",
+            onClick: () => setStreaming((v) => !v),
+            children: "Toggle streaming"
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(TableView, {
+        columns,
+        rows: pageSlice(rows, current, PAGE_SIZE),
+        pageStart: (current - 1) * PAGE_SIZE,
+        totalRows: rows.length,
+        page: current,
+        pageCount,
+        onPageChange: (p) => {
+          setPage(p);
+          report(`page ${p}`);
+        },
+        selection,
+        onSelectCell: (row, column) => {
+          setSelection({ row, column });
+          report(`select ${row}:${column}`);
+        },
+        onEditCell: (row, column, value) => {
+          setRows((all) => all.map((r, i) => i === row ? { ...r, [column]: value } : r));
+          report(`edit ${row}:${column}=${value}`);
+        },
+        onReorderColumns: (order) => {
+          setColumns(order);
+          report(`reorder ${order.join(",")}`);
+        },
+        streaming,
+        status: streaming ? "running" : "idle"
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("pre", {
+        id: "out",
+        style: {
+          flex: "0 0 auto",
+          maxHeight: "18vh",
+          overflow: "auto",
+          margin: 0,
+          padding: ".5rem .75rem",
+          font: `11px/1.5 ${typography.mono}`,
+          background: t.surface2,
+          color: t.ink2,
+          borderTop: `1px solid ${t.line}`
+        },
+        children: log.join(`
+`)
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-// packages/chat-panel/WaveButton.tsx
-var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
-// packages/chat-panel/demo.tsx
-var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
-var SAMPLE_DETAIL = {
-  userRequest: "normalize the phone column",
-  modelCalls: [{ model: "claude-sonnet-4-6", calls: 2 }],
-  inputTokens: 1843,
-  outputTokens: 412,
-  elapsedMs: 5300,
-  turns: [
-    { outcome: "committed", ops: [{ op: "add", path: "/transformations/-", value: { kind: "mutate" } }] }
-  ],
-  cellSamples: [
-    { column: "phone", samples: [{ in: "555 0199", out: "+1-555-0199" }] }
-  ]
-};
-var HELP_LINES = [
-  "Double-click a cell to edit it",
-  "Type :undo or :redo in the chat"
-];
-function Demo() {
-  const t = useTheme();
-  const [messages, setMessages] = import_react7.useState([]);
-  const [streaming, setStreaming] = import_react7.useState(false);
-  const [prefill, setPrefill] = import_react7.useState(null);
-  const [voiceStatus, setVoiceStatus] = import_react7.useState("idle");
-  const [seq, setSeq] = import_react7.useState(0);
-  const [log, setLog] = import_react7.useState(["ready"]);
-  const report = (event) => setLog((l) => [...l, event]);
-  const append = (...items) => {
-    setMessages((list) => [...list, ...items.map((m, i) => ({ ...m, id: seq + i }))]);
-    setSeq((n) => n + items.length);
-  };
-  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-    style: { height: "100vh", display: "flex" },
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ChatPanel, {
-        inputId: "demo-chat-input",
-        messages,
-        streaming,
-        requestCount: messages.filter((m) => m.role === "user").length,
-        prefill,
-        onSend: (text) => {
-          report(`send ${text}`);
-          append({ role: "user", text }, { role: "assistant", text: `Did: ${text}` });
-        },
-        onCancel: () => {
-          report("cancel");
-          setStreaming(false);
-        },
-        emptyState: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("p", {
-          style: { margin: 0, color: t.ink3, fontFamily: typography.ui, fontSize: 13 },
-          children: "No messages yet — send one below, or use the buttons on the right."
-        }, undefined, false, undefined, this),
-        helpLines: HELP_LINES,
-        micButton: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(MicButton, {
-          status: voiceStatus,
-          onStart: () => {
-            report("voice start");
-            setVoiceStatus("recording");
-          },
-          onLatch: () => {
-            report("voice latch");
-            setVoiceStatus("latched");
-          },
-          onStop: () => {
-            report("voice stop");
-            setVoiceStatus("sending");
-            setTimeout(() => setVoiceStatus("idle"), 800);
-          },
-          onCancel: () => {
-            report("voice cancel");
-            setVoiceStatus("idle");
-          }
-        }, undefined, false, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-        style: { flex: 1, display: "flex", flexDirection: "column", background: t.bg },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-            style: { display: "flex", flexWrap: "wrap", gap: 8, padding: 12 },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => append({ role: "assistant", text: "Error: Something broke while applying the change." }),
-                children: "Add error reply"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => append({ role: "assistant", text: "Normalized 12 phone numbers.", debug: SAMPLE_DETAIL }),
-                children: "Add reply with detail"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => setStreaming((v) => !v),
-                children: "Toggle streaming"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
-                variant: "chrome",
-                onClick: () => setPrefill("Keep rows where age >= 18"),
-                children: "Prefill draft"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("pre", {
-            id: "out",
-            style: {
-              flex: 1,
-              overflow: "auto",
-              margin: 12,
-              marginTop: 0,
-              padding: ".5rem .75rem",
-              font: `11px/1.5 ${typography.mono}`,
-              background: t.surface2,
-              color: t.ink2,
-              border: `1px solid ${t.line}`,
-              borderRadius: 6
-            },
-            children: log.join(`
-`)
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime9.jsxDEV(ThemeProvider, {
-  children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Demo, {}, undefined, false, undefined, this)
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime8.jsxDEV(ThemeProvider, {
+  children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Demo, {}, undefined, false, undefined, this)
 }, undefined, false, undefined, this));
