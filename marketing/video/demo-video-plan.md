@@ -75,6 +75,10 @@ each line's start time. Options, roughly best-voice first:
 
 - **ElevenLabs** — the most natural and expressive; paste the plain script, pick
   a voice, tune emphasis with punctuation and `<break>`. No full SSML.
+- **Gemini TTS** — `gemini-tts.mjs` auditions it (needs `GEMINI_API_KEY`):
+  it renders the script in several voices to `out/track-gemini-<voice>.wav` and
+  muxes a primary into `hero-<ratio>-en-gemini.webm`. Style is a plain-English
+  prompt prefix, not SSML.
 - **Azure Neural TTS** — full SSML (`voiceover.ssml` targets it): `<break>`,
   `<emphasis>`, `<prosody>`, expressive styles, and word-level timestamps.
 - **Google Cloud TTS** (Studio / Chirp3-HD voices) — SSML, very natural.
