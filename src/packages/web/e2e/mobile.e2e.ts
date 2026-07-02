@@ -97,6 +97,13 @@ test.describe('phone width', () => {
     // composer, prefilled with the tour's query.
     await expect(page.locator('[data-mob-sheet="keyboard"]')).toBeVisible();
     await expect(page.locator('#tutorial-chat-input')).not.toHaveValue('');
+
+    // The terminal "Voilà" step highlights the table, as on desktop — not the
+    // app bar (the filename/pager strip on top).
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('3 of 3');
+    await expect(page.locator('.driver-popover')).toContainText('Voilà');
+    await expect(page.locator('#tutorial-table-view')).toHaveClass(/driver-active-element/);
   });
 });
 
@@ -163,5 +170,47 @@ test.describe('medium width — the toolbar condenses instead of overflowing', (
       const { bar } = await overflow(page);
       expect(bar, `toolbar must not overflow at ${width}px (loaded)`).toBeLessThanOrEqual(0);
     }
+  });
+});
+
+// #MobileShell — browser-bar auto-hide. On touch devices the app gives the
+// document 1px of scroll room, pins #root to the visual viewport, and nudges
+// the page with window.scrollTo so Android Chrome / iOS Safari slide their
+// top and bottom bars away. Emulated touch (hasTouch) turns on the
+// (pointer: coarse) media block that carries the CSS half of the trick.
+test.describe('phone with touch — browser bars auto-hide', () => {
+  test.use({ viewport: PHONE, hasTouch: true });
+
+  test('the page has scroll room, the app is pinned, and the load nudge scrolls it', async ({
+    page,
+  }) => {
+    await page.goto('/TamedTable/app/');
+
+    const state = await page.evaluate(() => ({
+      coarse: matchMedia('(pointer: coarse)').matches,
+      slack: document.documentElement.scrollHeight - window.innerHeight,
+      rootPosition: getComputedStyle(document.getElementById('root')!).position,
+    }));
+    expect(state.coarse, 'touch emulation must present a coarse pointer').toBe(true);
+    expect(state.slack, 'the document needs scroll room for bars to auto-hide').toBeGreaterThanOrEqual(1);
+    expect(state.rootPosition, '#root must stay glued to the viewport while the page scrolls').toBe('fixed');
+
+    // The on-load nudge scrolls the 1px of slack, which is what triggers the
+    // browser to hide its bars.
+    await page.waitForFunction(() => window.scrollY >= 1);
+  });
+
+  test('a mouse-pointer page gets no scroll room and no nudge', async ({ browser }) => {
+    const context = await browser.newContext({ viewport: DESKTOP, hasTouch: false });
+    const page = await context.newPage();
+    await page.goto('http://localhost:5173/TamedTable/app/');
+    await page.waitForTimeout(300); // longer than the nudge's own delay
+    const state = await page.evaluate(() => ({
+      slack: document.documentElement.scrollHeight - window.innerHeight,
+      scrollY: window.scrollY,
+    }));
+    expect(state.slack).toBeLessThanOrEqual(0);
+    expect(state.scrollY).toBe(0);
+    await context.close();
   });
 });
