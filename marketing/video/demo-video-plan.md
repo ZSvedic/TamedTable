@@ -199,8 +199,11 @@ and muxes it; `encode.mjs` derives the MP4/GIF/poster. All muxing/encoding uses 
 full ffmpeg from the `imageio-ffmpeg` pip package (this env's bundled ffmpeg is
 video-only). Fonts are bundled as data-URIs in `fonts.css`, so renders load
 instantly and offline. `out/` is git-ignored — everything regenerates from
-source; the committed **`demo-16x9.mp4`** is the 16:9 render embedded in the
-repo README.
+source. The committed **`demo-16x9.gif`** is what the repo README embeds — a
+silent GIF by a relative path, which is the only form GitHub renders inline for
+signed-out visitors (a committed `<video>` doesn't render, and an uploaded
+`user-attachments` URL is auth-gated). The committed **`demo-16x9.mp4`** is
+linked next to it for sound.
 
 Run the render scripts plainly (`node capture.mjs`) — do NOT prefix with a
 `pkill` matching the chromium path, which would kill the run's own browser.
