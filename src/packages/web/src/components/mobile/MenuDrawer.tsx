@@ -159,7 +159,7 @@ export function MenuDrawer({
           <Item t={t} icon="code" label="Save recipe as Python…" disabled={!loaded || busy} onClick={() => run(() => void controller.savePython())} />
           {sep}
           <Item t={t} icon={dark ? 'sun' : 'moon'} label="Dark mode" value={dark ? 'on' : 'off'} onClick={onToggleTheme} />
-          <Item t={t} icon="cog" label="Settings…" onClick={() => run(() => controller.openSettings())} />
+          <Item t={t} icon="wrench" label="Settings…" onClick={() => run(() => controller.openSettings())} />
           <Item t={t} icon="tour" label="Tours…" onClick={() => run(() => controller.openTutorial())} />
         </div>
       </div>
