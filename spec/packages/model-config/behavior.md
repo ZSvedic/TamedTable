@@ -97,6 +97,14 @@ primary default). Currently: `claude-sonnet-4-5` for anthropic,
 - `gemini` for any id starting with `gemini-`
 - `openai` for any id starting with `gpt-`
 
+`acceptsTemperature(modelId)` reports whether a model still accepts a
+`temperature` sampling parameter. The newest models (Anthropic Opus 4.8/4.7,
+Fable 5, Sonnet 5; OpenAI GPT-5.4+/5.5) removed sampling params and reject the
+request with a 400, so it returns `true` only for models known to accept it
+(current Gemini, Sonnet 4.5/4.6, Haiku 4.5) and `false` for everything else —
+including unknown ids, so new models default to the safe no-temperature path.
+The headless engine calls it to decide whether to send `temperature: 0`.
+
 `keyFor(config)` returns the API key for `config.provider` — `geminiKey` when
 the provider is gemini, `openaiKey` when openai, otherwise `anthropicKey` — or
 null when that provider's key is unset. Every surface that needs "the key for

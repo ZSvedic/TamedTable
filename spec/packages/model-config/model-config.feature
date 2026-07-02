@@ -107,6 +107,33 @@ Feature: Model config
       When providerFor is called with "gpt-5.4-mini"
       Then the result is "openai"
 
+  Rule: acceptsTemperature
+
+    @headless
+    Scenario: An older Sonnet still accepts temperature
+      When acceptsTemperature is called with "claude-sonnet-4-6"
+      Then the boolean result is true
+
+    @headless
+    Scenario: Gemini models accept temperature
+      When acceptsTemperature is called with "gemini-3.5-flash"
+      Then the boolean result is true
+
+    @headless
+    Scenario: Opus 4.8 rejects temperature
+      When acceptsTemperature is called with "claude-opus-4-8"
+      Then the boolean result is false
+
+    @headless
+    Scenario: GPT-5.5 rejects temperature
+      When acceptsTemperature is called with "gpt-5.5"
+      Then the boolean result is false
+
+    @headless
+    Scenario: An unknown future model defaults to no temperature
+      When acceptsTemperature is called with "claude-sonnet-5"
+      Then the boolean result is false
+
   Rule: keyFor returns the active provider's key
 
     @headless

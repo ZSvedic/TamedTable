@@ -156,8 +156,13 @@ Cancellation is a four-step sequence:
 
 Anything committed before the cancel stays put.
 
-Temperature is pinned to 0 on every model call, but outputs are not byte-
-identical across model versions or providers. Tests that compare LLM-produced
+Temperature is pinned to 0 on model calls, but only for models that still
+accept a sampling parameter. The newest models (Anthropic Opus 4.8/4.7, Fable
+5, Sonnet 5; OpenAI GPT-5.4+/5.5) removed sampling params and reject
+`temperature` with a 400 ("temperature is deprecated for this model"), so the
+engine omits it for them and lets the model default apply. Either way outputs
+are not byte-identical across model versions or providers. Tests that compare
+LLM-produced
 cells against a frozen golden file are testing one specific `(model,
 version, prompt)` triple, not the transformation contract.
 
