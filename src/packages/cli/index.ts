@@ -18,7 +18,7 @@ import {
   type PlanEdit,
   type RequestDebugInfo,
 } from '@tamedtable/headless';
-import { resolveConfig } from '@tamedtable/model-config';
+import { resolveConfig, keyFor } from '@tamedtable/model-config';
 import { readConfigFromEnv } from '@tamedtable/model-config/env';
 import pkg from './package.json' with { type: 'json' };
 
@@ -914,7 +914,7 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
   // the headless provider can build without throwing on a missing key.
   if (!opts.apiKey) {
     const cfg = resolveConfig(readConfigFromEnv(), {});
-    const envKey = cfg.provider === 'gemini' ? cfg.geminiKey : cfg.anthropicKey;
+    const envKey = keyFor(cfg);
     if (envKey) opts = { ...opts, apiKey: envKey };
   }
   const runner = createHeadlessRunner(opts);
@@ -941,7 +941,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   // Resolve provider/key/model from env; let opts override (tests inject apiKey/model directly).
   if (!opts.apiKey) {
     const cfg = resolveConfig(readConfigFromEnv(), {});
-    const envKey = cfg.provider === 'gemini' ? cfg.geminiKey : cfg.anthropicKey;
+    const envKey = keyFor(cfg);
     if (envKey) opts = { ...opts, apiKey: envKey };
     if (!opts.model) opts = { ...opts, model: cfg.model };
     if (!opts.cellModel) opts = { ...opts, cellModel: cfg.cellModel };

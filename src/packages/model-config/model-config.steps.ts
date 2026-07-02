@@ -1,11 +1,12 @@
 // #ModelConfig
-import { When, Then } from '@cucumber/cucumber';
+import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import {
   resolveConfig,
   defaultModel,
   defaultCellModel,
   providerFor,
+  keyFor,
   ALL_MODELS,
   type ResolvedConfig,
   type Provider,
@@ -15,6 +16,7 @@ interface ModelConfigCtx {
   resolved?: ResolvedConfig;
   providerResult?: Provider;
   modelResult?: string;
+  keyResult?: string | null;
 }
 
 // The only shape these steps need from the cucumber World — state hangs off
@@ -194,6 +196,36 @@ Then(
     assert.ok(resolved && resolved[field] != null, `expected resolved ${field} to be set`);
   },
 );
+
+// ── keyFor steps ─────────────────────────────────────────────────────────────
+
+// Build a full ResolvedConfig directly. An empty key string stands in for a
+// missing key (null), matching how resolveConfig leaves an unset provider key.
+Given(
+  'a resolved config for provider {string} with keys anthropic {string}, gemini {string}, openai {string}',
+  function (this: ModelConfigWorld, provider: string, anthropic: string, gemini: string, openai: string) {
+    ctx(this).resolved = {
+      provider: provider as Provider,
+      anthropicKey: anthropic || null,
+      geminiKey: gemini || null,
+      openaiKey: openai || null,
+      model: defaultModel(provider as Provider),
+      cellModel: defaultCellModel(provider as Provider),
+    };
+  },
+);
+
+When('keyFor is called', function (this: ModelConfigWorld) {
+  ctx(this).keyResult = keyFor(ctx(this).resolved!);
+});
+
+Then('the key result is {string}', function (this: ModelConfigWorld, expected: string) {
+  assert.equal(ctx(this).keyResult, expected);
+});
+
+Then('the key result is null', function (this: ModelConfigWorld) {
+  assert.equal(ctx(this).keyResult, null);
+});
 
 // ── providerFor steps ────────────────────────────────────────────────────────
 

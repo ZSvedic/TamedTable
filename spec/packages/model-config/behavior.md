@@ -97,6 +97,12 @@ primary default). Currently: `claude-sonnet-4-5` for anthropic,
 - `gemini` for any id starting with `gemini-`
 - `openai` for any id starting with `gpt-`
 
+`keyFor(config)` returns the API key for `config.provider` — `geminiKey` when
+the provider is gemini, `openaiKey` when openai, otherwise `anthropicKey` — or
+null when that provider's key is unset. Every surface that needs "the key for
+the active provider" (the CLI, the web controller) uses this one helper so the
+provider→key mapping lives in a single place.
+
 ## StoragePort
 
 The module defines the interface; each surface implements it:
@@ -128,10 +134,10 @@ code) never import it. Call it only on Node/Bun surfaces.
 
 ## How the CLI uses it
 
-The CLI resolves config with `resolveConfig(readConfigFromEnv(), {})`. It
-picks `anthropicKey`, `geminiKey`, or `openaiKey` based on `config.provider`
-and forwards the chosen key to the headless runner. The help text mentions
-`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, and `OPENAI_API_KEY`.
+The CLI resolves config with `resolveConfig(readConfigFromEnv(), {})`, then
+takes the active provider's key with `keyFor(config)` and forwards it to the
+headless runner. The help text mentions `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
+and `OPENAI_API_KEY`.
 
 ## Model chooser component
 

@@ -41,23 +41,26 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 
 ## Setup
 
-You need [bun](https://bun.sh) and an Anthropic API key.
+You need [bun](https://bun.sh) and an API key from any one supported provider — Anthropic, Google Gemini, or OpenAI.
 
 1. Install the project's libraries — a one-time step you repeat only if the
    dependencies change:
    ```
    cd src && bun install
    ```
-2. Put your API key in a `.env` file at the repo root (the loader walks up from `src/` to find it):
+2. Put your provider's API key in a `.env` file at the repo root (the loader walks up from `src/` to find it). Use the variable that matches your provider:
    ```
-   ANTHROPIC_API_KEY=sk-ant-...
+   ANTHROPIC_API_KEY=sk-ant-...      # Anthropic
+   GEMINI_API_KEY=...                # Google Gemini
+   OPENAI_API_KEY=sk-...             # OpenAI
    ```
+   The runtime picks the provider from the model id (`TAMEDTABLE_MODEL` below), so set the model to one from your provider unless you use the default Anthropic model.
 
 Optional env vars and defaults if you omit them:
 
 | Var | Default | What it does |
 |---|---|---|
-| `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. |
+| `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `gemini-3.5-flash` (Google) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
 | `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Secondary model that fills in per-row LLM cells. Override with `claude-haiku-4-5` for cheaper/faster runs at some cost in per-cell fidelity. Must share the primary model's provider. |
 | `TAMEDTABLE_RPM` | `40` | Per-process request-per-minute cap. The Anthropic org-wide ceiling is 50. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
@@ -119,9 +122,9 @@ Here is every `bun` command the web UI uses, and when you need each:
 
 Why two directories? `bun install` installs libraries for the whole project at once, so it runs from the project root (`src/`); `bun run dev` and `bun run build` belong to the web package, so they run from that package's folder (`src/packages/web/`).
 
-Once the page loads, click **Settings** and paste your Anthropic API key — the web UI reads the key from a per-tab settings panel, not from `.env`. The Settings panel also picks which Anthropic model drives requests. Then click **Open sample…** to pick one of the bundled sample files, or use its dropdown for **Open local…** (a file from your computer) or **Open URL…** (a CSV, JSONL, Parquet, or Arrow file by address). Type a request in the chat sidebar and watch cells stream in. Click a cell to select it, double-click to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`, and each save button's dropdown saves in a different format — including **Save as Python** (`:save-py`). The table shows 20 rows per page with a pager along the bottom, and a status footer reports the selected cell and whether the app is idle, running, or saved.
+Once the page loads, click **Settings** and paste an API key from any supported provider (Anthropic, Google Gemini, or OpenAI) — the web UI reads the key from a per-tab settings panel, not from `.env`. The Settings panel also picks which model drives requests, and the chosen model selects the provider. Then click **Open sample…** to pick one of the bundled sample files, or use its dropdown for **Open local…** (a file from your computer) or **Open URL…** (a CSV, JSONL, Parquet, or Arrow file by address). Type a request in the chat sidebar and watch cells stream in. Click a cell to select it, double-click to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`, and each save button's dropdown saves in a different format — including **Save as Python** (`:save-py`). The table shows 20 rows per page with a pager along the bottom, and a status footer reports the selected cell and whether the app is idle, running, or saved.
 
-There is no server: the web UI calls Anthropic directly from the browser through the same SDK the CLI uses. File input/output uses the File System Access API where the browser supports it, with a download/upload fallback elsewhere.
+There is no server: the web UI calls your chosen provider directly from the browser through the same SDK the CLI uses. File input/output uses the File System Access API where the browser supports it, with a download/upload fallback elsewhere.
 
 ## Run the tests
 
