@@ -1,0 +1,43 @@
+TamedTable demo voiceover — for ElevenLabs (no SSML; uses its <break> tags).
+
+ElevenLabs ignores SSML but honors <break time="x.xs" /> for pauses and reads
+punctuation for cadence. Two ways to use this:
+
+──────────────────────────────────────────────────────────────────────────────
+OPTION A — one paste (simplest). Paste the block below and generate one take.
+The <break> values are sized so each line lands near its beat; pace varies by
+voice, so treat them as approximate. Export the WAV and send it back — the video
+gets retimed to your audio, so it doesn't have to be exact.
+──────────────────────────────────────────────────────────────────────────────
+
+Talk to your data. <break time="0.7s" /> Real data is messy. Formats vary by country. <break time="1.4s" /> Just say what you want. <break time="1.1s" /> Watch every row change, right in front of you. <break time="1.8s" /> Ask in any language. <break time="1.2s" /> Keep the steps, or export to Python.
+
+──────────────────────────────────────────────────────────────────────────────
+OPTION B — per line (best sync). Generate each line as its own clip; I place
+them at these exact start times. Cleanest result, a little more clicking.
+──────────────────────────────────────────────────────────────────────────────
+
+0.0s   Talk to your data.
+2.0s   Real data is messy. Formats vary by country.
+6.5s   Just say what you want.
+9.0s   Watch every row change, right in front of you.
+13.5s  Ask in any language.
+16.0s  Keep the steps, or export to Python.
+
+──────────────────────────────────────────────────────────────────────────────
+SETTINGS
+──────────────────────────────────────────────────────────────────────────────
+- Voice:  a warm, friendly narration voice (browse "conversational" / "narration";
+          e.g. Rachel, Sarah, Brian, Adam — pick by ear).
+- Model:  Eleven Multilingual v2 for a clean natural read, or Eleven v3 for the
+          most expressive (v3 also reads CAPS as emphasis and "..." as a pause).
+- Stability ~45  ·  Similarity ~75  ·  Style ~0–25  ·  Speaker boost on  ·  Speed 1.0
+  (lower Stability = more expressive/varied; nudge up if it gets uneven.)
+
+Delivery intent per line (for a voice actor or v3 tags): warm open landing on
+"data"; a touch wry on "messy"; light lift on "say"; emphasize "every row";
+emphasize "any"; confident, unhurried close.
+
+Send back the exported WAV (any sample rate). Drop it at out/voiceover-en.wav and
+`node audio.mjs` muxes it into both ratios; if the timing drifts, the video beats
+get nudged to match the voice.
