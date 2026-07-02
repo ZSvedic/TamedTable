@@ -34,7 +34,8 @@ const RATIOS = [
   { id: '16x9', w: 1280, h: 720 },
   { id: '9x16', w: 720, h: 1280 },
 ];
-const LANGS = ['en', 'es'];
+const LANGS = ['en'];   // the video is English; its one Spanish moment is the
+                        // prompt swap in the "any language" beat (timeline.html)
 
 const out = path.join(DIR, 'out');
 const tmp = path.join(out, '_rec');

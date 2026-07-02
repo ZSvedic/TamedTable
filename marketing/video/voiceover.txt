@@ -1,23 +1,20 @@
-# TamedTable demo voiceover — 20 seconds, one line per beat.
-# The spoken text also appears as burned-in captions (timeline.html), so the
-# clip works with sound off. audio.mjs synthesizes these with OpenAI TTS
-# (voice "nova"), time-fits each line to its beat, and muxes both languages.
-# No em dashes: they read as an AI tell.
+# TamedTable demo voiceover — English, 20 seconds.
+# The spoken lines are short so each fits its beat at natural pace (no speed-up).
+# The on-screen captions carry the fuller wording; the voiceover is punchier.
+#
+# audio.mjs synthesizes these with OpenAI TTS as an interim voice. For a better
+# voice, use voiceover.ssml in Azure/Google/Polly (or a script tool like
+# ElevenLabs), export one 20s track to out/voiceover-en.wav, and re-run
+# `node audio.mjs` — it muxes that file verbatim instead of calling OpenAI.
+#
+# start → spoken line                                  (delivery note)
+0.0s   Talk to your data.                              (warm open, land on "data")
+2.0s   Real data is messy. Formats vary by country.    (a touch wry on "messy")
+6.5s   Just say what you want.                         (light lift on "say")
+9.0s   Watch every row change, right in front of you.  (emphasis "every row")
+13.5s  Ask in any language.                            (emphasis "any")
+16.0s  Keep the steps, or export to Python.            (confident close)
 
-## English  (start → line)
-0.0s   Talk to your data.
-2.0s   Real data is messy. Phones need to be normalized based on the country.
-6.5s   Just say what you want.
-9.0s   Watch every row change, right in front of you.
-13.5s  Ask in any language. Same result.
-16.0s  Keep the steps. Replay them free, or export to Python.
-18.5s  TamedTable.
-
-## Español  (inicio → línea)
-0.0s   Habla con tus datos.
-2.0s   Los datos reales son un desastre. Los teléfonos deben normalizarse según el país.
-6.5s   Solo di lo que quieres.
-9.0s   Mira cambiar cada fila, ante tus ojos.
-13.5s  Pregunta en cualquier idioma. El mismo resultado.
-16.0s  Guarda los pasos. Repítelos gratis, o expórtalos a Python.
-18.5s  TamedTable.
+# The one Spanish moment is visual, not spoken: in the "any language" beat the
+# prompt chip types "normaliza los números de teléfono" while the caption reads
+# "Ask in any language."

@@ -1,11 +1,12 @@
 # Demo video plan
 
 A plan for a 20-second demo that ships in **two shapes** — horizontal 16:9 for
-desktop (the README and the homepage hero box) and vertical 9:16 for phones —
-each in **English and Spanish**, with a real-sounding voiceover **and** baked-in
-text, so it lands whether the sound is on or off (four files: ratio × language).
-This doc owns the storyboard, the look, and how to render it; it does not own the
-message ([marketing-brief.md](../marketing-brief.md)) or the palette
+desktop (the README and the homepage hero box) and vertical 9:16 for phones. It
+is **English**, with a voiceover **and** baked-in captions so it lands whether
+the sound is on or off. Its one Spanish moment is visual: the "any language" beat
+types a Spanish prompt while the caption stays English. This doc owns the
+storyboard, the look, and how to render it; it does not own the message
+([marketing-brief.md](../marketing-brief.md)) or the palette
 ([brand/brand.md](../brand/brand.md)).
 
 Two rules shape everything below:
@@ -25,9 +26,8 @@ viewport sizes.
 ## The 20 seconds, shot by shot
 
 Seven beats. The **camera** column says what fills the frame and how it moves —
-the same content, cropped for each ratio. Times below; the voiceover line is the
-English one (Spanish mirrors it). The intro and outro logo animations are short
-so the app beats keep the room.
+the same content, cropped for each ratio. The intro and outro logo animations are
+short so the app beats keep the room.
 
 | Time | Beat | Camera (what's in frame, how it moves) | Voiceover (EN) |
 |---|---|---|---|
@@ -35,7 +35,7 @@ so the app beats keep the room.
 | 2.0–6.5 | **The mess** | Push in on the table — three rows, three phone formats. Longer beat, more to read | *"Real data is messy. Phones need to be normalized based on the country."* |
 | 6.5–9.0 | **Say it** | Pan to the prompt chip; it types `normalize the phone numbers`; run button pulses | *"Just say what you want."* |
 | 9.0–13.5 | **Watch it** | Pan to the rows; cells rewrite top-to-bottom (~0.6s apart), each in a Pale-Sky flash | *"Watch every row change, right in front of you."* |
-| 13.5–16.0 | **Any language** | Chip swaps to the other language (ES→EN or EN→ES); same result flashes | *"Ask in any language. Same result."* |
+| 13.5–16.0 | **Any language** | Chip swaps to the Spanish prompt `normaliza los números de teléfono`; same result flashes | *"Ask in any language."* |
 | 16.0–18.5 | **Keep it** | Pan to the toolbar; `Save flow` / `Save as Python` gain a "saved ✓" pill | *"Keep the steps. Replay them free, or export to Python."* |
 | 18.5–20.0 | **Close** | Pull back to mark + tagline + `tamedtable.com` + `open in your browser, no install` | *"TamedTable."* |
 
@@ -55,16 +55,34 @@ Notes that keep it honest and readable small:
 Autoplay is muted on the web, so **the video must work silent**; the voiceover
 is a bonus for anyone with sound on and for the social/YouTube cut.
 
-- **Voiceover** — the seven lines per language, synthesized with OpenAI TTS
-  (voice "nova") by `audio.mjs`, which time-fits each line to its beat so lines
-  never overlap, then muxes the track into both ratios as Opus. The script lives
-  in `voiceover.txt`; a re-render is one command.
-- **Captions** — the same lines burned in, lower third on 16:9, upper area on
-  9:16. English and Spanish are separate renders (the caption text is baked in),
-  so the `lang` param drives both the captions and which voiceover is muxed.
+- **Voiceover** — six short lines (`voiceover.txt`), placed at their beats with
+  no speed-up. `audio.mjs` synthesizes them with OpenAI TTS as an *interim*
+  voice, then muxes the track into both ratios as Opus.
+- **Captions** — the fuller wording burned in, lower third on 16:9, upper area
+  on 9:16. The voiceover is the punchier version of the same lines.
 - **Key-phrase call-outs** — a few beats also stamp a short phrase in Ink
   (`Say what you want`, `Any language`, `Save, replay, Python`) in the brand
   type, separate from the running captions.
+
+### Getting a better voice
+
+OpenAI TTS is fine for a placeholder but reads a little flat. The pipeline takes
+an external voiceover so a better tool can drop in: put a finished 20s track at
+`out/voiceover-en.wav` and `audio.mjs` muxes it verbatim, skipping TTS.
+
+`voiceover.ssml` is the script marked up with pauses, emphasis, and pacing, plus
+each line's start time. Options, roughly best-voice first:
+
+- **ElevenLabs** — the most natural and expressive; paste the plain script, pick
+  a voice, tune emphasis with punctuation and `<break>`. No full SSML.
+- **Azure Neural TTS** — full SSML (`voiceover.ssml` targets it): `<break>`,
+  `<emphasis>`, `<prosody>`, expressive styles, and word-level timestamps.
+- **Google Cloud TTS** (Studio / Chirp3-HD voices) — SSML, very natural.
+- **Amazon Polly** (Neural) — SSML, solid and cheap.
+
+The clean workflow is **audio-first**: synthesize each line, lay them on a 20s
+timeline at the marked start times, export one WAV, and let the render mux it —
+so the picture follows the voice and nothing is ever time-stretched to fit.
 
 ## The look — locked to the brand
 
@@ -108,18 +126,14 @@ CSS-timeline approach fights back.
 
 ## What ships, and where
 
-Files are named `hero-<ratio>-<lang>.webm`, so language and shape both pick from
-the same set.
+Files are named `hero-<ratio>-en.webm`.
 
 | Target | File | Format |
 |---|---|---|
-| Homepage hero, desktop | `hero-16x9-<lang>.webm` (+ `.mp4`) | `<video autoplay muted loop playsinline>` |
-| Homepage hero, phone | `hero-9x16-<lang>.webm` (+ `.mp4`) | swapped in by a CSS media query / `<source media>` |
+| Homepage hero, desktop | `hero-16x9-en.webm` (+ `.mp4`) | `<video autoplay muted loop playsinline>` |
+| Homepage hero, phone | `hero-9x16-en.webm` (+ `.mp4`) | swapped in by a CSS media query / `<source media>` |
 | README (inline) | `hero-16x9-en.gif` **or** `poster-16x9-en.png` → linked MP4 | GitHub markdown won't autoplay a committed `<video>`; a GIF loops inline, a poster+link stays small |
 | Social / YouTube (later) | the 9:16 and 16:9 MP4s, sound on | out of scope this pass; the masters already cover it |
-
-Which language the homepage serves can key off the visitor's locale, or ship
-English by default with a language toggle.
 
 ## Where everything goes
 
@@ -130,12 +144,13 @@ both belong there — one directory, one source of truth:
 marketing/video/
   demo-video-plan.md      this doc
   timeline.html           the animated scene (camera, captions, call-outs); ?ratio & ?lang
-  capture.mjs             drives Playwright -> silent-<ratio>-<lang>.webm
-  audio.mjs               OpenAI TTS + mux -> hero-<ratio>-<lang>.webm
-  voiceover.txt           the TTS script (EN + ES)
+  capture.mjs             drives Playwright -> silent-<ratio>-en.webm
+  audio.mjs               OpenAI TTS (or external wav) + mux -> hero-<ratio>-en.webm
+  voiceover.txt           the voiceover script + delivery notes
+  voiceover.ssml          the same script marked up for Azure/Google/Polly
   out/                    git-ignored renders
-    hero-16x9-en.webm  hero-16x9-es.webm
-    hero-9x16-en.webm  hero-9x16-es.webm
+    hero-16x9-en.webm  hero-9x16-en.webm
+    voiceover-en.wav   (optional) an external voice; muxed verbatim if present
 ```
 
 Two small touches **outside** that dir are unavoidable, because the homepage is
@@ -162,22 +177,23 @@ So: **yes, everything can live in `marketing/video/`** — plus one symlink unde
 
 ## Prototype status
 
-A working rough pass lives in this dir. Two steps produce four files:
+A working rough pass lives in this dir. Two steps produce the two videos:
 
 ```
-node capture.mjs        # 4 silent renders: out/silent-<ratio>-<lang>.webm
-node audio.mjs          # TTS + mux -> out/hero-<ratio>-<lang>.webm  (needs OPENAI_API_KEY)
+node capture.mjs        # silent renders: out/silent-<ratio>-en.webm
+node audio.mjs          # voiceover + mux -> out/hero-<ratio>-en.webm  (needs OPENAI_API_KEY)
 ```
 
 `capture.mjs` drives `timeline.html` (the animated scene + camera) with
-Playwright; `audio.mjs` synthesizes the voiceover (OpenAI TTS) and muxes it with
-a full ffmpeg from the `imageio-ffmpeg` pip package (this env's bundled ffmpeg is
-video-only). `out/` is git-ignored — the renders regenerate from source.
+Playwright; `audio.mjs` synthesizes the voiceover (OpenAI TTS, or muxes an
+external `out/voiceover-en.wav`) with a full ffmpeg from the `imageio-ffmpeg` pip
+package (this env's bundled ffmpeg is video-only). `out/` is git-ignored — the
+renders regenerate from source.
 
-What the rough pass already does: **four videos** (16:9 and 9:16, each English
-and Spanish), 20s, all seven beats synced, brand colors and fonts, the row-by-row
-rewrite with the accent flash, burned-in captions and call-outs, portrait framing
-that fits the table width, and a real TTS voiceover time-fit to the beats.
+What the rough pass already does: **two videos** (16:9 and 9:16), 20s, all seven
+beats synced, brand colors and fonts, the row-by-row rewrite with the accent
+flash, burned-in captions and call-outs, portrait framing that fits the table
+width, the Spanish-prompt moment, and a voiceover placed at the beats.
 
 What it still fakes or skips, to close before it ships:
 
@@ -191,12 +207,13 @@ What it still fakes or skips, to close before it ships:
   script trims that pre-roll automatically, but bundling the fonts would make
   the render faster, fully offline, and immune to the flush timing the trim now
   guards against.
-- **TTS voice is a first pick** (`nova`). Worth auditioning voices, and the
-  Spanish lines are a first translation pass to proofread.
+- **Voiceover is an OpenAI placeholder.** It reads a little flat. Replace it with
+  ElevenLabs / Azure / Google (see *Getting a better voice*) and drop the WAV in
+  as `out/voiceover-en.wav`.
 
 ## Definition of done
 
-- Both ratios play clean at 30fps, ≤30s, loop with no seam.
+- Both ratios play clean at 25–30fps, ≤20s, loop with no seam.
 - Every beat readable with sound off, at ~360px wide.
 - Colors and fonts match the app and a tile side by side — no serif fallback,
   one accent.
