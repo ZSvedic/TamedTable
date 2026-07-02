@@ -153,6 +153,33 @@ serve the full-quality MP4/WebM.
 So: **yes, everything can live in `marketing/video/`** — plus one symlink under
 `marketing/web/` and one line in the deploy workflow when the assets first land.
 
+## Prototype status
+
+A first rough pass exists in this dir — `timeline.html` (the animated scene and
+camera) and `capture.mjs` (renders both ratios). Run it from here:
+
+```
+node capture.mjs        # writes out/hero-16x9.webm and out/hero-9x16.webm
+```
+
+`out/` is git-ignored — the renders regenerate from source, so they aren't
+committed. What the rough pass already does: both ratios, 30s, all seven beats
+synced, brand colors and fonts, the row-by-row rewrite with the accent flash,
+captions and call-outs, and portrait framing that fits the table width.
+
+What it still fakes or skips, to close before it ships:
+
+- **The app is a mock, not the real thing.** The table, chat, and toolbar are
+  hand-built HTML. Swap in captured slices of the real app driven by the
+  deep-linked clean-up tour (deterministic, key-free) so the footage is genuine.
+- **No audio yet.** Silent. Generate `voiceover.wav` from `voiceover.txt` and
+  mux it at encode.
+- **WebM only in this environment.** The bundled ffmpeg encodes VP8/WebM and
+  nothing else; the MP4 fallback and the README GIF/poster need a fuller ffmpeg.
+- **Font pre-roll.** Google Fonts load over the network (~14s headless); the
+  script trims that pre-roll automatically, but bundling the fonts would make
+  the render faster and fully offline.
+
 ## Definition of done
 
 - Both ratios play clean at 30fps, ≤30s, loop with no seam.
