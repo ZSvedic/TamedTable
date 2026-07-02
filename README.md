@@ -1,12 +1,12 @@
-# TamedTable
+TamedTable is a CLI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. 
 
-A CLI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. The full motivation is in [spec/rationale.md](spec/rationale.md); the wire-protocol idea — keeping per-turn token cost constant regardless of table size — is in [spec/behavior.md](spec/behavior.md#data-model).
+[TamedTable.com web](https://www.tamedtable.com) explains major features. 
 
-**Live:** [zsvedic.github.io/TamedTable](https://zsvedic.github.io/TamedTable/) — landing page · [Open Web App](https://zsvedic.github.io/TamedTable/app/) — runs directly in the browser, no install needed.
+[Run the live app](https://www.tamedtable.com/app/) directly in the browser, no install needed. 
 
 ## Project layout
 
-Organized by **lifecycle**, not by file type:
+Organized by *lifecycle*, not by file type:
 
 ```
 TamedTable/                  root: README.md, MAP.md (feature + code navigation), LICENSE, .gitignore
