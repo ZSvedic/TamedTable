@@ -67,6 +67,14 @@ export function providerFor(modelId: string): Provider {
   return 'anthropic';
 }
 
+/** The API key for the config's active provider, or null when it's unset.
+ *  One home for the provider→key mapping, shared by the CLI and web surfaces. */
+export function keyFor(config: ResolvedConfig): string | null {
+  if (config.provider === 'gemini') return config.geminiKey;
+  if (config.provider === 'openai') return config.openaiKey;
+  return config.anthropicKey;
+}
+
 // ── resolveConfig ──────────────────────────────────────────────────────────
 
 /**

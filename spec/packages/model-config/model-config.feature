@@ -107,6 +107,32 @@ Feature: Model config
       When providerFor is called with "gpt-5.4-mini"
       Then the result is "openai"
 
+  Rule: keyFor returns the active provider's key
+
+    @headless
+    Scenario: keyFor returns the anthropic key when provider is anthropic
+      Given a resolved config for provider "anthropic" with keys anthropic "sk-ant-x", gemini "AIza-y", openai "sk-openai-z"
+      When keyFor is called
+      Then the key result is "sk-ant-x"
+
+    @headless
+    Scenario: keyFor returns the gemini key when provider is gemini
+      Given a resolved config for provider "gemini" with keys anthropic "sk-ant-x", gemini "AIza-y", openai "sk-openai-z"
+      When keyFor is called
+      Then the key result is "AIza-y"
+
+    @headless
+    Scenario: keyFor returns the openai key when provider is openai
+      Given a resolved config for provider "openai" with keys anthropic "sk-ant-x", gemini "AIza-y", openai "sk-openai-z"
+      When keyFor is called
+      Then the key result is "sk-openai-z"
+
+    @headless
+    Scenario: keyFor returns null when the active provider's key is unset
+      Given a resolved config for provider "openai" with keys anthropic "sk-ant-x", gemini "", openai ""
+      When keyFor is called
+      Then the key result is null
+
   Rule: defaultModel
 
     @headless

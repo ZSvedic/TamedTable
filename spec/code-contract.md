@@ -248,7 +248,9 @@ Env vars:
 
 | Var | Default | Effect |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Required. May also be passed via `opts.apiKey`. |
+| `ANTHROPIC_API_KEY` | — | Anthropic key. May also be passed via `opts.apiKey`. |
+| `GEMINI_API_KEY` | — | Google Gemini key. |
+| `OPENAI_API_KEY` | — | OpenAI key. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. |
 | `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `claude-sonnet-4-5` (Anthropic), `gemini-3.5-flash` (Google), `gpt-5.4-mini` (OpenAI). |
@@ -256,6 +258,11 @@ Env vars:
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a per-turn debug block after a failed request. Set to `0`, `false`, or `off` to disable. |
+
+Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
+or `OPENAI_API_KEY`. `resolveConfig` picks the provider from whichever is set
+(Gemini > OpenAI > Anthropic when several are), and `TAMEDTABLE_MODEL` must
+name a model from that provider.
 
 ### Recording model calls for tests (#Cassettes)
 
@@ -796,6 +803,7 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function providerFor(modelId: string): Provider;
+function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey)
 function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
 

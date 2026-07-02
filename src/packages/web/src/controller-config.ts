@@ -3,7 +3,7 @@
 // state and expanded provider card, and the persistence + engine-rebuild that
 // a config change triggers. The config object itself lives on the host (the
 // React panel reads it directly); this owns the transitions.
-import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
+import { resolveConfig, keyFor, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { writeStoredConfig } from '@tamedtable/model-config/storage';
 import { userFacingMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
@@ -16,10 +16,7 @@ export class ConfigManager {
 
   /** Returns the API key for the currently-selected provider, or null. */
   activeApiKey(): string | null {
-    const { provider, anthropicKey, geminiKey, openaiKey } = this.host.config;
-    if (provider === 'gemini') return geminiKey;
-    if (provider === 'openai') return openaiKey;
-    return anthropicKey;
+    return keyFor(this.host.config);
   }
 
   openSettings(): void {
