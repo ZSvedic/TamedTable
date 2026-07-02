@@ -1,20 +1,21 @@
-# Model & batch-size sweep — Gemini + OpenAI (Phase 2, partial)
+# Model & batch-size sweep — Gemini + OpenAI + Anthropic (Phase 2, complete)
 
 First real run of the `@tamedtable/bench` sweep (`#BenchSweep`). Measures the
 group-C cell-fill task — *"Add a boolean column Music that is true for music
 videos"* — on a 120-row labelled subset of the liked-videos fixture, scoring
-each `(cell model × batch size)` config on **accuracy, cost, and time**. Gemini
-and OpenAI are scored against the same labels; Anthropic is not yet run.
+each `(cell model × batch size)` config on **accuracy, cost, and time**. All
+three providers are scored against the same labels. (`claude-opus-4-8` was
+skipped — too expensive for a per-row cell model.)
 
 ## Setup
 
 - **Subset:** 120 rows sampled evenly from the 1,820-row fixture (`benchmarks/ground-truth/music-sample.csv`).
 - **Ground truth:** auto-labelled by `gemini-2.5-pro`, hand spot-checked — 47 music / 69 non-music (the real ~39% rate). Accuracy = agreement with these labels by `videoId`.
-- **Grid:** 3 Gemini cell models + 1 OpenAI cell model × batch sizes {1, 5, 10, 20, 40, 80}. Patch turn fixed to each provider's default.
+- **Grid:** 3 Gemini + 1 OpenAI + 2 Anthropic cell models × batch sizes {1, 5, 10, 20, 40, 80}. Patch turn fixed to each provider's default.
 - **Single run per config** (no repetitions) — treat ±2–3% as noise on 120 rows.
-- **Cost:** $2.07 (Gemini) + $0.18 (OpenAI).
+- **Cost:** $2.07 (Gemini) + $0.18 (OpenAI) + $0.38 (Anthropic).
 
-> ⚠️ **Cross-provider caveat.** The ground truth was labelled by `gemini-2.5-pro`. Scoring OpenAI models against a Gemini labeller can give Gemini a few points of unearned "affinity" on ambiguous rows. On this easy task most labels are unambiguous so the effect is small, but read the Gemini-vs-OpenAI gap as *indicative, not decisive* until re-scored against a neutral or hand-verified gold set.
+> ⚠️ **Cross-provider caveat.** The ground truth was labelled by `gemini-2.5-pro`. Scoring OpenAI and Anthropic models against a Gemini labeller can give Gemini a few points of unearned "affinity" on ambiguous rows. On this easy task most labels are unambiguous so the effect is small, but read the cross-provider accuracy gaps as *indicative, not decisive* until re-scored against a neutral or hand-verified gold set.
 
 ## Results — Gemini
 
@@ -40,7 +41,7 @@ and OpenAI are scored against the same labels; Anthropic is not yet run.
 | gemini-3.1-pro-preview | 80 | 95.0% | $0.1116 | 31.4s | 3 |
 
 Charts: `benchmarks/charts/model-tradeoff.svg` and `benchmarks/charts/batch-*.svg`
-(rendered from `results/phase2-all.jsonl`, which unions the two provider files).
+(rendered from `results/phase2-all.jsonl`, which unions all three provider files).
 
 ## Results — OpenAI
 
@@ -62,21 +63,47 @@ low cost. Timing is erratic (reasoning-model latency + curl-shim overhead), so
 the time column is less reliable than Gemini's. See the cross-provider caveat
 above before weighting the accuracy gap.
 
+## Results — Anthropic
+
+`claude-sonnet-4-5` and `claude-haiku-4-5` are the realistic cell candidates.
+`claude-opus-4-8` was skipped — a premium model too costly for a per-row cell
+role.
+
+| Cell model | Batch | Accuracy | Cost | Time | Calls |
+|---|---|---|---|---|---|
+| claude-sonnet-4-5 | 1 | 91.7% | $0.0509 | 152.2s | 120 |
+| claude-sonnet-4-5 | 5 | 93.3% | $0.0473 | 58.1s | 25 |
+| claude-sonnet-4-5 | 10 | 95.0% | $0.0423 | 15.3s | 13 |
+| claude-sonnet-4-5 | 20 | 95.0% | $0.0489 | 23.8s | 7 |
+| claude-sonnet-4-5 | 40 | 94.2% | $0.0474 | 6.9s | 4 |
+| claude-sonnet-4-5 | 80 | 95.0% | $0.0482 | 9.6s | 3 |
+| claude-haiku-4-5 | 1 | 91.7% | $0.0152 | 175.2s | 120 |
+| claude-haiku-4-5 | 5 | 89.2% | $0.0174 | 43.4s | 30 |
+| claude-haiku-4-5 | 10 | 90.8% | $0.0155 | 26.8s | 13 |
+| claude-haiku-4-5 | 20 | 87.5% | $0.0150 | 6.9s | 7 |
+| claude-haiku-4-5 | 40 | 94.2% | $0.0151 | 5.2s | 4 |
+| claude-haiku-4-5 | 80 | 93.3% | $0.0159 | 5.9s | 3 |
+
+`claude-sonnet-4-5` sits in the Gemini band (~92–95%) at ~$0.045 — roughly 3×
+`gemini-3.1-flash-lite` but a third of `gemini-3.5-flash`/`pro`. `claude-haiku-4-5`
+is the cheapest Anthropic point (~$0.015, on par with flash-lite) and lands
+~88–94%, wobblier across batch sizes but recovering at 40–80. Both scored
+against the same Gemini-labelled gold set — see the cross-provider caveat.
+
 ## Findings
 
-1. **Accuracy is flat and high — Gemini 93–97%, OpenAI 88–91% — across every batch size.** On this task `flash-lite` is as accurate as `pro`; the task is easy enough that model capability isn't the bottleneck and there is no accuracy cliff, even at batch 80.
-2. **`gemini-3.1-flash-lite` is the value winner** — top-band accuracy (~95%) at **~$0.017**, roughly **10× cheaper** than flash/pro and fastest. `gpt-5.4-mini` is the cheapest point (~$0.013 at batch 20) but ~6 pts less accurate (partly labeller affinity — see caveat). `pro` buys no accuracy here at 7× flash-lite's cost (may still pay off on harder tasks).
-3. **Batching ≥10 is a large, free win.** Going from batch 1 → 10–20 cuts cost ~3–10× and time ~10× with no accuracy loss. The app's current default of **20** sits in the sweet spot; **10** peaked accuracy for flash-lite (96.7%). Beyond 40 a slight wobble appears (within noise, both providers).
+1. **Accuracy is flat and high — Gemini 93–97%, Anthropic 88–95%, OpenAI 88–91% — across every batch size.** On this task `flash-lite` is as accurate as `pro`; the task is easy enough that model capability isn't the bottleneck and there is no accuracy cliff, even at batch 80. All three providers land in a tight ~88–97% band.
+2. **`gemini-3.1-flash-lite` is the value winner** — top-band accuracy (~95%) at **~$0.017**, roughly **10× cheaper** than flash/pro and fastest. `claude-haiku-4-5` (~$0.015) and `gpt-5.4-mini` (~$0.013 at batch 20) match it on cost but land a few points lower in accuracy (partly labeller affinity — see caveat). `claude-sonnet-4-5` reaches the Gemini band (~95%) at ~$0.045. `pro` buys no accuracy here at 7× flash-lite's cost (may still pay off on harder tasks).
+3. **Batching ≥10 is a large, free win.** Going from batch 1 → 10–20 cuts cost ~3–10× and time ~10× with no accuracy loss. The app's current default of **20** sits in the sweet spot; **10** peaked accuracy for flash-lite (96.7%). Beyond 40 a slight wobble appears (within noise, all providers) — `claude-haiku-4-5` dips to 87.5% at batch 20 then recovers to 94% at 40.
 
 ## Implications for hyperparameters (Phase 3 / D)
 
 - **Gemini — affordable & default cell (CUP):** `gemini-3.1-flash-lite` (enough accuracy, ~10× cheaper). **Best cell:** `gemini-3.1-pro-preview` (headroom for hard tasks; no edge on this one).
 - **OpenAI — cell (CUP):** `gpt-5.4-mini` — cheapest overall but ~6 pts behind Gemini here (discount partly for labeller affinity). Its query-role (QM) partner is `gpt-5.5`.
+- **Anthropic — cell (CUP):** `claude-haiku-4-5` — cheapest Anthropic option (~$0.015, flash-lite-class cost) at ~88–94%. **Best cell:** `claude-sonnet-4-5` — Gemini-band accuracy (~95%) at ~$0.045, when a stronger model is warranted. `claude-opus-4-8` skipped as too expensive for a cell role.
 - **Batch size (all providers):** keep **~20** (10–20 band); nothing here argues for changing it.
-- **Anthropic:** not yet measured — hold the tier decision until its numbers land.
 
 ## Not covered here — needs the maintainer's environment
 
-- **Anthropic:** no `ANTHROPIC_API_KEY` reached the run's subprocess in this sandbox (the env var is set for new sessions but appears stripped, per the console's "won't be used to authenticate" note). Re-run `bun run bench:sweep` with the Anthropic key exported (or in `src/.env`).
-- **Transport:** `bun`'s `fetch` can't traverse this environment's TLS-terminating proxy (`curl` can), so both live runs used a local curl-based fetch shim — **not committed**, unnecessary in a normal environment.
+- **Transport:** `bun`'s `fetch` can't traverse this environment's TLS-terminating proxy (`curl` can), so the live runs used a local curl-based fetch shim — **not committed**, unnecessary in a normal environment.
 - **Rigour:** single run per config on one easy task, labelled by `gemini-2.5-pro`. Before finalising "best" vs "good enough" tiers, add a second harder cell task, a few repetitions for variance, and re-score against a neutral or hand-verified gold set.

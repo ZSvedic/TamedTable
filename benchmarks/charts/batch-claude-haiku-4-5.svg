@@ -1,42 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="640" height="528" viewBox="0 0 640 528" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
 <rect width="640" height="528" fill="#ffffff"/>
-<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — gemini-3.1-pro-preview</text>
+<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — claude-haiku-4-5</text>
 <text x="64" y="42" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
 <line x1="64" y1="48" x2="616" y2="48" stroke="#e5e5e5"/>
 <line x1="64" y1="168" x2="616" y2="168" stroke="#e5e5e5"/>
 <text x="56" y="52" font-size="10" text-anchor="end" fill="#222222">100%</text>
 <text x="56" y="172" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,53.0 91.9,54.0 126.9,54.0 196.8,54.0 336.5,53.0 616.0,54.0" fill="none" stroke="#0072B2" stroke-width="2"/>
-<circle cx="64.0" cy="53.0" r="3.5" fill="#0072B2"/>
-<circle cx="91.9" cy="54.0" r="3.5" fill="#0072B2"/>
-<circle cx="126.9" cy="54.0" r="3.5" fill="#0072B2"/>
-<circle cx="196.8" cy="54.0" r="3.5" fill="#0072B2"/>
-<circle cx="336.5" cy="53.0" r="3.5" fill="#0072B2"/>
-<circle cx="616.0" cy="54.0" r="3.5" fill="#0072B2"/>
+<polyline points="64.0,58.0 91.9,61.0 126.9,59.0 196.8,63.0 336.5,55.0 616.0,56.0" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="64.0" cy="58.0" r="3.5" fill="#D55E00"/>
+<circle cx="91.9" cy="61.0" r="3.5" fill="#D55E00"/>
+<circle cx="126.9" cy="59.0" r="3.5" fill="#D55E00"/>
+<circle cx="196.8" cy="63.0" r="3.5" fill="#D55E00"/>
+<circle cx="336.5" cy="55.0" r="3.5" fill="#D55E00"/>
+<circle cx="616.0" cy="56.0" r="3.5" fill="#D55E00"/>
 <text x="64" y="202" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
 <line x1="64" y1="208" x2="616" y2="208" stroke="#e5e5e5"/>
 <line x1="64" y1="328" x2="616" y2="328" stroke="#e5e5e5"/>
-<text x="56" y="212" font-size="10" text-anchor="end" fill="#222222">$0.5000</text>
+<text x="56" y="212" font-size="10" text-anchor="end" fill="#222222">$0.0200</text>
 <text x="56" y="332" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,219.9 91.9,293.7 126.9,296.4 196.8,298.4 336.5,301.3 616.0,301.2" fill="none" stroke="#0072B2" stroke-width="2"/>
-<circle cx="64.0" cy="219.9" r="3.5" fill="#0072B2"/>
-<circle cx="91.9" cy="293.7" r="3.5" fill="#0072B2"/>
-<circle cx="126.9" cy="296.4" r="3.5" fill="#0072B2"/>
-<circle cx="196.8" cy="298.4" r="3.5" fill="#0072B2"/>
-<circle cx="336.5" cy="301.3" r="3.5" fill="#0072B2"/>
-<circle cx="616.0" cy="301.2" r="3.5" fill="#0072B2"/>
+<polyline points="64.0,236.6 91.9,223.7 126.9,235.0 196.8,237.7 336.5,237.6 616.0,232.6" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="64.0" cy="236.6" r="3.5" fill="#D55E00"/>
+<circle cx="91.9" cy="223.7" r="3.5" fill="#D55E00"/>
+<circle cx="126.9" cy="235.0" r="3.5" fill="#D55E00"/>
+<circle cx="196.8" cy="237.7" r="3.5" fill="#D55E00"/>
+<circle cx="336.5" cy="237.6" r="3.5" fill="#D55E00"/>
+<circle cx="616.0" cy="232.6" r="3.5" fill="#D55E00"/>
 <text x="64" y="362" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
 <line x1="64" y1="368" x2="616" y2="368" stroke="#e5e5e5"/>
 <line x1="64" y1="488" x2="616" y2="488" stroke="#e5e5e5"/>
 <text x="56" y="372" font-size="10" text-anchor="end" fill="#222222">200s</text>
 <text x="56" y="492" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,384.7 91.9,467.1 126.9,470.0 196.8,470.3 336.5,473.2 616.0,469.1" fill="none" stroke="#0072B2" stroke-width="2"/>
-<circle cx="64.0" cy="384.7" r="3.5" fill="#0072B2"/>
-<circle cx="91.9" cy="467.1" r="3.5" fill="#0072B2"/>
-<circle cx="126.9" cy="470.0" r="3.5" fill="#0072B2"/>
-<circle cx="196.8" cy="470.3" r="3.5" fill="#0072B2"/>
-<circle cx="336.5" cy="473.2" r="3.5" fill="#0072B2"/>
-<circle cx="616.0" cy="469.1" r="3.5" fill="#0072B2"/>
+<polyline points="64.0,382.9 91.9,462.0 126.9,471.9 196.8,483.9 336.5,484.9 616.0,484.5" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="64.0" cy="382.9" r="3.5" fill="#D55E00"/>
+<circle cx="91.9" cy="462.0" r="3.5" fill="#D55E00"/>
+<circle cx="126.9" cy="471.9" r="3.5" fill="#D55E00"/>
+<circle cx="196.8" cy="483.9" r="3.5" fill="#D55E00"/>
+<circle cx="336.5" cy="484.9" r="3.5" fill="#D55E00"/>
+<circle cx="616.0" cy="484.5" r="3.5" fill="#D55E00"/>
 <text x="64.0" y="508" font-size="11" text-anchor="middle" fill="#222222">1</text>
 <text x="91.9" y="508" font-size="11" text-anchor="middle" fill="#222222">5</text>
 <text x="126.9" y="508" font-size="11" text-anchor="middle" fill="#222222">10</text>
