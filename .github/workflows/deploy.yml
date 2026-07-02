@@ -33,6 +33,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
+      # Same cache as ci.yml (bun store + Playwright Chromium, keyed on
+      # bun.lock), so a deploy reuses the browser a CI run already downloaded —
+      # the fresh ~150MB download made the smoke gate slow and flaky.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('src/bun.lock') }}
+          restore-keys: deps-${{ runner.os }}-
       - run: bun install
         working-directory: src
       # Assemble _site for the prod prefix: marketing homepage at the root, the
@@ -45,6 +55,7 @@ jobs:
           SITE_BASE: /
           OUT_DIR: _site
       # Smoke-test the demo bundles in headless Chromium before deploying.
+      # A cache hit above makes this install a no-op.
       - run: bunx playwright install chromium
         working-directory: src
       - run: bun run test:smoke

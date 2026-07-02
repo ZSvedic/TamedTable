@@ -1,13 +1,17 @@
 // #MobileShell
 // The phone layout: app bar (file + pager) over the frozen-header table over a
 // persistent five-action dock, with the Type / Speak / History sheets rising in
-// the dock's place. It drives the same WebController the desktop tree does — the
-// menu drawer and the shared Settings / Open-URL / Tours overlays carry every
-// action that doesn't fit the dock. A running tour reuses the real Driver.js
-// engine: the mobile table, the Menu button, and the composer carry the ids the
-// tour targets, and a chat step opens the Type sheet so the spotlight lands on
-// the visible composer.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+// the dock's place. The app bar and the bottom region are fixed to the screen;
+// the table flows in the document, so the page itself scrolls it — a natural
+// swipe hides the phone browser's bars and the browser scrollbar shows the
+// true position in the table (index.css keeps the page ≥1px scrollable so even
+// the empty page can be swiped). It drives the same WebController the desktop
+// tree does — the menu drawer and the shared Settings / Open-URL / Tours
+// overlays carry every action that doesn't fit the dock. A running tour reuses
+// the real Driver.js engine: the mobile table, the Menu button, and the
+// composer carry the ids the tour targets, and a chat step opens the Type
+// sheet so the spotlight lands on the visible composer.
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
@@ -18,8 +22,26 @@ import { Dock, type DockAction } from './Dock.tsx';
 import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
 import { KeyboardSheet, VoiceSheet, HistorySheet } from './sheets.tsx';
+import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
+
+/** The app bar's shell: pinned to the top of the screen, clearing the notch. */
+function fixedBarStyle(borderColor: string, background: string): CSSProperties {
+  return {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    height: APPBAR_OFFSET,
+    paddingTop: 'env(safe-area-inset-top)',
+    display: 'flex',
+    alignItems: 'center',
+    borderBottom: `1px solid ${borderColor}`,
+    background,
+  };
+}
 
 function AppBar({
   t,
@@ -63,14 +85,10 @@ function AppBar({
       id="tutorial-mobile-top"
       data-mob-appbar=""
       style={{
-        height: 46,
-        flex: '0 0 auto',
-        display: 'flex',
-        alignItems: 'center',
+        ...fixedBarStyle(t.line, t.surface),
         gap: space.px8,
         padding: '0 10px',
-        borderBottom: `1px solid ${t.line}`,
-        background: t.surface,
+        paddingTop: 'env(safe-area-inset-top)',
       }}
     >
       {navBtn('prev', page > 1 ? onPrev : null)}
@@ -281,14 +299,15 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   return (
     <div
       style={{
-        flex: 1,
-        minHeight: 0,
-        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         background: t.surface,
-        // Clear the iOS status bar / notch (mainly when added to the home screen).
-        paddingTop: 'env(safe-area-inset-top)',
+        // Fill the large viewport plus the 1px of scroll room (see index.css),
+        // so short content still leaves a swipe's worth of page to scroll.
+        minHeight: 'calc(100lvh + 1px)',
+        // The app bar and the dock are fixed; the flowing content clears them.
+        paddingTop: APPBAR_OFFSET,
+        paddingBottom: DOCK_OFFSET,
       }}
     >
       {loaded ? (
@@ -314,17 +333,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         </>
       ) : (
         <>
-          <div
-            style={{
-              height: 46,
-              flex: '0 0 auto',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderBottom: `1px solid ${t.line}`,
-              background: t.surface,
-            }}
-          >
+          <div style={{ ...fixedBarStyle(t.line, t.surface), justifyContent: 'center' }}>
             <span style={{ fontFamily: typography.ui, fontSize: typography.size.base, fontWeight: 600, color: t.ink3 }}>
               No file open
             </span>
@@ -339,32 +348,35 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         </>
       )}
 
-      {/* bottom region: the dock, or one of the input sheets in its place */}
-      {inputMode === 'keyboard' ? (
-        <KeyboardSheet
-          t={t}
-          draft={draft}
-          onDraft={setDraft}
-          onSend={sendChat}
-          onClose={() => setInputMode('none')}
-          inputId="tutorial-chat-input"
-        />
-      ) : inputMode === 'voice' ? (
-        <VoiceSheet t={t} status={voiceStatus} onSend={() => void controller.stopVoice()} onCancel={() => controller.cancelVoice()} />
-      ) : inputMode === 'history' ? (
-        <HistorySheet
-          t={t}
-          steps={timeline.steps}
-          cursor={timeline.cursor}
-          now={now}
-          onClose={() => setInputMode('none')}
-          onJump={(i) => void controller.jumpToHistory(i)}
-          onUndo={() => void controller.undo()}
-          onRedo={() => void controller.redo()}
-        />
-      ) : (
-        <Dock t={t} actions={dockActions} />
-      )}
+      {/* bottom region: the dock, or one of the input sheets in its place —
+          pinned to the bottom of the screen while the page scrolls the table */}
+      <div data-mob-bottom="" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 20 }}>
+        {inputMode === 'keyboard' ? (
+          <KeyboardSheet
+            t={t}
+            draft={draft}
+            onDraft={setDraft}
+            onSend={sendChat}
+            onClose={() => setInputMode('none')}
+            inputId="tutorial-chat-input"
+          />
+        ) : inputMode === 'voice' ? (
+          <VoiceSheet t={t} status={voiceStatus} onSend={() => void controller.stopVoice()} onCancel={() => controller.cancelVoice()} />
+        ) : inputMode === 'history' ? (
+          <HistorySheet
+            t={t}
+            steps={timeline.steps}
+            cursor={timeline.cursor}
+            now={now}
+            onClose={() => setInputMode('none')}
+            onJump={(i) => void controller.jumpToHistory(i)}
+            onUndo={() => void controller.undo()}
+            onRedo={() => void controller.redo()}
+          />
+        ) : (
+          <Dock t={t} actions={dockActions} />
+        )}
+      </div>
 
       {drawerOpen && (
         <MenuDrawer t={t} dark={dark} controller={controller} onClose={() => setDrawerOpen(false)} onToggleTheme={toggle} />

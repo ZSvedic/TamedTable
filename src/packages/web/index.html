@@ -9,7 +9,10 @@
     <title>TamedTable</title>
     <meta name="theme-color" content="#281C60" />
     <!-- Added to the home screen, the app runs full-screen — no browser bars.
-         In a normal tab the browser chrome stays; the layout fits 100svh. -->
+         In a normal tab, the phone layout lets the page itself scroll the
+         table, so a swipe hides the bars (see MobileShell). The manifest makes
+         Android's install open standalone; Settings offers the prompt. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

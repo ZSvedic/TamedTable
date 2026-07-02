@@ -6,6 +6,7 @@ import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
 import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
 import { browserContinuousPort } from '@tamedtable/voice-input/browser-vad';
 import { App } from './App.tsx';
+import { captureInstallPrompt } from './install-prompt.ts';
 import './index.css';
 
 // Lightweight tutorial scenario index, frozen into the bundle by vite.config.
@@ -54,6 +55,10 @@ controller.subscribe(() => {
 // controller. Unmatched/missing params boot normally — the controller no-ops.
 const params = new URLSearchParams(window.location.search);
 void controller.openTutorialFromLink(params.get('feature'), params.get('scenario'));
+
+// Catch Android's one-shot install event for the Settings panel's
+// "Add to home screen" button.
+captureInstallPrompt();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('TamedTable: #root element is missing from index.html');

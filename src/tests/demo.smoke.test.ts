@@ -99,7 +99,9 @@ beforeAll(async () => {
 
   const { chromium } = await import('playwright');
   browser = await chromium.launch({ executablePath: chromePath, args: ['--no-sandbox'] });
-});
+  // 15s instead of bun's 5s default hook timeout: a cold Chromium launch on a
+  // busy CI runner has blown the 5s budget (the builds above take ~1s total).
+}, 15_000);
 
 afterAll(async () => {
   await browser?.close();

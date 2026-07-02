@@ -171,7 +171,7 @@ export function Toolbar({
         <Icon name={dark ? 'sun' : 'moon'} />
       </Button>
       <Button onClick={onOpenSettings} title="API key and settings">
-        <Icon name="cog" />
+        <Icon name="wrench" />
         {!condensed && 'Settings'}
       </Button>
       <Button onClick={onOpenTutorial} title="Interactive tours — no API key required">

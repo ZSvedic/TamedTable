@@ -94,15 +94,17 @@ export function MenuDrawer({
   };
   return (
     <div style={{ display: 'contents' }}>
+      {/* Fixed, not absolute: the shell flows with the document-scrolled page,
+          but the drawer must cover the screen wherever the table is scrolled. */}
       <div
         onClick={onClose}
-        style={{ position: 'absolute', inset: 0, background: t.overlay, zIndex: 40 }}
+        style={{ position: 'fixed', inset: 0, background: t.overlay, zIndex: 40 }}
       />
       <div
         data-mob-drawer=""
         className="tt-sheet"
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           bottom: 0,
           left: 0,
@@ -159,7 +161,7 @@ export function MenuDrawer({
           <Item t={t} icon="code" label="Save recipe as Python…" disabled={!loaded || busy} onClick={() => run(() => void controller.savePython())} />
           {sep}
           <Item t={t} icon={dark ? 'sun' : 'moon'} label="Dark mode" value={dark ? 'on' : 'off'} onClick={onToggleTheme} />
-          <Item t={t} icon="cog" label="Settings…" onClick={() => run(() => controller.openSettings())} />
+          <Item t={t} icon="wrench" label="Settings…" onClick={() => run(() => controller.openSettings())} />
           <Item t={t} icon="tour" label="Tours…" onClick={() => run(() => controller.openTutorial())} />
         </div>
       </div>

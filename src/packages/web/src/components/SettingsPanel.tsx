@@ -7,12 +7,15 @@ import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
+import { useIsMobile } from '../hooks/useIsMobile.ts';
+import { installPrompt } from '../install-prompt.ts';
 import { ALL_MODELS, type Provider } from '@tamedtable/model-config';
 import { ModelChooser } from '@tamedtable/model-config/ModelChooser';
 
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
+  const isMobile = useIsMobile();
   const cfg = controller.getConfig();
 
   // Local key state — one entry per provider. Initialized from current config.
@@ -172,6 +175,47 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               </Button>
             </div>
           </div>
+
+          {/* #MobileShell — opened from a home-screen icon the app runs
+              full-screen, no browser bars. Android Chrome hands us its install
+              prompt (captured at startup); iOS browsers have no API for it, so
+              show the share-menu instruction instead. Desktop hides this. */}
+          {isMobile && (
+            <div style={{ marginTop: space.px16 }}>
+              <div
+                style={{
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.sm,
+                  fontWeight: 600,
+                  color: t.ink,
+                  marginBottom: space.px8,
+                }}
+              >
+                Add to home screen
+              </div>
+              <div
+                style={{
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.xs,
+                  color: t.ink3,
+                  marginBottom: space.px8,
+                }}
+              >
+                Opened from a home-screen icon, TamedTable runs full-screen — no browser bars.
+              </div>
+              {installPrompt() ? (
+                <Button variant="primary" onClick={() => void installPrompt()!.prompt()}>
+                  Add to home screen
+                </Button>
+              ) : (
+                <div style={{ fontFamily: typography.ui, fontSize: typography.size.xs, color: t.ink2 }}>
+                  {/iPad|iPhone|iPod/.test(navigator.userAgent)
+                    ? 'In your browser: Share → Add to Home Screen.'
+                    : 'In your browser menu: Add to Home screen.'}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* footer — Close only (changes are live) */}

@@ -6,12 +6,10 @@ import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
-import { useIsMobile } from '../hooks/useIsMobile.ts';
 
 export function TutorialPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
-  const isMobile = useIsMobile();
 
   const open = controller.tutorialOpen;
   const active = controller.isTutorialActive();
@@ -45,10 +43,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       cancel:               () => { controller.cancelTutorial(); },
     };
     const ui = new TourUi(cursor, {
-      // On the terminal stop the step's own target may be gone — anchor to the
-      // table on desktop, but on mobile the table fills the screen and the
-      // popover lands mid-data, so anchor to the compact app bar at the top.
-      doneElementId: isMobile ? 'tutorial-mobile-top' : 'tutorial-table-view',
+      // On the terminal stop the step's own target may be gone — anchor to
+      // the table, the result the tour just produced, on both layouts.
+      doneElementId: 'tutorial-table-view',
       // The terminal stop's "Voilà …" celebration, shown after the last real
       // step has run, numbered "N of N" with a Done button.
       doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,

@@ -97,6 +97,13 @@ test.describe('phone width', () => {
     // composer, prefilled with the tour's query.
     await expect(page.locator('[data-mob-sheet="keyboard"]')).toBeVisible();
     await expect(page.locator('#tutorial-chat-input')).not.toHaveValue('');
+
+    // The terminal "Voilà" step highlights the table, as on desktop — not the
+    // app bar (the filename/pager strip on top).
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('3 of 3');
+    await expect(page.locator('.driver-popover')).toContainText('Voilà');
+    await expect(page.locator('#tutorial-table-view')).toHaveClass(/driver-active-element/);
   });
 });
 
@@ -107,6 +114,13 @@ test.describe('desktop width', () => {
     await page.goto('/TamedTable/app/');
     await expect(page.locator('[data-tb-toolbar=""]')).toBeVisible();
     await expect(page.locator('[data-mob-dock=""]')).toHaveCount(0);
+  });
+
+  test('desktop Settings has no Add to home screen section', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByText('Diagnostics', { exact: true })).toBeVisible();
+    await expect(page.getByText('Add to home screen', { exact: true })).toHaveCount(0);
   });
 });
 
@@ -163,5 +177,74 @@ test.describe('medium width — the toolbar condenses instead of overflowing', (
       const { bar } = await overflow(page);
       expect(bar, `toolbar must not overflow at ${width}px (loaded)`).toBeLessThanOrEqual(0);
     }
+  });
+});
+
+// #MobileShell — document-scroll layout. On phones the page itself is the
+// table's scroller (the app bar and dock are fixed to the screen), so a
+// natural swipe hides the phone browser's bars and the browser scrollbar
+// shows the true position in the table. The page always keeps ≥1px of scroll
+// room past the large viewport, so even the empty page can be swiped.
+// Headless has no browser bars; these tests pin the mechanics.
+test.describe('phone — the page is the table scroller', () => {
+  test.use({ viewport: PHONE, hasTouch: true });
+
+  test('the empty page has scroll room and the app bar and dock are fixed', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await expect(page.getByText('What table can I tame?')).toBeVisible();
+
+    const state = await page.evaluate(() => ({
+      slack: document.documentElement.scrollHeight - window.innerHeight,
+      bottom: getComputedStyle(document.querySelector('[data-mob-bottom=""]')!).position,
+      dockBottom: Math.round(document.querySelector('[data-mob-dock=""]')!.getBoundingClientRect().bottom),
+      innerH: window.innerHeight,
+    }));
+    expect(state.slack, 'the page needs scroll room so a swipe can hide the bars').toBeGreaterThanOrEqual(1);
+    expect(state.bottom, 'the dock must stay pinned while the page scrolls').toBe('fixed');
+    expect(state.dockBottom).toBe(state.innerH);
+  });
+
+  test('a loaded table scrolls as the document; the header sticks under the app bar', async ({
+    page,
+  }) => {
+    // A short viewport so 20 rows are guaranteed taller than the screen.
+    await page.setViewportSize({ width: 390, height: 320 });
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-open="Open sample…"]').click();
+    await page
+      .locator('[data-tb-sample-dialog] [data-tb-sample]', { hasText: 'customers-input.csv' })
+      .first()
+      .click();
+    await expect(page.locator('[data-mob-cell]').first()).toBeVisible({ timeout: 30_000 });
+
+    // No inner vertical scroller — the document is the scroller.
+    const layout = await page.evaluate(() => ({
+      tableOverflow: getComputedStyle(document.querySelector('[data-mob-table]')!).overflowY,
+      slack: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    expect(layout.tableOverflow, 'the table must not trap vertical scrolling').not.toBe('auto');
+    expect(layout.slack, 'the 20-row page must overflow this short viewport').toBeGreaterThan(100);
+
+    // Scroll the page: the app bar stays at the top, the header row glues to it.
+    await page.evaluate(() => window.scrollTo(0, 150));
+    const m = await page.evaluate(() => {
+      const th = document.querySelector('[data-mob-table] thead th')!.getBoundingClientRect();
+      const bar = document.querySelector('[data-mob-appbar=""]')!.getBoundingClientRect();
+      return {
+        scrollY: Math.round(window.scrollY),
+        barTop: Math.round(bar.top),
+        gap: Math.round(th.top - bar.bottom),
+      };
+    });
+    expect(m.scrollY).toBe(150);
+    expect(m.barTop, 'the app bar must stay fixed at the top').toBe(0);
+    expect(Math.abs(m.gap), 'the sticky header must sit right under the app bar').toBeLessThanOrEqual(1);
+  });
+
+  test('Settings on a phone offers Add to home screen', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-dock="menu"]').click();
+    await page.locator('[data-mob-menu-item="Settings…"]').click();
+    await expect(page.getByText('Add to home screen', { exact: true })).toBeVisible();
   });
 });

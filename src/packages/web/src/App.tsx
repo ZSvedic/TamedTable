@@ -36,7 +36,9 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
   return (
     <div
       style={{
-        height: '100%',
+        // Desktop fills the viewport; the mobile shell flows with the document
+        // so the page itself can scroll the table (see MobileShell).
+        height: isMobile ? undefined : '100%',
         display: 'flex',
         flexDirection: 'column',
         background: t.bg,
