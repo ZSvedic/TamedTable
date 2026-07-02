@@ -1,4 +1,4 @@
-TamedTable is a CLI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. 
+TamedTable is an AI ETL tool you drive with natural language. Load a CSV, type *"normalize phone numbers"* or *"drop duplicate emails,"* and the LLM rewrites a small JSON spec that the runtime replays against the data. 
 
 [TamedTable.com web](https://www.tamedtable.com) explains major features. 
 
