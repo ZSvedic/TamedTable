@@ -7,6 +7,7 @@
       "devDependencies": {
         "@cucumber/cucumber": "^12.8.2",
         "@duckdb/node-api": "1.5.2-r.1",
+        "@tamedtable/bench": "workspace:*",
         "@tamedtable/cassette": "workspace:*",
         "@tamedtable/chat-panel": "workspace:*",
         "@tamedtable/cli": "workspace:*",
@@ -23,6 +24,15 @@
         "@types/node": "^25.6.0",
         "playwright": "^1.60.0",
         "typescript": "^6.0.3",
+      },
+    },
+    "packages/bench": {
+      "name": "@tamedtable/bench",
+      "version": "0.0.0",
+      "dependencies": {
+        "@tamedtable/core": "workspace:*",
+        "@tamedtable/headless": "workspace:*",
+        "@tamedtable/model-config": "workspace:*",
       },
     },
     "packages/cassette": {
@@ -445,6 +455,8 @@
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
     "@swc/helpers": ["@swc/helpers@0.5.23", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw=="],
+
+    "@tamedtable/bench": ["@tamedtable/bench@workspace:packages/bench"],
 
     "@tamedtable/cassette": ["@tamedtable/cassette@workspace:packages/cassette"],
 

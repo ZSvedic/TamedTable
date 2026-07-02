@@ -10,118 +10,15 @@ import { join } from 'node:path';
 import { createHeadlessRunner, type HeadlessRunner } from '@tamedtable/headless';
 import type { TablePlan } from '@tamedtable/core';
 import { TamedTableWorld, runnerOptsFor, SPEC_TC_DIR } from './world.ts';
+import { newTally, tallyingFetch, summarise, type Tally } from '@tamedtable/bench';
 
-// ── Pricing ──────────────────────────────────────────────────────────────────
-// USD per million tokens (input / output), Standard paid tier, for each exact
-// model id. Sources (verified against the published tables):
-//   Anthropic — claude-api model reference (Opus 5/25, Sonnet 3/15, Haiku 1/5,
-//               Fable 10/50).
-//   Gemini    — https://ai.google.dev/gemini-api/docs/pricing
-//   OpenAI    — https://developers.openai.com/api/docs/pricing
-// Cache-read is 0.1x of input on all three providers (Gemini Flash 0.15/1.50,
-// OpenAI cached 0.50/5.00), so CACHE_READ_MULT below applies universally. Update
-// a row if a provider revises that id. Unknown ids fall back to the Sonnet rate
-// so a model swap never crashes the report — only skews cost.
-const PRICING: Record<string, { in: number; out: number }> = {
-  'claude-fable-5': { in: 10, out: 50 },
-  'claude-opus-4-8': { in: 5, out: 25 },
-  'claude-opus-4-7': { in: 5, out: 25 },
-  'claude-opus-4-6': { in: 5, out: 25 },
-  'claude-sonnet-4-6': { in: 3, out: 15 },
-  'claude-sonnet-4-5': { in: 3, out: 15 },
-  'claude-haiku-4-5': { in: 1, out: 5 },
-  'gemini-3.1-pro-preview': { in: 2, out: 12 },      // <=200k prompt tier
-  'gemini-3.5-flash': { in: 1.5, out: 9 },
-  'gemini-3.1-flash-lite': { in: 0.25, out: 1.5 },   // text/image/video input
-  'gpt-5.5': { in: 5, out: 30 },                      // <272k context tier
-  'gpt-5.4-mini': { in: 0.75, out: 4.5 },
-};
-const FALLBACK_PRICE = { in: 3, out: 15 };
-
-// Prompt-cache multipliers on the input rate: a cache write costs 1.25×, a
-// cache read 0.1×. The runtime sends each cell/patch prompt with an ephemeral
-// cache breakpoint, so most input tokens land in the cache fields rather than
-// `input_tokens` — counting only `input_tokens` would wildly undercount both
-// tokens and cost.
-const CACHE_WRITE_MULT = 1.25;
-const CACHE_READ_MULT = 0.1;
-
-// ── Per-model usage tally ────────────────────────────────────────────────────
-// Reset before each scenario; written by the fetch wrapper installed in Before
-// (so live and cassette-replay runs are measured identically), read by the When
-// steps that finalise the scenario's metric.
-interface NormUsage { inTokens: number; cacheWrite: number; cacheRead: number; outTokens: number }
-interface ModelTally extends NormUsage { calls: number }
-let tally = new Map<string, ModelTally>();
-
-function resetTally(): void {
-  tally = new Map();
-}
-
-// Normalise a raw provider response body into uncached-input / cache-write /
-// cache-read / output token counts. Handles all three providers the app speaks:
-//   Anthropic  → usage.{input_tokens, output_tokens, cache_*_input_tokens}
-//   Google     → usageMetadata.{promptTokenCount (incl. cached), candidatesTokenCount, thoughtsTokenCount, cachedContentTokenCount}
-//   OpenAI     → usage.{prompt_tokens, completion_tokens, prompt_tokens_details.cached_tokens}
-function normalizeUsage(data: unknown): NormUsage | null {
-  const d = data as Record<string, unknown>;
-  const u = d?.usage as Record<string, number> | undefined;
-  const g = d?.usageMetadata as Record<string, number> | undefined;
-  if (u && typeof u.input_tokens === 'number') {
-    return {
-      inTokens: u.input_tokens ?? 0,
-      cacheWrite: u.cache_creation_input_tokens ?? 0,
-      cacheRead: u.cache_read_input_tokens ?? 0,
-      outTokens: u.output_tokens ?? 0,
-    };
-  }
-  if (g && typeof g.promptTokenCount === 'number') {
-    const cached = g.cachedContentTokenCount ?? 0;
-    return {
-      inTokens: Math.max(0, (g.promptTokenCount ?? 0) - cached),
-      cacheWrite: 0, // Gemini caching is implicit; no separate write count in usageMetadata
-      cacheRead: cached,
-      outTokens: (g.candidatesTokenCount ?? 0) + (g.thoughtsTokenCount ?? 0),
-    };
-  }
-  if (u && typeof u.prompt_tokens === 'number') {
-    const cached = (u.prompt_tokens_details as unknown as Record<string, number> | undefined)?.cached_tokens ?? 0;
-    return {
-      inTokens: Math.max(0, (u.prompt_tokens ?? 0) - cached),
-      cacheWrite: 0,
-      cacheRead: cached,
-      outTokens: u.completion_tokens ?? 0,
-    };
-  }
-  return null;
-}
-
-function addUsage(model: string, n: NormUsage): void {
-  const t = tally.get(model) ?? { calls: 0, inTokens: 0, cacheWrite: 0, cacheRead: 0, outTokens: 0 };
-  t.calls += 1;
-  t.inTokens += n.inTokens;
-  t.cacheWrite += n.cacheWrite;
-  t.cacheRead += n.cacheRead;
-  t.outTokens += n.outTokens;
-  tally.set(model, t);
-}
-
-// Total input includes cached tokens; cost prices each input class at its own
-// cache-adjusted rate plus output at the output rate.
-function summariseTally(): { calls: number; inTokens: number; outTokens: number; costUsd: number; models: string } {
-  let calls = 0, inTokens = 0, outTokens = 0, costUsd = 0;
-  const models: string[] = [];
-  for (const [model, t] of tally) {
-    const price = PRICING[model] ?? FALLBACK_PRICE;
-    calls += t.calls;
-    inTokens += t.inTokens + t.cacheWrite + t.cacheRead;
-    outTokens += t.outTokens;
-    costUsd += ((t.inTokens + t.cacheWrite * CACHE_WRITE_MULT + t.cacheRead * CACHE_READ_MULT) / 1e6) * price.in
-      + (t.outTokens / 1e6) * price.out;
-    models.push(`${model}×${t.calls}`);
-  }
-  return { calls, inTokens, outTokens, costUsd, models: models.join(', ') || '—' };
-}
+// ── Token accounting ─────────────────────────────────────────────────────────
+// Pricing, provider usage parsing, and cost math live in @tamedtable/bench
+// (single source: benchmarks/models.jsonl), so this standalone A/B/C flow and
+// the model×batch sweep price identically. This file just owns the per-scenario
+// tally: reset in the Before hook, written by the shared tallying fetch wrapper,
+// read by the finalise step.
+let tally: Tally = newTally();
 
 // ── Collected results ────────────────────────────────────────────────────────
 interface BenchRow {
@@ -154,22 +51,12 @@ Before({ tags: '@perf' }, function (this: TamedTableWorld, scenario: ITestCaseHo
   // Tally token usage off every model response, wrapping whatever fetch is in
   // play — the cassette recorder/player (replay/record) or the global fetch
   // (live). Cloning the response leaves the SDK's own read untouched.
+  // Tally token usage off every model response, wrapping whatever fetch is in
+  // play — the cassette recorder/player (replay/record) or the global fetch
+  // (live). The shared wrapper parses all three provider shapes identically.
   const base = opts.fetch ?? ((input: string | URL | Request, init?: RequestInit) => fetch(input, init));
-  resetTally();
-  opts.fetch = async (input, init) => {
-    const res = await base(input, init);
-    try {
-      const body = typeof init?.body === 'string' ? init.body : '';
-      // Model id lives in the JSON body (Anthropic, OpenAI) or the URL path
-      // (Google: …/models/<id>:generateContent).
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
-      const model = (body ? (JSON.parse(body) as { model?: string }).model : undefined)
-        ?? url?.match(/models\/([^:?/]+)/)?.[1];
-      const usage = normalizeUsage(await res.clone().json());
-      if (model && usage) addUsage(model, usage);
-    } catch { /* non-JSON or non-message endpoint — ignore */ }
-    return res;
-  };
+  tally = newTally();
+  opts.fetch = tallyingFetch(base, tally);
   this.runnerOpts = opts;
   this.runnerKind = 'headless';
   this.runnerFactory = () => createHeadlessRunner(opts);
@@ -237,7 +124,7 @@ Then('the benchmark records the result', function (this: TamedTableWorld) {
   const p = pending.get(this);
   if (!p) throw new Error('no pending benchmark to record');
   assert.ok(p.rows > 0, `benchmark operation produced no rows (${p.scenario})`);
-  const s = summariseTally();
+  const s = summarise(tally);
   results.push({
     group: p.group,
     scenario: p.scenario,

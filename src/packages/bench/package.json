@@ -1,0 +1,16 @@
+{
+  "name": "@tamedtable/bench",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@tamedtable/core": "workspace:*",
+    "@tamedtable/headless": "workspace:*",
+    "@tamedtable/model-config": "workspace:*"
+  }
+}
