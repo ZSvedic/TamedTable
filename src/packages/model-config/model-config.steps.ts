@@ -6,6 +6,7 @@ import {
   defaultModel,
   defaultCellModel,
   providerFor,
+  acceptsTemperature,
   keyFor,
   ALL_MODELS,
   type ResolvedConfig,
@@ -17,6 +18,7 @@ interface ModelConfigCtx {
   providerResult?: Provider;
   modelResult?: string;
   keyResult?: string | null;
+  boolResult?: boolean;
 }
 
 // The only shape these steps need from the cucumber World — state hangs off
@@ -233,6 +235,22 @@ When(
   'providerFor is called with {string}',
   function (this: ModelConfigWorld, modelId: string) {
     ctx(this).providerResult = providerFor(modelId);
+  },
+);
+
+// ── acceptsTemperature steps ─────────────────────────────────────────────────
+
+When(
+  'acceptsTemperature is called with {string}',
+  function (this: ModelConfigWorld, modelId: string) {
+    ctx(this).boolResult = acceptsTemperature(modelId);
+  },
+);
+
+Then(
+  'the boolean result is {word}',
+  function (this: ModelConfigWorld, expected: string) {
+    assert.equal(ctx(this).boolResult, expected === 'true');
   },
 );
 

@@ -2,7 +2,7 @@ import { generateText, tool, stepCountIs, jsonSchema } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { providerFor } from '@tamedtable/model-config';
+import { providerFor, acceptsTemperature } from '@tamedtable/model-config';
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
@@ -830,6 +830,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return (this.modelCache ??= this.provider()(this.opts.model ?? DEFAULT_MODEL));
   }
 
+  // Sampling params to spread into a generateText() call. We pin temperature
+  // to 0 for determinism, but only for models that still accept it — the
+  // newest models removed sampling params and 400 on `temperature`, so we omit
+  // it for them. See acceptsTemperature() in @tamedtable/model-config.
+  private samplingParams(modelId: string): { temperature?: number } {
+    return acceptsTemperature(modelId) ? { temperature: 0 } : {};
+  }
+
   /** The model-ID string to use for per-cell LLM calls. */
   private resolvedCellModelId(perCellModel?: string): string {
     if (perCellModel) return perCellModel;
@@ -896,7 +904,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       model: this.model(),
       system: PYTHON_EXPORT_PROMPT,
       prompt,
-      temperature: 0,
+      ...this.samplingParams(this.opts.model ?? DEFAULT_MODEL),
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
@@ -1037,7 +1045,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       toolChoice: { type: 'tool', toolName: 'apply_spec_patch' },
       stopWhen: stepCountIs(1),
       abortSignal: signal,
-      temperature: 0,
+      ...this.samplingParams(this.opts.model ?? DEFAULT_MODEL),
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
@@ -1499,7 +1507,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       system: BATCH_SYSTEM_PROMPT,
       prompt: prompts.map((p, i) => `[${i + 1}]\n${p}`).join('\n\n---\n\n'),
       abortSignal: signal,
-      temperature: 0,
+      ...this.samplingParams(this.resolvedCellModelId(perCellModel)),
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
@@ -1515,7 +1523,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       model: this.cellModel(perCellModel),
       prompt,
       abortSignal: signal,
-      temperature: 0,
+      ...this.samplingParams(this.resolvedCellModelId(perCellModel)),
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });

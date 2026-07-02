@@ -803,6 +803,7 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function providerFor(modelId: string): Provider;
+function acceptsTemperature(modelId: string): boolean;   // false for models that removed sampling params (Opus 4.8/4.7, Fable 5, Sonnet 5, GPT-5.4+/5.5) and unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey)
 function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
