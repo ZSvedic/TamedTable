@@ -1,67 +1,117 @@
 <!doctype html>
 <!-- #MobileShell — throwaway test bench for hiding the phone browser's bars.
-     Self-contained (no imports, no framework) so it can be iterated fast and
-     tested on a real phone via the PR preview. Each button tries one trick;
-     the readout at the top shows live viewport numbers so you can see whether
-     the bars actually went away. Not linked from anywhere; delete when the
-     winning trick lands in the app. -->
+     Round 2: no scrollTo tricks (iOS ignores them all; only trick 5 — real
+     scroll room — worked). Instead the page models the proposed app layout:
+     the DOCUMENT scrolls through a tall table, so a natural swipe hides the
+     bars and the browser's own scrollbar shows the true position in the
+     table. App bar + dock are fixed; the header row is sticky below the app
+     bar. Not linked from anywhere; delete when the layout lands in the app. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Scroll tricks — browser-bar test bench</title>
+    <title>Document-scroll table — browser-bar test bench</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { height: 100%; margin: 0; }
-      /* Trick 0 (CSS): 1px of scroll room past the large viewport, so the
-         document is always scrollable and the bars *can* auto-hide. */
-      body { min-height: calc(100lvh + 1px); font-family: system-ui, sans-serif; }
-      /* The "app": pinned to the visual viewport, grows when bars hide. */
-      #app {
-        position: fixed; top: 0; left: 0; right: 0; height: 100dvh;
-        display: flex; flex-direction: column; background: #f5f3ff;
+      html, body { margin: 0; }
+      body { font-family: system-ui, sans-serif; background: #f5f3ff; }
+
+      /* App bar: pinned to the top of the visual viewport. The table flows
+         underneath it (body padding clears it). */
+      #appbar {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+        background: #281c60; color: #fff;
+        padding: 8px 14px calc(8px);
+        padding-top: calc(8px + env(safe-area-inset-top));
       }
+      #appbar b { font-size: 14px; }
       #readout {
-        flex: 0 0 auto; padding: 10px 14px; background: #281c60; color: #fff;
-        font-family: ui-monospace, monospace; font-size: 13px; line-height: 1.6;
-        white-space: pre; padding-top: calc(10px + env(safe-area-inset-top));
+        font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.5;
+        white-space: pre; opacity: 0.9;
       }
-      #tricks { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-      button {
-        padding: 13px 14px; font-size: 15px; text-align: left; cursor: pointer;
-        border: 1px solid #c7c2e0; border-radius: 10px; background: #fff; color: #281c60;
-      }
-      button:active { background: #e8e4fa; }
-      #log { font-family: ui-monospace, monospace; font-size: 12px; color: #555; white-space: pre-wrap; }
-      #foot {
-        flex: 0 0 auto; padding: 10px 14px; background: #281c60; color: #fff;
-        font-size: 13px; text-align: center;
+
+      /* Dock: pinned to the bottom of the visual viewport — rises when the
+         bottom bar hides. */
+      #dock {
+        position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+        background: #281c60; color: #fff; font-size: 13px; text-align: center;
+        padding: 10px 14px;
         padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      }
+
+      /* The table is normal document flow — the PAGE scrolls it, not an inner
+         div. Body padding keeps the first/last rows clear of the bars. */
+      body { padding-top: var(--appbar-h, 92px); padding-bottom: 64px; }
+      table { border-collapse: collapse; width: 100%; background: #fff; }
+      th, td {
+        padding: 8px 10px; border-bottom: 1px solid #e2ddf5; font-size: 13px;
+        text-align: left; white-space: nowrap;
+      }
+      td:first-child, th:first-child { color: #8a84b0; font-family: ui-monospace, monospace; }
+      /* Header row sticks just below the fixed app bar while the page scrolls. */
+      thead th {
+        position: sticky; top: var(--appbar-h, 92px); z-index: 5;
+        background: #e8e4fa; color: #281c60; border-bottom: 1px solid #c7c2e0;
+      }
+      #controls { padding: 10px 14px; display: flex; gap: 8px; }
+      #controls button {
+        padding: 8px 12px; font-size: 13px; cursor: pointer;
+        border: 1px solid #c7c2e0; border-radius: 8px; background: #fff; color: #281c60;
       }
     </style>
   </head>
   <body>
-    <div id="app">
+    <div id="appbar">
+      <b>customers.csv · document-scroll layout</b>
       <div id="readout">…</div>
-      <div id="tricks">
-        <button data-trick="nudge1">1 — scrollTo(0, 1) now</button>
-        <button data-trick="nudge1-delay">2 — scrollTo(0, 1) after 300ms</button>
-        <button data-trick="down-up">3 — scrollTo(0, 120) then back to 1</button>
-        <button data-trick="smooth">4 — smooth scrollTo(0, 1)</button>
-        <button data-trick="slack">5 — grow scroll room to 200lvh (then swipe up yourself)</button>
-        <button data-trick="auto">6 — auto: nudge on every touchend (the app's trick)</button>
-        <button data-trick="fullscreen">7 — requestFullscreen (Android; iPhone Safari refuses)</button>
-        <div id="log"></div>
-      </div>
-      <div id="foot">bottom dock — visible = bottom bar not covering us</div>
     </div>
-    <script>
-      const readout = document.getElementById('readout');
-      const log = document.getElementById('log');
-      const say = (m) => { log.textContent = new Date().toISOString().slice(11, 19) + ' ' + m + '\n' + log.textContent; };
 
-      // Live viewport numbers. innerHeight grows when the bars slide away;
-      // lvh/svh (measured once via probe divs) bracket the possible range.
+    <div id="controls">
+      <button data-rows="300">300 rows (taller than screen)</button>
+      <button data-rows="8">8 rows (shorter — no scroll, bars stay)</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>FirstName</th><th>LastName</th><th>Country</th><th>Score</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+
+    <div id="dock">Menu · Undo · History · Type · Speak</div>
+
+    <script>
+      // Fake data — enough rows that the document is much taller than the
+      // viewport, so swiping through the table scrolls the PAGE (hiding the
+      // bars) and the browser scrollbar tracks the position in the table.
+      const FIRST = ['Ana', 'Marko', 'Ivana', 'Luka', 'Petra', 'Josip', 'Maja', 'Karlo'];
+      const LAST = ['Horvat', 'Kovač', 'Babić', 'Novak', 'Jurić', 'Marić'];
+      const CTRY = ['Croatia', 'Germany', 'Italy', 'Austria', 'Slovenia'];
+      function fill(n) {
+        const rows = [];
+        for (let i = 1; i <= n; i++) {
+          rows.push('<tr><td>' + i + '</td><td>' + FIRST[i % FIRST.length] + '</td><td>' +
+            LAST[i % LAST.length] + '</td><td>' + CTRY[i % CTRY.length] + '</td><td>' +
+            ((i * 37) % 100) + '</td></tr>');
+        }
+        document.getElementById('rows').innerHTML = rows.join('');
+        update();
+      }
+      document.getElementById('controls').addEventListener('click', (e) => {
+        const n = e.target.closest('button')?.dataset.rows;
+        if (n) { fill(+n); window.scrollTo(0, 0); }
+      });
+
+      // Body padding must clear the app bar exactly, and the sticky header
+      // sits at the same offset. Measured live (the readout changes height).
+      const appbar = document.getElementById('appbar');
+      function sizeBar() {
+        document.documentElement.style.setProperty('--appbar-h', appbar.offsetHeight + 'px');
+      }
+
+      // Live viewport readout: innerHeight vs 100lvh says whether the bars are
+      // hidden; scrollY/scrollHeight is the position the scrollbar shows.
+      const readout = document.getElementById('readout');
       const probe = (h) => {
         const d = document.createElement('div');
         d.style.cssText = 'position:fixed;height:100' + h + ';width:0;visibility:hidden';
@@ -71,46 +121,21 @@
         return Math.round(v);
       };
       function update() {
-        const lvh = probe('lvh'), svh = probe('svh');
-        const ih = window.innerHeight, vv = Math.round(window.visualViewport?.height ?? 0);
-        const barsGone = ih >= lvh - 1;
+        const lvh = probe('lvh'), svh = probe('svh'), ih = window.innerHeight;
+        const max = document.documentElement.scrollHeight - ih;
+        const pct = max > 0 ? Math.round((window.scrollY / max) * 100) : 0;
         readout.textContent =
-          'innerHeight   ' + ih + (barsGone ? '  ← bars HIDDEN' : '  ← bars visible') + '\n' +
-          'visualViewport ' + vv + '\n' +
-          'svh/lvh       ' + svh + ' / ' + lvh + '\n' +
-          'scrollY       ' + Math.round(window.scrollY) + '   doc slack ' +
-          (document.documentElement.scrollHeight - ih) + 'px';
+          'innerHeight ' + ih + ' (svh ' + svh + ' / lvh ' + lvh + ')' +
+          (ih >= lvh - 1 ? '  bars HIDDEN' : '  bars visible') + '\n' +
+          'page scroll ' + Math.round(window.scrollY) + 'px = ' + pct + '% of table';
+        sizeBar();
       }
-      ['resize', 'scroll', 'orientationchange'].forEach((e) => window.addEventListener(e, update, { passive: true }));
+      ['resize', 'scroll', 'orientationchange'].forEach((e) =>
+        window.addEventListener(e, update, { passive: true }));
       window.visualViewport?.addEventListener('resize', update);
-      setInterval(update, 500);
+
+      fill(300);
       update();
-
-      let autoOn = false;
-      const tricks = {
-        'nudge1':       () => { window.scrollTo(0, 1); say('scrollTo(0,1)'); },
-        'nudge1-delay': () => setTimeout(() => { window.scrollTo(0, 1); say('scrollTo(0,1) after 300ms'); }, 300),
-        'down-up':      () => { window.scrollTo(0, 120); setTimeout(() => window.scrollTo(0, 1), 60); say('scrollTo(0,120) → (0,1)'); },
-        'smooth':       () => { window.scrollTo({ top: 1, behavior: 'smooth' }); say('smooth scrollTo(0,1)'); },
-        'slack':        () => { document.body.style.minHeight = '200lvh'; say('scroll room now 200lvh — swipe up'); },
-        'auto':         () => { autoOn = !autoOn; say('auto nudge on touchend: ' + (autoOn ? 'ON' : 'off')); },
-        'fullscreen':   () => {
-          if (document.fullscreenElement) { document.exitFullscreen(); say('exit fullscreen'); }
-          else document.documentElement.requestFullscreen?.().then(
-            () => say('fullscreen OK'), (e) => say('fullscreen refused: ' + e.message));
-        },
-      };
-      document.getElementById('tricks').addEventListener('click', (e) => {
-        const t = e.target.closest('button')?.dataset.trick;
-        if (t) tricks[t]();
-      });
-      window.addEventListener('touchend', () => {
-        if (autoOn) setTimeout(() => { window.scrollTo(0, 1); update(); }, 100);
-      }, { passive: true });
-
-      // On load, try the app's current trick once, so just opening the page
-      // shows whether it does anything on this browser.
-      window.addEventListener('load', () => setTimeout(() => { window.scrollTo(0, 1); say('on-load scrollTo(0,1)'); }, 100));
     </script>
   </body>
 </html>
