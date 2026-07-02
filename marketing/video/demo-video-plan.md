@@ -184,39 +184,39 @@ So: **yes, everything can live in `marketing/video/`** — plus one symlink unde
 
 ## Prototype status
 
-A working rough pass lives in this dir. Two steps produce the two videos:
+A working rough pass lives in this dir. Three steps produce every deliverable:
 
 ```
-node capture.mjs        # silent renders: out/silent-<ratio>-en.webm
-node audio.mjs          # voiceover + mux -> out/hero-<ratio>-en.webm  (needs OPENAI_API_KEY)
+node capture.mjs        # silent renders: out/silent-<ratio>-en.webm  (Playwright)
+node gemini-tts.mjs     # Gemini voiceover + mux -> out/hero-<ratio>-en.webm  (needs GEMINI_API_KEY)
+node encode.mjs         # -> out/hero-<ratio>-en.mp4, hero-16x9-en.gif, poster-16x9-en.png
 ```
 
 `capture.mjs` drives `timeline.html` (the animated scene + camera) with
-Playwright; `audio.mjs` synthesizes the voiceover (OpenAI TTS, or muxes an
-external `out/voiceover-en.wav`) with a full ffmpeg from the `imageio-ffmpeg` pip
-package (this env's bundled ffmpeg is video-only). `out/` is git-ignored — the
-renders regenerate from source.
+Playwright; `gemini-tts.mjs` makes the voiceover and muxes it; `encode.mjs`
+derives the MP4/GIF/poster. All muxing/encoding uses a full ffmpeg from the
+`imageio-ffmpeg` pip package (this env's bundled ffmpeg is video-only). `out/`
+is git-ignored — everything regenerates from source. (`audio.mjs` is the OpenAI
+alternative and the external-WAV muxer, kept for A/B.)
 
-What the rough pass already does: **two videos** (16:9 and 9:16), 20s, all seven
-beats synced, brand colors and fonts, the row-by-row rewrite with the accent
-flash, burned-in captions and call-outs, portrait framing that fits the table
-width, the Spanish-prompt moment, and a voiceover placed at the beats.
+What the rough pass already does: **both ratios** in **WebM and MP4**, plus a
+README **GIF and poster**; 20s; all seven beats synced; brand colors and fonts;
+the row-by-row rewrite with the accent flash; burned-in captions and call-outs;
+portrait framing that fits the table width; the Spanish-prompt moment; and a
+continuous Gemini voiceover (voice **Algieba**) placed at the beats.
 
 What it still fakes or skips, to close before it ships:
 
 - **The app is a mock, not the real thing.** The table, chat, and toolbar are
   hand-built HTML. Swap in captured slices of the real app driven by the
   deep-linked clean-up tour (deterministic, key-free) so the footage is genuine.
-- **WebM only so far.** `audio.mjs` outputs WebM (VP8 + Opus). The same
-  `imageio-ffmpeg` binary has libx264, so an MP4 fallback and the README
-  GIF/poster are a small addition, not yet wired.
 - **Font pre-roll.** Google Fonts load over the network (~14s headless); the
   script trims that pre-roll automatically, but bundling the fonts would make
   the render faster, fully offline, and immune to the flush timing the trim now
   guards against.
-- **Voiceover is an OpenAI placeholder.** It reads a little flat. Replace it with
-  ElevenLabs / Azure / Google (see *Getting a better voice*) and drop the WAV in
-  as `out/voiceover-en.wav`.
+- **Voice can still be upgraded.** Algieba (Gemini) is the current pick; a paid
+  ElevenLabs/Azure read would be more expressive. Drop a 20s WAV at
+  `out/voiceover-en.wav` and re-mux.
 
 ## Definition of done
 

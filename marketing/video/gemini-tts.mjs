@@ -1,13 +1,10 @@
-// Gemini-TTS voiceover for the demo, continuous-read version.
-// The old approach synthesized each line separately, so the clips had different
-// tone and sounded cut-and-pasted. This renders the WHOLE script in ONE call
-// (one coherent take), then splits it at its natural sentence pauses and only
-// inserts silence to line the phrases up with the video beats. The voice stays
-// continuous; nothing is re-recorded per line.
-//
-// Produces, per voice: out/voice-<voice>.wav (the raw continuous read) and
-// out/hero-16x9-en-<voice>.webm (aligned, for A/B). Needs GEMINI_API_KEY.
-// Usage: node gemini-tts.mjs
+// Gemini-TTS voiceover for the demo — finalizer for the chosen voice.
+// Renders the WHOLE script in ONE call (one coherent take, consistent voice),
+// splits that read at its five longest pauses, and lays the phrases onto the
+// beats by CONCATENATING them with silence in between — sequential, so two
+// phrases can never overlap (that overlap is what caused the "double voice").
+// Produces out/voice-<VOICE>.wav (raw read) and hero-<ratio>-en.webm.
+// Needs GEMINI_API_KEY. Usage: node gemini-tts.mjs
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -18,14 +15,11 @@ const out = path.join(DIR, 'out');
 const tmp = path.join(out, '_gem');
 const KEY = process.env.GEMINI_API_KEY;
 const MODEL = 'gemini-2.5-flash-preview-tts';
-// young-to-middle-aged male voices
-const VOICES = ['Puck', 'Charon', 'Algieba'];
-const RATIOS = ['16x9'];              // audition in landscape; add 9x16 once picked
+const VOICE = 'Algieba';               // smooth, middle-aged male
+const RATIOS = ['16x9', '9x16'];
 const DUR = 20;
 const BEATS = [0.0, 2.0, 6.5, 9.0, 13.5, 16.0];   // 6 phrase start times
 
-// six sentences, one per beat (sentence 2/4/6 keep an internal comma pause that
-// stays shorter than the sentence-boundary pauses, so the split finds 5 clean cuts)
 const SCRIPT =
   'Talk to your data. Real data is messy, formats vary by country. ' +
   'Just say what you want. Watch every row change, right in front of you. ' +
@@ -35,8 +29,14 @@ const STYLE = 'Read this as one continuous, warm, friendly product narration, ' 
 
 const FF = execFileSync('python3',
   ['-c', 'import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())']).toString().trim();
+const ff = (...a) => execFileSync(FF, ['-hide_banner', '-y', ...a], { stdio: 'ignore' });
+function dur(file) {
+  const e = spawnSync(FF, ['-hide_banner', '-i', file]).stderr.toString();
+  const m = e.match(/Duration: (\d+):(\d+):(\d+\.\d+)/);
+  return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : 0;
+}
 
-async function continuousWav(voice, file) {
+async function continuousWav(file) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${KEY}`;
   for (let attempt = 0; attempt < 5; attempt++) {
     const res = await fetch(url, {
@@ -45,7 +45,7 @@ async function continuousWav(voice, file) {
         contents: [{ parts: [{ text: STYLE + SCRIPT }] }],
         generationConfig: {
           responseModalities: ['AUDIO'],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
         },
       }),
     });
@@ -53,8 +53,7 @@ async function continuousWav(voice, file) {
       const j = await res.json();
       const pcm = Buffer.from(j.candidates[0].content.parts[0].inlineData.data, 'base64');
       const raw = file + '.pcm'; writeFileSync(raw, pcm);
-      execFileSync(FF, ['-hide_banner', '-y', '-f', 's16le', '-ar', '24000', '-ac', '1',
-        '-i', raw, file], { stdio: 'ignore' });
+      ff('-f', 's16le', '-ar', '24000', '-ac', '1', '-i', raw, file);
       rmSync(raw, { force: true });
       return;
     }
@@ -63,60 +62,73 @@ async function continuousWav(voice, file) {
   }
 }
 
-function totalDur(file) {
-  const e = spawnSync(FF, ['-hide_banner', '-i', file]).stderr.toString();
-  const m = e.match(/Duration: (\d+):(\d+):(\d+\.\d+)/);
-  return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : 0;
-}
-
-// the 5 sentence boundaries = the 5 longest silences (comma pauses are shorter)
+// cumulative word-count fraction at each of the 5 sentence boundaries — where a
+// cut *should* fall in the read. "Longest silence" alone mis-splits when pacing
+// varies, so anchor each cut to its expected spot, then snap to the best pause
+// nearby (prefer longer, i.e. a real sentence break over a comma).
+const FRACS = [4, 12, 17, 26, 30].map(w => w / 37);
 function boundaries(file) {
   const e = spawnSync(FF, ['-hide_banner', '-i', file, '-af',
-    'silencedetect=noise=-32dB:d=0.15', '-f', 'null', '-']).stderr.toString();
+    'silencedetect=noise=-32dB:d=0.12', '-f', 'null', '-']).stderr.toString();
   const sil = [];
-  const re = /silence_start: ([\d.]+)[\s\S]*?silence_end: ([\d.]+) \| silence_duration: ([\d.]+)/g;
-  let m; while ((m = re.exec(e))) sil.push({ mid: (+m[1] + +m[2]) / 2, dur: +m[3] });
-  return sil.sort((a, b) => b.dur - a.dur).slice(0, 5).map(s => s.mid).sort((a, b) => a - b);
+  const re = /silence_start: (-?[\d.]+)[\s\S]*?silence_end: ([\d.]+) \| silence_duration: ([\d.]+)/g;
+  let m; while ((m = re.exec(e))) sil.push({ start: +m[1], end: +m[2], mid: (+m[1] + +m[2]) / 2, dur: +m[3] });
+  const total = dur(file);
+  const lead = sil.find(s => s.start <= 0.1);
+  const tail = [...sil].reverse().find(s => s.end >= total - 0.1);
+  const t0 = lead ? lead.end : 0.1;
+  const t1 = tail ? tail.start : total - 0.1;
+  const cuts = FRACS.map(f => {
+    const target = t0 + f * (t1 - t0);
+    const near = sil.filter(s => Math.abs(s.mid - target) < 1.8);
+    if (!near.length) return target;
+    // best = longest pause near the expected spot, lightly penalized by distance
+    return near.sort((a, b) => (b.dur - Math.abs(b.mid - target) * 0.15)
+                             - (a.dur - Math.abs(a.mid - target) * 0.15))[0].mid;
+  });
+  console.log(`  cuts: ${cuts.map(c => c.toFixed(2)).join(', ')}`);
+  return cuts;
 }
 
-// build the aligned 20s track: split the continuous read at the boundaries, then
-// place each phrase at its beat with adelay (only silence between phrases)
+// aligned 20s track: split at boundaries, then concat phrase + silence-to-next-beat
 function alignedTrack(cont, dest) {
   const cuts = boundaries(cont);
-  const total = totalDur(cont);
-  const edges = [0, ...cuts, total];               // 6 segments
-  const segs = [];
+  const edges = [0, ...cuts, dur(cont)];
+  const parts = [];
   for (let i = 0; i < 6; i++) {
     const seg = path.join(tmp, `seg${i}.wav`);
-    execFileSync(FF, ['-hide_banner', '-y', '-ss', String(edges[i]), '-to', String(edges[i + 1]),
-      '-i', cont, seg], { stdio: 'ignore' });
-    segs.push(seg);
+    ff('-ss', String(edges[i]), '-to', String(edges[i + 1]), '-i', cont,
+      '-ar', '48000', '-ac', '2', seg);
+    parts.push(seg);
+    if (i < 5) {
+      const gap = Math.max(0.05, BEATS[i + 1] - BEATS[i] - dur(seg));
+      if (BEATS[i + 1] - BEATS[i] - dur(seg) < 0)
+        console.log(`  ! phrase ${i} longer than its slot; timing may drift`);
+      const sil = path.join(tmp, `gap${i}.wav`);
+      ff('-f', 'lavfi', '-i', `anullsrc=r=48000:cl=stereo`, '-t', String(gap), sil);
+      parts.push(sil);
+    }
   }
-  const inputs = segs.flatMap(s => ['-i', s]);
-  const filt = segs.map((_, i) =>
-    `[${i}:a]aformat=sample_rates=48000:channel_layouts=stereo,` +
-    `adelay=${Math.round(BEATS[i] * 1000)}|${Math.round(BEATS[i] * 1000)}[a${i}]`).join(';');
-  const mix = `${segs.map((_, i) => `[a${i}]`).join('')}amix=inputs=6:normalize=0:dropout_transition=0,apad,atrim=0:${DUR}[aout]`;
-  execFileSync(FF, ['-hide_banner', '-y', ...inputs, '-filter_complex', `${filt};${mix}`,
-    '-map', '[aout]', '-ac', '2', '-ar', '48000', dest], { stdio: 'inherit' });
+  const list = path.join(tmp, 'list.txt');
+  writeFileSync(list, parts.map(p => `file '${p}'`).join('\n'));
+  const raw = path.join(tmp, 'raw.wav');
+  ff('-f', 'concat', '-safe', '0', '-i', list, '-ar', '48000', '-ac', '2', raw);
+  ff('-i', raw, '-af', 'apad', '-t', String(DUR), '-ar', '48000', '-ac', '2', dest);
 }
 
 mkdirSync(tmp, { recursive: true });
-for (const voice of VOICES) {
-  const cont = path.join(out, `voice-${voice}.wav`);
-  await continuousWav(voice, cont);
-  console.log(`✓ continuous read: ${cont} (${totalDur(cont).toFixed(1)}s)`);
+const cont = path.join(out, `voice-${VOICE}.wav`);
+await continuousWav(cont);
+console.log(`✓ continuous read: ${cont} (${dur(cont).toFixed(1)}s)`);
 
-  const track = path.join(tmp, `track-${voice}.wav`);
-  alignedTrack(cont, track);
-  for (const ratio of RATIOS) {
-    const silent = path.join(out, `silent-${ratio}-en.webm`);
-    const dest = path.join(out, `hero-${ratio}-en-${voice}.webm`);
-    execFileSync(FF, ['-hide_banner', '-y', '-i', silent, '-i', track,
-      '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'libopus', '-b:a', '160k',
-      '-shortest', dest], { stdio: 'inherit' });
-    console.log(`✓ ${ratio} (${voice}): ${dest}`);
-  }
+const track = path.join(tmp, 'track.wav');
+alignedTrack(cont, track);
+for (const ratio of RATIOS) {
+  const silent = path.join(out, `silent-${ratio}-en.webm`);
+  const destWebm = path.join(out, `hero-${ratio}-en.webm`);
+  ff('-i', silent, '-i', track, '-map', '0:v', '-map', '1:a',
+    '-c:v', 'copy', '-c:a', 'libopus', '-b:a', '160k', '-shortest', destWebm);
+  console.log(`✓ ${ratio}: ${destWebm}`);
 }
 rmSync(tmp, { recursive: true, force: true });
-console.log('done');
+console.log('done — now run: node encode.mjs  (for MP4 + GIF)');
