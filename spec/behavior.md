@@ -861,8 +861,12 @@ or the engine changes.
   mark, the file name, and — when the table spans more than one page — a
   `‹ page / total ›` pager with prev/next buttons (the same paging the
   desktop pagination bar drives).
-- The table fills the screen below the app bar and scrolls in both
-  directions; its header row and row-index column stay frozen.
+- The table fills the screen below the app bar. The **page itself**
+  scrolls the table (both directions — the app bar and dock stay
+  pinned to the screen), so the browser's own scrollbar shows the true
+  position in the table. The header row and row-index column stay
+  frozen: the header sticks below the app bar, the index column to the
+  left edge.
 - A persistent **bottom dock** carries five buttons — **Menu**,
   **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is
@@ -898,14 +902,21 @@ or the engine changes.
 
 In a normal browser tab the phone browser draws its own bars — the
 address bar on top, on some browsers a navigation bar at the bottom —
-which shrink the app. On touch devices the app leaves the page one
-pixel of scroll room and nudges it (`window.scrollTo`) on load and
-after each touch, so Chrome on Android and Safari on iOS can slide
-their bars away; the layout tracks the dynamic viewport, growing into
-the reclaimed space, and the dock is never covered by the bottom bar.
-Added to the home screen the app already runs full-screen and the nudge
-changes nothing. On a desktop (mouse) browser nothing changes either —
-no scroll room, no nudge.
+which shrink the app, and it slides them away only when the page
+really scrolls under a finger. Because the page is the table's
+scroller, swiping through the table hides the bars naturally. The page
+always keeps at least a bar's worth of scroll room — so even the empty
+page or a short table page can be swiped to dismiss the bars — and the
+layout grows into the reclaimed space, so the dock is never covered by
+the bottom bar. On desktop nothing scrolls; the layout is fixed to the
+window as before.
+
+On a phone the Settings panel ends with an **Add to home screen**
+section: opened from a home-screen icon the app runs full-screen, with
+no browser bars at all. Where the browser offers an install prompt
+(Chrome on Android) a button triggers it; elsewhere (Safari and other
+iOS browsers) the section shows the two-step share-menu instruction.
+Desktop Settings does not show the section.
 
 The empty page, the dialogs, and every transformation behave
 identically to the desktop app; the dock layout is purely a

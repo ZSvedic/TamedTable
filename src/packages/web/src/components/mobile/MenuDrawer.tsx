@@ -94,15 +94,17 @@ export function MenuDrawer({
   };
   return (
     <div style={{ display: 'contents' }}>
+      {/* Fixed, not absolute: the shell flows with the document-scrolled page,
+          but the drawer must cover the screen wherever the table is scrolled. */}
       <div
         onClick={onClose}
-        style={{ position: 'absolute', inset: 0, background: t.overlay, zIndex: 40 }}
+        style={{ position: 'fixed', inset: 0, background: t.overlay, zIndex: 40 }}
       />
       <div
         data-mob-drawer=""
         className="tt-sheet"
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           bottom: 0,
           left: 0,

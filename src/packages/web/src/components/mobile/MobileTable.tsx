@@ -1,13 +1,17 @@
 // #MobileShell
 // The paged grid for phones: the same rows the desktop TableView shows, but
-// with the header row frozen at the top and the row-number column frozen at
-// the left, so both stay put while the table scrolls in either direction.
-// Tapping a cell selects it (the status the voice prompt reads). Editing and
-// column-drag are desktop gestures — the mobile grid is select-and-scroll.
+// scrolled by the DOCUMENT in both directions (no inner scroller), so a swipe
+// through the table hides the phone browser's bars and the browser scrollbar
+// shows the true position. The header row stays frozen below the fixed app
+// bar and the row-number column at the left edge — both position: sticky
+// against the page. Tapping a cell selects it (the status the voice prompt
+// reads). Editing and column-drag are desktop gestures — the mobile grid is
+// select-and-scroll.
 import type { CSSProperties, ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import type { Row } from '@tamedtable/core';
 import type { CellRef } from '../../controller.ts';
+import { APPBAR_OFFSET } from './layout.ts';
 
 const IDX_W = 40;
 
@@ -38,7 +42,7 @@ export function MobileTable({
 }: MobileTableProps): ReactNode {
   const headerCell: CSSProperties = {
     position: 'sticky',
-    top: 0,
+    top: APPBAR_OFFSET,
     zIndex: 2,
     background: t.surface2,
     color: t.ink2,
@@ -68,17 +72,13 @@ export function MobileTable({
   };
 
   return (
-    <div
-      id={id}
-      data-mob-table=""
-      style={{ flex: 1, overflow: 'auto', position: 'relative', WebkitOverflowScrolling: 'touch', background: t.surface }}
-    >
+    <div id={id} data-mob-table="" style={{ flex: 1, background: t.surface }}>
       {streaming && (
         <div
           data-mob-streaming=""
           style={{
             position: 'sticky',
-            top: 0,
+            top: APPBAR_OFFSET,
             zIndex: 5,
             display: 'flex',
             alignItems: 'center',

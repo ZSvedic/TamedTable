@@ -11,31 +11,28 @@ body,
   height: 100%;
 }
 
-/* Size the app to the small viewport — the area left with the browser bars
-   visible — so the bottom dock is never hidden behind them. Falls back to the
-   100% above on old engines. */
+/* Desktop: size the app to the small viewport so nothing hides behind window
+   chrome. Falls back to the 100% above on old engines. */
 #root {
   height: 100svh;
 }
 
-/* #MobileShell — browser-bar auto-hide, the CSS half (the scrollTo nudge lives
-   in hide-browser-bars.ts). Phone browsers only slide their bars away when the
-   document scrolls, and our table-first layout never scrolls it. On touch
-   devices, give the body 1px of scroll room past the large viewport (bars
-   hidden) so a scroll is always possible, pin #root to the visual viewport so
-   that scroll is invisible, and size it dynamically so the app grows into the
-   space the bars vacate. Touch browsers use overlay scrollbars, so the slack
-   never draws a scrollbar. */
-@media (pointer: coarse) {
-  body {
-    min-height: calc(100lvh + 1px);
-  }
+/* #MobileShell — document-scroll layout. At phone width (keep in sync with
+   MOBILE_MAX_WIDTH in useIsMobile.ts) the document itself scrolls the table:
+   the shell pins its app bar and dock and lets the content flow, so a natural
+   swipe hides the phone browser's bars and the browser scrollbar shows the
+   true position in the table. The body keeps 1px of scroll room past the
+   large viewport (≈ a bar's height while the bars show), so even the empty
+   page can be swiped to dismiss them. */
+@media (max-width: 768px) {
+  html,
+  body,
   #root {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100dvh;
+    height: auto;
+  }
+  body {
+    min-height: 100vh; /* old engines without lvh */
+    min-height: calc(100lvh + 1px);
   }
 }
 
