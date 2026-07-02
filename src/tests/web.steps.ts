@@ -270,12 +270,12 @@ Then('the status footer reports {string}', function (this: TamedTableWorld, stat
 
 // ── Model picker ───────────────────────────────────────────────────────────
 
-When('user selects the model {string}', async function (this: TamedTableWorld, model: string) {
-  await controller(this).setModel(model);
-});
-
 Then('the configured model is {string}', function (this: TamedTableWorld, model: string) {
   assert.equal(controller(this).getSettings().model, model);
+});
+
+Then('the configured cellModel is {string}', function (this: TamedTableWorld, cellModel: string) {
+  assert.equal(controller(this).getSettings().cellModel, cellModel);
 });
 
 // ── URL load ───────────────────────────────────────────────────────────────

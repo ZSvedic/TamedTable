@@ -1,35 +1,36 @@
 // #ModelConfig #ProviderSelect
 // ModelChooser — the provider accordion: one card per provider with a masked
-// API-key input (eye toggle to reveal) and that provider's models as a
-// two-column primary/secondary radio matrix. The Primary radio picks the
-// patch-turn model (and carries voice input); the Secondary radio picks the
-// per-row cell model. Both are same-provider. A single generic explainer sits
-// above the cards. Pure component: props in, callbacks out; the host owns all
-// state except the per-provider reveal toggles. Styled only via --mc-* CSS
-// custom properties, each with a presentable light default, so it renders
-// standalone and the host injects its theme by setting the variables on a
-// wrapper.
+// API-key input (eye toggle to reveal). The user picks a provider, not
+// individual models — each provider's primary (patch-turn) and secondary
+// (per-row cell) models are fixed defaults, shown read-only inside the card
+// with their per-Mtok prices. A single generic explainer sits above the cards.
+// Pure component: props in, callbacks out; the host owns all state except the
+// per-provider reveal toggles. Styled only via --mc-* CSS custom properties,
+// each with a presentable light default, so it renders standalone and the host
+// injects its theme by setting the variables on a wrapper.
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import { useState, type ReactNode } from 'react';
 import type { ModelDef, Provider } from './index.ts';
 
-export type ModelRole = 'primary' | 'secondary';
-
 export interface ModelChooserProps {
   models: readonly ModelDef[];
   provider: Provider;
-  /** Primary (patch-turn) model id. */
+  /** Primary (patch-turn) model id — the provider default, shown read-only. */
   primaryModel: string;
-  /** Secondary (per-row cell) model id. */
+  /** Secondary (per-row cell) model id — the provider default, shown read-only. */
   secondaryModel: string;
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
-  /** Optional URL for a general "how to get an API key" help link below the
-   * cards. The host supplies the path so the component carries no site URL. */
+  /** Optional URL for a general "how to get an API key" help link, shown at the
+   * top below the explainer. The host supplies the path so the component
+   * carries no site URL. */
   byokHelpUrl?: string;
+  /** Optional URL for a "how to change the default models" help link, shown at
+   * the bottom below the cards. Points at the FAQ entry that explains editing
+   * models.json. The host supplies the path. */
+  changeModelsHelpUrl?: string;
   onProviderClick: (p: Provider) => void;
   onKeyChange: (p: Provider, value: string) => void;
-  onSelectModel: (role: ModelRole, modelId: string) => void;
 }
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
@@ -127,9 +128,9 @@ export function ModelChooser({
   keys,
   expandedProvider,
   byokHelpUrl,
+  changeModelsHelpUrl,
   onProviderClick,
   onKeyChange,
-  onSelectModel,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
     gemini: false, openai: false, anthropic: false,
@@ -184,6 +185,27 @@ export function ModelChooser({
       </span>
     ) : null;
 
+  // A small accent-coloured, new-tab help link. `attr` is the stable data
+  // attribute the tests hook onto (data-mc-byok / data-mc-changemodels).
+  const helpLink = (attr: string, href: string, label: string): ReactNode => (
+    <a
+      {...{ [attr]: '' }}
+      href={href}
+      target="_blank"
+      rel="noopener"
+      style={{
+        fontFamily: fontUi,
+        fontSize: 11.5,
+        fontWeight: 500,
+        color: accent,
+        textDecoration: 'none',
+        alignSelf: 'flex-start',
+      }}
+    >
+      {label}
+    </a>
+  );
+
   const radioKnob = (selected: boolean): ReactNode => (
     <span
       aria-hidden="true"
@@ -199,49 +221,63 @@ export function ModelChooser({
     />
   );
 
-  const ROLE_COL = 64;
+  // Per-Mtok price pill: "$3 in / $15 out". Shown on each read-only default row.
+  const priceTag = (m: ModelDef | undefined): ReactNode =>
+    m ? (
+      <span
+        style={{
+          fontFamily: fontMono,
+          fontSize: 11.5,
+          color: ink3,
+          flexShrink: 0,
+          marginLeft: 8,
+        }}
+      >
+        ${m.inUsdPerMtok} in / ${m.outUsdPerMtok} out
+      </span>
+    ) : null;
 
-  const roleHead = (label: string): ReactNode => (
-    <span
-      style={{
-        width: ROLE_COL,
-        textAlign: 'center',
-        fontFamily: fontUi,
-        fontSize: 10.5,
-        fontWeight: 600,
-        letterSpacing: 0.3,
-        textTransform: 'uppercase',
-        color: ink3,
-      }}
-    >
-      {label}
-    </span>
-  );
-
-  const roleCell = (role: ModelRole, modelId: string, selected: boolean): ReactNode => (
-    <button
-      type="button"
-      data-mc-role={role}
-      {...{ [`data-mc-${role}`]: modelId }}
-      aria-pressed={selected}
-      title={`Use ${modelId} as the ${role} model`}
-      onClick={() => onSelectModel(role, modelId)}
-      style={{
-        width: ROLE_COL,
-        display: 'flex',
-        justifyContent: 'center',
-        background: 'transparent',
-        border: 0,
-        padding: 0,
-        cursor: 'pointer',
-      }}
-    >
-      {radioKnob(selected)}
-    </button>
-  );
+  // One read-only row for a fixed role default: role label, model id, its
+  // price, and (for voice-capable primaries) the voice tag.
+  const defaultRow = (role: 'primary' | 'secondary', modelId: string): ReactNode => {
+    const m = models.find((x) => x.id === modelId);
+    return (
+      <div
+        data-mc-model={modelId}
+        data-mc-role={role}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '7px 6px',
+          borderRadius: radiusSm,
+          background: role === 'primary' ? accentSoft : 'transparent',
+        }}
+      >
+        <span
+          style={{
+            width: 74,
+            fontFamily: fontUi,
+            fontSize: 10.5,
+            fontWeight: 600,
+            letterSpacing: 0.3,
+            textTransform: 'uppercase',
+            color: ink3,
+            flexShrink: 0,
+          }}
+        >
+          {role}
+        </span>
+        <span style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1 }}>
+          {modelId}
+        </span>
+        {voiceTag(m?.voiceInput ?? false)}
+        {priceTag(m)}
+      </div>
+    );
+  };
 
   const cardBody = (meta: ProviderMeta): ReactNode => {
-    const providerModels = models.filter((m) => m.provider === meta.id);
     return (
       <div style={{ padding: '8px 14px 12px', borderTop: `1px solid ${line}` }}>
         {/* API key field */}
@@ -323,41 +359,10 @@ export function ModelChooser({
           </div>
         </div>
 
-        {/* Model matrix: a Primary and a Secondary radio column per model. */}
-        <div style={{ marginTop: 8 }}>
-          {/* Column headers */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px 4px' }}>
-            {roleHead('Primary')}
-            {roleHead('Secondary')}
-            <span style={{ flex: 1 }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {providerModels.map((m) => {
-              const isPrimary = m.id === primaryModel;
-              const isSecondary = m.id === secondaryModel;
-              return (
-                <div
-                  key={m.id}
-                  data-mc-model={m.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '7px 6px',
-                    borderRadius: radiusSm,
-                    background: isPrimary ? accentSoft : 'transparent',
-                  }}
-                >
-                  {roleCell('primary', m.id, isPrimary)}
-                  {roleCell('secondary', m.id, isSecondary)}
-                  <span style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1 }}>
-                    {m.id}
-                  </span>
-                  {voiceTag(m.voiceInput)}
-                </div>
-              );
-            })}
-          </div>
+        {/* Fixed role defaults for this provider — read-only, not selectable. */}
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {defaultRow('primary', primaryModel)}
+          {defaultRow('secondary', secondaryModel)}
         </div>
       </div>
     );
@@ -377,11 +382,13 @@ export function ModelChooser({
           color: ink3,
         }}
       >
+        Pick a provider — its models are chosen for you.{' '}
         <b style={{ color: ink }}>Primary</b> writes the spec patch each turn and
-        handles voice input. <b style={{ color: ink }}>Secondary</b> fills per-row
-        AI cells — pick a cheaper model there for bulk work. Both use the selected
-        provider.
+        handles voice input; <b style={{ color: ink }}>Secondary</b> fills per-row
+        AI cells with a cheaper model for bulk work.
       </p>
+      {/* General "how to get an API key" help link — top, below the explainer. */}
+      {byokHelpUrl && helpLink('data-mc-byok', byokHelpUrl, 'New here? How to get an API key ↗')}
       {PROVIDERS.map((meta) => {
         const isSelected = provider === meta.id;
         const isExpanded = expandedProvider === meta.id;
@@ -439,25 +446,13 @@ export function ModelChooser({
           </div>
         );
       })}
-      {/* General "how to get an API key" help link — host-supplied URL. */}
-      {byokHelpUrl && (
-        <a
-          data-mc-byok
-          href={byokHelpUrl}
-          target="_blank"
-          rel="noopener"
-          style={{
-            fontFamily: fontUi,
-            fontSize: 11.5,
-            fontWeight: 500,
-            color: accent,
-            textDecoration: 'none',
-            alignSelf: 'flex-start',
-          }}
-        >
-          New here? How to get an API key ↗
-        </a>
-      )}
+      {/* "How to change the default models" FAQ link — bottom, below the cards. */}
+      {changeModelsHelpUrl &&
+        helpLink(
+          'data-mc-changemodels',
+          changeModelsHelpUrl,
+          'How to change primary and secondary models? ↗',
+        )}
     </div>
   );
 }

@@ -78,7 +78,7 @@ Feature: Model config
     @headless
     Scenario: Empty config yields the provider's cell default
       When resolveConfig is called with empty env and empty stored
-      Then the resolved cellModel is "claude-sonnet-4-5"
+      Then the resolved cellModel is "claude-haiku-4-5"
 
     @headless
     Scenario: TAMEDTABLE_CELL_MODEL in env overrides stored cellModel
@@ -180,14 +180,19 @@ Feature: Model config
   Rule: defaultCellModel
 
     @headless
-    Scenario: defaultCellModel for anthropic returns claude-sonnet-4-5
+    Scenario: defaultCellModel for anthropic returns claude-haiku-4-5
       When defaultCellModel is called with "anthropic"
-      Then the result is "claude-sonnet-4-5"
+      Then the result is "claude-haiku-4-5"
 
     @headless
     Scenario: defaultCellModel for openai returns gpt-5.4-mini
       When defaultCellModel is called with "openai"
       Then the result is "gpt-5.4-mini"
+
+    @headless
+    Scenario: defaultCellModel for gemini returns gemini-3.1-flash-lite
+      When defaultCellModel is called with "gemini"
+      Then the result is "gemini-3.1-flash-lite"
 
   Rule: ALL_MODELS catalogue
 
@@ -237,18 +242,18 @@ Feature: Model config
       And the demo shows resolved provider "gemini"
 
     @web
-    Scenario: Picking a primary model updates the resolved config
+    Scenario: Selecting a provider pins its default primary and secondary models
       Given the model-config demo page
       When the user clicks the "Google" provider card
-      And the user picks the primary model "gemini-3.1-pro-preview"
-      Then the demo shows resolved model "gemini-3.1-pro-preview"
+      Then the demo shows resolved model "gemini-3.5-flash"
+      And the demo shows resolved cellModel "gemini-3.1-flash-lite"
 
     @web
-    Scenario: Picking a secondary model updates the resolved cell model
+    Scenario: The expanded card shows its two default models read-only
       Given the model-config demo page
-      When the user clicks the "Google" provider card
-      And the user picks the secondary model "gemini-3.1-pro-preview"
-      Then the demo shows resolved cellModel "gemini-3.1-pro-preview"
+      When the user clicks the "OpenAI" provider card
+      Then the "openai" card's primary default is "gpt-5.5"
+      And the "openai" card's secondary default is "gpt-5.4-mini"
 
     @web
     Scenario: Each expanded card deep-links to that provider's key page
@@ -264,6 +269,11 @@ Feature: Model config
     Scenario: The chooser shows a general how-to-get-a-key help link
       Given the model-config demo page
       Then the chooser shows a BYOK help link to "BYOK-setup.html" in a new tab
+
+    @web
+    Scenario: The chooser links to the FAQ on changing the default models
+      Given the model-config demo page
+      Then the chooser shows a change-models help link to "FAQ.html#change-models" in a new tab
 
     @web
     Scenario: A typed API key stays masked until the eye toggle reveals it

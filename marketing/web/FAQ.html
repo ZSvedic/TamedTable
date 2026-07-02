@@ -140,6 +140,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <nav class="faq-index" aria-label="Questions">
       <ul>
         <li><a href="#byok">How to Bring Your Own API Key (BYOK)?</a></li>
+        <li><a href="#change-models">How to change primary and secondary models?</a></li>
         <li><a href="#formats">What file formats does TamedTable support?</a></li>
         <li><a href="#privacy">Where is the privacy policy and EULA?</a></li>
         <li><a href="#third-party">But isn't my data sent to third-party AI models?</a></li>
@@ -193,6 +194,19 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         </div>
 
         <p class="closing">Tip: store the key in your browser or a password manager. Clearing your browser data or switching devices means entering it again. Ready? <a href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open the web app ↗</a></p>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Q: Change models ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="change-models" class="anchored">
+        How to change primary and secondary models?
+        <button class="copy-link" data-target="change-models" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>You pick a <strong>provider</strong> (Google, OpenAI, or Anthropic) in Settings — not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk.</p>
+        <p>Because TamedTable is open source and runs entirely on your own key, those defaults live in the code rather than behind an in-app switcher. To change them, edit one JSON file and rebuild:</p>
+        <p><code>src/packages/model-config/models.json</code> has two sections. The <code>models</code> list is every available model with its per-million-token prices; the <code>defaults</code> section maps each provider to its <code>primary</code> and <code>secondary</code> model id. Point a provider's <code>primary</code> or <code>secondary</code> at any id from the <code>models</code> list (same provider), then rebuild the app. Add a brand-new model by giving it a row in <code>models</code> first.</p>
       </div>
     </section>
 

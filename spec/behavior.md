@@ -789,19 +789,22 @@ the voice mic already uses, so text and voice share one key per provider.
 When a card is open its body shows an API key field with a show/hide toggle, a
 grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
 .env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`
-respectively), and that provider's models as a two-column primary/secondary
-radio matrix: the **Primary** column picks the patch-turn model (and the one
-that carries voice input), the **Secondary** column picks the per-row cell
-model. A single generic explainer of the two roles sits above the cards. A model
-row carries a green "🎙 voice" tag only when it supports voice.
+respectively), and that provider's two fixed default models **read-only** — a
+**Primary** row (the patch-turn model, which carries voice input) and a
+**Secondary** row (the per-row cell model), each with its model id and per-Mtok
+price. The user picks a provider, not individual models; a green "🎙 voice" tag
+shows on a row only when that model supports voice. A single generic explainer
+of the two roles sits above the cards, a "New here? How to get an API key" link
+sits directly below it, and a "How to change primary and secondary models?" link
+(to `FAQ.html#change-models`) sits below the cards.
 
 Changes apply immediately — selecting a provider card calls
-`controller.setConfig({ provider })`, and picking a Primary or Secondary model
-calls `controller.setConfig({ model })` or `controller.setConfig({ cellModel })`
-respectively. The footer has only a "Close" button; there
-is no separate "Save" button. Changing a model rebuilds the engine and replays
-the current transformations against the source, so the table on screen is
-preserved and the new model drives the next request. Full detail in
+`controller.clickProviderCard(p)`, which pins that provider and its two fixed
+defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
+"Close" button; there is no separate "Save" button. Switching provider changes
+the models, which rebuilds the engine and replays the current transformations
+against the source, so the table on screen is preserved and the new models drive
+the next request. Full detail in
 [spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
 
 When a request fails because the API key is wrong or missing, the web shell
