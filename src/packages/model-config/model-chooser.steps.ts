@@ -136,13 +136,25 @@ When(
   },
 );
 
-When('the user picks the primary model {string}', async function (this: DemoWorld, modelId: string) {
-  await page(this).click(`[data-mc-primary="${modelId}"]`);
-});
+// Only the expanded card renders its default rows, and each provider's default
+// ids are unique, so matching on role + model id is enough to pin the card.
+Then(
+  "the {string} card's primary default is {string}",
+  async function (this: DemoWorld, _provider: string, modelId: string) {
+    await page(this).waitForSelector(`[data-mc-role="primary"][data-mc-model="${modelId}"]`, {
+      timeout: 5_000,
+    });
+  },
+);
 
-When('the user picks the secondary model {string}', async function (this: DemoWorld, modelId: string) {
-  await page(this).click(`[data-mc-secondary="${modelId}"]`);
-});
+Then(
+  "the {string} card's secondary default is {string}",
+  async function (this: DemoWorld, _provider: string, modelId: string) {
+    await page(this).waitForSelector(`[data-mc-role="secondary"][data-mc-model="${modelId}"]`, {
+      timeout: 5_000,
+    });
+  },
+);
 
 When(
   'the user types {string} into the {string} key field',

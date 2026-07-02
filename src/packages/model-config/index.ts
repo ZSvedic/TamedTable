@@ -9,15 +9,18 @@ export type Provider = 'anthropic' | 'gemini' | 'openai';
 export interface ModelDef {
   id: string;
   name: string;
-  desc: string;
   provider: Provider;
   voiceInput: boolean;
-  /** At most one entry per provider — the model defaultModel() returns as the
-   *  primary (patch-turn) default. */
-  default?: boolean;
-  /** At most one entry per provider — the model defaultCellModel() returns as
-   *  the secondary (per-row cell) default. */
-  secondaryDefault?: boolean;
+  /** Input price, US$ per million tokens. Mirrors benchmarks/models.jsonl. */
+  inUsdPerMtok: number;
+  /** Output price, US$ per million tokens. Mirrors benchmarks/models.jsonl. */
+  outUsdPerMtok: number;
+}
+
+/** The primary + secondary (cell) model ids chosen as a provider's defaults. */
+export interface ProviderDefaults {
+  primary: string;
+  secondary: string;
 }
 
 export interface ResolvedConfig {
@@ -38,26 +41,33 @@ export interface StoragePort {
 }
 
 // ── Model catalogue ────────────────────────────────────────────────────────
-// One canonical home: models.json. Every model id in it must be verified
-// against the provider's current docs before changing — never guess an id.
+// One canonical home: models.json — two sections. `models` lists every
+// available model with its per-Mtok prices (mirrors benchmarks/models.jsonl);
+// `defaults` maps each provider to its primary + secondary (cell) model ids.
+// The user no longer picks individual models — they pick a provider, and the
+// defaults below decide the two roles. Every id must be verified against the
+// provider's current docs before changing — never guess an id.
 
-export const ALL_MODELS: readonly ModelDef[] = catalogue as ModelDef[];
+export const ALL_MODELS: readonly ModelDef[] =
+  (catalogue as { models: ModelDef[] }).models;
+
+export const DEFAULTS: Readonly<Record<Provider, ProviderDefaults>> =
+  (catalogue as { defaults: Record<Provider, ProviderDefaults> }).defaults;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-/** Default patch-turn (primary) model for a given provider: the catalogue
- *  entry flagged `default: true`, falling back to the provider's first entry. */
+/** Default patch-turn (primary) model for a provider: the `defaults` entry for
+ *  that provider, falling back to the provider's first catalogue entry. */
 export function defaultModel(provider: Provider): string {
-  const entries = ALL_MODELS.filter((m) => m.provider === provider);
-  return (entries.find((m) => m.default) ?? entries[0]!).id;
+  return DEFAULTS[provider]?.primary
+    ?? ALL_MODELS.find((m) => m.provider === provider)!.id;
 }
 
-/** Default per-row cell (secondary) model for a given provider: the catalogue
- *  entry flagged `secondaryDefault: true`, falling back to that provider's
- *  primary default. Always same-provider — cell calls never cross providers. */
+/** Default per-row cell (secondary) model for a provider: the `defaults` entry
+ *  for that provider, falling back to that provider's primary default. Always
+ *  same-provider — cell calls never cross providers. */
 export function defaultCellModel(provider: Provider): string {
-  const entries = ALL_MODELS.filter((m) => m.provider === provider);
-  return (entries.find((m) => m.secondaryDefault) ?? entries.find((m) => m.default) ?? entries[0]!).id;
+  return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
 }
 
 /** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids. */

@@ -21,8 +21,6 @@ interface ActiveRecording {
 function Demo() {
   const stored = useRef(readStoredConfig()).current;
   const [provider, setProvider] = useState<Provider>(stored.provider ?? 'anthropic');
-  const [model, setModel] = useState(stored.model ?? defaultModel(stored.provider ?? 'anthropic'));
-  const [cellModel, setCellModel] = useState(stored.cellModel ?? defaultCellModel(stored.provider ?? 'anthropic'));
   const [keys, setKeys] = useState<Record<Provider, string>>({
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',
@@ -30,10 +28,13 @@ function Demo() {
   });
   const [expanded, setExpanded] = useState<Provider | null>(null);
 
+  // Models are no longer user-selectable — they follow the provider defaults.
+  // Feeding the provider's defaults as the stored model/cellModel keeps the
+  // two roles pinned to those defaults whenever the provider changes.
   const resolved = resolveConfig({}, {
     provider,
-    model,
-    cellModel,
+    model: defaultModel(provider),
+    cellModel: defaultCellModel(provider),
     geminiKey: keys.gemini || null,
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
@@ -150,7 +151,6 @@ function Demo() {
           }
         }}
         onKeyChange={(p, value) => setKeys((prev) => ({ ...prev, [p]: value }))}
-        onSelectModel={(role, id) => (role === 'primary' ? setModel(id) : setCellModel(id))}
       />
 
       <h2>resolveConfig({'{}'}, stored)</h2>
