@@ -10,6 +10,11 @@ Organized by *lifecycle*, not by file type:
 
 ```
 TamedTable/                  root: README.md, MAP.md (feature + code navigation), LICENSE, .gitignore
+├── benchmarks/              model & batch-size benchmark DATA + outputs (no code — runner is @tamedtable/bench)
+│   ├── models.jsonl         single source of per-model pricing/specs (in/out $, context, audio)
+│   ├── ground-truth/        labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl)
+│   ├── results/             sweep outputs (JSONL)
+│   └── charts/              generated SVG tradeoff charts
 ├── marketing/               everything the public sees + the shared design base — never part of src/
 │   ├── tokens.json          design token master — colors, typography, spacing
 │   ├── brand/               marks, favicons, lockups, brand.md
@@ -219,16 +224,37 @@ OpenAI usage shapes, so per-model cost is attributed correctly for any provider.
 ### Cost accounting and results
 
 Cost is each call's token usage priced at the published per-model rates in
-`PRICING` (see [`src/tests/performance.steps.ts`](src/tests/performance.steps.ts)) —
-Anthropic from the model reference, [Gemini](https://ai.google.dev/gemini-api/docs/pricing)
-and [OpenAI](https://developers.openai.com/api/docs/pricing) at their Flash /
-Flash-Lite / Pro and flagship / mini tiers. Prompt-cache writes are billed at
-1.25× and reads at 0.1× of the input rate (Anthropic figures), because most
-input tokens are cached and counting only `input_tokens` would undercount badly.
+[`benchmarks/models.jsonl`](benchmarks/models.jsonl) — the single source of
+pricing/specs, loaded through `@tamedtable/bench`. Anthropic figures come from
+the model reference, [Gemini](https://ai.google.dev/gemini-api/docs/pricing) and
+[OpenAI](https://developers.openai.com/api/docs/pricing) from their pricing
+pages. Prompt-cache writes are billed at 1.25× and reads at 0.1× of the input
+rate (Anthropic figures), because most input tokens are cached and counting only
+`input_tokens` would undercount badly.
 
 Recorded results for specific model combinations live in
 [`process/journal/`](process/journal/) (e.g. the dated
 `*-performance-benchmark-results.md` report), not next to the test fixtures.
+
+### Model & batch-size sweep
+
+Beyond the single-config A/B/C run above, the `@tamedtable/bench` package sweeps
+group C across a grid of **(cell model × batch size)** and scores each config on
+speed, cost, **and accuracy** — the last measured against the committed
+ground-truth labels in [`benchmarks/ground-truth/`](benchmarks/ground-truth/).
+The sweep and its methodology live in [`benchmarks/README.md`](benchmarks/README.md);
+the CLI (all from `src/`) is:
+
+```
+bun run bench:sample 150     # draw a labelling subset from the fixture
+bun run bench:label          # auto-label it with a strong model (needs a key)
+bun run bench:sweep          # run the grid, score vs labels → benchmarks/results/
+bun run bench:chart          # render the tradeoff SVGs → benchmarks/charts/
+bun run bench:report         # print the results table
+```
+
+`sample`, `chart`, and `report` run offline; `label` and `sweep` make live calls
+and need the matching provider key.
 
 ## Iterate on the spec with WoZ and SCRIBE
 

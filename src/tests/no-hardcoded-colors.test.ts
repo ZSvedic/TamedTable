@@ -20,10 +20,14 @@ const stripVarFallbacks = (line: string): string => line.replace(/var\([^)]*\)/g
 //   ui-kit/**            — the token home; colors are *defined* here
 //   *.test.ts/.steps.ts  — test code, not shipped UI
 //   **/demo*             — standalone dev harnesses, not the product
+//   bench/**             — dev/research tool, not shipped UI; its charts use the
+//     Okabe-Ito colourblind-safe data-viz palette, which is a categorical
+//     accessibility choice unrelated to (and wrong to source from) the brand theme
 //   model-config/ModelChooser.tsx — the documented `--mc-*` injection adapter
 //     (behavior.md § Tokens): its hex are fallback defaults for host-set vars
 const isExempt = (path: string): boolean =>
   path.includes('/ui-kit/') ||
+  path.includes('/bench/') ||
   path.endsWith('.test.ts') ||
   path.endsWith('.steps.ts') ||
   /\/demo[^/]*$/.test(path) ||

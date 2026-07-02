@@ -50,6 +50,7 @@ The repo is organized by **lifecycle**, not by file type — see the tree in [RE
 - **`src/` holds the JS config** because `package.json` is coupled to the code it builds, and Node module resolution walks *up* — so anything importing dependencies (app code *and* step defs) must live under the dir that holds `node_modules/`. That makes `src/` a single deployable unit you can copy and run.
 - **`.feature` files live in `spec/`; app step defs in `src/tests/`, package step defs in the package** — the same spec/implementation split as `spec/behavior.md` + `spec/code-contract.md` ↔ `src/packages/`. Step defs read fixtures from `spec/test-cases/` by plain file path (data reads, unlike imports, cross directories freely).
 - **`src/` root files are permanent** (`package.json`, `bun.lock`, `bunfig.toml`, `tsconfig.json`, `cucumber.js`) — not regenerable from `spec/`, not deletable. Only `src/`'s *subdirs* (`packages/`, `tests/`) are regenerable.
+- **`benchmarks/` (root) is data + outputs, never importing code** — the model & batch-size benchmark's pricing table, ground truth, sweep results, and generated charts. Its runner is a workspace package (`src/packages/bench`, `@tamedtable/bench`) because it imports the engine and so must live under `src/` (the module-resolution rule above); the runner reads `benchmarks/` by plain path, the same way step defs read `spec/` fixtures. Keeping the data at the root — like `process/` and `marketing/` — keeps `src/` a clean deployable unit.
 
 Stack:
 
