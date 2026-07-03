@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- An audio waveform — five bars of rising/falling height for continuous voice. -->
+  <path d="M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3"/>
+</svg>

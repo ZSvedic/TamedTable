@@ -59,8 +59,13 @@ All components are pure — props in, callbacks out — and carry stable
   mode state (default light), paints the page background, and notifies the
   host on toggle; the host persists the mode. `useTheme()` / `useThemeControls()`
   throw outside the provider.
-- `Icon({ name, size? })` — inline 16×16 SVG, `currentColor` stroke, 20 names
-  (`data-uk-icon`).
+- `Icon({ name, size? })` — inline 16×16 SVG, `currentColor` stroke
+  (`data-uk-icon`). The glyph artwork is canonical in `marketing/icons/` —
+  one SVG per name, so the drawings survive a full `src/` regeneration; a
+  glyph whose source SVG says `fill="currentColor"` renders filled (stop,
+  play), every other one stroked. `bun run sync:icons` regenerates the
+  package's importable catalogue (`icons.ts`) from that directory; the guard
+  test fails CI if the catalogue drifts.
 - `Button({ children, onClick?, disabled?, variant?, title? })` — variants
   `ghost` (default), `chrome`, `primary`, `danger` (`data-uk-button`).
 - `SplitButton({ children, onClick, menu, disabled?, title?, caretTitle?, id? })` —

@@ -23,6 +23,7 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 ├── marketing/               everything the public sees + the shared design base — never part of src/
 │   ├── tokens.json          design token master — colors, typography, spacing
 │   ├── brand/               marks, favicons, lockups, brand.md
+│   ├── icons/               UI icon glyphs, one 16×16 SVG per name — source of ui-kit's generated icons.ts
 │   ├── claude-design-app/   in-browser design canvas (scratch JSX + generated tokens.jsx)
 │   ├── illustrations/       SVG feature tiles + gallery
 │   └── web/                 the landing page that ships to the site root
