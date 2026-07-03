@@ -14,7 +14,7 @@ const promptText = readFileSync(join(here, '../../../spec/prompt-app-edit.md'), 
 const shim = (file: string): string => join(here, 'src/shims', file);
 
 const specTcDir = join(here, '../../../spec/test-cases');
-const cassetteDir = join(here, '../../tests/__cassettes__');
+const cassetteDir = join(here, '../../../cassettes');
 
 // Tutorial: the @tour/@web feature files. We ship only a lightweight
 // MANIFEST (scenario name + tags + source file) in the JS bundle; the heavy

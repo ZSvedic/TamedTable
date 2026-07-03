@@ -14,7 +14,7 @@ export const SRC_DIR = join(import.meta.dirname, '..');
 export const REPO_ROOT = join(SRC_DIR, '..');
 export const SPEC_TC_DIR = join(REPO_ROOT, 'spec/test-cases');
 export const TEMP_DIR = join(REPO_ROOT, 'temp');
-export const CASSETTE_DIR = join(import.meta.dirname, '__cassettes__');
+export const CASSETTE_DIR = join(REPO_ROOT, 'cassettes');
 
 export type RunnerKind = 'headless' | 'cli' | 'web';
 

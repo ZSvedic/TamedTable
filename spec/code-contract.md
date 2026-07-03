@@ -300,9 +300,10 @@ A cassette file is a JSON object keyed by fingerprint; each value is
 `{ status, statusText, headers, body }`, with `body` the response body
 as text (a JSON payload or an SSE stream, captured verbatim). On replay
 a `Response` is reconstructed from those fields. Cassettes live one per
-feature file at `src/tests/__cassettes__/<feature>.json` — committed
-recorded data, not human-reviewed contract, so they sit under `src/`
-rather than `spec/`. They are written pretty-printed with keys sorted
+feature file at `cassettes/<feature>.json` in the repo root — committed
+recorded data, not human-reviewed contract, so they sit outside `spec/`,
+and not regenerable from spec (re-recording needs a live API key), so
+they sit outside `src/` too. They are written pretty-printed with keys sorted
 for reviewable diffs and committed to git. In `record` mode each new
 entry is flushed to its file as soon as it is captured.
 
@@ -528,7 +529,11 @@ type SqlExpr = { sql: string };
 ```
 
 DuckDB runs in-process. In Node (CLI / headless) the engine imports
-`@duckdb/node-api`; in the browser the Vite build aliases that import to a
+`@duckdb/node-api` — pinned to an exact version in `src/package.json`
+(no caret: its `-r.N` release tags don't range-match as plain semver);
+bump the pin deliberately, with the suite green. The version number
+itself lives only in `package.json`/`bun.lock`, never here.
+In the browser the Vite build aliases that import to a
 thin adapter over `@duckdb/duckdb-wasm` (`src/shims/duckdb.ts`) that exposes
 the same `DuckDBInstance.create → connect → run / runAndReadAll` surface the
 engine calls. The adapter pulls the multi-MB wasm payload through a dynamic
@@ -1041,7 +1046,7 @@ In the browser (`main.tsx`) the loaders `fetch` same-origin under
 fixtures *and* `.m4a` voice clips), `cassettes/<feature>.json` — directories the
 Vite `staticDirPlugin` copies into `dist/` at build and serves via dev
 middleware (features and fixtures from `spec/test-cases/`, cassettes from
-`src/tests/__cassettes__/`). `loadAudio` fetches the clip's bytes
+the root `cassettes/` dir). `loadAudio` fetches the clip's bytes
 (`arrayBuffer`); the other loaders return text. In tests the loaders read the
 same files with `readFileSync` (`loadAudio` returns the raw `Buffer` bytes). The `manifest` is frozen at
 build time by `vite.config.ts` (parsing each `@tour`/`@web` feature into

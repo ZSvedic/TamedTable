@@ -19,6 +19,7 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 │   ├── ground-truth/        labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl)
 │   ├── results/             sweep outputs (JSONL)
 │   └── charts/              generated SVG tradeoff charts
+├── cassettes/               recorded LLM responses the test suite replays — committed data, one JSON per feature
 ├── marketing/               everything the public sees + the shared design base — never part of src/
 │   ├── tokens.json          design token master — colors, typography, spacing
 │   ├── brand/               marks, favicons, lockups, brand.md
@@ -161,7 +162,7 @@ Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate b
 
 The Cucumber suite issues real natural-language requests. A live model call
 per scenario takes minutes (rate-limited) and needs an API key, so each model
-response is recorded once to `src/tests/__cassettes__/<feature>.json` and
+response is recorded once to `cassettes/<feature>.json` (repo root) and
 **replayed from disk** on every later run. The recordings are committed to git;
 `bun run test` replays them by default — seconds, offline, no key.
 
