@@ -174,6 +174,12 @@ a scenario — refresh the cassettes and commit the updated files:
 bun run test:record      # needs ANTHROPIC_API_KEY (see Setup above)
 ```
 
+`test:record` covers the headless and CLI profiles. The `@web`-only tour
+scenarios record through the web profile: `TAMEDTABLE_CASSETTE=record bun
+run test:web`. Voice scenarios record against live Gemini, substituting a
+real `GEMINI_API_KEY` from the environment for the scenario's placeholder —
+with fresh voice recordings on disk they replay as cassette hits instead.
+
 For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
 
 ## Performance benchmark
