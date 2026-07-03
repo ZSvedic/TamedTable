@@ -4,12 +4,12 @@ Feature: Row and dataset validation
 
   Rule: validate annotates each row with _valid and _validation
 
-    Background:
-      Given load "customers-input.csv"
-
+    # customers-missing-phone.csv is customers-input.csv with 3 phones blanked,
+    # so the flag-empty-phone demo actually has something to flag.
     @headless @cli @web @tour @cat-validate
     Scenario: Flag rows with empty Phone
-      Given the expected output is "validate-phone-expected.jsonl"
+      Given load "customers-missing-phone.csv"
+      And the expected output is "validate-phone-expected.jsonl"
       When query "Validate that Phone is non-empty"
       Then compare with the expected output
       And columns exist in the spec: "_valid", "_validation"
@@ -20,7 +20,8 @@ Feature: Row and dataset validation
 
     @headless @cli
     Scenario: validate is additive — no rows are dropped
-      Given the source has 20 rows and 3 have empty Phone
+      Given load "customers-input.csv"
+      And the source has 20 rows and 3 have empty Phone
       When query "Validate that Phone is non-empty"
       Then the current rows count is 20
 
@@ -61,16 +62,24 @@ Feature: Row and dataset validation
   # replays from validate.json. @cat-validate groups them in the panel.
   Rule: Each Validate tour runs its phrase key-free
 
+    # "Looks fake" is a semantic judgment, so the edit is two steps: an {llm}
+    # mutate computing a yes/no column, then a {js} validate reading it.
     @web @tour @cat-validate
     Scenario: Flag emails that look fake
       Given the TamedTable web app
       And load "emails.csv"
-      And the expected output is "validate-emails-expected.jsonl"
       When query "flag emails that look fake"
-      Then the spec has 1 transformation
+      Then the spec has 2 transformations
+      And transformation 1 is a "mutate"
+      And transformation 2 is a "validate"
       And no toast is shown
-      And compare with the expected output
+      And rows where "Email" is "bill.gates@microsoft.com" have _valid equal to false
+      And rows where "Email" is "asdf@asdf.com" have _valid equal to false
+      And rows where "Email" is "ana@acme.io" have _valid equal to true
+      And rows where "Email" is "cara@startup.dev" have _valid equal to true
 
+    # The predicate must round-trip the day: JS Date rolls 2024-02-30 over to
+    # March 1, so an isNaN guard alone can never catch day-overflow dates.
     @web @tour @cat-validate
     Scenario: Flag any impossible birth date
       Given the TamedTable web app
@@ -78,22 +87,42 @@ Feature: Row and dataset validation
       When query "flag any impossible birth date"
       Then the spec has 1 transformation
       And no toast is shown
+      And rows where "DOB" is "1873-01-01" have _valid equal to false
+      And rows where "DOB" is "2024-02-30" have _valid equal to false
+      And rows where "DOB" is "1990-05-12" have _valid equal to true
+      And rows where "DOB" is "1985-11-03" have _valid equal to true
 
+    # The mutate that computes the yes/no column MUST precede the validate that
+    # reads it — the runtime rejects the reverse order (see spec/behavior.md
+    # § Headless) and the recovery loop asks the model for a corrected patch.
     @web @tour @cat-validate
     Scenario: Check the city matches the country
       Given the TamedTable web app
       And load "citycountry.csv"
       When query "check the city matches the country"
       Then the spec has 2 transformations
+      And transformation 1 is a "mutate"
+      And transformation 2 is a "validate"
       And no toast is shown
+      And rows where "City" is "Paris" have _valid equal to false
+      And rows where "City" is "Osaka" have _valid equal to true
+      And rows where "City" is "Lyon" have _valid equal to true
+      And rows where "City" is "Berlin" have _valid equal to true
 
+    # Same two-step semantic-judgment shape as the fake-emails tour: a plain
+    # range check can never catch the missing-zero desk lamp.
     @web @tour @cat-validate
     Scenario: Flag prices that seem wrong
       Given the TamedTable web app
       And load "prices.csv"
       When query "flag prices that seem wrong"
-      Then the spec has 1 transformation
+      Then the spec has 2 transformations
+      And transformation 1 is a "mutate"
+      And transformation 2 is a "validate"
       And no toast is shown
+      And rows where "Item" is "Desk lamp" have _valid equal to false
+      And rows where "Item" is "Notebook" have _valid equal to true
+      And rows where "Item" is "Keyboard" have _valid equal to true
 
   Rule: Multiple validate transformations overwrite the reserved columns
 

@@ -499,6 +499,25 @@ named `_valid` or `_validation` and then appends a `validate`
 transformation overwrites them — the patch prompt warns the LLM
 about this so it picks fresh names when possible.
 
+A patched spec is checked before it runs: for every `validate`, each
+column its `pred`/`message` reads (`row.X` / `row["X"]` in `{js}`,
+`{X}` placeholders in `{llm}`; `{sql}` is not parsed) must be a source
+column, be created by an earlier transformation, or be `_valid` /
+`_validation`. The check walks the transformation list tracking the
+available columns (`mutate` adds its targets, `split` its `into`,
+`group` its by + agg keys, `select` narrows, `unpivot` replaces; `join`
+and `pivot` make later columns unknowable and suspend the check). A
+violation rejects the patch through the recovery loop with:
+
+```
+validate reads column "<X>" which no earlier step provides. A validate can
+only read source columns or columns created by transformations ordered
+before it — order the step that computes "<X>" before the validate.
+```
+
+Exported for tests as `checkValidateColumnOrder(spec, sourceColumns):
+string | undefined` from `@tamedtable/headless`.
+
 `pivot` and `unpivot` evaluate in JS; a `{sql}` companion path
 (via DuckDB's native PIVOT/UNPIVOT) is reserved for a later release.
 

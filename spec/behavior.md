@@ -104,11 +104,15 @@ cancel. It doesn't print to a terminal or own any I/O beyond what the runner
 needs.
 
 The LLM only changes the spec through one tool — call it the *patch tool* —
-that takes a list of RFC 6902 operations. The harness rejects two LLM
+that takes a list of RFC 6902 operations. The harness rejects three LLM
 mistakes inline and feeds them back through the recovery loop:
 
 - an empty operations list;
-- a patch that applies cleanly but leaves the spec identical to before.
+- a patch that applies cleanly but leaves the spec identical to before;
+- a patch that leaves a `validate` reading a column no step before it
+  provides. The predicate would test a value that doesn't exist yet — every
+  row would fail — so the rejection names the missing column and tells the
+  model to order the step that computes it before the `validate`.
 
 <!-- #LLMCells -->
 LLM-backed transformations evaluate a prompt template per row. The runtime:
@@ -616,6 +620,15 @@ bad rows.
 The `_valid` and `_validation` columns persist across subsequent
 transformations the way any other column does; a second `validate`
 appended to the same spec overwrites them.
+
+A `validate` may only read columns that exist when it runs: source
+columns, columns created by transformations ordered before it, and the
+reserved `_valid` / `_validation` pair. A patch that orders a `validate`
+before the step that computes its input — or that reads a column nothing
+creates — is rejected before anything runs and fed back through the
+recovery loop, naming the missing column. Steps whose output columns
+can't be known without running them (`join`, `pivot`) suspend the check
+for the transformations after them.
 
 ### `pivot` and `unpivot` transformations (#PivotData)
 
