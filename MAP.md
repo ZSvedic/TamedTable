@@ -36,7 +36,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 
 ## Library packages
 
-Each row is a self-contained library package with its own spec under `spec/packages/<name>/` — see [spec/packages/README.md](spec/packages/README.md) for the layout rules. The ID links to every file that references it.
+Each row is a self-contained library package; most have their own spec under `spec/packages/<name>/` — see [spec/packages/README.md](spec/packages/README.md) for the layout rules. Two exceptions, Table plan and Cassette replay, are specced in [spec/code-contract.md](spec/code-contract.md). The ID links to every file that references it.
 
 | Area | ID | Description |
 |---|---|---|
@@ -47,7 +47,7 @@ Each row is a self-contained library package with its own spec under `spec/packa
 | Gherkin Tour parser + driver | [#GherkinTour](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23GherkinTour&type=code) | Zero-dep `.feature` parser (`parseTours`) plus a host-agnostic `TourDriver` + `TourAdapter` that runs the tour flow; the `./ui` export adds a Driver.js spotlight (the only `driver.js`-dependent entry point). `demo.html` tours itself through it (`src/packages/gherkin-tour/`, spec at `spec/packages/gherkin-tour/`) |
 | Model config | [#ModelConfig](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ModelConfig&type=code) | Provider/key/model catalogue, config resolution, and the `ModelChooser` React component (`src/packages/model-config/`, spec at `spec/packages/model-config/`) |
 | Table view | [#TableView](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TableView&type=code) | Paged table grid with selection, inline edit, column drag-reorder, and the pure pagination model (`src/packages/table-view/`, spec at `spec/packages/table-view/`) |
-| Toolbar | [#Toolbar](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Toolbar&type=code) | Top bar (brand lockup, file readout, action buttons) and the Open-from-URL dialog with sample quick-picks (`src/packages/toolbar/`, spec at `spec/packages/toolbar/`) |
+| Toolbar | [#Toolbar](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Toolbar&type=code) | Top bar (brand lockup, file readout, action buttons), the URL-only Open-from-URL dialog, and the Open-sample picker (`src/packages/toolbar/`, spec at `spec/packages/toolbar/`) |
 | UI kit | [#UiKit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23UiKit&type=code) | Brand design tokens plus the primitive React components — `Button`, `Icon`, `SplitButton`, `Toasts`, `ThemeProvider` (`src/packages/ui-kit/`, spec at `spec/packages/ui-kit/`) |
 | Voice recording | [#VoicePort](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoicePort&type=code) | `VoicePort`, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt` (`src/packages/voice-input/`, spec at `spec/packages/voice-input/`) |
 | Hands-free voice capture | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | `ContinuousVoicePort` + the `@ricky0123/vad-web` VAD wrapper (`vad.ts`, `browser-vad.ts` in `src/packages/voice-input/`) and the chat-panel `WaveButton` |

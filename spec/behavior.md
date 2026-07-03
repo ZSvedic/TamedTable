@@ -339,10 +339,14 @@ They are handled locally without any LLM round-trip:
   on the next viewport- or state-changing event. No match prints
   `no match` and does not reprint. Missing pattern prints
   `:find: missing pattern`. Not recorded in the undo journal.
-- `:load <path>` reads a CSV or JSONL file as the new input source (file
-  type inferred from extension; only `.csv` and `.jsonl` accepted;
+- `:load <path>` reads a table file as the new input source (file
+  type inferred from extension; any registered format — `.csv`,
+  `.jsonl`, `.parquet`, `.arrow` — accepted;
   `<path>` is taken literally — a leading `@` is part of the filename,
-  not a Claude-Code-style file reference). Resets transformations,
+  not a Claude-Code-style file reference). A relative path that does
+  not exist is retried under `../spec/test-cases/` — a dev convenience
+  so feature files can name a fixture by bare filename; `execute`
+  resolves `--input` the same way. Resets transformations,
   filter/sort, and cached LLM cell results just like loading at startup.
   Missing path prints `:load: missing path`; unknown extension prints
   `:load: unknown file type`; success prints
@@ -524,9 +528,11 @@ seams rather than replacing them.
 ### CSV (and other tabular) output (#FormatOut)
 
 `:save <path>` and `tamedtable execute --output <path>` both dispatch on
-extension, the same way `:load` already does for input, accepting `.csv`
-alongside `.jsonl`; further formats (`.xlsx`, `.parquet`) land on the same
-dispatch and are out of scope until their own scenarios are written.
+extension, the same way `:load` already does for input. The dispatch goes
+through the format-codec registry, so `.csv`, `.jsonl`, `.parquet`, and
+`.arrow` all work — see
+[spec/packages/file-io/formats/](packages/file-io/formats/) for the
+per-format rules.
 
 CSV output rules: the header row is the spec's column order (using
 `label` when set, otherwise `id`); JSON nulls and JS undefined render
@@ -754,7 +760,8 @@ as inline errors inside the dialog, which stays open so the user can
 correct the URL — the dialog does not produce a toast for these.
 Bundled sample files live under the deployed site's `samples/`
 directory; their list is frozen at build time by the Vite config and
-surfaced inside the URL dialog as a one-click "fill the field" list.
+surfaced in the **Open sample…** picker dialog — one click loads the
+sample. The URL dialog stays URL-only.
 
 The web shell uses the existing `Runner` interface unmodified.
 Streaming chunks fire the same callback; the front-end debounces
@@ -786,8 +793,7 @@ The settings panel shows three provider accordion cards stacked vertically:
 Google, OpenAI, Anthropic. On open, no card is expanded. Clicking a collapsed
 card expands it and selects that provider; clicking an already-open card
 collapses it without changing the provider. Opening a card collapses any other
-open card. The currently selected provider's card opens by default when the
-panel mounts.
+open card.
 
 Each card header (always visible, clickable) shows a radio knob, the provider
 name and tagline, and a voice badge on the right edge. The voice badge is green
@@ -828,7 +834,7 @@ the next request. Full detail in
 
 When a request fails because the API key is wrong or missing, the web shell
 surfaces a toast with a sentence the user can act on: "Invalid API key. Open
-Settings to update your Gemini key." (or OpenAI / Anthropic). For Google the
+Settings to update your Google key." (or OpenAI / Anthropic). For Google the
 toast adds a second sentence — "If the key is correct, Google now blocks
 unrestricted keys — add an application restriction in Google AI Studio." —
 because [Google rejects unrestricted keys](https://ai.google.dev/gemini-api/docs/api-key#secure-unrestricted-keys)
@@ -836,7 +842,7 @@ and the symptom is an indistinguishable "API key not valid" response, so a user
 whose key is genuinely fine is told the real fix rather than re-entering the same
 key. A model-not-found error reads "Model not found. The selected model may be
 unavailable." A network or CORS failure reads "Network error. Could not reach the
-Gemini API." Errors that don't match a known pattern pass through as-is so no
+Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pass through as-is so no
 information is lost. The provider name in the message matches whichever provider
 card is selected.
 
@@ -847,9 +853,12 @@ CSV save shows `Save the current rows (:save)`, and the flow save shows
 
 A `?` button in the Requests sidebar header opens a discoverability
 popover listing four keyboard and gesture hints: double-click to edit a
-cell, drag a column header to reorder, `:undo` / `:redo` in the chat,
-and `:save` / `:save-flow` to export. Hovering over the button opens the
-popover; moving the cursor away closes it; clicking toggles it.
+cell, drag a column header to reorder, undo/redo, and the save exports.
+Hovering over the button opens the
+popover; moving the cursor away closes it; clicking toggles it. The web
+chat does not parse colon commands — undo/redo and the saves are toolbar
+buttons (dock actions on mobile), and a typed `:undo` goes to the model
+as plain text.
 
 After a successful request, the assistant chat bubble shows the
 transformed expressions — up to 7 lines with bodies truncated to 240

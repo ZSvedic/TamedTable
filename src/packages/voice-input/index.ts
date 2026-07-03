@@ -47,15 +47,25 @@ export type { ContinuousVoicePort, ContinuousVoiceHandlers } from './continuous.
 export type { VadTuning } from './vad.ts';
 export { DEFAULT_TUNING } from './vad.ts';
 
+/** The fixed instruction that opens every voice prompt. Canonical text lives
+ *  in spec/prompt-app-edit.md § VOICE_PROMPT; this is a byte-identical copy
+ *  (the package is zero-dep and browser-safe, so it can't read the spec file
+ *  at init the way headless does). A guard test fails CI if the copy drifts.
+ *  Fingerprint-load-bearing: one changed character orphans every recorded
+ *  voice cassette. */
+export const VOICE_INSTRUCTION = [
+  "The user's request is spoken in the attached audio clip. Listen to it",
+  'and carry out that request directly — there is no written request text.',
+  'Also set the `transcript` argument of apply_spec_patch to a verbatim',
+  'transcript of the audio.',
+].join('\n');
+
 /** Build the deterministic instruction text sent next to the audio on the
  *  patch turn. Pure — no network, no DOM — so it is unit- and
  *  Gherkin-testable. */
 export function buildVoicePrompt(ctx: VoiceContext): string {
   const lines = [
-    "The user's request is spoken in the attached audio clip. Listen to it",
-    'and carry out that request directly — there is no written request text.',
-    'Also set the `transcript` argument of apply_spec_patch to a verbatim',
-    'transcript of the audio.',
+    VOICE_INSTRUCTION,
     '',
     'Current table context:',
     `- File: ${ctx.filename}`,

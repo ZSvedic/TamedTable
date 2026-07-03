@@ -19,9 +19,11 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 │   ├── ground-truth/        labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl)
 │   ├── results/             sweep outputs (JSONL)
 │   └── charts/              generated SVG tradeoff charts
+├── cassettes/               recorded LLM responses the test suite replays — committed data, one JSON per feature
 ├── marketing/               everything the public sees + the shared design base — never part of src/
 │   ├── tokens.json          design token master — colors, typography, spacing
 │   ├── brand/               marks, favicons, lockups, brand.md
+│   ├── icons/               UI icon glyphs, one 16×16 SVG per name — source of ui-kit's generated icons.ts
 │   ├── claude-design-app/   in-browser design canvas (scratch JSX + generated tokens.jsx)
 │   ├── illustrations/       SVG feature tiles + gallery
 │   └── web/                 the landing page that ships to the site root
@@ -34,7 +36,7 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 │   ├── rationale.md         what TamedTable is and why
 │   ├── behavior.md          what the user sees + what the system does (API-free)
 │   ├── code-contract.md     types, signatures, libraries, env vars, exit codes
-│   ├── prompt-app-edit.md   the three LLM prompts (imported by the runtime at init)
+│   ├── prompt-app-edit.md   the LLM prompts (imported by the runtime at init)
 │   ├── writing-style.md     writing style for every markdown file in the repo
 │   ├── packages/            per-package specs — mirrors src/packages/; rules in its README.md
 │   └── test-cases/          Gherkin features + -input/-expected/.flow fixtures
@@ -157,11 +159,13 @@ browser binary `bun install` alone does not fetch.
 
 Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`.
 
+A Playwright e2e layer (`src/packages/web/e2e/`) drives the web app in a real browser alongside the Cucumber `@web` profile: `bun run test:e2e` from `src/packages/web/` starts the Vite dev server and runs the `*.e2e.ts` specs headless; it is not part of `bun run test`.
+
 ### Cassettes — why the suite is fast and key-free
 
 The Cucumber suite issues real natural-language requests. A live model call
 per scenario takes minutes (rate-limited) and needs an API key, so each model
-response is recorded once to `src/tests/__cassettes__/<feature>.json` and
+response is recorded once to `cassettes/<feature>.json` (repo root) and
 **replayed from disk** on every later run. The recordings are committed to git;
 `bun run test` replays them by default — seconds, offline, no key.
 

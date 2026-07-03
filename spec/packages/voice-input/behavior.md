@@ -44,14 +44,36 @@ Cancelling stops the recorder and releases the microphone without resolving.
 
 ## buildVoicePrompt
 
-Pure text assembly — no network, no DOM. The prompt tells the model the
-request is spoken, asks for a verbatim `transcript` argument on the patch
-call, and appends the table context so spoken references ("this column",
+Pure text assembly — no network, no DOM. The prompt opens with the fixed
+instruction whose canonical text is
+[prompt-app-edit.md § VOICE_PROMPT](../../prompt-app-edit.md) (the package
+keeps a byte-identical `VOICE_INSTRUCTION` copy; a guard test fails CI if it
+drifts), then appends the table context so spoken references ("this column",
 "the selected cell") resolve against the view:
 
 - `File: <filename>` and `Columns: <comma-separated ids>` always appear.
 - When a cell is selected, a `Selected cell:` line adds its column, 1-based
   row, and JSON-quoted value; with no selection the line is absent.
+
+The whole prompt is fingerprint-load-bearing: cassette replay matches a voice
+request byte-for-byte, so any wording change orphans every recorded voice
+cassette and forces a re-record.
+
+## audioMediaType
+
+Maps an audio filename's extension to the MIME type the voice patch turn
+sends. Shared by the test mic stub and the tutorial `play-audio` step so a
+replayed tour request fingerprints identically to the recorded voice turn —
+the mapping is as fingerprint-critical as the prompt text:
+
+| Extension | MIME type |
+|---|---|
+| `.m4a` | `audio/mp4` |
+| `.mp3` | `audio/mpeg` |
+| `.wav` | `audio/wav` |
+| `.webm` | `audio/webm` |
+
+Any other extension throws.
 
 ## ContinuousVoicePort
 
