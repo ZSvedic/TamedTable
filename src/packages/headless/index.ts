@@ -1151,10 +1151,23 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     for (const b of t.by) keyColumns.push(await this.evalSortKey(rows, b.key, signal));
     const dirs = t.by.map((b) => (b.dir === 'desc' ? -1 : 1));
     const indices = rows.map((_, i) => i);
+    // Numeric-aware compare: a pair of numbers or numeric strings orders by
+    // magnitude ("2" before "10"), any other pair by the relational operators.
+    const asNumber = (v: unknown): number | null => {
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);
+      return null;
+    };
     indices.sort((ai, bi) => {
       for (let k = 0; k < keyColumns.length; k++) {
-        const av = keyColumns[k]![ai] as number | string;
-        const bv = keyColumns[k]![bi] as number | string;
+        let av = keyColumns[k]![ai] as number | string;
+        let bv = keyColumns[k]![bi] as number | string;
+        const an = asNumber(av);
+        const bn = asNumber(bv);
+        if (an !== null && bn !== null) {
+          av = an;
+          bv = bn;
+        }
         if (av < bv) return -dirs[k]!;
         if (av > bv) return dirs[k]!;
       }

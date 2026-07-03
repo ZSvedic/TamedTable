@@ -578,9 +578,10 @@ Provider, key, and model config flow through `ResolvedConfig` from
 surface below.
 
 ```ts
-// pagination — 20 rows per page; the page index is 1-based and clamps
-// to [1, pageCount()]
-WebController.pageSize: number;          // 20
+// pagination — 20 rows per page unless the spec's `page` view op sets a
+// size (a "top 10" request patches /page); the page index is 1-based and
+// clamps to [1, pageCount()]
+WebController.pageSize: number;          // spec.page?.size ?? 20
 WebController.pageRows(): Row[];         // the current page's slice
 WebController.currentPage(): number;
 WebController.pageCount(): number;
@@ -749,6 +750,12 @@ evaluate each key's per-row values up front, then compare. SQL/LLM key
 evaluation makes `applySort` async; the runner already `await`s every
 transformation. When `sort.limit` is set, the ordered rows are sliced to
 the first N.
+
+The comparator is numeric-aware: when both key values coerce to a finite
+number (`typeof v === 'number'`, or a non-empty string with a finite
+`Number(v)`), they compare numerically; otherwise both compare with the
+`<`/`>` operators as before. The check is per-pair, so a mixed column
+still orders its numeric-looking values by magnitude.
 
 ### A formatter bug never fails a request
 

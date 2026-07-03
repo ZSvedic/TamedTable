@@ -9,8 +9,10 @@ Feature: Row and dataset validation
 
     @headless @cli @web @tour @cat-validate
     Scenario: Flag rows with empty Phone
+      Given the expected output is "validate-phone-expected.jsonl"
       When query "Validate that Phone is non-empty"
-      Then columns exist in the spec: "_valid", "_validation"
+      Then compare with the expected output
+      And columns exist in the spec: "_valid", "_validation"
       And every row has a boolean "_valid"
       And rows with empty Phone have _valid equal to false
       And rows with non-empty Phone have _valid equal to true
@@ -63,9 +65,11 @@ Feature: Row and dataset validation
     Scenario: Flag emails that look fake
       Given the TamedTable web app
       And load "emails.csv"
+      And the expected output is "validate-emails-expected.jsonl"
       When query "flag emails that look fake"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
     @web @tour @cat-validate
     Scenario: Flag any impossible birth date

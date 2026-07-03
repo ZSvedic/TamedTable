@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "source": "sales.csv",
+  "spec": {
+    "table": "sales.csv",
+    "columns": [
+      { "id": "Region" },
+      { "id": "Revenue" }
+    ],
+    "transformations": [
+      {
+        "kind": "sort",
+        "by": [
+          { "key": "Revenue", "dir": "desc" }
+        ]
+      }
+    ]
+  }
+}

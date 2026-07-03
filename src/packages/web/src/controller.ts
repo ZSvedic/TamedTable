@@ -102,8 +102,12 @@ export class WebController implements ControllerHost {
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
   lastDebug: RequestDebugInfo | undefined;
-  /** Rows per table page. */
-  readonly pageSize = PAGE_SIZE;
+  /** Rows per table page — the spec's `page` view op wins when set (a
+   *  "top 10" request patches /page), the fixed default otherwise. */
+  get pageSize(): number {
+    const size = this.displaySpec().page?.size;
+    return size && size > 0 ? Math.floor(size) : PAGE_SIZE;
+  }
   /** The selected cell, or null — drives the status footer. */
   selection: CellRef | null = null;
   /** Microphone state — drives the MicButton's red ring and spinner. */

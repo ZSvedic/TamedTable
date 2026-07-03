@@ -337,7 +337,8 @@ Sort on {js}/{sql}/{llm} keys with optional top-N limit; one marketing tour. Fix
 | Scenario | What it tests | ToDo |
 |---|---|---|
 | [Sort by a {js} key, descending, limited to the top 2](test-cases/sort.feature)<br>`@cli @offline` | JS sort + limit | NA |
-| [Sort by revenue, top 10](test-cases/sort.feature)<br>`@web @tour @cat-deterministic` | Revenue top-N via phrase replay (sales.csv) | NA |
+| [Sort by revenue, top 10](test-cases/sort.feature)<br>`@web @tour @cat-deterministic` | Revenue top-N via phrase replay (sales.csv): golden row order + 10-row visible page | NA |
+| [Sort by a bare column of numeric strings, descending](test-cases/sort.feature)<br>`@cli @offline @regression` | Numeric-aware compare — "2" before "10", never text order | NA |
 | [Sort by a {js} key, descending](test-cases/sort.feature)<br>`@cli @offline` | JS sort, no limit | NA |
 | [Sort by a {sql} key, descending](test-cases/sort.feature)<br>`@cli @offline` | SQL sort, no limit | NA |
 

@@ -10,30 +10,40 @@ Feature: Classify tours
     Scenario: Label each ticket as billing, bug, or feature
       Given the TamedTable web app
       And load "tickets.csv"
+      And the expected output is "classify-tickets-expected.jsonl"
       When query "label each ticket as billing, bug, or feature"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
     @web @tour @cat-classify
     Scenario: Score the sentiment of every review
       Given the TamedTable web app
       And load "reviews.csv"
+      And the expected output is "classify-sentiment-expected.jsonl"
       When query "score the sentiment of every review"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
-    @web @tour @cat-classify
+    # Regression: the numeric seniority scores the {llm} key returns sorted as
+    # text, putting the CTO 4th of 5.
+    @web @tour @cat-classify @regression
     Scenario: Sort the titles by seniority
       Given the TamedTable web app
       And load "titles.csv"
+      And the expected output is "classify-seniority-expected.jsonl"
       When query "sort the titles by seniority"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
     @web @tour @cat-classify
     Scenario: Split customers into men, women, and unknown
       Given the TamedTable web app
       And load "customers-input.csv"
+      And the expected output is "classify-gender-expected.jsonl"
       When query "split customers into men, women, and unknown"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
