@@ -23,9 +23,24 @@ Feature: Sort rows by a key
     Scenario: Sort by revenue, top 10
       Given the TamedTable web app
       And load "sales.csv"
+      And the expected output is "sort-tour-expected.jsonl"
       When query "sort by revenue, top 10"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
+      And the current page shows 10 rows
+
+  # Regression: the comparator ordered numeric strings as text ("10" before
+  # "2"), so a CSV revenue column sorted alphabetically.
+  Rule: Numeric strings compare as numbers, not text
+
+    @cli @offline @regression
+    Scenario: Sort by a bare column of numeric strings, descending
+      Given "sort-column.flow" exists
+      And the expected output is "sort-column-expected.jsonl"
+      When user runs "tamedtable execute sort-column.flow --input sales.csv --output sort-column-output.jsonl"
+      Then exit code is 0
+      And "sort-column-output.jsonl" matches the expected output
 
   Rule: A sort key may be a column name or any Expr shape
 

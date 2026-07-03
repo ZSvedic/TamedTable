@@ -19,9 +19,11 @@ Feature: Clean up tours
 
     @web @tour @cat-cleanup
     Scenario: Make the country names consistent
+      Given the expected output is "cleanup-countries-expected.jsonl"
       When query "make the country names consistent"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
     @web @tour @cat-cleanup
     Scenario: Fix the capitalization of names
@@ -31,6 +33,8 @@ Feature: Clean up tours
 
     @web @tour @cat-cleanup
     Scenario: Clean up the birth dates
+      Given the expected output is "cleanup-dob-expected.jsonl"
       When query "clean up the birth dates"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output

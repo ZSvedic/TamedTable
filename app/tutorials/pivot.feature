@@ -10,8 +10,10 @@ Feature: Pivot and unpivot
 
     @headless @cli @web @tour @cat-deterministic
     Scenario: One column per distinct on-value, default agg first
+      Given the expected output is "pivot-tour-expected.jsonl"
       When query "Pivot Quarter into columns, with Revenue as the value"
-      Then columns exist in the spec: "Q1", "Q2", "Q3", "Q4", "Region"
+      Then compare with the expected output
+      And columns exist in the spec: "Q1", "Q2", "Q3", "Q4", "Region"
       And columns are absent from the current rows: "Quarter", "Revenue"
 
     @headless @cli
