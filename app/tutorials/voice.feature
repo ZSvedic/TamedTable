@@ -28,6 +28,7 @@ Feature: Voice input
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
       And load "customers-input.csv"
+      And the API key has not been set
       When user selects the provider "gemini"
       Then the mic button is hidden
 
@@ -58,7 +59,9 @@ Feature: Voice input
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
-      Then a user bubble shows "🎙 validate DOB is not empty"
+      # The bubble carries the model's verbatim transcript — current Gemini
+      # normalizes casing and punctuation, so the expected text mirrors that.
+      Then a user bubble shows "🎙 Validate DOB is not empty."
       And no user bubble shows "🎙 Voice request"
       And an assistant bubble is shown
       And the spec has 1 transformation

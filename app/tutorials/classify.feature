@@ -33,8 +33,10 @@ Feature: Classify tours
       Given the TamedTable web app
       And load "titles.csv"
       And the expected output is "classify-seniority-expected.jsonl"
+      # The recorded edit adds a visible SeniorityRank column, then sorts on
+      # it numerically descending — CTO first, intern last.
       When query "sort the titles by seniority"
-      Then the spec has 1 transformation
+      Then the spec has 2 transformations
       And no toast is shown
       And compare with the expected output
 

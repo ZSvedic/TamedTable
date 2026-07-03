@@ -15,9 +15,9 @@
       <rect x="18" y="172" width="324" height="34" fill="#FFFFFF"/>
       <rect x="160" y="109" width="170" height="92" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
       <text x="32" y="125">Pfizer</text>
-      <text x="170" y="125">Pharma</text>
+      <text x="170" y="125">Healthcare</text>
       <text x="32" y="159">Stripe</text>
-      <text x="170" y="159">Fintech</text>
+      <text x="170" y="159">Finance</text>
       <text x="32" y="193">Boeing</text>
       <text x="170" y="193">Aerospace</text>
     </g>

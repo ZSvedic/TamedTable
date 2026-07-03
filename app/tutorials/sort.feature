@@ -24,8 +24,10 @@ Feature: Sort rows by a key
       Given the TamedTable web app
       And load "sales.csv"
       And the expected output is "sort-tour-expected.jsonl"
+      # The recorded edit sorts numerically desc and trims to the top 10 rows
+      # (a filter), so 2 of the 12 sales rows visibly drop out.
       When query "sort by revenue, top 10"
-      Then the spec has 1 transformation
+      Then the spec has 2 transformations
       And no toast is shown
       And compare with the expected output
       And the current page shows 10 rows

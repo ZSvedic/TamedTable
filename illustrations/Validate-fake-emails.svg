@@ -8,26 +8,33 @@
   <g>
     <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
     <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">name</text>
-    <text x="150" y="91" font-size="12" font-weight="600" fill="#FFFFFF">email</text>
+    <text x="110" y="91" font-size="12" font-weight="600" fill="#FFFFFF">email</text>
     <text x="300" y="91" font-size="12" font-weight="600" fill="#96BED7">flag</text>
-    <g font-size="12">
-      <rect x="18" y="104" width="324" height="32" fill="#FFFFFF"/>
-      <text x="32" y="124" fill="#281C60">Mia Khan</text>
-      <text x="150" y="124" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60">mia.k@gmail.com</text>
-      <rect x="296" y="108" width="36" height="20" rx="10" fill="#96BED7"/>
-      <text x="305" y="122" font-size="11" font-weight="600" fill="#281C60">ok</text>
+    <g font-size="11">
+      <rect x="18" y="104" width="324" height="24" fill="#FFFFFF"/>
+      <text x="32" y="120" fill="#281C60">Ana</text>
+      <text x="110" y="120" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#281C60">ana@acme.io</text>
+      <rect x="298" y="106" width="36" height="20" rx="10" fill="#96BED7"/>
+      <text x="307" y="120" font-size="11" font-weight="600" fill="#281C60">ok</text>
       <!-- bad row -->
-      <rect x="18" y="136" width="324" height="32" fill="#FBEEF0"/>
-      <text x="32" y="156" fill="#281C60">B. Gates</text>
-      <rect x="148" y="141" width="118" height="22" rx="5" fill="#FFFFFF" stroke="#E0AAB6" stroke-dasharray="3 3"/>
-      <text x="156" y="156" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#C0556B">bill.gates@microsoft.com</text>
-      <rect x="292" y="142" width="42" height="20" rx="10" fill="#C0556B"/>
-      <text x="299" y="156" font-size="11" font-weight="600" fill="#FFFFFF">fake</text>
-      <rect x="18" y="168" width="324" height="32" fill="#FFFFFF"/>
-      <text x="32" y="188" fill="#281C60">Tom Reed</text>
-      <text x="150" y="188" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60">t.reed@outlook.com</text>
-      <rect x="296" y="172" width="36" height="20" rx="10" fill="#96BED7"/>
-      <text x="305" y="186" font-size="11" font-weight="600" fill="#281C60">ok</text>
+      <rect x="18" y="128" width="324" height="24" fill="#FBEEF0"/>
+      <text x="32" y="144" fill="#281C60">Bob</text>
+      <rect x="106" y="130" width="172" height="20" rx="5" fill="#FFFFFF" stroke="#E0AAB6" stroke-dasharray="3 3"/>
+      <text x="112" y="144" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#C0556B">bill.gates@microsoft.com</text>
+      <rect x="292" y="130" width="42" height="20" rx="10" fill="#C0556B"/>
+      <text x="299" y="144" font-size="11" font-weight="600" fill="#FFFFFF">fake</text>
+      <rect x="18" y="152" width="324" height="24" fill="#FFFFFF"/>
+      <text x="32" y="168" fill="#281C60">Cara</text>
+      <text x="110" y="168" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#281C60">cara@startup.dev</text>
+      <rect x="298" y="154" width="36" height="20" rx="10" fill="#96BED7"/>
+      <text x="307" y="168" font-size="11" font-weight="600" fill="#281C60">ok</text>
+      <!-- bad row -->
+      <rect x="18" y="176" width="324" height="24" fill="#FBEEF0"/>
+      <text x="32" y="192" fill="#281C60">Dan</text>
+      <rect x="106" y="178" width="112" height="20" rx="5" fill="#FFFFFF" stroke="#E0AAB6" stroke-dasharray="3 3"/>
+      <text x="112" y="192" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#C0556B">asdf@asdf.com</text>
+      <rect x="292" y="178" width="42" height="20" rx="10" fill="#C0556B"/>
+      <text x="299" y="192" font-size="11" font-weight="600" fill="#FFFFFF">fake</text>
     </g>
     <rect x="18" y="72" width="324" height="128" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>

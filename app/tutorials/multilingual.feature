@@ -16,6 +16,7 @@ Feature: Multilingual requests
     Scenario: Normalize phone numbers in Spanish
       When query "normaliza los números de teléfono"
       Then a phone-normalization transformation is added
+      And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
     # The non-Spanish text variants share one shape; an outline keeps them
     # together. (Spanish stays a standalone @tour above — the homepage deep-links

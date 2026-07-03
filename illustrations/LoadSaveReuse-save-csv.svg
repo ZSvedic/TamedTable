@@ -5,21 +5,21 @@
   <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
   <text x="34" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#96BED7">:save</text>
   <text x="86" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">clean.csv</text>
-  <!-- clean mini table -->
+  <!-- clean mini table: real customers-input.csv rows, phones normalized -->
   <g>
     <path d="M18 78 q0 -6 6 -6 h180 q6 0 6 6 v22 h-192 Z" fill="#281C60"/>
-    <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">email</text>
-    <text x="120" y="91" font-size="12" font-weight="600" fill="#FFFFFF">phone</text>
+    <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">FirstName</text>
+    <text x="116" y="91" font-size="12" font-weight="600" fill="#FFFFFF">Phone</text>
     <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="9.5" fill="#281C60">
       <rect x="18" y="100" width="192" height="26" fill="#FFFFFF"/>
-      <text x="32" y="117" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10.5">alice@…</text>
-      <text x="116" y="117">+1 415-555-0101</text>
+      <text x="32" y="117" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10.5">John</text>
+      <text x="116" y="117">+12005551234</text>
       <rect x="18" y="126" width="192" height="26" fill="#F6F2EB"/>
-      <text x="32" y="143" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10.5">bob@…</text>
-      <text x="116" y="143">+1 312-555-0148</text>
+      <text x="32" y="143" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10.5">bob</text>
+      <text x="116" y="143">+445558765</text>
       <rect x="18" y="152" width="192" height="26" fill="#FFFFFF"/>
-      <text x="32" y="169" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10.5">cara@…</text>
-      <text x="116" y="169">+1 206-555-0190</text>
+      <text x="32" y="169" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10.5">Michael</text>
+      <text x="116" y="169">+445551234</text>
     </g>
     <rect x="18" y="72" width="192" height="106" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
