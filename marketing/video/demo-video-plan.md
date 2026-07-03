@@ -139,7 +139,7 @@ Files are named `hero-<ratio>-en.webm`.
 |---|---|---|
 | Homepage hero, desktop | `hero-16x9-en.webm` (+ `.mp4`) | `<video autoplay muted loop playsinline>` |
 | Homepage hero, phone | `hero-9x16-en.webm` (+ `.mp4`) | swapped in by a CSS media query / `<source media>` |
-| README (inline) | `hero-16x9-en.gif` **or** `poster-16x9-en.png` → linked MP4 | GitHub markdown won't autoplay a committed `<video>`; a GIF loops inline, a poster+link stays small |
+| README (inline) | the 16:9 MP4, uploaded once as a `github.com/user-attachments/assets/<uuid>` link | the only URL form GitHub's markdown renders as a native player; a committed `<video>` or a plain hosted URL does not render |
 | Social / YouTube (later) | the 9:16 and 16:9 MP4s, sound on | out of scope this pass; the masters already cover it |
 
 ## Where everything goes
@@ -174,10 +174,8 @@ served from `marketing/web/` and the README from the repo root:
    video-only change wouldn't rebuild the site (the symlink file itself hasn't
    changed).
 
-The README embeds by relative path — `marketing/video/out/hero-16x9.gif` (or the
-poster) — so it needs nothing outside `marketing/video/`. Rendered files are
-large; keep the README GIF/poster under a tight size budget and let the homepage
-serve the full-quality MP4/WebM.
+The README embeds a `user-attachments` link (see "How to regenerate" below for
+why), not a file path, so it needs nothing outside `marketing/video/` either.
 
 So: **yes, everything can live in `marketing/video/`** — plus one symlink under
 `marketing/web/` and one line in the deploy workflow when the assets first land.
@@ -199,11 +197,14 @@ and muxes it; `encode.mjs` derives the MP4/GIF/poster. All muxing/encoding uses 
 full ffmpeg from the `imageio-ffmpeg` pip package (this env's bundled ffmpeg is
 video-only). Fonts are bundled as data-URIs in `fonts.css`, so renders load
 instantly and offline. `out/` is git-ignored — everything regenerates from
-source. The committed **`demo-16x9.gif`** is what the repo README embeds — a
-silent GIF by a relative path, which is the only form GitHub renders inline for
-signed-out visitors (a committed `<video>` doesn't render, and an uploaded
-`user-attachments` URL is auth-gated). The committed **`demo-16x9.mp4`** is
-linked next to it for sound.
+source. The committed **`demo-16x9.mp4`** and **`demo-9x16.mp4`** are the
+masters (16:9 for the README and homepage, 9:16 for social). The README embeds
+the 16:9 cut via a `github.com/user-attachments/assets/<uuid>` link — the only
+URL form GitHub's markdown renders as a native player, confirmed to work for
+signed-out visitors. That link comes from dragging `demo-16x9.mp4` into a
+GitHub comment/issue editor by hand (there's no API for it); do this on a
+permanent, never-edited issue so the asset doesn't get garbage-collected — a
+prior attempt on a since-edited comment went dead (404) after a while.
 
 Run the render scripts plainly (`node capture.mjs`) — do NOT prefix with a
 `pkill` matching the chromium path, which would kill the run's own browser.
