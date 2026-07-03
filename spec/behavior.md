@@ -751,8 +751,10 @@ request of a session, so a session that only ever loads a CSV or JSONL
 and runs plain transformations never pays for it.
 
 The table view paginates. Rows display one fixed-size page at a time —
-twenty rows — with a pager that jumps to the first, previous, next,
-last, or a numbered page. Paging is a view concern, like the CLI's
+twenty rows, unless the spec's `page` view op sets a size (a "top 10"
+request patches `/page` to `{size: 10}`, so the visible page trims to
+ten rows) — with a pager that jumps to the first, previous, next, last,
+or a numbered page. Manual paging is a view concern, like the CLI's
 viewport: it never touches the spec, so it survives requests, undo, and
 redo. Loading a file opens page one; a request that shortens the table
 clamps the current page back into range.
@@ -1219,6 +1221,11 @@ per row, the same machinery `mutate` already uses.
 A `sort` may also carry a `limit`: a positive integer that keeps only the
 first N rows after ordering, so "top 10 by revenue" needs no manual row
 deletion.
+
+Ordering is numeric-aware. When both key values are numbers or numeric
+strings they compare as numbers — a CSV-loaded revenue column (all values
+strings) sorts by magnitude, so 2 comes before 10, never "10" before "2".
+Any other pair compares as text.
 
 ### A formatter bug never fails a request
 

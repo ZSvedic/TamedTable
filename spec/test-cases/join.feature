@@ -10,8 +10,10 @@ Feature: Lookup join
 
     @headless @cli @web @tour @cat-deterministic
     Scenario: Left join enriches each customer with ISO and Region
+      Given the expected output is "join-tour-expected.jsonl"
       When query "Join with join-country-codes.csv on Country to add ISO and Region"
-      Then columns exist in the spec: "ISO", "Region"
+      Then compare with the expected output
+      And columns exist in the spec: "ISO", "Region"
       And every row keeps its original FirstName
 
     @headless @cli

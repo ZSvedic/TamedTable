@@ -18,17 +18,21 @@ Feature: Enrich and extract tours
     Scenario: Fill the country from the city column
       Given the TamedTable web app
       And load "cities.csv"
+      And the expected output is "enrich-cities-expected.jsonl"
       When query "fill the country from the city column"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
     @web @tour @cat-enrich
     Scenario: Add the industry for each company
       Given the TamedTable web app
       And load "companies.csv"
+      And the expected output is "enrich-industry-expected.jsonl"
       When query "add the industry for each company"
       Then the spec has 1 transformation
       And no toast is shown
+      And compare with the expected output
 
     @web @tour @cat-enrich
     Scenario: Extract the amount and date from the memo
