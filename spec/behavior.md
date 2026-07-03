@@ -495,8 +495,12 @@ The patch prompt teaches the LLM the additive rule, the choice between
 `{js}` (structural rules) and `{llm}` (semantic understanding), the
 patchable paths (`/transformations/-` for append; `/columns` for add/remove/
 reorder, with a two-op pattern for "add column X with computed value Y"),
-the four-verb transformation grammar, the two expression shapes, and five
-few-shot examples covering filter, three normalizers, and dedupe.
+the transformation grammar, the three expression shapes, and a few-shot
+per common task. The few-shots also carry the hard-won ordering and shape
+rules: a computing mutate before the validate that reads it, one mutate per
+target column, `{llm}` (never a regex or range check) for semantic
+judgments, per-part `{llm}` extraction for delimiter-free text, a
+round-trip check for date plausibility, and digits-only phone output.
 
 The batch prompt tells the cell model to apply each task's instructions to
 its own content and return a JSON array of strings or nulls, one per task,
