@@ -88,6 +88,26 @@ to trust), and real behavior the spec never mentions (a rebuild would silently d
   bench `SweepResult` shape and chart layout, gherkin-tour `css.d.ts`, Node-builtin
   browser shims (`web/src/shims/fs|path|url.ts`), `index.css` desktop styling values.
 
+## Resolution — landed the same day, this branch
+
+1. Cassettes moved to root `cassettes/` (recorded data, like `benchmarks/`);
+   layout docs updated.
+2. Version-pinning rule written down: `bun.lock` is the spec of the dependency
+   tree; code-contract records the DuckDB pin's *why*, never the number.
+3. Icon artwork moved to `marketing/icons/` (one SVG per glyph);
+   `bun run sync:icons` generates ui-kit's `icons.ts`, guard test on drift.
+4. Voice prompt canonical in `spec/prompt-app-edit.md § VOICE_PROMPT`;
+   `voice-input` keeps a byte-identical copy under a guard test; MIME map
+   documented in the package spec.
+5. Every stale-spec item below fixed: the four code-contract passages, the two
+   behavior.md self-contradictions, the small stale facts, and the missing
+   one-liners (`.env` autoload, fixture path fallback, models.json membership
+   rule, e2e layer). The web `?` popover code stopped advertising chat
+   colon-commands that never existed.
+
+Still open by design: cassettes and `bun.lock` remain unrecreatable-by-spec —
+now documented as deliberate boundaries rather than gaps.
+
 ## Suggested fixes, in value order
 
 1. Fix the four actively-wrong code-contract passages (voice routing, replay provider,

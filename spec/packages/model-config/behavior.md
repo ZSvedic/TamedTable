@@ -53,7 +53,9 @@ a single JSON object with **two sections**:
 - `models` — every available model with its per-Mtok prices. This list mirrors
   [`benchmarks/models.jsonl`](../../../benchmarks/models.jsonl) (same ids, same
   prices); every catalogue id must have a pricing row there (a bench test
-  enforces it). `ALL_MODELS` is this array, imported — code never duplicates
+  enforces it). Membership rule: the catalogue equals `models.jsonl` minus
+  rows marked `runnable: false`, and each entry's `voiceInput` mirrors that
+  row's `audioInput`. `ALL_MODELS` is this array, imported — code never duplicates
   the list, and this spec intentionally doesn't either (a copy here went stale
   once already).
 - `defaults` — for each provider, the `primary` and `secondary` model ids.

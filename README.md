@@ -159,6 +159,8 @@ browser binary `bun install` alone does not fetch.
 
 Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`.
 
+A Playwright e2e layer (`src/packages/web/e2e/`) drives the web app in a real browser alongside the Cucumber `@web` profile: `bun run test:e2e` from `src/packages/web/` starts the Vite dev server and runs the `*.e2e.ts` specs headless; it is not part of `bun run test`.
+
 ### Cassettes — why the suite is fast and key-free
 
 The Cucumber suite issues real natural-language requests. A live model call

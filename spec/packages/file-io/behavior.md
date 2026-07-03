@@ -94,10 +94,13 @@ anchor — that save resolves as `downloaded`, never `cancelled`.
 
 ## Format detection
 
-`detectFormat(pathname, contentType)` returns `"csv"`, `"jsonl"`, or `null`.
-The path extension wins: `.csv` → csv; `.jsonl` or `.ndjson` → jsonl. Only
+`detectFormat(pathname, contentType)` returns a `FormatId` — `"csv"`,
+`"jsonl"`, `"parquet"`, or `"arrow"` — or `null`. The path extension wins:
+`.csv` → csv; `.jsonl` or `.ndjson` → jsonl; `.parquet` or `.pq` → parquet;
+`.arrow`, `.feather`, or `.arrows` → arrow. Only
 when the path has no table extension does the Content-Type header decide
-(any value containing `csv`, `jsonl`, or `ndjson`). Neither match → `null`.
+(any value containing one of the registry's content-type tokens, e.g. `csv`,
+`ndjson`, `parquet`, `feather`). Neither match → `null`.
 
 `sampleNameFromUrl(url, format)` names the download: the URL's last path
 segment, or `download.<format>` when the path has none.
@@ -115,7 +118,7 @@ order:
 3. Protocol not http/https → `Only http:// and https:// URLs are supported.`
 4. Network/CORS failure → `Couldn’t fetch <host> — network error or CORS blocked. (<detail>)`
 5. Non-OK response → `Fetch failed: HTTP <status> <statusText>`
-6. Format undetectable (path + Content-Type) → `Could not detect format. URL must end in .csv or .jsonl.`
+6. Format undetectable (path + Content-Type) → `Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow.`
 
 ## Flow serialization
 

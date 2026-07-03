@@ -63,6 +63,21 @@ three shapes; `split.into` and `pivot.index` are non-empty (an empty
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
 
+The type accepts the full `Expr` union everywhere, but the engine
+evaluates only some shapes per slot today; an unsupported shape throws
+at evaluation time and flows through the recovery loop:
+
+| Slot | Accepted today |
+|---|---|
+| `filter.pred` | `{js}`, `{sql}` |
+| `mutate.value` | `{js}`, `{sql}`, `{llm}` |
+| `sort.by[].key` | string, `{js}`, `{sql}`, `{llm}` |
+| `group.by` keys | string, `{js}` |
+| `group.agg` values | `{js}`, `{sql}`, `{llm}` |
+| `join.on` | `{js}` |
+| `split.on` | literal string, `RegExp`, `{js}`, `{llm}` |
+| `validate.pred` / `validate.message` | `{js}` |
+
 Patches: RFC 6902 via `fast-json-patch`; RFC 7396 merge hand-rolled
 (~20 LOC).
 
@@ -121,8 +136,10 @@ the codec's columns; it still throws `loadCsv: <path> has no header row` /
 `… duplicate column "…"`. `loadJsonl` and `readJsonl` hand the bytes to the
 JSONL codec, which derives the column list from the union of keys across rows
 (insertion order from the first row each key appears in). `Runner.loadInput` dispatches on file extension — `.csv`
-to `loadCsv`, `.jsonl` to `loadJsonl`; any other extension throws with a clear
-*"unknown file type"* error that the REPL surfaces inline. `writeJsonl`
+to `loadCsv`, `.jsonl` to `loadJsonl`, and any other registered extension
+(`.parquet`, `.arrow`, …) through the codec registry; an extension no codec
+claims throws a clear *"unknown file type"* error that the REPL surfaces
+inline. `writeJsonl`
 overwrites the file; the parent directory must already exist. The recovery
 budget is 3 turns; running out throws an error carrying a `debug` field —
 a `RequestDebugInfo` (see Headless).
@@ -151,9 +168,10 @@ interface FormatCodec {
 }
 
 // file-io registry surface
-function detectFormat(pathname: string, contentType: string | null): 'csv' | 'jsonl' | null;
-function formatForExtension(pathname: string): 'csv' | 'jsonl' | null;
-function loadCodec(id: 'csv' | 'jsonl'): Promise<FormatCodec>;
+type FormatId = 'csv' | 'jsonl' | 'parquet' | 'arrow';
+function detectFormat(pathname: string, contentType: string | null): FormatId | null;
+function formatForExtension(pathname: string): FormatId | null;
+function loadCodec(id: FormatId): Promise<FormatCodec>;
 ```
 
 `detectFormat`/`formatForExtension` read a synchronous descriptor table
@@ -257,12 +275,17 @@ Env vars:
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
-| `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a per-turn debug block after a failed request. Set to `0`, `false`, or `off` to disable. |
+| `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
 
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 or `OPENAI_API_KEY`. `resolveConfig` picks the provider from whichever is set
 (Gemini > OpenAI > Anthropic when several are), and `TAMEDTABLE_MODEL` must
 name a model from that provider.
+
+The CLI calls `core`'s `loadEnv()` at startup: it looks for a `.env`
+file in the working directory and up to four parent directories,
+parses it, and sets each variable only when the environment doesn't
+already define it — real env vars always win.
 
 ### Recording model calls for tests (#Cassettes)
 
@@ -348,11 +371,13 @@ and after `:viewport` from `process.stdout.columns` /
 - `autoRows = max(1, process.stdout.rows - REPL_CHROME_LINES)` where
   `REPL_CHROME_LINES = 5` (header + separator + bottom truncation
   marker + prompt + one line of breathing room).
-- `autoCols` is the greedy fit: walk columns in display order summing
-  each column's rendered width (the longer of header label or the
-  widest cell on the current row page, capped by the per-cell `trunc`
-  ellipsis at ~20 chars) plus the inter-column separator, and stop
-  just before exceeding `process.stdout.columns`. Minimum 1.
+- `autoCols` is a fixed-average estimate:
+  `floor((process.stdout.columns - REPL_INDENT) / REPL_AVG_COL_WIDTH)`
+  with `REPL_INDENT = 1` and `REPL_AVG_COL_WIDTH = 16` (average cell
+  plus the ` | ` separator), floored at `REPL_FALLBACK_COLS = 5`. The
+  estimate is deliberately conservative — at the default 80-col TTY it
+  yields 5, and `:viewport` overrides it when the data needs a
+  different ratio.
 
 When `process.stdout.isTTY` is false (piped stdout, no controlling
 terminal — tests, CI, `tamedtable execute`), both autodetect branches
@@ -451,10 +476,12 @@ transitively by `csv-parse`) with `header: true`, RFC 4180
 quoting, `\n` line endings, and no BOM. Nested values
 (`typeof === 'object' && !== null`) round-trip through `JSON.stringify`.
 
-`Runner.exportAs` and the REPL `:save` command dispatch on extension:
-`.jsonl` → `writeJsonl`, `.csv` → `writeCsv`. Any other extension
-throws the *"unknown file type"* error, surfaced inline by the REPL
-and as exit code 4 by `tamedtable execute`.
+`Runner.exportAs` and the REPL `:save` command dispatch on extension
+through the codec registry (`writeRows`): `.jsonl` → `writeJsonl`,
+`.csv` → `writeCsv`, other registered formats (`.parquet`, `.arrow`)
+through their codecs. An extension no codec claims throws the
+*"unknown file type"* error, surfaced inline by the REPL and as exit
+code 4 by `tamedtable execute`.
 
 ### `group` and `join` transformations (#Aggregate #LookupJoin)
 
@@ -463,8 +490,9 @@ interface GroupTransform { kind: "group"; by: Array<Expr | string>; agg: Record<
 interface JoinTransform  { kind: "join";  with: string; on: Expr; how?: "inner" | "left"; }
 ```
 
-The `by` list accepts either a bare column name (string) or a full
-`Expr` — same shorthand `sort.by[].key` already uses — and may be
+The `by` list accepts either a bare column name (string) or a `{js}`
+expression (`{sql}`/`{llm}` keys throw at evaluation — see the support
+matrix in [Data model](#data-model)) and may be
 empty, which aggregates the whole table into a single output row. `agg`
 expressions evaluate with the group's row slice bound as `rows` for
 JS (`(rows, key, allGroups) => …`), and as a relation for SQL — named
@@ -538,12 +566,13 @@ thin adapter over `@duckdb/duckdb-wasm` (`src/shims/duckdb.ts`) that exposes
 the same `DuckDBInstance.create → connect → run / runAndReadAll` surface the
 engine calls. The adapter pulls the multi-MB wasm payload through a dynamic
 `import()` only when the first connection is created, so a CSV/JSON session
-that never runs `{sql}` never loads it. Module init creates
-a single `Database` and `Connection`, registered as the table-level
-process state alongside the runner. The current rows are registered as
-a relation `t` (`conn.register('t', rows)`) before each
-SQL-touching transformation runs; the registration is replaced on
-every commit so SQL sees the latest committed state. Errors from
+that never runs `{sql}` never loads it. The runner creates its
+`DuckDBInstance` and connection lazily, on the first `{sql}` use.
+Before each SQL-touching transformation runs, the current rows are
+materialized as a table `t` (`CREATE TABLE` with every column
+`VARCHAR` — SQL fragments cast as needed — filled by batched
+`INSERT`s of 100 rows); any prior `t` is dropped first, so SQL always
+sees the latest committed state. Errors from
 DuckDB (parse, type, runtime) feed back through the recovery loop as
 plain strings, no stack traces.
 
@@ -557,7 +586,7 @@ cancel budget applies — if `interrupt()` doesn't take effect within
 that window, the runner still signals cancelled and the next request
 must wait for the lingering query to drain (`Runner.request` already
 throws when a second request starts while one is running). The
-DuckDB relation `t` is not unregistered on cancel.
+DuckDB table `t` is not dropped on cancel.
 
 | Env var | Default | Effect |
 |---|---|---|
@@ -569,7 +598,7 @@ DuckDB relation `t` is not unregistered on cancel.
 The web app is a separate package under `src/packages/web/` (Vite +
 React; no Bun-specific APIs in the renderer code, since it ships as
 static assets). It imports `@tamedtable/headless` directly — no HTTP
-layer; the model call goes from the browser to Anthropic
+layer; the model call goes from the browser to the selected provider
 through the same SDK, with the API key read from a per-tab settings
 panel rather than an env var. File-system access uses the File System
 Access API where available, falling back to download/upload for
@@ -622,8 +651,8 @@ WebController.activityStatus(): 'idle' | 'running' | 'saved';
 WebController.setModel(model: string): Promise<void>;
 
 // open sources — local file, remote URL, or a bundled sample (samples
-// are surfaced inside the URL dialog as one-click "fill the URL"
-// entries, not a separate code path)
+// live in their own OpenSampleDialog picker; the URL dialog is
+// URL-only)
 WebController.openCsv(): Promise<void>;          // native file picker → load
 WebController.openUrlDialog(): void;             // show Open URL dialog
 WebController.closeUrlDialog(): void;
@@ -631,7 +660,7 @@ WebController.urlDialogOpen: boolean;
 WebController.loadFromUrl(url: string): Promise<void>;  // fetch + load
 
 // helpers exported from the web package
-function detectFormat(pathname: string, contentType: string | null): 'csv' | 'jsonl' | null;
+function detectFormat(pathname: string, contentType: string | null): FormatId | null;  // see § Format codecs
 ```
 
 `loadFromUrl` validates the URL shape (http/https only), `GET`s the
@@ -980,11 +1009,10 @@ the only provider wired for voice. The engine routes OpenAI models through the
 Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
 compatibility.
 
-Because every text request routes through Anthropic regardless of the selected
-provider, `ensureHeadless` builds the engine with the selected model when it is
-an Anthropic model and with `defaultModel('anthropic')` otherwise — so a voice
-session (provider Google) still issues its follow-up patch call with a valid
-Anthropic model.
+Text and voice requests route through the selected provider:
+`ensureHeadless` builds the engine with `config.model` / `config.cellModel`
+and the active provider's key (see [§ Web UI](#web-ui-webui)). Only tutorial
+replay overrides this, pinning the recorded provider's defaults.
 
 ## Tutorial mode
 
@@ -1075,9 +1103,9 @@ throws on a miss. `ensureHeadless` pins the recording configuration during
 replay — `defaultModel(provider)` / `defaultCellModel(provider)` and a
 placeholder key — so the request fingerprints identically to the taped one; the
 engine is rebuilt when replay mode flips. The provider comes from
-`TutorialManager.replayProvider()`: a **voice tour** (any `play-audio` step)
-pins `'gemini'` (the request the voice path issues went to Gemini); every other
-tour pins `'anthropic'`. `sendChat` skips its Anthropic-key guard while
+`TutorialManager.replayProvider()`, which always returns `'gemini'` — every
+committed cassette, voice tours included, records with the Gemini provider
+defaults. `sendChat` skips its provider-key guard while
 replaying. Because the patch turn embeds only `basename(spec.table)` and pins
 the default model, a tour replays the cassette a `@headless`/`@cli`/`@web` run of
 the same scenario already recorded — no separate tutorial recording is needed (a

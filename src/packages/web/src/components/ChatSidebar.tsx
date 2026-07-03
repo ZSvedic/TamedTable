@@ -12,8 +12,8 @@ import { useController } from '../hooks/useController.ts';
 const HELP_LINES = [
   'Double-click a cell to edit it',
   'Drag a column header to reorder',
-  'Type :undo or :redo in the chat',
-  'Type :save or :save-flow to export',
+  'Undo and Redo live in the toolbar',
+  'Save rows or the flow from the toolbar',
 ];
 
 function EmptyChat(): ReactNode {
