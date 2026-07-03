@@ -63,14 +63,14 @@ You need [bun](https://bun.sh) and an API key from any one supported provider �
    GEMINI_API_KEY=...                # Google Gemini
    OPENAI_API_KEY=sk-...             # OpenAI
    ```
-   The runtime picks the provider from the model id (`TAMEDTABLE_MODEL` below), so set the model to one from your provider unless you use the default Anthropic model.
+   The runtime picks the provider from the model id (`TAMEDTABLE_MODEL` below), so set the model to one from your provider unless you use the default Gemini model.
 
 Optional env vars and defaults if you omit them:
 
 | Var | Default | What it does |
 |---|---|---|
-| `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `gemini-3.5-flash` (Google) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
-| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Secondary model that fills in per-row LLM cells. Override with `claude-haiku-4-5` for cheaper/faster runs at some cost in per-cell fidelity. Must share the primary model's provider. |
+| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `claude-sonnet-4-6` (Anthropic) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the primary model's provider. |
 | `TAMEDTABLE_RPM` | `40` | Per-process request-per-minute cap. The Anthropic org-wide ceiling is 50. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests that fire concurrently. Orthogonal to batch size — total parallel rows = batch × chunk. |
@@ -152,15 +152,15 @@ browser binary `bun install` alone does not fetch.
 | `bun run test:cli` | The Cucumber `@cli` profile only. |
 | `bun run test:web` | The Cucumber `@web` profile only. Drives the demos in headless Chromium, so it needs the browser from `bun run setup` (or `bunx playwright install chromium`). |
 | `bun run test:smoke` | The module-demo smoke test: builds each demo with the deploy workflow's flags and drives it in headless Chromium. Needs a Chromium binary (`bunx playwright install chromium`); not part of `bun run test`. |
-| `bun run test:record` | Re-records the cassettes (see below) against the live Anthropic API. |
+| `bun run test:record` | Re-records the cassettes (see below) against the live Gemini API. |
 | `bun run typecheck` | Type-check only — `tsc --noEmit` for the engine packages and the web package. |
 
 Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`.
 
 ### Cassettes — why the suite is fast and key-free
 
-The Cucumber suite issues real natural-language requests. A live Anthropic call
-per scenario takes 7–9 minutes (rate-limited) and needs an API key, so each model
+The Cucumber suite issues real natural-language requests. A live model call
+per scenario takes minutes (rate-limited) and needs an API key, so each model
 response is recorded once to `src/tests/__cassettes__/<feature>.json` and
 **replayed from disk** on every later run. The recordings are committed to git;
 `bun run test` replays them by default — seconds, offline, no key.
@@ -171,8 +171,15 @@ request` instead of returning a stale answer. When that happens — or when you 
 a scenario — refresh the cassettes and commit the updated files:
 
 ```
-bun run test:record      # needs ANTHROPIC_API_KEY (see Setup above)
+bun run test:record      # needs GEMINI_API_KEY (see Setup above)
 ```
+
+Every cassette records with the Gemini provider defaults —
+`gemini-3.5-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for
+per-row cells — the same models the key-free replay (tests and homepage
+tours) resolves. `test:record` covers the headless and CLI profiles; the
+`@web`-only tour scenarios record through the web profile:
+`TAMEDTABLE_CASSETTE=record bun run test:web`.
 
 For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
 
@@ -193,7 +200,7 @@ of **total time, tokens used, and estimated cost** per scenario, in three groups
 
 | Command | Network | Needs a key | What it does |
 |---|---|---|---|
-| `bun run bench` | **Offline** | No | Runs all three groups; group C replays the committed cassette (Anthropic Sonnet). |
+| `bun run bench` | **Offline** | No | Runs all three groups; group C replays the committed cassette (Gemini flash-lite). |
 | `bun run bench:record` | Online | Yes | Re-records group C against the live API and refreshes the committed cassette. |
 | `bun run bench:live` | Online | Yes | Runs every group straight against the live API — no cassette read or written. |
 
@@ -284,6 +291,6 @@ SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only w
 
 ## Known limitations
 
-- **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario — 7–9 minutes, mostly the 40 RPM throttle waiting out the 50 RPM org ceiling. Re-record only when a prompt changes.
-- **Golden-file fragility on LLM cells.** A few scenarios (e.g. `aggregate`) assert byte equality against a frozen JSONL golden. Sonnet and Haiku produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and the model's own minor revisions can shift the answer over time, so such tests are kept few and deliberate — tours assert robust properties instead. (The old byte-golden `datanorm.feature` was removed for exactly this brittleness; its behavior is covered by the clean-up / multilingual / loadsave tours.) Mismatches on LLM-driven cells aren't necessarily regressions — see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
+- **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario — minutes, mostly the `TAMEDTABLE_RPM` throttle respecting the provider's rate ceiling. Re-record only when a prompt changes.
+- **Golden-file fragility on LLM cells.** A few scenarios (e.g. `aggregate`) assert byte equality against a frozen JSONL golden. Models produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and a model's own minor revisions can shift the answer over time, so such tests are kept few and deliberate — tours assert robust properties instead. (The old byte-golden `datanorm.feature` was removed for exactly this brittleness; its behavior is covered by the clean-up / multilingual / loadsave tours.) Mismatches on LLM-driven cells aren't necessarily regressions — see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
 - **Tabular formats: CSV, JSONL, Parquet, Arrow/Feather.** All load (local, URL, or sample) and all save — the web app saves in the format you opened, the CLI's `:save <name.ext>` writes (and converts to) any of them. Other DuckDB-readable formats and `.xlsx` are not yet wired into the open/save dispatch.

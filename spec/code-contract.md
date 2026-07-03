@@ -252,8 +252,8 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
-| `TAMEDTABLE_MODEL` | `claude-sonnet-4-6` | Model that writes the spec patch each turn. |
-| `TAMEDTABLE_CELL_MODEL` | `claude-sonnet-4-5` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `claude-sonnet-4-5` (Anthropic), `gemini-3.5-flash` (Google), `gpt-5.4-mini` (OpenAI). |
+| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
@@ -282,7 +282,7 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 
 | `TAMEDTABLE_CASSETTE` | Behavior |
 |---|---|
-| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs the real key of the provider being recorded (`ANTHROPIC_API_KEY`; for `@web` scenarios the provider-key step also accepts `GEMINI_API_KEY` / `OPENAI_API_KEY` from the environment). |
+| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs the real key of the provider being recorded (`GEMINI_API_KEY` — every cassette records with the Gemini defaults; the `@web` provider-key step also substitutes `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` from the environment for scenarios that select those providers). |
 | `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`. No network, no API key. |
 | `off` (or any other value) | No recorder is installed; every call hits the network — a live run. |
 
@@ -498,6 +498,25 @@ the recovery loop as plain strings.
 named `_valid` or `_validation` and then appends a `validate`
 transformation overwrites them — the patch prompt warns the LLM
 about this so it picks fresh names when possible.
+
+A patched spec is checked before it runs: for every `validate`, each
+column its `pred`/`message` reads (`row.X` / `row["X"]` in `{js}`,
+`{X}` placeholders in `{llm}`; `{sql}` is not parsed) must be a source
+column, be created by an earlier transformation, or be `_valid` /
+`_validation`. The check walks the transformation list tracking the
+available columns (`mutate` adds its targets, `split` its `into`,
+`group` its by + agg keys, `select` narrows, `unpivot` replaces; `join`
+and `pivot` make later columns unknowable and suspend the check). A
+violation rejects the patch through the recovery loop with:
+
+```
+validate reads column "<X>" which no earlier step provides. A validate can
+only read source columns or columns created by transformations ordered
+before it — order the step that computes "<X>" before the validate.
+```
+
+Exported for tests as `checkValidateColumnOrder(spec, sourceColumns):
+string | undefined` from `@tamedtable/headless`.
 
 `pivot` and `unpivot` evaluate in JS; a `{sql}` companion path
 (via DuckDB's native PIVOT/UNPIVOT) is reserved for a later release.

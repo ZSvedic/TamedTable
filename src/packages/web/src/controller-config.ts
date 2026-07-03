@@ -90,9 +90,10 @@ export class ConfigManager {
     void this.setConfig({ anthropicKey: trimmed === '' ? null : trimmed });
   }
 
-  /** @deprecated Use setConfig({ anthropicKey: null }) instead. */
+  /** Clear every provider key — "no API key is set" regardless of provider.
+   *  @deprecated Use setConfig with explicit null keys instead. */
   clearApiKey(): void {
-    void this.setConfig({ anthropicKey: null });
+    void this.setConfig({ anthropicKey: null, geminiKey: null, openaiKey: null });
   }
 
   /** @deprecated Use setConfig({ model }) instead. */

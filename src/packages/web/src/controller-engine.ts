@@ -90,12 +90,11 @@ export class EngineManager {
   ensureHeadless(): HeadlessRunner {
     const replaying = this.host.tutorial.isReplaying();
     if (this.headless && this.builtForReplay === replaying) return this.headless;
-    // Tutorial replay pins the recording config — the active tour's provider
-    // defaults — so the request matches the taped one. A voice tour replays
-    // against Gemini (where its audio request went), every other tour against
-    // Anthropic; replayProvider() decides. The engine is rebuilt when replay
-    // mode flips (and playTutorial resets it per tour, so the provider tracks).
-    const replayProvider = replaying ? this.host.tutorial.replayProvider() : 'anthropic';
+    // Tutorial replay pins the recording config — the Gemini provider
+    // defaults every cassette records with — so the request matches the taped
+    // one. The engine is rebuilt when replay mode flips (and playTutorial
+    // resets it per tour, so the provider tracks).
+    const replayProvider = replaying ? this.host.tutorial.replayProvider() : 'gemini';
     this.headless = createHeadlessRunner({
       // A placeholder key is enough in replay because the cassette intercepts
       // every call. Otherwise pass the active provider's key (a non-empty

@@ -105,16 +105,16 @@ export interface HeadlessRunner {
 }
 
 // #ConfigEnv
-const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'claude-sonnet-4-6';
-const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'claude-sonnet-4-5';
+const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'gemini-3.5-flash';
+const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'gemini-3.1-flash-lite';
 
 // Per-provider fallbacks for per-row cell calls when the configured cell
 // model belongs to a different provider than the main model. Cell calls are
 // text-only and must share the main model's provider, so a cross-provider cell
 // model is coerced to that provider's text default rather than used blindly.
 const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = {
-  anthropic: DEFAULT_CELL_MODEL,
-  gemini: 'gemini-3.5-flash',
+  gemini: DEFAULT_CELL_MODEL,
+  anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
 };
 
@@ -708,6 +708,82 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
   }
 }
 
+/** Columns a `{js}` or `{llm}` expression reads: `row.X` / `row["X"]` /
+ *  `row?.X` in JS, `{X}` placeholders in LLM templates. `{sql}` is not
+ *  parsed — SQL column references can't be extracted reliably. */
+function exprColumnRefs(expr: Expr | undefined): string[] {
+  if (!expr) return [];
+  const refs: string[] = [];
+  if ('js' in expr) {
+    for (const m of expr.js.matchAll(/\brow(?:\?\.|\.)([A-Za-z_$][\w$]*)/g)) refs.push(m[1]!);
+    for (const m of expr.js.matchAll(/\brow(?:\?\.)?\[\s*['"]([^'"]+)['"]\s*\]/g)) refs.push(m[1]!);
+  } else if ('llm' in expr) {
+    for (const m of expr.llm.matchAll(/\{([^{}]+)\}/g)) if (m[1] !== '*') refs.push(m[1]!);
+  }
+  return refs;
+}
+
+// #Validate #Patch
+/** A `validate` may only read columns that exist when it runs: source
+ *  columns, columns created by transformations ordered before it, and the
+ *  reserved `_valid`/`_validation` pair. Walks the transformation list
+ *  tracking the available columns; `join` and `pivot` add columns that can't
+ *  be enumerated statically, so they suspend the check for later steps.
+ *  Returns the rejection message for the recovery loop, or undefined. */
+export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[]): string | undefined {
+  let available = new Set(sourceColumns);
+  let unknowable = false;
+  for (const t of spec.transformations as Transformation[]) {
+    switch (t.kind) {
+      case 'validate': {
+        if (!unknowable) {
+          for (const col of [...exprColumnRefs(t.pred), ...exprColumnRefs(t.message)]) {
+            if (col === '_valid' || col === '_validation') continue;
+            if (!available.has(col)) {
+              return `validate reads column "${col}" which no earlier step provides. A validate can only read source columns or columns created by transformations ordered before it — order the step that computes "${col}" before the validate.`;
+            }
+          }
+        }
+        available.add('_valid');
+        available.add('_validation');
+        break;
+      }
+      case 'mutate':
+        for (const c of Array.isArray(t.columns) ? t.columns : [t.columns]) available.add(c);
+        break;
+      case 'split':
+        for (const c of t.into) available.add(c);
+        break;
+      case 'select':
+        available = new Set(t.columns);
+        unknowable = false;
+        break;
+      case 'group': {
+        available = new Set<string>();
+        t.by.forEach((b, i) => available.add(typeof b === 'string' ? b : `key_${i + 1}`));
+        for (const k of Object.keys(t.agg)) available.add(k);
+        unknowable = false;
+        break;
+      }
+      case 'unpivot':
+        available = new Set([...t.id, t.names_to ?? 'name', t.values_to ?? 'value']);
+        unknowable = false;
+        break;
+      case 'pivot':
+        available = new Set(t.index);
+        unknowable = true; // one column per distinct on-value — data-dependent
+        break;
+      case 'join':
+        unknowable = true; // right-table columns aren't known without reading it
+        break;
+      case 'filter':
+      case 'sort':
+        break;
+    }
+  }
+  return undefined;
+}
+
 // ── Runner ─────────────────────────────────────────────────────────────────
 
 class HeadlessRunnerImpl implements HeadlessRunner {
@@ -964,6 +1040,19 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           turn.sentBack = tried.message;
           lastError = tried.message;
           prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${tried.message}`);
+          continue;
+        }
+
+        // A validate reading a column no earlier step provides would flag
+        // every row; reject before anything runs (spec/behavior.md § Headless).
+        const orderError = this.sourceRows.length
+          ? checkValidateColumnOrder(tried.spec, Object.keys(this.sourceRows[0]!))
+          : undefined;
+        if (orderError) {
+          turn.outcome = 'rejected';
+          turn.sentBack = orderError;
+          lastError = orderError;
+          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${orderError}`);
           continue;
         }
 

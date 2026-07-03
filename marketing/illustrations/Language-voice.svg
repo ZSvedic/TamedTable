@@ -3,7 +3,7 @@
   <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
   <!-- transcribed prompt chip -->
   <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
-  <text x="34" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">normalize the phone numbers</text>
+  <text x="34" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">normalize DOB column</text>
   <!-- mic button -->
   <circle cx="120" cy="138" r="46" fill="#E7F1F8" stroke="#96BED7"/>
   <circle cx="120" cy="138" r="46" fill="none" stroke="#96BED7" opacity="0.5"/>

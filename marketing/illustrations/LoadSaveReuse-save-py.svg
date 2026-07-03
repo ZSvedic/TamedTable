@@ -15,10 +15,9 @@
   <text x="330" y="87" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#96BED7" text-anchor="end">tidy.py</text>
   <!-- code lines -->
   <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="11.5">
-    <text x="34" y="116" fill="#96BED7">import pandas <tspan fill="#C9C2E8">as</tspan> pd</text>
-    <text x="34" y="138" fill="#C9C2E8">df = pd.read_csv(<tspan fill="#9FD3B0">"data.csv"</tspan>)</text>
-    <text x="34" y="160" fill="#C9C2E8">df = normalize_phone(df, <tspan fill="#9FD3B0">"phone"</tspan>)</text>
-    <text x="34" y="182" fill="#C9C2E8">df = df.drop_duplicates(<tspan fill="#9FD3B0">"email"</tspan>)</text>
-    <text x="34" y="204" fill="#C9C2E8">df.to_csv(<tspan fill="#9FD3B0">"clean.csv"</tspan>)</text>
+    <text x="34" y="118" fill="#96BED7">import pandas <tspan fill="#C9C2E8">as</tspan> pd</text>
+    <text x="34" y="142" fill="#C9C2E8">df = pd.read_csv(<tspan fill="#9FD3B0">"customers-input.csv"</tspan>)</text>
+    <text x="34" y="166" fill="#C9C2E8">df = normalize_phone(df, <tspan fill="#9FD3B0">"Phone"</tspan>)</text>
+    <text x="34" y="190" fill="#C9C2E8">df.to_csv(<tspan fill="#9FD3B0">"clean.csv"</tspan>)</text>
   </g>
 </svg>

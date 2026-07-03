@@ -265,13 +265,12 @@ export class TutorialManager {
     return this.activeTour ? basename(this.activeTour.feature ?? '', '.feature') : null;
   }
 
-  /** Provider the active tour pins for replay. A voice tour (any `play-audio`
-   *  step) replays against Gemini — that is where its audio request went, so
-   *  the recorded cassette is a Gemini call; every other tour replays against
-   *  Anthropic. Drives the replay model in `EngineManager.ensureHeadless`. */
+  /** Provider the active tour pins for replay. Every committed cassette —
+   *  voice tours included — records with the Gemini provider defaults, so
+   *  every tour replays against Gemini. Drives the replay model in
+   *  `EngineManager.ensureHeadless`. */
   replayProvider(): Provider {
-    const hasAudio = this.activeTour?.steps.some((s) => s.action.kind === 'play-audio');
-    return hasAudio ? 'gemini' : 'anthropic';
+    return 'gemini';
   }
 
   /** Replay one model call from the active tour's cassette. Fetched (and

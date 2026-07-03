@@ -226,6 +226,42 @@ Then(/^columns are absent from the current rows: (.+)$/, function (this: TamedTa
   for (const column of parseColumnList(list)) assertColumnAbsent(this, column);
 });
 
+// ── Output-property steps for tour done-when checks ─────────────────────────
+// Tours replay recorded model answers; these steps pin the *output* a tour
+// promises (a flagged row, a corrected cell) so a bad recording can't ship.
+
+Then('transformation {int} is a {string}', function (this: TamedTableWorld, index: number, kind: string) {
+  const transformations = this.ensureRunner().currentSpec().transformations;
+  const t = transformations[index - 1] as { kind?: string } | undefined;
+  assert.ok(t, `spec has ${transformations.length} transformations; no transformation ${index}`);
+  assert.equal(t!.kind, kind, `transformation ${index}`);
+});
+
+Then(/^rows where "([^"]+)" is "([^"]+)" have _valid equal to (true|false)$/, function (this: TamedTableWorld, column: string, value: string, expected: string) {
+  const matching = this.ensureRunner().currentRows().filter((r) => String(r[column]) === value);
+  assert.ok(matching.length > 0, `no row has ${column} = ${JSON.stringify(value)}`);
+  for (const r of matching) {
+    assert.equal(r._valid, expected === 'true', `row with ${column}=${value}: _valid`);
+  }
+});
+
+Then('the row where {string} is {string} has {string} equal to {string}', function (this: TamedTableWorld, keyColumn: string, keyValue: string, column: string, expected: string) {
+  const row = this.ensureRunner().currentRows().find((r) => String(r[keyColumn]) === keyValue);
+  assert.ok(row, `no row has ${keyColumn} = ${JSON.stringify(keyValue)}`);
+  assert.equal(String(row![column]), expected, `row with ${keyColumn}=${keyValue}, column "${column}"`);
+});
+
+Then('every non-null {string} matches the pattern {string}', function (this: TamedTableWorld, column: string, pattern: string) {
+  const re = new RegExp(pattern);
+  const rows = this.ensureRunner().currentRows();
+  assert.ok(rows.length > 0, 'no rows to check');
+  rows.forEach((r, i) => {
+    const v = r[column];
+    if (v === null || v === undefined) return;
+    assert.ok(re.test(String(v)), `row ${i}: ${column} ${JSON.stringify(v)} does not match /${pattern}/`);
+  });
+});
+
 Then('every row has a non-null {string} and {string}', function (this: TamedTableWorld, colA: string, colB: string) {
   const rows = this.ensureRunner().currentRows();
   assert.ok(rows.length > 0, 'no rows to check');

@@ -94,15 +94,29 @@ export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
   if (mode === 'record' || mode === 'replay') {
     const feature = basename(scenario.pickle.uri, '.feature');
     opts.fetch = cassetteFetch({ mode, file: join(CASSETTE_DIR, `${feature}.json`) });
+    // A @cancel scenario needs a mid-flight window for the abort to land in —
+    // that's why it runs with tiny batches (above). Replay from disk is
+    // near-instant, so the whole request can commit before the abort fires
+    // (a race CI loses). Pace each replayed response like a live call so the
+    // window reliably exists; record mode keeps real API latency.
+    if (tags.includes('@cancel') && mode === 'replay') {
+      const inner = opts.fetch;
+      opts.fetch = async (input, init) => {
+        const res = await inner(input, init);
+        await new Promise((r) => setTimeout(r, 75));
+        return res;
+      };
+    }
     // Pin the key in BOTH modes so record and replay resolve the same provider
     // and model. With no injected key, REPL scenarios resolve the provider from
     // process.env — and the CLI's .env auto-load (core loadEnv walks up to the
     // repo root) can flip a record run to whichever provider tops the env
     // precedence, producing cassettes replay can never match. Replay serves
     // every call from disk, so a placeholder is enough there; record needs the
-    // real ANTHROPIC_API_KEY. (cucumber.js lifts TAMEDTABLE_RPM for replay so
-    // the rate limiter adds no delay.)
-    opts.apiKey = process.env.ANTHROPIC_API_KEY ?? 'cassette-replay-placeholder';
+    // real GEMINI_API_KEY — every cassette records with the Gemini defaults.
+    // (cucumber.js lifts TAMEDTABLE_RPM for replay so the rate limiter adds no
+    // delay.)
+    opts.apiKey = process.env.GEMINI_API_KEY ?? 'cassette-replay-placeholder';
   }
   return opts;
 }

@@ -113,7 +113,8 @@ export function keyFor(config: ResolvedConfig): string | null {
  *   1. GEMINI_API_KEY in env → provider=gemini, geminiKey=value
  *   2. OPENAI_API_KEY in env → provider=openai, openaiKey=value
  *   3. ANTHROPIC_API_KEY in env → provider=anthropic, anthropicKey=value
- *   4. stored.provider (fallback: "anthropic")
+ *   4. stored.provider (fallback: "gemini" — the provider every committed
+ *      cassette records with, so key-free replay resolves the taped models)
  *   5. TAMEDTABLE_MODEL in env overrides stored model
  *   6. Final model must belong to resolved provider; if not, use defaultModel
  *   7. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
@@ -142,7 +143,7 @@ export function resolveConfig(
     provider = 'anthropic';
     anthropicKey = envAnthropic;
   } else {
-    provider = stored.provider ?? 'anthropic';
+    provider = stored.provider ?? 'gemini';
   }
 
   // Primary model: env wins, then stored, then provider default

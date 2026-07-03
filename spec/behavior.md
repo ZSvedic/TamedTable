@@ -104,11 +104,15 @@ cancel. It doesn't print to a terminal or own any I/O beyond what the runner
 needs.
 
 The LLM only changes the spec through one tool — call it the *patch tool* —
-that takes a list of RFC 6902 operations. The harness rejects two LLM
+that takes a list of RFC 6902 operations. The harness rejects three LLM
 mistakes inline and feeds them back through the recovery loop:
 
 - an empty operations list;
-- a patch that applies cleanly but leaves the spec identical to before.
+- a patch that applies cleanly but leaves the spec identical to before;
+- a patch that leaves a `validate` reading a column no step before it
+  provides. The predicate would test a value that doesn't exist yet — every
+  row would fail — so the rejection names the missing column and tells the
+  model to order the step that computes it before the `validate`.
 
 <!-- #LLMCells -->
 LLM-backed transformations evaluate a prompt template per row. The runtime:
@@ -227,14 +231,14 @@ tokens and the wall-clock time. For `validate dob is non-empty`:
 
 ```
     [debug] pred: row.DOB && String(row.DOB).length > 0
-    [debug] Sonnet 4.6 ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
+    [debug] gemini-3.5-flash ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
 ```
 
 A request that also fills LLM-backed cells calls a second model, so the
 summary names both:
 
 ```
-    [debug] Sonnet 4.6 ×1, Sonnet 4.5 ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
+    [debug] gemini-3.5-flash ×1, gemini-3.1-flash-lite ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
 ```
 
 The token counts and elapsed time vary from run to run; the rest of the
@@ -491,8 +495,12 @@ The patch prompt teaches the LLM the additive rule, the choice between
 `{js}` (structural rules) and `{llm}` (semantic understanding), the
 patchable paths (`/transformations/-` for append; `/columns` for add/remove/
 reorder, with a two-op pattern for "add column X with computed value Y"),
-the four-verb transformation grammar, the two expression shapes, and five
-few-shot examples covering filter, three normalizers, and dedupe.
+the transformation grammar, the three expression shapes, and a few-shot
+per common task. The few-shots also carry the hard-won ordering and shape
+rules: a computing mutate before the validate that reads it, one mutate per
+target column, `{llm}` (never a regex or range check) for semantic
+judgments, per-part `{llm}` extraction for delimiter-free text, a
+round-trip check for date plausibility, and digits-only phone output.
 
 The batch prompt tells the cell model to apply each task's instructions to
 its own content and return a JSON array of strings or nulls, one per task,
@@ -616,6 +624,15 @@ bad rows.
 The `_valid` and `_validation` columns persist across subsequent
 transformations the way any other column does; a second `validate`
 appended to the same spec overwrites them.
+
+A `validate` may only read columns that exist when it runs: source
+columns, columns created by transformations ordered before it, and the
+reserved `_valid` / `_validation` pair. A patch that orders a `validate`
+before the step that computes its input — or that reads a column nothing
+creates — is rejected before anything runs and fed back through the
+recovery loop, naming the missing column. Steps whose output columns
+can't be known without running them (`join`, `pivot`) suspend the check
+for the transformations after them.
 
 ### `pivot` and `unpivot` transformations (#PivotData)
 
@@ -1165,10 +1182,9 @@ against the tour's recorded cassette (fetched same-origin) and served from it,
 so no key is needed and no network call leaves the browser. Matching is exact
 over the whole request, so the tour must reproduce the request that was
 recorded — playback therefore pins the same model and configuration the
-recording used. Each tour pins its own provider: a **voice tour** (one with a
-`play-audio` step) replays against Gemini, the provider voice input uses, while
-every other tour replays against Anthropic. A request with no recording fails
-loudly (a toast), never a silent hang. Normal (non-tutorial) chat is unaffected:
+recording used: the Gemini provider defaults, which every committed cassette
+is recorded with (voice tours included — voice input is Gemini-only anyway).
+A request with no recording fails loudly (a toast), never a silent hang. Normal (non-tutorial) chat is unaffected:
 it still uses the visitor's own key against the live model.
 
 ### Deep links into a tutorial

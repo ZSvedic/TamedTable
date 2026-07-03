@@ -1,35 +1,18 @@
 {
-  "87665278c7911bb6b4667cca91fbf7a1f8a6bc1ceb6bcb69ecb9b7140a242d9e": {
+  "b327d8c2a7158775c350df4f02c7c002859bce12775019641d0ffe326ef3b4b8": {
     "status": 200,
     "statusText": "OK",
     "headers": {
-      "anthropic-organization-id": "b30fd65e-ac14-4333-8486-472b544841b0",
-      "anthropic-ratelimit-input-tokens-limit": "30000",
-      "anthropic-ratelimit-input-tokens-remaining": "17000",
-      "anthropic-ratelimit-input-tokens-reset": "2026-06-16T13:07:06Z",
-      "anthropic-ratelimit-output-tokens-limit": "8000",
-      "anthropic-ratelimit-output-tokens-remaining": "8000",
-      "anthropic-ratelimit-output-tokens-reset": "2026-06-16T13:06:42Z",
-      "anthropic-ratelimit-requests-limit": "50",
-      "anthropic-ratelimit-requests-remaining": "49",
-      "anthropic-ratelimit-requests-reset": "2026-06-16T13:06:37Z",
-      "anthropic-ratelimit-tokens-limit": "38000",
-      "anthropic-ratelimit-tokens-remaining": "25000",
-      "anthropic-ratelimit-tokens-reset": "2026-06-16T13:06:42Z",
-      "cf-cache-status": "DYNAMIC",
-      "cf-ray": "a0ca085fbdb85624-ORD",
-      "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
-      "content-type": "application/json",
-      "date": "Tue, 16 Jun 2026 13:06:41 GMT",
-      "request-id": "req_011Cc6zKBRS8drByWUx2JqbY",
-      "server": "cloudflare",
-      "set-cookie": "_cfuvid=H5tQydn4CIBJXgGWARmOZskQLer4zceYG9zYgzHgcGQ-1781615196.1141162-1.0.1.1-Aiytkb8n1pusTfkVMtvscJqx4KrfEfR4rjeTcUDHrFY; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.anthropic.com",
-      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
-      "traceresponse": "00-3c7420df2cf9ecc1088516796b979641-0e75d7f1bf1cc669-01",
-      "transfer-encoding": "chunked",
-      "vary": "Accept-Encoding",
-      "x-robots-tag": "none"
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:47 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=2414",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
     },
-    "body": "{\"model\":\"claude-sonnet-4-6\",\"id\":\"msg_01Spib7qthy7yr5tsnuzzf9a\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"id\":\"toolu_014NxyvLCxWLyHVpbmH8mhHU\",\"name\":\"apply_spec_patch\",\"input\":{\"operations\":[{\"op\":\"add\",\"path\":\"/transformations/-\",\"value\":\"{\\\"kind\\\":\\\"filter\\\",\\\"pred\\\":{\\\"js\\\":\\\"rows.findIndex(r => r.Email === row.Email) === i\\\"}}\"}]},\"caller\":{\"type\":\"direct\"}}],\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":26,\"cache_creation_input_tokens\":3613,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":3613,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":87,\"service_tier\":\"standard\",\"inference_geo\":\"global\"}}"
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"filter\\\",\\\"pred\\\":{\\\"js\\\":\\\"rows.findIndex(r =\\u003e r.Email === row.Email) === i\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"pz3q70ot\"\n            },\n            \"thoughtSignature\": \"Ev0HCvoHAQw51segBesWXaJgNNVZKPZG6ZUXxOAKx7tZ+XdaHqNA7dmFwz3aSkpnVEGWcFAeD8RcYY4plTx9OoeQH9UN+rKUGxDrRFTGOwRfdToWfHHJdlr2NBDS3MYORELvOTYJfEqZSD8gQbgsMxtj6EZMWremXw1DlQW86N1mTaRbCRN1Q0edTKN2jXIJLv3Ze5cOvfgTuFncBL3YgIg2pIKVol38lzYyX5rd2RiOFj2FJXSVzM5R7+qMwfqVFqkzV4ksrPAA8ova8d0im85BZuFkJXLYkZaMDnYP61e7fmRGL2FVqWbaarA6sKP/yFCagU8kpI+4lFHrAmJjTPRLapmoIkrzOJPP4/aqG2YpN/qQBugM+h5yhInxkSL1BunpZxl2pvZ0dsyZIOA8iKQHU4kikzK3DgLmHmVk7XlpTVCnTzb8aVpmeSidjpCjYu6Siph5uQ3qh1O5y/G6jwKSng2643OTdsF4A05852h/HY+5ImHM0cHE1VHTvrPdWSM6dLHucRdVVmxgQRkfcIc879+kgf//iNCqnLGeQM7VznGuNRmq+8I6noHxF51Js866l7KpYoz6b2N3SeLSt0VJraIp6MKtRMqK3BeSGQreN4MV1/TXEwnP+XJHI6VoOovNOaJpozOIC1Kwa48ieZnzvGtkiJPKm6ueE29HrscwGdhfpsIR585e5lMW3LabNeVFeAJn0IdE2P0K1IzHAAj4KendylskNR1yX7tiVQWipnoedcUeXtOQe5g7hHVoJnmQjMIwZKHOawwy0CTRaqJSUyRBSQjE7MjKSi18oP4aAru3o4oAYBqhIMG6c3vwDer49ToA9jNxVn+6+FlBWH/tHcMXrRrjQLSL5ljmQG7r6ffdGVNBRzjE2yyyp4hUD3/EvzerGtm1y+Ngtd7YEcBoOjd9nmHlSMgHgBSAvJ5w6MdD7Jj9qLMj24+PfOOLbWxk06e1OGD8YgVGvNaTGN1zfdVVS1+KP//jLSUvL6xJc+wwHV2gts7cbAOz62pnZgnx0+S7VszMcYzVa6gDg626Wli6uqpgo5JfG8pycWq7XddgGOq3ar03QJ5ZR4vkKKy1WB0SOL9ZAeUOFT1Hvj7PrK/YzMnFqLceLnURx8nsUbvva88nWgEKdxbBypLP9IHu0aeA3wdiQxRxKatNHH/X2lfxsxCkKE+T2F5LcA87S5FyqG4o6YTTsaMn0kUQQmj8ynH9TMUrWbx4XjVVf02nhsEZtAanE/IGxvHSkiomIW0SYMmBjydw3gqlKuUrw8xGBDJn8oh1hKE8Tka+sY+wOAZ1Au7gq23BLhAhUsWspq4RPjTtKviAqkqowkzQYWZsl9Iwhl9Wge1GXKEA7A==\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4444,\n    \"candidatesTokenCount\": 61,\n    \"totalTokenCount\": 4805,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4444\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 300,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"oY5Hasy2C5WY-8YPl-OYmQc\"\n}\n"
   }
 }

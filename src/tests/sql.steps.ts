@@ -43,13 +43,21 @@ function requireScripted(world: TamedTableWorld): ScriptedState {
   return state;
 }
 
-/** A canned Anthropic /v1/messages response carrying one apply_spec_patch call. */
+/** A canned Gemini generateContent response carrying one apply_spec_patch
+ *  call — the default provider's wire shape. */
 function toolUseBody(ops: unknown[]): string {
   return JSON.stringify({
-    model: 'scripted', id: 'msg_scripted', type: 'message', role: 'assistant',
-    content: [{ type: 'tool_use', id: 'toolu_scripted', name: 'apply_spec_patch', input: { operations: ops } }],
-    stop_reason: 'tool_use', stop_sequence: null,
-    usage: { input_tokens: 1, output_tokens: 1 },
+    candidates: [{
+      content: {
+        parts: [{ functionCall: { name: 'apply_spec_patch', args: { operations: ops }, id: 'scripted' } }],
+        role: 'model',
+      },
+      finishReason: 'STOP',
+      index: 0,
+    }],
+    usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+    modelVersion: 'scripted',
+    responseId: 'scripted',
   });
 }
 
