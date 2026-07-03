@@ -35,7 +35,7 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 │   ├── rationale.md         what TamedTable is and why
 │   ├── behavior.md          what the user sees + what the system does (API-free)
 │   ├── code-contract.md     types, signatures, libraries, env vars, exit codes
-│   ├── prompt-app-edit.md   the three LLM prompts (imported by the runtime at init)
+│   ├── prompt-app-edit.md   the LLM prompts (imported by the runtime at init)
 │   ├── writing-style.md     writing style for every markdown file in the repo
 │   ├── packages/            per-package specs — mirrors src/packages/; rules in its README.md
 │   └── test-cases/          Gherkin features + -input/-expected/.flow fixtures

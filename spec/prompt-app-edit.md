@@ -12,6 +12,12 @@ to tune any of these prompts — `src/` does not contain the text directly.
   separately for spec-driven tools.
 - `PYTHON_EXPORT_PROMPT` — sent on the single model call `:save-py` makes to
   translate a flow into a standalone Python script.
+- `VOICE_PROMPT` — the fixed instruction sent next to a spoken clip on a voice
+  patch turn. The one exception to "read at init": `@tamedtable/voice-input` is
+  zero-dependency and browser-safe, so it keeps a byte-identical copy
+  (`VOICE_INSTRUCTION`) and a guard test fails CI if the copy drifts. The text
+  is fingerprint-load-bearing — changing a single character orphans every
+  recorded voice cassette.
 
 ## SYSTEM_PROMPT
 
@@ -117,3 +123,10 @@ Expression shapes:
 You will never receive an `{llm}` expression — the caller rejects any flow that contains one.
 
 The script must run deterministically, with no network call and no AI call, as `./script.py input output`.
+
+## VOICE_PROMPT
+
+The user's request is spoken in the attached audio clip. Listen to it
+and carry out that request directly — there is no written request text.
+Also set the `transcript` argument of apply_spec_patch to a verbatim
+transcript of the audio.

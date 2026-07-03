@@ -8,7 +8,7 @@ Entry point for AI coding agents (Claude Code, Codex, Copilot, Cursor, …). Sta
 |---|---|
 | What the user sees, what the system does | [spec/behavior.md](spec/behavior.md) |
 | Types, env vars, exit codes | [spec/code-contract.md](spec/code-contract.md) |
-| LLM prompts (spec-editor + per-cell) | [spec/prompt-app-edit.md](spec/prompt-app-edit.md) |
+| LLM prompts (spec-editor, per-cell, voice, Python export) | [spec/prompt-app-edit.md](spec/prompt-app-edit.md) |
 | How to run anything (CLI / web / tests) | [README.md](README.md) |
 | Repo layout and tooling rationale | [README.md](README.md#project-layout) tree + [Layout, stack & process](#layout-stack--process) below |
 | Spec index, test-fixture naming | [spec/README.md](spec/README.md) |
