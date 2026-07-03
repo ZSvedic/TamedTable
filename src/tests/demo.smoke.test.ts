@@ -8,50 +8,19 @@
 // `bun run test:smoke` (sets SMOKE=1); without SMOKE=1 every test is skipped
 // so the default suite stays offline and browser-free.
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Browser, Page } from 'playwright';
+import { findChromium } from './demo-harness.ts';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
 const DEMOS = ['chat-panel', 'file-io', 'gherkin-tour', 'model-config', 'table-view', 'toolbar', 'ui-kit', 'voice-input'] as const;
 
-// Find a Playwright-managed Chromium without hardcoding the build number:
-// $PLAYWRIGHT_BROWSERS_PATH (container images) or ~/.cache/ms-playwright
-// (`playwright install chromium`), newest build first. Classic Chromium
-// builds unpack to chrome-linux/, Chrome-for-Testing builds to chrome-linux64/.
-function findChromium(): string | undefined {
-  const roots = [
-    process.env.PLAYWRIGHT_BROWSERS_PATH ?? '/opt/pw-browsers',
-    join(homedir(), '.cache', 'ms-playwright'),
-  ];
-  const bins = [join('chrome-linux', 'chrome'), join('chrome-linux64', 'chrome')];
-  for (const root of roots) {
-    if (!existsSync(root)) continue;
-    const builds = readdirSync(root)
-      .filter((dir) => /^chromium-\d+$/.test(dir))
-      .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]));
-    for (const build of builds) {
-      for (const bin of bins) {
-        const path = join(root, build, bin);
-        if (existsSync(path)) return path;
-      }
-    }
-  }
-  return undefined;
-}
-
 const smoke = process.env.SMOKE === '1';
-let chromePath = smoke ? findChromium() : undefined;
-if (smoke && !chromePath) {
-  // The playwright package knows where its own `playwright install` puts the
-  // browser, whatever the layout — trust it when the directory scan misses.
-  const { chromium } = await import('playwright');
-  const fallback = chromium.executablePath();
-  if (fallback && existsSync(fallback)) chromePath = fallback;
-}
+const chromePath = smoke ? findChromium((await import('playwright')).chromium) : undefined;
 if (smoke && !chromePath) {
   const msg =
     'demo smoke: no Chromium found under $PLAYWRIGHT_BROWSERS_PATH, /opt/pw-browsers, ' +

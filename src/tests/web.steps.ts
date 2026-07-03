@@ -4,21 +4,10 @@ import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadCsv } from '@tamedtable/core';
-import type { WebController } from '@tamedtable/web';
 import type { FormatId } from '@tamedtable/file-io';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
-import { webScenarios, type WebScenarioCtx } from './web-file-port.ts';
-
-function controller(world: TamedTableWorld): WebController {
-  return world.ensureRunner() as unknown as WebController;
-}
-
-function ctxOf(world: TamedTableWorld): WebScenarioCtx {
-  const ctx = webScenarios.get(world);
-  if (!ctx) throw new Error('web scenario context missing — is the @web Before hook wired?');
-  return ctx;
-}
+import { webController as controller, webCtx as ctxOf } from './web-file-port.ts';
 
 interface SavedFlow {
   version: number;
@@ -143,11 +132,6 @@ Then('table displays the header and at least the first {int} rows', function (th
 
 Then('the table has {int} rows', function (this: TamedTableWorld, n: number) {
   assert.equal(controller(this).displayRows().length, n);
-});
-
-Then('{string} contains normalization steps', function (this: TamedTableWorld, filename: string) {
-  const flow = readSavedFlow(this, filename);
-  assert.ok(flow.spec.transformations.length > 0, 'saved flow has no transformations');
 });
 
 Then('{string} contains a mutate transformation', function (this: TamedTableWorld, filename: string) {

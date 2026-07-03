@@ -18,7 +18,7 @@ const UIKIT_COPY = 'packages/ui-kit/tokens.json';
 const CANVAS_JSX = '../marketing/claude-design-app/tokens.jsx';
 
 /**
- * The TT_* globals the Babel canvas (index.html / Prototype.html) loads,
+ * The TT_* globals the Babel canvas (index.html) loads,
  * generated 1:1 from tokens.json — TT_TYPE flattens typography.size up so the
  * canvas reads TT_TYPE.base etc., matching the rest of the canvas files.
  */

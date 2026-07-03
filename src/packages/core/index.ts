@@ -128,17 +128,6 @@ export async function writeJsonl(path: string, rows: Row[], columnOrder?: string
   }
 }
 
-// #IoFormats #CsvSerialize
-export async function writeCsv(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
-  const codec = await loadCodec('csv');
-  const body = await codec.serialize(rows, columnOrder);
-  try {
-    await writeFile(filePath, body);
-  } catch (e) {
-    throw new Error(`writeCsv: could not write ${filePath}: ${(e as Error).message}`);
-  }
-}
-
 // #FormatOut
 /** Dispatch on file extension through the codec registry (.jsonl, .csv,
  *  .parquet, .arrow, …). Any unregistered extension throws an "unknown file

@@ -10,7 +10,7 @@ marketing/
   tokens.json            design token master — colors, typography, spacing
   brand/                 marks, favicons, lockups, brand.md
   claude-design-app/     in-browser design canvas (scratch JSX + generated tokens.jsx)
-  illustrations/         SVG feature tiles + gallery.html to preview them (old/ = superseded set)
+  illustrations/         SVG feature tiles + gallery.html to preview them
   video/                 storyboard + render plan (demo-video-plan.md) for the 20s video
   web/                   the landing page (index.html + styles.css + main.js)
 ```

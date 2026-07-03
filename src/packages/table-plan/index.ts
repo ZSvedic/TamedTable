@@ -73,10 +73,6 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   }).strict(),
 ]);
 
-// Re-export the transformation union as the default — patches and live plans
-// always validate against this single schema.
-export const TransformationSchema = TransformationUnionSchema;
-
 export type Expr =
   | { js: string }
   | { llm: string; model?: string }
