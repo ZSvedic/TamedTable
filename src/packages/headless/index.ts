@@ -105,16 +105,16 @@ export interface HeadlessRunner {
 }
 
 // #ConfigEnv
-const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'claude-sonnet-4-6';
-const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'claude-sonnet-4-5';
+const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'gemini-3.5-flash';
+const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'gemini-3.1-flash-lite';
 
 // Per-provider fallbacks for per-row cell calls when the configured cell
 // model belongs to a different provider than the main model. Cell calls are
 // text-only and must share the main model's provider, so a cross-provider cell
 // model is coerced to that provider's text default rather than used blindly.
 const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = {
-  anthropic: DEFAULT_CELL_MODEL,
-  gemini: 'gemini-3.5-flash',
+  gemini: DEFAULT_CELL_MODEL,
+  anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
 };
 

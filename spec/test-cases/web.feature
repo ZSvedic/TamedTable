@@ -21,6 +21,7 @@ Feature: Web front-end
     Scenario: A text request needs the selected provider's key, not Anthropic's
       Given the TamedTable web app
       And load "customers-input.csv"
+      And the API key has not been set
       And the provider "anthropic" has API key "sk-ant-example-key"
       And user selects the provider "gemini"
       When user sends the chat message "Normalize phone numbers"
@@ -67,6 +68,7 @@ Feature: Web front-end
     Scenario: Save as Python needs the selected provider's key
       Given the TamedTable web app
       And load "customers-input.csv"
+      And the API key has not been set
       And user selects the provider "gemini"
       When user says "Save as Python"
       Then a toast shows "Exporting to Python requires a Google API key"
@@ -248,17 +250,17 @@ Feature: Web front-end
   Rule: The settings panel selects the engine model
 
     @web
-    Scenario: The web app defaults to the Sonnet primary and Haiku cell model
+    Scenario: The web app defaults to the Gemini primary and flash-lite cell model
       Given the TamedTable web app
-      Then the configured model is "claude-sonnet-4-6"
-      And the configured cellModel is "claude-haiku-4-5"
+      Then the configured model is "gemini-3.5-flash"
+      And the configured cellModel is "gemini-3.1-flash-lite"
 
     @web
     Scenario: Selecting a provider pins its fixed default models
       Given the TamedTable web app
-      When user selects the provider "gemini"
-      Then the configured model is "gemini-3.5-flash"
-      And the configured cellModel is "gemini-3.1-flash-lite"
+      When user selects the provider "anthropic"
+      Then the configured model is "claude-sonnet-4-6"
+      And the configured cellModel is "claude-haiku-4-5"
 
     @web
     Scenario: Switching provider keeps the loaded table intact

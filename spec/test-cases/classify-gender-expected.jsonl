@@ -16,5 +16,5 @@
 {"ID":"16","FirstName":"Ahmed","LastName":"Khan","DOB":"","Country":"United Kingdom","Phone":"+44 555 4321","Gender":"man"}
 {"ID":"17","FirstName":"张","LastName":"三","DOB":"1990-01-01","Country":"China","Phone":"+86 555 1234","Gender":"unknown"}
 {"ID":"18","FirstName":"李","LastName":"四","DOB":"1985-05-15","Country":"China","Phone":"138 5555 6789","Gender":"unknown"}
-{"ID":"19","FirstName":"山田","LastName":"太郎","DOB":"-","Country":"Japan","Phone":"+81 555 1234","Gender":"unknown"}
+{"ID":"19","FirstName":"山田","LastName":"太郎","DOB":"-","Country":"Japan","Phone":"+81 555 1234","Gender":"man"}
 {"ID":"20","FirstName":"فلا","LastName":"الفلاني","DOB":"1990-01-01","Country":"Saudi Arabia","Phone":"+966 555 1234","Gender":"unknown"}

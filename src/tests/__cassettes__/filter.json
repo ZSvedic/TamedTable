@@ -1,35 +1,18 @@
 {
-  "1cf44dba61e8f4080342d7b42796c39123486bbd2d541c6e7318a20b1dacd5cd": {
+  "6d47b7cfb280cb0928127f0fa7bab8c140c2b1e7c0e184a81bbe45ee479caf31": {
     "status": 200,
     "statusText": "OK",
     "headers": {
-      "anthropic-organization-id": "b30fd65e-ac14-4333-8486-472b544841b0",
-      "anthropic-ratelimit-input-tokens-limit": "30000",
-      "anthropic-ratelimit-input-tokens-remaining": "18000",
-      "anthropic-ratelimit-input-tokens-reset": "2026-06-16T13:06:59Z",
-      "anthropic-ratelimit-output-tokens-limit": "8000",
-      "anthropic-ratelimit-output-tokens-remaining": "8000",
-      "anthropic-ratelimit-output-tokens-reset": "2026-06-16T13:06:36Z",
-      "anthropic-ratelimit-requests-limit": "50",
-      "anthropic-ratelimit-requests-remaining": "49",
-      "anthropic-ratelimit-requests-reset": "2026-06-16T13:06:35Z",
-      "anthropic-ratelimit-tokens-limit": "38000",
-      "anthropic-ratelimit-tokens-remaining": "26000",
-      "anthropic-ratelimit-tokens-reset": "2026-06-16T13:06:36Z",
-      "cf-cache-status": "DYNAMIC",
-      "cf-ray": "a0ca085588e35624-ORD",
-      "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
-      "content-type": "application/json",
-      "date": "Tue, 16 Jun 2026 13:06:36 GMT",
-      "request-id": "req_011Cc6zK4NXQCDEwm4Vkntsf",
-      "server": "cloudflare",
-      "set-cookie": "_cfuvid=tFWDzYbMypiEvFswnKsKHJL_JTS1v.AAw.s2RY33eXg-1781615194.4883652-1.0.1.1-EnY5GZq53_E68qQqQUB1kt472jBKp_8Hjx2ja0lP9Rk; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.anthropic.com",
-      "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
-      "traceresponse": "00-e5e95672e3f0ed4a15202f1783582cb7-60572b6dea10b1b0-01",
-      "transfer-encoding": "chunked",
-      "vary": "Accept-Encoding",
-      "x-robots-tag": "none"
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:57 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=5165",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
     },
-    "body": "{\"model\":\"claude-sonnet-4-6\",\"id\":\"msg_01ChgfJztoaxWSJXJw6gg6QZ\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"id\":\"toolu_01CJZdcZtkKsWyrybdsLA2Qt\",\"name\":\"apply_spec_patch\",\"input\":{\"operations\":[{\"op\":\"add\",\"path\":\"/transformations/-\",\"value\":\"{\\\"kind\\\":\\\"filter\\\",\\\"pred\\\":{\\\"js\\\":\\\"row.Country === 'USA'\\\"}}\"}]},\"caller\":{\"type\":\"direct\"}}],\"stop_reason\":\"tool_use\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":26,\"cache_creation_input_tokens\":3613,\"cache_read_input_tokens\":0,\"cache_creation\":{\"ephemeral_5m_input_tokens\":3613,\"ephemeral_1h_input_tokens\":0},\"output_tokens\":78,\"service_tier\":\"standard\",\"inference_geo\":\"global\"}}"
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"filter\\\",\\\"pred\\\":{\\\"js\\\":\\\"row.Country === 'USA'\\\"}}\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"46zla8tl\"\n            },\n            \"thoughtSignature\": \"Et0CCtoCAQw51sduRmrwxdxY4weUvmR9tNmwMOs7udLvbNvP7/b8KPVmq9zXPRXq8+JqP10KPCYvAKWHGo30WAKSlxzbHXZElnTsDdhXmUoxXdM4xRZ0q9qI7kTWrmbMBB+/5EzlvKerAod99u9bS3XTUPf6zeZf9C1JMafrdHCtxRh3jUiKbJQ48EclyustqBj0OLq0+SXpNX2Pt7VSGKI4mjiS3fyiCPJFj5KbDYJlNkoJoMJixdXUwv/CJJj6IMZqRbNted9VTpH6jqypzD7daR54U/mHC5UiAslgXtA9DdQLYHWKfgyIwO1MT3tpgQUlRw2/c+wUcjytdZcyJNSJ0g8CstERQaFUj9VBYfswh8m+pznJdc8bj5aNjLYLoQw8hfAJtRh5X+xN7knNaE5/0DYXfKzPUfrQpOVIhLPDuk1Q4m5TtUdUdeqSYbR42iXzrwhff/iMKarw0WLX0g==\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4444,\n    \"candidatesTokenCount\": 52,\n    \"totalTokenCount\": 4570,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4444\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 74,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"qI5HasYnhKaOsQ-S5b2oAQ\"\n}\n"
   }
 }

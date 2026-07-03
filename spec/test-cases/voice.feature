@@ -28,6 +28,7 @@ Feature: Voice input
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
       And load "customers-input.csv"
+      And the API key has not been set
       When user selects the provider "gemini"
       Then the mic button is hidden
 

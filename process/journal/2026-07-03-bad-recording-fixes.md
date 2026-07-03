@@ -1,11 +1,11 @@
-# 2026-07-03 — Bad-recording causes fixed; one record run left
+# 2026-07-03 — Bad-recording causes fixed; whole suite re-recorded on Gemini
 
 Status report for PR 2 of the
-[tour fix plan](2026-07-02-tour-fix-plan.md#pr-2--fix-the-causes-of-every-bad-recording-re-record-marketing-cleanup).
-Every cause the [audit](2026-07-02-tour-audit.md) found is fixed at its source
-— app guard, prompt, data, marketing — and the Gemini-recorded cassettes are
-already genuinely re-recorded. What remains is one `test:record` run with an
-Anthropic key, which the session that produced this PR did not have.
+[tour fix plan](2026-07-02-tour-fix-plan.md#pr-2--fix-the-causes-of-every-bad-recording-re-record-marketing-cleanup)
+(PR #203). Every cause the [audit](2026-07-02-tour-audit.md) found is fixed at
+its source, and — after the owner's decision to standardize on Google — every
+cassette in the repo is a fresh, genuine Gemini recording. The full suite
+(163 + 116 + 181 scenarios, 160 unit tests, typecheck) is green offline.
 
 ## What landed
 
@@ -25,58 +25,53 @@ Anthropic key, which the session that produced this PR did not have.
    (mcdonald, van der berg, o'neil) and the 03/04 date on both a US and a
    German row; mirrors regenerated. Memos name their years. New
    `customers-missing-phone.csv` gives the empty-phone tour something to
-   flag. Pass-through cells in the affected goldens are synced.
+   flag.
 4. **Output checks.** The broken tours now assert the outputs they promise
    (bill.gates flagged, Desk lamp flagged, only Paris/Japan flagged,
    McDonald capitalized, phones match `^\+[0-9]{7,15}$`, memo dates carry
    real years, Bob's address splits into CA / 94043). A bad recording can
    no longer ship green.
-5. **Marketing.** Homepage captions now quote the tours' real phrases and
-   promises; 18 SVG illustrations redrawn from real fixture rows (join,
-   pivot, sort, sentiment, seniority, emails, memos, languages, the five
-   load/save tiles, and more).
-6. **Gemini cassettes re-recorded for real.** `voice.json` fully, and the
-   five voice scenarios in `multilingual.json`, against live Gemini with
-   this environment's key — recorded from scratch, so no stale entries.
-   Iteration per the plan: the first fresh recording read `03/04/1983` on a
-   US row day-first; the few-shot 4 locale rule above fixed it and the
-   committed recording shows `1983-03-04` (US) / `1993-04-03` (DE). The
-   phone batch in `multilingual.json` is clean E.164 — no dropped digits,
-   no letter `l`.
+5. **One model baseline: Google.** The default provider is now gemini —
+   primary `gemini-3.5-flash` (spec patches, voice), secondary
+   `gemini-3.1-flash-lite` (per-row cells) — across the engine default,
+   `resolveConfig`'s fallback, tutorial replay, the test harness, and the
+   docs. This replaced the old three-model mix (Sonnet 4.6 patches, Sonnet
+   4.5 cells on headless/CLI, Haiku 4.5 cells on web).
+6. **Every cassette re-recorded from scratch** against live Gemini with the
+   environment's `GEMINI_API_KEY` — no stale entries, no hand edits — and
+   every recorded output verified: all 20 normalized phones digit-perfect,
+   capitalization fixes McDonald / van der Berg / O'Neil while preserving
+   CJK/Arabic names, the 03/04 date reads March 4 on the US row and April 3
+   on the German row, bill.gates@microsoft.com and the 4.20 desk lamp get
+   flagged, memo dates carry their real years. The `bench` performance
+   cassette was re-recorded too.
+7. **Marketing.** Homepage captions quote the tours' real phrases; 20 SVG
+   illustrations drawn from real fixture rows and real replay values.
 
-## Why the suite is red, and the finishing procedure
+## Where fresh recordings changed shape, tests and marketing follow
 
-Changing the spec-editor prompt changes every request fingerprint, so every
-Anthropic-replaying scenario now fails loudly with `no recording for this
-request` — the documented cassette workflow. With an Anthropic key, from
-`src/`:
+Recordings are never edited — where Gemini's genuine answer differs from
+Anthropic's old one, the assertions and captions were updated to the real
+behavior after row-by-row verification:
 
-1. Optional but recommended (drops dead-weight stale entries): delete every
-   `src/tests/__cassettes__/*.json` **except** `voice.json` and
-   `multilingual.json` before recording.
-2. `bun run test:record` — headless + cli, ~8 min at 40 RPM.
-3. `TAMEDTABLE_CASSETTE=record bun run test:web` — records the @web-only
-   tours. The Gemini voice entries are fresh cassette hits, so no Gemini
-   key is needed.
-4. `bun run test` — the new output assertions now judge the recordings.
-   If one fails, the recording missed its promise: improve the prompt or
-   data and record that feature again (`TAMEDTABLE_FEATURES=<name>`).
-   Never edit an answer by hand.
-5. Goldens: `validate-phone-expected.jsonl` was pre-built assuming the
-   few-shot's `'Phone is empty'` message — adjust from real replay output
-   if the recording words it differently. Re-add an expected-output golden
-   to the fake-emails tour (its old golden was removed — the edit shape
-   changed to mutate + validate), and add ones for prices / memos /
-   capitalization / address if wanted, per plan step 4.
+- "sort by revenue, top 10" trims to 10 rows with a numeric sort + filter
+  (2 transformations; Midwest and Northwest visibly drop from the 12-row
+  table).
+- "sort the titles by seniority" adds a visible `SeniorityRank` column
+  (100 → 1) and sorts on it — CTO first.
+- Sentiment scores are 1–5, not −1.0..1.0.
+- Voice transcripts come back sentence-cased ("Validate DOB is not
+  empty.").
+- Six goldens regenerated from verified replay output (tickets, sentiment,
+  seniority, gender, summarize, translate); the rest matched byte-for-byte.
 
-## Decisions
+## Iteration log (cause-fix, per the plan)
 
-- **Phone letter-guard is prompt-side, not engine-side.** The engine can't
-  recognize "this mutate normalizes phones" generically, so the few-shot
-  demands digits-only output and the tours pin `^\+[0-9]{7,15}$` in
-  Gherkin. If garbling still shows up in fresh recordings, treat it as a
-  product bug per the plan — not something to hide.
-- **The voice transcript assertion follows the model.** Current Gemini
-  consistently transcribes with sentence casing and punctuation
-  ("Validate DOB is not empty."), five runs in a row — the scenario now
-  expects that verbatim transcript.
+- The first fresh recording read `03/04/1983` on a USA row day-first;
+  few-shot 4 gained the country-convention rule and the re-record shows
+  `1983-03-04` (US) / `1993-04-03` (DE).
+- `clearApiKey` cleared only the Anthropic slot — an Anthropic-era
+  assumption; it now clears every provider key, and the "no key" scenarios
+  state that premise explicitly.
+- The `@scripted` SQL test harness served canned Anthropic-shaped tool
+  calls; it now serves the Gemini wire shape, matching the baseline.

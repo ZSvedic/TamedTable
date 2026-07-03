@@ -75,6 +75,10 @@ describe('RequestDebugInfo.cellSamples', () => {
   beforeAll(async () => {
     const runner = createHeadlessRunner({
       apiKey: 'test-key',
+      // The mock responses are Anthropic-shaped, so pin Anthropic models —
+      // the default is Gemini, whose wire format differs.
+      model: 'claude-sonnet-4-6',
+      cellModel: 'claude-sonnet-4-5',
       fetch: mockFetch(),
       onDebug: (info) => { debugInfo = info; },
     });

@@ -85,7 +85,9 @@ env always wins. The rules:
 1. If `GEMINI_API_KEY` is set in env → provider is gemini, geminiKey is that value.
 2. Else if `OPENAI_API_KEY` is set in env → provider is openai, openaiKey is that value.
 3. Else if `ANTHROPIC_API_KEY` is set in env → provider is anthropic, anthropicKey is that value.
-4. Else use `stored.provider`, falling back to "anthropic".
+4. Else use `stored.provider`, falling back to "gemini" — the provider whose
+   defaults every committed cassette is recorded with, so key-free replay
+   (tests, tours) resolves the models the recordings used.
 5. `TAMEDTABLE_MODEL` in env overrides the primary model from stored.
 6. Keys not present in env keep their stored values (or null).
 7. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`.

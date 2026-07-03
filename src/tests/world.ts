@@ -100,9 +100,10 @@ export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
     // repo root) can flip a record run to whichever provider tops the env
     // precedence, producing cassettes replay can never match. Replay serves
     // every call from disk, so a placeholder is enough there; record needs the
-    // real ANTHROPIC_API_KEY. (cucumber.js lifts TAMEDTABLE_RPM for replay so
-    // the rate limiter adds no delay.)
-    opts.apiKey = process.env.ANTHROPIC_API_KEY ?? 'cassette-replay-placeholder';
+    // real GEMINI_API_KEY — every cassette records with the Gemini defaults.
+    // (cucumber.js lifts TAMEDTABLE_RPM for replay so the rate limiter adds no
+    // delay.)
+    opts.apiKey = process.env.GEMINI_API_KEY ?? 'cassette-replay-placeholder';
   }
   return opts;
 }

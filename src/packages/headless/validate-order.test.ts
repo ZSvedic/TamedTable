@@ -124,6 +124,9 @@ describe('request() feeds the ordering rejection through the recovery loop', () 
     let debugInfo: RequestDebugInfo | undefined;
     const runner = createHeadlessRunner({
       apiKey: 'test-key',
+      // The mock responses below are Anthropic-shaped, so pin an Anthropic
+      // model — the default is Gemini, whose wire format differs.
+      model: 'claude-sonnet-4-6',
       onDebug: (info) => { debugInfo = info; },
       fetch: async () => {
         patchCalls++;

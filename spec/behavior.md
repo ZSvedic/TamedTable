@@ -231,14 +231,14 @@ tokens and the wall-clock time. For `validate dob is non-empty`:
 
 ```
     [debug] pred: row.DOB && String(row.DOB).length > 0
-    [debug] Sonnet 4.6 ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
+    [debug] gemini-3.5-flash ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
 ```
 
 A request that also fills LLM-backed cells calls a second model, so the
 summary names both:
 
 ```
-    [debug] Sonnet 4.6 ×1, Sonnet 4.5 ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
+    [debug] gemini-3.5-flash ×1, gemini-3.1-flash-lite ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
 ```
 
 The token counts and elapsed time vary from run to run; the rest of the
@@ -1182,10 +1182,9 @@ against the tour's recorded cassette (fetched same-origin) and served from it,
 so no key is needed and no network call leaves the browser. Matching is exact
 over the whole request, so the tour must reproduce the request that was
 recorded — playback therefore pins the same model and configuration the
-recording used. Each tour pins its own provider: a **voice tour** (one with a
-`play-audio` step) replays against Gemini, the provider voice input uses, while
-every other tour replays against Anthropic. A request with no recording fails
-loudly (a toast), never a silent hang. Normal (non-tutorial) chat is unaffected:
+recording used: the Gemini provider defaults, which every committed cassette
+is recorded with (voice tours included — voice input is Gemini-only anyway).
+A request with no recording fails loudly (a toast), never a silent hang. Normal (non-tutorial) chat is unaffected:
 it still uses the visitor's own key against the live model.
 
 ### Deep links into a tutorial

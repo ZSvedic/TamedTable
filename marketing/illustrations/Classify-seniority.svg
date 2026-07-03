@@ -9,7 +9,7 @@
     <path d="M18 76 q0 -6 6 -6 h312 q6 0 6 6 v20 h-324 Z" fill="#281C60"/>
     <text x="32" y="89" font-size="11.5" font-weight="600" fill="#FFFFFF">Name</text>
     <text x="110" y="89" font-size="11.5" font-weight="600" fill="#FFFFFF">Title</text>
-    <text x="270" y="89" font-size="10.5" font-weight="600" fill="#96BED7">senior → junior</text>
+    <text x="262" y="89" font-size="10.5" font-weight="600" fill="#96BED7">rank: senior → junior</text>
     <path d="M338 80 l0 8 M335 85 l3 4 l3 -4" stroke="#96BED7" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <g font-size="10.5" fill="#281C60">
       <rect x="18" y="96" width="324" height="22" fill="#FFFFFF"/>
@@ -30,12 +30,12 @@
     </g>
     <rect x="18" y="70" width="324" height="136" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
-  <!-- descending seniority bars hint at right edge -->
-  <g fill="#96BED7">
-    <rect x="316" y="104" width="18" height="6" rx="2"/>
-    <rect x="316" y="126" width="15" height="6" rx="2"/>
-    <rect x="316" y="148" width="12" height="6" rx="2"/>
-    <rect x="316" y="170" width="8" height="6" rx="2"/>
-    <rect x="316" y="192" width="5" height="6" rx="2"/>
+  <!-- the added SeniorityRank column the sort orders on, real replay values -->
+  <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" font-weight="600" fill="#281C60" text-anchor="end">
+    <text x="336" y="111">100</text>
+    <text x="336" y="133">90</text>
+    <text x="336" y="155">60</text>
+    <text x="336" y="177">20</text>
+    <text x="336" y="199">1</text>
   </g>
 </svg>

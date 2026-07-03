@@ -72,7 +72,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       fetch: compositeFetch,
       // Suppress real shell API keys — tests set keys explicitly via steps.
       env: {},
-      config: opts.apiKey ? { anthropicKey: opts.apiKey } : undefined,
+      config: opts.apiKey ? { geminiKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,
       tutorialSources,

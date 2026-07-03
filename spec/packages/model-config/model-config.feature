@@ -5,10 +5,10 @@ Feature: Model config
   Rule: resolveConfig defaults
 
     @headless
-    Scenario: Empty env and empty stored yields anthropic defaults
+    Scenario: Empty env and empty stored yields gemini defaults
       When resolveConfig is called with empty env and empty stored
-      Then the resolved provider is "anthropic"
-      And the resolved model is "claude-sonnet-4-6"
+      Then the resolved provider is "gemini"
+      And the resolved model is "gemini-3.5-flash"
       And the resolved anthropicKey is null
       And the resolved geminiKey is null
       And the resolved openaiKey is null
@@ -70,20 +70,20 @@ Feature: Model config
 
     @headless
     Scenario: TAMEDTABLE_MODEL in env overrides stored model
-      When resolveConfig is called with env TAMEDTABLE_MODEL="claude-haiku-4-5" and stored model "claude-opus-4-8"
-      Then the resolved model is "claude-haiku-4-5"
+      When resolveConfig is called with env TAMEDTABLE_MODEL="gemini-3.1-flash-lite" and stored model "gemini-3.5-flash"
+      Then the resolved model is "gemini-3.1-flash-lite"
 
   Rule: resolveConfig resolves the secondary (cell) model
 
     @headless
     Scenario: Empty config yields the provider's cell default
       When resolveConfig is called with empty env and empty stored
-      Then the resolved cellModel is "claude-haiku-4-5"
+      Then the resolved cellModel is "gemini-3.1-flash-lite"
 
     @headless
     Scenario: TAMEDTABLE_CELL_MODEL in env overrides stored cellModel
-      When resolveConfig is called with env TAMEDTABLE_CELL_MODEL="claude-haiku-4-5" and stored cellModel "claude-sonnet-4-6"
-      Then the resolved cellModel is "claude-haiku-4-5"
+      When resolveConfig is called with env TAMEDTABLE_CELL_MODEL="gemini-3.5-flash" and stored cellModel "gemini-3.1-flash-lite"
+      Then the resolved cellModel is "gemini-3.5-flash"
 
     @headless
     Scenario: A cross-provider stored cellModel is coerced to the provider cell default
