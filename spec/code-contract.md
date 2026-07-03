@@ -177,10 +177,10 @@ function loadCodec(id: FormatId): Promise<FormatCodec>;
 `detectFormat`/`formatForExtension` read a synchronous descriptor table
 (id + extensions + content types); `loadCodec` pulls the codec — and its
 parser — only on first use, so a run that never touches a format never imports
-its parser. `core`'s `loadCsv`/`loadJsonl`/`readJsonl`/`writeJsonl`/`writeCsv`
-delegate parse/serialize to the registry; `writeRows` dispatches on extension
-and routes `.csv`→`writeCsv`, `.jsonl`→`writeJsonl`. Adding a format is one
-codec file plus one registry row.
+its parser. `core`'s `loadCsv`/`loadJsonl`/`readJsonl`/`writeJsonl` delegate
+parse/serialize to the registry; `writeRows` dispatches on extension straight
+through the codec registry. Adding a format is one codec file plus one
+registry row.
 
 ## Headless
 
@@ -463,25 +463,23 @@ above parse against the single Zod schema like every other shape.
 
 ### CSV (and other tabular) output (#FormatOut)
 
-`writeCsv` mirrors the `writeJsonl` signature:
-
 ```ts
-function writeCsv(path: string, rows: Row[], columnOrder: string[]): Promise<void>;
+function writeRows(path: string, rows: Row[], columnOrder: string[]): Promise<void>;
 ```
 
 `columnOrder` is required for CSV (the header row needs it); for
-JSONL it stays optional. The writer uses
+JSONL it stays optional. The CSV codec uses
 `csv-stringify/sync` from the `csv` package (already pulled in
 transitively by `csv-parse`) with `header: true`, RFC 4180
 quoting, `\n` line endings, and no BOM. Nested values
 (`typeof === 'object' && !== null`) round-trip through `JSON.stringify`.
 
 `Runner.exportAs` and the REPL `:save` command dispatch on extension
-through the codec registry (`writeRows`): `.jsonl` → `writeJsonl`,
-`.csv` → `writeCsv`, other registered formats (`.parquet`, `.arrow`)
-through their codecs. An extension no codec claims throws the
-*"unknown file type"* error, surfaced inline by the REPL and as exit
-code 4 by `tamedtable execute`.
+through the codec registry (`writeRows`): `.jsonl`, `.csv`, and the
+other registered formats (`.parquet`, `.arrow`) each go through their
+codec. An extension no codec claims throws the *"unknown file type"*
+error, surfaced inline by the REPL and as exit code 4 by
+`tamedtable execute`.
 
 ### `group` and `join` transformations (#Aggregate #LookupJoin)
 
