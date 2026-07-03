@@ -9,7 +9,7 @@ The human-authored contract for TamedTable: what the system does, the types it e
 | [code-contract.md](code-contract.md) | Types, signatures, env vars, exit codes |
 | [prompt-app-edit.md](prompt-app-edit.md) | The LLM prompts (imported by the runtime at init) |
 | [writing-style.md](writing-style.md) | Writing style for all markdown in the repo |
-| [test-tree.md](test-tree.md) | Hand-reviewed map of every feature + scenario (what each tests + cleanup ideas), across test-cases and packages |
+| [test-conventions.md](test-conventions.md) | How the Gherkin suite is organized and kept small — tags, outlining levers, cross-file DRY decisions |
 | [packages/](packages/README.md) | Per-package specs — layout rules in its README |
 | [test-cases/](test-cases/) | Gherkin features + fixtures, named as below |
 
