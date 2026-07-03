@@ -452,42 +452,6 @@ function OverviewBoard() {
   );
 }
 
-function PrototypeLinkBoard() {
-  const t = TT_LIGHT;
-  return (
-    <a href="Prototype.html" target="_top" style={{
-      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-      width: 380, height: 700, boxSizing: 'border-box', padding: 26,
-      background: TT_BRAND.ink, textDecoration: 'none', fontFamily: TT_TYPE.ui,
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <Mark height={40} mode="reverse" />
-        <div style={{ font: `600 ${TT_TYPE.xl}px/1.3 ${TT_TYPE.ui}`, color: t.inkOnInk }}>
-          Clickable prototype
-        </div>
-        <div style={{ font: `400 ${TT_TYPE.sm}px/1.6 ${TT_TYPE.ui}`, color: TT_BRAND.accent }}>
-          The full three-region app, interactive: open a sample, type or hold-to-speak
-          a request, watch AI cells fill and flash, undo, save, switch themes.
-        </div>
-        <div style={{ font: `400 ${TT_TYPE.xs}px/1.8 ${TT_TYPE.mono}`, color: 'color-mix(in srgb, ' + t.inkOnInk + ' 55%, transparent)' }}>
-          try: filter Score ≥ 8<br />
-          → add a Country column<br />
-          → normalize phone numbers<br />
-          → :undo · :save
-        </div>
-      </div>
-      <div style={{
-        alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 8,
-        padding: '10px 16px', borderRadius: TT_S.radius, background: TT_BRAND.accent,
-        color: t.inkOnAcc, font: `600 ${TT_TYPE.sm}px/1 ${TT_TYPE.ui}`,
-      }}>
-        Open Prototype.html
-        <span style={{ display: 'inline-flex', transform: 'rotate(-90deg)' }}><Icon name="chevron" size={13} /></span>
-      </div>
-    </a>
-  );
-}
-
 // ── Canvas ────────────────────────────────────────────────────────────────
 function Canvas() {
   return (
@@ -495,9 +459,6 @@ function Canvas() {
       <DCSection id="intro" title="TamedTable" subtitle="Plain-English table transformations · regenerated against the current product and tokens.json.">
         <DCArtboard id="overview" label="System at a glance" width={780} height={700}>
           <OverviewBoard />
-        </DCArtboard>
-        <DCArtboard id="proto-link" label="Clickable prototype" width={380} height={700}>
-          <PrototypeLinkBoard />
         </DCArtboard>
       </DCSection>
 
