@@ -4,9 +4,9 @@ TamedTable is an AI ETL tool you drive with natural language. Load a CSV, type *
 
 [Run the live app](https://www.tamedtable.com/app/) directly in the browser, no install needed. 
 
-![TamedTable demo — normalize phone numbers in plain language](marketing/video/demo-16x9.gif)
+https://github.com/user-attachments/assets/1bb6857c-32d9-4ff1-9eda-2857b06cd08f
 
-*20-second demo (silent GIF, so it plays for everyone). [▶ Watch with sound (MP4)](marketing/video/demo-16x9.mp4).*
+*20-second demo — normalize phone numbers in plain language.*
 
 ## Project layout
 
