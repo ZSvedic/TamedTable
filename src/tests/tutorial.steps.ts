@@ -1,12 +1,8 @@
 // #TutorialMode — step definitions for spec/test-cases/tutorial.feature
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import type { WebController } from '@tamedtable/web';
 import { TamedTableWorld } from './world.ts';
-
-function controller(world: TamedTableWorld): WebController {
-  return world.ensureRunner() as unknown as WebController;
-}
+import { webController as controller } from './web-file-port.ts';
 
 // ── Given ──────────────────────────────────────────────────────────────────
 

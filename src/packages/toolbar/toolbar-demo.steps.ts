@@ -186,9 +186,3 @@ When('the user picks the first toolbar sample', async function (this: DemoWorld)
 Then('the toolbar URL dialog is closed', async function (this: DemoWorld) {
   await page(this).waitForSelector('[data-tb-dialog]', { state: 'detached' });
 });
-
-Then('the toolbar URL field is not empty', async function (this: DemoWorld) {
-  await page(this).waitForFunction(
-    `(document.querySelector('[data-tb-url-input]')?.value ?? '').length > 0`,
-  );
-});

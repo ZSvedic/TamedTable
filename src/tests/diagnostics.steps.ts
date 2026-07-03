@@ -1,12 +1,8 @@
 // #Diagnostics — step definitions for spec/test-cases/diagnostics.feature
 import { Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import type { WebController } from '@tamedtable/web';
 import { TamedTableWorld } from './world.ts';
-
-function controller(world: TamedTableWorld): WebController {
-  return world.ensureRunner() as unknown as WebController;
-}
+import { webController as controller } from './web-file-port.ts';
 
 /** Patterns that must never appear in a pasted report. */
 const KEY_SHAPES = [/sk-[A-Za-z0-9_-]+/, /AIza[A-Za-z0-9_-]+/];

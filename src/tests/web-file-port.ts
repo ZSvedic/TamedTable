@@ -11,7 +11,9 @@ import type {
   SaveOutcome,
   VoicePort,
   ContinuousVoicePort,
+  WebController,
 } from '@tamedtable/web';
+import type { TamedTableWorld } from './world.ts';
 
 export interface WebScenarioCtx {
   /** Set by the "without File System Access support" Given before the runner builds. */
@@ -39,6 +41,18 @@ export interface WebScenarioCtx {
 
 /** Per-World scenario context, shared between the @web hook and step defs. */
 export const webScenarios = new WeakMap<object, WebScenarioCtx>();
+
+/** The world's runner viewed as the web controller (@web scenarios only). */
+export function webController(world: TamedTableWorld): WebController {
+  return world.ensureRunner() as unknown as WebController;
+}
+
+/** This world's scenario context; throws if the @web Before hook didn't run. */
+export function webCtx(world: TamedTableWorld): WebScenarioCtx {
+  const ctx = webScenarios.get(world);
+  if (!ctx) throw new Error('web scenario context missing — is the @web Before hook wired?');
+  return ctx;
+}
 
 export class WebTestFilePort implements FilePort {
   readonly hasFileSystemAccess: boolean;

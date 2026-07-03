@@ -3,20 +3,10 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { WebController, VoicePort, ContinuousVoicePort } from '@tamedtable/web';
+import type { VoicePort, ContinuousVoicePort } from '@tamedtable/web';
 import { audioMediaType } from '@tamedtable/voice-input';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
-import { webScenarios } from './web-file-port.ts';
-
-function controller(world: TamedTableWorld): WebController {
-  return world.ensureRunner() as unknown as WebController;
-}
-
-function ctxOf(world: TamedTableWorld) {
-  const ctx = webScenarios.get(world);
-  if (!ctx) throw new Error('web scenario context missing — is the @web Before hook wired?');
-  return ctx;
-}
+import { webController as controller, webCtx as ctxOf } from './web-file-port.ts';
 
 // A deterministic mic: it plays a committed audio fixture (a real clip), so
 // the Gemini request fingerprints identically on every run, which is what

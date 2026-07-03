@@ -3,7 +3,7 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { access, readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
-import { readJsonl, type Row } from '@tamedtable/core';
+import { readJsonl } from '@tamedtable/core';
 import { runCli } from '@tamedtable/cli';
 import { TamedTableWorld, SRC_DIR, SPEC_TC_DIR, TEMP_DIR } from './world.ts';
 
@@ -90,15 +90,6 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
   this.lastInvocation = { exitCode: result.exitCode, stdout: chunks.join(''), stderr: result.stderr };
 });
 
-Then('column {string} matches the expected output', async function (this: TamedTableWorld, column: string) {
-  const golden = await readJsonl(this.goldenPath!);
-  const actual = this.ensureRunner().currentRows();
-  assert.equal(actual.length, golden.length, `row count: actual ${actual.length} vs golden ${golden.length}`);
-  for (let i = 0; i < golden.length; i++) {
-    assert.deepEqual(actual[i]?.[column], golden[i]?.[column], `row ${i} column "${column}"`);
-  }
-});
-
 Then('compare with the expected output', async function (this: TamedTableWorld) {
   const golden = await readJsonl(this.goldenPath!);
   const actual = this.ensureRunner().currentRows();
@@ -116,25 +107,6 @@ Then('{string} matches the expected output', async function (this: TamedTableWor
   const golden = await readJsonl(this.goldenPath!);
   const actual = await readJsonl(output(filename));
   assert.deepEqual(actual, golden);
-});
-
-Then('{string} matches the expected output ignoring {string}', async function (this: TamedTableWorld, filename: string, ignoreColumn: string) {
-  const golden = await readJsonl(this.goldenPath!);
-  const actual = await readJsonl(output(filename));
-  const strip = (rows: Row[]) =>
-    rows.map((r) => {
-      const copy = { ...r };
-      delete copy[ignoreColumn];
-      return copy;
-    });
-  assert.deepEqual(strip(actual), strip(golden));
-});
-
-Given('Phone, Country, and DOB are normalized', async function (this: TamedTableWorld) {
-  const runner = this.ensureRunner();
-  await runner.request('Normalize phone numbers');
-  await runner.request('Normalize country names');
-  await runner.request('Normalize DOB formats');
 });
 
 Given('duplicates are removed by Email', async function (this: TamedTableWorld) {
