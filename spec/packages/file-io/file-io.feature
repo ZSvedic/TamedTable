@@ -1,7 +1,7 @@
 # #FileIO
 # Browser-safe file input/output: the FilePort dialog interface, format
-# detection, table fetching over HTTP, and .flow serialization. "\n" in
-# quoted step arguments means a newline.
+# detection, codec edge cases, table fetching over HTTP, and .flow
+# serialization. "\n" in quoted step arguments means a newline.
 Feature: File IO package
 
   Rule: Format detection — the extension wins, Content-Type breaks ties
@@ -79,6 +79,53 @@ Feature: File IO package
       Given a stub fetch serving "https://x.test/page" with body "<html>" and content type "text/html"
       When fetchTable is called with "https://x.test/page"
       Then fetchTable fails with "Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow."
+
+  Rule: Text codecs survive messy input and say what broke
+
+    @headless
+    Scenario: A UTF-8 BOM never reaches the first column name
+      When a file "people.csv" with a UTF-8 BOM and body "name,age\nAda,36" is parsed
+      Then the parsed columns are "name, age"
+
+    @headless
+    Scenario: A CSV row with the wrong column count rejects the whole file
+      When a file "people.csv" with body "name,age\nAda" is parsed
+      Then parsing fails mentioning "Invalid Record Length"
+
+    @headless
+    Scenario: A malformed JSONL line names the file and line
+      When a file "dump.jsonl" with body "{}\nnot json" is parsed
+      Then parsing fails mentioning "dump.jsonl:2 malformed JSON"
+
+  Rule: Binary codecs keep 64-bit whole numbers exact
+
+    @headless
+    Scenario: An int64 too big for a JS number survives as a string
+      Given an Arrow file "big.arrow" with int64 column "id" holding "9007199254740993" and "42"
+      When the Arrow file is parsed
+      Then row 1 cell "id" is the string "9007199254740993"
+      And row 2 cell "id" is the number 42
+
+  Rule: Very large files warn instead of failing silently
+
+    @headless
+    Scenario: A file over 2 GB logs a size warning
+      When the size guard checks a 3 GB file named "big.parquet"
+      Then a console warning mentions "big.parquet is 3.0 GB"
+
+  Rule: Only a real cancel counts as cancelled — other picker errors surface
+
+    @headless
+    Scenario: Dismissing the open dialog resolves to no file
+      Given a browser open dialog that throws "AbortError"
+      When pickOpen runs against that browser
+      Then pickOpen resolves with no file
+
+    @headless
+    Scenario: A failing open dialog rethrows its error
+      Given a browser open dialog that throws "NotAllowedError"
+      When pickOpen runs against that browser
+      Then pickOpen rethrows an error named "NotAllowedError"
 
   Rule: A .flow file is the replayable spec plus its source name
 

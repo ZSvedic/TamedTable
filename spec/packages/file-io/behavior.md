@@ -92,6 +92,11 @@ File System Access API where the browser has it. Where it doesn't, `pickOpen`
 falls back to a hidden `<input type=file>` and `pickSave` to a download
 anchor — that save resolves as `downloaded`, never `cancelled`.
 
+Only a real user cancel maps to the quiet outcome: `BrowserFilePort` turns the
+picker's `AbortError` into `null` (Open) or `{ status: "cancelled" }` (Save)
+and rethrows every other error, so a genuine failure — permissions, disk —
+surfaces instead of looking like a cancel.
+
 ## Format detection
 
 `detectFormat(pathname, contentType)` returns a `FormatId` — `"csv"`,
