@@ -16,6 +16,9 @@ text codec — pure JS, never pulls a heavy engine. Shared contract (the
 - **Whitespace.** `trim: true` — leading/trailing whitespace around an
   *unquoted* field is stripped; whitespace inside quotes is preserved verbatim.
 - **BOM tolerated** (`bom: true`); blank lines skipped (`skip_empty_lines`).
+- **Ragged rows reject the file.** A row with fewer or more cells than the
+  header throws (`Invalid Record Length: …` from `csv-parse`) — the file is
+  never silently padded or truncated.
 - Every value stays a **string** — the runtime never infers numbers or dates;
   that is the LLM's job via a `mutate`.
 

@@ -19,7 +19,7 @@ pick code.
 | DONE: [chat-panel.md](chat-panel.md) | keep original | recreate's DOM rewrite can't plug into the web app |
 | DONE: [cli.md](cli.md) | keep original | recreate loses piped input lines and hangs |
 | DONE: [core.md](core.md) | keep original | recreate moved the engine into core against the contract |
-| [file-io.md](file-io.md) | keep original | recreate breaks on BOM, big numbers, and hides errors |
+| DONE: [file-io.md](file-io.md) | keep original | recreate breaks on BOM, big numbers, and hides errors |
 | [gherkin-tour.md](gherkin-tour.md) | keep original | recreate dropped the Tutorial panel |
 | [headless.md](headless.md) | combine | keep original behavior, adopt the recreate's file split |
 | [model-config.md](model-config.md) | combine | keep original code, adopt the recreate's test scenarios |

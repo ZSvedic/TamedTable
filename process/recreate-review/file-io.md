@@ -26,7 +26,8 @@ file — which is exactly why the recreate passed its suite while losing them.
 ## Questions for you
 
 - [ ] A CSV row with the wrong column count: reject the file (original, current
-      behavior) or accept and pad (recreate)? Answer:
+      behavior) or accept and pad (recreate)? Answer: Reject the file (keep the
+      original, current behavior).
 
 ## Plan
 
