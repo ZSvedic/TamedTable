@@ -16,7 +16,7 @@ import type { RequestAudio } from '@tamedtable/headless';
 import type { Provider } from '@tamedtable/model-config';
 import { audioMediaType } from '@tamedtable/voice-input';
 import { parseTours, type TourScenario } from '@tamedtable/gherkin-tour';
-import { replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
+import { parseCassette, replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
 import type { TutorialManifestEntry, TutorialSources } from './controller-types.ts';
 import { TUTORIAL_CATEGORIES } from './tutorial-categories.ts';
@@ -282,7 +282,7 @@ export class TutorialManager {
     let tape = this.cassetteCache.get(name);
     if (!tape) {
       const text = await this.tutorialSrc.loadCassette(name);
-      tape = JSON.parse(text) as Cassette;
+      tape = parseCassette(text);
       this.cassetteCache.set(name, tape);
     }
     const replay: FetchLike = replayFetch(tape);

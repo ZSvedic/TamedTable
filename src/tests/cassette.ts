@@ -10,9 +10,13 @@ import { dirname } from 'node:path';
 import {
   entryFromResponse,
   fingerprint,
+  missMessage,
+  parseCassette,
   requestBody,
   requestUrl,
   responseFromEntry,
+  serializeCassette,
+  splitBody,
   type Cassette,
   type CassetteEntry,
   type FetchLike,
@@ -39,32 +43,29 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
   const load = (): Cassette => {
     if (!tape) {
       tape = existsSync(file)
-        ? (JSON.parse(readFileSync(file, 'utf8')) as Cassette)
-        : {};
+        ? parseCassette(readFileSync(file, 'utf8'))
+        : { prefixes: {}, entries: {} };
     }
     return tape;
   };
 
-  // Keys sorted so re-recording produces reviewable diffs.
   const flush = (cassette: Cassette): void => {
     mkdirSync(dirname(file), { recursive: true });
-    const sorted = Object.fromEntries(
-      Object.entries(cassette).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
-    );
-    writeFileSync(file, JSON.stringify(sorted, null, 2) + '\n');
+    writeFileSync(file, serializeCassette(cassette));
   };
 
   return async (input, init) => {
     const method = (init?.method ?? 'GET').toUpperCase();
     const url = requestUrl(input);
-    const fp = await fingerprint(method, url, requestBody(init));
+    const body = requestBody(init);
+    const fp = await fingerprint(method, url, body);
 
     const cassette = load();
-    const hit = cassette[fp];
+    const hit = cassette.entries[fp];
     if (hit) return responseFromEntry(hit);
 
     if (mode === 'replay') {
-      throw new Error(`no recording for this request: ${fp} (${method} ${url})`);
+      throw new Error(missMessage(cassette, fp, method, url, body));
     }
 
     const res = await upstream(input, init);
@@ -73,7 +74,11 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
     // the SDK's own retry reaches the live API and the eventual success — not
     // the transient error — is what lands in the cassette.
     if (res.status >= 200 && res.status < 300) {
-      cassette[fp] = entry;
+      // The readable-request record: dedupe the boilerplate the body shares
+      // with other recordings into the tape's prefixes, keep only the part
+      // that varies on the entry.
+      entry.request = { method, url, ...splitBody(cassette, body) };
+      cassette.entries[fp] = entry;
       flush(cassette);
     }
     return responseFromEntry(entry);

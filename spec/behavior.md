@@ -192,6 +192,14 @@ impossible; a changed prompt is simply a miss to re-record. Recordings
 are committed to git, so a fresh checkout replays the whole suite
 without a key.
 
+Each recording also keeps a readable copy of the request that produced
+it, so a reviewer can see what was asked without reversing a hash. The
+boilerplate every request repeats — the system prompt — is stored once
+per file and each recording keeps only the part that varies. When a
+request has no recording, the failure doesn't just say "miss": it names
+the closest recording and shows where the two first differ, so a
+changed prompt is diagnosable at a glance.
+
 → [code-contract.md — Headless](code-contract.md#headless)
 
 ## CLI
