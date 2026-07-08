@@ -43,7 +43,7 @@ function ctx(world: FileIoWorld): NonNullable<FileIoWorld['_fio']> {
   return world._fio;
 }
 
-// ── detectFormat / sampleNameFromUrl ─────────────────────────────────
+// ── detectFormat / sampleNameFromUrl ─────────────────────────────────────────
 
 When(
   'detectFormat is called with path {string} and content type {string}',
@@ -78,7 +78,7 @@ Then('the derived name is {string}', function (this: FileIoWorld, expected: stri
   assert.equal(ctx(this).name, expected);
 });
 
-// ── fetchTable ──────────────────────────────────────────────────────────────────
+// ── fetchTable ───────────────────────────────────────────────────────────────
 
 Given(
   'a stub fetch serving {string} with body {string} and content type {string}',
@@ -145,7 +145,7 @@ Then('fetchTable fails mentioning {string}', function (this: FileIoWorld, fragme
   );
 });
 
-// ── parseTable: codec edge cases ─────────────────────────────────────
+// ── parseTable: codec edge cases ─────────────────────────────────────────────
 
 async function parseNamed(world: FileIoWorld, name: string, bytes: Uint8Array): Promise<void> {
   const c = ctx(world);
@@ -214,7 +214,7 @@ Then(
   },
 );
 
-// ── warnIfHuge ──────────────────────────────────────────────────────────────────
+// ── warnIfHuge ───────────────────────────────────────────────────────────────
 
 When(
   'the size guard checks a {int} GB file named {string}',
@@ -242,7 +242,7 @@ Then('a console warning mentions {string}', function (this: FileIoWorld, fragmen
   );
 });
 
-// ── BrowserFilePort error mapping ────────────────────────────────────
+// ── BrowserFilePort error mapping ────────────────────────────────────────────
 
 Given('a browser open dialog that throws {string}', function (this: FileIoWorld, errorName: string) {
   ctx(this).pickerErrorName = errorName;
@@ -276,7 +276,7 @@ Then('pickOpen rethrows an error named {string}', function (this: FileIoWorld, e
   assert.equal(ctx(this).error!.name, errorName);
 });
 
-// ── serializeFlow ──────────────────────────────────────────────────────────────────────────
+// ── serializeFlow ────────────────────────────────────────────────────────────
 
 const specWithColumns = (table: string | undefined, columns: string): TablePlan => ({
   ...(table === undefined ? {} : { table }),
