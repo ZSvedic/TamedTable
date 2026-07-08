@@ -14,9 +14,9 @@ pick code.
 
 | Report | Verdict | One-line reason |
 |---|---|---|
-| [bench.md](bench.md) | keep original | recreate drops accurate costing and the perf profiles |
-| [cassette.md](cassette.md) | keep original | recreate's fuzzy matcher breaks the strict-replay rule |
-| [chat-panel.md](chat-panel.md) | keep original | recreate's DOM rewrite can't plug into the web app |
+| DONE: [bench.md](bench.md) | keep original | recreate drops accurate costing and the perf profiles |
+| DONE: [cassette.md](cassette.md) | keep original | recreate's fuzzy matcher breaks the strict-replay rule |
+| DONE: [chat-panel.md](chat-panel.md) | keep original | recreate's DOM rewrite can't plug into the web app |
 | [cli.md](cli.md) | keep original | recreate loses piped input lines and hangs |
 | [core.md](core.md) | keep original | recreate moved the engine into core against the contract |
 | [file-io.md](file-io.md) | keep original | recreate breaks on BOM, big numbers, and hides errors |

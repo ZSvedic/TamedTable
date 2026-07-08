@@ -26,7 +26,7 @@ Done better in the recreate: the code is split into `index.ts` / `session.ts` /
 
 - [ ] Split the original's `cli/index.ts` into the same four files? No behavior
       change; the win is readability, the cost is one big diff to review.
-      Answer:
+      Answer: Yes, split.
 
 ## Plan
 
