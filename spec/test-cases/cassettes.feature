@@ -51,3 +51,28 @@ Feature: Record and replay model API calls
       When the recorder records that request twice
       Then the upstream is called exactly once
       And the cassette file holds one recording
+
+  Rule: Recorded entries carry a readable request
+
+    @headless @offline
+    Scenario: A recorded entry stores the request it answers
+      Given an empty cassette wrapping an upstream that answers one request
+      When the recorder records that request twice
+      Then the cassette entry stores the request method, url, and body
+      And the entry key equals the fingerprint of the stored request
+
+    @headless @offline
+    Scenario: Shared request boilerplate is stored once per file
+      Given an empty cassette wrapping an upstream that answers every request
+      When the recorder records two requests sharing a long boilerplate prefix
+      Then the cassette stores the shared boilerplate once as a named prefix
+      And both entries reference that prefix and reconstruct their exact bodies
+
+  Rule: A replay miss names the nearest recording
+
+    @headless @offline
+    Scenario: A miss reports where the nearest recording diverges
+      Given a cassette recorded from a request with a long boilerplate prefix
+      When the recorder replays that request with its ending changed
+      Then the recorder fails with "no recording for this request"
+      And the failure names the byte where the nearest recording differs

@@ -306,7 +306,7 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 | `TAMEDTABLE_CASSETTE` | Behavior |
 |---|---|
 | `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs the real key of the provider being recorded (`GEMINI_API_KEY` — every cassette records with the Gemini defaults; the `@web` provider-key step also substitutes `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` from the environment for scenarios that select those providers). |
-| `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`. No network, no API key. |
+| `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`; when any committed entry carries a readable request, the message also names the nearest recorded request and the byte offset where it diverges, with a short excerpt of each side. No network, no API key. |
 | `off` (or any other value) | No recorder is installed; every call hits the network — a live run. |
 
 `cucumber.js` defaults `TAMEDTABLE_CASSETTE` to `replay` when it is
@@ -320,9 +320,33 @@ and the eventual success — not the transient error — is what lands in
 the cassette.
 
 A cassette file is a JSON object keyed by fingerprint; each value is
-`{ status, statusText, headers, body }`, with `body` the response body
-as text (a JSON payload or an SSE stream, captured verbatim). On replay
-a `Response` is reconstructed from those fields. Cassettes live one per
+`{ request, status, statusText, headers, body }`, with `body` the
+response body as text (a JSON payload or an SSE stream, captured
+verbatim). On replay a `Response` is reconstructed from those fields.
+
+`request` is a human-readable record of what was sent:
+`{ method, url, prefixId, suffix }`. To keep the file small, the
+boilerplate every request repeats (system prompts and any other
+byte-identical leading run) is deduplicated into a top-level
+`_prefixes` map of `prefixId → string`; `prefixId` names an entry
+there (or is `null` when the body shares no long prefix with any
+other recording), and `prefix + suffix` reconstructs the exact
+original body bytes. The recorder splits each new body against the
+known prefixes — reusing the longest one the body starts with, or
+minting a new prefix from the longest common run (≥ 200 chars) it
+shares with an already-recorded body and re-splitting the entries that
+share it. `_prefixes` is reserved vocabulary: it can never collide
+with an entry key, which is always a 64-char hex fingerprint. The
+entry key stays the full-body fingerprint — replay lookup and the
+changed-prompt-is-a-miss guarantee are untouched — and a unit test
+asserts `fingerprint(method, url, prefix + suffix) === key` over every
+committed entry that carries a `request`. Entries recorded before this
+field existed have no `request`; they load and replay as-is and gain
+one the next time their cassette is re-recorded from scratch. (Request
+secrets never reach the file: every provider sends its API key in a
+header, and request headers are not recorded.)
+
+Cassettes live one per
 feature file at `cassettes/<feature>.json` in the repo root — committed
 recorded data, not human-reviewed contract, so they sit outside `spec/`,
 and not regenerable from spec (re-recording needs a live API key), so
@@ -831,6 +855,21 @@ handler: validates the `.py` extension and the path; scans
 `currentSpec().transformations` for any `{llm}` `Expr` and refuses if
 one is present; otherwise calls `exportPython` and writes the result.
 `:save-py` is REPL-only — no `tamedtable` subcommand.
+
+## Benchmarks (#BenchPerf #BenchSweep)
+
+→ [benchmarks/README.md](../benchmarks/README.md) for data layout and how to run.
+
+Benchmark costing must come from real provider usage responses: the
+runner wraps `fetch` (`tallyingFetch` in
+[`src/packages/bench/usage.ts`](../src/packages/bench/usage.ts)) and
+reads each provider's usage fields — including the cache-write and
+cache-read token classes, priced through `benchmarks/models.jsonl` —
+never token counts echoed back through debug callbacks, which miss
+cache classes and understate cost whenever caching kicks in. The bench
+must exercise the real request path — the same engine `fetch` route the
+app uses — never a mock or a reimplemented client, so caching, retries,
+and batching show up in the measurement.
 
 ## Model config
 
