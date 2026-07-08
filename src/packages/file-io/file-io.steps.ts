@@ -166,7 +166,7 @@ When(
 When(
   'a file {string} with a UTF-8 BOM and body {string} is parsed',
   async function (this: FileIoWorld, name: string, body: string) {
-    await parseNamed(this, name, new TextEncoder().encode('﻿' + unescape(body)));
+    await parseNamed(this, name, new TextEncoder().encode(String.fromCharCode(0xfeff) + unescape(body)));
   },
 );
 
