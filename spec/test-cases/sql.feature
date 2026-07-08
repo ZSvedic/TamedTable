@@ -60,11 +60,11 @@ Feature: SQL expressions
         """
         Add column UpperCountry computed in SQL as upper(Country)
         :load filter-input.csv
-        Add column UpperCity computed in SQL as upper(City)
+        Add column UpperName computed in SQL as upper(Name)
         exit
         """
       Then REPL exit code is 0
-      And column "UpperCity" exists in the spec
+      And column "UpperName" exists in the spec
       And column "UpperCountry" is absent from the current rows
 
   Rule: Cancellation interrupts a running SQL query
