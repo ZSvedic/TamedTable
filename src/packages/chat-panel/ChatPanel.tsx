@@ -357,12 +357,14 @@ export function ChatPanel({
               ?
             </button>
             {helpOpen && (
-              <div
+              <ul
                 style={{
                   position: 'absolute',
                   top: '100%',
                   right: 0,
+                  margin: 0,
                   marginTop: 4,
+                  listStyle: 'none',
                   background: t.surface,
                   border: `1px solid ${t.line}`,
                   borderRadius: space.radius,
@@ -379,7 +381,7 @@ export function ChatPanel({
                 }}
               >
                 {helpLines.map((line) => (
-                  <span
+                  <li
                     key={line}
                     style={{
                       fontFamily: typography.ui,
@@ -389,9 +391,9 @@ export function ChatPanel({
                     }}
                   >
                     {line}
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </span>
         )}
