@@ -1,0 +1,10 @@
+# lychee config, auto-detected by the Link check workflow (.github/workflows/link-check.yml).
+#
+# MAP.md carries ~40 `github.com/search?q=repo:...#Tag` code-search links. When the
+# lychee cache expires they all re-fetch at once and GitHub answers 429 (Too Many
+# Requests), failing the run. Throttle github.com so those requests are serialised
+# and spaced out instead of hammered in parallel.
+
+[hosts."github.com"]
+concurrency = 1
+request_interval = "500ms"

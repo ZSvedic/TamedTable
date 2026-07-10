@@ -1,6 +1,6 @@
 # Marketing brief
 
-The source of truth for TamedTable's message: the tagline, who it's for, and what it does for you. Derived docs in this dir — like the reworked feature menu in [new-ai-features.md](new-ai-features.md) — build on this, and the landing page is built on the [SaaSify template](https://github.com/prantomollick/saas-landing-page-template). Visuals live in [brand/brand.md](brand/brand.md); product details live in [spec/](../spec/).
+The source of truth for TamedTable's message: the tagline, who it's for, and what it does for you. Derived docs in this dir build on this, and the landing page is built on the [SaaSify template](https://github.com/prantomollick/saas-landing-page-template). Visuals live in [brand/brand.md](brand/brand.md); product details live in [spec/](../spec/).
 
 ## Taglines
 
