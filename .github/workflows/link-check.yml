@@ -35,6 +35,7 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
+            --config lychee.toml
             --cache
             --max-cache-age 1w
             --no-progress
