@@ -24,7 +24,7 @@ stored model.
 
 ## Questions for you
 
-- [ ] `TAMEDTABLE_MODEL` names a model from a different provider than the one
+- [x] `TAMEDTABLE_MODEL` names a model from a different provider than the one
       selected: coerce to the provider default (original, current) or trust the
       env var (recreate)? Answer: coerce to the provider default (original, current)
 
