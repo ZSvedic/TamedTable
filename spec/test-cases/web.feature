@@ -189,6 +189,69 @@ Feature: Web front-end
       And user undoes the last change
       Then the first column is "ID"
 
+  Rule: The history timeline drives redo and jump
+
+    The History sheet reads the full timeline — done steps first, then the
+    undone ones — with a cursor on the current step. A fresh load clears
+    the journal, so the load itself is never an entry.
+
+    Background:
+      Given the TamedTable web app
+      And load "customers-input.csv"
+
+    @web
+    Scenario: Redo restores an undone change
+      When user edits cell at row 1 column "Country" to "United States"
+      And user undoes the last change
+      And user redoes the last change
+      Then cell at row 1 column "Country" shows "United States"
+      And the spec has 1 transformation
+
+    @web
+    Scenario: The history timeline lists every change, newest current
+      When user edits cell at row 1 column "Country" to "United States"
+      And user reorders columns so "Country" comes first
+      Then the history timeline shows 2 entries
+      And the history cursor is at entry 1
+      And history entry 0 is labelled "edit Country row 1"
+      And history entry 1 is labelled "reorder columns"
+
+    @web
+    Scenario: Jumping the history to an earlier point restores that state
+      When user edits cell at row 1 column "Country" to "United States"
+      And user reorders columns so "Country" comes first
+      And user jumps to history entry 0
+      Then the spec has 1 transformation
+      And the history cursor is at entry 0
+      When user jumps to history entry 1
+      Then the first column is "Country"
+
+    @web
+    Scenario: A new change after undo clears the redone tail
+      When user edits cell at row 1 column "Country" to "United States"
+      And user undoes the last change
+      And user reorders columns so "Country" comes first
+      Then the history timeline shows 1 entry
+      And the history cursor is at entry 0
+
+  Rule: On a phone a tour's query step cues the Type sheet
+
+    The controller signals each tour step's focus target; the mobile shell
+    raises the Type sheet exactly when that target is the chat composer, so
+    the composer the tour spotlights is on screen. The layout halves of the
+    phone rules — the page is the table's scroller under a frozen header,
+    and on desktop nothing scrolls the page — are browser facts checked in
+    src/packages/web/e2e/mobile.e2e.ts.
+
+    @web
+    Scenario: The query tour step targets the chat composer
+      Given the TamedTable web app
+      And the tutorial "Filter by Country" is selected
+      When user plays the tutorial
+      Then the tour step targets the Open control
+      When user advances to the next tutorial step
+      Then the tour step targets the chat composer
+
   Rule: The table view paginates long tables
 
     Background:

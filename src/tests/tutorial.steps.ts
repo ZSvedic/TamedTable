@@ -119,6 +119,16 @@ Then('the golden rows are available', function (this: TamedTableWorld) {
   assert.notEqual(controller(this).goldenRows, null, 'goldenRows should not be null');
 });
 
+// The focus targets the mobile shell keys off: 'tutorial-chat-input' raises
+// the Type sheet; anything else returns the dock.
+Then('the tour step targets the Open control', function (this: TamedTableWorld) {
+  assert.equal(controller(this).currentStepElementId(), 'tutorial-open-btn');
+});
+
+Then('the tour step targets the chat composer', function (this: TamedTableWorld) {
+  assert.equal(controller(this).currentStepElementId(), 'tutorial-chat-input');
+});
+
 Then('the chat input is prefilled with {string}', function (this: TamedTableWorld, text: string) {
   assert.equal(controller(this).tutorialPrefill, text);
 });
