@@ -6,5 +6,5 @@
 # and spaced out instead of hammered in parallel.
 
 [hosts."github.com"]
-concurrency = 1
-request_interval = "500ms"
+concurrency = 4
+request_interval = "200ms"
