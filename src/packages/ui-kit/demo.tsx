@@ -25,10 +25,10 @@ function Demo(): ReactNode {
 
   const report = (event: string): void => setLog((l) => [...l, event]);
 
-  const addToast = (kind: ToastItem['kind']): void => {
+  const addToast = (kind: ToastItem['kind'], action?: string): void => {
     setToasts((list) => [
       ...list,
-      { id: toastSeq, kind, message: `Sample ${kind} toast #${toastSeq}` },
+      { id: toastSeq, kind, message: `Sample ${kind} toast #${toastSeq}`, ...(action ? { action } : {}) },
     ]);
     setToastSeq((n) => n + 1);
   };
@@ -100,6 +100,9 @@ function Demo(): ReactNode {
           <Button variant="danger" onClick={() => addToast('error')}>
             Add error toast
           </Button>
+          <Button variant="chrome" onClick={() => addToast('error', 'Copy report')}>
+            Add action toast
+          </Button>
         </div>
       </div>
 
@@ -119,7 +122,11 @@ function Demo(): ReactNode {
         </pre>
       </div>
 
-      <Toasts toasts={toasts} onDismiss={(id) => setToasts((l) => l.filter((x) => x.id !== id))} />
+      <Toasts
+        toasts={toasts}
+        onDismiss={(id) => setToasts((l) => l.filter((x) => x.id !== id))}
+        onAction={(id) => report(`toast action ${id}`)}
+      />
     </div>
   );
 }

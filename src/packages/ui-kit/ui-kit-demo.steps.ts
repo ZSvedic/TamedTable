@@ -69,6 +69,30 @@ Then('an {string} toast is visible', async function (this: object, kind: string)
   await page(this).waitForSelector(`[data-uk-toast="${kind}"]`);
 });
 
+When('the user adds a toast with a {string} action', async function (this: object, _label: string) {
+  await page(this).click('button:has-text("Add action toast")');
+});
+
+Then('the newest toast shows an action labelled {string}', async function (this: object, label: string) {
+  const action = page(this).locator('[data-uk-toast-action]').last();
+  await action.waitFor();
+  assert.equal(await action.textContent(), label);
+});
+
+When("the user clicks the newest toast's action", async function (this: object) {
+  await page(this).locator('[data-uk-toast-action]').last().click();
+});
+
+Then('the demo log records the toast action', async function (this: object) {
+  const p = page(this);
+  const pred = `(document.querySelector('#out')?.textContent ?? '').includes('toast action')`;
+  try {
+    await p.waitForFunction(pred, undefined, { timeout: 5_000 });
+  } catch {
+    assert.fail(`expected the log to record the toast action; it shows: ${await p.textContent('#out')}`);
+  }
+});
+
 When('the user dismisses the first toast', async function (this: object) {
   await page(this).click('[data-uk-toast-dismiss]');
 });

@@ -109,6 +109,16 @@ When('user sends the latched recording', async function (this: TamedTableWorld) 
   await controller(this).stopVoice();
 });
 
+// The 30 s cap elapsing: the web hook's injected voiceSchedule captured the
+// auto-stop callback instead of arming a real timer — firing it here IS the
+// timeout, so the scenario needs no 30-second wait.
+When('30 seconds pass without a release', async function (this: TamedTableWorld) {
+  const pending = ctxOf(this).voiceAutoStop;
+  if (!pending) throw new Error('no auto-stop scheduled — is a recording live?');
+  assert.equal(pending.ms, 30_000, 'the auto-stop must be armed for 30 s');
+  await pending.fn();
+});
+
 When('user presses Escape to cancel the recording', function (this: TamedTableWorld) {
   controller(this).cancelVoice();
 });

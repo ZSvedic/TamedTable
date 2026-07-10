@@ -23,7 +23,8 @@ export class VoiceManager {
   private readonly voice: VoicePort | undefined;
   private readonly continuous: ContinuousVoicePort | undefined;
   private voiceAbort: AbortController | null = null;
-  private voiceTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Cancels the pending 30 s auto-stop, set while a recording is live. */
+  private voiceAutoStopCancel: (() => void) | null = null;
   /** True while a continuous turn is being applied — so a second detected turn
    *  that lands mid-request is dropped rather than overlapping the first. */
   private continuousBusy = false;
@@ -55,7 +56,12 @@ export class VoiceManager {
       return;
     }
     this.host.voiceStatus = 'recording';
-    this.voiceTimer = setTimeout(() => void this.stopVoice(), 30_000);
+    const schedule = this.host.opts.voiceSchedule
+      ?? ((fn: () => Promise<void>, ms: number) => {
+        const t = setTimeout(() => void fn(), ms);
+        return () => clearTimeout(t);
+      });
+    this.voiceAutoStopCancel = schedule(() => this.stopVoice(), 30_000);
     this.host.notify();
   }
 
@@ -222,10 +228,8 @@ export class VoiceManager {
   }
 
   private clearVoiceTimer(): void {
-    if (this.voiceTimer) {
-      clearTimeout(this.voiceTimer);
-      this.voiceTimer = undefined;
-    }
+    this.voiceAutoStopCancel?.();
+    this.voiceAutoStopCancel = null;
   }
 
   /** Snapshot the current table view for the voice instruction text. */

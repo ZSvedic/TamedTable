@@ -38,10 +38,12 @@ const tutorialSources: TutorialSources = {
 
 const controller = createWebController({
   file: new BrowserFilePort(),
-  voice: browserVoicePort(),
+  // The port factories return null on a browser without the capture APIs;
+  // unset here keeps the mic / waveform buttons hidden there.
+  voice: browserVoicePort() ?? undefined,
   // Hands-free mode starts at the Balanced tuning (snappier than the library
   // default 1.4 s) so a turn is sent ~0.7 s after you stop.
-  continuousVoice: browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 }),
+  continuousVoice: browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 }) ?? undefined,
   tutorialSources,
 });
 

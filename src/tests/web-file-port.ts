@@ -25,6 +25,9 @@ export interface WebScenarioCtx {
   /** Emits one detected turn into the running continuous session. Set by the
    *  stub port's start(), cleared on stop() — so a step can fire a turn. */
   continuousEmit?: () => Promise<void>;
+  /** The pending 30 s recording auto-stop, captured by the injected
+   *  voiceSchedule so the "30 seconds pass" step can fire it without waiting. */
+  voiceAutoStop?: { fn: () => Promise<void>; ms: number };
   /** The port the runner factory built for this scenario. */
   filePort?: WebTestFilePort;
   /** An in-flight dialog action (openCsv / saveFlow / saveData) awaiting a step. */

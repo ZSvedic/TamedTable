@@ -54,6 +54,10 @@ export interface WebControllerOptions {
    *  browserContinuousPort(); tests inject a stub that emits a fixture clip.
    *  The waveform button is hidden when unset. */
   continuousVoice?: ContinuousVoicePort;
+  /** Test seam for the 30 s recording auto-stop: schedule `fn` after `ms` and
+   *  return a cancel. Defaults to setTimeout; the Cucumber web profile injects
+   *  a capture so a scenario can fire the timeout without waiting. */
+  voiceSchedule?: (fn: () => Promise<void>, ms: number) => () => void;
   /** Initial config (tests inject keys; the browser leaves it for the settings panel). */
   config?: Partial<ResolvedConfig>;
   /** Environment variables used to resolve the initial config. When omitted

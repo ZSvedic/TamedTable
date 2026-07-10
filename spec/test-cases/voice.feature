@@ -81,6 +81,19 @@ Feature: Voice input
       And the mic status is "idle"
 
     @web
+    Scenario: A recording that reaches thirty seconds stops and sends on its own
+      Given the TamedTable web app
+      And a stub microphone that records "voice-normalize-dob.m4a"
+      And load "customers-input.csv"
+      And the provider "gemini" has API key "AIza-example-key"
+      When user presses and holds the mic button
+      Then the mic status is "recording"
+      When 30 seconds pass without a release
+      Then the mic status is "idle"
+      And a user bubble shows "🎙 normalize DOB column"
+      And the spec has 1 transformation
+
+    @web
     Scenario: Escape cancels a recording without sending anything
       Given the TamedTable web app
       And a stub microphone that returns recorded audio
