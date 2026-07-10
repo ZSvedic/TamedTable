@@ -621,12 +621,14 @@ async function applyJoin(
   const how = t.how ?? 'left';
   const out: Row[] = [];
   for (const lrow of rows) {
-    const match = right.find((rrow) => Boolean(fn(lrow, rrow)));
-    if (match) {
+    // SQL multiplicity, not a first-match lookup: N right matches → N output rows.
+    const matches = right.filter((rrow) => Boolean(fn(lrow, rrow)));
+    for (const match of matches) {
       const merged: Row = { ...lrow };
       for (const [srcCol, dstCol] of Object.entries(rightColMap)) merged[dstCol] = match[srcCol];
       out.push(merged);
-    } else if (how === 'left') {
+    }
+    if (matches.length === 0 && how === 'left') {
       const merged: Row = { ...lrow };
       for (const dstCol of Object.values(rightColMap)) merged[dstCol] = null;
       out.push(merged);

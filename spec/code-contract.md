@@ -523,8 +523,11 @@ JS (`(rows, key, allGroups) => …`), and as a relation for SQL — named
 by name resolves; LLM aggregates receive the group's compact JSON as
 `{*}`.
 
-`Runner.loadInput` continues to dispatch on extension; the join's
-right-side path is loaded by the same code path. The Zod schema
+`applyJoin` emits one output row per matching `(leftRow, rightRow)`
+pair — SQL multiplicity, not a first-match lookup — so a left row with
+N right matches produces N rows. `Runner.loadInput` continues to
+dispatch on extension; the join's right-side path is loaded by the
+same code path. The Zod schema
 permits these two `kind` values and enforces a `.csv`/`.jsonl`
 extension for `join.with` (other extensions error at validation time,
 not at evaluation).

@@ -583,9 +583,12 @@ source. Shape: `{ kind: "join", with: <path>, on: <expr>, how?:
 resolved relative to the spec's working directory; the right table is
 loaded once at transformation-evaluation time and held for the join.
 `on` is a predicate expression evaluated for each `(leftRow,
-rightRow)` pair; truthy means match. Default `how` is `"left"` — left
-rows survive even without a right match, with right-side columns set
-to `null`. `"inner"` drops left rows that have no match.
+rightRow)` pair; truthy means match. A left row that matches several
+right rows emits **one output row per match** — the left values repeat,
+SQL style; the join is not a first-match lookup. Default `how` is
+`"left"` — left rows survive even without a right match, with
+right-side columns set to `null`. `"inner"` drops left rows that have
+no match.
 
 When right and left columns collide, the right column is renamed
 `<name>_2` (then `_3`, etc.) so no column silently overwrites
