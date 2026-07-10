@@ -90,6 +90,20 @@ Feature: Model config
       When resolveConfig is called with stored provider "openai" and cellModel "claude-haiku-4-5"
       Then the resolved cellModel is "gpt-5.4-mini"
 
+    @headless
+    # Rule 7: the final primary model must belong to the resolved provider.
+    Scenario: A cross-provider stored model is coerced to the provider default
+      When resolveConfig is called with stored provider "openai" and model "claude-sonnet-4-6"
+      Then the resolved model is "gpt-5.5"
+      And the resolved cellModel is "gpt-5.4-mini"
+
+    @headless
+    # Rules 5 + 7: the TAMEDTABLE_MODEL env override obeys the same provider guard.
+    Scenario: A cross-provider TAMEDTABLE_MODEL is coerced to the provider default
+      When resolveConfig is called with env GEMINI_API_KEY="AIza-x" and TAMEDTABLE_MODEL="gpt-5.5"
+      Then the resolved provider is "gemini"
+      And the resolved model is "gemini-3.5-flash"
+
   Rule: providerFor
 
     @headless
@@ -221,6 +235,71 @@ Feature: Model config
     Scenario: gemini-3.5-flash has voiceInput true
       Then the model "gemini-3.5-flash" has voiceInput true
 
+    @headless
+    # voiceInput mirrors benchmarks/models.jsonl audioInput: flash-lite has none.
+    Scenario: gemini-3.1-flash-lite has voiceInput false
+      Then the model "gemini-3.1-flash-lite" has voiceInput false
+
+    @headless
+    # Membership rule: the catalogue equals models.jsonl minus runnable:false.
+    Scenario: The catalogue carries every runnable benchmark model
+      Then ALL_MODELS contains the model "gemini-2.5-flash"
+      And ALL_MODELS contains the model "claude-fable-5"
+      And ALL_MODELS does not contain the model "gpt-5.5-pro"
+
+    @headless
+    Scenario: Every catalogue entry carries per-Mtok prices
+      Then every ALL_MODELS entry has inUsdPerMtok and outUsdPerMtok prices
+
+    @headless
+    Scenario: gemini-3.5-flash is priced 1.5 in and 9 out
+      Then the model "gemini-3.5-flash" costs 1.5 in and 9 out per Mtok
+
+  Rule: DEFAULTS names each provider's two roles
+
+    @headless
+    Scenario Outline: DEFAULTS for <provider>
+      Then DEFAULTS names the <provider> primary "<primary>" and secondary "<secondary>"
+
+      Examples:
+        | provider  | primary           | secondary             |
+        | gemini    | gemini-3.5-flash  | gemini-3.1-flash-lite |
+        | openai    | gpt-5.5           | gpt-5.4-mini          |
+        | anthropic | claude-sonnet-4-6 | claude-haiku-4-5      |
+
+  Rule: storage.ts persists config in localStorage
+
+    The storage entry point implements StoragePort over localStorage under the
+    single key "tamedtable.config"; helpers are safe no-ops without localStorage.
+
+    @headless
+    Scenario: writeStoredConfig round-trips through readStoredConfig
+      Given a fake localStorage
+      When writeStoredConfig is called with provider "anthropic" and anthropicKey "sk-ant-1"
+      Then readStoredConfig returns provider "anthropic" and anthropicKey "sk-ant-1"
+      And the fake localStorage holds a "tamedtable.config" blob
+
+    @headless
+    Scenario: clearStoredConfig removes the blob
+      Given a fake localStorage
+      When writeStoredConfig is called with provider "anthropic" and anthropicKey "sk-ant-1"
+      And clearStoredConfig is called
+      Then readStoredConfig returns an empty config
+      And the fake localStorage has no "tamedtable.config" blob
+
+    @headless
+    Scenario: A legacy tamedtable.apiKey value migrates to anthropicKey on first read
+      Given a fake localStorage where "tamedtable.apiKey" is "sk-legacy"
+      When readStoredConfig is called
+      Then readStoredConfig returns anthropicKey "sk-legacy"
+      And the fake localStorage has no "tamedtable.apiKey" entry
+
+    @headless
+    Scenario: Without localStorage the helpers are safe no-ops
+      Given no localStorage is available
+      Then readStoredConfig returns an empty config
+      And writeStoredConfig and clearStoredConfig do not throw
+
   Rule: ModelChooser component
 
     The provider accordion is a pure React component, mounted on the package
@@ -256,6 +335,19 @@ Feature: Model config
       And the "openai" card's secondary default is "gpt-5.4-mini"
 
     @web
+    Scenario: Each default row shows its per-Mtok price
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      Then the "primary" default row shows the price "$1.5 in / $9 out"
+      And the "secondary" default row shows the price "$0.25 in / $1.5 out"
+
+    @web
+    Scenario: The card body shows the env-var hint under the key field
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      Then the "gemini" card shows the env hint "or set GEMINI_API_KEY in .env"
+
+    @web
     Scenario: Each expanded card deep-links to that provider's key page
       Given the model-config demo page
       When the user clicks the "Google" provider card
@@ -274,6 +366,15 @@ Feature: Model config
     Scenario: The chooser links to the FAQ on changing the default models
       Given the model-config demo page
       Then the chooser shows a change-models help link to "FAQ.html#change-models" in a new tab
+
+    @web
+    Scenario: A typed key persists across a demo page reload
+      Given the model-config demo page
+      When the user clicks the "Anthropic" provider card
+      And the user types "sk-ant-persist" into the "anthropic" key field
+      And the demo page reloads
+      Then the demo shows resolved provider "anthropic"
+      And the demo shows resolved anthropicKey "sk-ant-persist"
 
     @web
     Scenario: A typed API key stays masked until the eye toggle reveals it

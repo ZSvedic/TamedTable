@@ -271,7 +271,7 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
-| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. |
+| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
 | `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
@@ -281,7 +281,8 @@ Env vars:
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 or `OPENAI_API_KEY`. `resolveConfig` picks the provider from whichever is set
 (Gemini > OpenAI > Anthropic when several are), and `TAMEDTABLE_MODEL` must
-name a model from that provider.
+name a model from that provider — one from another provider is coerced to
+the provider's default model.
 
 The CLI calls `core`'s `loadEnv()` at startup: it looks for a `.env`
 file in the working directory and up to four parent directories,

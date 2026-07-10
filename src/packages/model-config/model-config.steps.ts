@@ -1,5 +1,5 @@
 // #ModelConfig
-import { Given, When, Then } from '@cucumber/cucumber';
+import { After, Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import {
   resolveConfig,
@@ -9,9 +9,11 @@ import {
   acceptsTemperature,
   keyFor,
   ALL_MODELS,
+  DEFAULTS,
   type ResolvedConfig,
   type Provider,
 } from '@tamedtable/model-config';
+import { readStoredConfig, writeStoredConfig, clearStoredConfig } from './storage.ts';
 
 interface ModelConfigCtx {
   resolved?: ResolvedConfig;
@@ -123,6 +125,23 @@ When(
       provider: provider as Provider,
       cellModel,
     });
+  },
+);
+
+When(
+  'resolveConfig is called with stored provider {string} and model {string}',
+  function (this: ModelConfigWorld, provider: string, model: string) {
+    ctx(this).resolved = resolveConfig({}, {
+      provider: provider as Provider,
+      model,
+    });
+  },
+);
+
+When(
+  'resolveConfig is called with env GEMINI_API_KEY={string} and TAMEDTABLE_MODEL={string}',
+  function (this: ModelConfigWorld, key: string, model: string) {
+    ctx(this).resolved = resolveConfig({ GEMINI_API_KEY: key, TAMEDTABLE_MODEL: model }, {});
   },
 );
 
@@ -318,3 +337,158 @@ Then(
     assert.equal(m.voiceInput, false, `Expected model "${modelId}" to have voiceInput=false`);
   },
 );
+
+Then(
+  'ALL_MODELS contains the model {string}',
+  function (this: ModelConfigWorld, modelId: string) {
+    assert.ok(ALL_MODELS.some((m) => m.id === modelId), `Model "${modelId}" not found in ALL_MODELS`);
+  },
+);
+
+Then(
+  'ALL_MODELS does not contain the model {string}',
+  function (this: ModelConfigWorld, modelId: string) {
+    assert.ok(!ALL_MODELS.some((m) => m.id === modelId), `Model "${modelId}" unexpectedly in ALL_MODELS`);
+  },
+);
+
+Then(
+  'every ALL_MODELS entry has inUsdPerMtok and outUsdPerMtok prices',
+  function (this: ModelConfigWorld) {
+    for (const m of ALL_MODELS) {
+      assert.equal(typeof m.inUsdPerMtok, 'number', `Model "${m.id}" is missing inUsdPerMtok`);
+      assert.equal(typeof m.outUsdPerMtok, 'number', `Model "${m.id}" is missing outUsdPerMtok`);
+    }
+  },
+);
+
+Then(
+  'the model {string} costs {float} in and {float} out per Mtok',
+  function (this: ModelConfigWorld, modelId: string, inPrice: number, outPrice: number) {
+    const m = ALL_MODELS.find((m) => m.id === modelId);
+    assert.ok(m, `Model "${modelId}" not found in ALL_MODELS`);
+    assert.equal(m.inUsdPerMtok, inPrice);
+    assert.equal(m.outUsdPerMtok, outPrice);
+  },
+);
+
+// ── DEFAULTS steps ───────────────────────────────────────────────────────────
+
+Then(
+  'DEFAULTS names the {word} primary {string} and secondary {string}',
+  function (this: ModelConfigWorld, provider: string, primary: string, secondary: string) {
+    const d = DEFAULTS[provider as Provider];
+    assert.ok(d, `No DEFAULTS entry for provider "${provider}"`);
+    assert.equal(d.primary, primary);
+    assert.equal(d.secondary, secondary);
+  },
+);
+
+// ── storage.ts steps ─────────────────────────────────────────────────────────
+// storage.ts reads localStorage via globalThis, so a scenario installs a fake
+// there (or removes the real one) and the After hook restores whatever the
+// runtime had.
+
+interface StorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+function fakeStorage(seed: Record<string, string> = {}): StorageLike {
+  const data = new Map(Object.entries(seed));
+  return {
+    getItem: (k) => data.get(k) ?? null,
+    setItem: (k, v) => { data.set(k, v); },
+    removeItem: (k) => { data.delete(k); },
+  };
+}
+
+const g = globalThis as { localStorage?: StorageLike };
+let savedLocalStorage: StorageLike | undefined;
+let localStoragePatched = false;
+
+function patchLocalStorage(value: StorageLike | undefined): void {
+  if (!localStoragePatched) {
+    savedLocalStorage = g.localStorage;
+    localStoragePatched = true;
+  }
+  if (value === undefined) delete g.localStorage;
+  else g.localStorage = value;
+}
+
+After(function () {
+  if (!localStoragePatched) return;
+  if (savedLocalStorage === undefined) delete g.localStorage;
+  else g.localStorage = savedLocalStorage;
+  localStoragePatched = false;
+});
+
+Given('a fake localStorage', function (this: ModelConfigWorld) {
+  patchLocalStorage(fakeStorage());
+});
+
+Given(
+  'a fake localStorage where {string} is {string}',
+  function (this: ModelConfigWorld, key: string, value: string) {
+    patchLocalStorage(fakeStorage({ [key]: value }));
+  },
+);
+
+Given('no localStorage is available', function (this: ModelConfigWorld) {
+  patchLocalStorage(undefined);
+});
+
+When(
+  'writeStoredConfig is called with provider {string} and anthropicKey {string}',
+  function (this: ModelConfigWorld, provider: string, anthropicKey: string) {
+    writeStoredConfig({ provider: provider as Provider, anthropicKey });
+  },
+);
+
+When('clearStoredConfig is called', function (this: ModelConfigWorld) {
+  clearStoredConfig();
+});
+
+When('readStoredConfig is called', function (this: ModelConfigWorld) {
+  readStoredConfig();
+});
+
+Then(
+  'readStoredConfig returns provider {string} and anthropicKey {string}',
+  function (this: ModelConfigWorld, provider: string, anthropicKey: string) {
+    const c = readStoredConfig();
+    assert.equal(c.provider, provider);
+    assert.equal(c.anthropicKey, anthropicKey);
+  },
+);
+
+Then(
+  'readStoredConfig returns anthropicKey {string}',
+  function (this: ModelConfigWorld, anthropicKey: string) {
+    assert.equal(readStoredConfig().anthropicKey, anthropicKey);
+  },
+);
+
+Then('readStoredConfig returns an empty config', function (this: ModelConfigWorld) {
+  assert.deepEqual(readStoredConfig(), {});
+});
+
+Then(
+  'the fake localStorage holds a {string} blob',
+  function (this: ModelConfigWorld, key: string) {
+    assert.ok(g.localStorage?.getItem(key), `expected localStorage to hold "${key}"`);
+  },
+);
+
+Then(
+  'the fake localStorage has no {string} blob/entry',
+  function (this: ModelConfigWorld, key: string) {
+    assert.equal(g.localStorage?.getItem(key), null, `expected localStorage to have no "${key}"`);
+  },
+);
+
+Then('writeStoredConfig and clearStoredConfig do not throw', function (this: ModelConfigWorld) {
+  writeStoredConfig({ provider: 'anthropic', anthropicKey: 'sk-noop' });
+  clearStoredConfig();
+});
