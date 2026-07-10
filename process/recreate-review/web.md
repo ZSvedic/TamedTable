@@ -5,6 +5,43 @@ components, mobile shell, hooks, four Playwright e2e specs) with the
 recreate's (~94 KB source, plus a 40 MB `dist/` build output it committed by
 mistake).
 
+## Where the 169 KB difference goes
+
+Most of the gap is not "the recreate wrote leaner code" — it's things the
+recreate doesn't have at all, plus comments. Byte accounting:
+
+| Bucket | ORG | REC | Gap |
+|---|---|---|---|
+| Tests in the package (4 Playwright specs, 2 unit tests, playwright config) | 35 KB | 0 | 35 KB |
+| `public/` icons | 12 KB | 0 | 12 KB |
+| Build config (vite, tsconfig, index.html vs a 2.5 KB `build.ts`) | 12 KB | 4 KB | 8 KB |
+| Node-API shims for the browser | 12 KB | 8 KB | 4 KB |
+| Comments and blank lines inside app code | 51 KB | 6 KB | 45 KB |
+| App code with comments stripped | 142 KB | 79 KB | 63 KB |
+
+So of the 169 KB: ~55 KB is missing tests and assets, ~45 KB is
+documentation (a quarter of the original's controller lines are comments —
+the `#TutorialMode`-style headers that MAP.md and the spec link into; the
+recreate comments ~5% of lines), and only ~63 KB is genuinely smaller code.
+
+That remaining 63 KB buys less, not the same thing cheaper:
+
+- **UI**: the original's 13 React components (79 KB stripped) vs one 46 KB
+  imperative `app.ts` — the smaller version is exactly the
+  rebuild-the-world renderer criticized below. React's diffing is what the
+  original pays those bytes for; the recreate saves them by losing scroll,
+  focus, and typed text on every state change.
+- **Diagnostics**: 13 KB vs 4 KB — the recreate drops `redactString` and
+  the secret-key detection, so its bug reports can leak key material.
+- **Tutorial**: the original's 39 KB `TutorialManager` + panel lazy-loads
+  feature files and cassettes, caches them, and persists completion; the
+  recreate inlines a thinner version into its controller.
+
+Conclusion: the honest like-for-like number is 142 KB vs 79 KB, and the
+recreate's savings come from omitted behavior (state-preserving rendering,
+secret redaction) rather than better factoring. "Less code" here is not
+"easier to maintain" — it's uncommented code with no tests next to it.
+
 ## Analysis
 
 Credit first: the recreate's controller matches the original feature for
