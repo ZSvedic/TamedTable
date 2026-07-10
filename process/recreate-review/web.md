@@ -80,9 +80,24 @@ None.
 
 ## Plan
 
-1. Copy the recreate's phone scenarios (see `spec/test-cases/web.feature` in
-   TT-recreate) into the original's `spec/test-cases/web.feature`, plus its
-   history-sheet scenario if the original lacks it. Write step defs against
-   the controller. They document behavior the original already has, so they
+1. Copy the recreate's phone scenarios (they live in the recreate's
+   `spec/test-cases/shell.feature`, not its `web.feature`) into the
+   original's `spec/test-cases/web.feature`, plus its history-sheet
+   scenarios, which the original lacks. Write step defs against the
+   controller. They document behavior the original already has, so they
    pass right away — any red one is a real find.
 2. No code change.
+
+Done — outcome of step 1:
+
+- The history scenarios (redo, timeline listing, jump, redo-tail clearing)
+  landed controller-level and surfaced one real design difference: the
+  recreate's timeline lists the load as entry 0; the original's journal
+  deliberately clears on load, so the scenarios were adapted to that.
+- The tour scenario landed as the controller cue (the query step targets
+  the composer) — raising the Type sheet from that cue is the shell's job,
+  stated in the Rule description.
+- The two layout scenarios (phone page is the table's scroller; desktop
+  never scrolls) are browser facts a controller step can't see; they stay
+  in `e2e/mobile.e2e.ts`, where the missing desktop no-scroll check was
+  added — the one genuine coverage gap the recreate exposed.

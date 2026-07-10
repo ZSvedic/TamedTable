@@ -153,6 +153,23 @@ test.describe('desktop width', () => {
     await expect(page.getByText('Diagnostics', { exact: true })).toBeVisible();
     await expect(page.getByText('Add to home screen', { exact: true })).toHaveCount(0);
   });
+
+  test('nothing scrolls the page — panels scroll internally, even with a table loaded', async ({
+    page,
+  }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-tv-open="Open sample…"]').click();
+    await page
+      .locator('[data-tb-sample-dialog] [data-tb-sample]', { hasText: 'customers-input.csv' })
+      .first()
+      .click();
+    await expect(page.locator('[data-tv-cell="0:Country"]')).toBeVisible({ timeout: 30_000 });
+
+    const slack = await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    );
+    expect(slack, 'the desktop document must never be the scroller').toBeLessThanOrEqual(0);
+  });
 });
 
 // #Toolbar — the medium band between the phone breakpoint and full desktop

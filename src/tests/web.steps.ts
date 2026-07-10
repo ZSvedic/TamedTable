@@ -203,6 +203,28 @@ Then('the spec has {int} transformation(s)', function (this: TamedTableWorld, n:
   assert.equal(controller(this).displaySpec().transformations.length, n);
 });
 
+// ── History timeline ───────────────────────────────────────────────────────
+
+When('user redoes the last change', async function (this: TamedTableWorld) {
+  await controller(this).redo();
+});
+
+When('user jumps to history entry {int}', async function (this: TamedTableWorld, index: number) {
+  await controller(this).jumpToHistory(index);
+});
+
+Then('the history timeline shows {int} entry/entries', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).historyTimeline().steps.length, n);
+});
+
+Then('the history cursor is at entry {int}', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).historyTimeline().cursor, n);
+});
+
+Then('history entry {int} is labelled {string}', function (this: TamedTableWorld, i: number, label: string) {
+  assert.equal(controller(this).historyTimeline().steps[i]?.label, label);
+});
+
 // ── Pagination ─────────────────────────────────────────────────────────────
 
 When('user goes to page {int}', function (this: TamedTableWorld, page: number) {
