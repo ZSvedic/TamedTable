@@ -884,7 +884,7 @@ and batching show up in the measurement.
 ```ts
 type Provider = "anthropic" | "gemini" | "openai";
 
-interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; default?: boolean; secondaryDefault?: boolean; }
+interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
 
 interface ResolvedConfig {
   provider: Provider;
@@ -906,7 +906,7 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function providerFor(modelId: string): Provider;
-function acceptsTemperature(modelId: string): boolean;   // false for models that removed sampling params (Opus 4.8/4.7, Fable 5, Sonnet 5, GPT-5.4+/5.5) and unknown ids
+function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey)
 function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
