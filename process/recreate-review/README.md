@@ -1,6 +1,6 @@
 # Recreate review
 
-Ten reports comparing each package in this repo (the original) with the same
+Sixteen reports comparing each package in this repo (the original) with the same
 package in [TT-recreate](https://github.com/ZSvedic/TT-recreate), where Claude
 rebuilt `src/` from `spec/` alone. Each report is a standalone task for one
 Claude Code session: read it, get the owner's answers to its questions, run its
@@ -8,7 +8,7 @@ plan in this repo.
 
 The recreate passes its own test suite, but it also wrote that suite, so green
 proves little. Every finding comes from reading both implementations side by
-side. The pattern across all ten: the recreate is smaller but lost robustness
+side. The pattern across all sixteen: the recreate is smaller but lost robustness
 exactly where the spec is silent. Most plans therefore fix the spec, not just
 pick code.
 
@@ -24,6 +24,12 @@ pick code.
 | [headless.md](headless.md) | combine | keep original behavior, adopt the recreate's file split |
 | [model-config.md](model-config.md) | combine | keep original code, adopt the recreate's test scenarios |
 | [table-plan.md](table-plan.md) | keep original | recreate replaced the Zod schema with loose checks |
+| [table-view.md](table-view.md) | keep original | recreate has real pagination bugs, nothing to port |
+| [tests.md](tests.md) | keep original | steal curl-fetch.ts; recreate's asserts are looser |
+| [toolbar.md](toolbar.md) | keep original | recreate drops loading state, file-name rule, tour anchor |
+| [ui-kit.md](ui-kit.md) | keep original | adopt the toast-action scenario; sync pipeline lost |
+| [voice-input.md](voice-input.md) | combine | keep real VAD, adopt 30-second cap and capability guards |
+| [web.md](web.md) | keep original | recreate has no browser tests; adopt its phone scenarios |
 
 Every plan follows the [workflow rule](../../CLAUDE.md#workflow-rule--changing-a-component):
 spec first, then Gherkin, then code. When a plan documents behavior the code
