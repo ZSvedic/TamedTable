@@ -1,21 +1,21 @@
 {
   "models": [
-    { "id": "gemini-3.5-flash",       "name": "Gemini 3.5 Flash",     "provider": "gemini",    "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 9    },
-    { "id": "gemini-3.1-pro-preview", "name": "Gemini 3.1 Pro",       "provider": "gemini",    "voiceInput": true,  "inUsdPerMtok": 2,    "outUsdPerMtok": 12   },
-    { "id": "gemini-3.1-flash-lite",  "name": "Gemini 3.1 Flash-Lite","provider": "gemini",    "voiceInput": false, "inUsdPerMtok": 0.25, "outUsdPerMtok": 1.5  },
-    { "id": "gemini-2.5-flash",       "name": "Gemini 2.5 Flash",     "provider": "gemini",    "voiceInput": true,  "inUsdPerMtok": 0.3,  "outUsdPerMtok": 2.5  },
-    { "id": "gemini-2.5-flash-lite",  "name": "Gemini 2.5 Flash-Lite","provider": "gemini",    "voiceInput": true,  "inUsdPerMtok": 0.1,  "outUsdPerMtok": 0.4  },
+    { "id": "gemini-3.5-flash",       "name": "Gemini 3.5 Flash",     "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 9    },
+    { "id": "gemini-3.1-pro-preview", "name": "Gemini 3.1 Pro",       "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 2,    "outUsdPerMtok": 12   },
+    { "id": "gemini-3.1-flash-lite",  "name": "Gemini 3.1 Flash-Lite","provider": "gemini",    "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.25, "outUsdPerMtok": 1.5  },
+    { "id": "gemini-2.5-flash",       "name": "Gemini 2.5 Flash",     "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 0.3,  "outUsdPerMtok": 2.5  },
+    { "id": "gemini-2.5-flash-lite",  "name": "Gemini 2.5 Flash-Lite","provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 0.1,  "outUsdPerMtok": 0.4  },
 
-    { "id": "gpt-5.5",                "name": "GPT-5.5",              "provider": "openai",    "voiceInput": false, "inUsdPerMtok": 5,    "outUsdPerMtok": 30   },
-    { "id": "gpt-5.4",                "name": "GPT-5.4",              "provider": "openai",    "voiceInput": false, "inUsdPerMtok": 2.5,  "outUsdPerMtok": 15   },
-    { "id": "gpt-5.4-mini",           "name": "GPT-5.4 Mini",         "provider": "openai",    "voiceInput": false, "inUsdPerMtok": 0.75, "outUsdPerMtok": 4.5  },
-    { "id": "gpt-5.4-nano",           "name": "GPT-5.4 Nano",         "provider": "openai",    "voiceInput": false, "inUsdPerMtok": 0.2,  "outUsdPerMtok": 1.25 },
+    { "id": "gpt-5.5",                "name": "GPT-5.5",              "provider": "openai",    "temperature": false, "voiceInput": false, "inUsdPerMtok": 5,    "outUsdPerMtok": 30   },
+    { "id": "gpt-5.4",                "name": "GPT-5.4",              "provider": "openai",    "temperature": false, "voiceInput": false, "inUsdPerMtok": 2.5,  "outUsdPerMtok": 15   },
+    { "id": "gpt-5.4-mini",           "name": "GPT-5.4 Mini",         "provider": "openai",    "temperature": false, "voiceInput": false, "inUsdPerMtok": 0.75, "outUsdPerMtok": 4.5  },
+    { "id": "gpt-5.4-nano",           "name": "GPT-5.4 Nano",         "provider": "openai",    "temperature": false, "voiceInput": false, "inUsdPerMtok": 0.2,  "outUsdPerMtok": 1.25 },
 
-    { "id": "claude-fable-5",         "name": "Fable 5",              "provider": "anthropic", "voiceInput": false, "inUsdPerMtok": 10,   "outUsdPerMtok": 50   },
-    { "id": "claude-opus-4-8",        "name": "Opus 4.8",             "provider": "anthropic", "voiceInput": false, "inUsdPerMtok": 5,    "outUsdPerMtok": 25   },
-    { "id": "claude-sonnet-4-6",      "name": "Sonnet 4.6",           "provider": "anthropic", "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
-    { "id": "claude-sonnet-4-5",      "name": "Sonnet 4.5",           "provider": "anthropic", "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
-    { "id": "claude-haiku-4-5",       "name": "Haiku 4.5",            "provider": "anthropic", "voiceInput": false, "inUsdPerMtok": 1,    "outUsdPerMtok": 5    }
+    { "id": "claude-fable-5",         "name": "Fable 5",              "provider": "anthropic", "temperature": false, "voiceInput": false, "inUsdPerMtok": 10,   "outUsdPerMtok": 50   },
+    { "id": "claude-opus-4-8",        "name": "Opus 4.8",             "provider": "anthropic", "temperature": false, "voiceInput": false, "inUsdPerMtok": 5,    "outUsdPerMtok": 25   },
+    { "id": "claude-sonnet-4-6",      "name": "Sonnet 4.6",           "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
+    { "id": "claude-sonnet-4-5",      "name": "Sonnet 4.5",           "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
+    { "id": "claude-haiku-4-5",       "name": "Haiku 4.5",            "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 1,    "outUsdPerMtok": 5    }
   ],
   "defaults": {
     "gemini":    { "primary": "gemini-3.5-flash",  "secondary": "gemini-3.1-flash-lite" },

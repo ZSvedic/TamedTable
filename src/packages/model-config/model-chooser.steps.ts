@@ -5,7 +5,7 @@
 import { Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import type { Page } from 'playwright';
-import { bindDemoPage } from '../../tests/demo-harness.ts';
+import { bindDemoPage, expectText } from '../../tests/demo-harness.ts';
 
 const page = bindDemoPage({ name: 'model-config', pkgDir: import.meta.dirname });
 
@@ -51,6 +51,27 @@ Then(
     });
   },
 );
+
+Then(
+  'the {string} default row shows the price {string}',
+  async function (this: object, role: string, price: string) {
+    await expectText(page(this), `[data-mc-role="${role}"]`, price);
+  },
+);
+
+Then(
+  'the {string} card shows the env hint {string}',
+  async function (this: object, provider: string, hint: string) {
+    // data-mc-card marks the header button; the expanded body is its sibling.
+    await expectText(page(this), `[data-mc-card="${provider}"] + div`, hint);
+  },
+);
+
+When('the demo page reloads', async function (this: object) {
+  const p = page(this);
+  await p.reload();
+  await p.waitForSelector('#out');
+});
 
 When(
   'the user types {string} into the {string} key field',

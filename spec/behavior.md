@@ -583,9 +583,12 @@ source. Shape: `{ kind: "join", with: <path>, on: <expr>, how?:
 resolved relative to the spec's working directory; the right table is
 loaded once at transformation-evaluation time and held for the join.
 `on` is a predicate expression evaluated for each `(leftRow,
-rightRow)` pair; truthy means match. Default `how` is `"left"` — left
-rows survive even without a right match, with right-side columns set
-to `null`. `"inner"` drops left rows that have no match.
+rightRow)` pair; truthy means match. A left row that matches several
+right rows emits **one output row per match** — the left values repeat,
+SQL style; the join is not a first-match lookup. Default `how` is
+`"left"` — left rows survive even without a right match, with
+right-side columns set to `null`. `"inner"` drops left rows that have
+no match.
 
 When right and left columns collide, the right column is renamed
 `<name>_2` (then `_3`, etc.) so no column silently overwrites
@@ -1136,24 +1139,23 @@ advances.
 
 When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
-instruction, the **← Prev**, **Next →** and close (**×**) buttons, and a subtle
-keyboard-shortcut hint **below the buttons** (**← Prev**, **→** / **Space**
-next, **Esc** cancel). A spotlight never exceeds the screen: a target larger
-than the viewport (the table) is highlighted by its visible top region, so the
-popover always has room below it. Each step is **highlighted first** and
-**executed only when the user clicks Next** — the action runs as the tour
-advances, not at the moment the step appears. A step's action runs **once**: stepping back with Prev
-and forward again with Next re-highlights the step but does **not** re-run it —
-the file stays loaded and the query is not re-sent (a re-sent request would miss
-the cassette and fail with a toast).
+instruction, an **"N of M"** progress line, and a single forward button —
+**Next →**. **Tours are forward-only**: no Previous button, no ← key —
+stepping back would desync the app's replay state (a loaded file, a sent
+query) from the tour cursor. **→** / **Space** / **Enter** advance; **Esc**
+cancels; an accidental click on the dimmed overlay does not. A spotlight
+never exceeds the screen: a target larger than the viewport (the table) is
+highlighted by its visible top region, so the popover always has room below
+it. Each step is **highlighted first** and **executed only when the user
+clicks Next** — the action runs as the tour advances, not at the moment the
+step appears, and it runs **once**.
 
-The **last step is terminal**: it keeps its **"Step N of N"** title but its
-popover shows a completion message — `Voilà, "<tour name>" is done.` — with
-**Next disabled** and **Previous** still live (the user can step back). There is
-no separate "done" screen after it. **Finish** ends the tour from here and
-returns the user to wherever they started: a tour launched from the Tutorial
-panel reopens the chooser, while a deep-link tour goes back to the page the user
-came from (see *Deep links*).
+The **last stop is terminal**: it is numbered **"M of M"** and its popover
+shows a completion message — `Voilà, "<tour name>" is done.` — with the
+forward button relabelled **Done**. There is no separate "done" screen after
+it. **Done** ends the tour and returns the user to wherever they started: a
+tour launched from the Tutorial panel reopens the chooser, while a deep-link
+tour goes back to the page the user came from (see *Deep links*).
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)

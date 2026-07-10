@@ -23,11 +23,11 @@ What the recreate changed on purpose:
 
 ## Questions for you
 
-- [ ] Tours are forward-only today (no Back). Keep that rule and write it into
+- [x] Tours are forward-only today (no Back). Keep that rule and write it into
       `spec/behavior.md`? If you actually want a Back button, say so and it
       becomes a feature task instead. Answer: Keep that rule and write it into
       `spec/behavior.md`
-- [ ] Replacing driver.js with a hand-rolled overlay (the recreate's idea):
+- [x] Replacing driver.js with a hand-rolled overlay (the recreate's idea):
       try it later, or keep driver.js? Answer: keep driver.js
 
 ## Plan

@@ -67,6 +67,8 @@ Each `models` entry carries:
   before any change; never invent or guess an id)
 - `name` — short display name
 - `provider` — `gemini` | `openai` | `anthropic`
+- `temperature` — whether the model still accepts a `temperature` sampling
+  parameter (see `acceptsTemperature` below)
 - `voiceInput` — whether the model accepts audio input
 - `inUsdPerMtok` / `outUsdPerMtok` — input/output price, US$ per million tokens
 
@@ -115,8 +117,9 @@ for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai.
 `acceptsTemperature(modelId)` reports whether a model still accepts a
 `temperature` sampling parameter. The newest models (Anthropic Opus 4.8/4.7,
 Fable 5, Sonnet 5; OpenAI GPT-5.4+/5.5) removed sampling params and reject the
-request with a 400, so it returns `true` only for models known to accept it
-(current Gemini, Sonnet 4.5/4.6, Haiku 4.5) and `false` for everything else —
+request with a 400. The flag lives per model in `models.json` (`temperature`);
+the helper returns `true` only for ids that prefix-match a catalogue entry
+marked `true` (so dated aliases still match) and `false` for everything else —
 including unknown ids, so new models default to the safe no-temperature path.
 The headless engine calls it to decide whether to send `temperature: 0`.
 

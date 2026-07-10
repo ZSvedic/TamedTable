@@ -10,6 +10,8 @@ export interface ModelDef {
   id: string;
   name: string;
   provider: Provider;
+  /** Whether the model still accepts a `temperature` sampling parameter. */
+  temperature: boolean;
   voiceInput: boolean;
   /** Input price, US$ per million tokens. Mirrors benchmarks/models.jsonl. */
   inUsdPerMtok: number;
@@ -77,24 +79,15 @@ export function providerFor(modelId: string): Provider {
   return 'anthropic';
 }
 
-// Models that still accept a `temperature` (sampling) parameter. The newest
-// models — Anthropic Opus 4.8/4.7, Fable 5, Sonnet 5; OpenAI GPT-5.4+ / 5.5 —
-// removed sampling params and reject the request with a 400 ("temperature is
-// deprecated for this model"). We therefore only send `temperature` for models
-// known to accept it, and omit it (the safe default) for everything else,
-// including any future model. Prefix-matched so dated aliases still match.
-const TEMPERATURE_MODEL_PREFIXES = [
-  'gemini-',
-  'claude-sonnet-4-5',
-  'claude-sonnet-4-6',
-  'claude-haiku-4-5',
-];
-
-/** Whether a model accepts a `temperature` sampling parameter. Returns false
- *  for the newest models that removed sampling params (and for unknown ids, so
- *  new models default to the safe no-temperature path). */
+/** Whether a model accepts a `temperature` (sampling) parameter. The newest
+ *  models — Anthropic Opus 4.8/4.7, Fable 5, Sonnet 5; OpenAI GPT-5.4+ / 5.5 —
+ *  removed sampling params and reject the request with a 400 ("temperature is
+ *  deprecated for this model"). The flag lives per model in models.json; we
+ *  only send `temperature` for models marked true, and omit it (the safe
+ *  default) for everything else, including any unknown id. Prefix-matched
+ *  against catalogue ids so dated aliases still match. */
 export function acceptsTemperature(modelId: string): boolean {
-  return TEMPERATURE_MODEL_PREFIXES.some((p) => modelId.startsWith(p));
+  return ALL_MODELS.some((m) => m.temperature && modelId.startsWith(m.id));
 }
 
 /** The API key for the config's active provider, or null when it's unset.

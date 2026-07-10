@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "source": "join-offices-input.csv",
+  "spec": {
+    "table": "join-offices-input.csv",
+    "columns": [
+      { "id": "Company" },
+      { "id": "Country" }
+    ],
+    "transformations": [
+      {
+        "kind": "join",
+        "with": "join-offices-lookup.csv",
+        "on": { "js": "leftRow.Country === rightRow.Country" },
+        "how": "left"
+      }
+    ]
+  }
+}

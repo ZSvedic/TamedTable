@@ -55,8 +55,9 @@ set and runs at three points:
 3. When `runCli execute` loads a `.flow` file.
 
 The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
-three shapes; `split.into` and `pivot.index` are non-empty (an empty
-`group.by` is allowed — it aggregates the whole table into one row);
+three shapes; `split.into`, `pivot.index`, `sort.by`, and
+`unpivot.measures` are non-empty (an empty `group.by` is allowed — it
+aggregates the whole table into one row);
 `validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
 `.jsonl`. It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
@@ -270,7 +271,7 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
-| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. |
+| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
 | `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
@@ -280,7 +281,8 @@ Env vars:
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 or `OPENAI_API_KEY`. `resolveConfig` picks the provider from whichever is set
 (Gemini > OpenAI > Anthropic when several are), and `TAMEDTABLE_MODEL` must
-name a model from that provider.
+name a model from that provider — one from another provider is coerced to
+the provider's default model.
 
 The CLI calls `core`'s `loadEnv()` at startup: it looks for a `.env`
 file in the working directory and up to four parent directories,
@@ -522,8 +524,11 @@ JS (`(rows, key, allGroups) => …`), and as a relation for SQL — named
 by name resolves; LLM aggregates receive the group's compact JSON as
 `{*}`.
 
-`Runner.loadInput` continues to dispatch on extension; the join's
-right-side path is loaded by the same code path. The Zod schema
+`applyJoin` emits one output row per matching `(leftRow, rightRow)`
+pair — SQL multiplicity, not a first-match lookup — so a left row with
+N right matches produces N rows. `Runner.loadInput` continues to
+dispatch on extension; the join's right-side path is loaded by the
+same code path. The Zod schema
 permits these two `kind` values and enforces a `.csv`/`.jsonl`
 extension for `join.with` (other extensions error at validation time,
 not at evaluation).
@@ -539,7 +544,8 @@ interface UnpivotTransform  { kind: "unpivot"; id: string[]; measures: string[];
 
 The Zod schema permits these four `kind` values. Schema-level
 checks: `split.into` non-empty; `pivot.index` non-empty; `pivot.on`
-not in `pivot.index`; `validate.threshold` in `[0, 1]` when present.
+not in `pivot.index`; `unpivot.measures` non-empty;
+`validate.threshold` in `[0, 1]` when present.
 Runtime-evaluation errors (predicate throws, regex doesn't compile,
 LLM array-returning expression returns the wrong arity) flow through
 the recovery loop as plain strings.
@@ -878,7 +884,7 @@ and batching show up in the measurement.
 ```ts
 type Provider = "anthropic" | "gemini" | "openai";
 
-interface ModelDef { id: string; name: string; desc: string; provider: Provider; voiceInput: boolean; default?: boolean; secondaryDefault?: boolean; }
+interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
 
 interface ResolvedConfig {
   provider: Provider;
@@ -900,7 +906,7 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function providerFor(modelId: string): Provider;
-function acceptsTemperature(modelId: string): boolean;   // false for models that removed sampling params (Opus 4.8/4.7, Fable 5, Sonnet 5, GPT-5.4+/5.5) and unknown ids
+function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey)
 function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
