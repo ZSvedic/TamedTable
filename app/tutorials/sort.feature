@@ -44,6 +44,15 @@ Feature: Sort rows by a key
       Then exit code is 0
       And "sort-column-output.jsonl" matches the expected output
 
+  Rule: An empty sort.by rejects at validation
+
+    @cli @offline
+    Scenario: A sort with an empty by list rejects at validation
+      Given "sort-empty-by.flow" exists
+      When user runs "tamedtable execute sort-empty-by.flow --input sort-input.csv --output ../temp/sort-empty-out.jsonl"
+      Then exit code is 2
+      And stderr contains "sort.by must be non-empty"
+
   Rule: A sort key may be a column name or any Expr shape
 
     @cli @offline

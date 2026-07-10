@@ -32,6 +32,16 @@ Feature: Lookup join
       When query "Inner join with join-country-codes.csv on Country"
       Then the current rows contain no row with Country "Atlantis"
 
+  Rule: A left row matching several right rows emits one output row per match
+
+    @cli @offline
+    Scenario: One-to-many join outputs SQL multiplicity, not first-match lookup
+      Given "join-multi.flow" exists
+      And the expected output is "join-multi-expected.jsonl"
+      When user runs "tamedtable execute join-multi.flow --input join-offices-input.csv --output join-multi-output.jsonl"
+      Then exit code is 0
+      And "join-multi-output.jsonl" matches the expected output
+
   Rule: Column name collisions auto-rename right-side columns
 
     @headless @cli
