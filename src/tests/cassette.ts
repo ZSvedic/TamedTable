@@ -21,6 +21,7 @@ import {
   type CassetteEntry,
   type FetchLike,
 } from '@tamedtable/cassette';
+import { curlFetch } from './curl-fetch.ts';
 
 export { fingerprint };
 export type { CassetteEntry, FetchLike };
@@ -37,7 +38,9 @@ export interface CassetteOptions {
 /** A `fetch`-shaped wrapper that records to / replays from the cassette file. */
 export function cassetteFetch(opts: CassetteOptions): FetchLike {
   const { mode, file } = opts;
-  const upstream: FetchLike = opts.upstream ?? globalThis.fetch;
+  // Record mode defaults to curl (see curl-fetch.ts) — Bun's fetch cannot
+  // traverse the Claude sandbox's proxy. Replay never touches the upstream.
+  const upstream: FetchLike = opts.upstream ?? (mode === 'record' ? curlFetch() : globalThis.fetch);
   let tape: Cassette | undefined;
 
   const load = (): Cassette => {

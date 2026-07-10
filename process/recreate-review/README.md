@@ -25,10 +25,10 @@ pick code.
 | DONE: [model-config.md](model-config.md) | combine | keep original code, adopt the recreate's test scenarios |
 | DONE: [table-plan.md](table-plan.md) | keep original | recreate replaced the Zod schema with loose checks |
 | DONE: [table-view.md](table-view.md) | keep original | recreate has real pagination bugs, nothing to port |
-| [tests.md](tests.md) | keep original | steal curl-fetch.ts; recreate's asserts are looser |
+| DONE: [tests.md](tests.md) | keep original | steal curl-fetch.ts; recreate's asserts are looser |
 | DONE: [toolbar.md](toolbar.md) | keep original | recreate drops loading state, file-name rule, tour anchor |
-| [ui-kit.md](ui-kit.md) | keep original | adopt the toast-action scenario; sync pipeline lost |
-| [voice-input.md](voice-input.md) | combine | keep real VAD, adopt 30-second cap and capability guards |
+| DONE: [ui-kit.md](ui-kit.md) | keep original | adopt the toast-action scenario; sync pipeline lost |
+| DONE: [voice-input.md](voice-input.md) | combine | keep real VAD, adopt 30-second cap and capability guards |
 | [web.md](web.md) | keep original | recreate has no browser tests; adopt its phone scenarios |
 
 Every plan follows the [workflow rule](../../CLAUDE.md#workflow-rule--changing-a-component):

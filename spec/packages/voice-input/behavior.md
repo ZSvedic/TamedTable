@@ -37,7 +37,9 @@ cancelRecording() → void              // discard, never resolves stop
 ```
 
 `browserVoicePort()` (separate `browser-voice` entry point, DOM required)
-wraps MediaRecorder. `stopRecording` re-encodes the captured audio (webm/opus
+wraps MediaRecorder. It returns `null` when the browser lacks `getUserMedia`
+or `MediaRecorder`, so the host leaves voice unwired (and the mic button
+hidden) instead of throwing on the first press. `stopRecording` re-encodes the captured audio (webm/opus
 or mp4/aac, browser-dependent) to 16 kHz mono PCM16 WAV — the one format
 every voice-capable provider accepts — via model-config's `audio-wav` helper.
 Cancelling stops the recorder and releases the microphone without resolving.
@@ -80,7 +82,9 @@ Any other extension throws.
 Hands-free capture. The host injects a port; the browser implementation
 (`browserContinuousPort`, separate `browser-vad` entry point — DOM and WASM
 required) wraps `@ricky0123/vad-web`, the Silero VAD running on ONNX in an
-AudioWorklet.
+AudioWorklet. It returns `null` when the browser lacks `getUserMedia` or the
+Web Audio API, the same guard `browserVoicePort` applies — no port, no
+waveform button, no crash.
 
 ```
 start(handlers)  → Promise<void>   // ask for the mic, load the VAD, listen

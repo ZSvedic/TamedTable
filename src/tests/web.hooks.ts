@@ -69,6 +69,12 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       file: port,
       voice: ctx.voicePort,
       continuousVoice: ctx.continuousPort,
+      // Capture the 30 s auto-stop instead of arming a real timer, so the
+      // "30 seconds pass without a release" step can fire it deterministically.
+      voiceSchedule: (fn, ms) => {
+        ctx.voiceAutoStop = { fn, ms };
+        return () => { ctx.voiceAutoStop = undefined; };
+      },
       fetch: compositeFetch,
       // Suppress real shell API keys — tests set keys explicitly via steps.
       env: {},

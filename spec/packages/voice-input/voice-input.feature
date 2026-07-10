@@ -27,6 +27,20 @@ Feature: Voice input package
       When buildVoicePrompt is called
       Then the prompt does not contain "Selected cell"
 
+  Rule: A browser without capture APIs gets no port, not a crash
+
+    # The Node test runtime has no getUserMedia/MediaRecorder/AudioContext,
+    # which is exactly the environment the guards exist for.
+    @headless
+    Scenario: browserVoicePort is null without microphone APIs
+      When browserVoicePort is created in a runtime without capture APIs
+      Then no voice port is returned
+
+    @headless
+    Scenario: browserContinuousPort is null without microphone APIs
+      When browserContinuousPort is created in a runtime without capture APIs
+      Then no continuous port is returned
+
   Rule: The demo page records through a real (fake-device) microphone
 
     @web

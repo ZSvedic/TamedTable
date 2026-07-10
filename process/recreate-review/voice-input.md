@@ -26,8 +26,8 @@ original raises an error, the recreate assumes `audio/mp4` and carries on.
 
 ## Questions for you
 
-- [ ] Adopt the 30-second auto-stop-and-send? Answer: yes to auto-stop
-- [ ] Unknown audio file extension: keep raising an error (original, current)
+- [x] Adopt the 30-second auto-stop-and-send? Answer: yes to auto-stop
+- [x] Unknown audio file extension: keep raising an error (original, current)
       or assume `audio/mp4` (recreate)? Answer: keep raising an error (original, current)
 
 ## Plan

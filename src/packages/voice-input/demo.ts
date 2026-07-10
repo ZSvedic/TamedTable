@@ -41,6 +41,10 @@ function setRecState(state: 'idle' | 'recording' | 'stopped'): void {
 }
 
 startBtn.addEventListener('click', async () => {
+  if (!port) {
+    $('vi-result').textContent = 'microphone capture APIs unavailable in this browser';
+    return;
+  }
   try {
     await port.startRecording();
     setRecState('recording');
@@ -50,6 +54,7 @@ startBtn.addEventListener('click', async () => {
 });
 
 stopBtn.addEventListener('click', async () => {
+  if (!port) return; // recording can't have started without a port
   try {
     const blob = await port.stopRecording();
     $('vi-result').textContent = `${blob.type} · ${blob.size.toLocaleString('en-US')} bytes`;
@@ -64,7 +69,7 @@ stopBtn.addEventListener('click', async () => {
 });
 
 cancelBtn.addEventListener('click', () => {
-  port.cancelRecording();
+  port?.cancelRecording();
   $('vi-result').textContent = 'cancelled';
   setRecState('idle');
 });
@@ -118,6 +123,10 @@ $('hf-toggle').addEventListener('click', async () => {
   }
   $('hf-err').textContent = '';
   cont = browserContinuousPort(readTuning());
+  if (!cont) {
+    $('hf-err').textContent = 'microphone capture APIs unavailable in this browser';
+    return;
+  }
   try {
     await cont.start({
       onSpeechStart: () => {

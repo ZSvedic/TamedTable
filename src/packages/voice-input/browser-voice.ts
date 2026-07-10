@@ -10,7 +10,12 @@
 import { blobToWavBytes } from '@tamedtable/model-config/audio-wav';
 import type { VoicePort } from './index.ts';
 
-export function browserVoicePort(): VoicePort {
+/** MediaRecorder-backed VoicePort; null where the browser lacks the capture
+ *  APIs, so the host leaves voice unwired (mic hidden) instead of throwing. */
+export function browserVoicePort(): VoicePort | null {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) return null;
+  if (typeof MediaRecorder === 'undefined') return null;
+
   let recorder: MediaRecorder | null = null;
   let stream: MediaStream | null = null;
   let chunks: Blob[] = [];

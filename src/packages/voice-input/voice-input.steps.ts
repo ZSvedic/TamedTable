@@ -7,7 +7,7 @@ import { strict as assert } from 'node:assert';
 import { buildVoicePrompt, type VoiceContext } from './index.ts';
 
 interface VoiceWorld {
-  _vi?: { ctx?: VoiceContext; prompt?: string };
+  _vi?: { ctx?: VoiceContext; prompt?: string; port?: unknown; continuousPort?: unknown };
 }
 
 function ctx(world: VoiceWorld): NonNullable<VoiceWorld['_vi']> {
@@ -40,4 +40,28 @@ Then('the prompt contains {string}', function (this: VoiceWorld, expected: strin
 
 Then('the prompt does not contain {string}', function (this: VoiceWorld, text: string) {
   assert.ok(!ctx(this).prompt!.includes(text));
+});
+
+// ── Capability guards ────────────────────────────────────────────────────────
+// The Node test runtime genuinely lacks getUserMedia/MediaRecorder/AudioContext
+// — the very APIs the guards check — so calling the real factories here IS the
+// no-capture case. Dynamic imports keep the browser entry points out of the
+// module graph of the prompt-only scenarios above.
+
+When('browserVoicePort is created in a runtime without capture APIs', async function (this: VoiceWorld) {
+  const { browserVoicePort } = await import('./browser-voice.ts');
+  ctx(this).port = browserVoicePort();
+});
+
+Then('no voice port is returned', function (this: VoiceWorld) {
+  assert.equal(ctx(this).port, null, 'expected browserVoicePort() to return null');
+});
+
+When('browserContinuousPort is created in a runtime without capture APIs', async function (this: VoiceWorld) {
+  const { browserContinuousPort } = await import('./browser-vad.ts');
+  ctx(this).continuousPort = browserContinuousPort();
+});
+
+Then('no continuous port is returned', function (this: VoiceWorld) {
+  assert.equal(ctx(this).continuousPort, null, 'expected browserContinuousPort() to return null');
 });

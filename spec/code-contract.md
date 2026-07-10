@@ -985,9 +985,17 @@ turn start as the placeholder `🎙 Voice request` and are replaced by
 `🎙 <transcript>` when the model returns one.
 
 `VoicePort` is the recording surface. The browser implementation
-(`browserVoicePort`) wraps `MediaRecorder`; tests inject a stub returning a
-fixed `Blob`. `WebControllerOptions.voice` supplies it; the browser passes
-`browserVoicePort()` in `main.tsx`.
+(`browserVoicePort(): VoicePort | null`) wraps `MediaRecorder` and returns
+`null` when the browser lacks `getUserMedia` or `MediaRecorder`; tests inject
+a stub returning a fixed `Blob`. `WebControllerOptions.voice` supplies it; the
+browser passes `browserVoicePort() ?? undefined` in `main.tsx`, so a browser
+without capture APIs simply leaves voice unwired (mic hidden).
+
+`audioMediaType(filename)` maps an audio filename's extension to the MIME
+type the voice patch turn sends (`m4a`→`audio/mp4`, `mp3`→`audio/mpeg`,
+`wav`→`audio/wav`, `webm`→`audio/webm`) and **throws** on any other
+extension — deliberate, so a mistyped fixture name fails loudly instead of
+uploading under a guessed type.
 
 ### Continuous voice
 
@@ -1026,11 +1034,14 @@ clip through the same `sendAudioRequest` the mic uses — one patch turn per
 spoken turn, table context and cost identical. A clip that lands while a turn is
 still applying is dropped, so patch turns never overlap; toggling off calls
 `port.stop`. `WebControllerOptions.continuousVoice` supplies the port; the
-browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })`
-in `main.tsx`.
+browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })
+?? undefined` in `main.tsx` — the factory returns `null` (hands-free unwired,
+waveform hidden) when the browser lacks `getUserMedia` or the Web Audio API.
 
 `WebController` adds `voiceStatus: 'idle' | 'recording' | 'latched' | 'sending'`
-and four methods: `startVoice()` begins recording (auto-stopping after 30 s),
+and four methods: `startVoice()` begins recording (auto-stopping after 30 s;
+the schedule is injectable via `WebControllerOptions.voiceSchedule` —
+defaulting to `setTimeout` — so tests fire the timeout without waiting),
 `latchVoice()` switches a live press-and-hold recording to hands-free `latched`
 (a quick tap; recording continues under the explicit cancel/send controls, and
 it is a no-op unless currently `recording`), `stopVoice()` ends recording from

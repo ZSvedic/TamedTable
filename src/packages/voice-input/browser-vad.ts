@@ -8,7 +8,13 @@ import { createVad, DEFAULT_TUNING, type VadTuning, type VadHandle } from './vad
 import { encodeWav } from './wav.ts';
 import type { ContinuousVoicePort, ContinuousVoiceHandlers } from './continuous.ts';
 
-export function browserContinuousPort(tuning: Partial<VadTuning> = {}): ContinuousVoicePort {
+/** VAD-backed ContinuousVoicePort; null where the browser lacks the capture
+ *  APIs (same guard as browserVoicePort), so the host leaves hands-free
+ *  unwired (waveform button hidden) instead of throwing. */
+export function browserContinuousPort(tuning: Partial<VadTuning> = {}): ContinuousVoicePort | null {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) return null;
+  if ((globalThis as { AudioContext?: unknown }).AudioContext === undefined) return null;
+
   let vad: VadHandle | null = null;
 
   return {

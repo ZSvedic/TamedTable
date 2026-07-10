@@ -77,6 +77,14 @@ Feature: UI kit package
       And the split button menu is closed
 
     @web
+    Scenario: A toast can carry an inline action
+      Given the ui-kit demo page
+      When the user adds a toast with a "Copy report" action
+      Then the newest toast shows an action labelled "Copy report"
+      When the user clicks the newest toast's action
+      Then the demo log records the toast action
+
+    @web
     Scenario: A toast appears and can be dismissed
       Given the ui-kit demo page
       When the user adds an "error" toast

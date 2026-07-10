@@ -1038,7 +1038,10 @@ A microphone button sits in the chat sidebar, next to the send control. It is
 shown whenever the selected model accepts voice input (the catalogue's
 `voiceInput` flag — every Gemini model) **and** the
 selected provider's API key is set. With a text-only model selected, or with
-no key for the provider, the button is hidden. The recording is converted to
+no key for the provider, the button is hidden. On a browser missing the
+capture APIs (`getUserMedia` / `MediaRecorder`) no recording port is wired,
+so the button is hidden there too — it never appears and then fails on the
+first press. The recording is converted to
 WAV in the browser before sending, the one audio format every voice-capable
 provider accepts.
 
@@ -1081,7 +1084,8 @@ waveform button
 is a toggle: click it once and the app listens continuously, click again to
 stop. While listening, the button's bars pulse. It appears under the same
 conditions as the mic (a voice-capable model plus a key) and is hidden when
-hands-free voice isn't wired.
+hands-free voice isn't wired — including on a browser missing `getUserMedia`
+or the Web Audio API, where no hands-free port is wired at all.
 
 The difference is who decides a turn is over. A client-side voice-activity
 detector runs entirely in the browser — no audio leaves the machine to find turn
