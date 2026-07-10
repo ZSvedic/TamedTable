@@ -19,6 +19,12 @@ recreate doesn't have at all, plus comments. Byte accounting:
 | Comments and blank lines inside app code | 51 KB | 6 KB | 45 KB |
 | App code with comments stripped | 142 KB | 79 KB | 63 KB |
 
+The `public/` icons are deploy copies of `marketing/brand/` — Vite serves
+`public/` at the site root, and `src/` must stay a self-contained deployable
+unit, so it can't read `marketing/` at build time. The recreate ships no icon
+at all: its page loads fine but the tab is blank and there is no home-screen
+icon.
+
 So of the 169 KB: ~55 KB is missing tests and assets, ~45 KB is
 documentation (a quarter of the original's controller lines are comments —
 the `#TutorialMode`-style headers that MAP.md and the spec link into; the
