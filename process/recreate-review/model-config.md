@@ -26,7 +26,7 @@ stored model.
 
 - [ ] `TAMEDTABLE_MODEL` names a model from a different provider than the one
       selected: coerce to the provider default (original, current) or trust the
-      env var (recreate)? Answer:
+      env var (recreate)? Answer: coerce to the provider default (original, current)
 
 ## Plan
 

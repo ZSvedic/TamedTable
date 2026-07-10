@@ -22,7 +22,7 @@ an empty `unpivot.measures`; the original accepts both as no-ops.
 ## Questions for you
 
 - [ ] Empty `sort.by` / `unpivot.measures`: reject the plan (recreate) or keep
-      accepting them as no-ops (original, current)? Answer:
+      accepting them as no-ops (original, current)? Answer: reject the plan (recreate)
 
 ## Plan
 

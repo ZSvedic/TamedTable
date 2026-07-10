@@ -30,10 +30,10 @@ recreate's contribution is its layout.
 ## Questions for you
 
 - [ ] Join, one row matching three: output 1 row (original, current) or 3 rows
-      (recreate)? Answer:
+      (recreate)? Answer: go with 3 rows (recreate's behavior)
 - [ ] Split `headless/index.ts` into `engine.ts` (pure transformations),
       `sql.ts` (DuckDB), keeping `journal.ts` and putting the runner loop in
-      `index.ts` — files stay inside headless? No behavior change. Answer:
+      `index.ts` — files stay inside headless? No behavior change. Answer: Yes, split.
 
 ## Plan
 
