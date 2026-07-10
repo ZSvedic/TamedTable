@@ -50,3 +50,12 @@ Feature: Pivot and unpivot
     Scenario: Custom names_to and values_to
       When query "Unpivot Q1, Q2, Q3, Q4 into Quarter and Revenue"
       Then columns exist in the spec: "Quarter", "Revenue"
+
+  Rule: An empty unpivot.measures rejects at validation
+
+    @cli @offline
+    Scenario: An unpivot with an empty measures list rejects at validation
+      Given "unpivot-empty-measures.flow" exists
+      When user runs "tamedtable execute unpivot-empty-measures.flow --input pivot-wide-input.csv --output ../temp/unpivot-empty-out.jsonl"
+      Then exit code is 2
+      And stderr contains "unpivot.measures must be non-empty"

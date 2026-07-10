@@ -27,7 +27,8 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
   z.object({
     kind: z.literal('sort'),
-    by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) })),
+    by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) }))
+      .min(1, 'sort.by must be non-empty'),
     limit: z.number().int().positive().optional(),
   }).strict(),
   z.object({
@@ -67,7 +68,7 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('unpivot'),
     id: z.array(z.string()),
-    measures: z.array(z.string()),
+    measures: z.array(z.string()).min(1, 'unpivot.measures must be non-empty'),
     names_to: z.string().optional(),
     values_to: z.string().optional(),
   }).strict(),

@@ -55,8 +55,9 @@ set and runs at three points:
 3. When `runCli execute` loads a `.flow` file.
 
 The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
-three shapes; `split.into` and `pivot.index` are non-empty (an empty
-`group.by` is allowed — it aggregates the whole table into one row);
+three shapes; `split.into`, `pivot.index`, `sort.by`, and
+`unpivot.measures` are non-empty (an empty `group.by` is allowed — it
+aggregates the whole table into one row);
 `validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
 `.jsonl`. It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
@@ -539,7 +540,8 @@ interface UnpivotTransform  { kind: "unpivot"; id: string[]; measures: string[];
 
 The Zod schema permits these four `kind` values. Schema-level
 checks: `split.into` non-empty; `pivot.index` non-empty; `pivot.on`
-not in `pivot.index`; `validate.threshold` in `[0, 1]` when present.
+not in `pivot.index`; `unpivot.measures` non-empty;
+`validate.threshold` in `[0, 1]` when present.
 Runtime-evaluation errors (predicate throws, regex doesn't compile,
 LLM array-returning expression returns the wrong arity) flow through
 the recovery loop as plain strings.
