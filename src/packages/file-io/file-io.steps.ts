@@ -203,14 +203,14 @@ When('the Arrow file is parsed', async function (this: FileIoWorld) {
 Then(
   'row {int} cell {string} is the string {string}',
   function (this: FileIoWorld, row: number, column: string, expected: string) {
-    assert.deepEqual(ctx(this).parsed!.rows[row - 1][column], expected);
+    assert.deepEqual(ctx(this).parsed!.rows[row - 1]![column], expected);
   },
 );
 
 Then(
   'row {int} cell {string} is the number {int}',
   function (this: FileIoWorld, row: number, column: string, expected: number) {
-    assert.deepEqual(ctx(this).parsed!.rows[row - 1][column], expected);
+    assert.deepEqual(ctx(this).parsed!.rows[row - 1]![column], expected);
   },
 );
 
