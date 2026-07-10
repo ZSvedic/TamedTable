@@ -20,13 +20,13 @@ pick code.
 | DONE: [cli.md](cli.md) | keep original | recreate loses piped input lines and hangs |
 | DONE: [core.md](core.md) | keep original | recreate moved the engine into core against the contract |
 | DONE: [file-io.md](file-io.md) | keep original | recreate breaks on BOM, big numbers, and hides errors |
-| [gherkin-tour.md](gherkin-tour.md) | keep original | recreate dropped the Tutorial panel |
-| [headless.md](headless.md) | combine | keep original behavior, adopt the recreate's file split |
-| [model-config.md](model-config.md) | combine | keep original code, adopt the recreate's test scenarios |
-| [table-plan.md](table-plan.md) | keep original | recreate replaced the Zod schema with loose checks |
-| [table-view.md](table-view.md) | keep original | recreate has real pagination bugs, nothing to port |
+| DONE: [gherkin-tour.md](gherkin-tour.md) | keep original | recreate dropped the Tutorial panel |
+| DONE: [headless.md](headless.md) | combine | keep original behavior, adopt the recreate's file split |
+| DONE: [model-config.md](model-config.md) | combine | keep original code, adopt the recreate's test scenarios |
+| DONE: [table-plan.md](table-plan.md) | keep original | recreate replaced the Zod schema with loose checks |
+| DONE: [table-view.md](table-view.md) | keep original | recreate has real pagination bugs, nothing to port |
 | [tests.md](tests.md) | keep original | steal curl-fetch.ts; recreate's asserts are looser |
-| [toolbar.md](toolbar.md) | keep original | recreate drops loading state, file-name rule, tour anchor |
+| DONE: [toolbar.md](toolbar.md) | keep original | recreate drops loading state, file-name rule, tour anchor |
 | [ui-kit.md](ui-kit.md) | keep original | adopt the toast-action scenario; sync pipeline lost |
 | [voice-input.md](voice-input.md) | combine | keep real VAD, adopt 30-second cap and capability guards |
 | [web.md](web.md) | keep original | recreate has no browser tests; adopt its phone scenarios |
