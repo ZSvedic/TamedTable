@@ -1235,7 +1235,7 @@ could not work once the homepage began opening each tour in a new tab — a fres
 tab has no history to go back to.)
 
 Production links use the deployed base, e.g.
-`https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.
+`https://www.tamedtable.com/app/?feature=filter.feature&scenario=Filter+by+Country`.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 

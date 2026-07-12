@@ -90,8 +90,8 @@ Two crisp favicon sets ship in this dir so a browser tab tells the two surfaces 
 
 | Set | Source | Files | Used by |
 |-----|--------|-------|---------|
-| **Dark-on-white** | `icon-square-crisp.svg` | `favicon-16.png`, `favicon-32.png`, `favicon-48.png` | The marketing homepage (`zsvedic.github.io/TamedTable/`) |
-| **White-on-dark** | `icon-square-ink-crisp.svg` | `favicon-ink-16.png`, `favicon-ink-32.png`, `favicon-ink-48.png` | The web app (`zsvedic.github.io/TamedTable/app/`) |
+| **Dark-on-white** | `icon-square-crisp.svg` | `favicon-16.png`, `favicon-32.png`, `favicon-48.png` | The marketing homepage (`www.tamedtable.com`) |
+| **White-on-dark** | `icon-square-ink-crisp.svg` | `favicon-ink-16.png`, `favicon-ink-32.png`, `favicon-ink-48.png` | The web app (`www.tamedtable.com/app/`) |
 
 The white-on-dark set is the dark-on-white mark with Ink and Icon Background swapped — Ink (`#281C60`) fills the tile, the T-pillars and cross-bars turn white, and the accent cell stays Pale Sky (`#96BED7`). Both sets render in Crisp mode (cells touch, no grid lines), so they read at favicon sizes.
 

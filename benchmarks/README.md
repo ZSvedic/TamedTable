@@ -21,7 +21,7 @@ call) never shows up. This benchmark adds that axis.
 
 | Path | What |
 |---|---|
-| `models.jsonl` | One row per model: pricing, context window, audio input, `runnable`. The single source of cost — `@tamedtable/bench` loads it, and the `@perf` Cucumber flow prices through it too. |
+| `models.jsonl` | One row per model: pricing, context window, audio input, `runnable`. The benchmark's single source of cost — `@tamedtable/bench` loads it, and the `@perf` Cucumber flow prices through it too. The app's runtime catalogue (`src/packages/model-config/models.json`) is separate; a unit test asserts every shipped model has a row here. |
 | `ground-truth/music-sample.csv` | A subset of the fixture the sweep runs over. |
 | `ground-truth/music-labels.jsonl` | The gold `Music` verdict per `videoId`, scored against. |
 | `results/*.jsonl` | Sweep outputs — one `SweepResult` per line. |

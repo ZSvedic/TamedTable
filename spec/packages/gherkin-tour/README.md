@@ -10,4 +10,4 @@ demo page tours itself through this pipeline.
 | Behavior spec | [behavior.md](behavior.md) |
 | Gherkin scenarios | [gherkin-tour.feature](gherkin-tour.feature) |
 | Code, step defs, demo | [../../../src/packages/gherkin-tour/](../../../src/packages/gherkin-tour/) |
-| Live demo | https://zsvedic.github.io/TamedTable/demos/gherkin-tour/demo.html |
+| Live demo | https://www.tamedtable.com/demos/gherkin-tour/demo.html |

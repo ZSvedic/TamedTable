@@ -23,9 +23,9 @@ The homepage and the web app deliberately use **different** favicons so a browse
 
 The landing page is the site root; the web app sits under `/app/`. The deploy ([.github/workflows/deploy.yml](../.github/workflows/deploy.yml)) assembles them:
 
-- `https://zsvedic.github.io/TamedTable/` — `web/` (symlinks dereferenced)
-- `https://zsvedic.github.io/TamedTable/app/` — the web app build
-- `https://zsvedic.github.io/TamedTable/demos/<name>/` — per-package demos
+- `https://www.tamedtable.com/` — `web/` (symlinks dereferenced)
+- `https://www.tamedtable.com/app/` — the web app build
+- `https://www.tamedtable.com/demos/<name>/` — per-package demos
 
 A push to `main` that touches `marketing/web/`, `marketing/illustrations/`, or `marketing/brand/` redeploys. `marketing-brief.md` is a doc — editing it changes nothing live.
 
@@ -38,7 +38,7 @@ A push to `main` that touches `marketing/web/`, `marketing/illustrations/`, or `
 | Restyle (color, layout, spacing) | `web/styles.css` — every color is a `:root` CSS variable; change one to re-skin. |
 | Change page behavior | `web/main.js` — vanilla JS: nav toggle + the interactive feature lists. |
 | Add or redraw a feature tile | Follow [process/prompts/prompt-illustrate.md](../process/prompts/prompt-illustrate.md); drop the SVG in `illustrations/`. The homepage sees it through the symlink. |
-| Link to the app | Use `https://zsvedic.github.io/TamedTable/app/…` (not the bare root — that's the homepage now). |
+| Link to the app | Use `https://www.tamedtable.com/app/…` (not the bare root — that's the homepage now). |
 
 Preview without a build: open `web/index.html` in a browser (the symlinks resolve locally), or `illustrations/_gallery.html` to eyeball all tiles. Fonts load straight from Google Fonts — no offline story, since the app needs network anyway.
 

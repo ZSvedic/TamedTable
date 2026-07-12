@@ -107,6 +107,9 @@ header.nav {
 .hero h1 { font-size: 58px; font-weight: 600; line-height: 1.02; color: var(--on-dark); }
 .hero .sub { font-size: 19px; color: var(--on-dark-muted); margin-top: 20px; max-width: 440px; }
 .hero-cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+/* Key-free path, under the CTA buttons: quiet, but present before any signup ask. */
+.hero-note { font-size: 15px; color: var(--on-dark-muted); margin-top: 18px; }
+.hero-note a { color: var(--on-dark); }
 
 /* Hero demo — before/after run, stand-in for the 60s screencast */
 .demo {

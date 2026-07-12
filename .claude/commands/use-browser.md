@@ -73,7 +73,7 @@ Prove it works before reporting ready — load this repo's own JS-rendered demo 
 
 ```bash
 cd /tmp/pw-driver
-PW_CHROME="$PW_CHROME" node render.mjs "https://zsvedic.github.io/TamedTable/demos/gherkin-tour/demo.html" "#src"
+PW_CHROME="$PW_CHROME" node render.mjs "https://www.tamedtable.com/demos/gherkin-tour/demo.html" "#src"
 ```
 
 Expect the sample feature text including `query "keep rows where age >= 18"`. Then report: Chromium path used, setup time, and that headless rendering is ready.

@@ -42,14 +42,16 @@ for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-k
       --public-path="${BASE}demos/$name/" )
 done
 
-# Retarget the marketing pages' absolute links (Open Web App, og:url, feature
-# demos) onto the live custom domain at the current prefix. The source keeps the
-# old github.io URL as a stable placeholder; this rewrites it to
-# https://www.tamedtable.com<BASE>… — prod (BASE=/) → .../app/, a preview
-# (BASE=/pr-preview/pr-<N>/) → .../pr-preview/pr-<N>/app/. Anchored on the full
-# origin so github.com/.../TamedTable repo links are untouched.
-mapfile -t html < <(grep -rl 'https://zsvedic.github.io/TamedTable/' "$OUT" --include='*.html' || true)
-for f in "${html[@]}"; do
-  [ -n "$f" ] || continue
-  sed -i "s#https://zsvedic.github.io/TamedTable/#https://www.tamedtable.com${BASE}#g" "$f"
-done
+# Retarget the marketing pages' absolute links (Open Web App, og:url, canonical,
+# feature demos) onto the current prefix. The source writes them against the
+# prod root (https://www.tamedtable.com/); prod (BASE=/) leaves them unchanged,
+# a preview (BASE=/pr-preview/pr-<N>/) re-roots them to
+# .../pr-preview/pr-<N>/app/ etc. Anchored on the full origin so
+# github.com/.../TamedTable repo links are untouched.
+if [ "$BASE" != "/" ]; then
+  mapfile -t html < <(grep -rl 'https://www.tamedtable.com/' "$OUT" --include='*.html' || true)
+  for f in "${html[@]}"; do
+    [ -n "$f" ] || continue
+    sed -i "s#https://www.tamedtable.com/#https://www.tamedtable.com${BASE}#g" "$f"
+  done
+fi

@@ -8,7 +8,7 @@ Set up the TamedTable dev environment, then report status:
 
 2. **Open two tabs in a fresh MCP tab group.** Call `tabs_context_mcp` with `createIfEmpty: true`, use the empty tab it returns for the first URL, then `tabs_create_mcp` for the second:
    - https://github.com/ZSvedic/TamedTable
-   - https://zsvedic.github.io/TamedTable/app/
+   - https://www.tamedtable.com/app/
 
    Don't try to reuse tabs from prior chats — Claude in Chrome only sees tabs inside the current MCP group, so reattaching isn't reliable.
 

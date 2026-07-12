@@ -25,9 +25,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   section URL to the clipboard, confirming with a brief "Copied URL" label).
   Page-only rules live in this small inline <style>, not the shared sheet.
 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="styles.css">
 <style>
   /* Guide-only layout: a readable column on the linen ground. */
@@ -127,7 +125,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <nav class="nav-links" id="navLinks">
       <a class="link" href="/FAQ" aria-current="page">FAQ</a>
       <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
-      <a class="btn btn-dprimary" href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
+      <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
     </nav>
   </div>
 </header>
@@ -140,10 +138,14 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <nav class="faq-index" aria-label="Questions">
       <ul>
         <li><a href="#byok">How to Bring Your Own API Key (BYOK)?</a></li>
+        <li><a href="#key-safety">Is it safe to paste my API key into a web app?</a></li>
         <li><a href="#change-models">How to change primary and secondary models?</a></li>
         <li><a href="#formats">What file formats does TamedTable support?</a></li>
+        <li><a href="#compare">How is this different from OpenRefine, Copilot in Excel, or asking ChatGPT?</a></li>
         <li><a href="#privacy">Where is the privacy policy and EULA?</a></li>
         <li><a href="#third-party">But isn't my data sent to third-party AI models?</a></li>
+        <li><a href="#busl">What licence is TamedTable under?</a></li>
+        <li><a href="#business-model">What is the business model?</a></li>
         <li><a href="#ai-developed">Is TamedTable developed using AI?</a></li>
         <li><a href="#ai-quality">But AI code is not good!</a></li>
       </ul>
@@ -193,7 +195,21 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           </div>
         </div>
 
-        <p class="closing">Tip: store the key in your browser or a password manager. Clearing your browser data or switching devices means entering it again. Ready? <a href="https://zsvedic.github.io/TamedTable/app/" target="_blank" rel="noopener">Open the web app ↗</a></p>
+        <p class="closing">Tip: store the key in your browser or a password manager. Clearing your browser data or switching devices means entering it again. Ready? <a href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app ↗</a></p>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Q: Key safety ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="key-safety" class="anchored">
+        Is it safe to paste my API key into a web app?
+        <button class="copy-link" data-target="key-safety" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>A fair question to ask of any site that wants an API key. Here is exactly what happens with yours:</p>
+        <p>The key is saved in your browser's local storage, on your device, and requests go straight from your browser to your provider's API. There is no TamedTable server in the middle: the site is static files on GitHub Pages, it loads no third-party scripts, no analytics, and no ad code, so there is no code path that could quietly copy the key elsewhere. (If you inspect the network tab you may notice the header <code>anthropic-dangerous-direct-browser-access</code>; that is Anthropic's required opt-in name for exactly this setup, where the browser calls the API without a middleman.)</p>
+        <p>Two sensible precautions anyway: create a key just for TamedTable so you can revoke it on its own, and set a monthly spending cap in your provider's console. Every provider supports both.</p>
+        <p>And because the code is public, you don't have to take our word for it. You can read the request code <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/web/src/controller-engine.ts" target="_blank" rel="noopener">on GitHub</a> or run the app from your own clone.</p>
       </div>
     </section>
 
@@ -205,7 +221,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       </h2>
       <div class="faq-a">
         <p>You pick a <strong>provider</strong> (Google, OpenAI, or Anthropic) in Settings — not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk.</p>
-        <p>Because TamedTable is open source and runs entirely on your own key, those defaults live in the code rather than behind an in-app switcher. To change them, edit one JSON file and rebuild:</p>
+        <p>Because TamedTable is source-available (<a href="#busl">BUSL</a>) and runs entirely on your own key, those defaults live in the code rather than behind an in-app switcher. To change them, edit one JSON file and rebuild:</p>
         <p><code>src/packages/model-config/models.json</code> has two sections. The <code>models</code> list is every available model with its per-million-token prices; the <code>defaults</code> section maps each provider to its <code>primary</code> and <code>secondary</code> model id. Point a provider's <code>primary</code> or <code>secondary</code> at any id from the <code>models</code> list (same provider), then rebuild the app. Add a brand-new model by giving it a row in <code>models</code> first.</p>
       </div>
     </section>
@@ -222,6 +238,19 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       </div>
     </section>
 
+    <!-- ---------------------------- Q: Comparison ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="compare" class="anchored">
+        How is this different from OpenRefine, Copilot in Excel, or asking ChatGPT?
+        <button class="copy-link" data-target="compare" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p><strong><a href="https://openrefine.org/" target="_blank" rel="noopener">OpenRefine</a></strong> is excellent at deterministic cleanup (facets, clustering, GREL expressions), but you operate it through menus and formulas. TamedTable takes plain language, and its AI cells handle fuzzy jobs no formula covers, like classifying tickets by meaning.</p>
+        <p><strong>Copilot in Excel / Gemini in Sheets</strong> put AI inside a proprietary spreadsheet. TamedTable is a free client app on your own key: every transformation lands in a small replayable spec you can inspect, undo, re-run on next month's file, or export as a Python script.</p>
+        <p><strong>Asking ChatGPT</strong> (paste data, get data back) works for one-off jobs, but you can't see what it actually did, replay it, or trust it row-by-row at scale. TamedTable keeps the table on your machine, runs deterministic steps in a real SQL engine, and only sends the model the rows a fuzzy step needs.</p>
+      </div>
+    </section>
+
     <!-- ---------------------------- Q: Privacy / EULA ---------------------------- -->
     <section class="faq-q">
       <h2 id="privacy" class="anchored">
@@ -230,7 +259,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       </h2>
       <div class="faq-a">
         <p>There is no privacy policy because you send us no data. TamedTable is purely client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers — we don't have a server. We don't use cookies and we don't run any analytics. There is simply nothing to regulate.</p>
-        <p>There is no separate EULA either: TamedTable is open source, so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">licence on GitHub</a>.</p>
+        <p>There is no separate EULA either: TamedTable is source-available (<a href="#busl">BUSL</a>), so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">licence on GitHub</a>.</p>
       </div>
     </section>
 
@@ -242,6 +271,29 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       </h2>
       <div class="faq-a">
         <p>Not necessarily. You can run TamedTable on your own internal server and change the code to connect to an LLM that you host yourself.</p>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Q: Licence (BUSL) ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="busl" class="anchored">
+        What licence is TamedTable under?
+        <button class="copy-link" data-target="busl" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>The <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">Business Source License 1.1</a> (BUSL): all the source is public and you can use, modify, self-host, and redistribute it freely, with one restriction, and each release automatically becomes MIT four years after it ships. Projects such as MariaDB, HashiCorp's Terraform and Vault, and Sentry use or used the same licence.</p>
+        <p>The one restriction: selling TamedTable itself, as a paid product or hosted service, needs a commercial licence from the author. Why not a pure open-source licence? Because large cloud vendors have a habit of taking open-source projects, selling them as managed services, and giving nothing back to the people who built them. BUSL keeps the code open for you and closed for that move. So strictly speaking TamedTable is "source-available" rather than OSI-certified "open source", which is why this site uses the former term.</p>
+      </div>
+    </section>
+
+    <!-- ---------------------------- Q: Business model ---------------------------- -->
+    <section class="faq-q">
+      <h2 id="business-model" class="anchored">
+        What is the business model?
+        <button class="copy-link" data-target="business-model" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+      </h2>
+      <div class="faq-a">
+        <p>There isn't one. TamedTable is free and source-available; the only thing you pay for is your own API usage, to your provider. The author built it to learn the craft of AI-driven SDD/BDD/TDD (spec, behavior, and test-driven development) in public.</p>
       </div>
     </section>
 
@@ -265,8 +317,8 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <div class="faq-a">
         <p>Well, you win some, you lose some.</p>
         <p>Yes, you don't have humans micromanaging every line of code. But:</p>
-        <p><strong>A)</strong> AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">225 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</p>
-        <p><strong>B)</strong> This app was developed in two months by a single person. Without AI, the author would need a team of people: a backend dev, a frontend dev, a designer, etc. Those people need to pay their bills, so this software would be proprietary, paid SaaS. TamedTable is a free, open-source, client app, <em>exactly because of AI</em>.</p>
+        <p><strong>A)</strong> AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">over 400 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</p>
+        <p><strong>B)</strong> This app was developed in two months by a single person. Without AI, the author would need a team of people: a backend dev, a frontend dev, a designer, etc. Those people need to pay their bills, so this software would be proprietary, paid SaaS. TamedTable is a free, source-available, client app, <em>exactly because of AI</em>.</p>
       </div>
     </section>
   </div>

@@ -39,7 +39,7 @@ as a web app you click or a command you script; both run on the same engine.
 - **Asking stays cheap.** Describing a change costs the same whether your table has a hundred rows or a million, and replaying saved steps costs nothing at all.
 - **Nothing is hidden.** You see exactly what changed, row by row, so you can trust it.
 - **It speaks your language.** Ask in English, Spanish, German, French, Croatian, Chinese — by voice or text. It understands the request, not just keywords.
-- **It's open source.** No lock-in, no proprietary format.
+- **It's source-available (BUSL).** No lock-in, no proprietary format.
 
 # New AI feature list
 

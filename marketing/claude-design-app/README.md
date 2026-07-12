@@ -30,7 +30,7 @@ diverge — edit `../tokens.json` and re-sync, never a generated file.
 - **Tokens** — share the bytes. `../tokens.json` is the one source; the app
   copies it. No second hand-maintained palette.
 - **Primitives** (`src/packages/ui-kit/`) — code is canonical. The published
-  [ui-kit demo](https://zsvedic.github.io/TamedTable/demos/ui-kit/demo.html) is
+  [ui-kit demo](https://www.tamedtable.com/demos/ui-kit/demo.html) is
   the shared design-review surface.
 - **Iteration** — prototype here (the component/app `.jsx` + `.html` files are
   Claude-design scratch; `tokens.jsx` is generated, not scratch); land a change

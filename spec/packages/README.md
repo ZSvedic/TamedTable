@@ -23,4 +23,4 @@ When a library package ships a UI piece, it is a generic React component: props 
 
 ## Demos
 
-Each library package ships a `demo.html` — a standalone page that exercises the public API by hand, no app shell required. Run it locally with `bun run demo` from the package dir. The deploy workflow bundles each demo into the Pages artifact under `demos/<name>/`, so each package README also links the live URL (`https://zsvedic.github.io/TamedTable/demos/<name>/demo.html`).
+Each library package ships a `demo.html` — a standalone page that exercises the public API by hand, no app shell required. Run it locally with `bun run demo` from the package dir. The deploy workflow bundles each demo into the Pages artifact under `demos/<name>/`, so each package README also links the live URL (`https://www.tamedtable.com/demos/<name>/demo.html`).

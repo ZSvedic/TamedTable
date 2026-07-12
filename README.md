@@ -15,7 +15,7 @@ Organized by *lifecycle*, not by file type:
 ```
 TamedTable/                  root: README.md, MAP.md (feature + code navigation), LICENSE, .gitignore
 ├── benchmarks/              model & batch-size benchmark DATA + outputs (no code — runner is @tamedtable/bench)
-│   ├── models.jsonl         single source of per-model pricing/specs (in/out $, context, audio)
+│   ├── models.jsonl         the benchmark's model pricing/specs (the app's catalogue is model-config's models.json)
 │   ├── ground-truth/        labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl)
 │   ├── results/             sweep outputs (JSONL)
 │   └── charts/              generated SVG tradeoff charts
@@ -239,8 +239,10 @@ OpenAI usage shapes, so per-model cost is attributed correctly for any provider.
 ### Cost accounting and results
 
 Cost is each call's token usage priced at the published per-model rates in
-[`benchmarks/models.jsonl`](benchmarks/models.jsonl) — the single source of
-pricing/specs, loaded through `@tamedtable/bench`. Anthropic figures come from
+[`benchmarks/models.jsonl`](benchmarks/models.jsonl) — the benchmark's single
+source of pricing/specs, loaded through `@tamedtable/bench`. (The app ships a
+separate runtime catalogue, `src/packages/model-config/models.json`, which
+lists only the shipped models; a unit test keeps the two in sync.) Anthropic figures come from
 the model reference, [Gemini](https://ai.google.dev/gemini-api/docs/pricing) and
 [OpenAI](https://developers.openai.com/api/docs/pricing) from their pricing
 pages. Prompt-cache writes are billed at 1.25× and reads at 0.1× of the input
@@ -298,3 +300,11 @@ SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only w
 - **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario — minutes, mostly the `TAMEDTABLE_RPM` throttle respecting the provider's rate ceiling. Re-record only when a prompt changes.
 - **Golden-file fragility on LLM cells.** A few scenarios (e.g. `aggregate`) assert byte equality against a frozen JSONL golden. Models produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and a model's own minor revisions can shift the answer over time, so such tests are kept few and deliberate — tours assert robust properties instead. (The old byte-golden `datanorm.feature` was removed for exactly this brittleness; its behavior is covered by the clean-up / multilingual / loadsave tours.) Mismatches on LLM-driven cells aren't necessarily regressions — see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
 - **Tabular formats: CSV, JSONL, Parquet, Arrow/Feather.** All load (local, URL, or sample) and all save — the web app saves in the format you opened, the CLI's `:save <name.ext>` writes (and converts to) any of them. Other DuckDB-readable formats and `.xlsx` are not yet wired into the open/save dispatch.
+
+## License
+
+[Business Source License 1.1](LICENSE) (BUSL) — the source is public and free
+to use, modify, self-host, and redistribute; selling TamedTable itself as a
+product or hosted service needs a commercial license from the author. Each
+release converts to MIT four years after it ships. The
+[FAQ](https://www.tamedtable.com/FAQ#busl) explains the choice.
