@@ -52,11 +52,14 @@ controller.subscribe(() => {
   // Intentionally empty — config is persisted inside the controller.
 });
 
-// Deep link: ?feature=<file>&scenario=<name> opens the named tour and plays it.
-// Reading the URL belongs here (alongside the app build data), not the
-// controller. Unmatched/missing params boot normally — the controller no-ops.
+// Deep link: ?feature=<file>&scenario=<name> opens the named tour and plays
+// it; ?tours (any value) opens the Tours panel chooser instead — the
+// homepage's "take a guided tour" links use it. Reading the URL belongs here
+// (alongside the app build data), not the controller. Unmatched/missing
+// params boot normally — the controller no-ops.
 const params = new URLSearchParams(window.location.search);
-void controller.openTutorialFromLink(params.get('feature'), params.get('scenario'));
+if (params.has('tours')) controller.openTutorial();
+else void controller.openTutorialFromLink(params.get('feature'), params.get('scenario'));
 
 // Catch Android's one-shot install event for the Settings panel's
 // "Add to home screen" button.

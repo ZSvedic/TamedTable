@@ -729,19 +729,20 @@ Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
 three open actions stacked as buttons — **Open sample…**, **Open
 local…**, **Open URL…** — so the first run and the toolbar offer the
-identical choices. Below the buttons a line reads **"Or start one of
-the tours"** — a link that opens the Tours panel, so a first-time
-visitor finds the guided path without hunting for the toolbar button.
-The same line appears on the phone's empty page.
+identical choices. A quiet line directly under the buttons reads
+**"…or drop a file here"**. A gap below that, a line in the same style
+as the heading reads **"New here? Check Tours."** — the link opens the
+Tours panel, so a first-time visitor finds the guided path without
+hunting for the toolbar button. The same line appears on the phone's
+empty page.
 
 The empty page is also a drop target: dragging a file from the desktop
 onto it highlights the page (a tint plus a dashed border), and dropping
 loads the file exactly like **Open local…** — same four formats, same
 "Loaded …" message. A file whose extension isn't a supported format
-surfaces the standard "Could not open file …" error toast. Under the
-tours link a quiet line reads **"…or drop a file here"** so the
-gesture is discoverable. Once a table is loaded the drop target goes
-away; a stray drop is ignored rather than replacing the table.
+surfaces the standard "Could not open file …" error toast. Once a
+table is loaded the drop target goes away; a stray drop is ignored
+rather than replacing the table.
 
 Saving data mirrors that shape. **Save data** is itself a split-button:
 the primary half writes the rows back in the format the table was
@@ -1229,6 +1230,10 @@ reads two query parameters:
 
 - `feature` — the Gherkin file name the scenario lives in (e.g. `filter.feature`).
 - `scenario` — the scenario name, URL-encoded.
+
+A third parameter, `tours` (any value), opens the Tours panel chooser instead
+of playing one tour — the homepage's "take a guided tour" links use it, so a
+key-free visitor lands directly on the tour list.
 
 Both together name one tour; the file disambiguates when two files share a
 scenario name, so matching on the scenario name alone is not enough. When both

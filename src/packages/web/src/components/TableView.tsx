@@ -125,16 +125,19 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
           {openOptions(controller).map((o) => (
             <OptionRow key={o.label} icon={o.icon} label={o.label} onClick={o.onClick} t={t} />
           ))}
+          <div
+            style={{
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm,
+              color: t.ink3,
+              textAlign: 'center',
+            }}
+          >
+            …or drop a file here
+          </div>
         </div>
-        <ToursLink t={t} onOpen={() => controller.openTutorial()} />
-        <div
-          style={{
-            fontFamily: typography.ui,
-            fontSize: typography.size.sm,
-            color: t.ink3,
-          }}
-        >
-          …or drop a file here
+        <div style={{ marginTop: space.px16 }}>
+          <ToursLink t={t} onOpen={() => controller.openTutorial()} />
         </div>
       </div>
     </div>
