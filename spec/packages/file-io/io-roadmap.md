@@ -1,6 +1,7 @@
 # TamedTable I/O Roadmap
 
-Client-side (browser, BYOK) file-format support beyond the current CSV + JSONL.
+Client-side (browser, BYOK) file-format support beyond the shipped four
+(CSV, JSONL, Parquet, Arrow).
 Every format below is a bounded file that loads fully into the existing data
 model — no backend, no streaming model required. Backend-only / streaming-native
 formats (Arrow Flight, Kafka, Delta/Iceberg/Hudi, ORC) are excluded.
@@ -12,11 +13,10 @@ One engine reads the columnar and binary formats, in both runtimes:
 - **Node (CLI / headless)** already embeds DuckDB (`@duckdb/node-api`) for
   `{sql}` transformations. It reads CSV, JSON, Parquet, and Arrow natively, and
   Avro / Excel via extensions.
-- **Browser** currently *stubs DuckDB out* (`web/src/shims/duckdb.ts` throws),
-  so `{sql}` is dead in the web build. Phase 1 adds **duckdb-wasm** to the
-  browser, which (a) reads the same formats client-side via
-  `registerFileBuffer(bytes)` and (b) **re-enables `{sql}` transforms in the
-  web build** — one dependency, two wins.
+- **Browser** runs **duckdb-wasm** (shipped with Phase 1:
+  `web/src/shims/duckdb.ts` adapts it), which (a) reads the same formats
+  client-side via `registerFileBuffer(bytes)` and (b) powers `{sql}`
+  transforms in the web build — one dependency, two wins.
 
 Cost and shape:
 

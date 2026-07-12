@@ -1,6 +1,11 @@
 # I/O Phase 0 — cleanup before formats land
 
-A refactor that has to happen before [io-roadmap.md](io-roadmap.md) Phase 1. It
+> **Shipped 2026-06-29.** All five steps landed; this plan is kept as a
+> historical record. Current format support lives in
+> [spec/packages/file-io/](../../spec/packages/file-io/).
+
+A refactor that has to happen before
+[io-roadmap.md](../../spec/packages/file-io/io-roadmap.md) Phase 1. It
 moves every format codec into `file-io` behind a load-on-demand registry and
 makes `core` depend on `file-io`, not the reverse. It changes no user-visible
 behavior — CSV and JSONL load and save exactly as today — it only moves where
@@ -14,14 +19,15 @@ filesystem:
 - `loadCsv`/`loadJsonl`/`writeRows` (`core/index.ts`) take a **path**, read it
   with `node:fs`, then parse. Byte-acquisition and format-codec are one unit.
 - The browser can't call a path-based loader, so the web app keeps an in-memory
-  `Map<path, text>` (`web/src/shims/fs-promises.ts`) and writes picked text into
+  `Map<path, text>` (`web/src/shims/fs.ts`) and writes picked text into
   it by path just so `core`'s loader runs unchanged.
 - `file-io` only produces `{ name, text, format }` and never touches rows.
 
 So a parser that needs no filesystem is reached through a filesystem shim, and
 the package named `file-io` doesn't own file IO. Phase 1 also breaks the current
 seam outright: Parquet, Arrow, Avro are **binary**, but `PickedFile` is
-text-only — and those formats are read through [DuckDB-Wasm](io-roadmap.md), not
+text-only — and those formats are read through
+[DuckDB-Wasm](../../spec/packages/file-io/io-roadmap.md), not
 bespoke parsers, so the registry must hand a codec raw **bytes**, not text.
 
 ## Target shape (option D)
@@ -63,7 +69,7 @@ Two codec families share this one interface:
 - **DuckDB-backed** — Parquet / Arrow / Avro / Excel, delegating `parse` to a
   shared DuckDB reader (`registerFileBuffer` → `read_parquet`/…). These all
   share one lazy `load?()` that pulls duckdb-wasm. See
-  [io-roadmap.md](io-roadmap.md).
+  [io-roadmap.md](../../spec/packages/file-io/io-roadmap.md).
 
 New format = one codec file + one registry entry. `detectFormat` becomes a
 lookup over the registry instead of a hand-written `if` ladder.
@@ -75,7 +81,7 @@ Phase 1* (it adds a dependency and re-enables web `{sql}`, both user-visible).
 
 ## Steps
 
-Each step follows the [workflow rule](../../../CLAUDE.md#workflow-rule--changing-a-component):
+Each step follows the [workflow rule](../../CLAUDE.md#workflow-rule--changing-a-component):
 spec → Gherkin → step defs → red → green. **Land all five steps in a single
 PR** — they build on each other; commit per step for a clean history, but don't
 cut a PR between them. `cd src && bun run test` must be green before opening it.
@@ -98,7 +104,7 @@ shift is recorded in `spec/code-contract.md`.
 3. **Delete the web fs-shim.** Add a rows-based load seam to the headless
    `Runner` (`loadParsed(rows, spec)` beside `loadInput(path)`); the web app
    parses through `file-io` and loads rows directly. Removes
-   `web/src/shims/fs-promises.ts` and the path round-trip in `controller-files.ts`.
+   `web/src/shims/fs.ts` and the path round-trip in `controller-files.ts`.
 
 4. **Widen the seam to `Uint8Array`.** `PickedFile`/`FetchedTable` carry bytes;
    text codecs decode internally. This is what lets Phase 1's binary formats in.

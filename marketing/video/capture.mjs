@@ -2,11 +2,13 @@
 // Uses Playwright's built-in VP8 recorder; window.seek(ms) is driven on a wall
 // clock so the recording plays at real speed, then the font-load pre-roll is
 // trimmed with the bundled (video-only) ffmpeg. audio.mjs adds the voiceover.
-// Usage: node capture.mjs
-import { chromium } from '/home/user/node_modules/playwright/index.mjs';
+// Usage: node capture.mjs  (run `cd src && bun install` first — playwright
+// resolves from src/node_modules, the repo's only dependency root)
+import { chromium } from '../../src/node_modules/playwright/index.mjs';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import os from 'node:os';
 import path from 'node:path';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -27,8 +29,17 @@ async function waitStable(file) {
 }
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const FF = '/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux';
+// Playwright's browser cache: PLAYWRIGHT_BROWSERS_PATH if set, else the default.
+const BROWSERS = process.env.PLAYWRIGHT_BROWSERS_PATH
+  || path.join(os.homedir(), '.cache', 'ms-playwright');
+// The bundled video-only ffmpeg lives beside the browsers (ffmpeg-<rev>/ffmpeg-*).
+function findFfmpeg() {
+  const rev = readdirSync(BROWSERS).find(d => d.startsWith('ffmpeg-'));
+  if (!rev) throw new Error(`no ffmpeg-* under ${BROWSERS}; run: bunx playwright install ffmpeg`);
+  const dir = path.join(BROWSERS, rev);
+  return path.join(dir, readdirSync(dir).find(f => f.startsWith('ffmpeg')));
+}
+const FF = findFfmpeg();
 const DUR_MS = 20000;
 const RATIOS = [
   { id: '16x9', w: 1280, h: 720 },
@@ -41,7 +52,7 @@ const out = path.join(DIR, 'out');
 const tmp = path.join(out, '_rec');
 mkdirSync(out, { recursive: true });
 
-const browser = await chromium.launch({ executablePath: CHROME });
+const browser = await chromium.launch();
 for (const r of RATIOS) {
   for (const lang of LANGS) {
     rmSync(tmp, { recursive: true, force: true });

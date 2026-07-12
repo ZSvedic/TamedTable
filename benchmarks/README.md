@@ -67,11 +67,12 @@ Override with `--models=…`, `--batches=…`, `--out=name` on `sweep`.
 
 ## Ground truth
 
-`bench label` uses a strong model (Fable 5) as the labeller, then **spot-check by
-hand** before trusting the labels. The committed `music-sample.csv` /
-`music-labels.jsonl` is a small (24-row, balanced) hand-verified set so the
-pipeline runs offline out of the box; regenerate a larger auto-labelled set with
-`bench sample` + `bench label`.
+`bench label` uses a strong model (default `claude-fable-5`) as the labeller,
+then **spot-check by hand** before trusting the labels. The committed
+`music-sample.csv` / `music-labels.jsonl` is a 120-row set auto-labelled by
+`gemini-2.5-pro` and hand spot-checked (47 music / 69 non-music), so the
+pipeline runs offline out of the box; regenerate with `bench sample` +
+`bench label`.
 
 ## Charts
 
@@ -86,17 +87,16 @@ Colours are the Okabe-Ito colourblind-safe palette, keyed by provider.
 
 ## Results so far
 
-Real runs committed: `results/phase2-gemini.jsonl`, `results/phase2-openai.jsonl`,
-their union `results/phase2-all.jsonl` (what the charts render from), and the
-charts. Findings + per-config tables:
+Real runs committed in `results/phase2-all.jsonl` — all three providers, six
+cell models × six batch sizes (what the charts render from). Findings +
+per-config tables:
 [`process/journal/2026-07-02-model-batch-sweep.md`](../process/journal/2026-07-02-model-batch-sweep.md).
 
 - **Gemini** (3 cell models): accuracy flat 93–97% across every model and batch
   size, so `gemini-3.1-flash-lite` wins on value (~10× cheaper, same accuracy).
-- **OpenAI** (`gpt-5.4-mini`): 88–91% — cheapest overall but a few points behind
+- **Anthropic**: `claude-sonnet-4-5` hits 95% but at ~3× flash-lite's cost;
+  `claude-haiku-4-5` lands 88–94% at flash-lite prices.
+- **OpenAI** (`gpt-5.4-mini`): 84–91% — cheapest overall but a few points behind
   Gemini (partly labeller affinity; the labels are from `gemini-2.5-pro`).
-- **Batching ≥10** cuts cost/time sharply for free on both — the app's default
-  batch of 20 is in the sweet spot.
-- **Anthropic** — not yet run (no key reached the run's subprocess in the build
-  sandbox). Re-run `bun run bench:sweep` with `ANTHROPIC_API_KEY` exported;
-  results append to the same tables and charts.
+- **Batching ≥10** cuts cost/time sharply for free on every provider — the
+  app's default batch of 20 is in the sweet spot.
