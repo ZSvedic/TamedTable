@@ -8,4 +8,4 @@ File input/output for tables: the format **codec registry** (parse/serialize beh
 | Per-format quirks | [formats/csv.md](formats/csv.md), [formats/jsonl.md](formats/jsonl.md) |
 | Gherkin scenarios | [file-io.feature](file-io.feature) |
 | Code, step defs, demo | [../../../src/packages/file-io/](../../../src/packages/file-io/) |
-| Live demo | https://zsvedic.github.io/TamedTable/demos/file-io/demo.html |
+| Live demo | https://www.tamedtable.com/demos/file-io/demo.html |

@@ -7,7 +7,7 @@ Provider/key/model catalogue, config resolution (`ALL_MODELS`, `resolveConfig`),
 | Behavior spec | [behavior.md](behavior.md) |
 | Gherkin scenarios | [model-config.feature](model-config.feature) |
 | Code, step defs, demo | [../../../src/packages/model-config/](../../../src/packages/model-config/) |
-| Live demo | https://zsvedic.github.io/TamedTable/demos/model-config/demo.html |
+| Live demo | https://www.tamedtable.com/demos/model-config/demo.html |
 
 The demo mounts the real `ModelChooser` over local React state, shows the
 `resolveConfig` result live, persists config to the same localStorage blob as

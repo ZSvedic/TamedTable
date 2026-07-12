@@ -7,4 +7,4 @@ Voice request recording: the `VoicePort` interface, the MediaRecorder→WAV brow
 | Behavior spec | [behavior.md](behavior.md) |
 | Gherkin scenarios | [voice-input.feature](voice-input.feature) |
 | Code, step defs, demo | [../../../src/packages/voice-input/](../../../src/packages/voice-input/) |
-| Live demo | https://zsvedic.github.io/TamedTable/demos/voice-input/demo.html |
+| Live demo | https://www.tamedtable.com/demos/voice-input/demo.html |

@@ -1,6 +1,7 @@
 {
   "name": "tamedtable",
   "private": true,
+  "license": "BUSL-1.1",
   "type": "module",
   "workspaces": [
     "packages/*"

@@ -729,10 +729,20 @@ Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
 three open actions stacked as buttons — **Open sample…**, **Open
 local…**, **Open URL…** — so the first run and the toolbar offer the
-identical choices. Below the buttons a line reads **"Or start one of
-the tours"** — a link that opens the Tours panel, so a first-time
-visitor finds the guided path without hunting for the toolbar button.
-The same line appears on the phone's empty page.
+identical choices. A quiet line directly under the buttons reads
+**"…or drop a file here"**. A gap below that, a line in the same style
+as the heading reads **"New here? Check Tours."** — the link opens the
+Tours panel, so a first-time visitor finds the guided path without
+hunting for the toolbar button. The same line appears on the phone's
+empty page.
+
+The empty page is also a drop target: dragging a file from the desktop
+onto it highlights the page (a tint plus a dashed border), and dropping
+loads the file exactly like **Open local…** — same four formats, same
+"Loaded …" message. A file whose extension isn't a supported format
+surfaces the standard "Could not open file …" error toast. Once a
+table is loaded the drop target goes away; a stray drop is ignored
+rather than replacing the table.
 
 Saving data mirrors that shape. **Save data** is itself a split-button:
 the primary half writes the rows back in the format the table was
@@ -852,7 +862,10 @@ because [Google rejects unrestricted keys](https://ai.google.dev/gemini-api/docs
 and the symptom is an indistinguishable "API key not valid" response, so a user
 whose key is genuinely fine is told the real fix rather than re-entering the same
 key. A model-not-found error reads "Model not found. The selected model may be
-unavailable." A network or CORS failure reads "Network error. Could not reach the
+unavailable." A rate-limit rejection (HTTP 429) reads "Rate limited by the
+Google API. Wait a minute and try again." (or OpenAI / Anthropic) — the request
+did not fail because of anything the user wrote, so the message says to retry
+rather than rephrase. A network or CORS failure reads "Network error. Could not reach the
 Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pass through as-is so no
 information is lost. The provider name in the message matches whichever provider
 card is selected.
@@ -1218,6 +1231,10 @@ reads two query parameters:
 - `feature` — the Gherkin file name the scenario lives in (e.g. `filter.feature`).
 - `scenario` — the scenario name, URL-encoded.
 
+A third parameter, `tours` (any value), opens the Tours panel chooser instead
+of playing one tour — the homepage's "take a guided tour" links use it, so a
+key-free visitor lands directly on the tour list.
+
 Both together name one tour; the file disambiguates when two files share a
 scenario name, so matching on the scenario name alone is not enough. When both
 resolve to a real tour the app plays it from step 1 (the Tutorial panel stays
@@ -1235,7 +1252,7 @@ could not work once the homepage began opening each tour in a new tab — a fres
 tab has no history to go back to.)
 
 Production links use the deployed base, e.g.
-`https://zsvedic.github.io/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country`.
+`https://www.tamedtable.com/app/?feature=filter.feature&scenario=Filter+by+Country`.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 

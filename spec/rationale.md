@@ -35,7 +35,7 @@ The problem is that, since users are not programmers, it is difficult for them t
 - Manage dependencies and security.
 
 ## Proposed solution
-An open-source TamedTable web app that combines elements of:
+A source-available (BUSL) TamedTable web app that combines elements of:
 - Google Sheets: tabular editor. 
 - Claude Code: sidebar chat that calls tools.
 - Claude Design: user comments on the table are resolved in the background, and the code is hidden.

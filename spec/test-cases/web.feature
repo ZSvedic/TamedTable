@@ -100,6 +100,20 @@ Feature: Web front-end
       When user saves as "out.jsonl"
       Then the status footer reports "saved"
 
+  Rule: The empty page accepts a dropped file
+
+    @web
+    Scenario: Dropping a CSV onto the empty page loads it
+      Given the TamedTable web app
+      When user drops the file "customers-input.csv" onto the empty page
+      Then table displays the header and at least the first 5 rows
+
+    @web
+    Scenario: Dropping an unsupported file shows an error toast
+      Given the TamedTable web app
+      When user drops a file named "notes.txt" containing "hello" onto the empty page
+      Then a toast shows "Could not open file"
+
   Rule: Samples have their own picker, separate from the URL dialog
 
     @web
@@ -422,3 +436,13 @@ Feature: Web front-end
       And the LLM API returns a 401 unauthorized error
       When user sends the chat message "norm dob col"
       Then a toast shows "Invalid API key"
+
+    @web
+    Scenario: A rate-limited request tells the user to wait and retry
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And user clicks the provider card "gemini"
+      And the gemini key is set to "good-key"
+      And the LLM API returns a 429 rate-limit error
+      When user sends the chat message "norm dob col"
+      Then a toast shows "Rate limited by the Google API. Wait a minute and try again."

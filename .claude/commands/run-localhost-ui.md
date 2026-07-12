@@ -95,7 +95,7 @@ When I say **finish** (or "ship it"/"land it"), follow the repo
    - **Notable UI change** (this command is for UI work, so this is common) → **do
      not** auto-merge. Add the `pr-preview` label (`gh pr edit --add-label
      pr-preview`), which triggers [pr-preview.yml](../../.github/workflows/pr-preview.yml)
-     to build a live preview at `https://zsvedic.github.io/TamedTable/pr-preview/pr-<N>/`.
+     to build a live preview at `https://www.tamedtable.com/pr-preview/pr-<N>/`.
      Post that URL and **wait** for the user to eyeball it and say "merge"; then
      `gh pr merge --squash --delete-branch`.
    - **User said "hold merges"** (e.g. they're testing on `main`) → do neither. Leave
@@ -122,7 +122,7 @@ If CI is red, fix on the branch and push again — don't merge red.
   If you'll close the lid, stay on AC power and use `caffeinate -dimsu` (it can't
   override lid-close sleep on battery).
 - The **preview pane is local-only** — it can't show the deployed
-  `zsvedic.github.io` URL, only the worktree's dev server. That's the point: you see
+  `www.tamedtable.com` URL, only the worktree's dev server. That's the point: you see
   *your* edits, not what's shipped.
 - Parallel safety comes from the worktree: separate files, separate branch, separate
   port, and a uniquely-named launch config. Two `run-localhost-ui` chats won't race on

@@ -7,4 +7,4 @@ The top bar: brand lockup, file readout, and the action buttons (open, save, und
 | Behavior spec | [behavior.md](behavior.md) |
 | Gherkin scenarios | [toolbar.feature](toolbar.feature) |
 | Code, step defs, demo | [../../../src/packages/toolbar/](../../../src/packages/toolbar/) |
-| Live demo | https://zsvedic.github.io/TamedTable/demos/toolbar/demo.html |
+| Live demo | https://www.tamedtable.com/demos/toolbar/demo.html |

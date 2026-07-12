@@ -1,7 +1,7 @@
 // Binds WebController to the generic table grid — the grid itself (paging,
 // selection, inline edit, header drag) lives in @tamedtable/table-view. Only
 // the empty state stays here: it is app copy wired to the app's file dialogs.
-import { useState, type ReactNode } from 'react';
+import { useState, type DragEvent, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { useTheme, Icon, type IconName } from '@tamedtable/ui-kit/components';
 import { Mark } from '@tamedtable/toolbar/components';
@@ -67,15 +67,34 @@ function OptionRow({
 }
 
 function EmptyState({ controller, t }: { controller: WebController; t: Theme }): ReactNode {
+  // Drop target: dragging a file over the empty page tints it; dropping loads
+  // the file like Open local…. dragenter/leave fire on children too, so a
+  // depth counter keeps the tint from flickering while the drag crosses them.
+  const [dragDepth, setDragDepth] = useState(0);
+  const dropFile = async (e: DragEvent): Promise<void> => {
+    e.preventDefault();
+    setDragDepth(0);
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    await controller.openDropped(file.name, new Uint8Array(await file.arrayBuffer()));
+  };
+  const dragging = dragDepth > 0;
   return (
     <div
       data-tv-empty=""
+      onDragEnter={(e) => { e.preventDefault(); setDragDepth((d) => d + 1); }}
+      onDragLeave={() => setDragDepth((d) => Math.max(0, d - 1))}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => void dropFile(e)}
       style={{
         flex: 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: t.surface,
+        background: dragging ? t.surface3 : t.surface,
+        outline: dragging ? `2px dashed ${t.ink3}` : 'none',
+        outlineOffset: -8,
+        transition: 'background .12s',
         minWidth: 0,
         padding: space.px24,
       }}
@@ -106,8 +125,20 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
           {openOptions(controller).map((o) => (
             <OptionRow key={o.label} icon={o.icon} label={o.label} onClick={o.onClick} t={t} />
           ))}
+          <div
+            style={{
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm,
+              color: t.ink3,
+              textAlign: 'center',
+            }}
+          >
+            …or drop a file here
+          </div>
         </div>
-        <ToursLink t={t} onOpen={() => controller.openTutorial()} />
+        <div style={{ marginTop: space.px16 }}>
+          <ToursLink t={t} onOpen={() => controller.openTutorial()} />
+        </div>
       </div>
     </div>
   );
