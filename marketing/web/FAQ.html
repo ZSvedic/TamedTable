@@ -219,8 +219,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       </h2>
       <div class="faq-a">
         <p>You pick a <strong>provider</strong> (Google, OpenAI, or Anthropic) in Settings — not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk.</p>
-        <p>Because TamedTable is source-available (<a href="#busl">BUSL</a>) and runs entirely on your own key, those defaults live in the code rather than behind an in-app switcher. To change them, edit one JSON file and rebuild:</p>
-        <p><code>src/packages/model-config/models.json</code> has two sections. The <code>models</code> list is every available model with its per-million-token prices; the <code>defaults</code> section maps each provider to its <code>primary</code> and <code>secondary</code> model id. Point a provider's <code>primary</code> or <code>secondary</code> at any id from the <code>models</code> list (same provider), then rebuild the app. Add a brand-new model by giving it a row in <code>models</code> first.</p>
+        <p>To change the Primary or Secondary model, or add new models, edit the <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/model-config/models.json" target="_blank" rel="noopener">models.json file</a> and rebuild. (A rebuild is required: the catalogue is compiled into the app bundle, so editing the file in a deployed directory has no effect.)</p>
       </div>
     </section>
 
