@@ -734,6 +734,15 @@ the tours"** — a link that opens the Tours panel, so a first-time
 visitor finds the guided path without hunting for the toolbar button.
 The same line appears on the phone's empty page.
 
+The empty page is also a drop target: dragging a file from the desktop
+onto it highlights the page (a tint plus a dashed border), and dropping
+loads the file exactly like **Open local…** — same four formats, same
+"Loaded …" message. A file whose extension isn't a supported format
+surfaces the standard "Could not open file …" error toast. Under the
+tours link a quiet line reads **"…or drop a file here"** so the
+gesture is discoverable. Once a table is loaded the drop target goes
+away; a stray drop is ignored rather than replacing the table.
+
 Saving data mirrors that shape. **Save data** is itself a split-button:
 the primary half writes the rows back in the format the table was
 loaded as (CSV, JSONL, Parquet, or Arrow), suggesting the source file's
@@ -852,7 +861,10 @@ because [Google rejects unrestricted keys](https://ai.google.dev/gemini-api/docs
 and the symptom is an indistinguishable "API key not valid" response, so a user
 whose key is genuinely fine is told the real fix rather than re-entering the same
 key. A model-not-found error reads "Model not found. The selected model may be
-unavailable." A network or CORS failure reads "Network error. Could not reach the
+unavailable." A rate-limit rejection (HTTP 429) reads "Rate limited by the
+Google API. Wait a minute and try again." (or OpenAI / Anthropic) — the request
+did not fail because of anything the user wrote, so the message says to retry
+rather than rephrase. A network or CORS failure reads "Network error. Could not reach the
 Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pass through as-is so no
 information is lost. The provider name in the message matches whichever provider
 card is selected.

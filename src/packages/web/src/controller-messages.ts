@@ -42,9 +42,14 @@ export function userFacingMessage(error: unknown, provider?: string): string {
 
   const label = providerLabel(provider);
 
-  // Inspect AI SDK error properties for structured HTTP errors.
-  const statusCode = (error as Record<string, unknown>)?.statusCode as number | undefined;
-  const responseBody = String((error as Record<string, unknown>)?.responseBody ?? '');
+  // Inspect AI SDK error properties for structured HTTP errors. The SDK wraps
+  // retryable failures (429s) in a RetryError after its backoff runs out —
+  // classify by the last underlying error, not the wrapper.
+  const wrapped = (error as Record<string, unknown>)?.errors;
+  const cause = (Array.isArray(wrapped) && wrapped.length ? wrapped[wrapped.length - 1] : error) as
+    Record<string, unknown> | undefined;
+  const statusCode = cause?.statusCode as number | undefined;
+  const responseBody = String(cause?.responseBody ?? '');
   const fullText = `${message} ${responseBody}`;
 
   if (statusCode === 401 || /\b401\b|authentication_error|invalid.*api.{0,5}key|api key not valid|unauthenticated/i.test(fullText)) {
@@ -60,6 +65,10 @@ export function userFacingMessage(error: unknown, provider?: string): string {
 
   if (statusCode === 404 || /\b404\b|not_found_error|model.*not found/i.test(fullText))
     return 'Model not found. The selected model may be unavailable.';
+
+  // Rate limiting is not the user's fault — say retry, not rephrase.
+  if (statusCode === 429 || /\b429\b|rate.?limit|resource.{0,5}exhausted|too many requests|quota/i.test(fullText))
+    return `Rate limited by the ${label} API. Wait a minute and try again.`;
 
   if (/failed to fetch|network error|cors blocked|connection refused/i.test(fullText))
     return `Network error. Could not reach the ${label} API.`;

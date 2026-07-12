@@ -302,6 +302,8 @@ export class WebController implements ControllerHost {
   // ── File dialogs (→ files) ─────────────────────────────────────────────────
 
   openCsv(): Promise<void> { return this.files.openCsv(); }
+  /** Load a file dropped onto the empty page (drag-and-drop open). */
+  openDropped(name: string, bytes: Uint8Array): Promise<void> { return this.files.openDropped(name, bytes); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
   openSampleDialog(): void { this.files.openSampleDialog(); }

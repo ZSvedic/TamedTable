@@ -65,6 +65,20 @@ Then('the configured API key is {string}', function (this: TamedTableWorld, key:
   assert.equal(controller(this).getConfig().anthropicKey, key);
 });
 
+// ── Drag & drop onto the empty page ────────────────────────────────────────
+
+When('user drops the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {
+  const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
+  await controller(this).openDropped(filename, bytes);
+});
+
+When(
+  'user drops a file named {string} containing {string} onto the empty page',
+  async function (this: TamedTableWorld, filename: string, content: string) {
+    await controller(this).openDropped(filename, new TextEncoder().encode(content));
+  },
+);
+
 // ── Chat ───────────────────────────────────────────────────────────────────
 
 When('user sends the chat message {string}', async function (this: TamedTableWorld, text: string) {
@@ -445,6 +459,24 @@ Given('the gemini key is set to {string}', async function (this: TamedTableWorld
 
 Given('the openai key is set to {string}', async function (this: TamedTableWorld, key: string) {
   await controller(this).setConfig({ openaiKey: key });
+});
+
+Given('the LLM API returns a 429 rate-limit error', function (this: TamedTableWorld) {
+  ctxOf(this).mockLlmFetch = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: 429,
+            message: 'Resource has been exhausted (e.g. check quota).',
+            status: 'RESOURCE_EXHAUSTED',
+          },
+        }),
+        // retry-after: 0 — the SDK honors it, so its retry budget drains in
+        // milliseconds instead of minutes of exponential backoff.
+        { status: 429, headers: { 'content-type': 'application/json', 'retry-after': '0' } },
+      ),
+    );
 });
 
 Given('the LLM API returns a 401 unauthorized error', function (this: TamedTableWorld) {

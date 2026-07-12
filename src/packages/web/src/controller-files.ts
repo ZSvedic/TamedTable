@@ -40,6 +40,18 @@ export class FilesManager {
     }
   }
 
+  /** Load a file dropped onto the empty page — the drag-and-drop counterpart
+   *  of openCsv, minus the picker dialog. Same formats, same toasts. */
+  async openDropped(name: string, bytes: Uint8Array): Promise<void> {
+    try {
+      await this.loadFromPicked({ name, bytes });
+    } catch (e) {
+      this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
+    } finally {
+      this.host.notify();
+    }
+  }
+
   private async loadFromPicked(picked: PickedFile): Promise<void> {
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly — no filesystem, no path round-trip.
