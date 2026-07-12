@@ -14,9 +14,9 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 </script>
 <link rel="canonical" href="https://www.tamedtable.com/">
 <title>TamedTable — AI ETL in Natural Language</title>
-<meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load a spreadsheet, describe what you want, and watch it transform. No formulas, no code. Open source, runs on your own API key.">
+<meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load a spreadsheet, describe what you want, and watch it transform. No formulas, no code. Source-available, runs on your own API key.">
 <meta property="og:title" content="TamedTable — AI ETL in Natural Language">
-<meta property="og:description" content="Load a spreadsheet, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load): no formulas, no code. Open source.">
+<meta property="og:description" content="Load a spreadsheet, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load): no formulas, no code. Source-available.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.tamedtable.com/">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -28,12 +28,10 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   Assets are symlinks (DRY): favicon-32.png → marketing/brand/, illustrations/ → marketing/illustrations/.
   The deploy workflow assembles this dir at the site root; the web app lives under /app/.
 
-  Fonts: loaded straight from Google Fonts. No offline story needed — the web
-  app this links to requires network (the LLM call), so self-hosting buys nothing.
+  Fonts: self-hosted from fonts/ (a symlink to marketing/fonts/), so the "no
+  request leaves for a third party" privacy claim in the FAQ holds literally.
 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -75,6 +73,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open Web App</a>
           <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
         </div>
+        <p class="hero-note">No API key? <a href="https://www.tamedtable.com/app/?tours=1" target="_blank" rel="noopener">Take a guided tour</a>: it replays real sessions, free.</p>
       </div>
 
       <!-- Demo: looping before/after run — the "60-second screencast", animated in CSS.
@@ -131,7 +130,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             </svg>
             <h3>See everything</h3>
           </div>
-          <p>See changes as they happen. Nothing is hidden: TamedTable is open source, and runs on your own API keys.</p>
+          <p>See changes as they happen. Nothing is hidden: TamedTable is <a href="/FAQ#busl">source-available</a>, and runs on your own API keys.</p>
         </div>
         <div class="vp-card">
           <div class="vp-head">
@@ -354,11 +353,66 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     </div>
   </section>
 
+  <!-- ============================ TRUST ============================ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Trustworthy by design</h2>
+      </div>
+      <div class="vp-grid">
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="2.5"></rect>
+              <path d="M8 8H16M8 12H16M8 16H12"></path>
+              <circle cx="16" cy="16" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>A recipe, not vibes</h3>
+          </div>
+          <p>Each request becomes a small spec you can read. Deterministic steps run in a real SQL engine, and the same recipe replays on next month's file.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7.5 6.5 4 10l3.5 3.5"></path>
+              <path d="M4 10h10a6 6 0 0 1 0 12h-3"></path>
+              <circle cx="14" cy="10" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Undo anything</h3>
+          </div>
+          <p>Every change lands in the history. Step back one change or all of them; the original file on your disk is never touched.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 5 3.5 9.5 8 14"></path>
+              <path d="M16 10l4.5 4.5L16 19"></path>
+              <path d="M13.5 4 10.5 20"></path>
+              <circle cx="20.5" cy="7" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Leave anytime</h3>
+          </div>
+          <p>Export any recipe as a plain Python script and run it without TamedTable. Your data stays in open formats; there is no lock-in to defend.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 20V10M10 20V4M16 20v-8M22 20H2"></path>
+              <circle cx="10" cy="4" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Measured, not promised</h3>
+          </div>
+          <p>CI replays 498 test scenarios on every commit. In our <a href="https://github.com/ZSvedic/TamedTable/tree/main/benchmarks" target="_blank" rel="noopener">benchmark</a>, the default model matched hand-checked labels 96.7% of the time, at $0.15 per 1,000 rows classified.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- CTA -->
   <section class="cta">
     <div class="wrap">
       <h2>Try it in two minutes</h2>
-      <p>Open source. Runs on your <a href="/FAQ#byok">own API key</a>.</p>
+      <p><a href="/FAQ#busl">Source-available</a>. Runs on your <a href="/FAQ#byok">own API key</a>, or <a href="https://www.tamedtable.com/app/?tours=1" target="_blank" rel="noopener">take the guided tour</a> without one.</p>
       <div class="cta-row">
         <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app</a>
         <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
