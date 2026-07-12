@@ -1,0 +1,146 @@
+{
+  "108f549cb9c78a8beabdff6d02b0e72e2378d337a5ba03d0771187366e71dbe8": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:51 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3509",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"DOB\\\",\\\"value\\\":{\\\"llm\\\":\\\"Convert this date of birth to ISO 8601 format YYYY-MM-DD. Input: '{DOB}'. Same-row context (use ONLY to disambiguate locale-dependent formats): {*}. When the date could be day-first or month-first (like 03/04/1990), read it by the row's country convention: month-first for US rows, day-first for European and most other rows. Reply with ONLY the ISO date and nothing else. If empty, 'NA', '-', or otherwise missing, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"4rxs2sce\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4472,\n    \"candidatesTokenCount\": 178,\n    \"totalTokenCount\": 5150,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4472\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 500,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"v5BHaqO0Jp_3jrEPjbTB2Q8\"\n}\n"
+  },
+  "39b3bc1aafe77071d5eb4ab162400e16ecc11a5a244271b143d26d9f35dceadf": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:39 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=924",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+12005551234\\\", \\\"+15555678\\\", \\\"+445558765\\\", \\\"+6155943212\\\", \\\"+11005556789\\\", null, \\\"+445551234\\\", \\\"+615559876\\\", \\\"+13005554321\\\", \\\"+12425556789\\\", \\\"+12425551234\\\", \\\"+3855554321\\\", \\\"+495556789\\\", \\\"+345551234\\\", \\\"+493072344321\\\", \\\"+445554321\\\", \\\"+865551234\\\", \\\"+8613855556789\\\", \\\"+815551234\\\", \\\"+9665551234\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHUdMnWgkv/NeUn1MJumO/T1BlVA7IplWo3swfb1TxeZTfKugmm96Ew2ykZ58/\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 5153,\n    \"candidatesTokenCount\": 231,\n    \"totalTokenCount\": 5384,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 5153\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"tpBHasPqN7OysOIP9q6l2Qo\"\n}\n"
+  },
+  "4c86a6d0a80fc6b9ebf02e88809b8bc574fa8fd840246e3cbb325928824ba994": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:38 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=4498",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Phone\\\",\\\"value\\\":{\\\"llm\\\":\\\"Convert this phone number to E.164 format (a + followed by the country code and the national number, with no spaces, dashes, parentheses, or dots). Input phone: '{Phone}'. Customer country: '{Country}'. If the input starts with + or with a 0/00 international-dialing prefix in front of a country code, drop the 0/00 and keep it. If the input has no international prefix at all, infer the country code from the customer country and prepend it. Use exactly the digits present in the input as the national number — never drop, pad, or invent digits, and double-check the digit count matches the input. The result must contain only the leading + and the digits 0-9 — never a letter (take care never to write the letter l for the digit 1). Reply with ONLY the resulting E.164 string (e.g. +12005551234) and nothing else. If the input is empty, 'NA', '-', or is just a short local number with no area code, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"0pnae9l1\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4471,\n    \"candidatesTokenCount\": 285,\n    \"totalTokenCount\": 5391,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4471\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 635,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"spBHav_bFaqs-8YP8t-W-Qg\"\n}\n"
+  },
+  "58d2cf4d52ef5ae390acd8d5e3f071ad66fc38aceff6c5bd4c203057327a2b8e": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:42 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=476",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"United States\\\", \\\"Canada\\\", \\\"United Kingdom\\\", \\\"Australia\\\", \\\"United States\\\", \\\"Canada\\\", \\\"United Kingdom\\\", \\\"Australia\\\", \\\"United States\\\", \\\"Bahamas\\\", \\\"Bahamas\\\", \\\"Croatia\\\", \\\"Germany\\\", \\\"Spain\\\", \\\"Germany\\\", \\\"United Kingdom\\\", \\\"China\\\", \\\"China\\\", \\\"Japan\\\", \\\"Saudi Arabia\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH3vWOV7HOLjsu/YqL6D4Nt4Q5ggMDLU6VvE3NR0AFWDcrq3FdcewfQPxBUwGf\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 1535,\n    \"candidatesTokenCount\": 70,\n    \"totalTokenCount\": 1605,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 1535\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"upBHavWjHbOe-8YP872X6Qk\"\n}\n"
+  },
+  "76e88b590f88efaa2bee2ea712d6955ed24342c5f8a6025add3784bce1089eb2": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:42 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=2601",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Country\\\",\\\"value\\\":{\\\"llm\\\":\\\"Normalize this country name to its canonical English form. Input: '{Country}'. Reply with ONLY the canonical English name and nothing else. Examples: USA→United States, UK→United Kingdom, England→United Kingdom, Deutschland→Germany, The Bahamas→Bahamas. If empty or unrecognizable, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"aenq22s8\"\n            },\n            \"thoughtSignature\": \"Er0LCroLAQw51scVpo25wnI7Y6vhvQY0vTyoKd93EXEi7KWQ9X6WKbfFdZereoLp4i8KuTK1BYYefOxQFSvRg0az+TRkPX4diM6Y76y7q+0GbyuR1/PkQtSzXUSaQu7KEavTxJdf+RGq8X1gFMSZ7SlLOrsYa04ZdhDRFU+mBpkNOL+ZsCn3qgcu6MjmcWF9PGJHzl1X+KgAeECcN+EZj1MYtW7gIVPJuD0KdeaaUHrIT2VIwwQQhC3ZF1W83nJPu7AQfqMK/DDOX98AX2vE+bEsk5tnuGJeWBU7jRcGqJ2PbGVG/2AK+8BPegPK9ABwQ9MTFNHJR0LO92TyXEmvjJfMCiy4DSBmjitSUNq1TOhS91PifAYA9535wAr7MIX1Jcprg+OwnMmzPFjmxr785ZLyGdZCkA1B2sOsK/0k3BB9OJknfKMQqctQdmaPR9nHvWm99vVEpTiLVQTbQRGisayJvvy1inWvTKA6vpsOpekhHVEI+PAfjkpDMwGDGhF7dE6RJCyM4oJELg/1bBIldVrd6UwNiINP+YdwKmxahACQKYZxah9Q1I4SrElrLBuyKpupJdPFpowQhCZDrzpiRz6EvWWsIv/nieSfTook2FJtaJPpuG0JqYpYuViu84lICKeJ+Z/8MmVYcePp9RoWcWqlWm86xAIftBckWIuU1qNdtWcEOlp09eE/T3ablxZaAa9PzzTBtTWvMdC+lPjHSb1qH0OL3Hw6HH+lni6fU14G/mhbEtprc6Q5e0QGNwW10vO9nlQ0gZ3OjT+3fwG7JGTGPKIiS6McAWkSv2k5tRex6Gye5+xL2EqAUg+VqW1GB9vvY3Gttf9y2PJ+b6H7FGsnodbFYWP4alA1df1CZHmcDMJmv7mHD6WUNLaKQtCPx3w+KPNvG9j/JNmU8ZtbnD5eQJJ5eej2Zq8ObEaGnqUchfA5zyA2u0m4ztoz4FwAwTbI0GdR9P4YjSRdMxOhUGt1wFl9o5DijgiAVwYjrIN9NdzdCBzSUtZ+co8fP87JAu+RexeGAAiJ1eWveRH7ljuyVhmb8e8bIlBAYkt2pUvOWPD6ha4/f6gf+wBJcPgH9Wscsx4cHA8n9xDYQKBDro8hk5CM7UBiIMH1l8QLBhvNS5FoU30KeyN8lhonFe4s29JOVot+Cuy7y14M37rFsi+Wpg0ZASO8c/TTC2AWJb+MFWMSu6I2hJZTt03k8boKiNWbacULpLu/3+d3qeb7dN5DIqCimIDNOvGzVZX7njO0yoL0pK6MqYT12L3IpyTqvfgpZMEOs/jvWdPgLt4S4/ip4ap6uZZXA8m1ScU3H4hy22nCPZlgA4s5Oo+FxwGBRSp+XmmFOkEfcFyTETQz3I01lkW1+fyG1J2DGmtMLyDkFmPJkLUGl+xM+IUP1JWvZ0QfJyDJH6HXrL30UqCEAET+dbvXXL6SZJR9FXHFeUAHxX6G6ZgSiAH6P9J0+QY7n1gfHEnYmYQ6E0ymEgxlnggKiIq/Uk7GrRBnKIpDMqGuY4JmebvDgoHP3N5LslNdn/G//d1gV0Oe4vOci6X5tCsGF6FYF/sz2OOM8yDiW3dTFE6G5+TGkjg2g2Dqfx9w9zt8mAaRxTK9P9ZXm8QJlxvqT9DoOzEOThqvi6ajPq6XAE64CzU82p6MQ6E3uGPp7oRyO9/vdBqN46w9mfLU6Ik+4GgNWWQlGjIIMKeFvcQFkxCo42hftEaM76+JagCRssi+1bM98lKEGR9/OYqQftWcyU0i9XBAYRYEQJK/JnuGgbv+3Rap9tZbMLXgUaR4EgVIGdtCgyjk6DJsczVFKJGWzRZd5C9tIexBml8GeY1IwYXvngqEASkYH9zquuXuZ70tOzzgVVOUslaEYy7lCaMt6VWuxPtDWJEVpILiHdpk5OAj/XsQxXpsD+q7l9BZEjdSsOUXlDQqcFxIad2y6U+rXCHdVT0Y6aBLelmun0Q=\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4472,\n    \"candidatesTokenCount\": 115,\n    \"totalTokenCount\": 4932,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4472\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 345,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"t5BHarT4NKz1jrEP__3DiQg\"\n}\n"
+  },
+  "8236ed22bb83fcbb93a762805b7bead05f30777cb672b2294d8b529ffe10ec64": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:47 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=609",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"D. Doe\\\", \\\"Smith\\\", \\\"McDonald\\\", \\\"Williams\\\", \\\"Brown\\\", \\\"Davis\\\", \\\"Miller\\\", \\\"van der Berg\\\", \\\"O'Neil\\\", \\\"Taylor\\\", \\\"Anderson\\\", \\\"Babić\\\", \\\"Müller\\\", \\\"García\\\", \\\"Rossi\\\", \\\"Khan\\\", \\\"三\\\", \\\"四\\\", \\\"太郎\\\", \\\"الفلاني\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH/XIIaxOfxBwtur4CQuBKw08ZouDV7jPfaXrdwiRLzl5RV0iDrm2qk0BmUfQh\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 1987,\n    \"candidatesTokenCount\": 73,\n    \"totalTokenCount\": 2060,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 1987\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"v5BHaoUXpo2OsQ_z9NOhDA\"\n}\n"
+  },
+  "8f5d6951ce6851711b3a17007070a6509601aa08e919dd84559087e312b93ec5": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:46 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=525",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"John\\\", \\\"Jane\\\", \\\"Bob\\\", \\\"Alice\\\", \\\"Tom\\\", \\\"Emily\\\", \\\"Michael\\\", \\\"Sarah\\\", \\\"David\\\", \\\"Laura\\\", \\\"Chris\\\", \\\"Boris\\\", \\\"Anna\\\", \\\"Carlos\\\", \\\"Maria\\\", \\\"Ahmed\\\", \\\"张\\\", \\\"李\\\", \\\"山田\\\", \\\"فلا\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHbLVbw9nYQD1+BijPD9NqH/b8Y8ykOTzNYpEFXXmkadjTAuzlNQwzUweqMVUp\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 1972,\n    \"candidatesTokenCount\": 61,\n    \"totalTokenCount\": 2033,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 1972\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"vpBHaoj4GpiQ-8YPzufOsAk\"\n}\n"
+  },
+  "e32094ba631980ac0b160fee2cf0da57c0729afda04563597c69915d66a7c898": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:46 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3446",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"FirstName\\\",\\\"value\\\":{\\\"llm\\\":\\\"Fix the capitalization of this name part: '{FirstName}'. Apply standard personal-name capitalization (mcdonald → McDonald, van der berg → van der Berg, o'neil → O'Neil). If it is already correctly capitalized, or is not written in the Latin alphabet, reply with the input unchanged. Reply with ONLY the result and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\"\n                  },\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"LastName\\\",\\\"value\\\":{\\\"llm\\\":\\\"Fix the capitalization of this name part: '{LastName}'. Apply standard personal-name capitalization (mcdonald → McDonald, van der berg → van der Berg, o'neil → O'Neil). If it is already correctly capitalized, or is not written in the Latin alphabet, reply with the input unchanged. Reply with ONLY the result and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"nosc15ie\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4472,\n    \"candidatesTokenCount\": 259,\n    \"totalTokenCount\": 5136,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4472\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 405,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"u5BHaqMfzcD7xg-luNnwCg\"\n}\n"
+  },
+  "e608fb2c17ffb3db5b4fabdbeb19f367aac1256d896c9312ff34e3d875253293": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:51 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=857",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"1990-01-01\\\", \\\"1985-05-15\\\", \\\"1978-09-30\\\", \\\"1992-12-10\\\", \\\"1980-03-25\\\", \\\"1995-07-20\\\", \\\"1988-11-30\\\", \\\"1990-02-14\\\", \\\"1983-03-04\\\", null, \\\"1987-08-19\\\", \\\"1985-03-10\\\", \\\"1990-10-10\\\", \\\"1982-12-01\\\", \\\"1993-04-03\\\", null, \\\"1990-01-01\\\", \\\"1985-05-15\\\", null, \\\"1990-01-01\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHjTT/zQDjUcaZbVZM9cvORqlrGKz0oZAQ34JgxE6Cjkt/Z1TedVvYv/9O0JBu\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 3558,\n    \"candidatesTokenCount\": 210,\n    \"totalTokenCount\": 3768,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 3558\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"w5BHaqaaCZWY-8YPi_mMwQg\"\n}\n"
+  }
+}

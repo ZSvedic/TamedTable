@@ -1,0 +1,354 @@
+{
+  "0c6cb7e704a84fcbef5ca9668048c8471e17d79472ef9ace7d63586c12d9a7b6": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:32:31 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=330",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"United Kingdom\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHSCD/Xc65p/ojOb6I1THsivjd6v2oNKPdkHbmFxwW1UwgYkFVy/y1un4PUjhS\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 66,\n    \"candidatesTokenCount\": 2,\n    \"totalTokenCount\": 68,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 66\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"v49HatrXDeWKjrEP5t3sqAs\"\n}\n"
+  },
+  "1340c586e50476861b4c0f5c9bff70fff4f1bf7b36f3d3cf0158547b4a9fbf21": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:58 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=510",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+13005554321\\\", \\\"+12425556789\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH/OW4hCtHBnAAYzKByEVKnXTrO06TImb/fLnx8rG+Cg+5c9XnrpErZcy71A6c\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 589,\n    \"candidatesTokenCount\": 27,\n    \"totalTokenCount\": 616,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 589\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"co5Haq75BMS8sOIPitam6QE\"\n}\n"
+  },
+  "20abd9d62282968248539f225e633ff33e01a5c1465dc120521bec7532b9fa78": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:51 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=2594",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Country\\\",\\\"value\\\":{\\\"llm\\\":\\\"Normalize this country name to its canonical English form. Input: '{Country}'. Reply with ONLY the canonical English name and nothing else. Examples: USA→United States, UK→United Kingdom, England→United Kingdom, Deutschland→Germany, The Bahamas→Bahamas. If empty or unrecognizable, reply with the literal word: null\\\"}}\",\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"3g56utij\"\n            },\n            \"thoughtSignature\": \"EokLCoYLAQw51seY0dlCm93nsZf1ha1e8/6vqrjLXXAGaZHJ/EhZDqODNPeJ0wSqjVGP8vNVFCyTggcbwLqjEquaSakyKNV7L/LH3CUg1TT72+77sd1Ol2MdNMIR0isxRXXAfPKqIQaZzb01KZJ6gKR3+m4ylHolFA3DbVbq7AxfGbV1lPGdCoBBi9Yo+dodDYxZFbqQrAFs7xMLr9HVkRWbR2rzgNPnqTnyHUca3gl4nlLLN6NVkcQctyD3hr4ygNMXlM7kloxtEG5+u5Bo5eKv7OqPqB680fPk1kFRbGt4ntbmje2psgEl/ZlVm8c0JXVJCIn8Ugsuk19mb/037hXVcQVSyXx3dIUC59L9aLldq0+kxMSgat/FnJnP8c4m3wBWlWZw/zRuYqtXJNRoB4C0Lr0vX1HuzMJfz+zQ+OX8ihqlYdO5oI4CdX4DxYq4pTHJUawdOAzh1mvKWIZ7K0+D7DMLu0SxRGXsV/UGFCUkPPeRXbj+tW5KkwIo7t38OoIAJrGI4F7rU8Rv0Cgn6XYJpl41KOBjKotWHJPuNGW3miwGffpmkN99wOTt2whO5yAuBlGaguOLUE/Z9NZUtZAz4RFJ6OdEBUXWdk8xbUdPl2SD+dq4AwLKa5otZwEFixwcB29qvba9gDIqMJIDnWSBnQNkPUafLhCZgGduexOLH60JmSoGfdabAEXpW+EQ/xxYhrXA2Hl0uKyOeaDlaNSFpluO85RwGOAMoX9GCRlppbEmw2ZnEvr3d+e0eZuOH910nRbNk+z6zyK06GWSEmmsYEj6BGBZOq0Eq9kY/UtNEO6ZWYL1UWnx9aQwWvY5VcB0s4qksDHw0EbQzEjYDUOMCoF0XvfDHO0UuozUMtoapIIS6dac0SR0WdUBf2UEBTc65dwUzRxrFsny14stKwUpxM/pMAHYfZk5nPBZ2B3bxt/EoaacFDY19poknvXT3vmeMqRDKEZNFljodOLKjgVwzQPPu14FkiUUI8nymC5eiaIEWIDDPKMyKg9Q9G7kW7dFqORWHE4lQkNjO+pk5Lwvu+D2k34Msnu3Xl+TKZPahiin+trE43eke4Vw5w+iZmyCY2xjrwsyvCWWY1NC2N1OJDKtcAuXd+2LmLRDzNx2MjFRG56Xv6XcK5Nia9ePkkz03uyGDuqpc4ni4GOYvNv9uqZ9kswlZCbfeL/7FDsSvJ1NN1cPa8l7zScF7BZnsSKF+2BixewARr7UHGWWkBweetdSi8mUCwiPC8IdH6IWHJPhK9DsTJhRofA7ZUmAAIMXcwJAEpdKv4qPkBAV6I344bDbUmWN2ZXa/hu16UtrE4ZtbHR1TxrXZPVtr5BN2XmObK5lVDy1+ug3r2ZHe/txTT7EsY2Kz8xftvNPU46Ff5LEQOZ1htn5OKWo7osgTtyr996S1EgB5cAmVB6irtKcJIF6bE1vqxIRHjhm+sWAcGHelPl1nWJQmNwBOkEHsIQXbKQL+XTxhyPq1/6zM99Rv4urZoK/wh+M2w6enpRUvbj0QXnPvODVvr36MIY6wCc9ncO9IPAxLdjCEXq4UvWCDFSbmraV3zp0tfEd3RHGVzG5kN2cfN1VeWXz3AzHvgSzRKoy/0KbJPAb0fvhmoYYFlABuXul59R97UoySCdXd9QvjtDZS5BDk7ZYtBkVz+ZfVpyUvDj0mSaW8471x1jwo9UCsHAVbhEpF/FwqZTHMqbz7EjYfrJ3/Uw633Wc6Iq1f0Hx/2VxvKRges7Ex1aGO7/bGbKIvdN2OkRFFFMUgEN4H1llE+/TMDCjkHVqueyTjmw4VIKIodohS1wE6MMna0Y4pb5/QtGoWHWD8OkMC0xnFRuq9JqYSSZg0HdEplfoGISjsdYFcz6VovHwxoESPPzlPFlJFfP78A==\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4470,\n    \"candidatesTokenCount\": 115,\n    \"totalTokenCount\": 4918,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4470\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 333,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"aY5HavG4GPG8jrEPxozpkQ0\"\n}\n"
+  },
+  "2966032739195d0a8e423df7379355adb27377037c029d81f73d69e4745a3107": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:33:31 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=440",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Bahamas\\\", \\\"Croatia\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH1tBTceu3q3FYVeL5CSViiCUmVI0XMGv8TrqV1C1Nd5AuLBgpx4kW3BOH3LgY\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 225,\n    \"candidatesTokenCount\": 8,\n    \"totalTokenCount\": 233,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 225\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"-o9HasycOtLfjrEPmuWFwQI\"\n}\n"
+  },
+  "2ca5d2851559ddf0a201417464800f73d24fae738c1ee78a8a25e6127366efc4": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:32:31 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=622",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"United Kingdom\\\", \\\"Australia\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHiv/ZCCBzqPvLzkkFb8JhUsgUDv8Om5k9Ktjbx/mHe4ZmBhkrcvoZAbIXJ4z+\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 223,\n    \"candidatesTokenCount\": 7,\n    \"totalTokenCount\": 230,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 223\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"vo9HarfpJYWN-8YPnIi18Ak\"\n}\n"
+  },
+  "314d838482de127062444bd72b79791dfcc1f9a801920b7d54899128d84d1ad2": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:00 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=559",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+865551234\\\", \\\"+8613855556789\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHUsjvCh+6tTVY2FcZAhHkcmyjLsm+vOhnKHMqx3NcKxtKIeHQaSXJ79XWjCvu\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 585,\n    \"candidatesTokenCount\": 27,\n    \"totalTokenCount\": 612,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 585\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"dI5Hat-cBbLJ-8YPr9P52Ag\"\n}\n"
+  },
+  "334fd2a6401fb2fba4b3470f07ee2c0e851714cf352a2b9f5d20a41e173bb850": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:33:30 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=485",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"Bahamas\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH5yVMnxDTtKaD1wqu349m6ttEp9JpXTADy9i2LRWdAMi6ofWTCFKecz9y9zfN\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 67,\n    \"candidatesTokenCount\": 2,\n    \"totalTokenCount\": 69,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 67\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"-o9HaoLXHqudjrEP8I2D2Ao\"\n}\n"
+  },
+  "427c5466b83dd3fc8e41175ddedd024c152ac60da26ab64edaec4e24801e344b": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:55 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3520",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Phone\\\",\\\"value\\\":{\\\"llm\\\":\\\"Convert this phone number to E.164 format (a + followed by the country code and the national number, with no spaces, dashes, parentheses, or dots). Input phone: '{Phone}'. Customer country: '{Country}'. If the input starts with + or with a 0/00 international-dialing prefix in front of a country code, drop the 0/00 and keep it. If the input has no international prefix at all, infer the country code from the customer country and prepend it. Use exactly the digits present in the input as the national number — never drop, pad, or invent digits, and double-check the digit count matches the input. The result must contain only the leading + and the digits 0-9 — never a letter (take care never to write the letter l for the digit 1). Reply with ONLY the resulting E.164 string (e.g. +12005551234) and nothing else. If the input is empty, 'NA', '-', or is just a short local number with no area code, reply with the literal word: null\\\"}}\",\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"pkzg0kw2\"\n            },\n            \"thoughtSignature\": \"EpELCo4LAQw51sf9zq1bmewPIlfHtXZLQ2bxUhSihXAsItRyj7fwrRRKoQpvN5WMDsAfVORFgfRlzevW6g88RuvzvEMCwtF0yK7uNJfMdWm5b9DnvsZj+Ncsz03OtBZvHX6aqk+KDxjISjl6gk3yqBM3NYrOyK2pufgMUEj23Mt+tBTc5H02XZpk04X7e4txBTGp5L5FmZ2sFVknqOpIqW8ek56qAdkcpYrNv3o48kO+VtwKuFB+JU7usIg7IFIxJbyJixgRteTY39DUr6PQ2600m4UENvrDfYcyYVyKRz7YvxKlAarMes11LYMDujZZDXGH7pMBRFNhb7qKrLLbfUoEy5qlVwcVQ3eV8RIGzln+Ts7vbTSC+EMcbtEXS/y1g1LRWe0CQtIgFFGIvuAoit8C2wcdeo1FtVBptXGfTJCf4gGMSrOQBYQjWFO4i79P8U8SvX5omgARvprIrxRZE5vu3w525jVnpM2lUQXvs1KbyaC9CYcYilYybPzpuUVxcM6llqgKtP1BkYE66LShhCMHJTIDC/pYGwsAieZgKcBLhvfcbcGMalwvczTnIfqUJKwszg+OmBWQSJXeF/aoCjZB+APX1vA9C+DH8zT2hlVub1i/bZhHKMSODbdvp4SzC59870qNK0FoLqHDHk3vtaEHKmoHSb7O3pWK8Vcg0JPG8k3bJ5f2gS5WlBzYxKSXshhTbrg38WP6nt7IhWbnVSCQbkScda1Qd6ktw57M38HSersEcOPng1P55K/UnftArRiJEohXXv3CdeuQI93ozHOgPqY+RlFgrpqrO8MrM6/gPUgBqeSHT/XhGbTIv84AIvEfScg//JqXepCeChpkfC9ELP+J/tXxq4DmN8uKAxSu5+69ngCeCK0nGp4o1N6NrRtoqUWTdAUmI/dYWCI/RA1rGnp/o0mUI6liW2e4OB/Ga4NKNJKmqKzyNMymrOIcDjUJPsQEhM2eA7wjbme6w12P0V8SrFeyQyq3fYjze49G5raumEX890FReCN0kGsx4Y2bxQZJWq2GGq5TlltDWNppcSF1B/7GTGOahnPBIYx1zVML9RfM0QwV6Db/HYO0qY9HniGm4Mv4+TX9OZN9/k5Bv604H3c/UqEaY5jZPOOkP7pb1JiKrl7ZFU8CpmwW3PrzmQDgu5Pf+YXM8K/XEWSxWbpCLguJdCkO1PROhzSWT0uI6a61AXQceV3DEy5QQLKTLET5U66sF2lewD3gfw22VxbkvOhGBSPXh/PyryczC6lP1ey7+qoKHGwCfU44wXvgq9gyX9JDZmW1C8Uf+mvPGdP2wViksgpk1KxRXEy+sxcpbiBNgY/Ins+qwOjAAQ9rdrKrjroCN/pUwB6gKo8qZbr9SkuxJDWehJOTxuEcjn4B3HIN2G3QuuYS/00GEUtXfi008DKrMdb6HMB4i28agk0bE6wu+zJQrf+2NSlEkYbDGQ2dAYcVJRsxKsf9vj7QcEAyQ+pArB5kzUkm39Nb65cRCGKUqGSl5ENTANcIl46z1233M2nBPxY3OUbNolH3RgUPOVTTOKovWgdnIKzfBAQCVt8/idZKYpSBV6BFbVqxupMDiEozyDhq1PDK9SVwyLO4ZP56zE52awK0l3CKt2O7yD8IReK/hgyVcMj04HQ4qqCicoMuZhxVyeQ4zMMI5n9igkQr56EfVfcDEmv72E1HrkJYuPb1gqTXYsNvSbzbKXW6mErfmm9f6kov1Z32FOJhvUOwnwqcTcQ2lsLR6e5e8o4u86AU/S3JOX4tdWWpq5t7eu2Kb5sCTeUI0snvkjAX5O43Kf4+M51wU0Rti8A+b+5whNhvHvBY0huLCzVuFgE/ydDsUbcvptQgPcXJkxomXQqV+KOO92mexfrdDzola7savqe9uVQjfLuQonjq\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4470,\n    \"candidatesTokenCount\": 285,\n    \"totalTokenCount\": 5101,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4470\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 346,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"bI5HaqbAH6aNjrEP8_TToQw\"\n}\n"
+  },
+  "4a5217f93513d3357bca2cd693e9ffa0a2565075161f244d792e4b4d16b23593": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:58 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=545",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+445551234\\\", \\\"+615559876\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH1N6jZYxmIxKdldvFoXIQVajWglXnx/keaYNf9Xm2kGKVzYrRSRtWd8vZgQzA\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 583,\n    \"candidatesTokenCount\": 23,\n    \"totalTokenCount\": 606,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 583\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"cY5HauLdH7majrEPq9H3sAk\"\n}\n"
+  },
+  "5a7e15a65faab385ea4377caefd17dfdc622f62623efe744b2df933b9d71bb11": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:59 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=572",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+12425551234\\\", \\\"+3855554321\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHmpUdCgngmeHnb4O03Vnq0qeC642rXQ4QijAe22oANcmoDCnbx1WXAQ9v0GX+\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 589,\n    \"candidatesTokenCount\": 26,\n    \"totalTokenCount\": 615,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 589\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"co5Haq7WJLGp-8YPkeqeuA4\"\n}\n"
+  },
+  "6788f1813b2bda01ddfb3eb8b2c4fc32f28b339085648fdb9c05ca32d252c2b5": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:03 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=2691",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Country\\\",\\\"value\\\":{\\\"llm\\\":\\\"Normalize this country name to its canonical English form. Input: '{Country}'. Reply with ONLY the canonical English name and nothing else. Examples: USA→United States, UK→United Kingdom, England→United Kingdom, Deutschland→Germany, The Bahamas→Bahamas. If empty or unrecognizable, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\"\n                  }\n                ]\n              },\n              \"id\": \"yrj5h3ln\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4747,\n    \"candidatesTokenCount\": 115,\n    \"totalTokenCount\": 5217,\n    \"cachedContentTokenCount\": 4060,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4747\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4060\n      }\n    ],\n    \"thoughtsTokenCount\": 355,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"dY5Hapr0A_WNjrEP1-LYsAQ\"\n}\n"
+  },
+  "7f3de06d0b3fba6272407bd73b6202539cd24b41df307ce723dcf87abc8a2d23": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:56 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=519",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+12005551234\\\", \\\"+15555678\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH6seEC25BkFTE1xLbmOVUzi+wmxlo/PmbN8nsdXFSgXrFctJNJ9wSGIySXjNY\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 584,\n    \"candidatesTokenCount\": 24,\n    \"totalTokenCount\": 608,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 584\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"cI5HavupA83A-8YPpbjZ8Ao\"\n}\n"
+  },
+  "8147b2b40771cd0039bc49816c242a92a15d6c7bd4fdeb26a0a2ea4d0598fec9": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:56 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=455",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+445558765\\\", \\\"+6155943212\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHxfi9xx2/npCpKbwf0X1eeF+cJGWzsuwZaiV+UG1nE1DfVwJWHu3Pioo2PZyG\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 587,\n    \"candidatesTokenCount\": 24,\n    \"totalTokenCount\": 611,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 587\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"cI5HasjOI6z1jrEP__3DiQg\"\n}\n"
+  },
+  "96747873dbf557020a5b7c1bfd7343ec48aba4b5a2a6d1b9bc29f88dddb5346c": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:33:32 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=294",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Japan\\\", \\\"Saudi Arabia\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH8UBCyxRrRBgNFdjqxoE1bn5T5o/cnzTio5uy9ixCNtcbJ0j9P4WylsjuyuxC\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 224,\n    \"candidatesTokenCount\": 7,\n    \"totalTokenCount\": 231,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 224\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"_I9HatOUKpSljrEPydWYkAg\"\n}\n"
+  },
+  "ae089ee2896388f0b72919c9957710b25f59738efd3e56f716942d16ab5cf723": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:33:32 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=482",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"China\\\", \\\"China\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHnHZPeuthvEwrORdkvxWKpacHJ/4aa54jf29LRsIJKytEeZjj2khnc+Hz768x\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 223,\n    \"candidatesTokenCount\": 6,\n    \"totalTokenCount\": 229,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 223\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"_I9Haq-XDPShjrEPhMWViAs\"\n}\n"
+  },
+  "b502b14c4d9046f61b95284c3bf3ef00ad804e86c833fe9b6a109c9ab65e22c0": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:00 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=479",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+493072344321\\\", \\\"+445554321\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHcjERtjEOQsjqe9DqXsXvNbWWqka5iv6rd3eCLuzuqVw0CuCm/khEYh5kl3lX\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 585,\n    \"candidatesTokenCount\": 26,\n    \"totalTokenCount\": 611,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 585\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"c45Hat6OJbCTjrEPqJCc8Aw\"\n}\n"
+  },
+  "d06f7432e863c552be6205a4d08bf6068171b12011550d9c896a3a574a38dd28": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:33:31 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=429",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Germany\\\", \\\"Spain\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHBsX3gSHT0rdbOAgrftCcWqDWCPUmtUCnP5pVl3ISGmvJjhWl7ufhPTKH/njS\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 223,\n    \"candidatesTokenCount\": 6,\n    \"totalTokenCount\": 229,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 223\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"-49Hasv-GbqLjrEP6oGjqQo\"\n}\n"
+  },
+  "e2e274ff0776b392cfcb34d4af780037b8668946fa2e402d26886fc9a91f4aea": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:59 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=392",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+495556789\\\", \\\"+345551234\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHGUSZk5w9EQoh1Hi5dbIn7+Okd68tV2Fb0sdcqoIi8uBkfvL0eamCTJeOoFPS\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 583,\n    \"candidatesTokenCount\": 23,\n    \"totalTokenCount\": 606,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 583\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"c45Haqm-DJeM-8YPye_N4Ak\"\n}\n"
+  },
+  "e47cfe560a9c3cf539c6a08ddcd0aa139e7dca20fe8690925fe2f15524b84c27": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:33:32 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=319",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Germany\\\", \\\"United Kingdom\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHYPLzndTBAC71m6ytXgEdctaH1gRH5gyP7KTJuiCQEz8x6HhbzvS0OD402EzF\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 224,\n    \"candidatesTokenCount\": 7,\n    \"totalTokenCount\": 231,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 224\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"-49HapvfNL6TjrEPmPf9oAg\"\n}\n"
+  },
+  "f323e64758ebfef55c8b1bd7e10e57c668272cdce9a7b83a4c2224e3fef6cd98": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:01 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=385",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+815551234\\\", \\\"+9665551234\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH5D76TkO9ckI/ytyIaFCIwOOh8TJ/rtvWw6Di1NTMdhyc2WOUu2lqKU/sdqot\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 585,\n    \"candidatesTokenCount\": 24,\n    \"totalTokenCount\": 609,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 585\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"dI5Hau-vKqWssOIPn9PokAo\"\n}\n"
+  },
+  "f4d2e7e340ca1ad7a0cbf1009ca3ed4a38208b7f9af504a96c842287df864fc3": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:52 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=435",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"United States\\\", \\\"Canada\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHo105wOg4Rj0r6pPtrgmA9qjmVf+2R2WNKMp+UP/KzhKS+SacImax1u8IxWj+\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 223,\n    \"candidatesTokenCount\": 7,\n    \"totalTokenCount\": 230,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 223\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"a45HapX8PMS8sOIPitam6QE\"\n}\n"
+  },
+  "ff94e32055dba331674eec1888cd4caf570bfcec2377ac2088677d555b3fd89b": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:26:57 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=454",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+11005556789\\\", null]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH4EMyVQ4EUr3RkotWkpLm+7p6GupnRZObqJVHZW8GpWzok/hlM/iHoNVKSFhv\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 583,\n    \"candidatesTokenCount\": 16,\n    \"totalTokenCount\": 599,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 583\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"cY5HauqpA4e0jrEP3o30-Ak\"\n}\n"
+  }
+}

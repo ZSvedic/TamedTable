@@ -1,0 +1,18 @@
+{
+  "b327d8c2a7158775c350df4f02c7c002859bce12775019641d0ffe326ef3b4b8": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:47 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=2414",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"filter\\\",\\\"pred\\\":{\\\"js\\\":\\\"rows.findIndex(r =\\u003e r.Email === row.Email) === i\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"pz3q70ot\"\n            },\n            \"thoughtSignature\": \"Ev0HCvoHAQw51segBesWXaJgNNVZKPZG6ZUXxOAKx7tZ+XdaHqNA7dmFwz3aSkpnVEGWcFAeD8RcYY4plTx9OoeQH9UN+rKUGxDrRFTGOwRfdToWfHHJdlr2NBDS3MYORELvOTYJfEqZSD8gQbgsMxtj6EZMWremXw1DlQW86N1mTaRbCRN1Q0edTKN2jXIJLv3Ze5cOvfgTuFncBL3YgIg2pIKVol38lzYyX5rd2RiOFj2FJXSVzM5R7+qMwfqVFqkzV4ksrPAA8ova8d0im85BZuFkJXLYkZaMDnYP61e7fmRGL2FVqWbaarA6sKP/yFCagU8kpI+4lFHrAmJjTPRLapmoIkrzOJPP4/aqG2YpN/qQBugM+h5yhInxkSL1BunpZxl2pvZ0dsyZIOA8iKQHU4kikzK3DgLmHmVk7XlpTVCnTzb8aVpmeSidjpCjYu6Siph5uQ3qh1O5y/G6jwKSng2643OTdsF4A05852h/HY+5ImHM0cHE1VHTvrPdWSM6dLHucRdVVmxgQRkfcIc879+kgf//iNCqnLGeQM7VznGuNRmq+8I6noHxF51Js866l7KpYoz6b2N3SeLSt0VJraIp6MKtRMqK3BeSGQreN4MV1/TXEwnP+XJHI6VoOovNOaJpozOIC1Kwa48ieZnzvGtkiJPKm6ueE29HrscwGdhfpsIR585e5lMW3LabNeVFeAJn0IdE2P0K1IzHAAj4KendylskNR1yX7tiVQWipnoedcUeXtOQe5g7hHVoJnmQjMIwZKHOawwy0CTRaqJSUyRBSQjE7MjKSi18oP4aAru3o4oAYBqhIMG6c3vwDer49ToA9jNxVn+6+FlBWH/tHcMXrRrjQLSL5ljmQG7r6ffdGVNBRzjE2yyyp4hUD3/EvzerGtm1y+Ngtd7YEcBoOjd9nmHlSMgHgBSAvJ5w6MdD7Jj9qLMj24+PfOOLbWxk06e1OGD8YgVGvNaTGN1zfdVVS1+KP//jLSUvL6xJc+wwHV2gts7cbAOz62pnZgnx0+S7VszMcYzVa6gDg626Wli6uqpgo5JfG8pycWq7XddgGOq3ar03QJ5ZR4vkKKy1WB0SOL9ZAeUOFT1Hvj7PrK/YzMnFqLceLnURx8nsUbvva88nWgEKdxbBypLP9IHu0aeA3wdiQxRxKatNHH/X2lfxsxCkKE+T2F5LcA87S5FyqG4o6YTTsaMn0kUQQmj8ynH9TMUrWbx4XjVVf02nhsEZtAanE/IGxvHSkiomIW0SYMmBjydw3gqlKuUrw8xGBDJn8oh1hKE8Tka+sY+wOAZ1Au7gq23BLhAhUsWspq4RPjTtKviAqkqowkzQYWZsl9Iwhl9Wge1GXKEA7A==\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4444,\n    \"candidatesTokenCount\": 61,\n    \"totalTokenCount\": 4805,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4444\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 300,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"oY5Hasy2C5WY-8YPl-OYmQc\"\n}\n"
+  }
+}

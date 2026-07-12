@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Extract amount & date — "extract the amount and date from the memo" -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
+  <circle cx="40" cy="36" r="7" fill="#96BED7"/>
+  <path d="M37.5 32.5 L43.5 36 L37.5 39.5 Z" fill="#281C60"/>
+  <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60">extract the amount and date from the memo</text>
+  <g>
+    <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
+    <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">memo</text>
+    <text x="200" y="91" font-size="12" font-weight="600" fill="#FFFFFF">amount + date</text>
+    <g font-size="10.5" fill="#281C60">
+      <rect x="18" y="104" width="324" height="34" fill="#FFFFFF"/>
+      <rect x="18" y="138" width="324" height="34" fill="#F6F2EB"/>
+      <rect x="18" y="172" width="324" height="34" fill="#FFFFFF"/>
+
+      <text x="32" y="125">Paid $42 on 3 May 2025</text>
+      <rect x="196" y="111" width="46" height="20" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="201" y="125" font-family="JetBrains Mono, ui-monospace, monospace">42.00</text>
+      <rect x="248" y="111" width="82" height="20" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="253" y="125" font-family="JetBrains Mono, ui-monospace, monospace">2025-05-03</text>
+
+      <text x="32" y="159">Refund of 9.50 … Apr 8, 2024</text>
+      <rect x="196" y="145" width="46" height="20" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="204" y="159" font-family="JetBrains Mono, ui-monospace, monospace">9.50</text>
+      <rect x="248" y="145" width="82" height="20" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="253" y="159" font-family="JetBrains Mono, ui-monospace, monospace">2024-04-08</text>
+
+      <text x="32" y="193">Invoice 120 due Jun 1 2026</text>
+      <rect x="196" y="179" width="46" height="20" rx="5" fill="#FFFFFF" stroke="#DCDCDC" stroke-dasharray="3 3"/>
+      <text x="204" y="193" font-family="JetBrains Mono, ui-monospace, monospace" fill="#6A6280">null</text>
+      <rect x="248" y="179" width="82" height="20" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="253" y="193" font-family="JetBrains Mono, ui-monospace, monospace">2026-06-01</text>
+    </g>
+    <rect x="18" y="72" width="324" height="134" rx="6" fill="none" stroke="#DCDCDC"/>
+  </g>
+  <text x="32" y="220" font-size="9.5" fill="#6A6280">120 is an invoice number, not an amount — so amount stays null</text>
+</svg>

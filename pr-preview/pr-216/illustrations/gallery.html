@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>TamedTable feature illustrations</title>
+<style>
+  body{background:#F6F2EB;margin:0;padding:24px;font-family:Inter,system-ui,sans-serif}
+  h1{color:#281C60;font-size:18px}
+  .grid{display:grid;grid-template-columns:repeat(2,360px);gap:20px}
+  figure{margin:0;position:relative}
+  figcaption{color:#6A6280;font-size:12px;margin-top:4px}
+  img{display:block;border-radius:16px}
+  .tag{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;letter-spacing:.06em;
+       padding:3px 8px;border-radius:10px;color:#fff}
+  .tag.new{background:#281C60}
+  .tag.old{background:#96BED7;color:#281C60}
+</style>
+<h1>TamedTable — feature illustrations</h1>
+<p style="color:#6A6280;font-size:12px">Same order as the marketing list. <b>NEW</b> = freshly drawn, <b>OLD</b> = reused tile renamed to <code>{category}-{name}.svg</code>.</p>
+<div class="grid" id="g"></div>
+<script>
+  // [file, caption, status]  — order matches marketing/new-ai-features.md
+  const files=[
+    ["CleanUp-phone-numbers.svg","\"normalize the phone numbers\"","new"],
+    ["CleanUp-country-names.svg","\"make the country names consistent\"","new"],
+    ["CleanUp-capitalization.svg","\"fix the capitalization of names\"","new"],
+    ["CleanUp-birth-dates.svg","\"clean up the birth dates\"","new"],
+    ["EnrichExtract-split-address.svg","\"split the address into its parts\"","new"],
+    ["EnrichExtract-country-from-city.svg","\"fill the country from the city column\"","new"],
+    ["EnrichExtract-industry.svg","\"add the industry for each company\"","new"],
+    ["EnrichExtract-amount-date.svg","\"extract the amount and date from the memo\"","new"],
+    ["Classify-ticket-label.svg","\"label each ticket as billing, bug, or feature\"","new"],
+    ["Classify-sentiment.svg","\"score the sentiment of every review\"","new"],
+    ["Classify-seniority.svg","\"sort the titles by seniority\"","new"],
+    ["Classify-gender.svg","\"split customers into men, women, and unknown\"","new"],
+    ["Validate-fake-emails.svg","\"flag emails that look fake\"","new"],
+    ["Validate-impossible-date.svg","\"flag any impossible birth date\"","new"],
+    ["Validate-city-country.svg","\"check the city matches the country\"","new"],
+    ["Validate-wrong-prices.svg","\"flag prices that seem wrong\"","new"],
+    ["Language-voice.svg","tap the mic — speak instead of type","old"],
+    ["Language-summarize.svg","\"summarize each review in one line\"","new"],
+    ["Language-translate.svg","\"translate the comments to English\"","new"],
+    ["Language-detect-language.svg","\"tag the language of every comment\"","new"],
+    ["Language-multilingual.svg","\"normaliza los números de teléfono\"","old"],
+    ["Deterministic-filter.svg","\"Show only customers in the USA\"","old"],
+    ["Deterministic-sort-top.svg","\"sort by revenue, top 10\"","old"],
+    ["Deterministic-dedupe.svg","\"Remove duplicate rows by Email\"","old"],
+    ["Deterministic-pivot.svg","\"Pivot Quarter into columns, with Revenue as the value\"","old"],
+    ["Deterministic-join.svg","\"Join with join-country-codes.csv on Country to add ISO and Region\"","old"],
+    ["LoadSaveReuse-load.svg","a file or a URL","old"],
+    ["LoadSaveReuse-save-csv.svg",":save clean.csv","old"],
+    ["LoadSaveReuse-save-flow.svg",":save-flow tidy.flow","old"],
+    ["LoadSaveReuse-save-py.svg",":save-py tidy.py","old"],
+    ["LoadSaveReuse-undo-redo.svg",":undo / :redo","old"],
+  ];
+  const g=document.getElementById("g");
+  for(const [f,c,s] of files){
+    g.insertAdjacentHTML("beforeend",
+      `<figure><img src="${f}" width="360" height="230"><span class="tag ${s}">${s.toUpperCase()}</span><figcaption>${f} — ${c}</figcaption></figure>`);
+  }
+</script>

@@ -1,0 +1,194 @@
+{
+  "1e24f9efe8309a373c2cf7668abe3fefbcc3c087c9841b4cb8178f6ba64f0857": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:20 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=5356",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"value\": \"{\\\"id\\\":\\\"Amount\\\"}\",\n                    \"path\": \"/columns/-\",\n                    \"op\": \"add\"\n                  },\n                  {\n                    \"path\": \"/columns/-\",\n                    \"value\": \"{\\\"id\\\":\\\"Date\\\"}\",\n                    \"op\": \"add\"\n                  },\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Amount\\\",\\\"value\\\":{\\\"llm\\\":\\\"Extract the monetary amount from this memo as a plain decimal number with two decimals and no currency sign: '{Memo}'. A bare number that identifies something (an invoice or order number) is not an amount. Reply with ONLY the number and nothing else. If the memo contains no monetary amount, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\"\n                  },\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Date\\\",\\\"value\\\":{\\\"llm\\\":\\\"Extract the date from this memo in ISO 8601 format YYYY-MM-DD: '{Memo}'. Use ONLY the day, month, and year written in the memo — never invent or assume a year that is not written there; if the memo names no year, reply with the literal word: null. Reply with ONLY the ISO date and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"j3np4qha\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4417,\n    \"candidatesTokenCount\": 288,\n    \"totalTokenCount\": 5536,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4417\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 831,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"25BHasbNG4mfjrEP8Y_joAo\"\n}\n"
+  },
+  "284f964ba4346cab3b5ecfbb570c24ab5db57f63ccc4e8e7f42b7002ebddc4ae": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:15 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=458",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Healthcare\\\", \\\"Finance\\\", \\\"Aerospace\\\", \\\"Technology\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHoqgVT0lBrTsSJ6PsOP0UwoJ12B67cP37jgJg6N1T9YSlGU4ugeQtrIlroodo\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 334,\n    \"candidatesTokenCount\": 13,\n    \"totalTokenCount\": 347,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 334\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"2pBHarnxO7P4jrEP4NeoqQw\"\n}\n"
+  },
+  "342cb1080d0cc751afa89ba7b320357ec2d47089a1ef8b580f5fb8ac7c54e16a": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:05 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=5595",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/columns/-\",\n                    \"value\": \"{\\\"id\\\": \\\"Street\\\"}\"\n                  },\n                  {\n                    \"path\": \"/columns/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"id\\\": \\\"City\\\"}\"\n                  },\n                  {\n                    \"path\": \"/columns/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"id\\\": \\\"State\\\"}\"\n                  },\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/columns/-\",\n                    \"value\": \"{\\\"id\\\": \\\"Zip\\\"}\"\n                  },\n                  {\n                    \"value\": \"{\\\"kind\\\": \\\"mutate\\\", \\\"columns\\\": \\\"Street\\\", \\\"value\\\": {\\\"llm\\\": \\\"Extract the street address (including house number, street name, and unit/suite if present) from this address: '{Address}'. Reply with ONLY the street address and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\"\n                  },\n                  {\n                    \"value\": \"{\\\"kind\\\": \\\"mutate\\\", \\\"columns\\\": \\\"City\\\", \\\"value\\\": {\\\"llm\\\": \\\"Extract the city name from this address: '{Address}'. Reply with ONLY the city and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\",\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\"\n                  },\n                  {\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\": \\\"mutate\\\", \\\"columns\\\": \\\"State\\\", \\\"value\\\": {\\\"llm\\\": \\\"Extract the state or province from this address: '{Address}'. Reply with ONLY the state or province and nothing else. If the address names no state or province, reply with the literal word: null\\\"}}\"\n                  },\n                  {\n                    \"value\": \"{\\\"kind\\\": \\\"mutate\\\", \\\"columns\\\": \\\"Zip\\\", \\\"value\\\": {\\\"llm\\\": \\\"Extract the postal code or ZIP code from this address: '{Address}'. Reply with ONLY the postal code and nothing else. If the address names no postal code, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\"\n                  }\n                ]\n              },\n              \"id\": \"amuyumqc\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4414,\n    \"candidatesTokenCount\": 441,\n    \"totalTokenCount\": 5579,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4414\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 724,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"y5BHasTDNeaUjrEPsLGSuAk\"\n}\n"
+  },
+  "46b7f9407f4e03af52e88ef46be4539c1777eece73d49bb8dd7a64286124cce1": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:14 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3450",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"id\\\":\\\"Industry\\\"}\",\n                    \"path\": \"/columns/-\"\n                  },\n                  {\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Industry\\\",\\\"value\\\":{\\\"llm\\\":\\\"Classify this company into its primary industry sector (e.g., Technology, Healthcare, Finance, Consumer Goods, Energy, etc.). Company: '{Company}'. Reply with ONLY the industry name and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\",\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"a8vgcdj5\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4414,\n    \"candidatesTokenCount\": 130,\n    \"totalTokenCount\": 5034,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4414\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 490,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"15BHasTKH8jBsOIPr6uR8AU\"\n}\n"
+  },
+  "4fbfb122f485b4131546f4f61d8b7047ceb78ef9c4a40fe16738ad2d8732f344": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:21 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=512",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"2025-05-03\\\", \\\"2024-04-08\\\", \\\"2026-06-01\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH8Wy3JPnE6IJM7k20s+sKEu5yIejzV+RYsUvunTwIUaIjueIDexe7hBbueZZn\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 414,\n    \"candidatesTokenCount\": 36,\n    \"totalTokenCount\": 450,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 414\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"4ZBHaruWFIqR-8YPs4KPuAk\"\n}\n"
+  },
+  "75e21d93d012a8c076998abc7a7e4176a463c2a9e0c49ceecb99ade20d6adead": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:06 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=508",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[null, \\\"CA\\\", null]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHcQKCoSlL8I9RrugpZdS4h8wat/JJnBKAur9f4iMkFcy3ggzQP0beqHUEXptO\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 259,\n    \"candidatesTokenCount\": 8,\n    \"totalTokenCount\": 267,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 259\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"0pBHaurSHpWY-8YPl-OYmQc\"\n}\n"
+  },
+  "913570969f56a1c4028937776e3a9fd7110a2195cce6ec3cad5d2431ef8f785b": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:11 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=538",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Japan\\\", \\\"France\\\", \\\"Italy\\\", \\\"Canada\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbH64oFo5gXGYzBgqe7PN7Z6f5kYOKAad0y2w2Ivud27rM6+7HozWEpx+SqnXyx\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 267,\n    \"candidatesTokenCount\": 12,\n    \"totalTokenCount\": 279,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 267\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"1pBHasaAOqWssOIPn9PokAo\"\n}\n"
+  },
+  "ca356f0b42d36c03134a4bdf5439fc23d2c27ea0185cbbd8b99d77086e76d990": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:10 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3260",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/columns/-\",\n                    \"value\": \"{\\\"id\\\": \\\"Country\\\"}\"\n                  },\n                  {\n                    \"op\": \"add\",\n                    \"path\": \"/transformations/-\",\n                    \"value\": \"{\\\"kind\\\": \\\"mutate\\\", \\\"columns\\\": \\\"Country\\\", \\\"value\\\": {\\\"llm\\\": \\\"Identify the country where the city '{City}' is located. Reply with ONLY the canonical English name of the country and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"138uh92l\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4415,\n    \"candidatesTokenCount\": 121,\n    \"totalTokenCount\": 4944,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4415\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 408,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"05BHar3tKeWKjrEP5t3sqAs\"\n}\n"
+  },
+  "d67e9dbdefa4c34510df4f36b01c4cd5b09b8bb83b62b326110d95723a5c5ff1": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:06 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=517",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"London\\\", \\\"Mountain View\\\", \\\"London\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHG4u8D742IjQjNWCCjys+Wc5yO9NxbdMdGypx7Vners3LI/pIhePX5CDsUual\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 244,\n    \"candidatesTokenCount\": 10,\n    \"totalTokenCount\": 254,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 244\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"0ZBHaunTOqDO-8YP6piOmAk\"\n}\n"
+  },
+  "e4de87b1f86bc1dea94e4f3d7b7a2379f0b9d3a1d78410a86d832c0243324b93": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:21 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=478",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"42.00\\\", \\\"9.50\\\", null]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHR9N0gVuVMhD4xqyA7ILz+LVqIKbiGbV5Wo5lxIfs1cbffqvKJYdhEFTGk4gc\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 339,\n    \"candidatesTokenCount\": 15,\n    \"totalTokenCount\": 354,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 339\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"4JBHauWcM-2T-8YP06W6wAk\"\n}\n"
+  },
+  "ee5adc882ff07dca0a2c389a6f652e947fefa06bca1db190df9799db528e2981": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:07 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=630",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"NW1 6XE\\\", \\\"94043\\\", \\\"SW1A 2AA\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHXqvB8Nmz6YW/S00IybENZb72wX8E9C1RcPxcR7Rz4NQpYPb4DB4Tiu5Z82r6\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 259,\n    \"candidatesTokenCount\": 22,\n    \"totalTokenCount\": 281,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 259\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"05BHavfkAY27jrEPqpT9oA8\"\n}\n"
+  },
+  "ffdfdebcee9336554b7cb367d670851c087cd09a5e94f4569ac8ae2ebad0134b": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:05 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=466",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"221b Baker St\\\", \\\"1600 Amphitheatre Pkwy\\\", \\\"10 Downing Street\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHZvot2dtRnOpOoXuuca7EN3HQ4pvDF6ssFqO3GR80pn/iqsdQ8YpT6MuZwbP2\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 292,\n    \"candidatesTokenCount\": 26,\n    \"totalTokenCount\": 318,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 292\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"0ZBHao20HqyejrEP17bSuQo\"\n}\n"
+  }
+}
