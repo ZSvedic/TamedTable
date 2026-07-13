@@ -1,0 +1,21 @@
+ID, FirstName, LastName, DOB, Country, Phone
+01, John, D. Doe, 01-01-1990, USA, (200) 555-1234
+02, Jane, Smith, 1985-05-15, Canada, +1 555-5678
+03, bob, mcdonald, "Sep 30th, 1978", UK, 0044-555-8765
+04, Alice, Williams, 1992_12_10, Australia, +61.559.4321.2
+05, Tom, Brown, 25th of March 1980, USA, +1 (100)555-6789
+06, Emily, Davis, 1995/07/20, Canada, 555-4321
+07, Michael, Miller, 1988-11-30, England, +44 555 1234
+08, sarah, van der berg, 1990.02.14, Australia, +61 555 9876
+09, david, o'neil, 03/04/1983, USA, (300) 555-4321
+10, Laura, Taylor, NA, The Bahamas, +1 242 555-6789
+11, Chris, Anderson, 1987-08-19, Bahamas, +1 242 555-1234
+12, Boris, Babić, 1985-03-10, Croatia, +385 555 4321
+13, Anna, Müller, '10. Oktober 1990', Germany, +49 555 6789
+14, Carlos, García, 1982-12-01, Spain, +34 555 1234
+15, Maria, Rossi, 03.04.1993., Deutschland, 030 72344321
+16, Ahmed, Khan, , United Kingdom, +44 555 4321
+17, 张, 三, 1990-01-01, China, +86 555 1234
+18, 李, 四, 1985-05-15, China, 138 5555 6789
+19, 山田, 太郎, -, Japan, +81 555 1234
+20, فلا, الفلاني, 1990-01-01, Saudi Arabia, +966 555 1234
