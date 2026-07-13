@@ -2,10 +2,30 @@
 // Claude sandbox's proxy, so record mode shells the live model calls out to
 // curl, which honours HTTPS_PROXY and the CA bundle — that is what lets
 // `bun run test:record` work from a sandbox session. Replay never uses this:
-// it serves every call from the cassette on disk.
+// it serves every call from the cassette on disk. Uses node:child_process, not
+// Bun.spawn — the cucumber-js bin runs under Node, where the Bun global is
+// undefined.
+import { spawn } from 'node:child_process';
+import { readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FetchLike } from '@tamedtable/cassette';
+
+function run(args: string[], stdin?: string): Promise<{ code: number; stdout: Buffer; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(args[0]!, args.slice(1), { stdio: ['pipe', 'pipe', 'pipe'] });
+    const out: Buffer[] = [];
+    const err: Buffer[] = [];
+    proc.stdout.on('data', (c: Buffer) => out.push(c));
+    proc.stderr.on('data', (c: Buffer) => err.push(c));
+    proc.on('error', reject);
+    proc.on('close', (code) =>
+      resolve({ code: code ?? -1, stdout: Buffer.concat(out), stderr: Buffer.concat(err).toString() }),
+    );
+    if (stdin !== undefined) proc.stdin.write(stdin);
+    proc.stdin.end();
+  });
+}
 
 export function curlFetch(): FetchLike {
   return async (input, init) => {
@@ -21,19 +41,10 @@ export function curlFetch(): FetchLike {
       args.push('-H', `${k}: ${v}`);
     }
     if (init?.body !== undefined) args.push('--data-binary', '@-');
-    const proc = Bun.spawn(args, {
-      stdin: init?.body !== undefined ? new TextEncoder().encode(String(init.body)) : undefined,
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
-    const [body, err] = await Promise.all([
-      new Response(proc.stdout).arrayBuffer(),
-      new Response(proc.stderr).text(),
-    ]);
-    const code = await proc.exited;
-    if (code !== 0) throw new Error(`curl failed (${code}): ${err.slice(0, 300)}`);
-    const rawHeaders = await Bun.file(headerFile).text().catch(() => '');
-    await Bun.file(headerFile).delete?.().catch?.(() => { /* best effort */ });
+    const { code, stdout, stderr } = await run(args, init?.body !== undefined ? String(init.body) : undefined);
+    if (code !== 0) throw new Error(`curl failed (${code}): ${stderr.slice(0, 300)}`);
+    const rawHeaders = await readFile(headerFile, 'utf8').catch(() => '');
+    await unlink(headerFile).catch(() => { /* best effort */ });
     // The last header block (after any 100-continue / redirect blocks).
     const block = rawHeaders.trim().split(/\r?\n\r?\n/).pop() ?? '';
     const lines = block.split(/\r?\n/);
@@ -47,6 +58,6 @@ export function curlFetch(): FetchLike {
     }
     headers.delete('content-encoding'); // body arrives decoded
     headers.delete('content-length');
-    return new Response(body, { status, statusText, headers });
+    return new Response(stdout, { status, statusText, headers });
   };
 }
