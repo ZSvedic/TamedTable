@@ -39,6 +39,7 @@ Feature: Classify tours
       # it numerically descending — CTO first, intern last.
       When query "sort the titles by seniority"
       Then the spec has 2 transformations
+      And column "SeniorityRank" exists in the spec
       And no toast is shown
       And compare with the expected output
 
