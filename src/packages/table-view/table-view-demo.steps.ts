@@ -74,6 +74,47 @@ Then('the first column header is {string}', async function (this: object, expect
   await expectText(page(this), 'thead th:nth-child(2)', expected);
 });
 
+// Width of the header cell before the drag, so the "wider" assertion has a
+// baseline. Keyed by the scenario's world object.
+const widthBefore = new WeakMap<object, number>();
+
+When(
+  'the user drags the right edge of the {string} header {int} px right',
+  async function (this: object, col: string, delta: number) {
+    const p = page(this);
+    const header = p.locator(`[data-tv-header="${col}"]`);
+    widthBefore.set(this, (await header.boundingBox())!.width);
+    const handle = (await p.locator(`[data-tv-resize="${col}"]`).boundingBox())!;
+    const y = handle.y + handle.height / 2;
+    await p.mouse.move(handle.x + handle.width / 2, y);
+    await p.mouse.down();
+    await p.mouse.move(handle.x + handle.width / 2 + delta, y, { steps: 4 });
+    await p.mouse.up();
+  },
+);
+
+Then(
+  'the {string} header is about {int} px wider',
+  async function (this: object, col: string, delta: number) {
+    const before = widthBefore.get(this);
+    assert.ok(before !== undefined, 'no resize drag recorded in this scenario');
+    const after = (await page(this).locator(`[data-tv-header="${col}"]`).boundingBox())!.width;
+    // "About": sub-pixel rounding and the mouse landing a pixel off are fine.
+    assert.ok(
+      Math.abs(after - before - delta) <= 3,
+      `expected width ${before} + ${delta} ±3, got ${after}`,
+    );
+  },
+);
+
+Then(
+  'the demo event log does not show {string}',
+  async function (this: object, unexpected: string) {
+    const log = (await page(this).textContent('#out')) ?? '';
+    assert.ok(!log.includes(unexpected), `event log unexpectedly shows "${unexpected}": ${log}`);
+  },
+);
+
 When('the user toggles streaming', async function (this: object) {
   await page(this).click('button:has-text("Toggle streaming")');
 });

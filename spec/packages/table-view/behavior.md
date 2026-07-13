@@ -1,8 +1,9 @@
 # Table view
 
 The `@tamedtable/table-view` package owns how a table looks and feels: the
-paged grid with cell selection, inline editing, and column drag-reorder, the
-pagination bar, the status footer, and the pure pagination math behind them.
+paged grid with cell selection, inline editing, column drag-reorder, and
+column resize, the pagination bar, the status footer, and the pure
+pagination math behind them.
 It owns no data and no page state — the host holds the rows and the current
 page, passes the visible slice in, and hears about every gesture through
 callbacks. The app's empty-state panel ("No file loaded") stays in the app:
@@ -53,6 +54,16 @@ A row-number column, sticky headers, and the visible rows. Gestures:
 - Drag a header onto another → the dragged column lands at the target's
   position and `onReorderColumns` receives the full new order. The drag grip
   appears on header hover.
+- Drag the boundary between two headers → the column left of the boundary
+  resizes. Each header's right edge is a narrow resize handle; hovering it
+  shows the `col-resize` cursor, and dragging it never starts a header
+  reorder. Widths are view state local to the component, keyed by column id
+  (so a width follows its column through a reorder) and reset on remount —
+  no callback fires and no spec patch is produced. On the first resize the
+  component snapshots every column's rendered width and switches the table
+  to fixed layout, so untouched columns keep their size instead of
+  reflowing. A column can't shrink below a small floor that keeps its
+  handle grabbable.
 - `streaming` shows a sticky "Streaming results…" banner; `status` drives the
   footer dot (accent pulse while running, ok when saved).
 - A 0-row table states "This table has 0 rows."; the range readout shows
@@ -60,8 +71,9 @@ A row-number column, sticky headers, and the visible rows. Gestures:
 
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for
-tests: `data-tv-header`, `data-tv-cell="<absRow>:<col>"`, `data-tv-edit`,
-`data-tv-range`, `data-tv-selection`, `data-tv-status`, `data-tv-streaming`.
+tests: `data-tv-header`, `data-tv-resize`, `data-tv-cell="<absRow>:<col>"`,
+`data-tv-edit`, `data-tv-range`, `data-tv-selection`, `data-tv-status`,
+`data-tv-streaming`.
 
 ## Pagination component
 

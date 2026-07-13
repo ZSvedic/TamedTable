@@ -4,7 +4,13 @@
 // inline edit, header drag-reorder, paging) report back through callbacks.
 // The pulse and grip-reveal animations ship inside the component so the grid
 // looks the same standalone (demo page) and inside an app.
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { TableRow } from './index.ts';
@@ -48,6 +54,11 @@ const STATUS_LABEL: Record<TableStatus, string> = {
   saved: 'Saved',
 };
 
+/** Floor for a resized column — keeps the resize handle grabbable. */
+const MIN_COL_W = 48;
+/** Width given to a column that appears after the resize snapshot was taken. */
+const DEFAULT_COL_W = 120;
+
 const TV_CSS =
   '@keyframes tv-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
   ' .tv-pulse { animation: tv-pulse-kf 1.2s ease-in-out infinite; }' +
@@ -74,6 +85,10 @@ export function TableView({
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
   const [draft, setDraft] = useState('');
   const [dragCol, setDragCol] = useState<string | null>(null);
+  // Column widths in px, keyed by column id ('#' is the row-number column).
+  // null until the first resize; then the table switches to fixed layout.
+  const [widths, setWidths] = useState<Record<string, number> | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
 
   const firstRow = totalRows === 0 ? 0 : pageStart + 1;
   const lastRow = pageStart + rows.length;
@@ -103,6 +118,37 @@ export function TableView({
     onReorderColumns(order);
   };
 
+  const startResize = (col: string, e: ReactMouseEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    const table = tableRef.current;
+    if (!table) return;
+    // First resize: snapshot every column's rendered width, so switching the
+    // table to fixed layout keeps the untouched columns exactly as they are.
+    const snap: Record<string, number> = { ...(widths ?? {}) };
+    if (!widths) {
+      table.querySelectorAll('thead th').forEach((th, i) => {
+        snap[i === 0 ? '#' : columns[i - 1] ?? '#'] = th.getBoundingClientRect().width;
+      });
+    }
+    setWidths(snap);
+    const startX = e.clientX;
+    const startW = snap[col] ?? DEFAULT_COL_W;
+    const move = (ev: MouseEvent): void =>
+      setWidths({ ...snap, [col]: Math.max(MIN_COL_W, startW + ev.clientX - startX) });
+    const up = (): void => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      document.body.style.cursor = '';
+    };
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  const colW = (col: string): number => widths?.[col] ?? DEFAULT_COL_W;
+  const tableW = widths ? colW('#') + columns.reduce((sum, c) => sum + colW(c), 0) : undefined;
+
   const headerCell: CSSProperties = {
     position: 'sticky',
     top: 0,
@@ -119,6 +165,8 @@ export function TableView({
     fontSize: typography.size.sm,
     fontWeight: 600,
     whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   };
 
   const bodyCell: CSSProperties = {
@@ -127,7 +175,9 @@ export function TableView({
     borderBottom: `1px solid ${t.line}`,
     borderRight: `1px solid ${t.line}`,
     color: t.ink,
-    maxWidth: 320,
+    // Under fixed layout the colgroup owns the widths; the cap only matters
+    // while the table still auto-sizes to content.
+    maxWidth: widths ? undefined : 320,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -172,13 +222,24 @@ export function TableView({
           </div>
         )}
         <table
+          ref={tableRef}
           style={{
             borderCollapse: 'collapse',
             fontFamily: typography.mono,
             fontSize: typography.size.sm,
             fontVariantNumeric: 'tabular-nums',
+            tableLayout: widths ? 'fixed' : 'auto',
+            width: tableW,
           }}
         >
+          {widths && (
+            <colgroup>
+              <col style={{ width: colW('#') }} />
+              {columns.map((col) => (
+                <col key={col} style={{ width: colW(col) }} />
+              ))}
+            </colgroup>
+          )}
           <thead>
             <tr>
               <th
@@ -214,6 +275,26 @@ export function TableView({
                     </span>
                     {col}
                   </span>
+                  {/* Resize handle on the header's right edge. It cancels its
+                      own dragstart so grabbing it never begins a reorder. */}
+                  <span
+                    data-tv-resize={col}
+                    title="Drag to resize"
+                    draggable
+                    onDragStart={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onMouseDown={(e) => startResize(col, e)}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 8,
+                      height: '100%',
+                      cursor: 'col-resize',
+                    }}
+                  />
                 </th>
               ))}
             </tr>
