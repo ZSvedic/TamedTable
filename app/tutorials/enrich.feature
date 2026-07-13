@@ -44,14 +44,19 @@ Feature: Enrich and extract tours
       And compare with the expected output
 
     # Every memo names its year, so an extracted date is never a fabricated
-    # "current year" guess — a memo without a year would extract null.
+    # "current year" guess — a memo without a year would extract null. The
+    # phrase asks for refunds as negative so the amounts are signed money
+    # movements, not bare digits copied off the memo.
     @web @tour @cat-enrich
     Scenario: Extract the amount and date from the memo
       Given the TamedTable web app
       And load "memos.csv"
-      When query "extract the amount and date from the memo"
+      When query "extract the amount and date from the memo, refunds negative"
       Then the spec has 2 transformations
       And no toast is shown
+      And the row where "Id" is "1" has "Amount" equal to "42.00"
+      And the row where "Id" is "2" has "Amount" equal to "-9.50"
+      And the row where "Id" is "3" has "Amount" equal to "null"
       And the row where "Id" is "1" has "Date" equal to "2025-05-03"
       And the row where "Id" is "2" has "Date" equal to "2024-04-08"
       And the row where "Id" is "3" has "Date" equal to "2026-06-01"

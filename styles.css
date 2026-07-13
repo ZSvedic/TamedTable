@@ -242,6 +242,11 @@ section { padding: 52px 0; }
 .feat-item.active .fname { font-weight: 600; }
 .feat-item .fcmd { display: block; font-family: var(--font-mono); font-size: 14px; color: var(--ink); font-weight: 500; font-style: italic; margin-top: 0; }
 .feat-item .fnote { display: block; font-family: var(--font-body); font-size: 14px; color: var(--ink); font-weight: 400; font-style: normal; margin-top: 6px; }
+/* Let visitors copy the example phrases. Selection inside a <button> is a
+   browser default in Chromium but not Firefox/Safari; opting the text spans in
+   makes it uniform, and a plain click still activates the item (the click
+   fires on mouseup regardless of any selection). */
+.feat-item .fcmd, .feat-item .fnote { -webkit-user-select: text; user-select: text; }
 
 .feat-visual {
   border: 1px solid var(--silver); border-radius: var(--radius);
