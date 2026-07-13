@@ -63,9 +63,9 @@ recorded run right in the browser, with **no API key and no signup**:
 | Enrich & extract | *"split the address into its parts"* | Structures whatever mess they typed |
 | Enrich & extract | *"fill the country from the city column"* | Knows *Osaka → Japan* |
 | Enrich & extract | *"add the industry for each company"* | Inferred from company names |
-| Enrich & extract | *"extract the amount and date from the memo"* | Pulled from free text |
+| Enrich & extract | *"extract the amount and date from the memo, refunds negative"* | Pulled from free text, refunds signed |
 | Classify | *"label each ticket as billing, bug, or feature"* | Reads the ticket's meaning |
-| Classify | *"score the sentiment of every review"* | Positive, neutral, or negative |
+| Classify | *"classify sentiment into positive, negative and neutral"* | Reads the verdict, even in mixed reviews |
 | Classify | *"sort the titles by seniority"* | Ranks junior → senior |
 | Classify | *"split customers into men, women, and unknown"* | Gender inferred from first names |
 | Validate | *"flag emails that look fake"* | *bill.gates@microsoft.com* probably didn't sign up |
