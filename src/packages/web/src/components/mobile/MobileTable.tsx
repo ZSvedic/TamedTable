@@ -72,7 +72,15 @@ export function MobileTable({
   };
 
   return (
-    <div id={id} data-mob-table="" style={{ flex: 1, background: t.surface }}>
+    // width: max-content — the document scrolls this grid sideways, and the
+    // data cells are transparent, so the wrapper that paints the table surface
+    // (and anchors the tour spotlight) must span the whole table, not stop at
+    // the viewport edge where the page background would show through.
+    <div
+      id={id}
+      data-mob-table=""
+      style={{ flex: 1, width: 'max-content', minWidth: '100%', background: t.surface }}
+    >
       {streaming && (
         <div
           data-mob-streaming=""

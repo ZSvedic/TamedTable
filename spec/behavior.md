@@ -929,7 +929,10 @@ or the engine changes.
   pinned to the screen), so the browser's own scrollbar shows the true
   position in the table. The header row and row-index column stay
   frozen: the header sticks below the app bar, the index column to the
-  left edge.
+  left edge. The table's surface spans the whole scrollable width, so
+  scrolling right never exposes the tinted page background behind the
+  cells — and a tour spotlight anchored to the table covers the visible
+  columns wherever the page is scrolled.
 - A persistent **bottom dock** carries five buttons — **Menu**,
   **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is
