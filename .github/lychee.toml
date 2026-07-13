@@ -1,4 +1,4 @@
-# lychee config, auto-detected by the Link check workflow (.github/workflows/link-check.yml).
+# lychee config, passed via --config by the Link check workflow (.github/workflows/link-check.yml).
 #
 # MAP.md carries ~40 `github.com/search?q=repo:...#Tag` code-search links. When the
 # lychee cache expires they all re-fetch at once and GitHub answers 429 (Too Many
