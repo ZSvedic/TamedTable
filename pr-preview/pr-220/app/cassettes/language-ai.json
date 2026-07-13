@@ -1,0 +1,98 @@
+{
+  "58ca16cd9ef7e99d7e06b80a4fcbb31933945456f2a9dad7fc96560d7454f79a": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:25 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=570",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"The blender works well despite poor shipping.\\\", \\\"The battery life is very poor and disappointing.\\\", \\\"Great shoes that are comfortable and arrived quickly.\\\", \\\"The product is functional but unremarkable.\\\", \\\"Extremely poor customer support with no response.\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHG1jXhp++NipgYUjb7UWeSgkcOxK/SJrewiLj6l4vg/tiiHz+3yOLJSdYeas2\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 361,\n    \"candidatesTokenCount\": 47,\n    \"totalTokenCount\": 408,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 361\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"5JBHat7GH_-u-8YP_YXZ6Q4\"\n}\n"
+  },
+  "737a8aa2195df6bd2fb0e0b85fbe37cac25a8652cdc5c0016ffd11760919ce45": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:33 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3974",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"value\": \"{\\\"id\\\":\\\"Language\\\"}\",\n                    \"op\": \"add\",\n                    \"path\": \"/columns/-\"\n                  },\n                  {\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Language\\\",\\\"value\\\":{\\\"llm\\\":\\\"Identify the primary language of this comment. Reply with ONLY the canonical English name of the language (e.g., 'English', 'Spanish', 'French', 'German', 'Japanese') and nothing else. If the language cannot be determined or the comment is empty, reply with the literal word: null. Comment: '{Comment}'\\\"}}\",\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\"\n                  }\n                ]\n              },\n              \"id\": \"uu8qt9r1\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4414,\n    \"candidatesTokenCount\": 141,\n    \"totalTokenCount\": 5143,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4414\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 588,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"6ZBHavmsDr6TjrEPmPf9oAg\"\n}\n"
+  },
+  "a7cae9e8d16f54c8e140e76a07fa20d334a1e2165c927af8f24fedc7677f12ab": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:24 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=2491",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"id\\\":\\\"Summary\\\"}\",\n                    \"path\": \"/columns/-\"\n                  },\n                  {\n                    \"path\": \"/transformations/-\",\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Summary\\\",\\\"value\\\":{\\\"llm\\\":\\\"Summarize this review in one short line. Review: '{Review}'. Reply with ONLY the summary and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\"\n                  }\n                ]\n              },\n              \"id\": \"quvardfx\"\n            },\n            \"thoughtSignature\": \"EtQICtEIAQw51sc1xzUwcROdi7PdHIq+2OTHTJ6iRjYFNbON5mtO/p1Z+Gmp1D2fNXuWNbxs685qpwU8KAxq7jABO6lLgzpkCazbbB139Ctk+Yj2F2uTNHakKWuM4zJwFbYX/FuS/V+XmJVROOgsfZ/i8FKAbCm4ndnpczmkv4RDIG4quYbRJcrxu1CBYSd/nAqKdlmm3MZcwW9IamMbMrqI894slJTOW8H+XgyXTguLXjvXS1MY77ZtuBjKPwdKUeB6BtdpnWxgJ2P7Y8JnMv7QNBYSP6tgFio8yPx0flzCNLXBP9QflzA5trczcN2HIYIUUhLuE3TsUS4DIBqbwpGqhaKeD9oaLC53kKbNwFNl6diAIUVQkEGhGhyZHBNGRq4doyApjyQqQK2drkH/kaeht6gQWB9vKFOWZuV65H6H/dLulJwex1+eQUQwgqN7Qagw2EKL/Cyq+bqTvh8x3zMP9SryqrQraiSu1ykIc1ukeWOI2aC1y9fAAijXsjvGRrLfcjux+FPAbjmz2P+MtgOrho9CCGzFvIVIapCqFAw1phcJW7g7yaIt85+YKgyxuwhQvTFjyCzbyJVCuL+DCLvNPcDY8ZJG5ib3JCjtB1yK8wYNhmu1/t8IeIC988f+qPESABjr+hHE6MVFqIrtoxaCROmcCGgm4O4x2F2wOJCNUUp+5+Fvk8sbw0mlA1MOaT/RXEGzpHY67G6ctBwjMvU/1knSF9OCXv6fNs8ozcKK6M1NCILH6Aic6cxP1r6w9xSsrZ+wbo3c85UFFiJxtgHe1RzSG6dE/eV6Ou+P41bK9oOAp31xKF8QRxhuVMXDrcTchX3mqbIEBAi0pBR0vYS1WoRvbvDKB6ixf37jEu20mrugX/Sf6PaES58LDn23uoh5dVb3mPwtCZxect1hpCbKL80/4UGwZe/DttNSPkl+pQKV8oBilx7fBG6ZkDq5+aSvznFJkaJ+/Jt9yW+OeDRRRAWbCiLrFp/RIMQyYAEByfmE5Dcycf6fE0vMuMzLEHfrA4qlnfvrZjaq5q7M+L/UXDyYc5Mhn6xbd9On4cXvI0fIHJ3JFM2o0U/9X7vNvMmRiCygfpzM83Btav/ZCthPAEh8kDjV0kiFQQQ0NqYeHYSHBleS/dxF6IGhfmGNgCC5hnKm6Tkw2r3ZmaybqdAtD0HCKZl3Vqw08GwcNzNHfqaY2RhBP87NkAslMAt35n93h28qZQ4EgKkd6q7bgTuGGYNxbJmDGlJzG470sPEGdD/uE2ei8wL85OvBHfukXGEpC+fy3/DILVQxskmfWrqPn3H+VbnpPMdQXhINQRWGb8yOngH0kGq8c7+06EHQMJiWw7q4PQGf0ns7LXsaIbIR4g95f+AhNtiVDPCVvSRBnsDU/xAgetMRbWVl05HFx+8hALUVgFUdj3SkMAbhVNZdELkRBwrjoaXMM7BcWIEPPQElt340cFzT3C0n5qHs6yKVKQHjBg==\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4414,\n    \"candidatesTokenCount\": 111,\n    \"totalTokenCount\": 4817,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4414\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 292,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"4pBHaptClKWOsQ_J1ZiQCA\"\n}\n"
+  },
+  "c73ec429c8cdb1bf43db9d54cfc5ae271fdbd853846e097e9a9641344f7b57c1": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:34 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=412",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"French\\\", \\\"German\\\", \\\"Japanese\\\", \\\"Spanish\\\", \\\"Italian\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHyupQbnLNNq3to0oKvFGkmkg1zPE8AXClCahgebkXpKJVwZHMQWogf2wyvxWO\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 470,\n    \"candidatesTokenCount\": 15,\n    \"totalTokenCount\": 485,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 470\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"7ZBHapSPMISmjrEPkuW9qAE\"\n}\n"
+  },
+  "e43dc59278b609cda7c829caad22d07c454ad817ec01af39150c369469a6d3d0": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:29 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=511",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"Very good product, I recommend\\\", \\\"Delivered very quickly, thanks\\\", \\\"It was a very good product\\\", \\\"It does not work as I expected\\\", \\\"Excellent value for money\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHXHxY0v9TnoIXEKVQylS/26zYK6dsAao9cUtbHSr52x2A8XVOO7JhDfwEi5J9\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 370,\n    \"candidatesTokenCount\": 39,\n    \"totalTokenCount\": 409,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 370\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"6JBHavHJKq3ujrEPgdXpuQQ\"\n}\n"
+  },
+  "f3fcd112d73ed32e2bb77dc0cf5e093fc5be244c2554601cdd4c29a1607a7a1c": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:37:28 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=3575",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Comment\\\",\\\"value\\\":{\\\"llm\\\":\\\"Translate this comment to English. If it is already in English, keep it unchanged. Input: '{Comment}'. Reply with ONLY the translated English text and nothing else. If the input cannot be processed, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"h56y8jq3\"\n            },\n            \"thoughtSignature\": \"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\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4413,\n    \"candidatesTokenCount\": 97,\n    \"totalTokenCount\": 5095,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4413\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 585,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"5ZBHapu5BoOqsOIP-saiuQg\"\n}\n"
+  }
+}
