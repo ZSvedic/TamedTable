@@ -77,6 +77,18 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   /* Space stacked answer paragraphs (global reset zeroes <p> margins). */
   .faq-a > p + p { margin-top: 14px; }
 
+  /* A/B lettered list: the letter is the list marker, sitting in a fixed
+     gutter, so a row's wrapped lines align under its first line's text
+     rather than under the marker. */
+  .ab-list { list-style: none; margin: 14px 0 0; padding: 0; counter-reset: ab; }
+  .ab-list li { position: relative; padding-left: 1.9em; color: var(--ink); }
+  .ab-list li + li { margin-top: 14px; }
+  .ab-list li::before {
+    counter-increment: ab;
+    content: counter(ab, upper-alpha) ")";
+    position: absolute; left: 0; top: 0; font-weight: 600;
+  }
+
   .gotcha {
     margin: 18px 0; padding: 18px 20px;
     background: var(--accent-soft); border: 1px solid var(--silver);
@@ -277,7 +289,12 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="business-model" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>There isn't one. TamedTable is free and source-available; the only thing you pay for is your own API usage, to your provider. The author built it to learn the craft of AI-driven SDD/BDD/TDD (spec, behavior, and test-driven development) in public.</p>
+        <p>There isn't one. TamedTable is free and source-available; the only thing you pay for is your own API usage, to your provider.</p>
+        <p>The author built it to learn:</p>
+        <ol class="ab-list">
+          <li>The craft of AI-driven SDD/BDD/TDD (<strong>S</strong>pec/<strong>B</strong>ehavior/<strong>T</strong>est-<strong>D</strong>riven <strong>D</strong>evelopment).</li>
+          <li>How to create <a href="https://www.latent.space/p/s3" target="_blank" rel="noopener">Software 3.0</a>.</li>
+        </ol>
       </div>
     </section>
 
@@ -302,8 +319,10 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <div class="faq-a">
         <p>Well, you win some, you lose some.</p>
         <p>Yes, you don't have humans micromanaging every line of code. But:</p>
-        <p><strong>A)</strong> AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">over 400 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</p>
-        <p><strong>B)</strong> This app was developed in two months by a single person. Without AI, the author would need a team of people: a backend dev, a frontend dev, a designer, etc. Those people need to pay their bills, so this software would be proprietary, paid SaaS. TamedTable is a free, source-available, client app, <em>exactly because of AI</em>.</p>
+        <ol class="ab-list">
+          <li>AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">over 400 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</li>
+          <li>This app was developed in two months by a single person. Without AI, the author would need a team of people: a backend dev, a frontend dev, a designer, etc. Those people need to pay their bills, so this software would be proprietary, paid SaaS. TamedTable is a free, source-available, client app, <em>exactly because of AI</em>.</li>
+        </ol>
       </div>
     </section>
   </div>
