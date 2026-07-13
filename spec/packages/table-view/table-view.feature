@@ -1,6 +1,6 @@
 # #TableView
 # The table display package: paged grid with selection, inline editing, and
-# column drag-reorder, plus the pure pagination model behind the pager.
+# column drag-reorder and resize, plus the pure pagination model behind the pager.
 Feature: Table view package
 
   Rule: The pagination model is pure math
@@ -67,6 +67,27 @@ Feature: Table view package
     Scenario: Dragging a header reorders the columns
       Given the table-view demo page
       When the user drags the "age" header onto the "ID" header
+      Then the first column header is "age"
+      And the demo event log shows "reorder"
+
+    @web
+    Scenario: Dragging a header's right edge resizes the column
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 80 px right
+      Then the "name" header is about 80 px wider
+
+    @web
+    Scenario: Resizing a column does not trigger a reorder
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 80 px right
+      Then the demo event log does not show "reorder"
+      And the first column header is "ID"
+
+    @web
+    Scenario: Columns still reorder after a resize
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 80 px right
+      And the user drags the "age" header onto the "ID" header
       Then the first column header is "age"
       And the demo event log shows "reorder"
 

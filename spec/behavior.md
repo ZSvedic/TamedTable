@@ -706,10 +706,12 @@ half-applied spec change reverts.
 
 The browser front-end mirrors the CLI's interaction shape
 — a chat sidebar for natural-language requests and the table view to
-the right of it. Cell editing, scrolling, column-resize, and
-column-reorder happen through normal browser gestures but ultimately
-produce spec patches — the same shape the LLM produces — so undo/redo,
-history, and replay against the source all work unchanged.
+the right of it. Cell editing and column-reorder happen through normal
+browser gestures but ultimately produce spec patches — the same shape
+the LLM produces — so undo/redo, history, and replay against the source
+all work unchanged. Scrolling and column-resize (dragging the boundary
+between two column headers) are view-only gestures: they change what's
+on screen but touch no spec and leave no history entry.
 
 A table can be loaded from three sources, and each is its own
 first-class action: **Open sample…**, **Open local…**, and **Open
