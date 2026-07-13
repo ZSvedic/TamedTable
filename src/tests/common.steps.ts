@@ -175,6 +175,15 @@ Then(/^columns exist in the spec: (.+)$/, function (this: TamedTableWorld, list:
   for (const column of parseColumnList(list)) assertColumnExists(this, column);
 });
 
+// Negative spec-columns form: the column may well exist on the rows (an
+// internal helper a mutate computed) — this asserts only that the spec does
+// not display it. Compare `is absent from the current rows`, which checks data.
+Then('column {string} is not in the spec columns', function (this: TamedTableWorld, column: string) {
+  if (!this.runner) throw new Error('no runner — this step needs an in-process surface');
+  const ids = this.runner.currentSpec().columns.map((c) => c.id);
+  assert.ok(!ids.includes(column), `expected column "${column}" NOT in spec.columns. Got: ${ids.join(', ')}`);
+});
+
 function assertColumnAbsent(world: TamedTableWorld, column: string): void {
   if (world.runner) {
     try {

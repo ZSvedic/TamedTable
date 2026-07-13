@@ -36,7 +36,11 @@ export function compileJs(body: string): (row: Row, i: number, rows: Row[]) => u
 /** After replay, align spec.columns with the actual row keys: keep every
  *  column in spec.columns that still appears in the rows (preserving the
  *  LLM-chosen order and any label/format), and append new keys the
- *  transformations introduced in first-seen order. */
+ *  transformations introduced in first-seen order. Keys starting with `_`
+ *  are internal unless the spec declares them — `_valid`/`_validation`
+ *  display because the validate few-shots add them to `columns`, while a
+ *  yes/no helper column a mutate computes only for a later validate stays
+ *  on the rows but off the table (spec/behavior.md § Core / runner). */
 export function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
   if (rows.length === 0) return spec;
   const actualKeys: string[] = [];
@@ -50,10 +54,13 @@ export function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
   for (const col of spec.columns) {
     if (seen.has(col.id)) next.push(col);
   }
-  // Then, append any new keys that aren't already in spec.columns.
+  // Then, append any new keys that aren't already in spec.columns —
+  // underscore-prefixed keys only when the spec declared them.
   const declared = new Set(next.map((c) => c.id));
   for (const k of actualKeys) {
-    if (!declared.has(k)) next.push(byId.get(k) ?? { id: k });
+    if (declared.has(k)) continue;
+    if (k.startsWith('_') && !byId.has(k)) continue;
+    next.push(byId.get(k) ?? { id: k });
   }
   return { ...spec, columns: next };
 }

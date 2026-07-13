@@ -7,28 +7,32 @@
   <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13" fill="#281C60">flag prices that seem wrong</text>
   <g>
     <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
-    <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">item</text>
-    <text x="150" y="91" font-size="12" font-weight="600" fill="#FFFFFF">price</text>
-    <text x="300" y="91" font-size="12" font-weight="600" fill="#96BED7">flag</text>
-    <g font-size="12">
-      <rect x="18" y="104" width="324" height="32" fill="#FFFFFF"/>
-      <text x="32" y="124" fill="#281C60">Notebook</text>
-      <text x="150" y="124" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60">$19.99</text>
-      <rect x="296" y="108" width="36" height="20" rx="10" fill="#96BED7"/>
-      <text x="305" y="122" font-size="11" font-weight="600" fill="#281C60">ok</text>
+    <text x="32" y="91" font-size="11.5" font-weight="600" fill="#FFFFFF">Item</text>
+    <text x="105" y="91" font-size="11.5" font-weight="600" fill="#FFFFFF">Price</text>
+    <text x="152" y="91" font-size="11.5" font-weight="600" fill="#96BED7">_valid</text>
+    <text x="200" y="91" font-size="11.5" font-weight="600" fill="#96BED7">_validation</text>
+    <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5">
+      <rect x="18" y="102" width="324" height="24" fill="#FFFFFF"/>
+      <text x="32" y="118" fill="#281C60">Notebook</text>
+      <text x="105" y="118" fill="#281C60">19.99</text>
+      <text x="152" y="118" fill="#281C60">true</text>
+      <!-- bad row: the missing zero -->
+      <rect x="18" y="126" width="324" height="24" fill="#FBEEF0"/>
+      <text x="32" y="142" fill="#C0556B">Desk lamp</text>
+      <text x="105" y="142" font-weight="600" fill="#C0556B">4.20</text>
+      <text x="152" y="142" font-weight="600" fill="#C0556B">false</text>
+      <text x="200" y="142" font-size="9.5" fill="#C0556B" textLength="98" lengthAdjust="spacingAndGlyphs">Price seems wrong</text>
+      <rect x="18" y="150" width="324" height="24" fill="#FFFFFF"/>
+      <text x="32" y="166" fill="#281C60">Keyboard</text>
+      <text x="105" y="166" fill="#281C60">42.00</text>
+      <text x="152" y="166" fill="#281C60">true</text>
       <!-- bad row -->
-      <rect x="18" y="136" width="324" height="32" fill="#FBEEF0"/>
-      <text x="32" y="156" fill="#281C60">Desk lamp</text>
-      <rect x="148" y="141" width="96" height="22" rx="5" fill="#FFFFFF" stroke="#E0AAB6" stroke-dasharray="3 3"/>
-      <text x="158" y="156" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#C0556B">$4.20</text>
-      <rect x="294" y="142" width="40" height="20" rx="10" fill="#C0556B"/>
-      <text x="305" y="156" font-size="11" font-weight="600" fill="#FFFFFF">off</text>
-      <rect x="18" y="168" width="324" height="32" fill="#FFFFFF"/>
-      <text x="32" y="188" fill="#281C60">Keyboard</text>
-      <text x="150" y="188" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60">$42.00</text>
-      <rect x="296" y="172" width="36" height="20" rx="10" fill="#96BED7"/>
-      <text x="305" y="186" font-size="11" font-weight="600" fill="#281C60">ok</text>
+      <rect x="18" y="174" width="324" height="24" fill="#FBEEF0"/>
+      <text x="32" y="190" fill="#C0556B">Monitor</text>
+      <text x="105" y="190" font-weight="600" fill="#C0556B">3.10</text>
+      <text x="152" y="190" font-weight="600" fill="#C0556B">false</text>
+      <text x="200" y="190" font-size="9.5" fill="#C0556B" textLength="98" lengthAdjust="spacingAndGlyphs">Price seems wrong</text>
     </g>
-    <rect x="18" y="72" width="324" height="128" rx="6" fill="none" stroke="#DCDCDC"/>
+    <rect x="18" y="72" width="324" height="126" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
 </svg>

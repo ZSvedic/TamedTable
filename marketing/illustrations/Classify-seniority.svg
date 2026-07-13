@@ -9,7 +9,7 @@
     <path d="M18 76 q0 -6 6 -6 h312 q6 0 6 6 v20 h-324 Z" fill="#281C60"/>
     <text x="32" y="89" font-size="11.5" font-weight="600" fill="#FFFFFF">Name</text>
     <text x="110" y="89" font-size="11.5" font-weight="600" fill="#FFFFFF">Title</text>
-    <text x="262" y="89" font-size="10.5" font-weight="600" fill="#96BED7">rank: senior → junior</text>
+    <text x="331" y="89" font-size="10.5" font-weight="600" fill="#96BED7" text-anchor="end" textLength="100" lengthAdjust="spacingAndGlyphs">rank: senior → junior</text>
     <path d="M338 80 l0 8 M335 85 l3 4 l3 -4" stroke="#96BED7" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <g font-size="10.5" fill="#281C60">
       <rect x="18" y="96" width="324" height="22" fill="#FFFFFF"/>

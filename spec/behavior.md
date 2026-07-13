@@ -69,6 +69,14 @@ On a successful request the runner:
 3. Re-runs the transformations against the source.
 4. Commits — the new spec and rows become visible.
 
+On commit the displayed columns realign to the rows the replay produced:
+a column whose key no longer appears in any row drops out, and keys the
+transformations introduced append in first-seen order. The exception is
+keys starting with `_` — those are internal unless the patch lists them
+in `columns` explicitly. So `_valid` and `_validation` display (the
+validate few-shots add them), while a yes/no helper column a mutate
+computes only for a later validate stays on the rows but off the table.
+
 If any step throws, the patch rolls back and the error goes to the LLM as the
 next turn's input, up to a 3-turn recovery budget. The call either succeeds
 or throws; the spec is never left halfway between two states.
@@ -509,7 +517,9 @@ patchable paths (`/transformations/-` for append; `/columns` for add/remove/
 reorder, with a two-op pattern for "add column X with computed value Y"),
 the transformation grammar, the three expression shapes, and a few-shot
 per common task. The few-shots also carry the hard-won ordering and shape
-rules: a computing mutate before the validate that reads it, one mutate per
+rules: a computing mutate before the validate that reads it — with the
+computed yes/no column kept out of the displayed columns, so a semantic
+check surfaces only `_valid` and `_validation` — one mutate per
 target column, `{llm}` (never a regex or range check) for semantic
 judgments, per-part `{llm}` extraction for delimiter-free text, a
 round-trip check for date plausibility, and digits-only phone output.
