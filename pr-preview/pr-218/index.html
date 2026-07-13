@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
+     the visible URL matches the canonical (GitHub Pages has no server redirects).
+     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
+<script>
+(function(){var p=location.pathname;
+if(p.endsWith('/index.html'))p=p.slice(0,-10);
+else if(p.endsWith('.html'))p=p.slice(0,-5);
+if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
+</script>
+<link rel="canonical" href="https://www.tamedtable.com/pr-preview/pr-218/">
+<title>TamedTable — AI ETL in Natural Language</title>
+<meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load a spreadsheet, describe what you want, and watch it transform. No formulas, no code. Source-available, runs on your own API key.">
+<meta property="og:title" content="TamedTable — AI ETL in Natural Language">
+<meta property="og:description" content="Load a spreadsheet, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load): no formulas, no code. Source-available.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.tamedtable.com/pr-preview/pr-218/">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+
+<!--
+  TamedTable homepage — hi-fidelity static landing page.
+  Stack: plain HTML + CSS + vanilla JS. No framework, no build step, no dependencies.
+  KISS: markup here, palette + layout in styles.css, interactivity in main.js.
+  Assets are symlinks (DRY): favicon-32.png → marketing/brand/, illustrations/ → marketing/illustrations/.
+  The deploy workflow assembles this dir at the site root; the web app lives under /app/.
+
+  Fonts: self-hosted from fonts/ (a symlink to marketing/fonts/), so the "no
+  request leaves for a third party" privacy claim in the FAQ holds literally.
+-->
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="TamedTable home">
+      <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
+        <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
+        <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--accent)"></rect>
+      </svg>
+      <span class="wordmark">TamedTable</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/FAQ">FAQ</a>
+      <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-dprimary" href="https://www.tamedtable.com/pr-preview/pr-218/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <h1>Talk to your data.</h1>
+        <p class="sub">Load tabular data, say what you want, and watch it happen. AI <a href="https://en.wikipedia.org/wiki/Extract,_transform,_load" target="_blank" rel="noopener">ETL</a>: no formulas, no code.</p>
+        <div class="hero-cta">
+          <a class="btn btn-dprimary" href="https://www.tamedtable.com/pr-preview/pr-218/app/" target="_blank" rel="noopener">Open Web App</a>
+          <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
+        </div>
+        <p class="hero-note">No API key? <a href="https://www.tamedtable.com/pr-preview/pr-218/app/?tours=1" target="_blank" rel="noopener">Take a guided tour</a>: it replays real sessions, free.</p>
+      </div>
+
+      <!-- Demo: looping before/after run — the "60-second screencast", animated in CSS.
+           Each phone cell stacks a messy "before" and a clean "after"; the keyframes in
+           styles.css type the prompt, then swap before→after with a highlight pop, on a loop.
+           Honors prefers-reduced-motion: the final (clean) state shows static. -->
+      <div class="demo demo--anim" role="img" aria-label="TamedTable normalizing phone numbers across a table">
+        <div class="demo-bar">
+          <span class="demo-dot" style="background:#E66A5A"></span>
+          <span class="demo-dot" style="background:#E7B84B"></span>
+          <span class="demo-dot" style="background:#5CB874"></span>
+          <span class="demo-cap">TamedTable</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-prompt"><span class="caret">&gt;</span> <span class="demo-typed">normalize the phone numbers</span></div>
+          <table class="demo-tbl">
+            <thead><tr><th>Name</th><th>Phone</th><th>Country</th></tr></thead>
+            <tbody>
+              <tr><td>John D. Doe</td><td><span class="swap"><span class="v-before">(200) 555-1234</span><span class="v-after cell-changed">+12005551234</span></span></td><td>USA</td></tr>
+              <tr><td>Anna Müller</td><td><span class="swap"><span class="v-before">+49 555 6789</span><span class="v-after cell-changed">+495556789</span></span></td><td>Germany</td></tr>
+              <tr><td>张三</td><td><span class="swap"><span class="v-before">+86 555 1234</span><span class="v-after cell-changed">+865551234</span></span></td><td>China</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ VALUE PROPS ============================ -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Every common data job, in natural language</h2>
+      </div>
+      <div class="vp-grid">
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 9.5V6.5A2.5 2.5 0 0 1 5.5 4H18.5A2.5 2.5 0 0 1 21 6.5V9.5Z" fill="var(--accent)" stroke="none"></path>
+              <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
+              <path d="M3 9.5H21"></path>
+              <path d="M9 9.5V20M15 9.5V20"></path>
+              <path d="M3 14.75H21"></path>
+            </svg>
+            <h3>Understand your data</h3>
+          </div>
+          <p>The AI understands context, so it cleans, enriches, classifies, and validates — things no formula can.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 12C5.5 6.8 18.5 6.8 21.5 12 18.5 17.2 5.5 17.2 2.5 12Z"></path>
+              <circle cx="12" cy="12" r="3.3" fill="var(--accent)"></circle>
+            </svg>
+            <h3>See everything</h3>
+          </div>
+          <p>See changes as they happen. Nothing is hidden: TamedTable is <a href="/FAQ#busl">source-available</a>, and runs on your own API keys.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3.5 12a8.5 8.5 0 0 1 14.5-6"></path>
+              <path d="M18 2.5V6.3H14.2"></path>
+              <path d="M20.5 12a8.5 8.5 0 0 1-14.5 6"></path>
+              <path d="M6 21.5V17.7H9.8"></path>
+              <circle cx="12" cy="12" r="2" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Reuse and automate</h3>
+          </div>
+          <p>Every change saves as steps you replay on new data, or export as a Python script. Runs in browser and CLI.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 7.5C4 6 7.6 5 12 5s8 1 8 2.5"></path>
+              <path d="M4 7.5v9C4 18 7.6 19 12 19s8-1 8-2.5v-9"></path>
+              <path d="M4 12c0 1.5 3.6 2.5 8 2.5s8-1 8-2.5"></path>
+              <circle cx="12" cy="7.5" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Read many formats</h3>
+          </div>
+          <p>Open CSV, JSONL, Parquet, and Arrow files — local, from a URL, or a bundled sample.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ HOW IT WORKS ============================ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head"><h2>How it works</h2></div>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><h3><a href="/FAQ#byok">Add API keys</a></h3><p>Just the first time you start the app.</p></div>
+        <div class="step"><div class="num">2</div><h3>Open a file</h3><p>CSV, JSONL, Parquet, or Arrow. Local or from a URL.</p></div>
+        <div class="step"><div class="num">3</div><h3>Say what you want</h3><p>Works in any language: English, Chinese, etc.</p></div>
+        <div class="step"><div class="num">4</div><h3>Watch changes</h3><p>Dislike changes? Undo anything.</p></div>
+        <div class="step"><div class="num">5</div><h3>Automate</h3><p>You made a recipe; replay it on new data.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 01: Clean up -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <h2>Clean up</h2>
+          <p>Fix messy fields the way a person would. The AI reads each row's context, not just a pattern.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/CleanUp-phone-numbers.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="clean-up.feature" data-scenario="Normalize the phone numbers" data-label="Show me →"><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
+            <button class="feat-item" data-ill="illustrations/CleanUp-country-names.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="clean-up.feature" data-scenario="Make the country names consistent" data-label="Show me →"><span class="fcmd">"make the country names consistent"</span><span class="fnote">Folds UK / England / United Kingdom into one</span></button>
+            <button class="feat-item" data-ill="illustrations/CleanUp-capitalization.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="clean-up.feature" data-scenario="Fix the capitalization of names" data-label="Show me →"><span class="fcmd">"fix the capitalization of names"</span><span class="fnote">Handles McDonald, van der Berg</span></button>
+            <button class="feat-item" data-ill="illustrations/CleanUp-birth-dates.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="clean-up.feature" data-scenario="Clean up the birth dates" data-label="Show me →"><span class="fcmd">"clean up the birth dates"</span><span class="fnote">Knows 03/04 is March in the US, April in the EU</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/CleanUp-phone-numbers.svg" alt="Cleaning a data table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 02: Enrich & extract -->
+  <section>
+    <div class="wrap">
+      <div class="feature flip" data-feature>
+        <div class="feat-text">
+          <h2>Enrich &amp; extract</h2>
+          <p>Add what isn't there yet. The model fills the gaps and pulls structure out of free text.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/EnrichExtract-split-address.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="enrich.feature" data-scenario="Split the address into its parts" data-label="Show me →"><span class="fcmd">"split the address into its parts"</span><span class="fnote">Structures whatever mess they typed</span></button>
+            <button class="feat-item" data-ill="illustrations/EnrichExtract-country-from-city.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="enrich.feature" data-scenario="Fill the country from the city column" data-label="Show me →"><span class="fcmd">"fill the country from the city column"</span><span class="fnote">Knows Osaka → Japan</span></button>
+            <button class="feat-item" data-ill="illustrations/EnrichExtract-industry.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="enrich.feature" data-scenario="Add the industry for each company" data-label="Show me →"><span class="fcmd">"add the industry for each company"</span><span class="fnote">Inferred from company names</span></button>
+            <button class="feat-item" data-ill="illustrations/EnrichExtract-amount-date.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="enrich.feature" data-scenario="Extract the amount and date from the memo" data-label="Show me →"><span class="fcmd">"extract the amount and date from the memo"</span><span class="fnote">Pulled from free text</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/EnrichExtract-split-address.svg" alt="Enriching a data table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 03: Classify -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <h2>Classify</h2>
+          <p>Sort rows by meaning, not keywords — the AI reads what each row is actually about.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Classify-ticket-label.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="classify.feature" data-scenario="Label each ticket as billing, bug, or feature" data-label="Show me →"><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
+            <button class="feat-item" data-ill="illustrations/Classify-sentiment.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="classify.feature" data-scenario="Score the sentiment of every review" data-label="Show me →"><span class="fcmd">"score the sentiment of every review"</span><span class="fnote">Scores each review 1 to 5</span></button>
+            <button class="feat-item" data-ill="illustrations/Classify-seniority.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="classify.feature" data-scenario="Sort the titles by seniority" data-label="Show me →"><span class="fcmd">"sort the titles by seniority"</span><span class="fnote">Ranks senior → junior</span></button>
+            <button class="feat-item" data-ill="illustrations/Classify-gender.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="classify.feature" data-scenario="Split customers into men, women, and unknown" data-label="Show me →"><span class="fcmd">"split customers into men, women, and unknown"</span><span class="fnote">Gender inferred from first names</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Classify-ticket-label.svg" alt="Classifying rows in a table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 04: Validate -->
+  <section>
+    <div class="wrap">
+      <div class="feature flip" data-feature>
+        <div class="feat-text">
+          <h2>Validate</h2>
+          <p>Catch the wrong-looking rows before anyone else does.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Validate-fake-emails.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="validate.feature" data-scenario="Flag emails that look fake" data-label="Show me →"><span class="fcmd">"flag emails that look fake"</span><span class="fnote">bill.gates@microsoft.com probably didn't sign up</span></button>
+            <button class="feat-item" data-ill="illustrations/Validate-impossible-date.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="validate.feature" data-scenario="Flag any impossible birth date" data-label="Show me →"><span class="fcmd">"flag any impossible birth date"</span><span class="fnote">Flags both 1873 and Feb 30th</span></button>
+            <button class="feat-item" data-ill="illustrations/Validate-city-country.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="validate.feature" data-scenario="Check the city matches the country" data-label="Show me →"><span class="fcmd">"check the city matches the country"</span><span class="fnote">Paris, Japan gets a second look</span></button>
+            <button class="feat-item" data-ill="illustrations/Validate-wrong-prices.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="validate.feature" data-scenario="Flag prices that seem wrong" data-label="Show me →"><span class="fcmd">"flag prices that seem wrong"</span><span class="fnote">Catches the missing zero before Reddit does</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Validate-fake-emails.svg" alt="Flagging suspicious rows"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 05: Process language -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <h2>Process language</h2>
+          <p>Summarize, translate, and classify any language.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Language-voice.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="voice.feature" data-scenario="Normalize DOB by voice" data-label="Show me →"><span class="fcmd">tap the mic</span><span class="fnote">Say any command out loud, hands-free</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-summarize.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="language-ai.feature" data-scenario="Summarize each review in one line" data-label="Show me →"><span class="fcmd">"summarize each review in one line"</span><span class="fnote">Even the 500-word rant</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-translate.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="language-ai.feature" data-scenario="Translate the comments to English" data-label="Show me →"><span class="fcmd">"translate the comments to English"</span><span class="fnote">From any source language</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-detect-language.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="language-ai.feature" data-scenario="Tag the language of every comment" data-label="Show me →"><span class="fcmd">"tag the language of every comment"</span><span class="fnote">Language detected per row</span></button>
+            <button class="feat-item" data-ill="illustrations/Language-multilingual.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="multilingual.feature" data-scenario="Normalize phone numbers in Spanish" data-label="Show me →"><span class="fcmd">"normaliza los números de teléfono"</span><span class="fnote">Ask in any language, voice or text</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Language-voice.svg" alt="Language tasks on a table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 06: Be exact -->
+  <section>
+    <div class="wrap">
+      <div class="feature flip" data-feature>
+        <div class="feat-text">
+          <h2>Be exact</h2>
+          <p>The everyday spreadsheet jobs are still here; deterministic and repeatable.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/Deterministic-filter.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="filter.feature" data-scenario="Filter by Country" data-label="Show me →"><span class="fcmd">"Show only customers in the USA"</span><span class="fnote">Filter rows</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-sort-top.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="sort.feature" data-scenario="Sort by revenue, top 10" data-label="Show me →"><span class="fcmd">"sort by revenue, top 10"</span><span class="fnote">Sort or top-N</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="dedupe.feature" data-scenario="Drop duplicates by Email" data-label="Show me →"><span class="fcmd">"Remove duplicate rows by Email"</span><span class="fnote">Dedupe</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-pivot.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="pivot.feature" data-scenario="One column per distinct on-value, default agg first" data-label="Show me →"><span class="fcmd">"Pivot Quarter into columns, with Revenue as the value"</span><span class="fnote">Reshape tall to wide</span></button>
+            <button class="feat-item" data-ill="illustrations/Deterministic-join.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="join.feature" data-scenario="Left join enriches each customer with ISO and Region" data-label="Show me →"><span class="fcmd">"Join with join-country-codes.csv on Country to add ISO and Region"</span><span class="fnote">Join two tables</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/Deterministic-filter.svg" alt="Filtering and reshaping a table"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURE 07: Load, save & reuse -->
+  <section class="sec-paper">
+    <div class="wrap">
+      <div class="feature" data-feature>
+        <div class="feat-text">
+          <h2>Load, save &amp; reuse</h2>
+          <p>Your work is yours to keep: load from anywhere, save the data or the recipe, undo anything.</p>
+          <div class="feat-list">
+            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow — web or CLI</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-undo-redo.svg" data-url="https://www.tamedtable.com/pr-preview/pr-218/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
+          </div>
+        </div>
+        <div class="feat-visual">
+          <div class="feat-stage"><img class="feat-ill" src="illustrations/LoadSaveReuse-load.svg" alt="Loading, saving and replaying steps"></div>
+          <div class="feat-foot">
+            <div class="feat-dots"></div>
+            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TRUST ============================ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Trustworthy by design</h2>
+      </div>
+      <div class="vp-grid">
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="2.5"></rect>
+              <path d="M8 8H16M8 12H16M8 16H12"></path>
+              <circle cx="16" cy="16" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>A recipe, not vibes</h3>
+          </div>
+          <p>Each request becomes a small spec you can read. Deterministic steps run in a real SQL engine, and the same recipe replays on next month's file.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7.5 6.5 4 10l3.5 3.5"></path>
+              <path d="M4 10h10a6 6 0 0 1 0 12h-3"></path>
+              <circle cx="14" cy="10" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Undo anything</h3>
+          </div>
+          <p>Every change lands in the history. Step back one change or all of them; the original file on your disk is never touched.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 5 3.5 9.5 8 14"></path>
+              <path d="M16 10l4.5 4.5L16 19"></path>
+              <path d="M13.5 4 10.5 20"></path>
+              <circle cx="20.5" cy="7" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Leave anytime</h3>
+          </div>
+          <p>Export any recipe as a plain Python script and run it without TamedTable. Your data stays in open formats; there is no lock-in to defend.</p>
+        </div>
+        <div class="vp-card">
+          <div class="vp-head">
+            <svg class="vp-ic" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 20V10M10 20V4M16 20v-8M22 20H2"></path>
+              <circle cx="10" cy="4" r="1.4" fill="var(--accent)" stroke="none"></circle>
+            </svg>
+            <h3>Measured, not promised</h3>
+          </div>
+          <p>CI replays 498 test scenarios on every commit. In our <a href="https://github.com/ZSvedic/TamedTable/tree/main/benchmarks" target="_blank" rel="noopener">benchmark</a>, the default model matched hand-checked labels 96.7% of the time, at $0.15 per 1,000 rows classified.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="wrap">
+      <h2>Try it in two minutes</h2>
+      <p><a href="/FAQ#busl">Source-available</a>. Runs on your <a href="/FAQ#byok">own API key</a>, or <a href="https://www.tamedtable.com/pr-preview/pr-218/app/?tours=1" target="_blank" rel="noopener">take the guided tour</a> without one.</p>
+      <div class="cta-row">
+        <a class="btn btn-dprimary" href="https://www.tamedtable.com/pr-preview/pr-218/app/" target="_blank" rel="noopener">Open the web app</a>
+        <a class="btn btn-doutline" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <a class="brand" href="#top" style="font-size:18px;" aria-label="TamedTable home">
+      <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
+        <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
+        <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--accent)"></rect>
+      </svg>
+      <span class="wordmark">TamedTable</span>
+    </a>
+    <div class="foot-links">
+      <a href="/FAQ">FAQ</a>
+      <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+
+</body>
+</html>
