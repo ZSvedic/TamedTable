@@ -1,0 +1,18 @@
+{
+  "6d47b7cfb280cb0928127f0fa7bab8c140c2b1e7c0e184a81bbe45ee479caf31": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:27:57 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=5165",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"filter\\\",\\\"pred\\\":{\\\"js\\\":\\\"row.Country === 'USA'\\\"}}\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"46zla8tl\"\n            },\n            \"thoughtSignature\": \"Et0CCtoCAQw51sduRmrwxdxY4weUvmR9tNmwMOs7udLvbNvP7/b8KPVmq9zXPRXq8+JqP10KPCYvAKWHGo30WAKSlxzbHXZElnTsDdhXmUoxXdM4xRZ0q9qI7kTWrmbMBB+/5EzlvKerAod99u9bS3XTUPf6zeZf9C1JMafrdHCtxRh3jUiKbJQ48EclyustqBj0OLq0+SXpNX2Pt7VSGKI4mjiS3fyiCPJFj5KbDYJlNkoJoMJixdXUwv/CJJj6IMZqRbNted9VTpH6jqypzD7daR54U/mHC5UiAslgXtA9DdQLYHWKfgyIwO1MT3tpgQUlRw2/c+wUcjytdZcyJNSJ0g8CstERQaFUj9VBYfswh8m+pznJdc8bj5aNjLYLoQw8hfAJtRh5X+xN7knNaE5/0DYXfKzPUfrQpOVIhLPDuk1Q4m5TtUdUdeqSYbR42iXzrwhff/iMKarw0WLX0g==\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4444,\n    \"candidatesTokenCount\": 52,\n    \"totalTokenCount\": 4570,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4444\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 74,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"qI5HasYnhKaOsQ-S5b2oAQ\"\n}\n"
+  }
+}

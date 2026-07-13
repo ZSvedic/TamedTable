@@ -1,0 +1,4 @@
+{"Name":"Ana","Email":"ana@acme.io","_valid":true,"_validation":null}
+{"Name":"Bob","Email":"bill.gates@microsoft.com","_valid":true,"_validation":null}
+{"Name":"Cara","Email":"cara@startup.dev","_valid":true,"_validation":null}
+{"Name":"Dan","Email":"asdf@asdf.com","_valid":false,"_validation":"Suspicious local part: asdf"}
