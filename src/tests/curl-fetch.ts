@@ -59,6 +59,6 @@ export function curlFetch(): FetchLike {
     }
     headers.delete('content-encoding'); // body arrives decoded
     headers.delete('content-length');
-    return new Response(stdout, { status, statusText, headers });
+    return new Response(new Uint8Array(stdout), { status, statusText, headers });
   };
 }
