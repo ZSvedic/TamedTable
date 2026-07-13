@@ -3,8 +3,9 @@
 // curl, which honours HTTPS_PROXY and the CA bundle — that is what lets
 // `bun run test:record` work from a sandbox session. Replay never uses this:
 // it serves every call from the cassette on disk. Uses node:child_process, not
-// Bun.spawn — the cucumber-js bin runs under Node, where the Bun global is
-// undefined.
+// Bun.spawn — the test scripts force the Bun runtime (`bun --bun cucumber-js`),
+// but the portable API keeps record mode working under either runtime instead
+// of failing silently when it isn't Bun.
 import { spawn } from 'node:child_process';
 import { readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
