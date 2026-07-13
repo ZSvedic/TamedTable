@@ -75,6 +75,31 @@ test.describe('phone width', () => {
     await expect(page.locator('#tutorial-chat-input')).toBeVisible();
   });
 
+  test('the table surface spans the full horizontal scroll width', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-open="Open sample…"]').click();
+    const picker = page.locator('[data-tb-sample-dialog]');
+    await picker.locator('[data-tb-sample]', { hasText: 'customers-input.csv' }).first().click();
+    await expect(page.locator('[data-mob-cell]').first()).toBeVisible({ timeout: 30_000 });
+
+    // The page scrolls the table sideways; the cells' backgrounds are
+    // transparent, so the wrapper that paints the table's surface must be as
+    // wide as the table itself — otherwise the page background (body, a
+    // tinted color) shows through beside the columns once the user scrolls
+    // right.
+    const w = await page.evaluate(() => {
+      const wrap = document.querySelector('[data-mob-table=""]')!;
+      const table = wrap.querySelector('table')!;
+      return {
+        wrap: wrap.getBoundingClientRect().width,
+        table: table.getBoundingClientRect().width,
+        viewport: window.innerWidth,
+      };
+    });
+    expect(w.table, 'the sample table must be wider than a phone screen').toBeGreaterThan(w.viewport);
+    expect(w.wrap, 'the table surface must cover the whole table').toBeGreaterThanOrEqual(w.table);
+  });
+
   test('a tour runs on mobile: the spotlight advances and the Type sheet opens for the chat step', async ({
     page,
   }) => {
@@ -100,7 +125,10 @@ test.describe('phone width', () => {
 
     // The terminal "Voilà" step spotlights the table — clamped to the table's
     // visible top region, because a cutout as tall as the full-height table
-    // leaves the popover nowhere to sit and breaks the layout.
+    // leaves the popover nowhere to sit and breaks the layout. Scroll the page
+    // right first: the spotlight must still cover the visible table, not just
+    // the un-scrolled left region.
+    await page.evaluate(() => window.scrollTo(200, 0));
     await page.locator('.driver-popover-next-btn').click();
     await expect(progress).toHaveText('3 of 3');
     await expect(page.locator('.driver-popover')).toContainText('Voilà');
@@ -108,6 +136,10 @@ test.describe('phone width', () => {
       const spot = document.querySelector('.driver-active-element')!.getBoundingClientRect();
       const pop = document.querySelector('.driver-popover')!.getBoundingClientRect();
       const table = document.getElementById('tutorial-table-view')!.getBoundingClientRect();
+      // The wrapper can lie about its width (it once ended at the viewport
+      // edge while the table overflowed it) — measure the inner <table>, the
+      // honest content box, for the width check.
+      const grid = document.querySelector('#tutorial-table-view table')!.getBoundingClientRect();
       return {
         spotTop: Math.round(spot.top),
         spotBottom: Math.round(spot.bottom),
@@ -115,12 +147,18 @@ test.describe('phone width', () => {
         popTop: Math.round(pop.top),
         popBottom: Math.round(pop.bottom),
         coversTable: spot.top >= table.top - 1 && spot.left >= table.left - 1,
+        // How much of the viewport the cutout spans horizontally: the table is
+        // wider than the screen and the page is scrolled right, so the cutout
+        // must run edge to edge — a cutout stuck at the un-scrolled region
+        // reads as a broken half-highlight.
+        coversWidth: spot.left <= 1 && spot.right >= Math.min(grid.right, window.innerWidth) - 1,
         vh: window.innerHeight,
       };
     });
     expect(fit.spotH, 'the spotlight must be clamped to fit the screen').toBeLessThanOrEqual(fit.vh * 0.6);
     expect(fit.spotTop, 'the spotlight must start on screen').toBeGreaterThanOrEqual(0);
     expect(fit.coversTable, 'the spotlight must sit over the table region').toBe(true);
+    expect(fit.coversWidth, 'the spotlight must cover the visible table width when scrolled right').toBe(true);
     expect(fit.popBottom, 'the popover must stay on screen').toBeLessThanOrEqual(fit.vh + 1);
     expect(fit.popTop, 'the popover must sit below the cutout').toBeGreaterThanOrEqual(fit.spotBottom - 20);
   });
