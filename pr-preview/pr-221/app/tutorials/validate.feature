@@ -63,7 +63,8 @@ Feature: Row and dataset validation
   Rule: Each Validate tour runs its phrase key-free
 
     # "Looks fake" is a semantic judgment, so the edit is two steps: an {llm}
-    # mutate computing a yes/no column, then a {js} validate reading it.
+    # mutate computing a yes/no column, then a {js} validate reading it. The
+    # yes/no column is internal plumbing — the user sees only _valid/_validation.
     @web @tour @cat-validate
     Scenario: Flag emails that look fake
       Given the TamedTable web app
@@ -72,6 +73,8 @@ Feature: Row and dataset validation
       Then the spec has 2 transformations
       And transformation 1 is a "mutate"
       And transformation 2 is a "validate"
+      And columns exist in the spec: "_valid", "_validation"
+      And column "_email_fake" is not in the spec columns
       And no toast is shown
       And rows where "Email" is "bill.gates@microsoft.com" have _valid equal to false
       And rows where "Email" is "asdf@asdf.com" have _valid equal to false
@@ -103,6 +106,8 @@ Feature: Row and dataset validation
       Then the spec has 2 transformations
       And transformation 1 is a "mutate"
       And transformation 2 is a "validate"
+      And columns exist in the spec: "_valid", "_validation"
+      And column "_city_country_match" is not in the spec columns
       And no toast is shown
       And rows where "City" is "Paris" have _valid equal to false
       And rows where "City" is "Osaka" have _valid equal to true
@@ -119,6 +124,8 @@ Feature: Row and dataset validation
       Then the spec has 2 transformations
       And transformation 1 is a "mutate"
       And transformation 2 is a "validate"
+      And columns exist in the spec: "_valid", "_validation"
+      And column "_price_plausible" is not in the spec columns
       And no toast is shown
       And rows where "Item" is "Desk lamp" have _valid equal to false
       And rows where "Item" is "Notebook" have _valid equal to true
