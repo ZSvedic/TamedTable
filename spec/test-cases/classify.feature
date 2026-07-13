@@ -16,12 +16,14 @@ Feature: Classify tours
       And no toast is shown
       And compare with the expected output
 
+    # Categories, not a 1–5 score: inside the app tour a bare number never
+    # says which end of the scale is good, so the phrase names its labels.
     @web @tour @cat-classify
-    Scenario: Score the sentiment of every review
+    Scenario: Classify sentiment into positive, negative and neutral
       Given the TamedTable web app
       And load "reviews.csv"
       And the expected output is "classify-sentiment-expected.jsonl"
-      When query "score the sentiment of every review"
+      When query "classify sentiment into positive, negative and neutral"
       Then the spec has 1 transformation
       And no toast is shown
       And compare with the expected output
