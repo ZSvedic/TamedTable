@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
+      # The save-py exported-script scenario executes the generated Python via
+      # `uv run --script`. The script's PEP 723 header declares no dependencies,
+      # so the run needs no network beyond uv itself being present.
+      - uses: astral-sh/setup-uv@v6
       # Cache the bun install store and the Playwright browser download — both
       # keyed on bun.lock, so a run only pays the install/download cost when
       # dependencies change. The Chromium download is the slowest CI step.

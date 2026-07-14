@@ -1,10 +1,13 @@
 // #FormatOut #Aggregate #LookupJoin #ColSplit #Validate #PivotData #SqlExpr #DebugOut #PyExport
-import { Given, Then } from '@cucumber/cucumber';
+import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import type { Row } from '@tamedtable/core';
-import { TamedTableWorld, SPEC_TC_DIR, TEMP_DIR } from './world.ts';
+import { readJsonl } from '@tamedtable/core';
+import { TamedTableWorld, SPEC_TC_DIR, SRC_DIR, TEMP_DIR } from './world.ts';
 
 // ── Synthetic single-row tables (convert.feature) ──────────────────────────
 //
@@ -371,3 +374,42 @@ Then('the spec is unchanged from before the request', function (this: TamedTable
   assert.ok(out, 'no prior `query` step recorded an outcome');
   assert.deepEqual(out!.specAfter, out!.specBefore);
 });
+
+// ── run the exported Python script (save-py.feature) ───────────────────────
+//
+// The exported script's contract is `uv run --script <path> <input> <output>`:
+// the shebang + PEP 723 header resolve dependencies, no AI call at run time.
+// Executing it here pins the equivalence promise in behavior.md — the script
+// reproduces the rows the session itself saved.
+
+const execFileAsync = promisify(execFile);
+
+When('user runs the exported script {string} with input {string} and output {string}',
+  async function (this: TamedTableWorld, script: string, input: string, outputFile: string) {
+    const scriptPath = join(SRC_DIR, script);
+    const inputPath = join(SPEC_TC_DIR, input);
+    const outputPath = join(TEMP_DIR, basename(outputFile));
+    try {
+      const { stdout, stderr } = await execFileAsync(
+        'uv', ['run', '--script', scriptPath, inputPath, outputPath],
+        { timeout: 120_000 },
+      );
+      this.lastInvocation = { exitCode: 0, stdout, stderr };
+    } catch (e) {
+      const err = e as { code?: number | string; stdout?: string; stderr?: string; message: string };
+      if (err.code === 'ENOENT') throw new Error('`uv` is not on PATH — the exported-script scenario needs it installed');
+      this.lastInvocation = {
+        exitCode: typeof err.code === 'number' ? err.code : 1,
+        stdout: err.stdout ?? '',
+        stderr: err.stderr ?? err.message,
+      };
+    }
+  });
+
+Then('{string} has the same rows as {string}',
+  async function (this: TamedTableWorld, actualFile: string, expectedFile: string) {
+    const actual = await readJsonl(join(TEMP_DIR, basename(actualFile)));
+    const expected = await readJsonl(join(TEMP_DIR, basename(expectedFile)));
+    assert.ok(expected.length > 0, `${expectedFile} is empty — nothing to compare`);
+    assert.deepEqual(actual, expected);
+  });
