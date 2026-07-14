@@ -35,7 +35,7 @@ as a web app you click or a command you script; both run on the same engine.
 
 ## Why it's different
 
-- **You keep the steps, not a pile of code.** Save them, run them again tomorrow, even turn them into a Python script.
+- **You keep the steps.** Save them, run them again tomorrow, even turn them into a Python script.
 - **Asking stays cheap.** Describing a change costs the same whether your table has a hundred rows or a million, and replaying saved steps costs nothing at all.
 - **Nothing is hidden.** You see exactly what changed, row by row, so you can trust it.
 - **It speaks your language.** Ask in English, Spanish, German, French, Croatian, Chinese — by voice or text. It understands the request, not just keywords.

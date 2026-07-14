@@ -34,5 +34,5 @@
     </g>
     <rect x="18" y="72" width="324" height="134" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
-  <text x="32" y="220" font-size="9.5" fill="#6A6280">120 is an invoice number, not an amount — so amount stays null</text>
+  <text x="32" y="220" font-size="9.5" fill="#6A6280">120 is an invoice number, not an amount</text>
 </svg>
