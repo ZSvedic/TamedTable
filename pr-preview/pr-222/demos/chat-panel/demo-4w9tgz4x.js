@@ -17582,6 +17582,7 @@ function ChatPanel({
   streaming,
   requestCount,
   prefill = null,
+  disabledHint = null,
   onSend,
   onCancel,
   inputId,
@@ -17630,14 +17631,19 @@ function ChatPanel({
       }
     };
   }, [prefill]);
+  const disabled = disabledHint !== null;
+  import_react5.useEffect(() => {
+    if (disabled)
+      setDraft("");
+  }, [disabled]);
   const send = () => {
     const text = draft.trim();
-    if (!text || streaming)
+    if (!text || streaming || disabled)
       return;
     setDraft("");
     onSend(text);
   };
-  const hasDraft = draft.trim() !== "";
+  const hasDraft = draft.trim() !== "" && !disabled;
   const sendBtn = {
     height: 30,
     width: 30,
@@ -17831,7 +17837,8 @@ function ChatPanel({
                     send();
                   }
                 },
-                placeholder: "Describe a transformation…",
+                placeholder: disabledHint ?? "Describe a transformation…",
+                disabled,
                 rows: 3,
                 style: {
                   flex: 1,
@@ -17842,10 +17849,10 @@ function ChatPanel({
                   fontFamily: typography.ui,
                   fontSize: typography.size.base,
                   lineHeight: 1.5,
-                  color: t.ink
+                  color: disabled ? t.ink3 : t.ink
                 }
               }, undefined, false, undefined, this),
-              micButton,
+              disabled ? null : micButton,
               streaming ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
                 type: "button",
                 "data-cp-stop": "",
@@ -18074,6 +18081,7 @@ function Demo() {
   const [messages, setMessages] = import_react7.useState([]);
   const [streaming, setStreaming] = import_react7.useState(false);
   const [prefill, setPrefill] = import_react7.useState(null);
+  const [disabledHint, setDisabledHint] = import_react7.useState(null);
   const [voiceStatus, setVoiceStatus] = import_react7.useState("idle");
   const [seq, setSeq] = import_react7.useState(0);
   const [log, setLog] = import_react7.useState(["ready"]);
@@ -18091,6 +18099,7 @@ function Demo() {
         streaming,
         requestCount: messages.filter((m) => m.role === "user").length,
         prefill,
+        disabledHint,
         onSend: (text) => {
           report(`send ${text}`);
           append({ role: "user", text }, { role: "assistant", text: `Did: ${text}` });
@@ -18150,6 +18159,11 @@ function Demo() {
                 variant: "chrome",
                 onClick: () => setPrefill("Keep rows where age >= 18"),
                 children: "Prefill draft"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => setDisabledHint((v) => v ? null : "Replay mode: undo/redo only"),
+                children: "Toggle replay lock"
               }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),

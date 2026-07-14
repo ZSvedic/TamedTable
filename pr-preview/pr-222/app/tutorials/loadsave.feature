@@ -1,13 +1,13 @@
 # #TutorialMode
-# Marketing "Load, save & reuse" tour — a single combined walkthrough. The save /
-# undo / save-flow / save-py items on the homepage all deep-link here. Loads a
-# file and runs one transform (replayed from loadsave.json) so there is something
-# to save, reuse, or undo. @cat-loadsave groups it in the panel.
-Feature: Load, save and reuse tour
+# Load/save regression test — no longer a marketing tour (the homepage
+# "Load, save & reuse" section is informational only). Loads a file and runs
+# one transform (replayed from loadsave.json) so cumulative load → query
+# behavior stays covered. Still @web, so it appears in the panel's Dev dropdown.
+Feature: Load, save and reuse
 
-  Rule: The combined Load, save and reuse tour runs key-free
+  Rule: Load then transform runs key-free
 
-    @web @tour @cat-loadsave
+    @web
     Scenario: Load a file, transform it, then save and reuse
       Given the TamedTable web app
       And load "customers-input.csv"

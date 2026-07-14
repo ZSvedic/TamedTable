@@ -181,7 +181,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <div class="feature" data-feature>
         <div class="feat-text">
           <h2>Clean up</h2>
-          <p>Fix messy fields the way a person would. The AI reads each row's context, not just a pattern.</p>
+          <p>Fix messy fields the way a person would. The AI reads each row's context before deciding.</p>
           <div class="feat-list">
             <button class="feat-item active" data-ill="illustrations/CleanUp-phone-numbers.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="clean-up.feature" data-scenario="Normalize the phone numbers" data-label="Show me →"><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
             <button class="feat-item" data-ill="illustrations/CleanUp-country-names.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="clean-up.feature" data-scenario="Make the country names consistent" data-label="Show me →"><span class="fcmd">"make the country names consistent"</span><span class="fnote">Folds UK / England / United Kingdom into one</span></button>
@@ -231,7 +231,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <div class="feature" data-feature>
         <div class="feat-text">
           <h2>Classify</h2>
-          <p>Sort rows by meaning, not keywords. The AI reads what each row is actually about.</p>
+          <p>Sort rows by what they mean. The AI reads what each row is about.</p>
           <div class="feat-list">
             <button class="feat-item active" data-ill="illustrations/Classify-ticket-label.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="classify.feature" data-scenario="Label each ticket as billing, bug, or feature" data-label="Show me →"><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
             <button class="feat-item" data-ill="illustrations/Classify-sentiment.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="classify.feature" data-scenario="Classify sentiment into positive, negative and neutral" data-label="Show me →"><span class="fcmd">"classify sentiment into positive, negative and neutral"</span><span class="fnote">Reads the verdict, even in mixed reviews</span></button>
@@ -335,18 +335,17 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <h2>Load, save &amp; reuse</h2>
           <p>Your work is yours to keep: load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow from web or CLI</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-undo-redo.svg" data-url="https://www.tamedtable.com/pr-preview/pr-222/app/" data-feature="loadsave.feature" data-scenario="Load a file, transform it, then save and reuse" data-label="Show me →"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
+            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow from web or CLI</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-undo-redo.svg"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
           </div>
         </div>
         <div class="feat-visual">
           <div class="feat-stage"><img class="feat-ill" src="illustrations/LoadSaveReuse-load.svg" alt="Loading, saving and replaying steps"></div>
           <div class="feat-foot">
             <div class="feat-dots"></div>
-            <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
           </div>
         </div>
       </div>
@@ -367,7 +366,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
               <path d="M8 8H16M8 12H16M8 16H12"></path>
               <circle cx="16" cy="16" r="1.4" fill="var(--accent)" stroke="none"></circle>
             </svg>
-            <h3>A recipe, not vibes</h3>
+            <h3>A repeatable recipe</h3>
           </div>
           <p>Each request becomes a small spec you can read. Deterministic steps run in a real SQL engine, and the same recipe replays on next month's file.</p>
         </div>
@@ -400,7 +399,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
               <path d="M4 20V10M10 20V4M16 20v-8M22 20H2"></path>
               <circle cx="10" cy="4" r="1.4" fill="var(--accent)" stroke="none"></circle>
             </svg>
-            <h3>Measured, not promised</h3>
+            <h3>Tested &amp; benchmarked</h3>
           </div>
           <p>CI replays 498 test scenarios on every commit. In our <a href="https://github.com/ZSvedic/TamedTable/tree/main/benchmarks" target="_blank" rel="noopener">benchmark</a>, the default model matched hand-checked labels 96.7% of the time, at $0.15 per 1,000 rows classified.</p>
         </div>
