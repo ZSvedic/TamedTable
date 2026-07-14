@@ -1181,15 +1181,15 @@ voice turn and replays key-free.
 | `tutorialScenarioNames(): string[]` | Names of `@tour` tours (flat list). |
 | `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the seven marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tour` scenarios (the Dev dropdown). |
-| `selectTutorialScenario(name)` | Selects the manifest entry by name; resets step state (the tour loads lazily on play). |
+| `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup — the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
 | `async nextStep()` | Executes the **current** step (only if it hasn't run before — see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`lastStepDescription`), so in the UI Next is disabled there and the done state is not reached; `nextStep` still supports it for the step-def loop. |
 | `prevStep()` | Decrements step index; re-highlights the step but executes nothing. A subsequent `nextStep` over an already-run step skips its side effect. |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
 | `finishTutorial()` | Cancels the active tour and opens the Tutorial panel chooser, regardless of how the tour was launched, so the user can pick another tutorial. Deep-link visitors arrive in a new tab (the homepage opens "Show me →" in a new tab) and close it to return to the homepage; the app does not navigate for them. |
-| `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` refuse with the stay toast (see behavior.md § Staying in the tour) while stayed. |
-| `isTutorialStayed(): boolean` | True after `stayTutorial()` — a tour is loaded (replay mode on) but no step is highlighted and the terminal stop is dismissed. Cleared by `cancelTutorial()`/`playTutorial()`. |
+| `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` return silently while stayed (the UI disables the chat input and mic — see behavior.md § Staying in the tour). |
+| `isTutorialStayed(): boolean` | True after `stayTutorial()` — a tour is loaded (replay mode on) but no step is highlighted and the terminal stop is dismissed. Cleared by `cancelTutorial()`/`selectTutorialScenario()`/`playTutorial()`. |
 | `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
 | `isTutorialDone(): boolean` | True once all steps have been executed and the tour is awaiting the final Finish action. |
 | `currentTutorialStepNumber(): number \| null` | 1-based step number, or `null` when inactive or done. |

@@ -224,15 +224,32 @@ Feature: Tutorial panel
       And no toast is shown
 
     @web
-    Scenario: A new chat request is blocked while staying
+    Scenario: Playing another tour after staying starts cleanly
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      When user opens the tutorial panel
+      # Selecting while stayed leaves the stayed tour first — back to the empty
+      # state — so the view never reads rows from a freshly rebuilt engine.
+      And the tutorial "Filter by Country" is selected
+      Then the table has 0 rows
+      When user plays the whole tutorial
+      Then the spec has 1 transformation
+      And table displays the header and at least the first 1 rows
+      And no toast is shown
+
+    @web
+    Scenario: A new chat request is silently ignored while staying
       Given the TamedTable web app
       And the API key has not been set
       And the tutorial "Flag rows with empty Phone" is selected
       And user plays the whole tutorial
       And user stays in the tour
       When user sends the chat message "sort by Name"
-      Then a toast shows "The tour is finished"
-      And the spec has 1 transformation
+      Then the spec has 1 transformation
+      And no toast is shown
 
   Rule: A deep link opens, selects, and plays a named tour
 

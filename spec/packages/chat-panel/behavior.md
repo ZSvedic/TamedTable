@@ -51,6 +51,10 @@ headless dependency.
   disabled on an empty draft), the host's `micButton` slot, and send — or a
   stop button that fires `onCancel` while streaming. A non-null `prefill`
   syncs into the draft (tutorial prefill-chat steps).
+- Disabled state: a non-null `disabledHint` disables the textarea and send
+  button, clears the draft, shows the hint as the greyed placeholder, and
+  hides the `micButton` slot — the host's "input is off, here is why" state
+  (the app uses it while staying in a finished tour).
 
 Stable attributes: `data-cp-message="user|assistant"`, `data-cp-error`,
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-send`, `data-cp-stop`,

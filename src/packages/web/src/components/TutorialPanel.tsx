@@ -48,11 +48,11 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       // the table, the result the tour just produced, on both layouts.
       doneElementId: 'tutorial-table-view',
       // The terminal stop's "Voilà …" celebration, shown after the last real
-      // step has run, numbered "N of N". "Go to Tours" opens the chooser;
-      // "Stay in tour" keeps the result on screen (undo/redo replay key-free).
+      // step has run, numbered "N of N". "Back to Tours" opens the chooser;
+      // "Stay here" keeps the result on screen (undo/redo replay key-free).
       doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,
-      doneBtnText: 'Go to Tours',
-      stayBtnText: 'Stay in tour',
+      doneBtnText: 'Back to Tours',
+      stayBtnText: 'Stay here',
       theme: {
         background: t.surface, text: t.ink, border: t.line2, accent: t.accent,
         // Next/Done as the app's primary button (ink fill, on-ink label).

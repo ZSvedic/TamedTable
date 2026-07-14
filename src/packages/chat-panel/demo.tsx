@@ -34,6 +34,7 @@ function Demo(): ReactNode {
   const [messages, setMessages] = useState<ChatPanelMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [prefill, setPrefill] = useState<string | null>(null);
+  const [disabledHint, setDisabledHint] = useState<string | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<VoiceButtonStatus>('idle');
   const [seq, setSeq] = useState(0);
   const [log, setLog] = useState<string[]>(['ready']);
@@ -53,6 +54,7 @@ function Demo(): ReactNode {
         streaming={streaming}
         requestCount={messages.filter((m) => m.role === 'user').length}
         prefill={prefill}
+        disabledHint={disabledHint}
         onSend={(text) => {
           report(`send ${text}`);
           append(
@@ -107,6 +109,9 @@ function Demo(): ReactNode {
           </Button>
           <Button variant="chrome" onClick={() => setPrefill('Keep rows where age >= 18')}>
             Prefill draft
+          </Button>
+          <Button variant="chrome" onClick={() => setDisabledHint((v) => (v ? null : 'Replay mode: undo/redo only'))}>
+            Toggle replay lock
           </Button>
         </div>
         <pre

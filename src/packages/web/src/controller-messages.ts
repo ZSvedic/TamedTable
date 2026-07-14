@@ -24,10 +24,11 @@ export function missingTextKeyMessage(provider?: string): string {
   return missingProviderKeyMessage(provider, 'Text requests require');
 }
 
-/** The refusal toast while staying in a finished tour — the cassette cannot
- *  answer a request it never recorded. See behavior.md § Staying in the tour. */
-export const STAY_TOUR_MESSAGE =
-  'The tour is finished — undo/redo still work. Open Tours to leave.';
+/** The greyed hint inside the disabled chat input while staying in a finished
+ *  tour — the cassette cannot answer a request it never recorded, so the input
+ *  and mic are disabled instead of failing. See behavior.md § Staying in the tour. */
+export const STAY_REPLAY_HINT =
+  'You are inside Tour replay, use undo/redo to examine steps.';
 
 /** Map an engine error (or its message string) to a sentence a non-technical
  *  user can act on. Pass the raw caught error object when available — the

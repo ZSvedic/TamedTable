@@ -1184,10 +1184,10 @@ step appears, and it runs **once**.
 
 The **last stop is terminal**: it is numbered **"M of M"** and its popover
 shows a completion message — `Voilà, "<tour name>" is done.` — with two
-buttons. The primary, **Go to Tours**, ends the tour and returns the user to
+buttons. The primary, **Back to Tours**, ends the tour and returns the user to
 wherever they started: a tour launched from the Tutorial panel reopens the
 chooser, while a deep-link tour goes back to the page the user came from (see
-*Deep links*). The secondary, **Stay in tour**, closes the overlay but keeps
+*Deep links*). The secondary, **Stay here**, closes the overlay but keeps
 the finished tour on screen; **Esc** on the terminal stop also stays (on
 earlier steps it still cancels).
 
@@ -1195,10 +1195,13 @@ earlier steps it still cancels).
 stays in key-free replay mode, so the user can examine the data and walk the
 steps back and forth with **undo/redo** — those re-runs replay from the tour's
 cassette and need no API key. New requests cannot be served from the cassette,
-so sending a typed or spoken request is blocked with a toast — `The tour is
-finished — undo/redo still work. Open Tours to leave.` — and the table is left
-untouched. Opening the Tutorial panel is the way out: playing another tour or
-closing the panel leaves the finished tour as usual.
+so the chat input and the mic are disabled while staying; the input shows the
+greyed hint `You are inside Tour replay, use undo/redo to examine steps.` and
+a request sent anyway (programmatically) is silently ignored — no toast, table
+untouched. Opening the Tutorial panel is the way out: selecting another tour
+leaves the stayed tour first (back to the empty state, exactly like Back to
+Tours) and then plays fresh; closing the panel leaves the finished tour as
+usual.
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)
@@ -1268,7 +1271,7 @@ closed — the Driver.js overlay takes over immediately). A missing parameter, a
 unknown file, or an unknown scenario boots the app normally — panel closed, no
 error toast; a deep link never crashes or blocks a normal visit.
 
-**Finishing a tour.** Clicking **Go to Tours** on the terminal last step opens the
+**Finishing a tour.** Clicking **Back to Tours** on the terminal last step opens the
 Tutorial panel chooser, whichever way the tour was started — so the visitor can
 pick another tutorial without hunting for the panel. The marketing homepage opens every "Show me →"
 link in a **new tab**, so a deep-link visitor who is finished simply closes that
