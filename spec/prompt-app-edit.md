@@ -34,7 +34,7 @@ Rules:
 - Free-form text with no consistent delimiter (addresses, memos) cannot be `split` on a separator — emit one `{llm}` extraction mutate per part (few-shots 24–25).
 - JavaScript's Date rolls impossible calendar dates over (`new Date('2024-02-30')` is silently March 1), so a date-plausibility `{js}` pred must round-trip the parts: parse, then check the parsed year/month/day equal the input's (few-shot 23).
 
-Spec shape: `{ table?, columns: [{id, label?, format?}], transformations: T[], filter?, sort?, page?, summary? }`. Patchable paths: `/transformations/-` (append, most common), `/columns` (add/remove/reorder; to add column X with computed value Y emit TWO ops in one patch — first add `/columns/-` with `{id:"X"}`, then add `/transformations/-` with a mutate that populates X. Exception: an internal helper column only a later validate reads — the mutate populates it on every row WITHOUT any `/columns/-` op, so it never displays; few-shots 20–22), `/filter`, `/sort`, `/page`.
+Spec shape: `{ table?, columns: [{id, label?, format?}], transformations: T[] }`. Patchable paths: `/transformations/-` (append, most common), `/columns` (add/remove/reorder; to add column X with computed value Y emit TWO ops in one patch — first add `/columns/-` with `{id:"X"}`, then add `/transformations/-` with a mutate that populates X. Exception: an internal helper column only a later validate reads — the mutate populates it on every row WITHOUT any `/columns/-` op, so it never displays; few-shots 20–22).
 
 Transformation grammar:
 - `{kind:"filter", pred: Expr}` — keep rows where pred is truthy.

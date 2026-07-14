@@ -97,22 +97,13 @@ const ColumnSchema = z.object({
   format: z.string().optional(),
 });
 
-// Reserved view fields: `page` is the only view op the runtime evaluates, so a
-// present `filter`, `sort`, or `summary` would commit as a silent no-op — reject
-// it with a message that steers the model to the matching transformation.
-const reservedViewField = (name: string, instead: string) =>
-  z.never({
-    error: `top-level "${name}" is a reserved view field the runtime never evaluates — the patch would change no rows. Append ${instead} to /transformations/- instead.`,
-  }).optional();
-
+// The spec describes data only — table, columns, transformations. View knobs
+// (page size, pagination) are UI state, so `.strict()` rejects any other
+// top-level key (e.g. `filter`, `sort`, `page`, `summary`) as unrecognized.
 export const TablePlanSchema = z
   .object({
     table: z.string().optional(),
     columns: z.array(ColumnSchema),
-    filter: reservedViewField('filter', '{kind:"filter", pred: Expr}'),
-    sort: reservedViewField('sort', '{kind:"sort", by:[{key, dir}]}'),
-    page: z.object({ size: z.number(), offset: z.number() }).optional(),
-    summary: reservedViewField('summary', 'a {kind:"group"} transformation'),
     transformations: z.array(TransformationUnionSchema),
   })
   .strict();

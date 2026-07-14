@@ -13,13 +13,11 @@ Patch (RFC 6902) for array ops, a JSON Merge Patch (RFC 7396) for shallow
 edits — that the runtime applies, validates, and replays against the
 immutable source rows.
 
-The spec carries an ordered list of *transformations* that mutate data before
-view ops run. One view op is live today — `page`, which trims the visible
-page. The reserved `filter`, `sort`, and `summary` view fields are never
-evaluated, so a patch that writes one is rejected back to the model with a
-message naming the transformation to append instead — otherwise the patch
-would commit without changing a single row. Four core transformation kinds
-cover the row-and-column basics:
+The spec describes the *data*: the source table, the visible columns, and an
+ordered list of *transformations* that mutate rows. How the result is
+*viewed* — page size, pagination — is UI state the spec never carries; each
+surface owns its own view knobs. Four core transformation kinds cover the
+row-and-column basics:
 
 - **filter** — keep rows where a predicate is truthy. <!-- #FilterRows -->
 - **mutate** — set one or more columns from a value expression. <!-- #DataNorm -->
@@ -121,10 +119,10 @@ mistakes inline and feeds them back through the recovery loop:
 
 - an empty operations list;
 - a patch that applies cleanly but leaves the spec identical to before;
-- a patch that writes a reserved top-level view field (`filter`, `sort`,
-  `summary`). Those fields are never evaluated, so the write would commit
-  while changing nothing — the rejection tells the model to append the
-  matching transformation (`filter`, `sort`, `group`) instead;
+- a patch that writes a top-level key outside the spec shape (`table`,
+  `columns`, `transformations`) — the spec describes data, never the view,
+  so the schema rejects the unrecognized key and the message steers the
+  model back to the transformation list;
 - a patch that leaves a `validate` reading a column no step before it
   provides. The predicate would test a value that doesn't exist yet — every
   row would fail — so the rejection names the missing column and tells the
@@ -816,10 +814,9 @@ request of a session, so a session that only ever loads a CSV or JSONL
 and runs plain transformations never pays for it.
 
 The table view paginates. Rows display one fixed-size page at a time —
-twenty rows, unless the spec's `page` view op sets a size (a "top 10"
-request patches `/page` to `{size: 10}`, so the visible page trims to
-ten rows) — with a pager that jumps to the first, previous, next, last,
-or a numbered page. Manual paging is a view concern, like the CLI's
+twenty rows by default; the page size is a view setting the web shell
+owns — with a pager that jumps to the first, previous, next, last,
+or a numbered page. Paging is a view concern, like the CLI's
 viewport: it never touches the spec, so it survives requests, undo, and
 redo. Loading a file opens page one; a request that shortens the table
 clamps the current page back into range.

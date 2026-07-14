@@ -40,10 +40,6 @@ interface TablePlan {
   table?: string;
   columns: Array<{ id: string; label?: string; format?: string }>;
   transformations: Transformation[];
-  filter?: never;   // reserved view field — a present value fails validation
-  sort?: never;     // reserved view field — a present value fails validation
-  page?: { size?: number; offset?: number };
-  summary?: never;  // reserved view field — a present value fails validation
 }
 ```
 
@@ -59,10 +55,11 @@ three shapes; `split.into`, `pivot.index`, `sort.by`, and
 `unpivot.measures` are non-empty (an empty `group.by` is allowed — it
 aggregates the whole table into one row);
 `validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
-`.jsonl`; a present top-level `filter`, `sort`, or `summary` fails with a
-message naming the transformation to append instead (`page` is the only
-live view field — nothing ever evaluates the other three, so a patch
-writing one would otherwise commit as a silent no-op). It does *not* check whether a JS body compiles or whether an
+`.jsonl`; the top-level object is strict — any key outside `table`,
+`columns`, and `transformations` fails as an unrecognized key (the spec
+describes data, never the view, so a patch writing a view knob such as
+`filter`, `sort`, `page`, or `summary` is rejected into the recovery
+loop). It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
@@ -662,10 +659,10 @@ Provider, key, and model config flow through `ResolvedConfig` from
 surface below.
 
 ```ts
-// pagination — 20 rows per page unless the spec's `page` view op sets a
-// size (a "top 10" request patches /page); the page index is 1-based and
-// clamps to [1, pageCount()]
-WebController.pageSize: number;          // spec.page?.size ?? 20
+// pagination — rows per page is a WebController-owned view setting with a
+// default of 20 (the spec never carries a page size); the page index is
+// 1-based and clamps to [1, pageCount()]
+WebController.pageSize: number;          // view setting, default 20
 WebController.pageRows(): Row[];         // the current page's slice
 WebController.currentPage(): number;
 WebController.pageCount(): number;
