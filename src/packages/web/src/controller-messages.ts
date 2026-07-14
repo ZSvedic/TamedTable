@@ -24,6 +24,11 @@ export function missingTextKeyMessage(provider?: string): string {
   return missingProviderKeyMessage(provider, 'Text requests require');
 }
 
+/** The refusal toast while staying in a finished tour — the cassette cannot
+ *  answer a request it never recorded. See behavior.md § Staying in the tour. */
+export const STAY_TOUR_MESSAGE =
+  'The tour is finished — undo/redo still work. Open Tours to leave.';
+
 /** Map an engine error (or its message string) to a sentence a non-technical
  *  user can act on. Pass the raw caught error object when available — the
  *  function inspects `statusCode` and `responseBody` on SDK error objects so

@@ -117,6 +117,7 @@ Then(
 class FakeAdapter implements TourAdapter {
   readonly calls: string[] = [];
   finished = false;
+  stayed = false;
   private log(method: string, arg: string | undefined) {
     this.calls.push(`${method}(${arg ?? ''})`);
   }
@@ -127,6 +128,7 @@ class FakeAdapter implements TourAdapter {
   async playAudio(f: string)            { this.log('playAudio', f); }
   elementIdFor(a: TourAction): string { return `el-${a.kind}`; }
   onFinish() { this.finished = true; }
+  onStay() { this.stayed = true; }
 }
 
 interface DriverCtx {
@@ -186,6 +188,10 @@ When('the driver finishes', function (this: DriverWorld) {
   dctx(this).driver.finish();
 });
 
+When('the driver stays', function (this: DriverWorld) {
+  dctx(this).driver.stay();
+});
+
 Then('the driver is active', function (this: DriverWorld) {
   assert.equal(dctx(this).driver.isActive(), true);
 });
@@ -216,4 +222,12 @@ Then('the adapter calls were {string}', function (this: DriverWorld, expected: s
 
 Then('the adapter onFinish was called', function (this: DriverWorld) {
   assert.equal(dctx(this).adapter.finished, true);
+});
+
+Then('the adapter onFinish was not called', function (this: DriverWorld) {
+  assert.equal(dctx(this).adapter.finished, false);
+});
+
+Then('the adapter onStay was called', function (this: DriverWorld) {
+  assert.equal(dctx(this).adapter.stayed, true);
 });

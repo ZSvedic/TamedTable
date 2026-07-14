@@ -20,7 +20,7 @@ import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/m
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig } from '@tamedtable/model-config/storage';
-import { userFacingMessage, summarizeDebug, missingTextKeyMessage } from './controller-messages.ts';
+import { userFacingMessage, summarizeDebug, missingTextKeyMessage, STAY_TOUR_MESSAGE } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { EngineManager } from './controller-engine.ts';
 import { PatchManager } from './controller-patch.ts';
@@ -220,6 +220,13 @@ export class WebController implements ControllerHost {
       this.fail('Open a CSV or JSONL file before sending a request.');
       return;
     }
+    // Staying in a finished tour: the engine still replays from the tour's
+    // cassette, which cannot answer a request it never recorded — refuse
+    // instead of surfacing a cassette miss. Undo/redo replay fine and stay on.
+    if (this.tutorial.isTutorialStayed()) {
+      this.fail(STAY_TOUR_MESSAGE);
+      return;
+    }
     // Text requests route through the selected provider, so a missing key for
     // that provider fails fast — before any network call — leaving the table
     // untouched. A key for a different provider does not count. A playing
@@ -364,6 +371,10 @@ export class WebController implements ControllerHost {
   cancelTutorial(): void { this.tutorial.cancelTutorial(); }
   /** Cancel the active tour and reopen the Tutorial panel at the chooser. */
   finishTutorial(): void { this.tutorial.finishTutorial(); }
+  /** Dismiss the terminal stop but keep the finished tour on screen. */
+  stayTutorial(): void { this.tutorial.stayTutorial(); }
+  /** True while the user is staying in a finished tour. */
+  isTutorialStayed(): boolean { return this.tutorial.isTutorialStayed(); }
   isTutorialActive(): boolean { return this.tutorial.isTutorialActive(); }
   /** True once all steps have been executed and the tour awaits the Finish action. */
   isTutorialDone(): boolean { return this.tutorial.isTutorialDone(); }

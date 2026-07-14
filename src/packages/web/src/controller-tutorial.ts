@@ -237,6 +237,23 @@ export class TutorialManager {
     this.openTutorial();
   }
 
+  /** Leave the terminal stop but keep the finished tour on screen: the step
+   *  cursor clears (the overlay tears down) while the active tour — and with it
+   *  key-free cassette replay — stays. Undo/redo re-runs replay from the tape;
+   *  new requests are refused (see the sendChat/sendAudioRequest guards). */
+  stayTutorial(): void {
+    if (!this.isTutorialDone()) return;
+    this.tutorialStepIndex = null;
+    this.host.tutorialPrefill = null;
+    this.host.notify();
+  }
+
+  /** True after `stayTutorial()`: a tour is loaded (replay mode on) but no step
+   *  is highlighted and the terminal stop is dismissed. */
+  isTutorialStayed(): boolean {
+    return this.activeTour !== null && this.tutorialStepIndex === null;
+  }
+
   isTutorialActive(): boolean {
     return (
       this.tutorialStepIndex !== null &&

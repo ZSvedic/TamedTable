@@ -1188,6 +1188,8 @@ voice turn and replays key-free.
 | `prevStep()` | Decrements step index; re-highlights the step but executes nothing. A subsequent `nextStep` over an already-run step skips its side effect. |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
 | `finishTutorial()` | Cancels the active tour and opens the Tutorial panel chooser, regardless of how the tour was launched, so the user can pick another tutorial. Deep-link visitors arrive in a new tab (the homepage opens "Show me →" in a new tab) and close it to return to the homepage; the app does not navigate for them. |
+| `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` refuse with the stay toast (see behavior.md § Staying in the tour) while stayed. |
+| `isTutorialStayed(): boolean` | True after `stayTutorial()` — a tour is loaded (replay mode on) but no step is highlighted and the terminal stop is dismissed. Cleared by `cancelTutorial()`/`playTutorial()`. |
 | `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
 | `isTutorialDone(): boolean` | True once all steps have been executed and the tour is awaiting the final Finish action. |
 | `currentTutorialStepNumber(): number \| null` | 1-based step number, or `null` when inactive or done. |

@@ -210,6 +210,10 @@ export interface TourAdapter {
   /** Called once when the tour finishes — the host decides what comes next
    *  (the app opens its Tutorial panel; the demo shows a status line). */
   onFinish(): void;
+  /** Called once when the user stays at the terminal stop instead of
+   *  finishing — the host keeps what the tour built on screen. Optional:
+   *  hosts without a "stay" exit simply omit it (and get no Stay button). */
+  onStay?(): void;
 }
 
 /** The read/navigate surface a tour UI needs from whatever owns the cursor.
@@ -230,6 +234,9 @@ export interface TourCursor {
   stepCount(): number;
   next(): Promise<void> | void;
   finish(): void;
+  /** Leave the terminal stop but keep what the tour built on screen. Optional:
+   *  when absent, `TourUi` shows no Stay button and Esc keeps cancelling. */
+  stay?(): void;
   cancel(): void;
 }
 
@@ -282,6 +289,13 @@ export class TourDriver implements TourCursor {
   finish(): void {
     this.cancel();
     this.adapter.onFinish();
+  }
+
+  /** End the tour, keeping the host's state — hands off to the optional
+   *  onStay hook instead of onFinish. */
+  stay(): void {
+    this.cancel();
+    this.adapter.onStay?.();
   }
 
   /** True while a step is highlighted and awaiting execution. */

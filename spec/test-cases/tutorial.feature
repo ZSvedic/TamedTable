@@ -193,6 +193,47 @@ Feature: Tutorial panel
       When user plays the whole tutorial
       Then the tour "Flag rows with empty Phone" is marked complete
 
+  Rule: The terminal stop can stay in the finished tour
+
+    # "Stay in tour" keeps the tour's result on screen in key-free replay mode:
+    # undo/redo re-run earlier specs whose model calls replay from the cassette,
+    # while new typed or spoken requests are refused with a toast — the cassette
+    # cannot answer a request it never recorded.
+    @web
+    Scenario: Staying keeps the tour's result and replay mode
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      When user stays in the tour
+      Then the spec has 1 transformation
+      And the tutorial is not active
+      And no toast is shown
+
+    @web
+    Scenario: Undo and redo replay key-free while staying
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      When user undoes the last change
+      Then the spec has 0 transformations
+      When user redoes the last change
+      Then the spec has 1 transformation
+      And no toast is shown
+
+    @web
+    Scenario: A new chat request is blocked while staying
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      When user sends the chat message "sort by Name"
+      Then a toast shows "The tour is finished"
+      And the spec has 1 transformation
+
   Rule: A deep link opens, selects, and plays a named tour
 
     @web
