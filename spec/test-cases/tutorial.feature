@@ -193,6 +193,64 @@ Feature: Tutorial panel
       When user plays the whole tutorial
       Then the tour "Flag rows with empty Phone" is marked complete
 
+  Rule: The terminal stop can stay in the finished tour
+
+    # "Stay in tour" keeps the tour's result on screen in key-free replay mode:
+    # undo/redo re-run earlier specs whose model calls replay from the cassette,
+    # while new typed or spoken requests are refused with a toast — the cassette
+    # cannot answer a request it never recorded.
+    @web
+    Scenario: Staying keeps the tour's result and replay mode
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      When user stays in the tour
+      Then the spec has 1 transformation
+      And the tutorial is not active
+      And no toast is shown
+
+    @web
+    Scenario: Undo and redo replay key-free while staying
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      When user undoes the last change
+      Then the spec has 0 transformations
+      When user redoes the last change
+      Then the spec has 1 transformation
+      And no toast is shown
+
+    @web
+    Scenario: Playing another tour after staying starts cleanly
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      When user opens the tutorial panel
+      # Selecting while stayed leaves the stayed tour first — back to the empty
+      # state — so the view never reads rows from a freshly rebuilt engine.
+      And the tutorial "Filter by Country" is selected
+      Then the table has 0 rows
+      When user plays the whole tutorial
+      Then the spec has 1 transformation
+      And table displays the header and at least the first 1 rows
+      And no toast is shown
+
+    @web
+    Scenario: A new chat request is silently ignored while staying
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      When user sends the chat message "sort by Name"
+      Then the spec has 1 transformation
+      And no toast is shown
+
   Rule: A deep link opens, selects, and plays a named tour
 
     @web

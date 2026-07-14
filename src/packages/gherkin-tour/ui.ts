@@ -36,6 +36,11 @@ export interface TourUiOptions {
   /** Terminal-stop text — shown after the last real step has run, e.g.
    *  `Voilà, the "<tour>" tour is done.`. Defaults to "Done.". */
   doneDescription?: string;
+  /** Terminal-stop primary button label — defaults to "Done". */
+  doneBtnText?: string;
+  /** Terminal-stop secondary (stay) button label — defaults to "Stay here".
+   *  Shown only when the cursor implements `stay()`. */
+  stayBtnText?: string;
   /** Host theme colors for the popover; omit to keep Driver.js defaults. */
   theme?: TourUiTheme;
 }
@@ -106,14 +111,23 @@ export class TourUi {
       ? (this.opts.doneDescription ?? 'Done.')
       : asInstruction(this.tour.currentStep()?.text ?? '');
 
+    // The terminal stop offers a second exit when the cursor supports it:
+    // "stay" keeps what the tour built on screen. The button rides in Driver's
+    // previous-button slot — a first-class Driver.js button, no DOM injection —
+    // and Esc then means stay, the non-destructive reading of "dismiss".
+    const canStay = done && typeof this.tour.stay === 'function';
+
     const d = driver({
       animate: true,
       overlayOpacity: 0.25,
       allowClose: true,
-      // Esc cancels (allowClose), but an accidental overlay click must not — a
-      // no-op behavior keeps the tour from vanishing on a stray click.
+      // Esc dismisses (allowClose), but an accidental overlay click must not —
+      // a no-op behavior keeps the tour from vanishing on a stray click.
       overlayClickBehavior: () => {},
-      onDestroyStarted: () => { if (!this.silentDestroy) this.cancel(); },
+      onDestroyStarted: () => {
+        if (this.silentDestroy) return;
+        if (canStay) this.stay(); else this.cancel();
+      },
       onPopoverRender: (popover) => { this.applyTheme(popover.wrapper); },
     });
     this.d = d;
@@ -124,14 +138,17 @@ export class TourUi {
         description,
         side: 'bottom',
         align: 'start',
-        // Driver's own footer: progress on the left, a single forward button on
-        // the right (no Previous, no close button). Esc still cancels.
-        showButtons: ['next'],
+        // Driver's own footer: progress on the left, forward button on the
+        // right (no close button). Steps are forward-only; the previous slot
+        // appears only on the terminal stop, repurposed as the stay button.
+        showButtons: canStay ? ['previous', 'next'] : ['next'],
         showProgress: true,
         progressText: `${num} of ${total}`,
-        nextBtnText: done ? 'Done' : 'Next &rarr;',
+        nextBtnText: done ? (this.opts.doneBtnText ?? 'Done') : 'Next &rarr;',
+        prevBtnText: this.opts.stayBtnText ?? 'Stay here',
         onNextClick: () => { if (done) this.finish(); else void this.advance(); },
-        onCloseClick: () => { this.cancel(); },
+        onPrevClick: () => { this.stay(); },
+        onCloseClick: () => { if (canStay) this.stay(); else this.cancel(); },
       },
     });
     this.opts.onChange?.();
@@ -198,6 +215,15 @@ export class TourUi {
       if (bg) { next.style.background = bg; next.style.borderColor = bg; }
       if (fg) next.style.color = fg;
     }
+    // The stay button (Driver's previous slot) reads as secondary: outlined on
+    // the popover background, next to the filled primary.
+    const prev = wrapper.querySelector('.driver-popover-prev-btn') as HTMLElement | null;
+    if (prev) {
+      prev.style.textShadow = 'none';
+      if (theme.background) prev.style.background = theme.background;
+      if (theme.border) prev.style.borderColor = theme.border;
+      if (theme.text) prev.style.color = theme.text;
+    }
     // The arrow's visible side is filled with the popover background; retint just
     // that side so it doesn't stay Driver's default light color on a dark theme.
     if (theme.background) {
@@ -219,6 +245,12 @@ export class TourUi {
 
   private finish(): void {
     this.tour.finish();
+    this.render();
+    this.detachKeyboard();
+  }
+
+  private stay(): void {
+    this.tour.stay?.();
     this.render();
     this.detachKeyboard();
   }

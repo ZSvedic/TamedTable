@@ -42,6 +42,13 @@ Feature: Chat panel package
       Then the chat input contains "Keep rows where age >= 18"
 
     @web
+    Scenario: A disabled hint greys out the input row
+      Given the chat-panel demo page
+      When the user clicks the replay-lock button
+      Then the chat input is disabled with hint "Replay mode: undo/redo only"
+      And the mic button is not shown
+
+    @web
     Scenario: Holding the mic records, releasing sends
       Given the chat-panel demo page
       When the user presses and holds the mic button

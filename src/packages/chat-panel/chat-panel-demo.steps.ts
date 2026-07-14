@@ -75,6 +75,24 @@ Then('the chat input contains {string}', async function (this: object, expected:
   );
 });
 
+When('the user clicks the replay-lock button', async function (this: object) {
+  await page(this).click('button:has-text("Toggle replay lock")');
+});
+
+Then('the chat input is disabled with hint {string}', async function (this: object, hint: string) {
+  const p = page(this);
+  await p.waitForFunction(
+    `(() => { const el = document.querySelector('#demo-chat-input');
+       return el && el.disabled && el.placeholder === ${JSON.stringify(hint)}; })()`,
+  );
+});
+
+Then('the mic button is not shown', async function (this: object) {
+  await page(this).waitForFunction(
+    `document.querySelector('[data-testid="mic-button"]') === null`,
+  );
+});
+
 When('the user presses and holds the mic button', async function (this: object) {
   await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerdown');
 });

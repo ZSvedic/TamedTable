@@ -113,12 +113,13 @@ export class TutorialManager {
 
   selectTutorialScenario(name: string): void {
     this.selected = this.manifest.find((t) => t.name === name) ?? null;
-    this.activeTour = null;
-    this.tutorialStepIndex = null;
-    this.executedThrough = -1;
-    this.host.goldenRows = null;
-    this.host.tutorialPrefill = null;
-    this.host.notify();
+    // Leave any playing or stayed tour through the full cancel cleanup. A bare
+    // `activeTour = null` here once flipped replay mode off while the stayed
+    // tour's data was still marked loaded — the next render then read rows from
+    // a freshly rebuilt (empty) engine and crashed. cancelTutorial resets the
+    // engine and the loaded flag together, so the app returns to the empty
+    // state before the newly selected tour plays.
+    this.cancelTutorial();
   }
 
   /** Deep link: select by (feature, scenario) and play from step 1, keeping
@@ -131,10 +132,8 @@ export class TutorialManager {
     const entry = this.manifest.find((t) => t.feature === feature && t.name === scenario);
     if (!entry) return false;
     this.selected = entry;
-    this.activeTour = null;
-    this.tutorialStepIndex = null;
-    this.host.goldenRows = null;
-    this.host.tutorialPrefill = null;
+    // Same full cleanup as selectTutorialScenario — see the comment there.
+    this.cancelTutorial();
     await this.playTutorial();
     return true;
   }
@@ -235,6 +234,23 @@ export class TutorialManager {
   finishTutorial(): void {
     this.cancelTutorial();
     this.openTutorial();
+  }
+
+  /** Leave the terminal stop but keep the finished tour on screen: the step
+   *  cursor clears (the overlay tears down) while the active tour — and with it
+   *  key-free cassette replay — stays. Undo/redo re-runs replay from the tape;
+   *  new requests are refused (see the sendChat/sendAudioRequest guards). */
+  stayTutorial(): void {
+    if (!this.isTutorialDone()) return;
+    this.tutorialStepIndex = null;
+    this.host.tutorialPrefill = null;
+    this.host.notify();
+  }
+
+  /** True after `stayTutorial()`: a tour is loaded (replay mode on) but no step
+   *  is highlighted and the terminal stop is dismissed. */
+  isTutorialStayed(): boolean {
+    return this.activeTour !== null && this.tutorialStepIndex === null;
   }
 
   isTutorialActive(): boolean {

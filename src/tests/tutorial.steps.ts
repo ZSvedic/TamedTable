@@ -43,6 +43,10 @@ When('user finishes the tutorial', function (this: TamedTableWorld) {
   controller(this).finishTutorial();
 });
 
+When('user stays in the tour', function (this: TamedTableWorld) {
+  controller(this).stayTutorial();
+});
+
 When('user advances to the last tutorial step', async function (this: TamedTableWorld) {
   const c = controller(this);
   // Execute all steps including the last one (enters done state).

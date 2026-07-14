@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { typography } from '@tamedtable/ui-kit';
 import { useTheme } from '@tamedtable/ui-kit/components';
 import { ChatPanel, MicButton, WaveButton } from '@tamedtable/chat-panel/components';
+import { STAY_REPLAY_HINT } from '../controller-messages.ts';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 
@@ -56,6 +57,9 @@ export function ChatSidebar({
       streaming={controller.streaming}
       requestCount={controller.history().length}
       prefill={controller.tutorialPrefill}
+      // Staying in a finished tour: the cassette can't answer new requests, so
+      // the input row greys out (mic hidden) with the replay hint instead.
+      disabledHint={controller.isTutorialStayed() ? STAY_REPLAY_HINT : null}
       onSend={(text) => void controller.sendChat(text)}
       onCancel={() => controller.cancelRequest()}
       emptyState={<EmptyChat />}

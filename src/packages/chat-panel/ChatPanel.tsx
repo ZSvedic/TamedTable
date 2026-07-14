@@ -202,6 +202,10 @@ export interface ChatPanelProps {
   requestCount: number;
   /** Non-null text syncs into the draft (tutorial prefill-chat steps). */
   prefill?: string | null;
+  /** Non-null disables the input row: the textarea and send grey out, the
+   *  draft clears, this text shows as the placeholder, and the `micButton`
+   *  slot is hidden — the host's "input is off, here is why" state. */
+  disabledHint?: string | null;
   onSend: (text: string) => void;
   onCancel: () => void;
   /** DOM id for the textarea (e.g. for Driver.js highlights). */
@@ -222,6 +226,7 @@ export function ChatPanel({
   streaming,
   requestCount,
   prefill = null,
+  disabledHint = null,
   onSend,
   onCancel,
   inputId,
@@ -264,14 +269,21 @@ export function ChatPanel({
     return () => { if (guard.timer) { clearInterval(guard.timer); guard.timer = null; } };
   }, [prefill]);
 
+  // Entering the disabled state drops whatever was typed — the hint placeholder
+  // must show, and a stale draft would send the moment the row re-enables.
+  const disabled = disabledHint !== null;
+  useEffect(() => {
+    if (disabled) setDraft('');
+  }, [disabled]);
+
   const send = (): void => {
     const text = draft.trim();
-    if (!text || streaming) return;
+    if (!text || streaming || disabled) return;
     setDraft('');
     onSend(text);
   };
 
-  const hasDraft = draft.trim() !== '';
+  const hasDraft = draft.trim() !== '' && !disabled;
 
   const sendBtn: CSSProperties = {
     height: 30,
@@ -474,7 +486,8 @@ export function ChatPanel({
                 send();
               }
             }}
-            placeholder="Describe a transformation…"
+            placeholder={disabledHint ?? 'Describe a transformation…'}
+            disabled={disabled}
             rows={3}
             style={{
               flex: 1,
@@ -485,10 +498,10 @@ export function ChatPanel({
               fontFamily: typography.ui,
               fontSize: typography.size.base,
               lineHeight: 1.5,
-              color: t.ink,
+              color: disabled ? t.ink3 : t.ink,
             }}
           />
-          {micButton}
+          {disabled ? null : micButton}
           {streaming ? (
             <button
               type="button"

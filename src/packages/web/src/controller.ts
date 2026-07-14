@@ -215,6 +215,12 @@ export class WebController implements ControllerHost {
   async sendChat(text: string): Promise<void> {
     const trimmed = text.trim();
     if (!trimmed) return;
+    // Staying in a finished tour: the engine still replays from the tour's
+    // cassette, which cannot answer a request it never recorded. The UI
+    // disables the input (with the STAY_REPLAY_HINT placeholder), so this
+    // guard is only reachable programmatically — ignore silently, before any
+    // bubble or toast.
+    if (this.tutorial.isTutorialStayed()) return;
     this.pushMessage('user', trimmed);
     if (!this.loaded) {
       this.fail('Open a CSV or JSONL file before sending a request.');
@@ -364,6 +370,10 @@ export class WebController implements ControllerHost {
   cancelTutorial(): void { this.tutorial.cancelTutorial(); }
   /** Cancel the active tour and reopen the Tutorial panel at the chooser. */
   finishTutorial(): void { this.tutorial.finishTutorial(); }
+  /** Dismiss the terminal stop but keep the finished tour on screen. */
+  stayTutorial(): void { this.tutorial.stayTutorial(); }
+  /** True while the user is staying in a finished tour. */
+  isTutorialStayed(): boolean { return this.tutorial.isTutorialStayed(); }
   isTutorialActive(): boolean { return this.tutorial.isTutorialActive(); }
   /** True once all steps have been executed and the tour awaits the Finish action. */
   isTutorialDone(): boolean { return this.tutorial.isTutorialDone(); }

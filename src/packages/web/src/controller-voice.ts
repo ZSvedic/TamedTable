@@ -115,6 +115,11 @@ export class VoiceManager {
    *  does. Shared by the mic-release path and the tutorial `play-audio` step —
    *  which replays this exact request from a cassette, key-free. */
   async sendAudioRequest(audio: RequestAudio, signal?: AbortSignal): Promise<void> {
+    // Staying in a finished tour: the engine still replays from the tour's
+    // cassette, which cannot answer a request it never recorded — ignore
+    // silently like sendChat does (the UI disables the mic). A playing tour's
+    // play-audio step is unaffected (not stayed).
+    if (this.host.tutorial.isTutorialStayed()) return;
     // Placeholder bubble; the same model call that patches the spec also
     // returns a transcript, which replaces it the moment the call lands.
     const bubbleId = this.host.pushMessage('user', VOICE_REQUEST_LABEL);

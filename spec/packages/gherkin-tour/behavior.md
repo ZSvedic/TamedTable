@@ -90,6 +90,9 @@ instead of building a `TourDriver`; the package's `demo.html` uses `TourDriver`.
   the scenario's `golden` (if any) is surfaced via `showGolden` — after the query
   has run, never before.
 - **`finish()`** ends the tour and calls the adapter's `onFinish` hook.
+- **`stay()`** ends the tour and calls the adapter's optional `onStay` hook —
+  the "keep what the tour built on screen" exit, distinct from `onFinish`'s
+  "return to the chooser".
 - **`cancel()`** abandons it, running nothing further.
 
 There is **no `prev`** — a tour only moves forward, so a step never re-runs (in
@@ -110,6 +113,7 @@ there.
 | `showGolden(goldenFile)` | reaching the terminal stop (the lifted `golden`, or undefined) |
 | `elementIdFor(action)` | resolving a spotlight target → DOM id, or null |
 | `onFinish()` | `finish` |
+| `onStay?()` | `stay` (optional — for hosts that offer a "stay" exit at the terminal stop) |
 
 The side-effect methods are async — the driver awaits each before advancing, so a
 step that issues a model call or plays a clip completes before the next stop.
@@ -121,15 +125,20 @@ own popover** — its footer button, its "X of Y" progress, its animation, and i
 Esc-to-cancel. There is no hand-rolled button row or key-cap badges. What the
 package customizes, and why it differs from a plain Driver.js tour:
 
-- **Forward only.** No Previous button, no ← key. The footer holds one button:
-  **Next →** on a step, **Done** on the terminal stop. **Space**/**→**/**Enter**
-  advance; **Esc** cancels. An accidental overlay click does *not* cancel.
+- **Forward only.** No Previous button, no ← key. On a step the footer holds
+  one button: **Next →**. **Space**/**→**/**Enter** advance; **Esc** cancels.
+  An accidental overlay click does *not* cancel.
 - **Progress, not a title.** The popover shows the step instruction plus Driver's
   progress line "X of Y" — no "Step N of N" heading.
 - **Terminal stop.** After the last real step the popover anchors to the
   host-named `doneElementId` (the step's own target may be gone) and shows
   `doneDescription` — the app passes `Voilà, "<tour>" is done.` — numbered "N of
-  N", with the Done button.
+  N". The primary button reads `doneBtnText` (default **Done**) and calls
+  `finish`. When the cursor implements the optional `stay()`, a secondary
+  button reading `stayBtnText` (default **Stay here**) appears in Driver's
+  previous-button slot and calls `stay`; **Esc** on the terminal stop then
+  stays instead of cancelling. Without `stay()` the terminal stop keeps the
+  single button and Esc-cancels, as before.
 - **Viewport-sized spotlight.** A target can be larger than the screen — the
   app's table fills it. A cutout that big leaves the popover nowhere to sit,
   and Driver's scroll-into-view yanks the page. When the target's box is

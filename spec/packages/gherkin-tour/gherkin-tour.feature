@@ -306,3 +306,18 @@ Feature: Gherkin Tour parser
       And the driver finishes
       Then the adapter onFinish was called
       And the driver is not active
+
+  Rule: Staying calls the adapter's onStay hook, not onFinish
+
+    @headless
+    Scenario: staying at the terminal stop ends the tour without onFinish
+      Given a tour with steps:
+        | kind      | arg   |
+        | load-file | x.csv |
+      When the driver plays the tour
+      And the driver advances 1 time
+      And the driver stays
+      Then the adapter onStay was called
+      And the adapter onFinish was not called
+      And the driver is not active
+      And the driver is not done
