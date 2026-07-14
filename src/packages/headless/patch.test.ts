@@ -30,24 +30,25 @@ describe('applyAndValidate', () => {
   });
 });
 
-// Regression: asked "show only Ana", the model patched `/filter` (a reserved
-// view field nothing evaluates) instead of appending a filter transformation.
-// The spec validated, the patch committed — and not a single row was filtered.
-// A write to a reserved view field must be rejected into the recovery loop
-// with a message naming the transformation to append instead.
-describe('applyAndValidate — reserved view fields', () => {
+// Regression: asked "show only Ana", the model patched `/filter` — a view
+// knob that is no longer part of the spec (the spec describes data; the UI
+// owns the view). The strict schema rejects any top-level key outside
+// { table, columns, transformations } as unrecognized, with a clear message
+// the recovery loop can feed back to the model.
+describe('applyAndValidate — view fields are not part of the spec', () => {
   const cases = [
-    { path: '/filter', value: { js: "row.Name === 'Ana'" }, fix: '"filter"' },
-    { path: '/sort', value: [{ key: 'Name', dir: 'asc' }], fix: '"sort"' },
-    { path: '/summary', value: { groupBy: [], aggregates: [] }, fix: '"group"' },
+    { path: '/filter', value: { js: "row.Name === 'Ana'" } },
+    { path: '/sort', value: [{ key: 'Name', dir: 'asc' }] },
+    { path: '/page', value: { size: 10, offset: 0 } },
+    { path: '/summary', value: { groupBy: [], aggregates: [] } },
   ];
-  for (const { path, value, fix } of cases) {
-    it(`rejects a patch writing ${path} and points at the ${fix} transformation`, () => {
+  for (const { path, value } of cases) {
+    it(`rejects a patch writing ${path} as an unrecognized key`, () => {
       const r = applyAndValidate(baseSpec, [{ op: 'add', path, value }]);
       expect(r.kind).toBe('err');
       if (r.kind === 'err') {
-        expect(r.message).toContain('/transformations/-');
-        expect(r.message).toContain(fix);
+        expect(r.message.toLowerCase()).toContain('unrecognized');
+        expect(r.message).toContain(`"${path.slice(1)}"`);
       }
     });
   }
