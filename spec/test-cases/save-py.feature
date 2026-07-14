@@ -18,6 +18,26 @@ Feature: Export a flow as a Python script
       And the first line of "../temp/save-py-flow.py" is "#!/usr/bin/env -S uv run --script"
       And "../temp/save-py-flow.py" contains the line "# /// script"
 
+  Rule: Running the exported script reproduces the flow's output
+
+    # Same phrase as the scenario above, so both model calls (spec patch +
+    # Python generation) replay from the cassette already on tape. The script
+    # itself runs deterministically — the equivalence check needs no model.
+    @cli
+    Scenario: The exported script writes the same rows the session saved
+      When user enters the REPL with "customers-input.csv" and types:
+        """
+        Show only customers in the USA
+        :save ../temp/save-py-manual.jsonl
+        :save-py ../temp/save-py-equiv.py
+        exit
+        """
+      Then REPL exit code is 0
+      And "../temp/save-py-equiv.py" exists
+      When user runs the exported script "../temp/save-py-equiv.py" with input "customers-input.csv" and output "../temp/save-py-script.jsonl"
+      Then exit code is 0
+      And "../temp/save-py-script.jsonl" has the same rows as "../temp/save-py-manual.jsonl"
+
   Rule: The web app exports the same flow through the Save-flow dropdown
 
     @web

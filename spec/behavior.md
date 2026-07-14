@@ -1316,7 +1316,9 @@ single self-contained Python 3 script. The script carries a
 top comments, so `./script.py input output` runs directly with `uv`
 resolving dependencies. It reads a `.csv` or `.jsonl` input and writes
 the transformed table to the output path. The script runs
-deterministically — no AI call at run time.
+deterministically — no AI call at run time — and reproduces the flow's
+result: run over the same input, it writes the same rows the session
+would have written with `:save`.
 
 Generating the script makes exactly one AI call: the model translates
 the spec's transformations into Python. Because the exported script
