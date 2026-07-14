@@ -1147,14 +1147,17 @@ into the seven marketing feature categories** — Clean up, Enrich & extract,
 Classify, Validate, Process language, Be exact, and Load, save & reuse —
 numbered 01–07, in the same order as the homepage sections. A scenario's group comes
 from its `@cat-…` tag (e.g. `@cat-cleanup`); empty categories are omitted.
+Load, save & reuse has no tours — by the time a visitor cares about saving,
+they have already loaded a file and run a query — so the panel shows the first
+six groups.
 **Clicking a tour starts it immediately** — there is no separate Play step. A
 tour the visitor has played to the end carries a **green checkmark** in the list
 (remembered across reloads), so it is easy to see what is left to try.
 Below the groups, a **Dev** dropdown lists every `@web` scenario that is *not*
 `@tour`, so a developer can smoke-test any scenario without opening the
 `.feature` file; picking one starts it too. The homepage "Show me →" links
-deep-link into these tours, one per feature item (the Load, save & reuse items
-share a single combined tour).
+deep-link into these tours, one per feature item; the Load, save & reuse
+homepage section is informational only, with no "Show me →" links.
 
 A `load the lookup table …` step (a join's second input) is a **silent
 prerequisite**, not a tour step: the file is written before the tour starts and

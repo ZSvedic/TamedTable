@@ -16,7 +16,7 @@ the default run until `bun run test:record` makes the tape (record mode includes
 those scenarios). No scenario carries the tag today; the mechanism is the escape
 hatch for the next one that does. (`datanorm.feature` was removed — its strict
 byte-golden NL assertions were brittle and never recorded, and the normalization
-behavior is covered offline by the clean-up / loadsave / multilingual tours.)
+behavior is covered offline by the clean-up / loadsave / multilingual scenarios.)
 
 ## Keeping `.feature` files small
 
