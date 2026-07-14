@@ -14,7 +14,11 @@ edits — that the runtime applies, validates, and replays against the
 immutable source rows.
 
 The spec carries an ordered list of *transformations* that mutate data before
-view ops (filter, sort, page, summary) run. Four core transformation kinds
+view ops run. One view op is live today — `page`, which trims the visible
+page. The reserved `filter`, `sort`, and `summary` view fields are never
+evaluated, so a patch that writes one is rejected back to the model with a
+message naming the transformation to append instead — otherwise the patch
+would commit without changing a single row. Four core transformation kinds
 cover the row-and-column basics:
 
 - **filter** — keep rows where a predicate is truthy. <!-- #FilterRows -->
@@ -112,11 +116,15 @@ cancel. It doesn't print to a terminal or own any I/O beyond what the runner
 needs.
 
 The LLM only changes the spec through one tool — call it the *patch tool* —
-that takes a list of RFC 6902 operations. The harness rejects three LLM
+that takes a list of RFC 6902 operations. The harness rejects four LLM
 mistakes inline and feeds them back through the recovery loop:
 
 - an empty operations list;
 - a patch that applies cleanly but leaves the spec identical to before;
+- a patch that writes a reserved top-level view field (`filter`, `sort`,
+  `summary`). Those fields are never evaluated, so the write would commit
+  while changing nothing — the rejection tells the model to append the
+  matching transformation (`filter`, `sort`, `group`) instead;
 - a patch that leaves a `validate` reading a column no step before it
   provides. The predicate would test a value that doesn't exist yet — every
   row would fail — so the rejection names the missing column and tells the

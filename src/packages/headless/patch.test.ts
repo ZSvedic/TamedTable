@@ -30,6 +30,29 @@ describe('applyAndValidate', () => {
   });
 });
 
+// Regression: asked "show only Ana", the model patched `/filter` (a reserved
+// view field nothing evaluates) instead of appending a filter transformation.
+// The spec validated, the patch committed — and not a single row was filtered.
+// A write to a reserved view field must be rejected into the recovery loop
+// with a message naming the transformation to append instead.
+describe('applyAndValidate — reserved view fields', () => {
+  const cases = [
+    { path: '/filter', value: { js: "row.Name === 'Ana'" }, fix: '"filter"' },
+    { path: '/sort', value: [{ key: 'Name', dir: 'asc' }], fix: '"sort"' },
+    { path: '/summary', value: { groupBy: [], aggregates: [] }, fix: '"group"' },
+  ];
+  for (const { path, value, fix } of cases) {
+    it(`rejects a patch writing ${path} and points at the ${fix} transformation`, () => {
+      const r = applyAndValidate(baseSpec, [{ op: 'add', path, value }]);
+      expect(r.kind).toBe('err');
+      if (r.kind === 'err') {
+        expect(r.message).toContain('/transformations/-');
+        expect(r.message).toContain(fix);
+      }
+    });
+  }
+});
+
 // Gemini's function-calling layer turns an untyped `value: {}` into a bare
 // `{ type: "object" }` with no guidance, and the model then emits garbage
 // (e.g. `"value": 3`) — so `value` is a string-typed field carrying
