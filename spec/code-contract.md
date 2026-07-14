@@ -40,10 +40,10 @@ interface TablePlan {
   table?: string;
   columns: Array<{ id: string; label?: string; format?: string }>;
   transformations: Transformation[];
-  filter?: unknown;
-  sort?: unknown;
+  filter?: never;   // reserved view field — a present value fails validation
+  sort?: never;     // reserved view field — a present value fails validation
   page?: { size?: number; offset?: number };
-  summary?: { groupBy: unknown[]; aggregates: unknown[] };  // both must be []
+  summary?: never;  // reserved view field — a present value fails validation
 }
 ```
 
@@ -59,7 +59,10 @@ three shapes; `split.into`, `pivot.index`, `sort.by`, and
 `unpivot.measures` are non-empty (an empty `group.by` is allowed — it
 aggregates the whole table into one row);
 `validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
-`.jsonl`. It does *not* check whether a JS body compiles or whether an
+`.jsonl`; a present top-level `filter`, `sort`, or `summary` fails with a
+message naming the transformation to append instead (`page` is the only
+live view field — nothing ever evaluates the other three, so a patch
+writing one would otherwise commit as a silent no-op). It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
