@@ -1,0 +1,83 @@
+{
+  "version": 2,
+  "source": "TournamentSearch.csv",
+  "spec": {
+    "table": "TournamentSearch.csv",
+    "columns": [
+      {
+        "id": "Dogadanje"
+      },
+      {
+        "id": "ukupno_igraca"
+      },
+      {
+        "id": "broj_turnirskih_skupina"
+      },
+      {
+        "id": "primjeri_turnira"
+      },
+      {
+        "id": "lokacije"
+      },
+      {
+        "id": "zadnja_godina"
+      }
+    ],
+    "transformations": [
+      {
+        "kind": "mutate",
+        "columns": "Tempo igre",
+        "value": {
+          "llm": "Normalize this chess time-control notation to the common standard form used for chess tournaments. Input: '{Tempo igre}'. Interpret varied local or informal formats (for example minutes, seconds, increment, delay, multiple time periods, blitz/rapid/classical labels) and rewrite as a concise standard notation such as '90+30', '3+2', '40/90+30', or '90 min + 30 sec increment' only when needed for clarity. Preserve all time-control information present in the input; do not invent missing values. Reply in Croatian or language-neutral chess notation, with ONLY the normalized time-control text and nothing else. If the input is empty, missing, or cannot be interpreted as a chess time control, reply with the literal word: null"
+        }
+      },
+      {
+        "kind": "mutate",
+        "columns": "Dogadanje",
+        "value": {
+          "llm": "Infer the parent tournament event / tournament series that this row belongs to, so rows that are merely sections, age groups, rating groups, rounds, or team/individual categories of the same event get the same concise event name. Use the tournament name, organizer(s), chief arbiter, location, dates, time control, federation/state, and other same-row context to decide. Tournament name: '{Turnir}'. Same-row context: {*}. Return a stable Croatian or language-neutral event name, without section labels such as U12, rapid/blitz section, Open A/B/C, rating group, round, category, or team/individual subdivision unless that label is essential to distinguish genuinely different events. Reply with ONLY the event name and nothing else. If the input cannot be processed, reply with the literal word: null"
+        }
+      },
+      {
+        "kind": "filter",
+        "pred": {
+          "js": "(() => { const fed = String(row.FED ?? '').trim().toUpperCase(); const state = String(row.State ?? '').trim().toUpperCase(); const loc = String(row.Lokacija ?? '').toLowerCase(); const isCroatia = fed === 'CRO' || state === 'CRO' || state === 'HR' || state.includes('CROATIA') || state.includes('HRVAT') || loc.includes('hrvatska') || loc.includes('croatia'); const parseYear = (v) => { const s = String(v ?? '').trim(); if (!s) return NaN; const iso = s.match(/(20\\d{2}|19\\d{2})/); if (iso) return Number(iso[1]); const dmy = s.match(/\\b(\\d{1,2})[.\\/-](\\d{1,2})[.\\/-](\\d{2,4})\\b/); if (dmy) { let y = Number(dmy[3]); if (y < 100) y += y >= 70 ? 1900 : 2000; return y; } return NaN; }; const years = [parseYear(row.do), parseYear(row.od), parseYear(row['Zadnja izmjena'])].filter(Number.isFinite); const y = years.length ? Math.max(...years) : NaN; const currentYear = new Date().getFullYear(); const recent = Number.isFinite(y) ? y >= currentYear - 5 && y <= currentYear + 1 : true; return isCroatia && recent; })()"
+        }
+      },
+      {
+        "kind": "group",
+        "by": [
+          "Dogadanje"
+        ],
+        "agg": {
+          "ukupno_igraca": {
+            "js": "rows.reduce((sum, r) => { const raw = String(r.n ?? '').replace(/[^0-9.-]/g, ''); const val = Number(raw); return sum + (Number.isFinite(val) ? val : 0); }, 0)"
+          },
+          "broj_turnirskih_skupina": {
+            "js": "rows.length"
+          },
+          "primjeri_turnira": {
+            "js": "Array.from(new Set(rows.map(r => String(r.Turnir ?? '').trim()).filter(Boolean))).slice(0, 5).join(' | ')"
+          },
+          "lokacije": {
+            "js": "Array.from(new Set(rows.map(r => String(r.Lokacija ?? '').trim()).filter(Boolean))).slice(0, 5).join(' | ')"
+          },
+          "zadnja_godina": {
+            "js": "(() => { const parseYear = (v) => { const s = String(v ?? '').trim(); if (!s) return NaN; const m = s.match(/(20\\d{2}|19\\d{2})/); if (m) return Number(m[1]); const d = s.match(/\\b(\\d{1,2})[.\\/-](\\d{1,2})[.\\/-](\\d{2,4})\\b/); if (d) { let y = Number(d[3]); if (y < 100) y += y >= 70 ? 1900 : 2000; return y; } return NaN; }; const years = rows.flatMap(r => [parseYear(r.do), parseYear(r.od), parseYear(r['Zadnja izmjena'])]).filter(Number.isFinite); return years.length ? Math.max(...years) : null; })()"
+          }
+        }
+      },
+      {
+        "kind": "sort",
+        "by": [
+          {
+            "key": {
+              "js": "Number(row.ukupno_igraca) || 0"
+            },
+            "dir": "desc"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -73,7 +73,7 @@ test('a CSV session never loads duckdb-wasm; a {sql} transform does and runs in 
   await page.goto('/TamedTable/app/');
 
   // Load the bundled CSV sample through the Open URL dialog.
-  await page.locator('[data-uk-split-caret]').first().click();
+  await page.locator('[data-uk-menubtn]').first().click();
   await page.locator('[data-uk-menu-item="Open URL…"]').click();
   const dialog = page.locator('[data-tb-dialog]');
   await dialog.locator('[data-tb-url-input]').fill(SAMPLE_URL);

@@ -17,7 +17,7 @@ function openOptions(
 ): { icon: IconName; label: string; onClick: () => void }[] {
   return [
     { icon: 'sparkle', label: 'Open sample…', onClick: () => controller.openSampleDialog() },
-    { icon: 'folder', label: 'Open local…', onClick: () => void controller.openCsv() },
+    { icon: 'upload', label: 'Open local…', onClick: () => void controller.openCsv() },
     { icon: 'link', label: 'Open URL…', onClick: () => controller.openUrlDialog() },
   ];
 }

@@ -123,11 +123,12 @@ export interface HeadlessRunner {
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
   request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  /** Replace the spec and replay it against the source. `opts` serves a long
-   *  replay (the web's flow-open): `onStep` fires as each transformation
-   *  starts, `onChunk` streams AI-cell results, and aborting `signal` throws
-   *  `Runner: cancelled` with the previous spec and rows untouched — the
-   *  replay commits only when it finishes whole. */ // #OpenFlow
+  /** Replace the spec, replaying its transformations onto the loaded source
+   *  rows. Accepts the same streaming/abort options a request carries plus
+   *  `onStep`, which fires as each transformation starts — so a replayed
+   *  flow streams, reports progress, and can be cancelled (the Open & run
+   *  flow path); aborting throws `Runner: cancelled` with the previous spec
+   *  and rows untouched. */ // #OpenFlow
   setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
@@ -483,6 +484,116 @@ export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[
   return undefined;
 }
 
+// #FileIO
+/** Whether a saved flow can run on a table with `sourceColumns`: walks the
+ *  transformations tracking column availability (the same walk as
+ *  `checkValidateColumnOrder`), checking each step's *reads* — expression
+ *  references (`row.X`, `{X}` templates), `split.from`, `select`/`group.by`/
+ *  `pivot`/`unpivot` column names. Returns a user-readable message naming the
+ *  first column no earlier step provides, or undefined when the flow fits.
+ *  `join` and `pivot` add columns that can't be enumerated statically, so
+ *  they suspend the check for later steps; `{sql}` expressions aren't parsed. */
+export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]): string | undefined {
+  let available = new Set(sourceColumns);
+  let unknowable = false;
+  const label = (t: Transformation, i: number): string => `step ${i + 1} (${t.kind})`;
+
+  for (const [i, t] of (spec.transformations as Transformation[]).entries()) {
+    const reads: string[] = [];
+    switch (t.kind) {
+      case 'filter':
+        reads.push(...exprColumnRefs(t.pred));
+        break;
+      case 'mutate':
+        reads.push(...exprColumnRefs(t.value));
+        break;
+      case 'select':
+        reads.push(...t.columns);
+        break;
+      case 'sort':
+        for (const b of t.by) {
+          if (typeof b.key === 'string') reads.push(b.key);
+          else reads.push(...exprColumnRefs(b.key));
+        }
+        break;
+      case 'group':
+        for (const b of t.by) {
+          if (typeof b === 'string') reads.push(b);
+          else reads.push(...exprColumnRefs(b));
+        }
+        break;
+      case 'join':
+        reads.push(...exprColumnRefs(t.on));
+        break;
+      case 'split':
+        reads.push(t.from);
+        if (typeof t.on === 'object' && !(t.on instanceof RegExp)) reads.push(...exprColumnRefs(t.on));
+        break;
+      case 'validate':
+        reads.push(
+          ...[...exprColumnRefs(t.pred), ...exprColumnRefs(t.message)].filter(
+            (c) => c !== '_valid' && c !== '_validation',
+          ),
+        );
+        break;
+      case 'pivot':
+        reads.push(...t.index, t.on, t.values);
+        break;
+      case 'unpivot':
+        reads.push(...t.id, ...t.measures);
+        break;
+    }
+
+    if (!unknowable) {
+      for (const col of reads) {
+        if (!available.has(col)) {
+          return `The flow reads column "${col}" (${label(t, i)}), which the current table does not have. Current columns: ${[...available].join(', ')}.`;
+        }
+      }
+    }
+
+    // Mirror checkValidateColumnOrder's availability bookkeeping.
+    switch (t.kind) {
+      case 'mutate':
+        for (const c of Array.isArray(t.columns) ? t.columns : [t.columns]) available.add(c);
+        break;
+      case 'split':
+        for (const c of t.into) available.add(c);
+        break;
+      case 'select':
+        available = new Set(t.columns);
+        unknowable = false;
+        break;
+      case 'group': {
+        available = new Set<string>();
+        t.by.forEach((b, bi) => available.add(typeof b === 'string' ? b : `key_${bi + 1}`));
+        for (const k of Object.keys(t.agg)) available.add(k);
+        unknowable = false;
+        break;
+      }
+      case 'unpivot':
+        available = new Set([...t.id, t.names_to ?? 'name', t.values_to ?? 'value']);
+        unknowable = false;
+        break;
+      case 'pivot':
+        available = new Set(t.index);
+        unknowable = true; // one column per distinct on-value — data-dependent
+        break;
+      case 'join':
+        unknowable = true; // right-table columns aren't known without reading it
+        break;
+      case 'validate':
+        available.add('_valid');
+        available.add('_validation');
+        break;
+      case 'filter':
+      case 'sort':
+        break;
+    }
+  }
+  return undefined;
+}
+
 // ── Runner ─────────────────────────────────────────────────────────────────
 
 class HeadlessRunnerImpl implements HeadlessRunner {
@@ -686,7 +797,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   async setSpec(
     spec: TablePlan,
-    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void } = {}
+    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void } = {},
   ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;

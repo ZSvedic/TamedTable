@@ -723,13 +723,55 @@ present, replaces the global `fetch` used here — the same hook the
 engine uses for cassette replay, so URL-load scenarios run offline.
 
 The three load sources are first-class actions — **Open sample…**,
-**Open local…**, **Open URL…**. The toolbar renders them as one
-`SplitButton`: the primary action opens the sample picker, the dropdown
-carries **Open local…** and **Open URL…**. The two halves render inside
-one rounded shell with a single hover tint and no internal divider, so
-the pair reads as one control. The empty page stacks the same three as
-separate buttons under the brand mark and the line "What table can I
-tame?".
+**Open local…**, **Open URL…**. The toolbar renders them inside one
+`MenuButton` (ui-kit): a plain dropdown trigger with grouped sections
+(**Recent** submenu entry, then **Data** and **Recipe** headers).
+The matching **Save** `MenuButton` groups the four **Save <format>…**
+entries under **Data** and the two recipe exports under **Recipe**.
+The empty page stacks the same three open actions as separate buttons
+under the brand mark and the line "What table can I tame?".
+
+```ts
+// controller surface added by the menu refactor
+interface RecentEntry {
+  kind: 'sample' | 'url' | 'local' | 'flow';
+  label: string;         // display name, e.g. "customers.csv"
+  url?: string;          // set for sample/url kinds — reload address
+}
+class WebController {
+  recents(): RecentEntry[];                 // newest first, at most 5
+  openRecent(entry: RecentEntry): Promise<void>;
+  openFlow(): Promise<void>;                // Open .flow & run on current data…
+}
+```
+
+Recents persist under the localStorage key `tamedtable-recents`
+(best-effort — in-memory when localStorage is unavailable), capped at
+5, deduplicated by kind + label + url. `openFlow` runs one
+`FilePort.pickOpen` handshake for the `.flow` file, validates it,
+checks its input columns against the current table's source columns
+(`checkFlowInputColumns(spec, sourceColumns)`, exported by
+`@tamedtable/headless` — walks the transformations tracking column
+availability the way `checkValidateColumnOrder` does and returns a
+message naming the first missing read, or undefined), then applies
+the flow's spec through `Runner.setSpec` onto the already-loaded
+source rows, recording one patch-journal entry labelled
+`Ran <flow name>` so a single undo restores the previous spec.
+`setSpec(spec, opts?)` accepts the same optional `{ signal, onChunk }`
+a request carries plus `onStep` (a `StepUpdate` as each transformation
+starts), so a replayed AI cell streams onto the table and can be
+aborted; the web controller sets `streaming` for the duration (the
+same busy state a chat request drives). While the replay runs the
+controller exposes `flowRun: FlowRunState | null` — name, 1-based
+`step`/`totalSteps`, running `kind`, `rowsDone`/`rowsTotal`, and a
+`log` capped at the newest 500 lines — rendered by the modal
+`FlowRunDialog` (`data-flow-run-dialog`, progress bar, collapsed-by-
+default log, Cancel via `cancelFlowRun()`). Flow failures set
+`WebController.errorDialog: string | null` — rendered by the shared
+`ErrorDialog` overlay (both layouts), dismissed with
+`dismissErrorDialog()` (`data-tt-error-dialog`); a cancel is not a
+failure — it surfaces as the info toast
+`Flow cancelled — table unchanged.` instead.
 
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on

@@ -1,39 +1,10 @@
 # #OpenFlow
-# Opening a saved .flow in the web app applies it to a table, with a
-# progress dialog (expandable log, cancel) for long replays. Every scenario
-# here is offline: filter.flow is deterministic ({js} only), so no model
-# call and no cassette. The replay progress/cancel seam itself is
-# headless — the same setSpec the web dialog drives.
-Feature: Open and run a saved flow
-
-  Rule: Opening a flow applies it to a table
-
-    @web
-    Scenario: Opening a flow runs it against the already-loaded table
-      Given the TamedTable web app
-      And load "filter-input.csv"
-      When user says "Load CSV file"
-      And user selects "filter.flow"
-      Then the table has 4 rows
-      And the undo history lists "Apply flow filter.flow"
-
-    @web
-    Scenario: Opening a flow with no table loaded asks for its input first
-      Given the TamedTable web app
-      When user says "Load CSV file"
-      And user selects the flow "filter.flow" which then asks for its input
-      Then a toast shows "needs its input table"
-      When user selects "filter-input.csv"
-      Then the table has 4 rows
-
-    @web
-    Scenario: An invalid flow file surfaces an error and changes nothing
-      Given the TamedTable web app
-      And load "filter-input.csv"
-      When user says "Load CSV file"
-      And user selects "filter-input.csv" renamed to "broken.flow"
-      Then a toast shows "Could not open file"
-      And the table has 10 rows
+# The replay progress/cancel seam behind the web's flow-run dialog — the
+# same setSpec the "Open .flow & run on current data…" path drives (the
+# dialog UX itself is covered by web.feature § "A saved flow can be opened
+# and run on the current table"). Offline: filter.flow is deterministic
+# ({js} only), so no model call and no cassette.
+Feature: Flow replay progress and cancel
 
   Rule: A flow replay reports progress and honors cancel
 

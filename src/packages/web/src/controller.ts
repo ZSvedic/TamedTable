@@ -25,6 +25,7 @@ import type { ControllerHost } from './controller-context.ts';
 import { EngineManager } from './controller-engine.ts';
 import { PatchManager } from './controller-patch.ts';
 import { FilesManager } from './controller-files.ts';
+import type { RecentEntry } from './recents.ts';
 import { VoiceManager } from './controller-voice.ts';
 import { ConfigManager } from './controller-config.ts';
 import { TutorialManager } from './controller-tutorial.ts';
@@ -102,6 +103,9 @@ export class WebController implements ControllerHost {
   urlDialogOpen = false;
   /** Whether the Open-sample picker dialog is showing. */
   sampleDialogOpen = false;
+  /** A modal error message (the flow error dialog), or null when hidden —
+   *  used for failures a fading toast could miss. */
+  errorDialog: string | null = null;
   streaming = false;
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
@@ -318,13 +322,22 @@ export class WebController implements ControllerHost {
   // ── File dialogs (→ files) ─────────────────────────────────────────────────
 
   openCsv(): Promise<void> { return this.files.openCsv(); }
+  /** "Open .flow & run on current data…" — pick a saved flow and replay it
+   *  onto the currently-loaded table. */
+  openFlow(): Promise<void> { return this.files.openFlow(); }
+  /** Hide the modal error dialog. */
+  dismissErrorDialog(): void { this.errorDialog = null; this.notify(); }
+  /** The Open menu's Recent entries — newest first, at most 5. */
+  recents(): RecentEntry[] { return this.files.recents(); }
+  /** Re-open a Recent entry (reload a URL/sample, or re-raise a picker). */
+  openRecent(entry: RecentEntry): Promise<void> { return this.files.openRecent(entry); }
   /** Load a file dropped onto the empty page (drag-and-drop open). */
   openDropped(name: string, bytes: Uint8Array): Promise<void> { return this.files.openDropped(name, bytes); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
   openSampleDialog(): void { this.files.openSampleDialog(); }
   closeSampleDialog(): void { this.files.closeSampleDialog(); }
-  loadFromUrl(url: string): Promise<void> { return this.files.loadFromUrl(url); }
+  loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> { return this.files.loadFromUrl(url, kind); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
   savePython(): Promise<void> { return this.files.savePython(); }
   saveData(): Promise<void> { return this.files.saveData(); }

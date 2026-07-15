@@ -15,24 +15,54 @@ import {
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
-import { isCancelled, specHasLlmCell } from '@tamedtable/headless';
+import type { TablePlan } from '@tamedtable/core';
+import { checkFlowInputColumns, isCancelled, specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
+import { RecentsStore, type RecentEntry } from './recents.ts';
+
+/** The data formats the Open picker accepts. */
+const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
 export class FilesManager {
   private readonly host: ControllerHost;
+  private readonly recentsStore = new RecentsStore();
   constructor(host: ControllerHost) {
     this.host = host;
   }
 
+  /** The Open menu's Recent entries — newest first, at most 5. */
+  recents(): RecentEntry[] {
+    return this.recentsStore.list();
+  }
+
+  /** Re-open a Recent entry: samples and URLs reload their address; local
+   *  files and flows re-open the matching picker (the browser cannot reopen
+   *  a local file silently — the entry's name is the reminder). */
+  async openRecent(entry: RecentEntry): Promise<void> {
+    if ((entry.kind === 'sample' || entry.kind === 'url') && entry.url) {
+      try {
+        await this.loadFromUrl(entry.url, entry.kind);
+      } catch (e) {
+        this.host.pushToast('error', `Could not open ${entry.label}: ${(e as Error).message}`);
+      }
+      return;
+    }
+    if (entry.kind === 'flow') return this.openFlow();
+    return this.openCsv();
+  }
+
   /** Open the file Open dialog and load the picked file (CSV, JSONL, Parquet,
-   *  Arrow — or a .flow, which runs against a table; see openFlowPicked). */
+   *  or Arrow). */
   async openCsv(): Promise<void> {
     this.host.dialog = 'open';
     this.host.notify();
     try {
-      const picked = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow', '.flow']);
-      if (picked) await this.loadFromPicked(picked);
+      const picked = await this.host.file.pickOpen(OPEN_EXTENSIONS);
+      if (picked) {
+        await this.loadFromPicked(picked);
+        this.recentsStore.record({ kind: 'local', label: picked.name });
+      }
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
     } finally {
@@ -41,11 +71,77 @@ export class FilesManager {
     }
   }
 
+  // #OpenFlow
+  /** "Open .flow & run on current data…" — pick a saved `.flow` and replay
+   *  its transformations onto the currently-loaded table's source as one
+   *  history entry (a single undo restores the previous spec). The replay
+   *  runs behind the flow-run dialog (engine.applySpec): live progress, an
+   *  event log, and a Cancel that leaves the table untouched. Failures — an
+   *  unreadable flow, a flow reading columns the table lacks, AI cells with
+   *  no provider key — raise the modal error dialog, not a fading toast. */
+  async openFlow(): Promise<void> {
+    if (!this.host.loaded) {
+      this.host.pushToast('error', 'Load a file before running a flow.');
+      return;
+    }
+    this.host.dialog = 'open';
+    this.host.notify();
+    try {
+      const picked = await this.host.file.pickOpen(['.flow']);
+      if (!picked) return;
+      const spec = FilesManager.parseFlowFile(picked);
+      const mismatch = checkFlowInputColumns(spec, this.host.engine.sourceColumns());
+      if (mismatch) {
+        this.host.errorDialog = `${picked.name} does not fit the current table. ${mismatch}`;
+        return;
+      }
+      if (specHasLlmCell(spec) && !this.host.settingsMgr.activeApiKey()?.trim()) {
+        this.host.errorDialog = missingProviderKeyMessage(
+          this.host.config.provider,
+          'Running a flow with AI cells requires',
+        );
+        return;
+      }
+      const prevSpec = structuredClone(this.host.engine.currentSpec());
+      await this.host.engine.applySpec(spec, picked.name);
+      this.host.patch.record({
+        label: `Ran ${picked.name}`,
+        prevSpec,
+        nextSpec: structuredClone(this.host.engine.currentSpec()),
+      });
+      this.recentsStore.record({ kind: 'flow', label: picked.name });
+      this.host.pushMessage(
+        'assistant',
+        `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
+      );
+    } catch (e) {
+      // The dialog's Cancel is a deliberate stop, not a failure — the replay
+      // left the table untouched, so a quiet toast is enough.
+      if (isCancelled(e)) this.host.pushToast('info', 'Flow cancelled — table unchanged.');
+      else this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
+    } finally {
+      this.host.dialog = null;
+      this.host.notify();
+    }
+  }
+
+  /** Parse and validate a picked `.flow` file through file-io's parseFlow
+   *  (JSON, version 1 or 2, the one TablePlan schema), prefixing errors
+   *  with the file's name. */
+  private static parseFlowFile(picked: PickedFile): TablePlan {
+    try {
+      return parseFlow(new TextDecoder().decode(picked.bytes)).spec;
+    } catch (e) {
+      throw new Error(`${picked.name}: ${(e as Error).message}`);
+    }
+  }
+
   /** Load a file dropped onto the empty page — the drag-and-drop counterpart
    *  of openCsv, minus the picker dialog. Same formats, same toasts. */
   async openDropped(name: string, bytes: Uint8Array): Promise<void> {
     try {
       await this.loadFromPicked({ name, bytes });
+      this.recentsStore.record({ kind: 'local', label: name });
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
     } finally {
@@ -54,7 +150,6 @@ export class FilesManager {
   }
 
   private async loadFromPicked(picked: PickedFile): Promise<void> {
-    if (picked.name.toLowerCase().endsWith('.flow')) return this.openFlowPicked(picked);
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly — no filesystem, no path round-trip.
     const { rows, spec } = await parseTable(picked.name, picked.bytes);
@@ -62,36 +157,6 @@ export class FilesManager {
     this.host.pushMessage(
       'assistant',
       `Loaded ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-    );
-  }
-
-  // #OpenFlow
-  /** Run an opened .flow against a table — the browser's counterpart to the
-   *  CLI's `execute`. With a table loaded the flow runs against its source
-   *  rows (journaled, so undo restores the previous spec); with nothing
-   *  loaded the picker reopens for the flow's input table first. The replay
-   *  itself runs behind the flow-run dialog (engine.applyFlow); cancelling
-   *  it leaves the table untouched. */
-  private async openFlowPicked(picked: PickedFile): Promise<void> {
-    const { source, spec } = parseFlow(new TextDecoder().decode(picked.bytes));
-    if (!this.host.loaded) {
-      this.host.pushToast('info', `${picked.name} needs its input table — pick ${source || 'the data file'}.`);
-      const input = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow']);
-      if (!input) return;
-      await this.loadFromPicked(input);
-    }
-    try {
-      await this.host.engine.applyFlow(spec, picked.name);
-    } catch (e) {
-      if (isCancelled(e)) {
-        this.host.pushToast('info', 'Flow cancelled — table unchanged.');
-        return;
-      }
-      throw e; // openCsv's catch shows "Could not open file: <reason>"
-    }
-    this.host.pushMessage(
-      'assistant',
-      `Applied ${picked.name} — ${spec.transformations.length} transformation${spec.transformations.length === 1 ? '' : 's'}, ${this.host.engine.currentRows().length} rows.`,
     );
   }
 
@@ -121,10 +186,12 @@ export class FilesManager {
 
   /** Fetch a CSV or JSONL from `url` and render it like a local-file open.
    *  Throws on any failure so the dialog can keep itself open with an
-   *  inline error; success closes the dialog at the caller. */
-  async loadFromUrl(url: string): Promise<void> {
+   *  inline error; success closes the dialog at the caller. `kind` labels
+   *  the Recent entry — the sample picker passes 'sample'. */
+  async loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> {
     const { name, bytes } = await fetchTable(url, this.host.opts.fetch);
     await this.loadFromPicked({ name, bytes });
+    this.recentsStore.record({ kind, label: name, url });
   }
 
   /** Save the current flow (replayable spec) via the Save dialog. */

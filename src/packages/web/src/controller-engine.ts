@@ -172,6 +172,75 @@ export class EngineManager {
     this.ensureHeadless().registerLookup(name, rows);
   }
 
+  /** The loaded source's column ids — what a replayed flow reads (its
+   *  transformations run on the source rows, not the derived view). */
+  sourceColumns(): string[] {
+    return this.loadedSource?.spec.columns.map((c) => c.id) ?? [];
+  }
+
+  // #OpenFlow
+  /** Replace the current spec, replaying its transformations onto the loaded
+   *  source rows (the Open & run .flow path). Runs like a request — AI cells
+   *  paint onto the overlay as chunks land — behind the flow-run dialog:
+   *  `host.flowRun` carries live step/row progress and the event log named
+   *  after the picked `.flow` file, and the dialog's Cancel aborts through
+   *  the same controller the chat Stop uses. setSpec commits only when the
+   *  whole replay finishes, so a cancel or failure leaves the previous spec
+   *  and rows untouched. Throws when the replay fails or is cancelled. */
+  async applySpec(spec: TablePlan, name: string): Promise<void> {
+    const runner = this.ensureHeadless();
+    const ownAbort = new AbortController();
+    this.activeAbort = ownAbort;
+    this.host.streaming = true;
+    this.overlay.clear();
+    const run: FlowRunState = {
+      name,
+      step: 0,
+      totalSteps: spec.transformations.length,
+      kind: '',
+      rowsDone: 0,
+      rowsTotal: 0,
+      log: [],
+    };
+    this.host.flowRun = run;
+    this.host.notify();
+
+    const appendLog = (line: string): void => {
+      run.log.push(line);
+      if (run.log.length > FLOW_LOG_MAX) run.log.splice(0, run.log.length - FLOW_LOG_MAX);
+    };
+
+    try {
+      await runner.setSpec(spec, {
+        signal: ownAbort.signal,
+        onStep: (u) => {
+          run.step = u.index + 1;
+          run.kind = u.kind;
+          run.rowsTotal = u.rows;
+          run.rowsDone = 0;
+          appendLog(`step ${u.index + 1}/${u.total} — ${u.kind} (${u.rows} rows)`);
+          this.host.notify();
+        },
+        onChunk: (u) => {
+          run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
+          appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
+          this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
+          this.scheduleOverlayFlush();
+        },
+      });
+    } finally {
+      this.activeAbort = null;
+      this.host.streaming = false;
+      this.host.flowRun = null;
+      this.overlay.clear();
+      if (this.overlayTimer) {
+        clearTimeout(this.overlayTimer);
+        this.overlayTimer = undefined;
+      }
+      this.host.notify();
+    }
+  }
+
   /** Shared post-load bookkeeping for loadInput / loadParsed: cache the source
    *  for model-change rebuilds and reset the per-load view state. */
   private afterLoad(runner: HeadlessRunner, sourcePath: string): void {
@@ -234,76 +303,6 @@ export class EngineManager {
   /** Cancel the in-flight request, if any. */
   cancelActive(): void {
     this.activeAbort?.abort();
-  }
-
-  // #OpenFlow
-  /** Replay an opened flow's spec against the loaded source, feeding the
-   *  flow-run dialog: `host.flowRun` carries live step/row progress and the
-   *  event log, and the dialog's Cancel aborts through the same controller
-   *  the chat Stop uses. Commits to the journal as `Apply flow <name>`; on
-   *  cancel or error setSpec leaves the previous spec and rows untouched. */
-  async applyFlow(spec: TablePlan, name: string): Promise<void> {
-    if (!this.host.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
-    const runner = this.ensureHeadless();
-    const prevSpec = structuredClone(runner.currentSpec());
-
-    const ownAbort = new AbortController();
-    this.activeAbort = ownAbort;
-    this.host.streaming = true;
-    this.overlay.clear();
-    this.host.selection = null;
-    this.host.savedLabel = null;
-    const run: FlowRunState = {
-      name,
-      step: 0,
-      totalSteps: spec.transformations.length,
-      kind: '',
-      rowsDone: 0,
-      rowsTotal: 0,
-      log: [],
-    };
-    this.host.flowRun = run;
-    this.host.notify();
-
-    const appendLog = (line: string): void => {
-      run.log.push(line);
-      if (run.log.length > FLOW_LOG_MAX) run.log.splice(0, run.log.length - FLOW_LOG_MAX);
-    };
-
-    try {
-      await runner.setSpec(spec, {
-        signal: ownAbort.signal,
-        onStep: (u) => {
-          run.step = u.index + 1;
-          run.kind = u.kind;
-          run.rowsTotal = u.rows;
-          run.rowsDone = 0;
-          appendLog(`step ${u.index + 1}/${u.total} — ${u.kind} (${u.rows} rows)`);
-          this.host.notify();
-        },
-        onChunk: (u) => {
-          run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
-          appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
-          this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
-          this.scheduleOverlayFlush();
-        },
-      });
-      this.host.patch.record({
-        label: `Apply flow ${name}`,
-        prevSpec,
-        nextSpec: structuredClone(runner.currentSpec()),
-      });
-    } finally {
-      this.activeAbort = null;
-      this.host.streaming = false;
-      this.host.flowRun = null;
-      this.overlay.clear();
-      if (this.overlayTimer) {
-        clearTimeout(this.overlayTimer);
-        this.overlayTimer = undefined;
-      }
-      this.host.notify();
-    }
   }
 
   currentRows(): Row[] {

@@ -1,28 +1,23 @@
 // #MobileShell
-// The left slide-in drawer that holds every toolbar action the app bar can't:
-// the open sources, the save targets, the dark-mode toggle, Settings, and
-// Tours. Each item calls the same WebController method the desktop toolbar
-// does, then closes the drawer; Settings, Open-URL, and Tours hand off to the
-// shared overlays. Save targets are disabled until a table is loaded.
+// The left slide-in drawer — the phone's home for everything the dock can't
+// carry. It renders the SAME menu model the desktop toolbar dropdowns use
+// (openMenuSections / saveMenuSections: identical items, icons, order, and
+// disabled states — DRY), expanded in full under "Open" and "Save" headings
+// with separators between the groups. "Recent" expands in place. Below them:
+// the dark-mode toggle, Settings, and Tours.
 import { useState, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
-import { Icon, type IconName } from '@tamedtable/ui-kit/components';
-import { Lockup } from '@tamedtable/toolbar/components';
-import type { FormatId } from '@tamedtable/file-io';
+import { Icon, type IconName, type MenuButtonSection } from '@tamedtable/ui-kit/components';
+import { Lockup, openMenuSections, saveMenuSections } from '@tamedtable/toolbar/components';
 import type { WebController } from '../../controller.ts';
-
-const SAVE_FORMATS: { id: FormatId; label: string }[] = [
-  { id: 'csv', label: 'CSV' },
-  { id: 'jsonl', label: 'JSONL' },
-  { id: 'parquet', label: 'Parquet' },
-  { id: 'arrow', label: 'Arrow' },
-];
+import { recentMenuItems, saveMenus } from '../Toolbar.tsx';
 
 function Item({
   t,
   icon,
   label,
   value,
+  tag,
   disabled,
   indent,
   onClick,
@@ -31,6 +26,8 @@ function Item({
   icon?: IconName;
   label: string;
   value?: string;
+  /** Small right-aligned badge (a Recent entry's kind). */
+  tag?: string;
   disabled?: boolean;
   indent?: boolean;
   onClick: () => void;
@@ -48,7 +45,7 @@ function Item({
         display: 'flex',
         alignItems: 'center',
         gap: space.px12,
-        padding: indent ? `9px 18px 9px 46px` : '11px 18px',
+        padding: indent ? '9px 18px 9px 48px' : '11px 18px',
         width: '100%',
         border: 0,
         background: hover && !disabled ? t.surface3 : 'transparent',
@@ -65,9 +62,97 @@ function Item({
           <Icon name={icon} size={18} />
         </span>
       )}
-      <span style={{ flex: 1 }}>{label}</span>
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      {tag && (
+        <span
+          style={{
+            fontFamily: typography.ui,
+            fontSize: typography.size.xs,
+            color: t.ink3,
+            background: t.surface3,
+            borderRadius: 4,
+            padding: '1px 6px',
+          }}
+        >
+          {tag}
+        </span>
+      )}
       {value && <span style={{ fontFamily: typography.mono, fontSize: typography.size.xs, color: t.ink3 }}>{value}</span>}
     </button>
+  );
+}
+
+/** One drawer group: the desktop dropdown's sections flattened into the
+ *  drawer — separators between sections (their small Data/Recipe headers are
+ *  dropped; the item labels carry the meaning), submenu items expanding in
+ *  place with their tagged sub-entries. */
+function SectionList({
+  t,
+  sections,
+  expanded,
+  onToggle,
+  onPick,
+}: {
+  t: Theme;
+  sections: MenuButtonSection[];
+  expanded: string | null;
+  onToggle: (label: string) => void;
+  onPick: (action: () => void) => void;
+}): ReactNode {
+  const sep = <div style={{ height: 1, background: t.line, margin: '7px 0' }} />;
+  return (
+    <>
+      {sections.map((section, si) => (
+        <div key={si} style={{ display: 'contents' }}>
+          {si > 0 && sep}
+          {section.items.map((item) => (
+            <div key={item.label} style={{ display: 'contents' }}>
+              <Item
+                t={t}
+                icon={item.icon}
+                label={item.label}
+                disabled={item.disabled}
+                value={item.submenu ? (expanded === item.label ? '▾' : '▸') : undefined}
+                onClick={() => {
+                  if (item.submenu) onToggle(item.label);
+                  else if (item.onClick) onPick(item.onClick);
+                }}
+              />
+              {item.submenu &&
+                expanded === item.label &&
+                item.submenu.map((sub) => (
+                  <Item
+                    key={`${sub.label} ${sub.tag ?? ''}`}
+                    t={t}
+                    indent
+                    label={sub.label}
+                    tag={sub.tag}
+                    onClick={() => onPick(sub.onClick)}
+                  />
+                ))}
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function GroupHeading({ t, label }: { t: Theme; label: string }): ReactNode {
+  return (
+    <div
+      style={{
+        fontFamily: typography.ui,
+        fontSize: typography.size.xs,
+        fontWeight: 700,
+        letterSpacing: '.06em',
+        textTransform: 'uppercase',
+        color: t.ink3,
+        padding: '10px 18px 4px',
+      }}
+    >
+      {label}
+    </div>
   );
 }
 
@@ -84,7 +169,7 @@ export function MenuDrawer({
   onClose: () => void;
   onToggleTheme: () => void;
 }): ReactNode {
-  const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const loaded = controller.isLoaded();
   const busy = controller.streaming;
   const sep = <div style={{ height: 1, background: t.line, margin: '7px 0' }} />;
@@ -92,6 +177,21 @@ export function MenuDrawer({
     onClose();
     fn();
   };
+
+  const openSections = openMenuSections({
+    onOpenSample: () => controller.openSampleDialog(),
+    onOpenLocal: () => void controller.openCsv(),
+    onOpenUrl: () => controller.openUrlDialog(),
+    onOpenFlow: () => void controller.openFlow(),
+    recentMenu: recentMenuItems(controller),
+    loaded,
+  });
+  // The desktop Save button disables whole; the drawer disables per item.
+  const saveSections = saveMenuSections(saveMenus(controller)).map((s) => ({
+    ...s,
+    items: s.items.map((item) => ({ ...item, disabled: !loaded || busy })),
+  }));
+
   return (
     <div style={{ display: 'contents' }}>
       {/* Fixed, not absolute: the shell flows with the document-scrolled page,
@@ -131,34 +231,18 @@ export function MenuDrawer({
             <Icon name="x" size={18} />
           </button>
         </div>
-        <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column' }}>
-          <Item t={t} icon="sparkle" label="Open sample…" onClick={() => run(() => controller.openSampleDialog())} />
-          <Item t={t} icon="folder" label="Open local…" onClick={() => run(() => void controller.openCsv())} />
-          <Item t={t} icon="link" label="Open URL…" onClick={() => run(() => controller.openUrlDialog())} />
-          {sep}
-          <Item t={t} icon="save" label="Save data" disabled={!loaded || busy} onClick={() => run(() => void controller.saveData())} />
-          <Item
+        <div style={{ padding: '0 0 8px', display: 'flex', flexDirection: 'column' }}>
+          <GroupHeading t={t} label="Open" />
+          <SectionList
             t={t}
-            icon="save"
-            label="Save data as…"
-            disabled={!loaded || busy}
-            value={saveAsOpen ? '▾' : '▸'}
-            onClick={() => setSaveAsOpen((o) => !o)}
+            sections={openSections}
+            expanded={expanded}
+            onToggle={(label) => setExpanded((e) => (e === label ? null : label))}
+            onPick={run}
           />
-          {saveAsOpen &&
-            SAVE_FORMATS.map((f) => (
-              <Item
-                key={f.id}
-                t={t}
-                indent
-                label={`Save as ${f.label}…`}
-                disabled={!loaded || busy}
-                onClick={() => run(() => void controller.saveDataAs(f.id))}
-              />
-            ))}
           {sep}
-          <Item t={t} icon="file" label="Save recipe…" disabled={!loaded || busy} onClick={() => run(() => void controller.saveFlow())} />
-          <Item t={t} icon="code" label="Save recipe as Python…" disabled={!loaded || busy} onClick={() => run(() => void controller.savePython())} />
+          <GroupHeading t={t} label="Save" />
+          <SectionList t={t} sections={saveSections} expanded={expanded} onToggle={() => {}} onPick={run} />
           {sep}
           <Item t={t} icon={dark ? 'sun' : 'moon'} label="Dark mode" value={dark ? 'on' : 'off'} onClick={onToggleTheme} />
           <Item t={t} icon="wrench" label="Settings…" onClick={() => run(() => controller.openSettings())} />

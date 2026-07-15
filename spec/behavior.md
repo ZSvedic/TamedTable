@@ -744,15 +744,62 @@ A table can be loaded from three sources, and each is its own
 first-class action: **Open sample…**, **Open local…**, and **Open
 URL…**. Samples are no longer buried inside the URL dialog — a user
 looking for a bundled file should not have to guess it lives behind
-"URL". The toolbar surfaces the three as one Open split-button: the
-primary click is **Open sample…** (it raises a small picker of the
-bundled sample files; clicking a sample loads it straight away), and
-the dropdown carries **Open local…** (the native file picker) and
-**Open URL…** (the URL dialog). The split-button is rendered as a
-single control — one rounded shell, one shared hover tint, no internal
-divider between the label and the dropdown chevron — so it reads as one
-toolbar item rather than two adjacent menu entries. The URL dialog is
-now URL-only: it accepts a typed address and no longer lists samples.
+"URL". The toolbar surfaces them under one **Open** menu button — a
+document icon, the word "Open", and a chevron; clicking anywhere on it
+drops a plain menu (there is no split default action). The menu is
+grouped under small headers:
+
+- **Recent** — a submenu entry at the top, greyed (disabled) until
+  something has been loaded. Hovering or tapping it opens a side panel
+  beside the menu listing the last 5 successful loads,
+  newest first, each tagged with its kind (`sample`, `URL`, `local`,
+  `flow`). A sample or URL entry reloads that address directly; a
+  local or flow entry re-opens the matching file picker (a browser
+  cannot silently reopen a local file), with the name serving as the
+  reminder of what to pick. The list persists across reloads
+  (localStorage, best-effort).
+- **Data** — **Open sample…** (raises the sample picker; clicking a
+  sample loads it straight away), **Open local…** (the native file
+  picker), and **Open URL…** (the URL dialog).
+- **Recipe** — **Open .flow & run on current data…** (below), greyed
+  until a table is loaded.
+
+The URL dialog is URL-only: it accepts a typed address and no longer
+lists samples.
+
+**Open .flow & run on current data…** replays a saved recipe onto the
+table already open in the UI — one picker, for the `.flow` file only
+(the data is the current table's source, so no second file is asked
+for; the entry is disabled until a table is loaded). The flow is
+validated (version 1 or 2, a well-formed spec), then checked against
+the current table: a flow that reads a column the current data does
+not have is refused with a **flow error dialog** — a modal that names
+the missing column and the current columns, dismissed with OK (a
+modal, not a toast, so it can't be missed, and it renders on the
+phone layout the same way). The same dialog surfaces an unreadable or
+invalid flow file (`Could not run flow …`) and a flow with `{llm}`
+cells when the selected provider's key is missing. When the checks
+pass, the flow's transformations replay onto the current table's
+source, streaming AI cells onto the table as they compute. The replay
+replaces the spec as one history entry, so a single undo returns to
+the table as it was, and a chat message reports the result
+(`Ran <flow> — N rows, M columns.`). Sample files to try this with
+live in `spec/user-files/`.
+
+While the flow runs, a modal **flow-run dialog** <!-- #OpenFlow -->
+fronts the streaming state — a large file with AI cells can take
+minutes, so the run gets progress, a log, and a way out:
+
+- A progress readout — `Step i of N — <kind>`, plus `rows done / total`
+  while an AI-cell step streams — over a progress bar that advances step
+  by step (fractionally within a streaming step).
+- An expandable **Log**, collapsed by default, that feeds one line per
+  event as the run progresses: each step as it starts, and each streamed
+  cell (`<column> · row <n>: <before> → <after>`). Only the newest 500
+  lines are kept — a bound, not a transcript.
+- A **Cancel** button. Cancelling aborts the replay and leaves the table
+  exactly as it was — nothing half-applied — with an info toast
+  (`Flow cancelled — table unchanged.`) instead of the error dialog.
 
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
@@ -767,25 +814,27 @@ empty page.
 
 The empty page is also a drop target: dragging a file from the desktop
 onto it highlights the page (a tint plus a dashed border), and dropping
-loads the file exactly like **Open local…** — same formats (the four data
-formats plus `.flow`), same "Loaded …" message. A file whose extension
-isn't a supported format
+loads the file exactly like **Open local…** — same four formats, same
+"Loaded …" message. A file whose extension isn't a supported format
 surfaces the standard "Could not open file …" error toast. Once a
 table is loaded the drop target goes away; a stray drop is ignored
 rather than replacing the table.
 
-Saving data mirrors that shape. **Save data** is itself a split-button:
-the primary half writes the rows back in the format the table was
-loaded as (CSV, JSONL, Parquet, or Arrow), suggesting the source file's
-name; its dropdown carries a **Save as <format>…** entry per supported
-format, each of which serializes a copy in that format and opens the
-Save dialog with a matching suggested name, so the user can save a
-different format or rename the file.
+Saving mirrors that shape: one **Save** menu button (the disk icon,
+the word "Save", a chevron; plain dropdown, no default click),
+disabled until a table is loaded. Its menu is grouped the same way:
 
-**Save flow** is a split-button on the same pattern. The primary half
-writes the replayable `.flow` file as before; its dropdown carries
-**Save as Flow…** (the same `.flow` save) and **Save as Python…**, which
-translates the flow into a standalone Python script. The Python export is
+- **Data** — one **Save <format>…** entry per supported format (CSV,
+  JSONL, Parquet, Arrow). Each serializes the current rows in that
+  format and opens the Save dialog with a matching suggested name
+  (the source file's stem plus the format's extension — the source's
+  own format entry suggests the original name back), so the user can
+  keep the format they opened, switch formats, or rename.
+- **Recipe** — **Save recipe as .flow…** (the replayable `.flow`
+  file) and **Save recipe as Python…**, which
+  translates the flow into a standalone Python script.
+
+The Python export is
 model-backed — the selected provider's primary (patch-turn) model does the
 translation — so unlike every other save it needs a key for the selected
 provider, and a missing key fails fast with a provider-named toast such as
@@ -794,44 +843,6 @@ provider, and a missing key fails fast with a provider-named toast such as
 cell (which has no deterministic Python form), surfacing a toast that points
 the user to save it as a flow instead. This is the browser's counterpart to
 the CLI's `:save-py`.
-
-**Opening a flow.** <!-- #OpenFlow --> **Open local…** and the empty-page
-drop target accept `.flow` next to the four data formats — the browser's
-counterpart to the CLI's `tamedtable execute`. Opening one applies the
-flow's transformations:
-
-- With a table already loaded, the flow runs against that table's source
-  rows, replacing the current transformations. The change is journaled as
-  `Apply flow <name>`, so undo restores what was there before.
-- With nothing loaded, an info toast names the flow's recorded input
-  (`<name> needs its input table — pick <source>.`) and the file picker
-  reopens for a data file; picking one loads it, then the flow runs
-  against it. Cancelling the picker leaves the app as it was.
-
-A file that isn't a valid flow — bad JSON, an unknown `version`, or a spec
-that fails validation — surfaces the standard "Could not open file …"
-error toast and changes nothing.
-
-While the flow runs, a modal **flow-run dialog** replaces the plain
-streaming state — a large file with AI cells can take minutes, so the run
-gets progress, a log, and a way out:
-
-- A progress readout — `Step i of N — <kind>`, plus `rows done / total`
-  while an AI-cell step streams — over a progress bar that advances step
-  by step (fractionally within a streaming step).
-- An expandable **Log**, collapsed by default, that feeds one line per
-  event as the run progresses: each step as it starts, and each streamed
-  cell (`<column> · row <n>: <before> → <after>`). Only the newest 500
-  lines are kept — a bound, not a transcript.
-- A **Cancel** button. Cancelling aborts the replay and leaves the table
-  exactly as it was — nothing half-applied — with an info toast
-  (`Flow cancelled — table unchanged.`). An input table freshly loaded
-  for this flow stays loaded; only the transformations are discarded.
-
-On success the dialog closes and the chat reports
-`Applied <name> — <n> transformations, <rows> rows.` On any replay error
-(a column the input lacks, a failing expression) the dialog closes, the
-error surfaces as a toast, and the table stays untouched.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,
@@ -951,10 +962,11 @@ file yet is not invited to file an issue. When a new error path is added and
 not classified, it counts as an app error — the safe default costs one extra
 button, never a lost bug report.
 
-Toolbar action buttons carry tooltips that name their CLI command
-equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the
-CSV save shows `Save the current rows (:save)`, and the flow save shows
-`Save the flow as a replayable .flow file (:save-flow)`.
+Toolbar action buttons carry tooltips: Undo names its CLI command
+equivalent (`Undo (:undo)`), Redo likewise (`Redo (:redo)`), the Open
+menu button reads `Open a table or a saved flow`, and the Save menu
+button reads `Save the data or the recipe`. Menu entries name
+themselves and carry no extra tooltip.
 
 A `?` button in the Requests sidebar header opens a discoverability
 popover listing three gesture hints: double-click to edit a cell, drag a
@@ -962,8 +974,8 @@ column divider to resize columns, and drag a column header to reorder.
 Hovering over the button opens the
 popover; moving the cursor away closes it; clicking toggles it. The web
 chat does not parse colon commands — undo/redo and the saves are toolbar
-buttons (dock actions on mobile), and a typed `:undo` goes to the model
-as plain text.
+actions (the dock's Undo and the app bar's Save menu on mobile), and a
+typed `:undo` goes to the model as plain text.
 
 After a successful request, the assistant chat bubble shows the
 transformed expressions — up to 7 lines with bodies truncated to 100
@@ -997,7 +1009,7 @@ Between the full desktop width and the phone breakpoint there is a band where
 the top bar cannot fit all its labelled buttons in one row. Rather than let the
 bar overflow the viewport, the toolbar **condenses**: the file readout is
 hidden and every action button drops its text for an icon (the tooltip still
-names it), so Open, Save data, Save flow, Undo, Redo, the theme toggle,
+names it), so Open, Save, Undo, Redo, the theme toggle,
 Settings, and Tours stay on one line that fits. Mobile-friendliness means the
 app never scrolls sideways at any width — the row condenses instead of spilling.
 
@@ -1009,10 +1021,11 @@ table-first **dock layout**. The same controller drives both — only the
 chrome differs; nothing about loading, transforming, saving, undo/redo,
 or the engine changes.
 
-- The desktop top bar collapses to a compact **app bar**: the brand
-  mark, the file name, and — when the table spans more than one page — a
-  `‹ page / total ›` pager with prev/next buttons (the same paging the
-  desktop pagination bar drives).
+- The desktop top bar collapses to a compact **app bar**: the file
+  name and a `‹ page / total ›` pager with prev/next buttons when the
+  table spans more than one page (the same paging the desktop
+  pagination bar drives). The open and save actions live in the Menu
+  drawer, not the app bar — corner icons are too small to tap.
 - The table fills the screen below the app bar. The **page itself**
   scrolls the table (both directions — the app bar and dock stay
   pinned to the screen), so the browser's own scrollbar shows the true
@@ -1026,12 +1039,15 @@ or the engine changes.
   **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is
   nothing to undo). Undo, History, Type, and Speak are disabled until a
-  table is loaded; **Menu stays live** so Settings, Tours, and the open
-  actions are reachable even before a file is loaded.
-- **Menu** opens a left **drawer** with the actions that live in the
-  desktop toolbar: the three Open actions, Save data (and Save as…),
-  Save recipe (and Save as Python…), a dark-mode toggle, Settings, and
-  Tours.
+  table is loaded; **Menu stays live** so the open actions, Settings,
+  and Tours are reachable even before a file is loaded.
+- **Menu** opens a left **drawer** carrying the desktop toolbar's Open
+  and Save menus expanded in full — the same menu model the desktop
+  dropdowns render (identical items, icons, order, and disabled
+  states), listed under **Open** and **Save** headings with separator
+  lines between the groups instead of nested dropdowns. **Recent**
+  expands in place inside the drawer (tap to unfold the tagged
+  entries). Below them: a dark-mode toggle, Settings, and Tours.
 - **Type**, **Speak**, and **History** each raise a **sheet** that takes
   the dock's place at the bottom, so the table stays in view above it:
   - **Type** is a composer — a one-line field with a send button and a

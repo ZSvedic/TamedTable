@@ -44,16 +44,19 @@ function Demo(): ReactNode {
           setDialogOpen(true);
         }}
         onOpenLocal={() => report('open local')}
-        onSaveData={() => report('save data')}
-        saveDataMenu={[
-          { label: 'Save as CSV…', onClick: () => report('save as csv') },
-          { label: 'Save as JSONL…', onClick: () => report('save as jsonl') },
-          { label: 'Save as Parquet…', onClick: () => report('save as parquet') },
+        onOpenFlow={() => report('open flow')}
+        recentMenu={[
+          { label: 'people.csv', tag: 'local', onClick: () => report('recent people.csv') },
+          { label: 'cities.jsonl', tag: 'URL', onClick: () => report('recent cities.jsonl') },
         ]}
-        onSaveFlow={() => report('save flow')}
+        saveDataMenu={[
+          { label: 'Save CSV…', onClick: () => report('save as csv') },
+          { label: 'Save JSONL…', onClick: () => report('save as jsonl') },
+          { label: 'Save Parquet…', onClick: () => report('save as parquet') },
+        ]}
         saveFlowMenu={[
-          { label: 'Save as Flow…', onClick: () => report('save as flow') },
-          { label: 'Save as Python…', onClick: () => report('save as python') },
+          { label: 'Save recipe as .flow…', onClick: () => report('save as flow') },
+          { label: 'Save recipe as Python…', onClick: () => report('save as python') },
         ]}
         onUndo={() => {
           report('undo');
