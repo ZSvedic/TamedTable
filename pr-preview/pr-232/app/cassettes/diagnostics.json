@@ -1,0 +1,34 @@
+{
+  "39b3bc1aafe77071d5eb4ab162400e16ecc11a5a244271b143d26d9f35dceadf": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:59 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=946",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"text\": \"[\\\"+12005551234\\\", \\\"+15555678\\\", \\\"+445558765\\\", \\\"+6155943212\\\", \\\"+11005556789\\\", null, \\\"+445551234\\\", \\\"+615559876\\\", \\\"+13005554321\\\", \\\"+12425556789\\\", \\\"+12425551234\\\", \\\"+3855554321\\\", \\\"+495556789\\\", \\\"+345551234\\\", \\\"+493072344321\\\", \\\"+445554321\\\", \\\"+865551234\\\", \\\"+8613855556789\\\", \\\"+815551234\\\", \\\"+9665551234\\\"]\",\n            \"thoughtSignature\": \"EjQKMgEMOdbHYFed175j/TeOGmry2G6E/Np5agr9651TyEBfFU95wNSwhz0cA3YbJKKoG9GD\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 5153,\n    \"candidatesTokenCount\": 231,\n    \"totalTokenCount\": 5384,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 5153\n      }\n    ],\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.1-flash-lite\",\n  \"responseId\": \"ypBHasnONpOjjrEPoJzimAM\"\n}\n"
+  },
+  "427c5466b83dd3fc8e41175ddedd024c152ac60da26ab64edaec4e24801e344b": {
+    "status": 200,
+    "statusText": "OK",
+    "headers": {
+      "content-type": "application/json; charset=UTF-8",
+      "date": "Fri, 03 Jul 2026 10:36:58 GMT",
+      "server": "scaffolding on HTTPServer2",
+      "server-timing": "gfet4t7; dur=6790",
+      "vary": "Origin,X-Origin,Referer",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "x-gemini-service-tier": "standard",
+      "x-xss-protection": "0"
+    },
+    "body": "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\": [\n          {\n            \"functionCall\": {\n              \"name\": \"apply_spec_patch\",\n              \"args\": {\n                \"operations\": [\n                  {\n                    \"op\": \"add\",\n                    \"value\": \"{\\\"kind\\\":\\\"mutate\\\",\\\"columns\\\":\\\"Phone\\\",\\\"value\\\":{\\\"llm\\\":\\\"Convert this phone number to E.164 format (a + followed by the country code and the national number, with no spaces, dashes, parentheses, or dots). Input phone: '{Phone}'. Customer country: '{Country}'. If the input starts with + or with a 0/00 international-dialing prefix in front of a country code, drop the 0/00 and keep it. If the input has no international prefix at all, infer the country code from the customer country and prepend it. Use exactly the digits present in the input as the national number — never drop, pad, or invent digits, and double-check the digit count matches the input. The result must contain only the leading + and the digits 0-9 — never a letter (take care never to write the letter l for the digit 1). Reply with ONLY the resulting E.164 string (e.g. +12005551234) and nothing else. If the input is empty, 'NA', '-', or is just a short local number with no area code, reply with the literal word: null\\\"}}\",\n                    \"path\": \"/transformations/-\"\n                  }\n                ]\n              },\n              \"id\": \"5gbmx95h\"\n            },\n            \"thoughtSignature\": \"EpELCo4LAQw51sfCwYHdq/gLtMI9Yw5y4Wkg3hnMJ0y9eYDKWSDmPg1J2zb/m9neYBTnbHNsxrrDi42jxyxBTDmKk4v5D8i0eb/oMJ4kOS8Vc5QeqvoE7P+UM11Oiq8r/yjxTP2ug3+aXkjPOmv4SfRuhmPipWzVNZxZcakIZjt75Ih8hwXHnI8+KLiFVahdREhieuSXdqh0T7e3y23WK38dM2n39UbYhGIqZhJvSxZaKUkrOy7bUH3gHTxpge1ROhIFXzOcfihBV2UUqNxZnwXJZhdScww/ZzXsnFsfB8T0VS9CKJyQnLIgwOHGwD8swDbYMaIWH6l6+gCt+MQOxkEom5MbMjUmCEWJWjeMf7Eu0uI9YvDBBdAXNtiC/FvbnBAQ7dcBlYG0xZOumuszr7G0w7Vkm6Qwu8afYeg7J2ArEUv+jeUn7Gw9gkFrMzHRVOv9AKIxBfJK/arBlDRmG5N+I2Mn53G3iT5EyODiqWtHua9xBLU2Zxi1PBaFIOpx0cyhTqjQFpKW+wBgT7Ashfut09QTHYjbBfDMfNHHC2vgqdAQJiD/cM5qOp3NtUK9DNcs7HPvM5c8dZ3SQMDXXa/bVrCnk/7Zjumi+6/Cd9bqO8yuVcBOqrawj7jEskEtz0477eCQy60FBPSxIk5+PWeKAskSSAGx1XVkBlLRxWKXCbuFsUlsqfM+RbLnSlppmz9DsfJhUc+yyxLepgRpw1GtPYkyWdHSFh1DWVLR62ZfLJIMkXTYGpMI4pCVasoAo0jpwPhvRfiT7agzklWZLW2AXdWTW/O9CeSGn6cB9jKh5pibBn00/7Dt6u84+rxqTLrRD3rBB8pF4HrWerKYmpz8QeagylH42kCUSKht7sAeJi95pWqnAVbbUk7rquHtMTQ0FHBomvhIEdQpce3kVz34z57TyGVDgxTat6eat7ROwzPvNpBTDmXPFVzFb4o6LUkBmE6nDNyD5sGWqNWWfp/+RGx4DOlP8PRQREt5WBoUraaO2RtA7TDXpVFLP6OrDpIyeKvEYe0ytGZBnHv+iNh9mWkw+pKQmbGDxv1CMHHQeSNVdD7aS+VebzSwkLQLtY3ICYIC2aXN0pAlFM1YYwNUwW727r+QI3Eznaz1J4EIDsRbL8Dlcdu45m0iU08jAyPtsAepTMG/Ql9FIU6eXTlw9VcZf6AXydFE8p6MkttVZjrPvUv64DIzT+eS1/Q1eUPK6xpPWbLpwv9/ICtpFdGzktmf+pVEbBOITmDaQM3hPjySQXGHC8YVEixoE/BPthQQD09EtusrILorYQ3TAyoY2fQDAS0/Q8Q3lqLInHj3j0wV/b7KKyJSKL81KoZAzLOVkle+t6Q6wZvi/6zd5Pj/1ntm7iS6wBZCscI7Yfo18FJn5E0HGlcOfJmmhNpWIvxeO37t8qapymCVmq1Od+ccr+4yVKgK9qwf2pkWhWS9hMzChoK961E0rK694wnrbGY7ZvYdcPy2le60Q2S9JPLT4HL5DjB8bTZaonPHF2ypEB0HHo6q1sAlA+rrb8Qt/XUW1jNrrzJRer5m4zxlF624l+T33Oiw3M0ObK7IEWHwHQ1T2Emxq3LtUftVeBJr7VUaBSB5O8OmzK0o41tT5+V3qYGWrrkn/z9VIyKSwXz0XhoPnuXZDwbdUcbsghmd/ErQy/t2DUe3TllsFBSioCaI+5ulmAp3pxrnB6sm2sMs50dPW4iOCNsUh5pfzKyhK13YiJWqAoSbHTHslcRilXhgxHJt4xgRuuwl5oYLMFzId9Cobbg4azF53BB6khdvCrg/ViGCtqVp5lOBStLwnwiZ8QpWb9BhueKI8DTP+hLZJ7e6BnKg+ed1tKsXQzl/rHpNmuEX8aJFahKvHmukNZQ/C3JMEPPN4BrhNKUtbcZ8xBTv\"\n          }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\": \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\": 4470,\n    \"candidatesTokenCount\": 285,\n    \"totalTokenCount\": 5101,\n    \"cachedContentTokenCount\": 4058,\n    \"promptTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4470\n      }\n    ],\n    \"cacheTokensDetails\": [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 4058\n      }\n    ],\n    \"thoughtsTokenCount\": 346,\n    \"serviceTier\": \"standard\"\n  },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"xJBHaun4BN6C-8YP64mSuAg\"\n}\n"
+  }
+}
