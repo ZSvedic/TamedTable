@@ -81,7 +81,7 @@ export class FilesManager {
     try {
       const picked = await this.host.file.pickOpen(['.flow']);
       if (!picked) return;
-      const spec = FilesManager.parseFlow(picked);
+      const { spec, source: sourceName } = FilesManager.parseFlow(picked);
       if (specHasLlmCell(spec) && !this.host.settingsMgr.activeApiKey()?.trim()) {
         this.host.pushToast(
           'error',
@@ -89,6 +89,9 @@ export class FilesManager {
         );
         return;
       }
+      // The flow records its source by name only — a browser can't read a
+      // path, so the user picks the file; the toast says which one.
+      this.host.pushToast('info', `Now pick the flow's source data file (${sourceName}).`);
       const source = await this.host.file.pickOpen(OPEN_EXTENSIONS);
       if (!source) return;
       const { rows, spec: baseSpec } = await parseTable(source.name, source.bytes);
@@ -114,18 +117,22 @@ export class FilesManager {
   }
 
   /** Parse and validate a picked `.flow` file (JSON, version 1 or 2, a
-   *  well-formed spec). Throws with a user-readable message. */
-  private static parseFlow(picked: PickedFile): TablePlan {
-    let flow: { version?: number; spec?: unknown };
+   *  well-formed spec). Returns the spec plus the recorded source file name
+   *  (the second picker's prompt). Throws with a user-readable message. */
+  private static parseFlow(picked: PickedFile): { spec: TablePlan; source: string } {
+    type FlowFile = { version?: number; source?: string; spec?: unknown };
+    let flow: FlowFile;
     try {
-      flow = JSON.parse(new TextDecoder().decode(picked.bytes)) as { version?: number; spec?: unknown };
+      flow = JSON.parse(new TextDecoder().decode(picked.bytes)) as FlowFile;
     } catch {
       throw new Error(`${picked.name} is not a valid .flow file (invalid JSON).`);
     }
     if (flow.version !== 1 && flow.version !== 2) {
       throw new Error(`${picked.name}: version must be 1 or 2 (got ${flow.version ?? 'none'}).`);
     }
-    return validateTablePlan(flow.spec);
+    const spec = validateTablePlan(flow.spec);
+    const source = flow.source || (spec.table ? spec.table.split('/').pop() : '') || 'the source file';
+    return { spec, source };
   }
 
   /** Load a file dropped onto the empty page — the drag-and-drop counterpart

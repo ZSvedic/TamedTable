@@ -163,10 +163,32 @@ export class EngineManager {
   }
 
   /** Replace the current spec, replaying its transformations onto the loaded
-   *  source rows (the Open & run .flow path). Throws when the replay fails. */
+   *  source rows (the Open & run .flow path). Runs like a request: `streaming`
+   *  is set for the duration, AI cells paint onto the overlay as chunks land,
+   *  and Cancel aborts the replay. Throws when the replay fails. */
   async applySpec(spec: TablePlan): Promise<void> {
-    await this.ensureHeadless().setSpec(spec);
+    const runner = this.ensureHeadless();
+    const ownAbort = new AbortController();
+    this.activeAbort = ownAbort;
+    this.host.streaming = true;
+    this.overlay.clear();
     this.host.notify();
+    const onChunk = (u: ChunkUpdate): void => {
+      this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
+      this.scheduleOverlayFlush();
+    };
+    try {
+      await runner.setSpec(spec, { signal: ownAbort.signal, onChunk });
+    } finally {
+      this.activeAbort = null;
+      this.host.streaming = false;
+      this.overlay.clear();
+      if (this.overlayTimer) {
+        clearTimeout(this.overlayTimer);
+        this.overlayTimer = undefined;
+      }
+      this.host.notify();
+    }
   }
 
   /** Shared post-load bookkeeping for loadInput / loadParsed: cache the source

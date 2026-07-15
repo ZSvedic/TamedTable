@@ -738,8 +738,8 @@ document icon, the word "Open", and a chevron; clicking anywhere on it
 drops a plain menu (there is no split default action). The menu is
 grouped under small headers:
 
-- **Recent** — an expandable entry at the top, hidden until something
-  has been loaded. Expanding it lists the last 5 successful loads,
+- **Recent** — an expandable entry at the top, greyed (disabled) until
+  something has been loaded. Expanding it lists the last 5 successful loads,
   newest first, each tagged with its kind (`sample`, `URL`, `local`,
   `flow`). A sample or URL entry reloads that address directly; a
   local or flow entry re-opens the matching file picker (a browser
@@ -759,12 +759,18 @@ for a `.flow` file and validates it (version 1 or 2, a well-formed
 spec). Because the browser has no filesystem paths, the flow's
 recorded `source` cannot be read directly — the picker opens a second
 time so the user picks the source data file (a toast names the file
-the flow expects). The source loads like any local open, then the
-flow's transformations replay onto it as one history entry, so a
-single undo returns to the freshly-loaded source. A flow that carries
-an `{llm}` cell needs the selected provider's key and fails fast with
-the provider-named toast when it is missing; an unreadable or invalid
-flow file surfaces a "Could not run flow …" error toast.
+the flow expects, e.g. `Now pick the flow's source data file
+(TournamentSearch.csv).`). The source loads like any local open, then
+the flow's transformations replay onto it exactly like a chat request:
+the app shows the running state, AI cells stream onto the table as
+they compute, and the run can be cancelled. The replay lands as one
+history entry, so a single undo returns to the freshly-loaded source,
+and a chat message reports the result (`Ran <flow> on <source> — N
+rows, M columns.`). A flow that carries an `{llm}` cell needs the
+selected provider's key and fails fast with the provider-named toast
+when it is missing — before the source is even asked for; an
+unreadable or invalid flow file surfaces a "Could not run flow …"
+error toast. Sample files to try this with live in `spec/user-files/`.
 
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same

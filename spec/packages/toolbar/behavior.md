@@ -63,7 +63,7 @@ treated as JSONL) — the badge the dialog shows beside each sample row.
 - Right: an "Open" menu button (ui-kit `MenuButton`; its `openButtonId` is the
   Driver.js tutorial target) — a document icon, the label, a chevron, and a
   plain grouped dropdown: the expandable "Recent" entry (from `recentMenu`;
-  hidden while the list is empty), then a "Data" section with "Open sample…",
+  disabled while the list is empty), then a "Data" section with "Open sample…",
   "Open local…", and "Open URL…", then a "Recipe" section with
   "Open & run .flow…". A "Save" menu button (the disk icon; disabled until
   `loaded`) groups `saveDataMenu` under "Data" and `saveFlowMenu` under

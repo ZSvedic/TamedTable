@@ -117,7 +117,10 @@ export interface HeadlessRunner {
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
   request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  setSpec(spec: TablePlan): Promise<void>;
+  /** Replace the spec, replaying its transformations onto the loaded source
+   *  rows. Accepts the same streaming/abort options a request carries, so a
+   *  replayed AI cell streams and can be cancelled (the Open & run flow path). */
+  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -640,10 +643,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return text.endsWith('\n') ? text : text + '\n';
   }
 
-  async setSpec(spec: TablePlan): Promise<void> {
+  async setSpec(
+    spec: TablePlan,
+    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void } = {},
+  ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
-    const rows = await this.replay(validated, this.sourceRows, undefined, undefined);
+    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk);
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;

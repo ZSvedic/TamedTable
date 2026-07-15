@@ -729,6 +729,10 @@ Recents persist under the localStorage key `tamedtable-recents`
 data file — then loads the source and applies the flow's spec through
 `Runner.setSpec`, recording one patch-journal entry labelled
 `Ran <flow name>` so a single undo returns to the raw load.
+`setSpec(spec, opts?)` accepts the same optional `{ signal, onChunk }`
+a request carries, so a replayed AI cell streams onto the table and
+can be aborted; the web controller sets `streaming` for the duration
+(the same busy state a chat request drives).
 
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on

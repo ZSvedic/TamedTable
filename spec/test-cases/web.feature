@@ -113,6 +113,24 @@ Feature: Web front-end
       And a single undo returns the table to 10 rows
 
     @web
+    Scenario: The second picker is announced with the flow's source file name
+      Given the TamedTable web app
+      When user says "Open flow"
+      And user selects "filter.flow"
+      Then a toast shows "Now pick the flow's source data file (filter-input.csv)"
+      When user selects "filter-input.csv"
+      Then the table has 4 rows
+
+    @web
+    Scenario: A flow with AI cells needs the selected provider's key
+      Given the TamedTable web app
+      And the API key has not been set
+      And user selects the provider "gemini"
+      When user says "Open flow"
+      And user selects "cleanup.flow"
+      Then a toast shows "Running a flow with AI cells requires a Google API key"
+
+    @web
     Scenario: An invalid flow file surfaces an error toast
       Given the TamedTable web app
       When user says "Open flow"

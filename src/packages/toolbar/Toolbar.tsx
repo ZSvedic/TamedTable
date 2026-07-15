@@ -72,18 +72,20 @@ export function openMenuSections(opts: {
   onOpenFlow: () => void;
   recentMenu: RecentMenuItem[];
 }): MenuButtonSection[] {
-  const sections: MenuButtonSection[] = [];
-  if (opts.recentMenu.length > 0) {
-    sections.push({
+  const sections: MenuButtonSection[] = [
+    {
       items: [
         {
           label: 'Recent',
           icon: 'clock',
+          // Greyed until something has been loaded — the entry stays visible
+          // so the feature is discoverable from the first open.
+          disabled: opts.recentMenu.length === 0,
           submenu: opts.recentMenu.map((r) => ({ label: r.label, tag: r.tag, onClick: r.onClick })),
         },
       ],
-    });
-  }
+    },
+  ];
   sections.push(
     {
       header: 'Data',

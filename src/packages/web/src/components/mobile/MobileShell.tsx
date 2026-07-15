@@ -160,7 +160,7 @@ function EmptyState({
   onOpenUrl: () => void;
   onOpenTours: () => void;
 }): ReactNode {
-  const opt = (icon: 'sparkle' | 'folder' | 'link', label: string, on: () => void, id?: string): ReactNode => (
+  const opt = (icon: 'sparkle' | 'upload' | 'link', label: string, on: () => void, id?: string): ReactNode => (
     <button
       key={label}
       type="button"
@@ -209,7 +209,7 @@ function EmptyState({
       <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: space.px8 }}>
         {/* The tour's load step spotlights this Open sample… button. */}
         {opt('sparkle', 'Open sample…', onOpenSample, 'tutorial-open-btn')}
-        {opt('folder', 'Open local…', onOpenLocal)}
+        {opt('upload', 'Open local…', onOpenLocal)}
         {opt('link', 'Open URL…', onOpenUrl)}
       </div>
       <ToursLink t={t} onOpen={onOpenTours} />
