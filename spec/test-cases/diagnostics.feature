@@ -47,6 +47,17 @@ Feature: In-app diagnostics log
       And the diagnostics report drops the provider key fields
 
     @web @offline @regression
+    # GitHub rejects URLs past ~8 KB ("Whoa there! Your request URL is too
+    # long."). Percent-encoding roughly triples the raw markdown, so the
+    # truncation budget must be measured on the encoded URL, not the report.
+    Scenario: The bug report link never exceeds GitHub's URL limit
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the diagnostics log is filled with long events
+      Then the bug report link is shorter than 8000 characters
+      And the bug report link notes the report was truncated
+
+    @web @offline @regression
     # The bug-report link prefills a GitHub issue with the report — it must stay
     # redacted, since the URL is shared publicly.
     Scenario: The bug-report link points to GitHub with a redacted report

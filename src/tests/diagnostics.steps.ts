@@ -1,5 +1,5 @@
 // #Diagnostics — step definitions for spec/test-cases/diagnostics.feature
-import { Then, When } from '@cucumber/cucumber';
+import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { TamedTableWorld } from './world.ts';
 import { webController as controller } from './web-file-port.ts';
@@ -117,6 +117,31 @@ Then('the diagnostics report drops the provider key fields', function (this: Tam
     assert.ok(!report.includes(field), `report still mentions "${field}"`);
   }
   assert.ok(!report.includes('DEADBEEF'), 'report still contains a secret key value');
+});
+
+Given('the diagnostics log is filled with long events', function (this: TamedTableWorld) {
+  // Enough long toasts to overflow any URL budget, with the punctuation a real
+  // report carries (quotes, slashes, arrows) — percent-encoding inflates those
+  // ~3×, which is exactly what pushed real links past GitHub's limit.
+  for (let i = 0; i < 25; i++) {
+    controller(this).pushToast(
+      'error',
+      `Could not load tutorial fixture "fixture-${i}.jsonl": fetch /pr-preview/pr-222/app/samples/fixture-${i}.jsonl → 503 ${'"{*}" → '.repeat(30)}`,
+    );
+  }
+});
+
+Then(
+  'the bug report link is shorter than {int} characters',
+  function (this: TamedTableWorld, max: number) {
+    const url = controller(this).bugReportUrl();
+    assert.ok(url.length < max, `bug report link is ${url.length} chars, expected < ${max}`);
+  },
+);
+
+Then('the bug report link notes the report was truncated', function (this: TamedTableWorld) {
+  const url = decodeURIComponent(controller(this).bugReportUrl().replaceAll('+', ' '));
+  assert.ok(url.includes('Report truncated'), 'bug report link carries no truncation note');
 });
 
 Then('the bug report link targets the TamedTable issue tracker', function (this: TamedTableWorld) {

@@ -1070,8 +1070,10 @@ the per-provider key fields outright. A pasted report is safe to share.
 Three actions live in Settings. **Send a bug report** (the primary
 button) copies the full report to the clipboard and opens a prefilled
 GitHub issue on the maintainers' tracker — the report rides in the issue
-body, truncated to fit the URL, with the clipboard copy as the backstop
-for a long log or a blocked popup. **Copy diagnostics report** copies the
+body, truncated so the final *encoded* URL stays under GitHub's ~8 KB
+limit (percent-encoding roughly triples the raw markdown, so the budget
+must be measured on the URL, never the report), with the clipboard copy
+as the backstop for a long log or a blocked popup. **Copy diagnostics report** copies the
 markdown for pasting anywhere (a Claude chat, a comment). **Clear
 diagnostics** empties the log. An error toast also carries a **Copy
 report** action so a user can grab the report the moment a bug surfaces.
