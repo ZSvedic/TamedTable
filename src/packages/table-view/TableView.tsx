@@ -196,197 +196,209 @@ export function TableView({
     >
       <style>{TV_CSS}</style>
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {streaming && (
-          <div
-            data-tv-streaming=""
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'center',
-              gap: space.px8,
-              padding: `${space.px6}px ${space.px12}px`,
-              background: t.accentSoft,
-              color: t.ink,
-              fontFamily: typography.ui,
-              fontSize: typography.size.sm,
-              borderBottom: `1px solid ${t.line}`,
-            }}
-          >
-            <span
-              className="tv-pulse"
-              style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }}
-            />
-            Streaming results…
-          </div>
-        )}
-        <table
-          ref={tableRef}
-          style={{
-            borderCollapse: 'collapse',
-            fontFamily: typography.mono,
-            fontSize: typography.size.sm,
-            fontVariantNumeric: 'tabular-nums',
-            tableLayout: widths ? 'fixed' : 'auto',
-            width: tableW,
-          }}
-        >
-          {widths && (
-            <colgroup>
-              <col style={{ width: colW('#') }} />
-              {columns.map((col) => (
-                <col key={col} style={{ width: colW(col) }} />
-              ))}
-            </colgroup>
-          )}
-          <thead>
-            <tr>
-              <th
+        {/* Sizes to the table so the banner spans its full width even when the
+            table overflows the viewport horizontally. */}
+        <div style={{ width: 'max-content', minWidth: '100%' }}>
+          {streaming && (
+            <div
+              data-tv-streaming=""
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 2,
+                padding: `${space.px6}px ${space.px12}px`,
+                background: t.accentSoft,
+                color: t.ink,
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                borderBottom: `1px solid ${t.line}`,
+              }}
+            >
+              {/* Sticky left keeps the label visible while scrolling sideways. */}
+              <span
                 style={{
-                  ...headerCell,
-                  textAlign: 'right',
-                  color: t.ink4,
-                  fontFamily: typography.mono,
-                  fontWeight: 400,
+                  position: 'sticky',
+                  left: space.px12,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: space.px8,
                 }}
               >
-                #
-              </th>
-              {columns.map((col) => (
-                <th
-                  key={col}
-                  className="tv-th"
-                  data-tv-header={col}
-                  draggable
-                  onDragStart={() => setDragCol(col)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => dropOn(col)}
-                  title="Drag to reorder"
-                  style={{
-                    ...headerCell,
-                    cursor: 'grab',
-                    background: dragCol === col ? t.accentSoft : t.surface2,
-                  }}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6 }}>
-                    <span className="tv-grip" style={{ color: t.ink4 }}>
-                      <Icon name="grip" size={12} />
-                    </span>
-                    {col}
-                  </span>
-                  {/* Resize handle on the header's right edge. It cancels its
-                      own dragstart so grabbing it never begins a reorder. */}
-                  <span
-                    data-tv-resize={col}
-                    title="Drag to resize"
-                    draggable
-                    onDragStart={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onMouseDown={(e) => startResize(col, e)}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: 0,
-                      width: 8,
-                      height: '100%',
-                      cursor: 'col-resize',
-                    }}
-                  />
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, ri) => {
-              const absRow = pageStart + ri;
-              return (
-                <tr key={absRow}>
-                  <td
-                    style={{
-                      ...bodyCell,
-                      color: t.ink4,
-                      textAlign: 'right',
-                      background: t.surface2,
-                    }}
-                  >
-                    {absRow + 1}
-                  </td>
-                  {columns.map((col) => {
-                    const isEditing = editing?.row === absRow && editing.col === col;
-                    const isSelected =
-                      selection?.row === absRow && selection.column === col;
-                    return (
-                      <td
-                        key={col}
-                        data-tv-cell={`${absRow}:${col}`}
-                        title="Click to select · double-click to edit"
-                        onClick={() => onSelectCell(absRow, col)}
-                        onDoubleClick={() => {
-                          setEditing({ row: absRow, col });
-                          setDraft(cellText(row?.[col]));
-                        }}
-                        style={{
-                          ...bodyCell,
-                          padding: isEditing ? 0 : bodyCell.padding,
-                          background:
-                            isSelected && !isEditing ? t.accentSoft : undefined,
-                          boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : undefined,
-                        }}
-                      >
-                        {isEditing ? (
-                          <input
-                            autoFocus
-                            data-tv-edit=""
-                            value={draft}
-                            onChange={(e) => setDraft(e.target.value)}
-                            onBlur={commitEdit}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                commitEdit();
-                              } else if (e.key === 'Escape') {
-                                setEditing(null);
-                              }
-                            }}
-                            style={{
-                              width: '100%',
-                              boxSizing: 'border-box',
-                              fontFamily: typography.mono,
-                              fontSize: typography.size.sm,
-                              background: t.surface,
-                              color: t.ink,
-                              border: 'none',
-                              outline: 'none',
-                              padding: `0 ${space.px10}px`,
-                              height: space.rowH,
-                            }}
-                          />
-                        ) : (
-                          cellText(row?.[col])
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {rows.length === 0 && (
-          <div
+                <span
+                  className="tv-pulse"
+                  style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }}
+                />
+                Streaming results…
+              </span>
+            </div>
+          )}
+          <table
+            ref={tableRef}
             style={{
-              padding: space.px16,
-              color: t.ink3,
-              fontFamily: typography.ui,
+              borderCollapse: 'collapse',
+              fontFamily: typography.mono,
               fontSize: typography.size.sm,
+              fontVariantNumeric: 'tabular-nums',
+              tableLayout: widths ? 'fixed' : 'auto',
+              width: tableW,
             }}
           >
-            This table has 0 rows.
-          </div>
-        )}
+            {widths && (
+              <colgroup>
+                <col style={{ width: colW('#') }} />
+                {columns.map((col) => (
+                  <col key={col} style={{ width: colW(col) }} />
+                ))}
+              </colgroup>
+            )}
+            <thead>
+              <tr>
+                <th
+                  style={{
+                    ...headerCell,
+                    textAlign: 'right',
+                    color: t.ink4,
+                    fontFamily: typography.mono,
+                    fontWeight: 400,
+                  }}
+                >
+                  #
+                </th>
+                {columns.map((col) => (
+                  <th
+                    key={col}
+                    className="tv-th"
+                    data-tv-header={col}
+                    draggable
+                    onDragStart={() => setDragCol(col)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => dropOn(col)}
+                    title="Drag to reorder"
+                    style={{
+                      ...headerCell,
+                      cursor: 'grab',
+                      background: dragCol === col ? t.accentSoft : t.surface2,
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6 }}>
+                      <span className="tv-grip" style={{ color: t.ink4 }}>
+                        <Icon name="grip" size={12} />
+                      </span>
+                      {col}
+                    </span>
+                    {/* Resize handle on the header's right edge. It cancels its
+                        own dragstart so grabbing it never begins a reorder. */}
+                    <span
+                      data-tv-resize={col}
+                      title="Drag to resize"
+                      draggable
+                      onDragStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => startResize(col, e)}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        width: 8,
+                        height: '100%',
+                        cursor: 'col-resize',
+                      }}
+                    />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => {
+                const absRow = pageStart + ri;
+                return (
+                  <tr key={absRow}>
+                    <td
+                      style={{
+                        ...bodyCell,
+                        color: t.ink4,
+                        textAlign: 'right',
+                        background: t.surface2,
+                      }}
+                    >
+                      {absRow + 1}
+                    </td>
+                    {columns.map((col) => {
+                      const isEditing = editing?.row === absRow && editing.col === col;
+                      const isSelected =
+                        selection?.row === absRow && selection.column === col;
+                      return (
+                        <td
+                          key={col}
+                          data-tv-cell={`${absRow}:${col}`}
+                          title="Click to select · double-click to edit"
+                          onClick={() => onSelectCell(absRow, col)}
+                          onDoubleClick={() => {
+                            setEditing({ row: absRow, col });
+                            setDraft(cellText(row?.[col]));
+                          }}
+                          style={{
+                            ...bodyCell,
+                            padding: isEditing ? 0 : bodyCell.padding,
+                            background:
+                              isSelected && !isEditing ? t.accentSoft : undefined,
+                            boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : undefined,
+                          }}
+                        >
+                          {isEditing ? (
+                            <input
+                              autoFocus
+                              data-tv-edit=""
+                              value={draft}
+                              onChange={(e) => setDraft(e.target.value)}
+                              onBlur={commitEdit}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  commitEdit();
+                                } else if (e.key === 'Escape') {
+                                  setEditing(null);
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                fontFamily: typography.mono,
+                                fontSize: typography.size.sm,
+                                background: t.surface,
+                                color: t.ink,
+                                border: 'none',
+                                outline: 'none',
+                                padding: `0 ${space.px10}px`,
+                                height: space.rowH,
+                              }}
+                            />
+                          ) : (
+                            cellText(row?.[col])
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {rows.length === 0 && (
+            <div
+              style={{
+                padding: space.px16,
+                color: t.ink3,
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+              }}
+            >
+              This table has 0 rows.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* pagination bar */}

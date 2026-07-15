@@ -11,10 +11,9 @@ import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 
 const HELP_LINES = [
-  'Double-click a cell to edit it',
-  'Drag a column header to reorder',
-  'Undo and Redo live in the toolbar',
-  'Save rows or the flow from the toolbar',
+  'Double-click a cell to edit it.',
+  'Drag a column divider to resize columns.',
+  'Drag a column header to reorder.',
 ];
 
 function EmptyChat(): ReactNode {

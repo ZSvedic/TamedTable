@@ -907,8 +907,8 @@ CSV save shows `Save the current rows (:save)`, and the flow save shows
 `Save the flow as a replayable .flow file (:save-flow)`.
 
 A `?` button in the Requests sidebar header opens a discoverability
-popover listing four keyboard and gesture hints: double-click to edit a
-cell, drag a column header to reorder, undo/redo, and the save exports.
+popover listing three gesture hints: double-click to edit a cell, drag a
+column divider to resize columns, and drag a column header to reorder.
 Hovering over the button opens the
 popover; moving the cursor away closes it; clicking toggles it. The web
 chat does not parse colon commands — undo/redo and the saves are toolbar
@@ -916,8 +916,9 @@ buttons (dock actions on mobile), and a typed `:undo` goes to the model
 as plain text.
 
 After a successful request, the assistant chat bubble shows the
-transformed expressions — up to 7 lines with bodies truncated to 240
-characters each; overflow renders as `… and N more`. Model, token, and
+transformed expressions — up to 7 lines with bodies truncated to 100
+characters each (long code expressions trim the same as prompt text, so
+the thread stays scannable); overflow renders as `… and N more`. Model, token, and
 elapsed-time stats are not shown in the bubble; they appear only in the
 expandable detail panel.
 

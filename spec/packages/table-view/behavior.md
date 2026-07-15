@@ -64,8 +64,10 @@ A row-number column, sticky headers, and the visible rows. Gestures:
   to fixed layout, so untouched columns keep their size instead of
   reflowing. A column can't shrink below a small floor that keeps its
   handle grabbable.
-- `streaming` shows a sticky "Streaming results…" banner; `status` drives the
-  footer dot (accent pulse while running, ok when saved).
+- `streaming` shows a sticky "Streaming results…" banner spanning the full
+  table width even when the table overflows horizontally (the label stays
+  pinned to the visible left edge); `status` drives the footer dot (accent
+  pulse while running, ok when saved).
 - A 0-row table states "This table has 0 rows."; the range readout shows
   `<first>–<last> of <total> rows`.
 
