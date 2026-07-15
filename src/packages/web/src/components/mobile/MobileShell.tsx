@@ -13,12 +13,11 @@
 // sheet so the spotlight lands on the visible composer.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
-import { Icon, MenuButton } from '@tamedtable/ui-kit/components';
+import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
-import { Lockup, openMenuSections, saveMenuSections } from '@tamedtable/toolbar/components';
+import { Lockup } from '@tamedtable/toolbar/components';
 import type { WebController } from '../../controller.ts';
 import { useController } from '../../hooks/useController.ts';
-import { recentMenuItems, saveMenus } from '../Toolbar.tsx';
 import { Dock, type DockAction } from './Dock.tsx';
 import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
@@ -45,45 +44,8 @@ function fixedBarStyle(borderColor: string, background: string): CSSProperties {
   };
 }
 
-/** The app bar's Open and Save menus — the same grouped menus the desktop
- *  toolbar renders, condensed to icon-plus-chevron and right-aligned so they
- *  drop down without overflowing the screen edge. */
-function BarMenus({ controller }: { controller: WebController }): ReactNode {
-  const loaded = controller.isLoaded();
-  const busy = controller.streaming;
-  const { saveDataMenu, saveFlowMenu } = saveMenus(controller);
-  return (
-    <div data-mob-appbar-menus="" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <MenuButton
-        align="right"
-        disabled={busy}
-        title="Open a table or a saved flow"
-        sections={openMenuSections({
-          onOpenSample: () => controller.openSampleDialog(),
-          onOpenLocal: () => void controller.openCsv(),
-          onOpenUrl: () => controller.openUrlDialog(),
-          onOpenFlow: () => void controller.openFlow(),
-          recentMenu: recentMenuItems(controller),
-          loaded,
-        })}
-      >
-        <Icon name="file" />
-      </MenuButton>
-      <MenuButton
-        align="right"
-        disabled={!loaded || busy}
-        title="Save the data or the recipe"
-        sections={saveMenuSections({ saveDataMenu, saveFlowMenu })}
-      >
-        <Icon name="save" />
-      </MenuButton>
-    </div>
-  );
-}
-
 function AppBar({
   t,
-  controller,
   fileName,
   page,
   pageCount,
@@ -91,7 +53,6 @@ function AppBar({
   onNext,
 }: {
   t: Theme;
-  controller: WebController;
   fileName: string;
   page: number;
   pageCount: number;
@@ -141,7 +102,6 @@ function AppBar({
         </span>
       </div>
       {navBtn('next', page < pageCount ? onNext : null)}
-      <BarMenus controller={controller} />
     </div>
   );
 }
@@ -358,7 +318,6 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         <>
           <AppBar
             t={t}
-            controller={controller}
             fileName={fileName}
             page={page}
             pageCount={pageCount}
@@ -378,11 +337,10 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         </>
       ) : (
         <>
-          <div style={{ ...fixedBarStyle(t.line, t.surface), gap: space.px8, padding: '0 10px', paddingTop: 'env(safe-area-inset-top)' }}>
-            <span style={{ flex: 1, textAlign: 'center', fontFamily: typography.ui, fontSize: typography.size.base, fontWeight: 600, color: t.ink3 }}>
+          <div style={{ ...fixedBarStyle(t.line, t.surface), justifyContent: 'center' }}>
+            <span style={{ fontFamily: typography.ui, fontSize: typography.size.base, fontWeight: 600, color: t.ink3 }}>
               No file open
             </span>
-            <BarMenus controller={controller} />
           </div>
           <EmptyState
             t={t}

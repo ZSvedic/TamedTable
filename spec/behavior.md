@@ -997,13 +997,10 @@ chrome differs; nothing about loading, transforming, saving, undo/redo,
 or the engine changes.
 
 - The desktop top bar collapses to a compact **app bar**: the file
-  name, a `‹ page / total ›` pager with prev/next buttons when the
+  name and a `‹ page / total ›` pager with prev/next buttons when the
   table spans more than one page (the same paging the desktop
-  pagination bar drives), and — at the right edge — the same **Open**
-  and **Save** menu buttons the desktop toolbar carries, condensed to
-  icon-plus-chevron. Their menus drop down from the bar, right-aligned
-  so they never overflow the screen edge, with the identical grouped
-  entries (Recent / Data / Recipe).
+  pagination bar drives). The open and save actions live in the Menu
+  drawer, not the app bar — corner icons are too small to tap.
 - The table fills the screen below the app bar. The **page itself**
   scrolls the table (both directions — the app bar and dock stay
   pinned to the screen), so the browser's own scrollbar shows the true
@@ -1017,13 +1014,15 @@ or the engine changes.
   **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is
   nothing to undo). Undo, History, Type, and Speak are disabled until a
-  table is loaded; **Menu stays live** so Settings and Tours are
-  reachable even before a file is loaded (the open actions sit in the
-  app bar's always-live Open menu).
-- **Menu** opens a left **drawer** with the actions the app bar and
-  dock don't carry: a dark-mode toggle, Settings, and Tours. The open
-  and save actions live in the app bar's Open and Save menus, not the
-  drawer.
+  table is loaded; **Menu stays live** so the open actions, Settings,
+  and Tours are reachable even before a file is loaded.
+- **Menu** opens a left **drawer** carrying the desktop toolbar's Open
+  and Save menus expanded in full — the same menu model the desktop
+  dropdowns render (identical items, icons, order, and disabled
+  states), listed under **Open** and **Save** headings with separator
+  lines between the groups instead of nested dropdowns. **Recent**
+  expands in place inside the drawer (tap to unfold the tagged
+  entries). Below them: a dark-mode toggle, Settings, and Tours.
 - **Type**, **Speak**, and **History** each raise a **sheet** that takes
   the dock's place at the bottom, so the table stays in view above it:
   - **Type** is a composer — a one-line field with a send button and a

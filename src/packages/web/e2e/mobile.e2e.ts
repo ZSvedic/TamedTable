@@ -43,28 +43,20 @@ test.describe('phone width', () => {
     await expect(page.locator('[data-tb-toolbar=""]')).toHaveCount(0);
   });
 
-  test('the menu drawer opens with Settings and Tours even before a file loads', async ({ page }) => {
+  test('the menu drawer carries the full Open and Save menus even before a file loads', async ({ page }) => {
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-dock="menu"]').click();
     await expect(page.locator('[data-mob-drawer=""]')).toBeVisible();
+    // The same menu model as the desktop dropdowns, expanded in the drawer.
+    await expect(page.locator('[data-mob-menu-item="Open sample…"]')).toBeVisible();
+    await expect(page.locator('[data-mob-menu-item="Open .flow & run on current data…"]')).toBeDisabled();
+    await expect(page.locator('[data-mob-menu-item="Save CSV…"]')).toBeDisabled();
     await expect(page.locator('[data-mob-menu-item="Settings…"]')).toBeVisible();
     await expect(page.locator('[data-mob-menu-item="Tours…"]')).toBeVisible();
-    // The open actions moved to the app bar's Open menu.
-    await expect(page.locator('[data-mob-menu-item="Open sample…"]')).toHaveCount(0);
-  });
-
-  test('the app bar Open menu drops down right-aligned and inside the viewport', async ({ page }) => {
-    await page.goto('/TamedTable/app/');
-    await page.locator('[data-mob-appbar-menus] [data-uk-menubtn]').first().click();
-    const item = page.locator('[data-uk-menu-item="Open sample…"]');
-    await expect(item).toBeVisible();
-    // The regression this guards: the dropdown overflowing the screen edge.
-    const box = (await item.boundingBox())!;
-    const viewport = page.viewportSize()!;
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
-    // Picking "Open sample…" raises the same sample picker the empty page uses.
-    await item.click();
+    // The app bar carries no menu buttons — they were too small to tap.
+    await expect(page.locator('[data-uk-menubtn]')).toHaveCount(0);
+    // Picking "Open sample…" closes the drawer and raises the sample picker.
+    await page.locator('[data-mob-menu-item="Open sample…"]').click();
     await expect(page.locator('[data-tb-sample-dialog]')).toBeVisible();
   });
 

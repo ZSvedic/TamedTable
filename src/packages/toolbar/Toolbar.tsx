@@ -64,7 +64,7 @@ export interface ToolbarProps {
 }
 
 /** The Open menu's grouped sections — shared by the desktop toolbar and the
- *  mobile app bar so both render the identical menu. */
+ *  mobile Menu drawer so both render the identical menu model. */
 export function openMenuSections(opts: {
   onOpenSample: () => void;
   onOpenLocal: () => void;
