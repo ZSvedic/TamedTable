@@ -60,6 +60,21 @@ function debugDetailText(debug: ChatRequestDetail): string {
   ].join('\n');
 }
 
+/** Quiet chip: a subtle bordered pill that separates the copy and Report bug
+ *  actions from the plain "request detail" toggle beside them. */
+function chipStyle(t: Theme): CSSProperties {
+  return {
+    background: t.surface,
+    border: `1px solid ${t.line}`,
+    borderRadius: space.radiusSm,
+    padding: '2px 7px',
+    cursor: 'pointer',
+    color: t.ink3,
+    display: 'inline-flex',
+    alignItems: 'center',
+  };
+}
+
 function AssistantMessage({
   t,
   message,
@@ -166,13 +181,8 @@ function AssistantMessage({
                   aria-label={copied ? 'Copied' : 'Copy request detail'}
                   data-testid="copy-debug"
                   style={{
-                    background: 'transparent',
-                    border: 0,
-                    padding: 0,
-                    cursor: 'pointer',
+                    ...chipStyle(t),
                     color: copied ? t.ok : t.ink3,
-                    display: 'inline-flex',
-                    alignItems: 'center',
                   }}
                 >
                   <Icon name="copy" size={12} />
@@ -186,15 +196,9 @@ function AssistantMessage({
                 onClick={() => onReportBug?.(message)}
                 title="Report bug — opens a prefilled GitHub issue"
                 style={{
-                  background: 'transparent',
-                  border: 0,
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: t.ink3,
+                  ...chipStyle(t),
                   fontFamily: typography.ui,
                   fontSize: typography.size.xs,
-                  display: 'inline-flex',
-                  alignItems: 'center',
                   gap: space.px4,
                 }}
               >
