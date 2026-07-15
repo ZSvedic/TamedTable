@@ -1,38 +1,26 @@
 // #MobileShell
-// The left slide-in drawer that holds every toolbar action the app bar can't:
-// the open sources, the save targets, the dark-mode toggle, Settings, and
-// Tours. Each item calls the same WebController method the desktop toolbar
-// does, then closes the drawer; Settings, Open-URL, and Tours hand off to the
-// shared overlays. Save targets are disabled until a table is loaded.
+// The left slide-in drawer for the actions the app bar and dock don't carry:
+// the dark-mode toggle, Settings, and Tours. The open and save actions live
+// in the app bar's Open and Save menus (see MobileShell's BarMenus). Each item
+// calls the same WebController method the desktop toolbar does, then closes
+// the drawer; Settings and Tours hand off to the shared overlays.
 import { useState, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon, type IconName } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
-import type { FormatId } from '@tamedtable/file-io';
 import type { WebController } from '../../controller.ts';
-
-const SAVE_FORMATS: { id: FormatId; label: string }[] = [
-  { id: 'csv', label: 'CSV' },
-  { id: 'jsonl', label: 'JSONL' },
-  { id: 'parquet', label: 'Parquet' },
-  { id: 'arrow', label: 'Arrow' },
-];
 
 function Item({
   t,
   icon,
   label,
   value,
-  disabled,
-  indent,
   onClick,
 }: {
   t: Theme;
   icon?: IconName;
   label: string;
   value?: string;
-  disabled?: boolean;
-  indent?: boolean;
   onClick: () => void;
 }): ReactNode {
   const [hover, setHover] = useState(false);
@@ -40,7 +28,6 @@ function Item({
     <button
       type="button"
       data-mob-menu-item={label}
-      disabled={disabled}
       onClick={onClick}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
@@ -48,16 +35,15 @@ function Item({
         display: 'flex',
         alignItems: 'center',
         gap: space.px12,
-        padding: indent ? `9px 18px 9px 46px` : '11px 18px',
+        padding: '11px 18px',
         width: '100%',
         border: 0,
-        background: hover && !disabled ? t.surface3 : 'transparent',
-        color: disabled ? t.ink4 : t.ink,
-        cursor: disabled ? 'default' : 'pointer',
+        background: hover ? t.surface3 : 'transparent',
+        color: t.ink,
+        cursor: 'pointer',
         fontFamily: typography.ui,
-        fontSize: indent ? typography.size.sm : typography.size.base,
+        fontSize: typography.size.base,
         textAlign: 'left',
-        opacity: disabled ? 0.6 : 1,
       }}
     >
       {icon && (
@@ -84,10 +70,6 @@ export function MenuDrawer({
   onClose: () => void;
   onToggleTheme: () => void;
 }): ReactNode {
-  const [saveAsOpen, setSaveAsOpen] = useState(false);
-  const loaded = controller.isLoaded();
-  const busy = controller.streaming;
-  const sep = <div style={{ height: 1, background: t.line, margin: '7px 0' }} />;
   const run = (fn: () => void): void => {
     onClose();
     fn();
@@ -132,34 +114,6 @@ export function MenuDrawer({
           </button>
         </div>
         <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column' }}>
-          <Item t={t} icon="sparkle" label="Open sample…" onClick={() => run(() => controller.openSampleDialog())} />
-          <Item t={t} icon="folder" label="Open local…" onClick={() => run(() => void controller.openCsv())} />
-          <Item t={t} icon="link" label="Open URL…" onClick={() => run(() => controller.openUrlDialog())} />
-          {sep}
-          <Item t={t} icon="save" label="Save data" disabled={!loaded || busy} onClick={() => run(() => void controller.saveData())} />
-          <Item
-            t={t}
-            icon="save"
-            label="Save data as…"
-            disabled={!loaded || busy}
-            value={saveAsOpen ? '▾' : '▸'}
-            onClick={() => setSaveAsOpen((o) => !o)}
-          />
-          {saveAsOpen &&
-            SAVE_FORMATS.map((f) => (
-              <Item
-                key={f.id}
-                t={t}
-                indent
-                label={`Save as ${f.label}…`}
-                disabled={!loaded || busy}
-                onClick={() => run(() => void controller.saveDataAs(f.id))}
-              />
-            ))}
-          {sep}
-          <Item t={t} icon="file" label="Save recipe…" disabled={!loaded || busy} onClick={() => run(() => void controller.saveFlow())} />
-          <Item t={t} icon="code" label="Save recipe as Python…" disabled={!loaded || busy} onClick={() => run(() => void controller.savePython())} />
-          {sep}
           <Item t={t} icon={dark ? 'sun' : 'moon'} label="Dark mode" value={dark ? 'on' : 'off'} onClick={onToggleTheme} />
           <Item t={t} icon="wrench" label="Settings…" onClick={() => run(() => controller.openSettings())} />
           <Item t={t} icon="tour" label="Tours…" onClick={() => run(() => controller.openTutorial())} />

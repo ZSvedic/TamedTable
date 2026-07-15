@@ -162,6 +162,13 @@ export class EngineManager {
     this.ensureHeadless().registerLookup(name, rows);
   }
 
+  /** Replace the current spec, replaying its transformations onto the loaded
+   *  source rows (the Open & run .flow path). Throws when the replay fails. */
+  async applySpec(spec: TablePlan): Promise<void> {
+    await this.ensureHeadless().setSpec(spec);
+    this.host.notify();
+  }
+
   /** Shared post-load bookkeeping for loadInput / loadParsed: cache the source
    *  for model-change rebuilds and reset the per-load view state. */
   private afterLoad(runner: HeadlessRunner, sourcePath: string): void {

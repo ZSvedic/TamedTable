@@ -2,7 +2,7 @@
 
 The `@tamedtable/ui-kit` package owns the TamedTable design system: the brand
 tokens (colors, typography, spacing) and the primitive React components every
-surface composes — buttons, icons, the split/dropdown button, the toast stack,
+surface composes — buttons, icons, the dropdown menu button, the toast stack,
 and the light/dark theme context. It owns no app state and no storage: hosts
 pass data in and get callbacks out, and theme persistence is injected through
 `ThemeProvider` props.
@@ -13,7 +13,7 @@ The web app wraps its shell in the provider, persisting the mode itself:
 
 ```
 <ThemeProvider initialMode={stored} onModeChange={store}>
-  <Toolbar … />          // composes Button, SplitButton, Icon
+  <Toolbar … />          // composes Button, MenuButton, Icon
   <Toasts toasts={controller.toasts} onDismiss={(id) => controller.dismissToast(id)} />
 </ThemeProvider>
 ```
@@ -68,10 +68,19 @@ All components are pure — props in, callbacks out — and carry stable
   test fails CI if the catalogue drifts.
 - `Button({ children, onClick?, disabled?, variant?, title? })` — variants
   `ghost` (default), `chrome`, `primary`, `danger` (`data-uk-button`).
-- `SplitButton({ children, onClick, menu, disabled?, title?, caretTitle?, id? })` —
-  primary half plus a caret that opens a menu of `{ label, onClick, disabled? }`
-  items; closes on pick, click-outside, or Escape (`data-uk-split-main`,
-  `data-uk-split-caret`, `data-uk-menu-item`).
+- `MenuButton({ children, sections, disabled?, title?, id?, align? })` — a
+  plain dropdown button: one trigger (label plus chevron, no split default
+  action) that opens a grouped menu. `sections` is a list of
+  `{ header?, items }`; sections after the first draw a separator line, and a
+  `header` renders as a small uppercase group label. Each item is
+  `{ label, onClick?, icon?, tag?, disabled?, submenu? }` — `icon` draws a
+  leading `Icon`, `tag` a small right-aligned badge, and `submenu` (a list of
+  `{ label, tag?, onClick }`) makes the item expandable in place: clicking it
+  unfolds the sub-entries indented below it instead of closing the menu.
+  `align: 'right'` anchors the menu to the trigger's right edge for buttons
+  near the right screen edge. Closes on pick, click-outside, or Escape
+  (`data-uk-menubtn`, `data-uk-menu-header`, `data-uk-menu-item`,
+  `data-uk-menu-tag`).
 - `Toasts({ toasts, onDismiss, onAction? })` — fixed bottom-right stack of
   `{ id, kind: "info" | "error", message, action? }` items, each with a dismiss
   button; a toast carrying an `action` label also shows an inline action button
@@ -100,7 +109,7 @@ shared:
 
 The demo (`demo.html` + `demo.tsx`, deployed under `/demos/ui-kit/`) mounts
 every component over plain React state inside a `ThemeProvider`: the four
-button variants, the full icon grid, a split button, add-info/add-error toast
+button variants, the full icon grid, a grouped menu button, add-info/add-error toast
 buttons, and the theme toggle. The wrapper carries `data-uk-mode` with the
 active mode, every interaction appends to the `#out` event log, and `#out`
 is non-empty on load — the demo smoke test's ready signal.

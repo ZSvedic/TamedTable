@@ -92,6 +92,7 @@ When('user says {string}', function (this: TamedTableWorld, action: string) {
   const ctx = ctxOf(this);
   let pending: Promise<unknown>;
   if (action === 'Load CSV file') pending = c.openCsv();
+  else if (action === 'Open flow') pending = c.openFlow();
   else if (action === 'Save flow') pending = c.saveFlow();
   else if (action === 'Save data') pending = c.saveData();
   else if (action === 'Save as Flow') pending = c.saveFlow();
@@ -118,7 +119,10 @@ When('user selects {string}', async function (this: TamedTableWorld, filename: s
   const ctx = ctxOf(this);
   const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
   await ctx.filePort!.resolveOpen({ name: filename, bytes });
-  await ctx.pending;
+  // openFlow chains a second Open dialog after the first pick, so waiting on
+  // the whole action would deadlock — proceed as soon as either the action
+  // settles or the next dialog is up.
+  await Promise.race([ctx.pending, ctx.filePort!.nextDialogRequested()]);
 });
 
 When('user saves as {string}', async function (this: TamedTableWorld, filename: string) {
@@ -154,6 +158,48 @@ Then('{string} contains a mutate transformation', function (this: TamedTableWorl
     flow.spec.transformations.some((t) => t.kind === 'mutate'),
     'saved flow has no mutate transformation',
   );
+});
+
+Then('a single undo returns the table to {int} rows', async function (this: TamedTableWorld, n: number) {
+  await controller(this).undo();
+  assert.equal(controller(this).displayRows().length, n);
+});
+
+// ── Recents ────────────────────────────────────────────────────────────────
+
+Then(
+  'the recents list has {string} tagged {string} first',
+  function (this: TamedTableWorld, label: string, kind: string) {
+    const first = controller(this).recents()[0];
+    assert.ok(first, 'recents list is empty');
+    assert.equal(first.label, label);
+    assert.equal(first.kind, kind);
+  },
+);
+
+When('user loads {int} fixture files locally', async function (this: TamedTableWorld, n: number) {
+  // Cycle distinct fixture names so each load is a distinct recent entry.
+  const fixtures = [
+    'customers-input.csv',
+    'filter-input.csv',
+    'sort-input.csv',
+    'dedupe-input.csv',
+    'paginate-input.csv',
+    'colsplit-fullname-input.csv',
+  ];
+  assert.ok(n <= fixtures.length, `at most ${fixtures.length} fixtures available`);
+  const c = controller(this);
+  const ctx = ctxOf(this);
+  for (const filename of fixtures.slice(0, n)) {
+    const pending = c.openCsv();
+    const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
+    await ctx.filePort!.resolveOpen({ name: filename, bytes });
+    await pending;
+  }
+});
+
+Then('the recents list has {int} entries', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).recents().length, n);
 });
 
 Then('the file is delivered as a download', function (this: TamedTableWorld) {

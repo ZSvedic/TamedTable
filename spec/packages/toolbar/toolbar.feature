@@ -15,24 +15,39 @@ Feature: Toolbar package
     @web
     Scenario: Action buttons fire their callbacks
       Given the toolbar demo page
-      When the user clicks the toolbar button "Save data"
-      Then the toolbar event log shows "save data"
       When the user clicks the toolbar button "Undo"
       Then the toolbar event log shows "undo"
 
     @web
-    Scenario: The Save-as menu saves a copy in another format
+    Scenario: The Save menu groups data formats and recipe exports
       Given the toolbar demo page
       When the user opens the toolbar save menu
-      And the user picks the toolbar menu item "Save as JSONL…"
+      Then the toolbar menu shows the group header "Data"
+      And the toolbar menu shows the group header "Recipe"
+      When the user picks the toolbar menu item "Save JSONL…"
       Then the toolbar event log shows "save as jsonl"
 
     @web
-    Scenario: The Save-flow menu exports the flow to Python
+    Scenario: The Save menu exports the recipe to Python
       Given the toolbar demo page
-      When the user opens the toolbar save-flow menu
-      And the user picks the toolbar menu item "Save as Python…"
+      When the user opens the toolbar save menu
+      And the user picks the toolbar menu item "Save recipe as Python…"
       Then the toolbar event log shows "save as python"
+
+    @web
+    Scenario: The Open menu runs a saved flow
+      Given the toolbar demo page
+      When the user opens the toolbar open menu
+      And the user picks the toolbar menu item "Open & run .flow…"
+      Then the toolbar event log shows "open flow"
+
+    @web
+    Scenario: The Open menu lists recent files behind an expandable entry
+      Given the toolbar demo page
+      When the user opens the toolbar open menu
+      And the user picks the toolbar menu item "Recent"
+      And the user picks the toolbar menu item "people.csv"
+      Then the toolbar event log shows "recent people.csv"
 
     @web
     Scenario: The theme toggle flips the wrapper

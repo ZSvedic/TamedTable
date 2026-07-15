@@ -14,14 +14,41 @@ import {
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
+import { validateTablePlan, type TablePlan } from '@tamedtable/core';
 import { specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
+import { RecentsStore, type RecentEntry } from './recents.ts';
+
+/** The data formats the Open picker accepts. */
+const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
 export class FilesManager {
   private readonly host: ControllerHost;
+  private readonly recentsStore = new RecentsStore();
   constructor(host: ControllerHost) {
     this.host = host;
+  }
+
+  /** The Open menu's Recent entries — newest first, at most 5. */
+  recents(): RecentEntry[] {
+    return this.recentsStore.list();
+  }
+
+  /** Re-open a Recent entry: samples and URLs reload their address; local
+   *  files and flows re-open the matching picker (the browser cannot reopen
+   *  a local file silently — the entry's name is the reminder). */
+  async openRecent(entry: RecentEntry): Promise<void> {
+    if ((entry.kind === 'sample' || entry.kind === 'url') && entry.url) {
+      try {
+        await this.loadFromUrl(entry.url, entry.kind);
+      } catch (e) {
+        this.host.pushToast('error', `Could not open ${entry.label}: ${(e as Error).message}`);
+      }
+      return;
+    }
+    if (entry.kind === 'flow') return this.openFlow();
+    return this.openCsv();
   }
 
   /** Open the file Open dialog and load the picked file (CSV, JSONL, Parquet,
@@ -30,8 +57,11 @@ export class FilesManager {
     this.host.dialog = 'open';
     this.host.notify();
     try {
-      const picked = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow']);
-      if (picked) await this.loadFromPicked(picked);
+      const picked = await this.host.file.pickOpen(OPEN_EXTENSIONS);
+      if (picked) {
+        await this.loadFromPicked(picked);
+        this.recentsStore.record({ kind: 'local', label: picked.name });
+      }
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
     } finally {
@@ -40,11 +70,70 @@ export class FilesManager {
     }
   }
 
+  /** "Open & run .flow…" — pick a saved `.flow`, then its source data file,
+   *  load the source, and replay the flow's transformations onto it as one
+   *  history entry (a single undo returns to the raw load). The browser has
+   *  no filesystem paths, so the flow's recorded `source` can't be read
+   *  directly — the second picker asks the user for it by name. */
+  async openFlow(): Promise<void> {
+    this.host.dialog = 'open';
+    this.host.notify();
+    try {
+      const picked = await this.host.file.pickOpen(['.flow']);
+      if (!picked) return;
+      const spec = FilesManager.parseFlow(picked);
+      if (specHasLlmCell(spec) && !this.host.settingsMgr.activeApiKey()?.trim()) {
+        this.host.pushToast(
+          'error',
+          missingProviderKeyMessage(this.host.config.provider, 'Running a flow with AI cells requires'),
+        );
+        return;
+      }
+      const source = await this.host.file.pickOpen(OPEN_EXTENSIONS);
+      if (!source) return;
+      const { rows, spec: baseSpec } = await parseTable(source.name, source.bytes);
+      await this.host.engine.loadParsed(rows, baseSpec);
+      const prevSpec = structuredClone(this.host.engine.currentSpec());
+      await this.host.engine.applySpec(spec);
+      this.host.patch.record({
+        label: `Ran ${picked.name}`,
+        prevSpec,
+        nextSpec: structuredClone(this.host.engine.currentSpec()),
+      });
+      this.recentsStore.record({ kind: 'flow', label: picked.name });
+      this.host.pushMessage(
+        'assistant',
+        `Ran ${picked.name} on ${source.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
+      );
+    } catch (e) {
+      this.host.pushToast('error', `Could not run flow: ${(e as Error).message}`);
+    } finally {
+      this.host.dialog = null;
+      this.host.notify();
+    }
+  }
+
+  /** Parse and validate a picked `.flow` file (JSON, version 1 or 2, a
+   *  well-formed spec). Throws with a user-readable message. */
+  private static parseFlow(picked: PickedFile): TablePlan {
+    let flow: { version?: number; spec?: unknown };
+    try {
+      flow = JSON.parse(new TextDecoder().decode(picked.bytes)) as { version?: number; spec?: unknown };
+    } catch {
+      throw new Error(`${picked.name} is not a valid .flow file (invalid JSON).`);
+    }
+    if (flow.version !== 1 && flow.version !== 2) {
+      throw new Error(`${picked.name}: version must be 1 or 2 (got ${flow.version ?? 'none'}).`);
+    }
+    return validateTablePlan(flow.spec);
+  }
+
   /** Load a file dropped onto the empty page — the drag-and-drop counterpart
    *  of openCsv, minus the picker dialog. Same formats, same toasts. */
   async openDropped(name: string, bytes: Uint8Array): Promise<void> {
     try {
       await this.loadFromPicked({ name, bytes });
+      this.recentsStore.record({ kind: 'local', label: name });
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
     } finally {
@@ -89,10 +178,12 @@ export class FilesManager {
 
   /** Fetch a CSV or JSONL from `url` and render it like a local-file open.
    *  Throws on any failure so the dialog can keep itself open with an
-   *  inline error; success closes the dialog at the caller. */
-  async loadFromUrl(url: string): Promise<void> {
+   *  inline error; success closes the dialog at the caller. `kind` labels
+   *  the Recent entry — the sample picker passes 'sample'. */
+  async loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> {
     const { name, bytes } = await fetchTable(url, this.host.opts.fetch);
     await this.loadFromPicked({ name, bytes });
+    this.recentsStore.record({ kind, label: name, url });
   }
 
   /** Save the current flow (replayable spec) via the Save dialog. */

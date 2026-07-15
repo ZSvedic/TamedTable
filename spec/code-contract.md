@@ -700,13 +700,35 @@ present, replaces the global `fetch` used here — the same hook the
 engine uses for cassette replay, so URL-load scenarios run offline.
 
 The three load sources are first-class actions — **Open sample…**,
-**Open local…**, **Open URL…**. The toolbar renders them as one
-`SplitButton`: the primary action opens the sample picker, the dropdown
-carries **Open local…** and **Open URL…**. The two halves render inside
-one rounded shell with a single hover tint and no internal divider, so
-the pair reads as one control. The empty page stacks the same three as
-separate buttons under the brand mark and the line "What table can I
-tame?".
+**Open local…**, **Open URL…**. The toolbar renders them inside one
+`MenuButton` (ui-kit): a plain dropdown trigger with grouped sections
+(**Recent** expandable entry, then **Data** and **Recipe** headers).
+The matching **Save** `MenuButton` groups the four **Save <format>…**
+entries under **Data** and the two recipe exports under **Recipe**.
+The empty page stacks the same three open actions as separate buttons
+under the brand mark and the line "What table can I tame?".
+
+```ts
+// controller surface added by the menu refactor
+interface RecentEntry {
+  kind: 'sample' | 'url' | 'local' | 'flow';
+  label: string;         // display name, e.g. "customers.csv"
+  url?: string;          // set for sample/url kinds — reload address
+}
+class WebController {
+  recents(): RecentEntry[];                 // newest first, at most 5
+  openRecent(entry: RecentEntry): Promise<void>;
+  openFlow(): Promise<void>;                // Open & run .flow…
+}
+```
+
+Recents persist under the localStorage key `tamedtable-recents`
+(best-effort — in-memory when localStorage is unavailable), capped at
+5, deduplicated by kind + label + url. `openFlow` runs two sequential
+`FilePort.pickOpen` handshakes — the `.flow` file, then the source
+data file — then loads the source and applies the flow's spec through
+`Runner.setSpec`, recording one patch-journal entry labelled
+`Ran <flow name>` so a single undo returns to the raw load.
 
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on

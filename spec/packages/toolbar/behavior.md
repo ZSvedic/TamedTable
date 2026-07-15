@@ -4,13 +4,14 @@ The `@tamedtable/toolbar` package owns the app's top bar, its URL-open dialog,
 and its sample picker. It holds no app state and no engine wiring: the host
 passes the load state, the file readout, and the undo/redo flags as props, and
 hears about every button press through callbacks (`onOpenSample`,
-`onOpenLocal`, `onOpenUrl`, `onSaveData`, `onSaveFlow`, `onUndo`, `onRedo`,
-`onToggleTheme`, `onOpenSettings`, `onOpenTutorial`). The "Save as" menu entries are app data
-too — the host passes `saveDataMenu` and `saveFlowMenu`, each a list of
-`{ label, onClick }` items, because the package knows nothing about file
-formats or flow/Python exports. The sample-file list and their URLs are app
-data, passed in — the package never reaches for `import.meta.env` or
-`window.location`.
+`onOpenLocal`, `onOpenUrl`, `onOpenFlow`, `onUndo`, `onRedo`,
+`onToggleTheme`, `onOpenSettings`, `onOpenTutorial`). The menu entries are app
+data too — the host passes `saveDataMenu` and `saveFlowMenu` (each a list of
+`{ label, onClick }` items — the package knows nothing about file formats or
+flow/Python exports) and `recentMenu` (a list of `{ label, tag, onClick }`
+items, newest first — the package knows nothing about how recents are stored).
+The sample-file list and their URLs are app data, passed in — the package
+never reaches for `import.meta.env` or `window.location`.
 
 The `Brand` mark/wordmark/lockup lives inside this package: the toolbar is its
 only consumer, so there is no reason to host it elsewhere or in `ui-kit`.
@@ -28,8 +29,10 @@ The web app's wrapper binds `WebController`:
   onOpenSample={() => controller.openSampleDialog()}
   onOpenLocal={() => void controller.openCsv()}
   onOpenUrl={() => controller.openUrlDialog()}
-  onSaveData={() => void controller.saveData()}
-  onSaveFlow={() => void controller.saveFlow()}
+  onOpenFlow={() => void controller.openFlow()}
+  recentMenu={recentMenu}       // { label, tag, onClick }[] from controller.recents()
+  saveDataMenu={saveDataMenu}   // "Save CSV…" … per format
+  saveFlowMenu={saveFlowMenu}   // "Save recipe as .flow…" / "Save recipe as Python…"
   onUndo={() => void controller.undo()} onRedo={() => void controller.redo()}
   onToggleTheme={toggle}
   onOpenSettings={() => controller.openSettings()}
@@ -57,18 +60,17 @@ treated as JSONL) — the badge the dialog shows beside each sample row.
 
 - Left: the brand lockup (reverse mark on a dark theme), then a monospace
   readout of `fileName · {rowCount} rows × {colCount} cols` once `loaded`.
-- Right: an "Open sample…" split button (its `openButtonId` is the Driver.js
-  tutorial target) — the primary half raises the sample picker, and its caret
-  menu carries "Open local…" and "Open URL…"; a "Save data" split
-  button — the primary half saves in the format the table was loaded as, and
-  its caret menu (`saveDataMenu`) lists "Save as <format>…" entries that save a
-  copy in a different format (and let the user rename); a "Save flow" split
-  button on the same pattern — the primary half saves the `.flow`, and its
-  caret menu (`saveFlowMenu`) carries "Save as Flow…" and "Save as Python…";
-  both saves disabled until `loaded`; a divider; "Undo" / "Redo" (gated on `canUndo` /
-  `canRedo`); a divider; the light/dark toggle (sun on dark, moon on light);
-  "Settings"; and "Tours". Every action except the theme toggle, settings, and
-  tours is also disabled while `busy`.
+- Right: an "Open" menu button (ui-kit `MenuButton`; its `openButtonId` is the
+  Driver.js tutorial target) — a document icon, the label, a chevron, and a
+  plain grouped dropdown: the expandable "Recent" entry (from `recentMenu`;
+  hidden while the list is empty), then a "Data" section with "Open sample…",
+  "Open local…", and "Open URL…", then a "Recipe" section with
+  "Open & run .flow…". A "Save" menu button (the disk icon; disabled until
+  `loaded`) groups `saveDataMenu` under "Data" and `saveFlowMenu` under
+  "Recipe". Then a divider; "Undo" / "Redo" (gated on `canUndo` / `canRedo`);
+  a divider; the light/dark toggle (sun on dark, moon on light); "Settings";
+  and "Tours". Every action except the theme toggle, settings, and tours is
+  also disabled while `busy`.
 
 ## OpenUrlDialog component
 

@@ -100,6 +100,40 @@ Feature: Web front-end
       When user saves as "out.jsonl"
       Then the status footer reports "saved"
 
+  Rule: A saved flow can be opened and run
+
+    @web
+    Scenario: Open & run a saved flow replays it onto its source file
+      Given the TamedTable web app
+      When user says "Open flow"
+      Then display Open File dialog
+      When user selects "filter.flow"
+      And user selects "filter-input.csv"
+      Then the table has 4 rows
+      And a single undo returns the table to 10 rows
+
+    @web
+    Scenario: An invalid flow file surfaces an error toast
+      Given the TamedTable web app
+      When user says "Open flow"
+      And user selects "customers-input.csv"
+      Then a toast shows "Could not run flow"
+
+  Rule: Successful loads are remembered as recents
+
+    @web
+    Scenario: A local load lands at the top of the recents list
+      Given the TamedTable web app
+      When user says "Load CSV file"
+      And user selects "customers-input.csv"
+      Then the recents list has "customers-input.csv" tagged "local" first
+
+    @web
+    Scenario: The recents list is capped at 5, newest first
+      Given the TamedTable web app
+      When user loads 6 fixture files locally
+      Then the recents list has 5 entries
+
   Rule: The empty page accepts a dropped file
 
     @web

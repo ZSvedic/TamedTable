@@ -4,18 +4,33 @@
 // engines or files. The brand lockup at the left lives in ./Brand.
 import type { ReactNode } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
-import { useTheme, Button, SplitButton, Icon } from '@tamedtable/ui-kit/components';
+import {
+  useTheme,
+  Button,
+  MenuButton,
+  Icon,
+  type MenuButtonSection,
+} from '@tamedtable/ui-kit/components';
 import { Lockup } from './Brand.tsx';
 
-/** One "Save as …" dropdown entry. The host owns the targets — the package
+/** One "Save …" dropdown entry. The host owns the targets — the package
  *  knows nothing about CSV/JSONL/Parquet/Arrow formats or flow/Python exports. */
 export interface SaveMenuItem {
   label: string;
   onClick: () => void;
 }
 
+/** One entry of the Open menu's expandable "Recent" list. The host owns the
+ *  storage and the reload behavior — the package only renders the rows. */
+export interface RecentMenuItem {
+  label: string;
+  /** The entry's kind badge: "sample", "URL", "local", or "flow". */
+  tag: string;
+  onClick: () => void;
+}
+
 export interface ToolbarProps {
-  /** A table is loaded — enables the save buttons and shows the readout. */
+  /** A table is loaded — enables the save menu and shows the readout. */
   loaded: boolean;
   /** A request is running — disables the loading/saving/history actions. */
   busy: boolean;
@@ -25,7 +40,7 @@ export interface ToolbarProps {
   colCount?: number;
   canUndo: boolean;
   canRedo: boolean;
-  /** DOM id for the Open split button — the Driver.js tutorial spotlight. */
+  /** DOM id for the Open menu button — the Driver.js tutorial spotlight. */
   openButtonId?: string;
   /** Medium width: hide the file readout and drop button labels to icons
    *  (tooltips retained) so the row fits instead of overflowing. */
@@ -33,17 +48,68 @@ export interface ToolbarProps {
   onOpenSample: () => void;
   onOpenUrl: () => void;
   onOpenLocal: () => void;
-  onSaveData: () => void;
-  /** "Save as <format>…" entries for the Save-data dropdown. */
+  /** "Open & run .flow…" — pick a saved flow and replay it. */
+  onOpenFlow: () => void;
+  /** Last-loaded files, newest first (at most 5); empty hides the Recent entry. */
+  recentMenu: RecentMenuItem[];
+  /** "Save <format>…" entries for the Save menu's Data group. */
   saveDataMenu: SaveMenuItem[];
-  onSaveFlow: () => void;
-  /** "Save as Flow…" / "Save as Python…" entries for the Save-flow dropdown. */
+  /** "Save recipe as …" entries for the Save menu's Recipe group. */
   saveFlowMenu: SaveMenuItem[];
   onUndo: () => void;
   onRedo: () => void;
   onToggleTheme: () => void;
   onOpenSettings: () => void;
   onOpenTutorial: () => void;
+}
+
+/** The Open menu's grouped sections — shared by the desktop toolbar and the
+ *  mobile app bar so both render the identical menu. */
+export function openMenuSections(opts: {
+  onOpenSample: () => void;
+  onOpenLocal: () => void;
+  onOpenUrl: () => void;
+  onOpenFlow: () => void;
+  recentMenu: RecentMenuItem[];
+}): MenuButtonSection[] {
+  const sections: MenuButtonSection[] = [];
+  if (opts.recentMenu.length > 0) {
+    sections.push({
+      items: [
+        {
+          label: 'Recent',
+          icon: 'clock',
+          submenu: opts.recentMenu.map((r) => ({ label: r.label, tag: r.tag, onClick: r.onClick })),
+        },
+      ],
+    });
+  }
+  sections.push(
+    {
+      header: 'Data',
+      items: [
+        { label: 'Open sample…', icon: 'sparkle', onClick: opts.onOpenSample },
+        { label: 'Open local…', icon: 'upload', onClick: opts.onOpenLocal },
+        { label: 'Open URL…', icon: 'link', onClick: opts.onOpenUrl },
+      ],
+    },
+    {
+      header: 'Recipe',
+      items: [{ label: 'Open & run .flow…', icon: 'play', onClick: opts.onOpenFlow }],
+    },
+  );
+  return sections;
+}
+
+/** The Save menu's grouped sections — shared by desktop and mobile. */
+export function saveMenuSections(opts: {
+  saveDataMenu: SaveMenuItem[];
+  saveFlowMenu: SaveMenuItem[];
+}): MenuButtonSection[] {
+  return [
+    { header: 'Data', items: opts.saveDataMenu },
+    { header: 'Recipe', items: opts.saveFlowMenu },
+  ];
 }
 
 export function Toolbar({
@@ -59,9 +125,9 @@ export function Toolbar({
   onOpenSample,
   onOpenUrl,
   onOpenLocal,
-  onSaveData,
+  onOpenFlow,
+  recentMenu,
   saveDataMenu,
-  onSaveFlow,
   saveFlowMenu,
   onUndo,
   onRedo,
@@ -117,39 +183,23 @@ export function Toolbar({
 
       <div style={{ flex: 1 }} />
 
-      <SplitButton
+      <MenuButton
         id={openButtonId}
-        onClick={onOpenSample}
         disabled={busy}
-        title="Open a bundled sample file"
-        caretTitle="More open options"
-        menu={[
-          { label: 'Open local…', onClick: onOpenLocal },
-          { label: 'Open URL…', onClick: onOpenUrl },
-        ]}
+        title="Open a table or a saved flow"
+        sections={openMenuSections({ onOpenSample, onOpenLocal, onOpenUrl, onOpenFlow, recentMenu })}
       >
-        <Icon name="folder" />
-        {!condensed && 'Open sample…'}
-      </SplitButton>
-      <SplitButton
-        onClick={onSaveData}
+        <Icon name="file" />
+        {!condensed && 'Open'}
+      </MenuButton>
+      <MenuButton
         disabled={!loaded || busy}
-        title="Save the current rows (:save)"
-        caretTitle="Save a copy in a different format"
-        menu={saveDataMenu}
+        title="Save the data or the recipe"
+        sections={saveMenuSections({ saveDataMenu, saveFlowMenu })}
       >
         <Icon name="save" />
-        {!condensed && 'Save data'}
-      </SplitButton>
-      <SplitButton
-        onClick={onSaveFlow}
-        disabled={!loaded || busy}
-        title="Save the flow as a replayable .flow file (:save-flow)"
-        caretTitle="Save the flow as a .flow file or a Python script"
-        menu={saveFlowMenu}
-      >
-        {condensed ? <Icon name="code" /> : 'Save flow'}
-      </SplitButton>
+        {!condensed && 'Save'}
+      </MenuButton>
 
       {divider}
 
