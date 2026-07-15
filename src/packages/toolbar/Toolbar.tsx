@@ -20,7 +20,7 @@ export interface SaveMenuItem {
   onClick: () => void;
 }
 
-/** One entry of the Open menu's expandable "Recent" list. The host owns the
+/** One entry of the Open menu's "Recent" submenu. The host owns the
  *  storage and the reload behavior — the package only renders the rows. */
 export interface RecentMenuItem {
   label: string;
@@ -50,7 +50,7 @@ export interface ToolbarProps {
   onOpenLocal: () => void;
   /** "Open & run .flow…" — pick a saved flow and replay it. */
   onOpenFlow: () => void;
-  /** Last-loaded files, newest first (at most 5); empty hides the Recent entry. */
+  /** Last-loaded files, newest first (at most 5); empty greys the Recent entry. */
   recentMenu: RecentMenuItem[];
   /** "Save <format>…" entries for the Save menu's Data group. */
   saveDataMenu: SaveMenuItem[];

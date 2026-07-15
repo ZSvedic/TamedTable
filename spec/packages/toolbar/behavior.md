@@ -62,7 +62,7 @@ treated as JSONL) — the badge the dialog shows beside each sample row.
   readout of `fileName · {rowCount} rows × {colCount} cols` once `loaded`.
 - Right: an "Open" menu button (ui-kit `MenuButton`; its `openButtonId` is the
   Driver.js tutorial target) — a document icon, the label, a chevron, and a
-  plain grouped dropdown: the expandable "Recent" entry (from `recentMenu`;
+  plain grouped dropdown: the "Recent" submenu entry (from `recentMenu`;
   disabled while the list is empty), then a "Data" section with "Open sample…",
   "Open local…", and "Open URL…", then a "Recipe" section with
   "Open & run .flow…". A "Save" menu button (the disk icon; disabled until

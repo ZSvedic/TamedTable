@@ -42,7 +42,7 @@ Feature: Toolbar package
       Then the toolbar event log shows "open flow"
 
     @web
-    Scenario: The Open menu lists recent files behind an expandable entry
+    Scenario: The Open menu lists recent files behind a Recent submenu
       Given the toolbar demo page
       When the user opens the toolbar open menu
       And the user picks the toolbar menu item "Recent"

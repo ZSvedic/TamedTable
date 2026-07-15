@@ -702,7 +702,7 @@ engine uses for cassette replay, so URL-load scenarios run offline.
 The three load sources are first-class actions — **Open sample…**,
 **Open local…**, **Open URL…**. The toolbar renders them inside one
 `MenuButton` (ui-kit): a plain dropdown trigger with grouped sections
-(**Recent** expandable entry, then **Data** and **Recipe** headers).
+(**Recent** submenu entry, then **Data** and **Recipe** headers).
 The matching **Save** `MenuButton` groups the four **Save <format>…**
 entries under **Data** and the two recipe exports under **Recipe**.
 The empty page stacks the same three open actions as separate buttons

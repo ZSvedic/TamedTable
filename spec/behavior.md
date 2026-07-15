@@ -738,8 +738,9 @@ document icon, the word "Open", and a chevron; clicking anywhere on it
 drops a plain menu (there is no split default action). The menu is
 grouped under small headers:
 
-- **Recent** — an expandable entry at the top, greyed (disabled) until
-  something has been loaded. Expanding it lists the last 5 successful loads,
+- **Recent** — a submenu entry at the top, greyed (disabled) until
+  something has been loaded. Hovering or tapping it opens a side panel
+  beside the menu listing the last 5 successful loads,
   newest first, each tagged with its kind (`sample`, `URL`, `local`,
   `flow`). A sample or URL entry reloads that address directly; a
   local or flow entry re-opens the matching file picker (a browser

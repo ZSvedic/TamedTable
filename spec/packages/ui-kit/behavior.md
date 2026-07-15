@@ -75,12 +75,14 @@ All components are pure — props in, callbacks out — and carry stable
   `header` renders as a small uppercase group label. Each item is
   `{ label, onClick?, icon?, tag?, disabled?, submenu? }` — `icon` draws a
   leading `Icon`, `tag` a small right-aligned badge, and `submenu` (a list of
-  `{ label, tag?, onClick }`) makes the item expandable in place: clicking it
-  unfolds the sub-entries indented below it instead of closing the menu.
-  `align: 'right'` anchors the menu to the trigger's right edge for buttons
-  near the right screen edge. Closes on pick, click-outside, or Escape
-  (`data-uk-menubtn`, `data-uk-menu-header`, `data-uk-menu-item`,
-  `data-uk-menu-tag`).
+  `{ label, tag?, onClick }`) gives the item a side flyout: hovering or
+  clicking it opens the sub-entries in a panel beside the menu, away from the
+  menu's aligned edge (rightwards for a left-aligned menu, leftwards for a
+  right-aligned one, so it never overflows the screen edge the menu hugs),
+  without closing the menu. `align: 'right'` anchors the menu to the
+  trigger's right edge for buttons near the right screen edge. Closes on
+  pick, click-outside, or Escape (`data-uk-menubtn`, `data-uk-menu-header`,
+  `data-uk-menu-item`, `data-uk-menu-tag`).
 - `Toasts({ toasts, onDismiss, onAction? })` — fixed bottom-right stack of
   `{ id, kind: "info" | "error", message, action? }` items, each with a dismiss
   button; a toast carrying an `action` label also shows an inline action button

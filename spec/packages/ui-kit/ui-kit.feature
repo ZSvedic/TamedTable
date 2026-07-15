@@ -78,7 +78,7 @@ Feature: UI kit package
       And the menu button menu is closed
 
     @web
-    Scenario: An expandable menu entry unfolds in place
+    Scenario: A submenu entry opens a side flyout panel
       Given the ui-kit demo page
       When the user clicks the demo menu button
       And the user picks the menu item "Recent"

@@ -4,7 +4,7 @@ import { space, typography } from './index.ts';
 import { useTheme } from './ThemeProvider.tsx';
 import { Icon, type IconName } from './Icon.tsx';
 
-/** A sub-entry of an expandable menu item (e.g. one recent file). */
+/** A sub-entry of a submenu item (e.g. one recent file). */
 export interface MenuButtonSubItem {
   label: string;
   /** Small right-aligned badge, e.g. the recent entry's kind. */
@@ -18,8 +18,9 @@ export interface MenuButtonItem {
   /** Leading glyph. */
   icon?: IconName;
   disabled?: boolean;
-  /** Sub-entries that unfold in place when the item is clicked — the menu
-   *  stays open until a sub-entry (or another item) is picked. */
+  /** Sub-entries shown in a side flyout panel when the item is hovered or
+   *  clicked — the menu stays open until a sub-entry (or another item) is
+   *  picked. The flyout opens away from the menu's aligned edge. */
   submenu?: MenuButtonSubItem[];
 }
 
@@ -46,7 +47,7 @@ interface MenuButtonProps {
 
 // A plain dropdown button: one trigger (no split default action) that opens
 // a grouped menu of actions. Groups carry small uppercase headers and are
-// divided by separator lines; an item with a submenu unfolds in place.
+// divided by separator lines; an item with a submenu opens a side flyout.
 export function MenuButton({
   children,
   sections,
@@ -168,18 +169,28 @@ export function MenuButton({
                 </div>
               )}
               {section.items.map((item) => (
-                <div key={item.label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div
+                  key={item.label}
+                  style={{ position: 'relative' }}
+                  onMouseEnter={() => {
+                    if (item.submenu && !item.disabled) setExpanded(item.label);
+                  }}
+                  onMouseLeave={() => {
+                    if (item.submenu) setExpanded((e) => (e === item.label ? null : e));
+                  }}
+                >
                   <MenuRow
                     label={item.label}
                     icon={item.icon}
                     disabled={item.disabled}
                     trailing={
                       item.submenu ? (
+                        // A "›" pointing where the flyout opens.
                         <span
                           style={{
                             color: t.ink3,
                             display: 'inline-flex',
-                            transform: expanded === item.label ? 'rotate(180deg)' : undefined,
+                            transform: align === 'right' ? 'rotate(90deg)' : 'rotate(-90deg)',
                           }}
                         >
                           <Icon name="chevron" size={11} />
@@ -189,27 +200,51 @@ export function MenuButton({
                     onClick={() => {
                       if (item.disabled) return;
                       if (item.submenu) {
-                        setExpanded((e) => (e === item.label ? null : item.label));
+                        // Open (never toggle): with a mouse, hover has already
+                        // opened the flyout and the click must not close it;
+                        // a tap opens it on touch screens.
+                        setExpanded(item.label);
                         return;
                       }
                       close();
                       item.onClick?.();
                     }}
                   />
-                  {item.submenu &&
-                    expanded === item.label &&
-                    item.submenu.map((sub) => (
-                      <MenuRow
-                        key={`${sub.label} ${sub.tag ?? ''}`}
-                        label={sub.label}
-                        tag={sub.tag}
-                        indent
-                        onClick={() => {
-                          close();
-                          sub.onClick();
-                        }}
-                      />
-                    ))}
+                  {item.submenu && expanded === item.label && (
+                    <div
+                      role="menu"
+                      style={{
+                        position: 'absolute',
+                        top: -space.px4,
+                        // Flyout away from the menu's aligned edge, overlapping
+                        // it slightly so the pointer can travel without a gap.
+                        [align === 'right' ? 'right' : 'left']: 'calc(100% - 4px)',
+                        minWidth: 180,
+                        maxWidth: 'min(280px, 70vw)',
+                        background: t.surface,
+                        border: `1px solid ${t.line2}`,
+                        borderRadius: space.radius,
+                        boxShadow: t.shadow,
+                        padding: space.px4,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        zIndex: 51,
+                      }}
+                    >
+                      {item.submenu.map((sub) => (
+                        <MenuRow
+                          key={`${sub.label} ${sub.tag ?? ''}`}
+                          label={sub.label}
+                          tag={sub.tag}
+                          onClick={() => {
+                            close();
+                            sub.onClick();
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -226,7 +261,6 @@ function MenuRow({
   tag,
   trailing,
   disabled,
-  indent,
   onClick,
 }: {
   label: string;
@@ -234,7 +268,6 @@ function MenuRow({
   tag?: string;
   trailing?: ReactNode;
   disabled?: boolean;
-  indent?: boolean;
   onClick: () => void;
 }): ReactNode {
   const t = useTheme();
@@ -256,7 +289,7 @@ function MenuRow({
         border: 0,
         background: !disabled && hover ? t.surface3 : 'transparent',
         borderRadius: space.radiusSm,
-        padding: indent ? '5px 10px 5px 26px' : '6px 10px',
+        padding: '6px 10px',
         cursor: disabled ? 'default' : 'pointer',
         color: t.ink,
         fontFamily: typography.ui,
