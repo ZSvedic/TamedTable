@@ -1,0 +1,20 @@
+{"ID":"01","FirstName":"John","LastName":"D. Doe","DOB":"01-01-1990","Country":"USA","Phone":"(200) 555-1234","_valid":true,"_validation":null}
+{"ID":"02","FirstName":"Jane","LastName":"Smith","DOB":"1985-05-15","Country":"Canada","Phone":"+1 555-5678","_valid":true,"_validation":null}
+{"ID":"03","FirstName":"bob","LastName":"mcdonald","DOB":"Sep 30th, 1978","Country":"UK","Phone":"0044-555-8765","_valid":true,"_validation":null}
+{"ID":"04","FirstName":"Alice","LastName":"Williams","DOB":"1992_12_10","Country":"Australia","Phone":"+61.559.4321.2","_valid":true,"_validation":null}
+{"ID":"05","FirstName":"Tom","LastName":"Brown","DOB":"25th of March 1980","Country":"USA","Phone":"+1 (100)555-6789","_valid":true,"_validation":null}
+{"ID":"06","FirstName":"Emily","LastName":"Davis","DOB":"1995/07/20","Country":"Canada","Phone":"","_valid":false,"_validation":"Phone is empty"}
+{"ID":"07","FirstName":"Michael","LastName":"Miller","DOB":"1988-11-30","Country":"England","Phone":"+44 555 1234","_valid":true,"_validation":null}
+{"ID":"08","FirstName":"sarah","LastName":"van der berg","DOB":"1990.02.14","Country":"Australia","Phone":"+61 555 9876","_valid":true,"_validation":null}
+{"ID":"09","FirstName":"david","LastName":"o'neil","DOB":"03/04/1983","Country":"USA","Phone":"(300) 555-4321","_valid":true,"_validation":null}
+{"ID":"10","FirstName":"Laura","LastName":"Taylor","DOB":"NA","Country":"The Bahamas","Phone":"+1 242 555-6789","_valid":true,"_validation":null}
+{"ID":"11","FirstName":"Chris","LastName":"Anderson","DOB":"1987-08-19","Country":"Bahamas","Phone":"","_valid":false,"_validation":"Phone is empty"}
+{"ID":"12","FirstName":"Boris","LastName":"Babić","DOB":"1985-03-10","Country":"Croatia","Phone":"+385 555 4321","_valid":true,"_validation":null}
+{"ID":"13","FirstName":"Anna","LastName":"Müller","DOB":"'10. Oktober 1990'","Country":"Germany","Phone":"+49 555 6789","_valid":true,"_validation":null}
+{"ID":"14","FirstName":"Carlos","LastName":"García","DOB":"1982-12-01","Country":"Spain","Phone":"+34 555 1234","_valid":true,"_validation":null}
+{"ID":"15","FirstName":"Maria","LastName":"Rossi","DOB":"03.04.1993.","Country":"Deutschland","Phone":"030 72344321","_valid":true,"_validation":null}
+{"ID":"16","FirstName":"Ahmed","LastName":"Khan","DOB":"","Country":"United Kingdom","Phone":"","_valid":false,"_validation":"Phone is empty"}
+{"ID":"17","FirstName":"张","LastName":"三","DOB":"1990-01-01","Country":"China","Phone":"+86 555 1234","_valid":true,"_validation":null}
+{"ID":"18","FirstName":"李","LastName":"四","DOB":"1985-05-15","Country":"China","Phone":"138 5555 6789","_valid":true,"_validation":null}
+{"ID":"19","FirstName":"山田","LastName":"太郎","DOB":"-","Country":"Japan","Phone":"+81 555 1234","_valid":true,"_validation":null}
+{"ID":"20","FirstName":"فلا","LastName":"الفلاني","DOB":"1990-01-01","Country":"Saudi Arabia","Phone":"+966 555 1234","_valid":true,"_validation":null}
