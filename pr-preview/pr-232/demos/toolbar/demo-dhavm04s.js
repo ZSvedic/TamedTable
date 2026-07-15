@@ -17733,18 +17733,18 @@ function Lockup({ size = 14, color, dark = false, style }) {
 // packages/toolbar/Toolbar.tsx
 var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
 function openMenuSections(opts) {
-  const sections = [];
-  if (opts.recentMenu.length > 0) {
-    sections.push({
+  const sections = [
+    {
       items: [
         {
           label: "Recent",
           icon: "clock",
+          disabled: opts.recentMenu.length === 0,
           submenu: opts.recentMenu.map((r) => ({ label: r.label, tag: r.tag, onClick: r.onClick }))
         }
       ]
-    });
-  }
+    }
+  ];
   sections.push({
     header: "Data",
     items: [
