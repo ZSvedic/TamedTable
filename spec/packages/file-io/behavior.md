@@ -29,7 +29,7 @@ table = await fetchTable("https://example.com/people.csv")
 ```
 
 and loads the rows into the engine via `Runner.loadParsed`. When the user later
-clicks Save flow:
+picks "Save recipe as .flow…":
 
 ```
 flow = serializeFlow(spec)

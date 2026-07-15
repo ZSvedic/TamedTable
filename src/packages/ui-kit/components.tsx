@@ -5,5 +5,10 @@
 export { ThemeProvider, useTheme, useThemeControls, type ThemeMode } from './ThemeProvider.tsx';
 export { Icon, ICON_NAMES, type IconName } from './Icon.tsx';
 export { Button } from './Button.tsx';
-export { SplitButton } from './SplitButton.tsx';
+export {
+  MenuButton,
+  type MenuButtonItem,
+  type MenuButtonSection,
+  type MenuButtonSubItem,
+} from './MenuButton.tsx';
 export { Toasts, type ToastItem } from './Toasts.tsx';

@@ -49,15 +49,26 @@ Then('the demo is in {string} mode', async function (this: object, mode: string)
   await page(this).waitForSelector(`[data-uk-mode="${mode}"]`);
 });
 
-When('the user clicks the split button caret', async function (this: object) {
-  await page(this).click('[data-uk-split-caret]');
+When('the user clicks the demo menu button', async function (this: object) {
+  await page(this).click('[data-uk-menubtn]');
+});
+
+Then('the menu shows the group header {string}', async function (this: object, header: string) {
+  await page(this).waitForSelector(`[data-uk-menu-header="${header}"]`);
 });
 
 When('the user picks the menu item {string}', async function (this: object, label: string) {
   await page(this).click(`[data-uk-menu-item="${label}"]`);
 });
 
-Then('the split button menu is closed', async function (this: object) {
+Then('the menu shows the sub-entry {string} tagged {string}', async function (this: object, label: string, tag: string) {
+  const item = page(this).locator(`[data-uk-menu-item="${label}"]`);
+  await item.waitFor();
+  const badge = item.locator('[data-uk-menu-tag]');
+  assert.equal(await badge.textContent(), tag);
+});
+
+Then('the menu button menu is closed', async function (this: object) {
   await page(this).waitForSelector('[data-uk-menu-item]', { state: 'detached' });
 });
 

@@ -8,7 +8,7 @@ import {
   Button,
   Icon,
   ICON_NAMES,
-  SplitButton,
+  MenuButton,
   Toasts,
   ThemeProvider,
   useTheme,
@@ -78,17 +78,33 @@ function Demo(): ReactNode {
       </div>
 
       <div style={section}>
-        <p style={heading}>Split button</p>
-        <SplitButton
-          onClick={() => report('Save clicked')}
-          menu={[
-            { label: 'Save as flow', onClick: () => report('Save as flow clicked') },
-            { label: 'Save as data', onClick: () => report('Save as data clicked') },
-            { label: 'Disabled item', onClick: () => report('never'), disabled: true },
+        <p style={heading}>Menu button</p>
+        <MenuButton
+          sections={[
+            {
+              items: [
+                {
+                  label: 'Recent',
+                  icon: 'clock',
+                  submenu: [
+                    { label: 'alpha.csv', tag: 'local', onClick: () => report('alpha.csv clicked') },
+                    { label: 'beta.jsonl', tag: 'URL', onClick: () => report('beta.jsonl clicked') },
+                  ],
+                },
+              ],
+            },
+            {
+              header: 'Data',
+              items: [
+                { label: 'Save as flow', onClick: () => report('Save as flow clicked') },
+                { label: 'Save as data', onClick: () => report('Save as data clicked') },
+                { label: 'Disabled item', onClick: () => report('never'), disabled: true },
+              ],
+            },
           ]}
         >
           <Icon name="save" /> Save
-        </SplitButton>
+        </MenuButton>
       </div>
 
       <div style={section}>

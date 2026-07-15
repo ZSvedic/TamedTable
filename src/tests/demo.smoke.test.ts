@@ -137,14 +137,14 @@ describe.skipIf(skip)('demo smoke', () => {
 
   it('toolbar: fires a button callback and opens the URL dialog', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('toolbar');
-    await page.click('[data-tb-toolbar] button:has-text("Save data")');
+    await page.click('[data-tb-toolbar] button:has-text("Undo")');
     await page.waitForFunction(
-      `(document.querySelector('#out')?.textContent ?? '').includes('save data')`,
+      `(document.querySelector('#out')?.textContent ?? '').includes('undo')`,
     );
 
-    // Open URL moved into the Open split button's dropdown menu: click the
-    // first split button's caret, then the "Open URL…" menu item.
-    await page.locator('[data-tb-toolbar] [data-uk-split-caret]').first().click();
+    // Open URL lives in the Open menu button's dropdown: open the first menu
+    // button, then pick the "Open URL…" menu item.
+    await page.locator('[data-tb-toolbar] [data-uk-menubtn]').first().click();
     await page.click('[data-uk-menu-item="Open URL…"]');
     await page.waitForSelector('[data-tb-dialog]');
     await expectClean(page, consoleErrors, failedRequests);

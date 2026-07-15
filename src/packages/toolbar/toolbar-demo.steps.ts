@@ -17,15 +17,18 @@ When('the user clicks the toolbar theme toggle', async function (this: object) {
   await page(this).click('[data-tb-toolbar] button[title*="theme"]');
 });
 
-When('the user opens the toolbar save menu', async function (this: object) {
-  // Three split buttons carry a caret — "Open sample…", "Save data", "Save flow";
-  // the Save-data menu is the second.
-  await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(1).click();
+When('the user opens the toolbar open menu', async function (this: object) {
+  // Two menu buttons — Open then Save; Open is the first.
+  await page(this).locator('[data-tb-toolbar] [data-uk-menubtn]').nth(0).click();
 });
 
-When('the user opens the toolbar save-flow menu', async function (this: object) {
-  // The Save-flow split button is the third (after "Open sample…" and "Save data").
-  await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(2).click();
+When('the user opens the toolbar save menu', async function (this: object) {
+  // Two menu buttons — Open then Save; Save is the second.
+  await page(this).locator('[data-tb-toolbar] [data-uk-menubtn]').nth(1).click();
+});
+
+Then('the toolbar menu shows the group header {string}', async function (this: object, header: string) {
+  await page(this).waitForSelector(`[data-uk-menu-header="${header}"]`);
 });
 
 When('the user picks the toolbar menu item {string}', async function (this: object, label: string) {
@@ -37,15 +40,16 @@ Then('the toolbar event log shows {string}', async function (this: object, expec
 });
 
 When('the user opens the toolbar URL dialog', async function (this: object) {
-  // "Open URL…" now lives in the Open split-button's dropdown (the first caret).
-  await page(this).locator('[data-tb-toolbar] [data-uk-split-caret]').nth(0).click();
+  // "Open URL…" lives in the Open menu button's dropdown.
+  await page(this).locator('[data-tb-toolbar] [data-uk-menubtn]').nth(0).click();
   await page(this).click('[data-uk-menu-item="Open URL…"]');
   await page(this).waitForSelector('[data-tb-dialog]');
 });
 
 When('the user opens the toolbar sample picker', async function (this: object) {
-  // "Open sample…" is the Open split-button's primary half.
-  await page(this).click('[data-tb-toolbar] button:has-text("Open sample")');
+  // "Open sample…" lives in the Open menu button's dropdown.
+  await page(this).locator('[data-tb-toolbar] [data-uk-menubtn]').nth(0).click();
+  await page(this).click('[data-uk-menu-item="Open sample…"]');
   await page(this).waitForSelector('[data-tb-sample-dialog]');
 });
 

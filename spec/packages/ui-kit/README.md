@@ -1,6 +1,6 @@
 # ui-kit
 
-The TamedTable design system: brand tokens (`lightTheme`, `darkTheme`, `typography`, `space`) and the primitive React components (`Button`, `Icon`, `SplitButton`, `Toasts`, `ThemeProvider`).
+The TamedTable design system: brand tokens (`lightTheme`, `darkTheme`, `typography`, `space`) and the primitive React components (`Button`, `Icon`, `MenuButton`, `Toasts`, `ThemeProvider`).
 
 | What | Where |
 |---|---|

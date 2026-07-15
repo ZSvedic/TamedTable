@@ -1,6 +1,6 @@
 # #UiKit
 # The design system: brand tokens (theme objects, typography, spacing) plus
-# the primitive React components — Button, Icon, SplitButton, Toasts, and the
+# the primitive React components — Button, Icon, MenuButton, Toasts, and the
 # light/dark ThemeProvider.
 Feature: UI kit package
 
@@ -69,12 +69,23 @@ Feature: UI kit package
       Then the demo is in "light" mode
 
     @web
-    Scenario: The split button menu opens, picks, and closes
+    Scenario: The menu button opens its grouped menu, picks, and closes
       Given the ui-kit demo page
-      When the user clicks the split button caret
-      And the user picks the menu item "Save as flow"
+      When the user clicks the demo menu button
+      Then the menu shows the group header "Data"
+      When the user picks the menu item "Save as flow"
       Then the demo log shows "Save as flow clicked"
-      And the split button menu is closed
+      And the menu button menu is closed
+
+    @web
+    Scenario: A submenu entry opens a side flyout panel
+      Given the ui-kit demo page
+      When the user clicks the demo menu button
+      And the user picks the menu item "Recent"
+      Then the menu shows the sub-entry "alpha.csv" tagged "local"
+      When the user picks the menu item "alpha.csv"
+      Then the demo log shows "alpha.csv clicked"
+      And the menu button menu is closed
 
     @web
     Scenario: A toast can carry an inline action

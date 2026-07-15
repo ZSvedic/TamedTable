@@ -16,7 +16,7 @@ export function OpenSampleDialog({ controller }: { controller: WebController }):
     <SampleDialog
       open={controller.sampleDialogOpen}
       samples={samples}
-      onPick={(url) => void controller.loadFromUrl(url)}
+      onPick={(url) => void controller.loadFromUrl(url, 'sample')}
       onClose={() => controller.closeSampleDialog()}
     />
   );

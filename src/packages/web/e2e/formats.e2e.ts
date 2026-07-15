@@ -13,8 +13,8 @@ for (const { label, file } of [
 ]) {
   test(`${label} loads in the browser and renders the table`, async ({ page }) => {
     await page.goto('/TamedTable/app/');
-    await page.locator('[data-uk-split-caret]').first().click();
-  await page.locator('[data-uk-menu-item="Open URL…"]').click();
+    await page.locator('[data-uk-menubtn]').first().click();
+    await page.locator('[data-uk-menu-item="Open URL…"]').click();
     const dialog = page.locator('[data-tb-dialog]');
     await dialog.locator('[data-tb-url-input]').fill(`${BASE}/samples/${file}`);
     await dialog.getByRole('button', { name: 'Load' }).click();
@@ -42,17 +42,18 @@ test('Save data writes a real Parquet in the browser (hyparquet-writer)', async 
   });
   await page.goto('/TamedTable/app/');
   // Load the Parquet sample.
-  await page.locator('[data-uk-split-caret]').first().click();
+  await page.locator('[data-uk-menubtn]').first().click();
   await page.locator('[data-uk-menu-item="Open URL…"]').click();
   const dialog = page.locator('[data-tb-dialog]');
   await dialog.locator('[data-tb-url-input]').fill(`${BASE}/samples/customers-input.parquet`);
   await dialog.getByRole('button', { name: 'Load' }).click();
   await expect(page.locator('[data-tv-cell="1:Country"]')).toHaveText('Canada', { timeout: 60_000 });
 
-  // Save data — headless Chromium lacks the File System Access API, so this
+  // Save Parquet — headless Chromium lacks the File System Access API, so this
   // takes the download fallback. Capture the bytes and check the Parquet magic.
   const dl = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Save data' }).click();
+  await page.locator('[data-uk-menubtn]').nth(1).click();
+  await page.locator('[data-uk-menu-item="Save Parquet…"]').click();
   const download = await dl;
   expect(download.suggestedFilename()).toMatch(/\.parquet$/);
   const stream = await download.createReadStream();

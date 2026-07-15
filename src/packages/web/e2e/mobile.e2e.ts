@@ -43,13 +43,21 @@ test.describe('phone width', () => {
     await expect(page.locator('[data-tb-toolbar=""]')).toHaveCount(0);
   });
 
-  test('the menu drawer opens with the toolbar actions even before a file loads', async ({ page }) => {
+  test('the menu drawer carries the full Open and Save menus even before a file loads', async ({ page }) => {
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-dock="menu"]').click();
     await expect(page.locator('[data-mob-drawer=""]')).toBeVisible();
+    // The same menu model as the desktop dropdowns, expanded in the drawer.
     await expect(page.locator('[data-mob-menu-item="Open sample…"]')).toBeVisible();
+    await expect(page.locator('[data-mob-menu-item="Open .flow & run on current data…"]')).toBeDisabled();
+    await expect(page.locator('[data-mob-menu-item="Save CSV…"]')).toBeDisabled();
     await expect(page.locator('[data-mob-menu-item="Settings…"]')).toBeVisible();
     await expect(page.locator('[data-mob-menu-item="Tours…"]')).toBeVisible();
+    // The app bar carries no menu buttons — they were too small to tap.
+    await expect(page.locator('[data-uk-menubtn]')).toHaveCount(0);
+    // Picking "Open sample…" closes the drawer and raises the sample picker.
+    await page.locator('[data-mob-menu-item="Open sample…"]').click();
+    await expect(page.locator('[data-tb-sample-dialog]')).toBeVisible();
   });
 
   test('loading a sample fills the app bar and opens the Type composer from the dock', async ({
@@ -248,7 +256,8 @@ test.describe('medium width — the toolbar condenses instead of overflowing', (
   test('the toolbar never overflows across the band with a file loaded', async ({ page }) => {
     await page.setViewportSize({ width: DESKTOP.width, height: 800 });
     await page.goto('/TamedTable/app/');
-    await page.locator('[data-tb-toolbar=""] [data-uk-split-main]').first().click();
+    await page.locator('[data-tb-toolbar=""] [data-uk-menubtn]').first().click();
+    await page.locator('[data-uk-menu-item="Open sample…"]').click();
     const picker = page.locator('[data-tb-sample-dialog]');
     await expect(picker).toBeVisible();
     await picker.locator('[data-tb-sample]', { hasText: 'customers-input.csv' }).first().click();
