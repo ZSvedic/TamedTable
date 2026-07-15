@@ -15,7 +15,7 @@ import {
   type SaveOutcome,
 } from '@tamedtable/file-io';
 import { validateTablePlan, type TablePlan } from '@tamedtable/core';
-import { specHasLlmCell } from '@tamedtable/headless';
+import { checkFlowInputColumns, specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { RecentsStore, type RecentEntry } from './recents.ts';
@@ -70,32 +70,34 @@ export class FilesManager {
     }
   }
 
-  /** "Open & run .flow…" — pick a saved `.flow`, then its source data file,
-   *  load the source, and replay the flow's transformations onto it as one
-   *  history entry (a single undo returns to the raw load). The browser has
-   *  no filesystem paths, so the flow's recorded `source` can't be read
-   *  directly — the second picker asks the user for it by name. */
+  /** "Open .flow & run on current data…" — pick a saved `.flow` and replay
+   *  its transformations onto the currently-loaded table's source as one
+   *  history entry (a single undo restores the previous spec). Failures — an
+   *  unreadable flow, a flow reading columns the table lacks, AI cells with
+   *  no provider key — raise the modal error dialog, not a fading toast. */
   async openFlow(): Promise<void> {
+    if (!this.host.loaded) {
+      this.host.pushToast('error', 'Load a file before running a flow.');
+      return;
+    }
     this.host.dialog = 'open';
     this.host.notify();
     try {
       const picked = await this.host.file.pickOpen(['.flow']);
       if (!picked) return;
-      const { spec, source: sourceName } = FilesManager.parseFlow(picked);
+      const spec = FilesManager.parseFlow(picked);
+      const mismatch = checkFlowInputColumns(spec, this.host.engine.sourceColumns());
+      if (mismatch) {
+        this.host.errorDialog = `${picked.name} does not fit the current table. ${mismatch}`;
+        return;
+      }
       if (specHasLlmCell(spec) && !this.host.settingsMgr.activeApiKey()?.trim()) {
-        this.host.pushToast(
-          'error',
-          missingProviderKeyMessage(this.host.config.provider, 'Running a flow with AI cells requires'),
+        this.host.errorDialog = missingProviderKeyMessage(
+          this.host.config.provider,
+          'Running a flow with AI cells requires',
         );
         return;
       }
-      // The flow records its source by name only — a browser can't read a
-      // path, so the user picks the file; the toast says which one.
-      this.host.pushToast('info', `Now pick the flow's source data file (${sourceName}).`);
-      const source = await this.host.file.pickOpen(OPEN_EXTENSIONS);
-      if (!source) return;
-      const { rows, spec: baseSpec } = await parseTable(source.name, source.bytes);
-      await this.host.engine.loadParsed(rows, baseSpec);
       const prevSpec = structuredClone(this.host.engine.currentSpec());
       await this.host.engine.applySpec(spec);
       this.host.patch.record({
@@ -106,10 +108,10 @@ export class FilesManager {
       this.recentsStore.record({ kind: 'flow', label: picked.name });
       this.host.pushMessage(
         'assistant',
-        `Ran ${picked.name} on ${source.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
+        `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
       );
     } catch (e) {
-      this.host.pushToast('error', `Could not run flow: ${(e as Error).message}`);
+      this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
     } finally {
       this.host.dialog = null;
       this.host.notify();
@@ -117,10 +119,9 @@ export class FilesManager {
   }
 
   /** Parse and validate a picked `.flow` file (JSON, version 1 or 2, a
-   *  well-formed spec). Returns the spec plus the recorded source file name
-   *  (the second picker's prompt). Throws with a user-readable message. */
-  private static parseFlow(picked: PickedFile): { spec: TablePlan; source: string } {
-    type FlowFile = { version?: number; source?: string; spec?: unknown };
+   *  well-formed spec). Throws with a user-readable message. */
+  private static parseFlow(picked: PickedFile): TablePlan {
+    type FlowFile = { version?: number; spec?: unknown };
     let flow: FlowFile;
     try {
       flow = JSON.parse(new TextDecoder().decode(picked.bytes)) as FlowFile;
@@ -130,9 +131,7 @@ export class FilesManager {
     if (flow.version !== 1 && flow.version !== 2) {
       throw new Error(`${picked.name}: version must be 1 or 2 (got ${flow.version ?? 'none'}).`);
     }
-    const spec = validateTablePlan(flow.spec);
-    const source = flow.source || (spec.table ? spec.table.split('/').pop() : '') || 'the source file';
-    return { spec, source };
+    return validateTablePlan(flow.spec);
   }
 
   /** Load a file dropped onto the empty page — the drag-and-drop counterpart

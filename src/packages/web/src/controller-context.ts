@@ -43,6 +43,7 @@ export interface ControllerHost {
   dialog: DialogKind;
   urlDialogOpen: boolean;
   sampleDialogOpen: boolean;
+  errorDialog: string | null;
   settingsOpen: boolean;
   expandedProvider: Provider | null;
   voiceStatus: VoiceStatus;

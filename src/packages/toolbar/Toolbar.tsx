@@ -48,7 +48,7 @@ export interface ToolbarProps {
   onOpenSample: () => void;
   onOpenUrl: () => void;
   onOpenLocal: () => void;
-  /** "Open & run .flow…" — pick a saved flow and replay it. */
+  /** "Open .flow & run on current data…" — pick a saved flow and replay it. */
   onOpenFlow: () => void;
   /** Last-loaded files, newest first (at most 5); empty greys the Recent entry. */
   recentMenu: RecentMenuItem[];
@@ -71,6 +71,8 @@ export function openMenuSections(opts: {
   onOpenUrl: () => void;
   onOpenFlow: () => void;
   recentMenu: RecentMenuItem[];
+  /** A table is loaded — enables "Open .flow & run on current data…". */
+  loaded: boolean;
 }): MenuButtonSection[] {
   const sections: MenuButtonSection[] = [
     {
@@ -97,7 +99,15 @@ export function openMenuSections(opts: {
     },
     {
       header: 'Recipe',
-      items: [{ label: 'Open & run .flow…', icon: 'play', onClick: opts.onOpenFlow }],
+      // The flow runs on the open table, so the entry needs one.
+      items: [
+        {
+          label: 'Open .flow & run on current data…',
+          icon: 'play',
+          disabled: !opts.loaded,
+          onClick: opts.onOpenFlow,
+        },
+      ],
     },
   );
   return sections;
@@ -189,7 +199,7 @@ export function Toolbar({
         id={openButtonId}
         disabled={busy}
         title="Open a table or a saved flow"
-        sections={openMenuSections({ onOpenSample, onOpenLocal, onOpenUrl, onOpenFlow, recentMenu })}
+        sections={openMenuSections({ onOpenSample, onOpenLocal, onOpenUrl, onOpenFlow, recentMenu, loaded })}
       >
         <Icon name="file" />
         {!condensed && 'Open'}

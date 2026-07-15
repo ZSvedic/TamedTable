@@ -99,6 +99,9 @@ export class WebController implements ControllerHost {
   urlDialogOpen = false;
   /** Whether the Open-sample picker dialog is showing. */
   sampleDialogOpen = false;
+  /** A modal error message (the flow error dialog), or null when hidden —
+   *  used for failures a fading toast could miss. */
+  errorDialog: string | null = null;
   streaming = false;
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
@@ -312,8 +315,11 @@ export class WebController implements ControllerHost {
   // ── File dialogs (→ files) ─────────────────────────────────────────────────
 
   openCsv(): Promise<void> { return this.files.openCsv(); }
-  /** "Open & run .flow…" — pick a saved flow, then its source, and replay it. */
+  /** "Open .flow & run on current data…" — pick a saved flow and replay it
+   *  onto the currently-loaded table. */
   openFlow(): Promise<void> { return this.files.openFlow(); }
+  /** Hide the modal error dialog. */
+  dismissErrorDialog(): void { this.errorDialog = null; this.notify(); }
   /** The Open menu's Recent entries — newest first, at most 5. */
   recents(): RecentEntry[] { return this.files.recents(); }
   /** Re-open a Recent entry (reload a URL/sample, or re-raise a picker). */

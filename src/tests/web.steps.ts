@@ -119,10 +119,7 @@ When('user selects {string}', async function (this: TamedTableWorld, filename: s
   const ctx = ctxOf(this);
   const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
   await ctx.filePort!.resolveOpen({ name: filename, bytes });
-  // openFlow chains a second Open dialog after the first pick, so waiting on
-  // the whole action would deadlock — proceed as soon as either the action
-  // settles or the next dialog is up.
-  await Promise.race([ctx.pending, ctx.filePort!.nextDialogRequested()]);
+  await ctx.pending;
 });
 
 When('user saves as {string}', async function (this: TamedTableWorld, filename: string) {
@@ -163,6 +160,20 @@ Then('{string} contains a mutate transformation', function (this: TamedTableWorl
 Then('a single undo returns the table to {int} rows', async function (this: TamedTableWorld, n: number) {
   await controller(this).undo();
   assert.equal(controller(this).displayRows().length, n);
+});
+
+Then('the flow error dialog shows {string}', function (this: TamedTableWorld, needle: string) {
+  const message = controller(this).errorDialog;
+  assert.ok(message, 'expected the flow error dialog to be showing');
+  assert.ok(message.includes(needle), `error dialog "${message}" should mention "${needle}"`);
+});
+
+When('user dismisses the flow error dialog', function (this: TamedTableWorld) {
+  controller(this).dismissErrorDialog();
+});
+
+Then('no flow error dialog is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).errorDialog, null);
 });
 
 // ── Recents ────────────────────────────────────────────────────────────────

@@ -101,19 +101,6 @@ export class WebTestFilePort implements FilePort {
     this.openResolve = undefined;
   }
 
-  /** Resolves once another dialog is awaiting a step — openFlow chains two
-   *  Open dialogs (the .flow file, then its source), so the step that picks
-   *  the first file must not block on the whole action settling. Never
-   *  rejects: when no dialog follows, it simply never resolves (the caller
-   *  races it against the action's own promise). */
-  async nextDialogRequested(): Promise<void> {
-    try {
-      await this.waitFor(() => this.openResolve !== undefined || this.saveResolve !== undefined);
-    } catch {
-      await new Promise<never>(() => {});
-    }
-  }
-
   /** Resolve a pending Save dialog, recording the written content under `name`. */
   async resolveSave(name: string): Promise<void> {
     await this.waitFor(() => this.saveResolve !== undefined);

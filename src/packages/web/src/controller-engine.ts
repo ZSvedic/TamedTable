@@ -162,6 +162,12 @@ export class EngineManager {
     this.ensureHeadless().registerLookup(name, rows);
   }
 
+  /** The loaded source's column ids — what a replayed flow reads (its
+   *  transformations run on the source rows, not the derived view). */
+  sourceColumns(): string[] {
+    return this.loadedSource?.spec.columns.map((c) => c.id) ?? [];
+  }
+
   /** Replace the current spec, replaying its transformations onto the loaded
    *  source rows (the Open & run .flow path). Runs like a request: `streaming`
    *  is set for the duration, AI cells paint onto the overlay as chunks land,

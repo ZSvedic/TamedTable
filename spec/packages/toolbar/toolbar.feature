@@ -38,7 +38,7 @@ Feature: Toolbar package
     Scenario: The Open menu runs a saved flow
       Given the toolbar demo page
       When the user opens the toolbar open menu
-      And the user picks the toolbar menu item "Open & run .flow…"
+      And the user picks the toolbar menu item "Open .flow & run on current data…"
       Then the toolbar event log shows "open flow"
 
     @web

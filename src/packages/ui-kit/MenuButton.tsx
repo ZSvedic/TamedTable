@@ -285,6 +285,7 @@ function MenuRow({
         display: 'flex',
         alignItems: 'center',
         gap: space.px8,
+        width: '100%',
         textAlign: 'left',
         border: 0,
         background: !disabled && hover ? t.surface3 : 'transparent',

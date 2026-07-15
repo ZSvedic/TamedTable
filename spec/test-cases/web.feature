@@ -100,42 +100,46 @@ Feature: Web front-end
       When user saves as "out.jsonl"
       Then the status footer reports "saved"
 
-  Rule: A saved flow can be opened and run
+  Rule: A saved flow can be opened and run on the current table
 
     @web
-    Scenario: Open & run a saved flow replays it onto its source file
+    Scenario: Open .flow & run replays the recipe on the open table
       Given the TamedTable web app
+      And load "filter-input.csv"
       When user says "Open flow"
       Then display Open File dialog
       When user selects "filter.flow"
-      And user selects "filter-input.csv"
       Then the table has 4 rows
       And a single undo returns the table to 10 rows
 
     @web
-    Scenario: The second picker is announced with the flow's source file name
+    Scenario: A flow reading a column the current table lacks is refused
       Given the TamedTable web app
+      And load "sort-input.csv"
       When user says "Open flow"
       And user selects "filter.flow"
-      Then a toast shows "Now pick the flow's source data file (filter-input.csv)"
-      When user selects "filter-input.csv"
-      Then the table has 4 rows
+      Then the flow error dialog shows "Country"
+      And the table has 4 rows
 
     @web
     Scenario: A flow with AI cells needs the selected provider's key
       Given the TamedTable web app
+      And load "customers-input.csv"
       And the API key has not been set
       And user selects the provider "gemini"
       When user says "Open flow"
       And user selects "cleanup.flow"
-      Then a toast shows "Running a flow with AI cells requires a Google API key"
+      Then the flow error dialog shows "Running a flow with AI cells requires a Google API key"
 
     @web
-    Scenario: An invalid flow file surfaces an error toast
+    Scenario: An invalid flow file surfaces the error dialog
       Given the TamedTable web app
+      And load "filter-input.csv"
       When user says "Open flow"
       And user selects "customers-input.csv"
-      Then a toast shows "Could not run flow"
+      Then the flow error dialog shows "Could not run flow"
+      When user dismisses the flow error dialog
+      Then no flow error dialog is shown
 
   Rule: Successful loads are remembered as recents
 

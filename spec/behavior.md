@@ -750,28 +750,31 @@ grouped under small headers:
 - **Data** — **Open sample…** (raises the sample picker; clicking a
   sample loads it straight away), **Open local…** (the native file
   picker), and **Open URL…** (the URL dialog).
-- **Recipe** — **Open & run .flow…** (below).
+- **Recipe** — **Open .flow & run on current data…** (below), greyed
+  until a table is loaded.
 
 The URL dialog is URL-only: it accepts a typed address and no longer
 lists samples.
 
-**Open & run .flow…** replays a saved recipe. It opens the file picker
-for a `.flow` file and validates it (version 1 or 2, a well-formed
-spec). Because the browser has no filesystem paths, the flow's
-recorded `source` cannot be read directly — the picker opens a second
-time so the user picks the source data file (a toast names the file
-the flow expects, e.g. `Now pick the flow's source data file
-(TournamentSearch.csv).`). The source loads like any local open, then
-the flow's transformations replay onto it exactly like a chat request:
-the app shows the running state, AI cells stream onto the table as
-they compute, and the run can be cancelled. The replay lands as one
-history entry, so a single undo returns to the freshly-loaded source,
-and a chat message reports the result (`Ran <flow> on <source> — N
-rows, M columns.`). A flow that carries an `{llm}` cell needs the
-selected provider's key and fails fast with the provider-named toast
-when it is missing — before the source is even asked for; an
-unreadable or invalid flow file surfaces a "Could not run flow …"
-error toast. Sample files to try this with live in `spec/user-files/`.
+**Open .flow & run on current data…** replays a saved recipe onto the
+table already open in the UI — one picker, for the `.flow` file only
+(the data is the current table's source, so no second file is asked
+for; the entry is disabled until a table is loaded). The flow is
+validated (version 1 or 2, a well-formed spec), then checked against
+the current table: a flow that reads a column the current data does
+not have is refused with a **flow error dialog** — a modal that names
+the missing column and the current columns, dismissed with OK (a
+modal, not a toast, so it can't be missed, and it renders on the
+phone layout the same way). The same dialog surfaces an unreadable or
+invalid flow file (`Could not run flow …`) and a flow with `{llm}`
+cells when the selected provider's key is missing. When the checks
+pass, the flow's transformations replay onto the current table's
+source exactly like a chat request: the app shows the running state,
+AI cells stream onto the table as they compute, and the run can be
+cancelled. The replay replaces the spec as one history entry, so a
+single undo returns to the table as it was, and a chat message
+reports the result (`Ran <flow> — N rows, M columns.`). Sample files
+to try this with live in `spec/user-files/`.
 
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same

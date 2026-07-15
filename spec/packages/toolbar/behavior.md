@@ -65,7 +65,8 @@ treated as JSONL) — the badge the dialog shows beside each sample row.
   plain grouped dropdown: the "Recent" submenu entry (from `recentMenu`;
   disabled while the list is empty), then a "Data" section with "Open sample…",
   "Open local…", and "Open URL…", then a "Recipe" section with
-  "Open & run .flow…". A "Save" menu button (the disk icon; disabled until
+  "Open .flow & run on current data…" (disabled until `loaded` — the flow
+  runs on the open table). A "Save" menu button (the disk icon; disabled until
   `loaded`) groups `saveDataMenu` under "Data" and `saveFlowMenu` under
   "Recipe". Then a divider; "Undo" / "Redo" (gated on `canUndo` / `canRedo`);
   a divider; the light/dark toggle (sun on dark, moon on light); "Settings";

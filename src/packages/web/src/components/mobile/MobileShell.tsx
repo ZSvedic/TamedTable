@@ -64,6 +64,7 @@ function BarMenus({ controller }: { controller: WebController }): ReactNode {
           onOpenUrl: () => controller.openUrlDialog(),
           onOpenFlow: () => void controller.openFlow(),
           recentMenu: recentMenuItems(controller),
+          loaded,
         })}
       >
         <Icon name="file" />

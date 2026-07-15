@@ -718,21 +718,29 @@ interface RecentEntry {
 class WebController {
   recents(): RecentEntry[];                 // newest first, at most 5
   openRecent(entry: RecentEntry): Promise<void>;
-  openFlow(): Promise<void>;                // Open & run .flow…
+  openFlow(): Promise<void>;                // Open .flow & run on current data…
 }
 ```
 
 Recents persist under the localStorage key `tamedtable-recents`
 (best-effort — in-memory when localStorage is unavailable), capped at
-5, deduplicated by kind + label + url. `openFlow` runs two sequential
-`FilePort.pickOpen` handshakes — the `.flow` file, then the source
-data file — then loads the source and applies the flow's spec through
-`Runner.setSpec`, recording one patch-journal entry labelled
-`Ran <flow name>` so a single undo returns to the raw load.
+5, deduplicated by kind + label + url. `openFlow` runs one
+`FilePort.pickOpen` handshake for the `.flow` file, validates it,
+checks its input columns against the current table's source columns
+(`checkFlowInputColumns(spec, sourceColumns)`, exported by
+`@tamedtable/headless` — walks the transformations tracking column
+availability the way `checkValidateColumnOrder` does and returns a
+message naming the first missing read, or undefined), then applies
+the flow's spec through `Runner.setSpec` onto the already-loaded
+source rows, recording one patch-journal entry labelled
+`Ran <flow name>` so a single undo restores the previous spec.
 `setSpec(spec, opts?)` accepts the same optional `{ signal, onChunk }`
 a request carries, so a replayed AI cell streams onto the table and
 can be aborted; the web controller sets `streaming` for the duration
-(the same busy state a chat request drives).
+(the same busy state a chat request drives). Flow failures set
+`WebController.errorDialog: string | null` — rendered by the shared
+`ErrorDialog` overlay (both layouts), dismissed with
+`dismissErrorDialog()` (`data-tt-error-dialog`).
 
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on
