@@ -3,7 +3,8 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { access, readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
-import { readJsonl } from '@tamedtable/core';
+import { readJsonl, type TablePlan } from '@tamedtable/core';
+import { serializeFlow } from '@tamedtable/file-io';
 import { runCli } from '@tamedtable/cli';
 import { TamedTableWorld, SRC_DIR, SPEC_TC_DIR, TEMP_DIR } from './world.ts';
 
@@ -107,6 +108,31 @@ Then('{string} matches the expected output', async function (this: TamedTableWor
   const golden = await readJsonl(this.goldenPath!);
   const actual = await readJsonl(output(filename));
   assert.deepEqual(actual, golden);
+});
+
+// ── Query-provenance metadata (spec/behavior.md § Data model) ───────────────
+// A committed request stamps its text as `query` on every transformation it
+// added or changed; a saved .flow carries the stamp inside the spec verbatim.
+
+Then('every transformation the request added carries {string} as query metadata', function (this: TamedTableWorld, text: string) {
+  const outcome = this.lastRequestOutcome;
+  assert.ok(outcome?.ok && outcome.specAfter, 'expected a committed request');
+  const prior = new Set(outcome.specBefore.transformations.map((t) => JSON.stringify(t)));
+  const added = outcome.specAfter.transformations.filter((t) => !prior.has(JSON.stringify(t)));
+  assert.ok(added.length > 0, 'expected the request to add at least one transformation');
+  for (const t of added) {
+    assert.equal((t as { query?: string }).query, text, `transformation ${JSON.stringify(t)}`);
+  }
+});
+
+Then('a saved flow carries the same query metadata', function (this: TamedTableWorld) {
+  const spec = this.ensureRunner().currentSpec();
+  const flow = JSON.parse(serializeFlow(spec)) as { spec: TablePlan };
+  assert.deepEqual(flow.spec.transformations, spec.transformations);
+  assert.ok(
+    flow.spec.transformations.some((t) => typeof (t as { query?: string }).query === 'string'),
+    'expected the saved flow to embed query metadata',
+  );
 });
 
 Given('duplicates are removed by Email', async function (this: TamedTableWorld) {

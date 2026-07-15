@@ -34,6 +34,17 @@ applied patch — reversing every transformation and column change the most
 recent user turn introduced, as a single unit — and replays the rest
 against the source. No LLM call.
 
+Every transformation remembers the request that produced it. When a request
+commits, its text — for a spoken request, the transcript — is stamped
+verbatim onto each transformation the turn added or changed, as `query`
+metadata. The stamp is provenance only: the engine ignores it, and the
+patch model never sees it (it is stripped from the spec before every
+model turn). Because it lives inside the spec, a saved `.flow` carries
+it, so the file records not just what each step does but what the user
+asked for — in the user's own words and language. Undo removes a
+transformation and its stamp together; a step later changed by another
+request carries that later request.
+
 Per-turn token budget stays constant regardless of table size or conversation
 length: cached system prompt (~600 tokens) + current spec (~300) + user
 message (~30) + last error if any (~50). No rolling chat history; each

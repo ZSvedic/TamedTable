@@ -21,21 +21,28 @@ export const ExprSchema: z.ZodTypeAny = z.union([
 
 const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
 
+// Provenance metadata every kind accepts: the chat request (voice: the
+// transcript) that created or last changed the step. The runner stamps it at
+// commit; the engine ignores it; the model never sees it.
+const QueryMeta = { query: z.string().optional() };
+
 const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('filter'), pred: ExprSchema }).strict(),
-  z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema }).strict(),
-  z.object({ kind: z.literal('select'), columns: z.array(z.string()) }).strict(),
+  z.object({ kind: z.literal('filter'), pred: ExprSchema, ...QueryMeta }).strict(),
+  z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema, ...QueryMeta }).strict(),
+  z.object({ kind: z.literal('select'), columns: z.array(z.string()), ...QueryMeta }).strict(),
   z.object({
     kind: z.literal('sort'),
     by: z.array(z.object({ key: z.union([z.string(), ExprSchema]), dir: z.enum(['asc', 'desc']) }))
       .min(1, 'sort.by must be non-empty'),
     limit: z.number().int().positive().optional(),
+    ...QueryMeta,
   }).strict(),
   z.object({
     kind: z.literal('group'),
     // An empty `by` aggregates the whole table into a single output row.
     by: z.array(z.union([z.string(), ExprSchema])),
     agg: z.record(z.string(), ExprSchema),
+    ...QueryMeta,
   }).strict(),
   z.object({
     kind: z.literal('join'),
@@ -44,6 +51,7 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
     }),
     on: ExprSchema,
     how: z.enum(['inner', 'left']).optional(),
+    ...QueryMeta,
   }).strict(),
   z.object({
     kind: z.literal('split'),
@@ -51,12 +59,14 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
     into: z.array(z.string()).min(1, 'split.into must be non-empty'),
     on: z.union([z.string(), z.instanceof(RegExp), ExprSchema]),
     drop: z.boolean().optional(),
+    ...QueryMeta,
   }).strict(),
   z.object({
     kind: z.literal('validate'),
     pred: ExprSchema,
     message: ExprSchema.optional(),
     threshold: z.number().min(0).max(1).optional(),
+    ...QueryMeta,
   }).strict(),
   z.object({
     kind: z.literal('pivot'),
@@ -64,6 +74,7 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
     on: z.string(),
     values: z.string(),
     agg: z.enum(['sum', 'count', 'avg', 'min', 'max', 'first']).optional(),
+    ...QueryMeta,
   }).strict().refine((p) => !p.index.includes(p.on), { message: 'pivot.on cannot be in pivot.index' }),
   z.object({
     kind: z.literal('unpivot'),
@@ -71,6 +82,7 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
     measures: z.array(z.string()).min(1, 'unpivot.measures must be non-empty'),
     names_to: z.string().optional(),
     values_to: z.string().optional(),
+    ...QueryMeta,
   }).strict(),
 ]);
 
@@ -79,17 +91,20 @@ export type Expr =
   | { llm: string; model?: string }
   | { sql: string };
 
+/** Provenance metadata on every Transformation kind — see QueryMeta above. */
+type WithQuery = { query?: string };
+
 export type Transformation =
-  | { kind: 'filter'; pred: Expr }
-  | { kind: 'mutate'; columns: string | string[]; value: Expr }
-  | { kind: 'select'; columns: string[] }
-  | { kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }>; limit?: number }
-  | { kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> }
-  | { kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' }
-  | { kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }
-  | { kind: 'validate'; pred: Expr; message?: Expr; threshold?: number }
-  | { kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' }
-  | { kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string };
+  | ({ kind: 'filter'; pred: Expr } & WithQuery)
+  | ({ kind: 'mutate'; columns: string | string[]; value: Expr } & WithQuery)
+  | ({ kind: 'select'; columns: string[] } & WithQuery)
+  | ({ kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }>; limit?: number } & WithQuery)
+  | ({ kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> } & WithQuery)
+  | ({ kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' } & WithQuery)
+  | ({ kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean } & WithQuery)
+  | ({ kind: 'validate'; pred: Expr; message?: Expr; threshold?: number } & WithQuery)
+  | ({ kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' } & WithQuery)
+  | ({ kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string } & WithQuery);
 
 const ColumnSchema = z.object({
   id: z.string(),

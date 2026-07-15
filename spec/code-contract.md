@@ -34,6 +34,9 @@ type Transformation =
   | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // #PivotData
   | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // #PivotData
 
+// Every Transformation variant also accepts optional provenance metadata:
+//   query?: string   // the chat request (voice: the transcript) that created or last changed the step
+
 type Row = Record<string, unknown>;
 
 interface TablePlan {
@@ -63,6 +66,16 @@ loop). It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
+
+`query` is provenance metadata, accepted on every transformation kind. The
+runner stamps it at commit time: the request's text (voice: the transcript)
+lands verbatim on each transformation the committed turn added or changed —
+"changed" meaning its JSON has no identical counterpart in the pre-request
+spec. The engine never reads it, and the spec shown to the model — the
+patch turn and the Python-export turn — has it stripped, so the model
+neither sees nor edits it and prompts stay byte-identical for cassette
+replay. Since it rides inside `transformations`, `serializeFlow` carries
+it into saved `.flow` files unchanged and `execute` accepts it back.
 
 The type accepts the full `Expr` union everywhere, but the engine
 evaluates only some shapes per slot today; an unsupported shape throws

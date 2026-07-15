@@ -330,10 +330,26 @@ const RECOVERY_GUIDANCE = [
   'Do not just retry the same shape with a different literal — the next emission must be measurably more permissive than the one that failed.',
 ].join(' ');
 
+/** @internal — exported for unit tests. The spec as the model sees it: each
+ *  transformation's `query` provenance stripped. The model neither reads nor
+ *  edits the metadata, and stripping keeps patch-turn and Python-export
+ *  prompts byte-identical to a spec that never carried it — so recorded
+ *  cassettes keep replaying. */
+export function stripQueryMetadata(spec: TablePlan): TablePlan {
+  const transformations = spec.transformations as Transformation[];
+  if (!transformations.some((t) => 'query' in t)) return spec;
+  return {
+    ...spec,
+    transformations: transformations.map(({ query: _query, ...t }) => t as Transformation),
+  };
+}
+
 function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string {
   // The LLM edits transformations/columns/view-ops — never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
-  // model only ever sees the basename.
+  // model only ever sees the basename. Query provenance is stripped the same
+  // way — metadata, not the model's to see or edit.
+  spec = stripQueryMetadata(spec);
   const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
   const specJson = JSON.stringify(llmSpec, null, 2);
   if (!errPrefix) return `Current spec:\n${specJson}\n\nUser request: ${text}`;
@@ -361,6 +377,23 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
   } catch (e) {
     return { kind: 'err', message: (e as Error).message };
   }
+}
+
+// #Patch
+/** @internal — exported for unit tests. Stamp `query` provenance on every
+ *  transformation the committed turn added or changed — any transformation
+ *  whose JSON has no identical counterpart in the pre-request spec. A step
+ *  untouched by the turn keeps its earlier stamp (its JSON, stamp included,
+ *  matches `before`); a step the patch rewrote is restamped with the latest
+ *  request. */
+export function stampQueries(spec: TablePlan, before: TablePlan, query: string): TablePlan {
+  const prior = new Set(before.transformations.map((t) => JSON.stringify(t)));
+  return {
+    ...spec,
+    transformations: (spec.transformations as Transformation[]).map((t) =>
+      prior.has(JSON.stringify(t)) ? t : { ...t, query }
+    ),
+  };
 }
 
 /** Columns a `{js}` or `{llm}` expression reads: `row.X` / `row["X"]` /
@@ -618,8 +651,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #PyExport
   async exportPython(): Promise<string> {
     this.requireLoaded();
-    // Same table-path trim as a patch turn: the model sees the basename only.
-    const spec = this.spec;
+    // Same trims as a patch turn: basename-only table, no query provenance.
+    const spec = stripQueryMetadata(this.spec);
     const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
     const prompt = `Translate this TamedTable flow into a standalone Python 3 script.\n\nSpec:\n${JSON.stringify(llmSpec, null, 2)}`;
     await rateLimiter.acquire();
@@ -669,6 +702,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const budget = this.opts.recoveryBudget ?? 3;
       let lastError: string | undefined;
       let transcriptSent = false;
+      // The provenance text stamped on committed transformations: the request
+      // text, or — for a spoken request — the transcript once it arrives.
+      let queryText = text;
       let prompt = buildPrompt(text, this.spec);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
@@ -676,6 +712,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         const ops = llmTurn.ops;
         if (llmTurn.transcript && !transcriptSent) {
           transcriptSent = true;
+          queryText = llmTurn.transcript;
           callOpts.onTranscript?.(llmTurn.transcript);
         }
         const turn: RequestDebugTurn = { ops, outcome: '' };
@@ -716,7 +753,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         try {
           const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk);
           abortIf(signal);
-          this.spec = syncColumnsToRows(tried.spec, newRows);
+          this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
           const expressions = diffPlans(specBefore, this.spec)
