@@ -66,6 +66,7 @@ function Demo(): ReactNode {
           report('cancel');
           setStreaming(false);
         }}
+        onReportBug={(m) => report(`report bug #${m.id}`)}
         emptyState={
           <p style={{ margin: 0, color: t.ink3, fontFamily: typography.ui, fontSize: 13 }}>
             No messages yet — send one below, or use the buttons on the right.
@@ -101,7 +102,10 @@ function Demo(): ReactNode {
           <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Error: Something broke while applying the change.' })}>
             Add error reply
           </Button>
-          <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Normalized 12 phone numbers.', debug: SAMPLE_DETAIL })}>
+          <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Error: Something unexpected broke — this looks like a bug.', reportable: true })}>
+            Add app-error reply
+          </Button>
+          <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Normalized 12 phone numbers.', debug: SAMPLE_DETAIL, reportable: true })}>
             Add reply with detail
           </Button>
           <Button variant="chrome" onClick={() => setStreaming((v) => !v)}>

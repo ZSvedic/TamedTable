@@ -887,6 +887,20 @@ Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pa
 information is lost. The provider name in the message matches whichever provider
 card is selected.
 
+Every error also lands in the chat as a red `Error:` assistant message — the
+toast is ephemeral, the chat entry stays on screen and selectable. Errors come
+in two kinds, decided where the error is raised. **Guidance errors** mean the
+request could not run as asked and the message already says what to do next:
+no file loaded, a missing or invalid API key, model not found, rate limiting,
+a network failure, a cancelled request, or a request already in progress.
+**App errors** are everything else — the recovery budget exhausting after 3
+attempts, or any failure that matches no known pattern. An app-error chat
+message carries a **Report bug** action (see the request-detail section
+below); a guidance error never does, so a user who simply hasn't loaded a
+file yet is not invited to file an issue. When a new error path is added and
+not classified, it counts as an app error — the safe default costs one extra
+button, never a lost bug report.
+
 Toolbar action buttons carry tooltips that name their CLI command
 equivalent: Undo shows `Undo (:undo)`, Redo shows `Redo (:redo)`, the
 CSV save shows `Save the current rows (:save)`, and the flow save shows
@@ -910,7 +924,14 @@ expandable detail panel.
 Clicking **request detail** below an assistant message expands an
 inline panel with three sections. A small copy icon to the right of the
 toggle copies the panel's full text to the clipboard (it turns green
-briefly to confirm). The **request** section shows the
+briefly to confirm). Next to the copy icon, a **Report bug** action (a
+bug icon) starts the same send-a-bug-report flow the Settings panel
+offers — it first records the flagged reply and the request text that
+produced it as a diagnostics event, so the prefilled GitHub issue leads
+with the exchange being reported. Every reply to a completed request
+carries the action (a wrong answer is a bug even when nothing turned
+red), and an app-error message carries it even without a request detail;
+guidance errors never do. The **request** section shows the
 user's original text and one summary line: model name(s), call count,
 total token count, and elapsed seconds. The **response** section lists
 each turn with its outcome label (`committed`, `rejected`, or an
@@ -1016,7 +1037,7 @@ console digging. The app keeps a small rolling log of recent events; the
 report is that log plus the app version and a key-free config snapshot,
 written as a markdown doc.
 
-The app records an event at three moments, each carrying the context that
+The app records an event at four moments, each carrying the context that
 explains it:
 
 - every toast the user sees (an error or an info note);
@@ -1024,7 +1045,10 @@ explains it:
   fingerprint, and the first 2 KB of the request body;
 - a tutorial replay miss ("no recording for this request") — the active
   tour and scenario plus the missing fingerprint, the exact pair that
-  turns a long debugging session into a two-minute diagnosis.
+  turns a long debugging session into a two-minute diagnosis;
+- a chat reply the user flags with **Report bug** — the flagged reply's
+  text and the request that produced it, so the report leads with the
+  exchange being reported.
 
 Each event also carries whatever context is available: the active
 tutorial feature and scenario, the provider, model, and cell model, how
@@ -1046,11 +1070,16 @@ the per-provider key fields outright. A pasted report is safe to share.
 Three actions live in Settings. **Send a bug report** (the primary
 button) copies the full report to the clipboard and opens a prefilled
 GitHub issue on the maintainers' tracker — the report rides in the issue
-body, truncated to fit the URL, with the clipboard copy as the backstop
-for a long log or a blocked popup. **Copy diagnostics report** copies the
+body, truncated to a raw budget small enough (2,000 chars) that even
+percent-encoded (~3× for JSON-heavy markdown) the URL stays well under
+GitHub's ~8 KB limit, with the clipboard copy as the backstop for a long
+log or a blocked popup. **Copy diagnostics report** copies the
 markdown for pasting anywhere (a Claude chat, a comment). **Clear
 diagnostics** empties the log. An error toast also carries a **Copy
 report** action so a user can grab the report the moment a bug surfaces.
+The chat is the durable entry point: the **Report bug** action on a
+request-detail row or an app-error reply (see the Web UI section)
+records the flagged exchange, then runs the same send-a-bug-report flow.
 The report lists events newest first.
 
 → [code-contract.md — Diagnostics log](code-contract.md#diagnostics-log-diagnostics)

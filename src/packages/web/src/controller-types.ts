@@ -84,6 +84,11 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
   debug?: RequestDebugInfo;
+  /** True when the chat offers a Report bug action on this message: every
+   *  reply to a completed request, plus app-error replies. Guidance errors
+   *  (no file, missing/invalid key, rate limit, network, cancelled) stay
+   *  unset. See spec/behavior.md § Web UI. */
+  reportable?: boolean;
 }
 
 /** @deprecated Use ResolvedConfig from @tamedtable/model-config instead. */

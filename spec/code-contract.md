@@ -778,8 +778,19 @@ WebController.diagnosticsReport(): string;        // markdown, newest first
 WebController.copyDiagnosticsReport(): Promise<void>;     // → clipboard
 WebController.bugReportUrl(): string;             // prefilled GitHub new-issue URL
 WebController.sendBugReport(): Promise<void>;     // copy report + open the issue
+WebController.reportMessageBug(id: number): Promise<void>; // record the flagged
+                                    // chat reply as a user-report event, then sendBugReport()
 WebController.clearDiagnostics(): void;
 ```
+
+`ChatMessage` carries `reportable?: boolean` — the chat panel shows its
+**Report bug** action only when it is `true`. The controller sets it on
+every reply to a completed request and on app-error replies;
+`describeError(error, provider)` in `controller-messages.ts` returns
+`{ message, reportable }` (guidance patterns — cancelled, in-progress,
+401/404/429, network — are not reportable; the unknown fall-through and
+the exhausted recovery budget are). `userFacingMessage` remains the
+message-only wrapper around it.
 
 Pure helpers (unit-tested directly):
 
@@ -803,12 +814,15 @@ Redaction is a hard contract, verified by an `@regression` scenario:
   (`anthropicKey`, `geminiKey`, `openaiKey`) are dropped whole;
 - the config snapshot is taken with the `*Key` fields already omitted.
 
-Three capture points wire into existing code, no logic duplicated: the
+Four capture points wire into existing code, no logic duplicated: the
 controller's `pushToast` path records every toast; `EngineManager`'s
 fetch records a failed model request (method, URL, `fingerprint` from
 `@tamedtable/cassette`, and the body truncated to `MAX_BODY`); the same
 fetch records a tutorial replay miss with the active tour, scenario, and
-missing fingerprint.
+missing fingerprint; and `reportMessageBug` records a user report
+(`source: 'user-report'`, the flagged reply's text and the request that
+produced it — `RequestDebugInfo.userRequest` when present, else the nearest
+user message above — both truncated to `MAX_BODY`).
 
 ## One schema, richer sort keys, and Python export
 

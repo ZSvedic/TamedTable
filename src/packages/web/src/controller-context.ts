@@ -56,9 +56,9 @@ export interface ControllerHost {
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
   pushToast(kind: 'info' | 'error', message: string, action?: string): void;
-  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo): number;
+  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean): number;
   updateMessage(id: number, text: string): void;
-  fail(message: string, debug?: RequestDebugInfo): void;
+  fail(message: string, debug?: RequestDebugInfo, reportable?: boolean): void;
   /** Send a chat request (used by tutorial prefill-chat steps). */
   sendChat(text: string): Promise<void>;
 

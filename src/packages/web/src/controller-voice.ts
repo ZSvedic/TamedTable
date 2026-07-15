@@ -12,7 +12,7 @@ import {
   type VoicePort,
   type ContinuousVoicePort,
 } from '@tamedtable/voice-input';
-import { userFacingMessage, summarizeDebug } from './controller-messages.ts';
+import { describeError, summarizeDebug } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 
 /** Placeholder chat-bubble/history label for a voice turn, replaced by
@@ -136,12 +136,13 @@ export class VoiceManager {
       });
       if (heard) this.host.patch.relabelLast(heard);
       const debug = this.host.lastDebug;
-      this.host.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
+      this.host.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug, true);
     } catch (e) {
       // Same failure surface as a typed request: error toast plus an
       // assistant message carrying the per-attempt debug info.
       const debug = (e as { debug?: RequestDebugInfo }).debug;
-      this.host.fail(`Voice input failed: ${userFacingMessage(e, this.host.config.provider)}`, debug);
+      const { message, reportable } = describeError(e, this.host.config.provider);
+      this.host.fail(`Voice input failed: ${message}`, debug, reportable);
     }
   }
 

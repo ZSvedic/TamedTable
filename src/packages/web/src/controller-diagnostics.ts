@@ -36,10 +36,12 @@ const MAX_BODY = 2048;
 
 /** Where a "Send a bug report" lands — the maintainers' issue tracker. */
 const ISSUE_URL = 'https://github.com/ZSvedic/TamedTable/issues/new';
-/** How much of the report rides in the prefilled issue URL. GitHub's
- *  new-issue link breaks past ~8 KB, so a long log is truncated here and the
- *  full copy goes to the clipboard instead. */
-const URL_REPORT_BUDGET = 6000;
+/** How much raw report rides in the prefilled issue URL. GitHub rejects
+ *  URLs past ~8 KB ("Whoa there! Your request URL is too long."), and
+ *  percent-encoding inflates the report's JSON-heavy markdown ~3× — so the
+ *  raw budget is kept small enough that the encoded URL stays well under
+ *  the limit. The full copy goes to the clipboard regardless. */
+const URL_REPORT_BUDGET = 2000;
 
 // ── Pure helpers (unit-tested directly) ─────────────────────────────────────
 
@@ -173,6 +175,16 @@ export class DiagnosticsManager {
       requestBody: opts.body.slice(0, MAX_BODY),
       ...(opts.status !== undefined ? { status: opts.status } : {}),
       ...(opts.error !== undefined ? { error: String((opts.error as Error)?.message ?? opts.error) } : {}),
+    });
+  }
+
+  /** Record a chat reply the user flagged with Report bug — the reply's text
+   *  plus the request that produced it, both truncated like request bodies. */
+  recordUserReport(messageText: string, userRequest?: string): void {
+    this.record('info', 'User flagged a chat reply with Report bug', {
+      source: 'user-report',
+      messageText: messageText.slice(0, MAX_BODY),
+      ...(userRequest !== undefined ? { userRequest: userRequest.slice(0, MAX_BODY) } : {}),
     });
   }
 

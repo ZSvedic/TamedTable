@@ -1,5 +1,5 @@
 // #Diagnostics — step definitions for spec/test-cases/diagnostics.feature
-import { Then, When } from '@cucumber/cucumber';
+import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { TamedTableWorld } from './world.ts';
 import { webController as controller } from './web-file-port.ts';
@@ -58,6 +58,51 @@ Then(
   },
 );
 
+/** The newest assistant chat message, or undefined. */
+function lastAssistant(world: TamedTableWorld): { id: number; text: string; reportable?: boolean } | undefined {
+  return controller(world)
+    .messages.filter((m) => m.role === 'assistant')
+    .at(-1);
+}
+
+Then('the last assistant reply offers to report a bug', function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.equal(m.reportable, true, `reply is not reportable: "${m.text}"`);
+});
+
+Then('the last assistant reply does not offer to report a bug', function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.ok(!m.reportable, `reply is unexpectedly reportable: "${m.text}"`);
+});
+
+Then('the last assistant reply shows {string}', function (this: TamedTableWorld, needle: string) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.ok(m.text.includes(needle), `reply "${m.text}" does not contain "${needle}"`);
+});
+
+When('user reports the last chat reply as a bug', async function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  await controller(this).reportMessageBug(m.id);
+});
+
+Then(
+  'a diagnostics user report records the request {string}',
+  function (this: TamedTableWorld, request: string) {
+    const reports = controller(this)
+      .diagnosticsEvents()
+      .filter((e) => e.context.source === 'user-report');
+    assert.ok(reports.length > 0, 'no user-report diagnostics event was recorded');
+    assert.ok(
+      reports.some((e) => e.context.userRequest === request),
+      `no user report carried the request "${request}"; saw: ${JSON.stringify(reports.map((e) => e.context.userRequest))}`,
+    );
+  },
+);
+
 Then('the diagnostics report contains no API key', function (this: TamedTableWorld) {
   const report = controller(this).diagnosticsReport();
   for (const re of KEY_SHAPES) {
@@ -72,6 +117,31 @@ Then('the diagnostics report drops the provider key fields', function (this: Tam
     assert.ok(!report.includes(field), `report still mentions "${field}"`);
   }
   assert.ok(!report.includes('DEADBEEF'), 'report still contains a secret key value');
+});
+
+Given('the diagnostics log is filled with long events', function (this: TamedTableWorld) {
+  // Enough long toasts to overflow any URL budget, with the punctuation a real
+  // report carries (quotes, slashes, arrows) — percent-encoding inflates those
+  // ~3×, which is exactly what pushed real links past GitHub's limit.
+  for (let i = 0; i < 25; i++) {
+    controller(this).pushToast(
+      'error',
+      `Could not load tutorial fixture "fixture-${i}.jsonl": fetch /pr-preview/pr-222/app/samples/fixture-${i}.jsonl → 503 ${'"{*}" → '.repeat(30)}`,
+    );
+  }
+});
+
+Then(
+  'the bug report link is shorter than {int} characters',
+  function (this: TamedTableWorld, max: number) {
+    const url = controller(this).bugReportUrl();
+    assert.ok(url.length < max, `bug report link is ${url.length} chars, expected < ${max}`);
+  },
+);
+
+Then('the bug report link notes the report was truncated', function (this: TamedTableWorld) {
+  const url = decodeURIComponent(controller(this).bugReportUrl().replaceAll('+', ' '));
+  assert.ok(url.includes('Report truncated'), 'bug report link carries no truncation note');
 });
 
 Then('the bug report link targets the TamedTable issue tracker', function (this: TamedTableWorld) {

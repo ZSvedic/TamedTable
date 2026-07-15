@@ -479,6 +479,24 @@ Given('the LLM API returns a 429 rate-limit error', function (this: TamedTableWo
     );
 });
 
+Given('the LLM API returns an unrecognized error', function (this: TamedTableWorld) {
+  // A non-retryable 400 whose message matches no known pattern — the app-error
+  // (reportable) classification's fall-through case.
+  ctxOf(this).mockLlmFetch = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: 400,
+            message: 'The flux capacitor overheated while inlining.',
+            status: 'INTERNAL',
+          },
+        }),
+        { status: 400, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+});
+
 Given('the LLM API returns a 401 unauthorized error', function (this: TamedTableWorld) {
   ctxOf(this).mockLlmFetch = () =>
     Promise.resolve(

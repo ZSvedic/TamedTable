@@ -28,6 +28,28 @@ Feature: Chat panel package
       And the request detail shows "normalize the phone column"
 
     @web
+    Scenario: A reportable reply with detail offers a Report bug action
+      Given the chat-panel demo page
+      When the user adds a reply with request detail
+      And the user clicks the Report bug action
+      Then the chat event log shows "report bug"
+
+    @web
+    Scenario: An app-error reply offers Report bug without a request detail
+      Given the chat-panel demo page
+      When the user adds an app-error reply
+      Then an assistant error shows "Something unexpected broke"
+      When the user clicks the Report bug action
+      Then the chat event log shows "report bug"
+
+    @web
+    Scenario: A guidance error offers no Report bug action
+      Given the chat-panel demo page
+      When the user adds an error reply
+      Then an assistant error shows "Something broke"
+      And no Report bug action is shown
+
+    @web
     Scenario: Streaming swaps send for stop, and stop cancels
       Given the chat-panel demo page
       When the user toggles chat streaming
