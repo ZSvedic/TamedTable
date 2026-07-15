@@ -100,7 +100,9 @@ export function userFacingMessage(error: unknown, provider?: string): string {
 
 /** A one-line-per-expression summary of a committed request, for the chat. */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  const MAX_BODY = 240;
+  // Short enough that a dense code expression stays a line or two in the
+  // sidebar — the full body lives in the request detail panel.
+  const MAX_BODY = 100;
   const MAX_LINES = 7;
   const allHead = info.expressions.map((e) => {
     const body = e.body.length > MAX_BODY ? e.body.slice(0, MAX_BODY) + '…' : e.body;
