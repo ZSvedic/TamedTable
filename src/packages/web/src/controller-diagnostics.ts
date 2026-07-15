@@ -176,6 +176,16 @@ export class DiagnosticsManager {
     });
   }
 
+  /** Record a chat reply the user flagged with Report bug — the reply's text
+   *  plus the request that produced it, both truncated like request bodies. */
+  recordUserReport(messageText: string, userRequest?: string): void {
+    this.record('info', 'User flagged a chat reply with Report bug', {
+      source: 'user-report',
+      messageText: messageText.slice(0, MAX_BODY),
+      ...(userRequest !== undefined ? { userRequest: userRequest.slice(0, MAX_BODY) } : {}),
+    });
+  }
+
   // ── Public read/actions (delegated from WebController) ────────────────────
 
   /** The log, chronological (newest last), as a fresh array. */

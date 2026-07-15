@@ -40,6 +40,18 @@ When('the user adds a reply with request detail', async function (this: object) 
   await page(this).click('button:has-text("Add reply with detail")');
 });
 
+When('the user adds an app-error reply', async function (this: object) {
+  await page(this).click('button:has-text("Add app-error reply")');
+});
+
+When('the user clicks the Report bug action', async function (this: object) {
+  await page(this).click('[data-cp-report]');
+});
+
+Then('no Report bug action is shown', async function (this: object) {
+  await page(this).waitForFunction(`document.querySelector('[data-cp-report]') === null`);
+});
+
 When('the user expands the request detail', async function (this: object) {
   await page(this).click('[data-cp-detail-toggle]');
 });

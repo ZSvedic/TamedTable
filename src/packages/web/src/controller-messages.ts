@@ -31,20 +31,30 @@ export const STAY_REPLAY_HINT =
   'You are inside Tour replay, use undo/redo to examine steps.';
 
 /** Map an engine error (or its message string) to a sentence a non-technical
- *  user can act on. Pass the raw caught error object when available — the
- *  function inspects `statusCode` and `responseBody` on SDK error objects so
- *  it can classify errors whose `.message` is empty or opaque. */
-export function userFacingMessage(error: unknown, provider?: string): string {
+ *  user can act on, plus its report classification. Pass the raw caught error
+ *  object when available — the function inspects `statusCode` and
+ *  `responseBody` on SDK error objects so it can classify errors whose
+ *  `.message` is empty or opaque.
+ *
+ *  `reportable: false` marks a *guidance* error — the message already tells
+ *  the user what to do (fix a key, wait out a rate limit, check the network)
+ *  and a bug report would be a false positive. Anything else is an *app
+ *  error* the chat offers to report; the unknown fall-through defaults to
+ *  reportable so an unclassified new error costs an extra button, never a
+ *  lost bug report. See spec/behavior.md § Web UI. */
+export function describeError(error: unknown, provider?: string): { message: string; reportable: boolean } {
   const message = typeof error === 'string' ? error
     : error instanceof Error ? error.message
     : String(error);
 
-  // Runner-level messages (these always have a clear string).
+  // Runner-level messages (these always have a clear string). An exhausted
+  // recovery budget means the model failed at its job three times — that is
+  // an app error worth reporting, not user misuse.
   if (message.startsWith('Runner: recovery budget exhausted'))
-    return "Couldn't apply that change after 3 attempts. Try rephrasing or breaking it into smaller steps.";
-  if (message === 'Runner: cancelled') return 'Request cancelled.';
+    return { message: "Couldn't apply that change after 3 attempts. Try rephrasing or breaking it into smaller steps.", reportable: true };
+  if (message === 'Runner: cancelled') return { message: 'Request cancelled.', reportable: false };
   if (message === 'Runner: a request is already in progress.')
-    return 'A request is already running.';
+    return { message: 'A request is already running.', reportable: false };
 
   const label = providerLabel(provider);
 
@@ -65,21 +75,27 @@ export function userFacingMessage(error: unknown, provider?: string): string {
     // whose key is fine would otherwise keep re-entering it. Point at the real
     // fix. See https://ai.google.dev/gemini-api/docs/api-key#secure-unrestricted-keys
     if (provider === 'gemini')
-      return `${base} If the key is correct, Google now blocks unrestricted keys — add an application restriction in Google AI Studio.`;
-    return base;
+      return { message: `${base} If the key is correct, Google now blocks unrestricted keys — add an application restriction in Google AI Studio.`, reportable: false };
+    return { message: base, reportable: false };
   }
 
   if (statusCode === 404 || /\b404\b|not_found_error|model.*not found/i.test(fullText))
-    return 'Model not found. The selected model may be unavailable.';
+    return { message: 'Model not found. The selected model may be unavailable.', reportable: false };
 
   // Rate limiting is not the user's fault — say retry, not rephrase.
   if (statusCode === 429 || /\b429\b|rate.?limit|resource.{0,5}exhausted|too many requests|quota/i.test(fullText))
-    return `Rate limited by the ${label} API. Wait a minute and try again.`;
+    return { message: `Rate limited by the ${label} API. Wait a minute and try again.`, reportable: false };
 
   if (/failed to fetch|network error|cors blocked|connection refused/i.test(fullText))
-    return `Network error. Could not reach the ${label} API.`;
+    return { message: `Network error. Could not reach the ${label} API.`, reportable: false };
 
-  return message || `An unexpected error occurred reaching the ${label} API.`;
+  return { message: message || `An unexpected error occurred reaching the ${label} API.`, reportable: true };
+}
+
+/** The message-only wrapper around `describeError` — kept because most
+ *  callers only need the sentence, not the classification. */
+export function userFacingMessage(error: unknown, provider?: string): string {
+  return describeError(error, provider).message;
 }
 
 /** A one-line-per-expression summary of a committed request, for the chat. */

@@ -28,11 +28,13 @@ The web app's wrapper binds `WebController`:
 
 ## Message types (main entry, React-free)
 
-`ChatPanelMessage` is `{ id, role: "user" | "assistant", text, debug? }`.
-`debug`, when present, is a `ChatRequestDetail` — a structural subset of the
-engine's `RequestDebugInfo` (request text, model calls, token counts, elapsed
-time, per-turn ops, cell samples), so the app's debug objects fit without a
-headless dependency.
+`ChatPanelMessage` is `{ id, role: "user" | "assistant", text, debug?,
+reportable? }`. `debug`, when present, is a `ChatRequestDetail` — a
+structural subset of the engine's `RequestDebugInfo` (request text, model
+calls, token counts, elapsed time, per-turn ops, cell samples), so the app's
+debug objects fit without a headless dependency. `reportable: true` marks a
+message the user can flag as a bug — the classification (app error vs
+guidance error) is the host's job; the panel only renders the action.
 
 ## ChatPanel component (`./components` entry, react peer dependency)
 
@@ -47,6 +49,11 @@ headless dependency.
   "request detail" toggle and a copy button; expanded, it shows the request,
   model/token/elapsed summary, per-turn ops, and cell samples — the same
   text the copy button puts on the clipboard.
+- Report bug: a message with `reportable: true` gets a "Report bug" action
+  (bug icon + label) when the host passes `onReportBug`, which fires with
+  the message. It sits on the request-detail row when `debug` is present,
+  or stands alone under the message text otherwise (an app error without a
+  detail). Messages without `reportable` never show it.
 - Input row: a textarea (Enter sends, Shift+Enter for a newline; send is
   disabled on an empty draft), the host's `micButton` slot, and send — or a
   stop button that fires `onCancel` while streaming. A non-null `prefill`
@@ -57,8 +64,9 @@ headless dependency.
   (the app uses it while staying in a finished tour).
 
 Stable attributes: `data-cp-message="user|assistant"`, `data-cp-error`,
-`data-cp-detail-toggle`, `data-cp-detail`, `data-cp-send`, `data-cp-stop`,
-plus the app's existing `data-testid="mic-button"` / `"copy-debug"`.
+`data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
+`data-cp-stop`, plus the app's existing `data-testid="mic-button"` /
+`"copy-debug"`.
 
 ## MicButton component
 
@@ -83,8 +91,9 @@ animations ship inside the component.
 
 The demo (`demo.html` + `demo.tsx`, deployed under `/demos/chat-panel/`)
 mounts ChatPanel over plain React state: sending appends the user message
-and an echoed assistant reply, buttons inject an error reply and a reply
-with request detail, a streaming toggle drives the Running…/stop state, a
+and an echoed assistant reply, buttons inject an error reply (guidance — no
+Report bug), an app-error reply (`reportable`, no detail), and a reportable
+reply with request detail, a streaming toggle drives the Running…/stop state, a
 prefill button exercises the draft sync, and the demo MicButton cycles
 recording → sending → idle. Every callback appends to the `#out` event log,
 non-empty on load — the demo smoke test's ready signal.

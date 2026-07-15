@@ -2,6 +2,7 @@
 // by hand. marketing/icons/ is the canonical source of the glyph artwork.
 
 export type IconName =
+  | 'bug'
   | 'check'
   | 'chevLeft'
   | 'chevRight'
@@ -36,6 +37,7 @@ export type IconName =
   | 'x';
 
 export const PATHS: Record<IconName, string> = {
+  bug: 'M5.5 8A2.5 2.5 0 0 1 8 5.5 2.5 2.5 0 0 1 10.5 8v2a2.5 2.5 0 0 1-5 0Z M6.2 5.9 4.8 4.2 M9.8 5.9 11.2 4.2 M5.5 8.5H3 M10.5 8.5H13 M5.9 11 4.2 12.6 M10.1 11 11.8 12.6',
   check: 'm3 8 3.5 3.5L13 5',
   chevLeft: 'M10 4 6 8l4 4',
   chevRight: 'M6 4l4 4-4 4',

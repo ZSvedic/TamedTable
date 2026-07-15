@@ -20,7 +20,7 @@ import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/m
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig } from '@tamedtable/model-config/storage';
-import { userFacingMessage, summarizeDebug, missingTextKeyMessage } from './controller-messages.ts';
+import { describeError, userFacingMessage, summarizeDebug, missingTextKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { EngineManager } from './controller-engine.ts';
 import { PatchManager } from './controller-patch.ts';
@@ -171,8 +171,8 @@ export class WebController implements ControllerHost {
     this.notify();
   }
 
-  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo): number {
-    this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug }];
+  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean): number {
+    this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug, reportable }];
     this.notify();
     return this.messageSeq;
   }
@@ -183,11 +183,14 @@ export class WebController implements ControllerHost {
     this.notify();
   }
 
-  fail(message: string, debug?: RequestDebugInfo): void {
+  fail(message: string, debug?: RequestDebugInfo, reportable = true): void {
     // Every error toast offers a one-click diagnostics report, so a user who
-    // hits a bug can grab the redacted, pasteable report on the spot.
+    // hits a bug can grab the redacted, pasteable report on the spot. The
+    // durable Report bug action lives on the chat message — only for app
+    // errors (`reportable` defaults to true so an unclassified error is never
+    // silently unreportable); guidance errors pass false.
     this.pushToast('error', message, 'Copy report');
-    this.pushMessage('assistant', `Error: ${message}`, debug);
+    this.pushMessage('assistant', `Error: ${message}`, debug, reportable);
   }
 
   // ── Runner interface (drives the shared, surface-agnostic scenarios) ─────
@@ -220,7 +223,7 @@ export class WebController implements ControllerHost {
     if (this.tutorial.isTutorialStayed()) return;
     this.pushMessage('user', trimmed);
     if (!this.loaded) {
-      this.fail('Open a CSV or JSONL file before sending a request.');
+      this.fail('Open a CSV or JSONL file before sending a request.', undefined, false);
       return;
     }
     // Text requests route through the selected provider, so a missing key for
@@ -229,16 +232,19 @@ export class WebController implements ControllerHost {
     // tutorial is the exception: it replays from a cassette and needs no key.
     // See spec/behavior.md § Web UI / settings.
     if (!this.tutorial.isReplaying() && !this.settingsMgr.activeApiKey()?.trim()) {
-      this.fail(missingTextKeyMessage(this.config.provider));
+      this.fail(missingTextKeyMessage(this.config.provider), undefined, false);
       return;
     }
     try {
       await this.engine.request(trimmed);
       const debug = this.lastDebug;
-      this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug);
+      // A wrong answer is a bug even when nothing turned red — every reply to
+      // a completed request carries the Report bug action.
+      this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug, true);
     } catch (e) {
       const debug = (e as { debug?: RequestDebugInfo }).debug;
-      this.fail(userFacingMessage(e, this.config.provider), debug);
+      const { message, reportable } = describeError(e, this.config.provider);
+      this.fail(message, debug, reportable);
     }
   }
 
@@ -394,6 +400,23 @@ export class WebController implements ControllerHost {
   bugReportUrl(): string { return this.diagnostics.bugReportUrl(); }
   /** Copy the report and open a prefilled GitHub issue for the maintainers. */
   sendBugReport(): Promise<void> { return this.diagnostics.sendBugReport(); }
+  /** Report bug from the chat: record the flagged reply (and the request that
+   *  produced it) as a diagnostics event, then run the send-bug-report flow —
+   *  so the prefilled issue leads with the exchange being reported. */
+  reportMessageBug(id: number): Promise<void> {
+    const idx = this.messages.findIndex((m) => m.id === id);
+    if (idx >= 0) {
+      const message = this.messages[idx]!;
+      // The request that produced the reply: the debug info's request text
+      // when present, else the nearest user message above (an error reply
+      // without debug still names what the user asked for).
+      const userRequest =
+        message.debug?.userRequest ??
+        this.messages.slice(0, idx).reverse().find((m) => m.role === 'user')?.text;
+      this.diagnostics.recordUserReport(message.text, userRequest);
+    }
+    return this.diagnostics.sendBugReport();
+  }
   clearDiagnostics(): void { this.diagnostics.clear(); }
 }
 

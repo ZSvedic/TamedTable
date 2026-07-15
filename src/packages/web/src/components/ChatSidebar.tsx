@@ -62,6 +62,7 @@ export function ChatSidebar({
       disabledHint={controller.isTutorialStayed() ? STAY_REPLAY_HINT : null}
       onSend={(text) => void controller.sendChat(text)}
       onCancel={() => controller.cancelRequest()}
+      onReportBug={(m) => void controller.reportMessageBug(m.id)}
       emptyState={<EmptyChat />}
       helpLines={HELP_LINES}
       micButton={

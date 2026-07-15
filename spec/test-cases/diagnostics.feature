@@ -58,6 +58,47 @@ Feature: In-app diagnostics log
       Then the bug report link targets the TamedTable issue tracker
       And the bug report link contains no API key
 
+  Rule: Bug reporting starts in the chat, and only for app errors
+
+    @web @offline
+    # An error matching no known pattern is an app error — the reply offers
+    # Report bug. Guidance errors (wrong key, no file) never do.
+    Scenario: An unrecognized failure marks the chat reply reportable
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the provider "anthropic" has API key "sk-ant-example-key"
+      And the LLM API returns an unrecognized error
+      When user sends the chat message "norm dob col"
+      Then the last assistant reply offers to report a bug
+
+    @web @offline
+    Scenario: A no-file guidance error is not reportable
+      Given the TamedTable web app
+      When user sends the chat message "norm dob col"
+      Then the last assistant reply shows "Open a CSV or JSONL file"
+      And the last assistant reply does not offer to report a bug
+
+    @web @offline
+    Scenario: An invalid API key is guidance, not an app bug
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the provider "anthropic" has API key "sk-ant-example-key"
+      And the LLM API returns a 401 unauthorized error
+      When user sends the chat message "norm dob col"
+      Then the last assistant reply does not offer to report a bug
+
+    @web @offline
+    # Reporting from the chat records the flagged exchange first, so the
+    # prefilled GitHub issue leads with the request being reported.
+    Scenario: Reporting a chat reply records the flagged request
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the provider "anthropic" has API key "sk-ant-example-key"
+      And the LLM API returns an unrecognized error
+      When user sends the chat message "norm dob col"
+      And user reports the last chat reply as a bug
+      Then a diagnostics user report records the request "norm dob col"
+
   Rule: The report and log are one click away
 
     @web @offline

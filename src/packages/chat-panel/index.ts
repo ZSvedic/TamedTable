@@ -16,12 +16,15 @@ export interface ChatRequestDetail {
 }
 
 /** One chat message. Assistant text starting with `Error:` renders in error
- *  style with the prefix stripped. */
+ *  style with the prefix stripped. `reportable: true` marks a message the user
+ *  can flag as a bug — the host classifies (app error vs guidance error); the
+ *  panel only renders the Report bug action. */
 export interface ChatPanelMessage {
   id: number;
   role: 'user' | 'assistant';
   text: string;
   debug?: ChatRequestDetail;
+  reportable?: boolean;
 }
 
 /** Mic button state — drives the red ring (recording while held), the

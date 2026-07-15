@@ -60,11 +60,20 @@ function debugDetailText(debug: ChatRequestDetail): string {
   ].join('\n');
 }
 
-function AssistantMessage({ t, message }: { t: Theme; message: ChatPanelMessage }): ReactNode {
+function AssistantMessage({
+  t,
+  message,
+  onReportBug,
+}: {
+  t: Theme;
+  message: ChatPanelMessage;
+  onReportBug?: (message: ChatPanelMessage) => void;
+}): ReactNode {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const isError = message.text.startsWith('Error:');
   const body = isError ? message.text.replace(/^Error:\s*/, '') : message.text;
+  const showReport = message.reportable === true && onReportBug !== undefined;
 
   const copyDetail = (): void => {
     if (!message.debug) return;
@@ -108,7 +117,7 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatPanelMessage 
         <div style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{body}</div>
       </div>
 
-      {message.debug && (
+      {(message.debug || showReport) && (
         <>
           <div
             style={{
@@ -120,54 +129,81 @@ function AssistantMessage({ t, message }: { t: Theme; message: ChatPanelMessage 
               gap: space.px8,
             }}
           >
-            <button
-              type="button"
-              data-cp-detail-toggle=""
-              onClick={() => setOpen((o) => !o)}
-              style={{
-                background: 'transparent',
-                border: 0,
-                padding: 0,
-                cursor: 'pointer',
-                color: t.ink3,
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: space.px4,
-              }}
-            >
-              <span
+            {message.debug && (
+              <>
+                <button
+                  type="button"
+                  data-cp-detail-toggle=""
+                  onClick={() => setOpen((o) => !o)}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    padding: 0,
+                    cursor: 'pointer',
+                    color: t.ink3,
+                    fontFamily: typography.ui,
+                    fontSize: typography.size.xs,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: space.px4,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      transition: 'transform .15s',
+                      transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    }}
+                  >
+                    <Icon name="chevron" size={12} />
+                  </span>
+                  request detail
+                </button>
+                <button
+                  type="button"
+                  onClick={copyDetail}
+                  title={copied ? 'Copied' : 'Copy request detail'}
+                  aria-label={copied ? 'Copied' : 'Copy request detail'}
+                  data-testid="copy-debug"
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    padding: 0,
+                    cursor: 'pointer',
+                    color: copied ? t.ok : t.ink3,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Icon name="copy" size={12} />
+                </button>
+              </>
+            )}
+            {showReport && (
+              <button
+                type="button"
+                data-cp-report=""
+                onClick={() => onReportBug?.(message)}
+                title="Report bug — opens a prefilled GitHub issue"
                 style={{
+                  background: 'transparent',
+                  border: 0,
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: t.ink3,
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.xs,
                   display: 'inline-flex',
-                  transition: 'transform .15s',
-                  transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+                  alignItems: 'center',
+                  gap: space.px4,
                 }}
               >
-                <Icon name="chevron" size={12} />
-              </span>
-              request detail
-            </button>
-            <button
-              type="button"
-              onClick={copyDetail}
-              title={copied ? 'Copied' : 'Copy request detail'}
-              aria-label={copied ? 'Copied' : 'Copy request detail'}
-              data-testid="copy-debug"
-              style={{
-                background: 'transparent',
-                border: 0,
-                padding: 0,
-                cursor: 'pointer',
-                color: copied ? t.ok : t.ink3,
-                display: 'inline-flex',
-                alignItems: 'center',
-              }}
-            >
-              <Icon name="copy" size={12} />
-            </button>
+                <Icon name="bug" size={12} />
+                Report bug
+              </button>
+            )}
           </div>
-          {open && (
+          {message.debug && open && (
             <pre
               data-cp-detail=""
               style={{
@@ -208,6 +244,9 @@ export interface ChatPanelProps {
   disabledHint?: string | null;
   onSend: (text: string) => void;
   onCancel: () => void;
+  /** Fired by the Report bug action on a `reportable` message. When omitted,
+   *  the action is never rendered. */
+  onReportBug?: (message: ChatPanelMessage) => void;
   /** DOM id for the textarea (e.g. for Driver.js highlights). */
   inputId?: string;
   /** Rendered when there are no messages — app copy. */
@@ -229,6 +268,7 @@ export function ChatPanel({
   disabledHint = null,
   onSend,
   onCancel,
+  onReportBug,
   inputId,
   emptyState,
   helpLines = [],
@@ -429,7 +469,7 @@ export function ChatPanel({
               {m.text}
             </UserBubble>
           ) : (
-            <AssistantMessage key={m.id} t={t} message={m} />
+            <AssistantMessage key={m.id} t={t} message={m} onReportBug={onReportBug} />
           ),
         )}
         {streaming && (

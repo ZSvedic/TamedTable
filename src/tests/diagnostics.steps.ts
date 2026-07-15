@@ -58,6 +58,51 @@ Then(
   },
 );
 
+/** The newest assistant chat message, or undefined. */
+function lastAssistant(world: TamedTableWorld): { id: number; text: string; reportable?: boolean } | undefined {
+  return controller(world)
+    .messages.filter((m) => m.role === 'assistant')
+    .at(-1);
+}
+
+Then('the last assistant reply offers to report a bug', function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.equal(m.reportable, true, `reply is not reportable: "${m.text}"`);
+});
+
+Then('the last assistant reply does not offer to report a bug', function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.ok(!m.reportable, `reply is unexpectedly reportable: "${m.text}"`);
+});
+
+Then('the last assistant reply shows {string}', function (this: TamedTableWorld, needle: string) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.ok(m.text.includes(needle), `reply "${m.text}" does not contain "${needle}"`);
+});
+
+When('user reports the last chat reply as a bug', async function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  await controller(this).reportMessageBug(m.id);
+});
+
+Then(
+  'a diagnostics user report records the request {string}',
+  function (this: TamedTableWorld, request: string) {
+    const reports = controller(this)
+      .diagnosticsEvents()
+      .filter((e) => e.context.source === 'user-report');
+    assert.ok(reports.length > 0, 'no user-report diagnostics event was recorded');
+    assert.ok(
+      reports.some((e) => e.context.userRequest === request),
+      `no user report carried the request "${request}"; saw: ${JSON.stringify(reports.map((e) => e.context.userRequest))}`,
+    );
+  },
+);
+
 Then('the diagnostics report contains no API key', function (this: TamedTableWorld) {
   const report = controller(this).diagnosticsReport();
   for (const re of KEY_SHAPES) {
