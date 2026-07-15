@@ -36,12 +36,12 @@ const MAX_BODY = 2048;
 
 /** Where a "Send a bug report" lands — the maintainers' issue tracker. */
 const ISSUE_URL = 'https://github.com/ZSvedic/TamedTable/issues/new';
-/** Cap on the *encoded* new-issue URL. GitHub rejects URLs past ~8 KB
- *  ("Whoa there! Your request URL is too long."), and percent-encoding
- *  roughly triples the report's JSON-heavy markdown — so the budget is
- *  measured on the final URL, never on the raw report. The full copy goes
- *  to the clipboard regardless. */
-const MAX_URL_LENGTH = 7000;
+/** How much raw report rides in the prefilled issue URL. GitHub rejects
+ *  URLs past ~8 KB ("Whoa there! Your request URL is too long."), and
+ *  percent-encoding inflates the report's JSON-heavy markdown ~3× — so the
+ *  raw budget is kept small enough that the encoded URL stays well under
+ *  the limit. The full copy goes to the clipboard regardless. */
+const URL_REPORT_BUDGET = 2000;
 
 // ── Pure helpers (unit-tested directly) ─────────────────────────────────────
 
@@ -227,26 +227,13 @@ export class DiagnosticsManager {
       'Diagnostics (auto-generated, redacted — contains no API keys):',
       '',
     ].join('\n');
-    const build = (slice: string, truncated: boolean): string => {
-      const body =
-        intro +
-        slice +
-        (truncated ? '\n\n_(Report truncated — the full report is on your clipboard; paste it here.)_' : '');
-      return `${ISSUE_URL}?${new URLSearchParams({ title: 'Bug report', body }).toString()}`;
-    };
-    const full = build(report, false);
-    if (full.length <= MAX_URL_LENGTH) return full;
-    // Binary-search the longest report prefix whose *encoded* URL still fits —
-    // encoding inflates JSON-heavy markdown ~3×, so a raw-character budget
-    // cannot be trusted.
-    let lo = 0;
-    let hi = report.length;
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      if (build(report.slice(0, mid), true).length <= MAX_URL_LENGTH) lo = mid;
-      else hi = mid - 1;
-    }
-    return build(report.slice(0, lo), true);
+    const truncated = report.length > URL_REPORT_BUDGET;
+    const body =
+      intro +
+      (truncated ? report.slice(0, URL_REPORT_BUDGET) : report) +
+      (truncated ? '\n\n_(Report truncated — the full report is on your clipboard; paste it here.)_' : '');
+    const params = new URLSearchParams({ title: 'Bug report', body });
+    return `${ISSUE_URL}?${params.toString()}`;
   }
 
   /** Copy the full report to the clipboard, then open a prefilled GitHub issue.
