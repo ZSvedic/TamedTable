@@ -17440,6 +17440,18 @@ function debugDetailText(debug) {
   ].join(`
 `);
 }
+function chipStyle(t) {
+  return {
+    background: t.surface,
+    border: `1px solid ${t.line}`,
+    borderRadius: space.radiusSm,
+    padding: "2px 7px",
+    cursor: "pointer",
+    color: t.ink3,
+    display: "inline-flex",
+    alignItems: "center"
+  };
+}
 function AssistantMessage({
   t,
   message,
@@ -17547,13 +17559,8 @@ function AssistantMessage({
                     "aria-label": copied ? "Copied" : "Copy request detail",
                     "data-testid": "copy-debug",
                     style: {
-                      background: "transparent",
-                      border: 0,
-                      padding: 0,
-                      cursor: "pointer",
-                      color: copied ? t.ok : t.ink3,
-                      display: "inline-flex",
-                      alignItems: "center"
+                      ...chipStyle(t),
+                      color: copied ? t.ok : t.ink3
                     },
                     children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
                       name: "copy",
@@ -17568,15 +17575,9 @@ function AssistantMessage({
                 onClick: () => onReportBug?.(message),
                 title: "Report bug — opens a prefilled GitHub issue",
                 style: {
-                  background: "transparent",
-                  border: 0,
-                  padding: 0,
-                  cursor: "pointer",
-                  color: t.ink3,
+                  ...chipStyle(t),
                   fontFamily: typography.ui,
                   fontSize: typography.size.xs,
-                  display: "inline-flex",
-                  alignItems: "center",
                   gap: space.px4
                 },
                 children: [
