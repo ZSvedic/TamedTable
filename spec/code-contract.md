@@ -116,7 +116,12 @@ interface Runner {
   // in the browser. An unregistered name falls back to the by-path read.
   registerLookup(name: string, rows: Row[]): void;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  setSpec(spec: TablePlan): Promise<void>;
+  // Replace the spec and replay it against the source. `opts` serves a long
+  // replay (the web's flow-open #OpenFlow): `onStep` fires as each
+  // transformation starts, `onChunk` streams AI-cell results, and aborting
+  // `signal` throws `Runner: cancelled` with the previous spec and rows
+  // untouched — setSpec commits only when the whole replay finishes.
+  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -129,6 +134,11 @@ type ChunkUpdate = {
   before: unknown;
   after: unknown;
 };
+
+// One replayed transformation starting: its 0-based index, the run's total,
+// its kind, and the row count entering it. Steps a replay skips (the
+// unchanged-prefix reuse) are not reported.
+type StepUpdate = { index: number; total: number; kind: string; rows: number };
 
 /** Spoken audio riding along on the patch turn (web voice input). When set,
  *  every patch-turn call in the request sends the audio as a file part next

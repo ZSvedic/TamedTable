@@ -8,13 +8,14 @@ import {
   fetchTable,
   formatForExtension,
   loadCodec,
+  parseFlow,
   parseTable,
   serializeFlow,
   type FormatId,
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
-import { specHasLlmCell } from '@tamedtable/headless';
+import { isCancelled, specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 
@@ -25,12 +26,12 @@ export class FilesManager {
   }
 
   /** Open the file Open dialog and load the picked file (CSV, JSONL, Parquet,
-   *  or Arrow). */
+   *  Arrow — or a .flow, which runs against a table; see openFlowPicked). */
   async openCsv(): Promise<void> {
     this.host.dialog = 'open';
     this.host.notify();
     try {
-      const picked = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow']);
+      const picked = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow', '.flow']);
       if (picked) await this.loadFromPicked(picked);
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
@@ -53,6 +54,7 @@ export class FilesManager {
   }
 
   private async loadFromPicked(picked: PickedFile): Promise<void> {
+    if (picked.name.toLowerCase().endsWith('.flow')) return this.openFlowPicked(picked);
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly — no filesystem, no path round-trip.
     const { rows, spec } = await parseTable(picked.name, picked.bytes);
@@ -60,6 +62,36 @@ export class FilesManager {
     this.host.pushMessage(
       'assistant',
       `Loaded ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
+    );
+  }
+
+  // #OpenFlow
+  /** Run an opened .flow against a table — the browser's counterpart to the
+   *  CLI's `execute`. With a table loaded the flow runs against its source
+   *  rows (journaled, so undo restores the previous spec); with nothing
+   *  loaded the picker reopens for the flow's input table first. The replay
+   *  itself runs behind the flow-run dialog (engine.applyFlow); cancelling
+   *  it leaves the table untouched. */
+  private async openFlowPicked(picked: PickedFile): Promise<void> {
+    const { source, spec } = parseFlow(new TextDecoder().decode(picked.bytes));
+    if (!this.host.loaded) {
+      this.host.pushToast('info', `${picked.name} needs its input table — pick ${source || 'the data file'}.`);
+      const input = await this.host.file.pickOpen(['.csv', '.jsonl', '.parquet', '.arrow']);
+      if (!input) return;
+      await this.loadFromPicked(input);
+    }
+    try {
+      await this.host.engine.applyFlow(spec, picked.name);
+    } catch (e) {
+      if (isCancelled(e)) {
+        this.host.pushToast('info', 'Flow cancelled — table unchanged.');
+        return;
+      }
+      throw e; // openCsv's catch shows "Could not open file: <reason>"
+    }
+    this.host.pushMessage(
+      'assistant',
+      `Applied ${picked.name} — ${spec.transformations.length} transformation${spec.transformations.length === 1 ? '' : 's'}, ${this.host.engine.currentRows().length} rows.`,
     );
   }
 

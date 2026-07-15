@@ -35,6 +35,7 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  FlowRunState,
   Toast,
   TutorialManifestEntry,
   TutorialSources,
@@ -53,6 +54,7 @@ export type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  FlowRunState,
   ResolvedConfig,
   Toast,
   TutorialManifestEntry,
@@ -94,6 +96,8 @@ export class WebController implements ControllerHost {
   expandedProvider: Provider | null = null;
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
+  /** Live progress of a running flow replay, or null — the flow-run dialog. */
+  flowRun: FlowRunState | null = null; // #OpenFlow
   /** Whether the Open URL modal dialog is showing. */
   urlDialogOpen = false;
   /** Whether the Open-sample picker dialog is showing. */
@@ -250,6 +254,9 @@ export class WebController implements ControllerHost {
 
   /** Cancel the in-flight request, if any. */
   cancelRequest(): void { this.engine.cancelActive(); }
+
+  /** Cancel the running flow replay — the flow-run dialog's Cancel. */
+  cancelFlowRun(): void { this.engine.cancelActive(); } // #OpenFlow
 
   // ── View accessors (never throw — safe before a file is loaded) ───────────
 

@@ -767,8 +767,9 @@ empty page.
 
 The empty page is also a drop target: dragging a file from the desktop
 onto it highlights the page (a tint plus a dashed border), and dropping
-loads the file exactly like **Open local…** — same four formats, same
-"Loaded …" message. A file whose extension isn't a supported format
+loads the file exactly like **Open local…** — same formats (the four data
+formats plus `.flow`), same "Loaded …" message. A file whose extension
+isn't a supported format
 surfaces the standard "Could not open file …" error toast. Once a
 table is loaded the drop target goes away; a stray drop is ignored
 rather than replacing the table.
@@ -793,6 +794,44 @@ provider, and a missing key fails fast with a provider-named toast such as
 cell (which has no deterministic Python form), surfacing a toast that points
 the user to save it as a flow instead. This is the browser's counterpart to
 the CLI's `:save-py`.
+
+**Opening a flow.** <!-- #OpenFlow --> **Open local…** and the empty-page
+drop target accept `.flow` next to the four data formats — the browser's
+counterpart to the CLI's `tamedtable execute`. Opening one applies the
+flow's transformations:
+
+- With a table already loaded, the flow runs against that table's source
+  rows, replacing the current transformations. The change is journaled as
+  `Apply flow <name>`, so undo restores what was there before.
+- With nothing loaded, an info toast names the flow's recorded input
+  (`<name> needs its input table — pick <source>.`) and the file picker
+  reopens for a data file; picking one loads it, then the flow runs
+  against it. Cancelling the picker leaves the app as it was.
+
+A file that isn't a valid flow — bad JSON, an unknown `version`, or a spec
+that fails validation — surfaces the standard "Could not open file …"
+error toast and changes nothing.
+
+While the flow runs, a modal **flow-run dialog** replaces the plain
+streaming state — a large file with AI cells can take minutes, so the run
+gets progress, a log, and a way out:
+
+- A progress readout — `Step i of N — <kind>`, plus `rows done / total`
+  while an AI-cell step streams — over a progress bar that advances step
+  by step (fractionally within a streaming step).
+- An expandable **Log**, collapsed by default, that feeds one line per
+  event as the run progresses: each step as it starts, and each streamed
+  cell (`<column> · row <n>: <before> → <after>`). Only the newest 500
+  lines are kept — a bound, not a transcript.
+- A **Cancel** button. Cancelling aborts the replay and leaves the table
+  exactly as it was — nothing half-applied — with an info toast
+  (`Flow cancelled — table unchanged.`). An input table freshly loaded
+  for this flow stays loaded; only the transformations are discarded.
+
+On success the dialog closes and the chat reports
+`Applied <name> — <n> transformations, <rows> rows.` On any replay error
+(a column the input lacks, a failing expression) the dialog closes, the
+error surfaces as a toast, and the table stays untouched.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,

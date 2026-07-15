@@ -20,7 +20,7 @@ import {
 } from '@tamedtable/core';
 
 export { SpecJournal, type JournalEntry, type TimelineStep } from './journal.ts';
-export { renderPrompt, validateTemplate, parseLlmParts } from './engine.ts';
+export { renderPrompt, validateTemplate, parseLlmParts, isCancelled } from './engine.ts';
 import {
   CANCELLED,
   abortIf,
@@ -51,6 +51,12 @@ export type ChunkUpdate = {
   before: unknown;
   after: unknown;
 };
+
+// #OpenFlow
+/** One replayed transformation starting: its 0-based index, the run's total,
+ *  its kind, and the row count entering it. Steps a replay skips (the
+ *  unchanged-prefix reuse) are not reported. */
+export type StepUpdate = { index: number; total: number; kind: string; rows: number };
 
 export interface RequestDebugTurn {
   ops: unknown[];
@@ -117,7 +123,12 @@ export interface HeadlessRunner {
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
   request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  setSpec(spec: TablePlan): Promise<void>;
+  /** Replace the spec and replay it against the source. `opts` serves a long
+   *  replay (the web's flow-open): `onStep` fires as each transformation
+   *  starts, `onChunk` streams AI-cell results, and aborting `signal` throws
+   *  `Runner: cancelled` with the previous spec and rows untouched — the
+   *  replay commits only when it finishes whole. */ // #OpenFlow
+  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -673,10 +684,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return text.endsWith('\n') ? text : text + '\n';
   }
 
-  async setSpec(spec: TablePlan): Promise<void> {
+  async setSpec(
+    spec: TablePlan,
+    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void } = {}
+  ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
-    const rows = await this.replay(validated, this.sourceRows, undefined, undefined);
+    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk, opts.onStep);
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;
@@ -839,7 +853,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     spec: TablePlan,
     sourceRows: Row[],
     signal: AbortSignal | undefined,
-    onChunk: ((u: ChunkUpdate) => void) | undefined
+    onChunk: ((u: ChunkUpdate) => void) | undefined,
+    onStep?: (u: StepUpdate) => void
   ): Promise<Row[]> {
     const prev = this.spec.transformations;
     const next = spec.transformations;
@@ -858,6 +873,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       start = 0;
     }
     for (let i = start; i < next.length; i++) {
+      // Report the step before the abort check, so a cancel fired from inside
+      // the onStep callback stops the replay before the step runs.
+      onStep?.({ index: i, total: next.length, kind: (next[i] as Transformation).kind, rows: rows.length });
       abortIf(signal);
       rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk);
     }
