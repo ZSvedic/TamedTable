@@ -11,13 +11,6 @@ import type { VoiceStatus } from '../../controller.ts';
 
 const SHEET_H = 300;
 
-const SUGGESTIONS = [
-  'normalize phone numbers',
-  'keep rows with Score ≥ 8',
-  'add a Country column',
-  'drop duplicate emails',
-];
-
 const sheetBase = (t: Theme): React.CSSProperties => ({
   flex: '0 0 auto',
   // Grow by the home-indicator inset and pad it back, so the sheet keeps its
@@ -31,7 +24,7 @@ const sheetBase = (t: Theme): React.CSSProperties => ({
   borderTop: `1px solid ${t.line}`,
 });
 
-// ── Type: composer + tap-to-fill suggestion chips ──────────────────────────
+// ── Type: composer ──────────────────────────────────────────────────────────
 export function KeyboardSheet({
   t,
   draft,
@@ -55,33 +48,6 @@ export function KeyboardSheet({
   return (
     <div className="tt-sheet" data-mob-sheet="keyboard" style={sheetBase(t)}>
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-        <div style={{ display: 'flex', gap: space.px6, padding: `${space.px8}px ${space.px10}px 0`, overflowX: 'auto' }}>
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onDraft(s)}
-              style={{
-                flex: '0 0 auto',
-                display: 'inline-flex',
-                alignItems: 'center',
-                height: 28,
-                lineHeight: 1,
-                border: `1px solid ${t.line2}`,
-                borderRadius: 16,
-                padding: '0 12px',
-                background: t.surface2,
-                color: t.ink2,
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: space.px8, padding: space.px10 }}>
           <button
             type="button"
