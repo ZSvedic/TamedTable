@@ -1025,10 +1025,14 @@ or the engine changes.
   entries). Below them: a dark-mode toggle, Settings, and Tours.
 - **Type**, **Speak**, and **History** each raise a **sheet** that takes
   the dock's place at the bottom, so the table stays in view above it:
-  - **Type** is a composer — a one-line field with a send button. The
-    phone's own keyboard does the typing. Sending runs the request and
-    lowers the sheet; the chevron-down button lowers it without
-    sending.
+  - **Type** is a composer — a one-line field with a send button, in a
+    sheet only as tall as the field itself. The phone's own keyboard
+    does the typing, and the sheet rides on top of it: phone browsers
+    slide the keyboard over the page without moving `fixed` elements,
+    so the bottom region tracks the visual viewport and rises by the
+    keyboard's height — the field always stays visible, with no dead
+    space between it and the keys. Sending runs the request and lowers
+    the sheet; the chevron-down button lowers it without sending.
   - **Speak** records (a live waveform, nothing recognized yet); the send
     button stops recording, transcribes, runs the request, and lowers the
     sheet on its own. Cancel discards.
