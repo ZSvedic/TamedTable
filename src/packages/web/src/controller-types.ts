@@ -126,8 +126,8 @@ export interface FlowRunState {
   /** 1-based index of the running transformation (0 until the first starts). */
   step: number;
   totalSteps: number;
-  /** Kind of the running transformation ("mutate", "filter", …). */
-  kind: string;
+  /** The running transformation's describeStep label ("mutate EventGroup (AI)"). */
+  label: string;
   /** Rows streamed so far in the running step (AI-cell steps only). */
   rowsDone: number;
   /** Rows entering the running step. */

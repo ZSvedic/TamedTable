@@ -89,7 +89,7 @@ export function FlowRunDialog({ controller }: { controller: WebController }): Re
           >
             {run.step === 0
               ? 'Starting…'
-              : `Step ${run.step} of ${run.totalSteps} — ${run.kind}` +
+              : `Step ${run.step} of ${run.totalSteps} — ${run.label}` +
                 (run.rowsTotal > 0 && run.rowsDone > 0 ? ` · ${run.rowsDone} / ${run.rowsTotal} rows` : '')}
           </div>
 

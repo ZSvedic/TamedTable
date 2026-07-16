@@ -54,9 +54,62 @@ export type ChunkUpdate = {
 
 // #OpenFlow
 /** One replayed transformation starting: its 0-based index, the run's total,
- *  its kind, and the row count entering it. Steps a replay skips (the
- *  unchanged-prefix reuse) are not reported. */
-export type StepUpdate = { index: number; total: number; kind: string; rows: number };
+ *  its kind, its describeStep label, and the row count entering it. Steps a
+ *  replay skips (the unchanged-prefix reuse) are not reported. */
+export type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+
+// ── describeStep — human-friendly one-liner per transformation ───────────────
+
+/** The expression-shape marker for a step label: which engine evaluates it —
+ *  and, for `llm`, that the step calls the per-row cell model. */
+function exprMarker(e: Expr | string | RegExp | undefined): 'js' | 'sql' | 'AI' | undefined {
+  if (!e || typeof e === 'string' || e instanceof RegExp) return undefined;
+  if ('llm' in e) return 'AI';
+  if ('sql' in e) return 'sql';
+  return 'js';
+}
+
+/** First few names, `, …` when more — keeps labels one line. */
+function nameList(names: string[], cap = 4): string {
+  return names.slice(0, cap).join(', ') + (names.length > cap ? ', …' : '');
+}
+
+// #OpenFlow
+/** A deterministic, human-friendly one-liner for a transformation, derived
+ *  entirely from its own fields — no model call, nothing stored. Shown by the
+ *  flow-run dialog's status line and log so each step names its target and
+ *  flags per-row model work with an `(AI)` marker: `mutate EventGroup (AI)`,
+ *  `filter (js)`, `group by EventGroup → total_players, sections, …`,
+ *  `sort by Name desc`. */
+export function describeStep(t: Transformation): string {
+  switch (t.kind) {
+    case 'filter':
+      return `filter (${exprMarker(t.pred)})`;
+    case 'mutate':
+      return `mutate ${nameList(Array.isArray(t.columns) ? t.columns : [t.columns])} (${exprMarker(t.value)})`;
+    case 'select':
+      return `select ${nameList(t.columns)}`;
+    case 'sort':
+      return `sort by ${t.by
+        .map((b) => `${typeof b.key === 'string' ? b.key : `(${exprMarker(b.key)})`} ${b.dir}`)
+        .join(', ')}`;
+    case 'group': {
+      const by = t.by.map((b) => (typeof b === 'string' ? b : `(${exprMarker(b)})`));
+      const ai = Object.values(t.agg).some((e) => exprMarker(e) === 'AI') ? ' (AI)' : '';
+      return `group by ${nameList(by)} → ${nameList(Object.keys(t.agg))}${ai}`;
+    }
+    case 'join':
+      return `join ${t.with}`;
+    case 'split':
+      return `split ${t.from} → ${nameList(t.into)}`;
+    case 'validate':
+      return `validate (${exprMarker(t.pred)})`;
+    case 'pivot':
+      return `pivot ${t.values} by ${t.on}`;
+    case 'unpivot':
+      return `unpivot ${nameList(t.measures)}`;
+  }
+}
 
 export interface RequestDebugTurn {
   ops: unknown[];
@@ -986,7 +1039,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     for (let i = start; i < next.length; i++) {
       // Report the step before the abort check, so a cancel fired from inside
       // the onStep callback stops the replay before the step runs.
-      onStep?.({ index: i, total: next.length, kind: (next[i] as Transformation).kind, rows: rows.length });
+      const t = next[i] as Transformation;
+      onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length });
       abortIf(signal);
       rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk);
     }

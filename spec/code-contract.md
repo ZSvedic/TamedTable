@@ -136,9 +136,15 @@ type ChunkUpdate = {
 };
 
 // One replayed transformation starting: its 0-based index, the run's total,
-// its kind, and the row count entering it. Steps a replay skips (the
-// unchanged-prefix reuse) are not reported.
-type StepUpdate = { index: number; total: number; kind: string; rows: number };
+// its kind, a human-friendly label, and the row count entering it. Steps a
+// replay skips (the unchanged-prefix reuse) are not reported. `label` comes
+// from `describeStep(t)` — a deterministic one-liner derived from the
+// transformation's own fields: the kind, its target columns/keys, and the
+// expression shape as a marker — `(js)`, `(sql)`, or `(AI)` when the step
+// calls the cell model. Examples: `mutate EventGroup (AI)`, `filter (js)`,
+// `group by EventGroup → total_players, sections, …`, `sort by Name desc`.
+type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+function describeStep(t: Transformation): string;
 
 /** Spoken audio riding along on the patch turn (web voice input). When set,
  *  every patch-turn call in the request sends the audio as a file part next
@@ -338,6 +344,20 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 unset, so the suite runs offline unless a command opts into `record`
 or `off`. The fingerprint is strict by design: a changed prompt is
 always a miss, never a silent stale hit.
+
+A *small* prompt edit — one that would not change what the model
+answers — does not have to force a live re-record:
+`bun run cassettes:rekey` (`src/packages/cassette/rekey.ts`) rewrites
+the committed cassettes in place, splicing the current
+`spec/prompt-app-edit.md` `SYSTEM_PROMPT` into every recorded
+patch-turn body whose stored request still carries the previous
+version (taken from git `HEAD`), and re-keys each entry under the
+recomputed fingerprint. Responses stay byte-identical, so goldens
+cannot drift. This is a deliberate trade: the tape then claims the
+model saw a prompt it never saw, so reserve it for wording tweaks and
+re-record (`bun run test:record`) when a prompt change is meant to
+alter model behavior. An entry recorded before the readable-request
+format (no `request` field) cannot be re-keyed; the script reports it.
 
 Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
 returned to the SDK unsaved, so its built-in retry reaches the live API
@@ -763,7 +783,8 @@ starts), so a replayed AI cell streams onto the table and can be
 aborted; the web controller sets `streaming` for the duration (the
 same busy state a chat request drives). While the replay runs the
 controller exposes `flowRun: FlowRunState | null` — name, 1-based
-`step`/`totalSteps`, running `kind`, `rowsDone`/`rowsTotal`, and a
+`step`/`totalSteps`, the running step's `describeStep` label,
+`rowsDone`/`rowsTotal`, and a
 `log` capped at the newest 500 lines — rendered by the modal
 `FlowRunDialog` (`data-flow-run-dialog`, progress bar, collapsed-by-
 default log, Cancel via `cancelFlowRun()`). A flow replay sets

@@ -296,7 +296,7 @@ export class EngineManager {
     publish: 'immediate' | 'on-first-chunk',
     totalSteps = 0,
   ): { onStep: (u: StepUpdate) => void; onChunk: (u: ChunkUpdate) => void } {
-    const run: FlowRunState = { name, step: 0, totalSteps, kind: '', rowsDone: 0, rowsTotal: 0, log: [] };
+    const run: FlowRunState = { name, step: 0, totalSteps, label: '', rowsDone: 0, rowsTotal: 0, log: [] };
     let visible = publish === 'immediate';
     if (visible) this.host.flowRun = run;
     const appendLog = (line: string): void => {
@@ -307,10 +307,10 @@ export class EngineManager {
       onStep: (u) => {
         run.step = u.index + 1;
         run.totalSteps = u.total;
-        run.kind = u.kind;
+        run.label = u.label;
         run.rowsTotal = u.rows;
         run.rowsDone = 0;
-        appendLog(`step ${u.index + 1}/${u.total} — ${u.kind} (${u.rows} rows)`);
+        appendLog(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows`);
         if (visible) this.host.notify();
       },
       onChunk: (u) => {

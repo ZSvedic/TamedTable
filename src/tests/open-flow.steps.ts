@@ -42,13 +42,13 @@ When('the flow {string} replays but is cancelled at the first step', async funct
   assert.equal(ctx.error?.message, 'Runner: cancelled', 'expected the replay to cancel');
 });
 
-Then('the replay reported step {int} of {int} as {string} over {int} rows', function (this: TamedTableWorld, step: number, total: number, kind: string, rows: number) {
+Then('the replay reported step {int} of {int} labelled {string} over {int} rows', function (this: TamedTableWorld, step: number, total: number, label: string, rows: number) {
   const ctx = replayCtx.get(this);
   const u = ctx?.steps[step - 1];
   assert.ok(u, `no step ${step} reported (got ${ctx?.steps.length ?? 0})`);
   assert.deepEqual(
-    { index: u!.index, total: u!.total, kind: u!.kind, rows: u!.rows },
-    { index: step - 1, total, kind, rows },
+    { index: u!.index, total: u!.total, label: u!.label, rows: u!.rows },
+    { index: step - 1, total, label, rows },
   );
 });
 

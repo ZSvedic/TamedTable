@@ -12,7 +12,7 @@ Feature: Flow replay progress and cancel
     Scenario: Flow replay reports each step as it starts
       Given load "filter-input.csv"
       When the flow "filter.flow" replays with progress tracking
-      Then the replay reported step 1 of 1 as "filter" over 10 rows
+      Then the replay reported step 1 of 1 labelled "filter (js)" over 10 rows
       And the replayed table has 4 rows
 
     @headless

@@ -790,9 +790,13 @@ While the flow runs, a modal **flow-run dialog** <!-- #OpenFlow -->
 fronts the streaming state — a large file with AI cells can take
 minutes, so the run gets progress, a log, and a way out:
 
-- A progress readout — `Step i of N — <kind>`, plus `rows done / total`
-  while an AI-cell step streams — over a progress bar that advances step
-  by step (fractionally within a streaming step).
+- A progress readout — `Step i of N — <step label>`, plus
+  `rows done / total` while an AI-cell step streams — over a progress bar
+  that advances step by step (fractionally within a streaming step). The
+  label is derived from the step itself — kind, target columns/keys, and
+  an expression marker, e.g. `mutate EventGroup (AI)`, `filter (js)`,
+  `group by EventGroup → total_players, sections, …` — so a step that
+  calls the per-row model is recognizable by its `(AI)` marker.
 - An expandable **Log**, collapsed by default, that feeds one line per
   event as the run progresses: each step as it starts, and each streamed
   cell (`<column> · row <n>: <before> → <after>`). Only the newest 500
