@@ -79,8 +79,14 @@ test.describe('phone width', () => {
 
     // Type button raises the composer sheet with the chat input.
     await page.locator('[data-mob-dock="type"]').click();
-    await expect(page.locator('[data-mob-sheet="keyboard"]')).toBeVisible();
+    const sheet = page.locator('[data-mob-sheet="keyboard"]');
+    await expect(sheet).toBeVisible();
     await expect(page.locator('#tutorial-chat-input')).toBeVisible();
+
+    // The composer hugs its input row — no fixed-height whitespace under it
+    // (the OS keyboard sits right below the sheet on a real phone).
+    const h = await sheet.evaluate((el) => el.getBoundingClientRect().height);
+    expect(h, 'composer sheet must be content-sized, not the 300px pane').toBeLessThan(120);
   });
 
   test('the table surface spans the full horizontal scroll width', async ({ page }) => {
