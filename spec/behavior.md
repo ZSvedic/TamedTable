@@ -34,6 +34,17 @@ applied patch — reversing every transformation and column change the most
 recent user turn introduced, as a single unit — and replays the rest
 against the source. No LLM call.
 
+Every transformation remembers the request that produced it. When a request
+commits, its text — for a spoken request, the transcript — is stamped
+verbatim onto each transformation the turn added or changed, as `query`
+metadata. The stamp is provenance only: the engine ignores it, and the
+patch model never sees it (it is stripped from the spec before every
+model turn). Because it lives inside the spec, a saved `.flow` carries
+it, so the file records not just what each step does but what the user
+asked for — in the user's own words and language. Undo removes a
+transformation and its stamp together; a step later changed by another
+request carries that later request.
+
 Per-turn token budget stays constant regardless of table size or conversation
 length: cached system prompt (~600 tokens) + current spec (~300) + user
 message (~30) + last error if any (~50). No rolling chat history; each
@@ -769,12 +780,37 @@ phone layout the same way). The same dialog surfaces an unreadable or
 invalid flow file (`Could not run flow …`) and a flow with `{llm}`
 cells when the selected provider's key is missing. When the checks
 pass, the flow's transformations replay onto the current table's
-source exactly like a chat request: the app shows the running state,
-AI cells stream onto the table as they compute, and the run can be
-cancelled. The replay replaces the spec as one history entry, so a
-single undo returns to the table as it was, and a chat message
-reports the result (`Ran <flow> — N rows, M columns.`). Sample files
-to try this with live in `spec/user-files/`.
+source, streaming AI cells onto the table as they compute. The replay
+replaces the spec as one history entry, so a single undo returns to
+the table as it was, and a chat message reports the result
+(`Ran <flow> — N rows, M columns.`). Sample files to try this with
+live in `spec/user-files/`.
+
+While the flow runs, a modal **flow-run dialog** <!-- #OpenFlow -->
+fronts the streaming state — a large file with AI cells can take
+minutes, so the run gets progress, a log, and a way out:
+
+- A progress readout — `Step i of N — <step label>`, plus
+  `rows done / total` while an AI-cell step streams — over a progress bar
+  that advances step by step (fractionally within a streaming step). The
+  label is derived from the step itself — kind, target columns/keys, and
+  an expression marker, e.g. `mutate EventGroup (AI)`, `filter (js)`,
+  `group by EventGroup → total_players, sections, …` — so a step that
+  calls the per-row model is recognizable by its `(AI)` marker.
+- An expandable **Log**, collapsed by default, that feeds one line per
+  event as the run progresses: each step as it starts, and each streamed
+  cell (`<column> · row <n>: <before> → <after>`). Only the newest 500
+  lines are kept — a bound, not a transcript.
+- A **Cancel** button. Cancelling aborts the replay and leaves the table
+  exactly as it was — nothing half-applied — with an info toast
+  (`Flow cancelled — table unchanged.`) instead of the error dialog.
+
+The same dialog fronts a **chat request** the moment its replay streams
+its first AI cell — the trigger is the first cell result arriving, so a
+request whose transformations are all deterministic (JS/SQL) never
+raises it. The title is the request's text instead of a file name, and
+Cancel stops the request exactly like the chat Stop button. The dialog
+is a shared overlay, so the phone layout gets the same modal.
 
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same

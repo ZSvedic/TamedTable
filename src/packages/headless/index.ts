@@ -20,7 +20,7 @@ import {
 } from '@tamedtable/core';
 
 export { SpecJournal, type JournalEntry, type TimelineStep } from './journal.ts';
-export { renderPrompt, validateTemplate, parseLlmParts } from './engine.ts';
+export { renderPrompt, validateTemplate, parseLlmParts, isCancelled } from './engine.ts';
 import {
   CANCELLED,
   abortIf,
@@ -51,6 +51,65 @@ export type ChunkUpdate = {
   before: unknown;
   after: unknown;
 };
+
+// #OpenFlow
+/** One replayed transformation starting: its 0-based index, the run's total,
+ *  its kind, its describeStep label, and the row count entering it. Steps a
+ *  replay skips (the unchanged-prefix reuse) are not reported. */
+export type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+
+// ── describeStep — human-friendly one-liner per transformation ───────────────
+
+/** The expression-shape marker for a step label: which engine evaluates it —
+ *  and, for `llm`, that the step calls the per-row cell model. */
+function exprMarker(e: Expr | string | RegExp | undefined): 'js' | 'sql' | 'AI' | undefined {
+  if (!e || typeof e === 'string' || e instanceof RegExp) return undefined;
+  if ('llm' in e) return 'AI';
+  if ('sql' in e) return 'sql';
+  return 'js';
+}
+
+/** First few names, `, …` when more — keeps labels one line. */
+function nameList(names: string[], cap = 4): string {
+  return names.slice(0, cap).join(', ') + (names.length > cap ? ', …' : '');
+}
+
+// #OpenFlow
+/** A deterministic, human-friendly one-liner for a transformation, derived
+ *  entirely from its own fields — no model call, nothing stored. Shown by the
+ *  flow-run dialog's status line and log so each step names its target and
+ *  flags per-row model work with an `(AI)` marker: `mutate EventGroup (AI)`,
+ *  `filter (js)`, `group by EventGroup → total_players, sections, …`,
+ *  `sort by Name desc`. */
+export function describeStep(t: Transformation): string {
+  switch (t.kind) {
+    case 'filter':
+      return `filter (${exprMarker(t.pred)})`;
+    case 'mutate':
+      return `mutate ${nameList(Array.isArray(t.columns) ? t.columns : [t.columns])} (${exprMarker(t.value)})`;
+    case 'select':
+      return `select ${nameList(t.columns)}`;
+    case 'sort':
+      return `sort by ${t.by
+        .map((b) => `${typeof b.key === 'string' ? b.key : `(${exprMarker(b.key)})`} ${b.dir}`)
+        .join(', ')}`;
+    case 'group': {
+      const by = t.by.map((b) => (typeof b === 'string' ? b : `(${exprMarker(b)})`));
+      const ai = Object.values(t.agg).some((e) => exprMarker(e) === 'AI') ? ' (AI)' : '';
+      return `group by ${nameList(by)} → ${nameList(Object.keys(t.agg))}${ai}`;
+    }
+    case 'join':
+      return `join ${t.with}`;
+    case 'split':
+      return `split ${t.from} → ${nameList(t.into)}`;
+    case 'validate':
+      return `validate (${exprMarker(t.pred)})`;
+    case 'pivot':
+      return `pivot ${t.values} by ${t.on}`;
+    case 'unpivot':
+      return `unpivot ${nameList(t.measures)}`;
+  }
+}
 
 export interface RequestDebugTurn {
   ops: unknown[];
@@ -116,11 +175,14 @@ export interface HeadlessRunner {
    *  the browser (no filesystem); an unregistered name falls back to reading
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
-  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
+  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   /** Replace the spec, replaying its transformations onto the loaded source
-   *  rows. Accepts the same streaming/abort options a request carries, so a
-   *  replayed AI cell streams and can be cancelled (the Open & run flow path). */
-  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
+   *  rows. Accepts the same streaming/abort options a request carries plus
+   *  `onStep`, which fires as each transformation starts — so a replayed
+   *  flow streams, reports progress, and can be cancelled (the Open & run
+   *  flow path); aborting throws `Runner: cancelled` with the previous spec
+   *  and rows untouched. */ // #OpenFlow
+  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -333,10 +395,26 @@ const RECOVERY_GUIDANCE = [
   'Do not just retry the same shape with a different literal — the next emission must be measurably more permissive than the one that failed.',
 ].join(' ');
 
+/** @internal — exported for unit tests. The spec as the model sees it: each
+ *  transformation's `query` provenance stripped. The model neither reads nor
+ *  edits the metadata, and stripping keeps patch-turn and Python-export
+ *  prompts byte-identical to a spec that never carried it — so recorded
+ *  cassettes keep replaying. */
+export function stripQueryMetadata(spec: TablePlan): TablePlan {
+  const transformations = spec.transformations as Transformation[];
+  if (!transformations.some((t) => 'query' in t)) return spec;
+  return {
+    ...spec,
+    transformations: transformations.map(({ query: _query, ...t }) => t as Transformation),
+  };
+}
+
 function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string {
   // The LLM edits transformations/columns/view-ops — never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
-  // model only ever sees the basename.
+  // model only ever sees the basename. Query provenance is stripped the same
+  // way — metadata, not the model's to see or edit.
+  spec = stripQueryMetadata(spec);
   const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
   const specJson = JSON.stringify(llmSpec, null, 2);
   if (!errPrefix) return `Current spec:\n${specJson}\n\nUser request: ${text}`;
@@ -364,6 +442,23 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
   } catch (e) {
     return { kind: 'err', message: (e as Error).message };
   }
+}
+
+// #Patch
+/** @internal — exported for unit tests. Stamp `query` provenance on every
+ *  transformation the committed turn added or changed — any transformation
+ *  whose JSON has no identical counterpart in the pre-request spec. A step
+ *  untouched by the turn keeps its earlier stamp (its JSON, stamp included,
+ *  matches `before`); a step the patch rewrote is restamped with the latest
+ *  request. */
+export function stampQueries(spec: TablePlan, before: TablePlan, query: string): TablePlan {
+  const prior = new Set(before.transformations.map((t) => JSON.stringify(t)));
+  return {
+    ...spec,
+    transformations: (spec.transformations as Transformation[]).map((t) =>
+      prior.has(JSON.stringify(t)) ? t : { ...t, query }
+    ),
+  };
 }
 
 /** Columns a `{js}` or `{llm}` expression reads: `row.X` / `row["X"]` /
@@ -731,8 +826,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #PyExport
   async exportPython(): Promise<string> {
     this.requireLoaded();
-    // Same table-path trim as a patch turn: the model sees the basename only.
-    const spec = this.spec;
+    // Same trims as a patch turn: basename-only table, no query provenance.
+    const spec = stripQueryMetadata(this.spec);
     const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
     const prompt = `Translate this TamedTable flow into a standalone Python 3 script.\n\nSpec:\n${JSON.stringify(llmSpec, null, 2)}`;
     await rateLimiter.acquire();
@@ -755,11 +850,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   async setSpec(
     spec: TablePlan,
-    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void } = {},
+    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void } = {},
   ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
-    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk);
+    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk, opts.onStep);
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;
@@ -768,7 +863,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #MainLoop
   async request(
     text: string,
-    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
+    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
   ): Promise<void> {
     this.requireLoaded();
     if (this.busy || this.sql.hasLingeringSql()) throw new Error('Runner: a request is already in progress.');
@@ -785,6 +880,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const budget = this.opts.recoveryBudget ?? 3;
       let lastError: string | undefined;
       let transcriptSent = false;
+      // The provenance text stamped on committed transformations: the request
+      // text, or — for a spoken request — the transcript once it arrives.
+      let queryText = text;
       let prompt = buildPrompt(text, this.spec);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
@@ -792,6 +890,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         const ops = llmTurn.ops;
         if (llmTurn.transcript && !transcriptSent) {
           transcriptSent = true;
+          queryText = llmTurn.transcript;
           callOpts.onTranscript?.(llmTurn.transcript);
         }
         const turn: RequestDebugTurn = { ops, outcome: '' };
@@ -830,9 +929,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         }
 
         try {
-          const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk);
+          const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk, callOpts.onStep);
           abortIf(signal);
-          this.spec = syncColumnsToRows(tried.spec, newRows);
+          this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
           const expressions = diffPlans(specBefore, this.spec)
@@ -918,7 +1017,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     spec: TablePlan,
     sourceRows: Row[],
     signal: AbortSignal | undefined,
-    onChunk: ((u: ChunkUpdate) => void) | undefined
+    onChunk: ((u: ChunkUpdate) => void) | undefined,
+    onStep?: (u: StepUpdate) => void
   ): Promise<Row[]> {
     const prev = this.spec.transformations;
     const next = spec.transformations;
@@ -937,6 +1037,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       start = 0;
     }
     for (let i = start; i < next.length; i++) {
+      // Report the step before the abort check, so a cancel fired from inside
+      // the onStep callback stops the replay before the step runs.
+      const t = next[i] as Transformation;
+      onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length });
       abortIf(signal);
       rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk);
     }

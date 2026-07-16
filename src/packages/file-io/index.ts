@@ -129,3 +129,22 @@ export function serializeFlow(spec: TablePlan): string {
   const source = (spec.table ? spec.table.split('/').pop() : '') || 'input.csv';
   return JSON.stringify({ version: 2, source, spec }, null, 2) + '\n';
 }
+
+// #OpenFlow
+/** Parse a .flow file's text — the browser-side inverse of serializeFlow
+ *  (the CLI's `execute` keeps its own path-based loader). Accepts `version`
+ *  1 or 2 and validates the spec through the one TablePlan schema; throws
+ *  with a message the host can show as-is. */
+export function parseFlow(text: string): { source: string; spec: TablePlan } {
+  let doc: unknown;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    throw new Error('not a valid flow file (bad JSON)');
+  }
+  const { version, source, spec } = (doc ?? {}) as { version?: unknown; source?: unknown; spec?: unknown };
+  if (version !== 1 && version !== 2) {
+    throw new Error(`unsupported flow version: ${JSON.stringify(version)}`);
+  }
+  return { source: typeof source === 'string' ? source : '', spec: validateTablePlan(spec) };
+}

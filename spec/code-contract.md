@@ -34,6 +34,9 @@ type Transformation =
   | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // #PivotData
   | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // #PivotData
 
+// Every Transformation variant also accepts optional provenance metadata:
+//   query?: string   // the chat request (voice: the transcript) that created or last changed the step
+
 type Row = Record<string, unknown>;
 
 interface TablePlan {
@@ -63,6 +66,16 @@ loop). It does *not* check whether a JS body compiles or whether an
 `{Column}` placeholder matches a real column — those errors surface at
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
+
+`query` is provenance metadata, accepted on every transformation kind. The
+runner stamps it at commit time: the request's text (voice: the transcript)
+lands verbatim on each transformation the committed turn added or changed —
+"changed" meaning its JSON has no identical counterpart in the pre-request
+spec. The engine never reads it, and the spec shown to the model — the
+patch turn and the Python-export turn — has it stripped, so the model
+neither sees nor edits it and prompts stay byte-identical for cassette
+replay. Since it rides inside `transformations`, `serializeFlow` carries
+it into saved `.flow` files unchanged and `execute` accepts it back.
 
 The type accepts the full `Expr` union everywhere, but the engine
 evaluates only some shapes per slot today; an unsupported shape throws
@@ -102,8 +115,13 @@ interface Runner {
   // against these rows instead of reading the file by path — lets joins run
   // in the browser. An unregistered name falls back to the by-path read.
   registerLookup(name: string, rows: Row[]): void;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
-  setSpec(spec: TablePlan): Promise<void>;
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
+  // Replace the spec and replay it against the source. `opts` serves a long
+  // replay (the web's flow-open #OpenFlow): `onStep` fires as each
+  // transformation starts, `onChunk` streams AI-cell results, and aborting
+  // `signal` throws `Runner: cancelled` with the previous spec and rows
+  // untouched — setSpec commits only when the whole replay finishes.
+  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -116,6 +134,17 @@ type ChunkUpdate = {
   before: unknown;
   after: unknown;
 };
+
+// One replayed transformation starting: its 0-based index, the run's total,
+// its kind, a human-friendly label, and the row count entering it. Steps a
+// replay skips (the unchanged-prefix reuse) are not reported. `label` comes
+// from `describeStep(t)` — a deterministic one-liner derived from the
+// transformation's own fields: the kind, its target columns/keys, and the
+// expression shape as a marker — `(js)`, `(sql)`, or `(AI)` when the step
+// calls the cell model. Examples: `mutate EventGroup (AI)`, `filter (js)`,
+// `group by EventGroup → total_players, sections, …`, `sort by Name desc`.
+type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+function describeStep(t: Transformation): string;
 
 /** Spoken audio riding along on the patch turn (web voice input). When set,
  *  every patch-turn call in the request sends the audio as a file part next
@@ -315,6 +344,20 @@ cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 unset, so the suite runs offline unless a command opts into `record`
 or `off`. The fingerprint is strict by design: a changed prompt is
 always a miss, never a silent stale hit.
+
+A *small* prompt edit — one that would not change what the model
+answers — does not have to force a live re-record:
+`bun run cassettes:rekey` (`src/packages/cassette/rekey.ts`) rewrites
+the committed cassettes in place, splicing the current
+`spec/prompt-app-edit.md` `SYSTEM_PROMPT` into every recorded
+patch-turn body whose stored request still carries the previous
+version (taken from git `HEAD`), and re-keys each entry under the
+recomputed fingerprint. Responses stay byte-identical, so goldens
+cannot drift. This is a deliberate trade: the tape then claims the
+model saw a prompt it never saw, so reserve it for wording tweaks and
+re-record (`bun run test:record`) when a prompt change is meant to
+alter model behavior. An entry recorded before the readable-request
+format (no `request` field) cannot be re-keyed; the script reports it.
 
 Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
 returned to the SDK unsaved, so its built-in retry reaches the live API
@@ -735,12 +778,25 @@ the flow's spec through `Runner.setSpec` onto the already-loaded
 source rows, recording one patch-journal entry labelled
 `Ran <flow name>` so a single undo restores the previous spec.
 `setSpec(spec, opts?)` accepts the same optional `{ signal, onChunk }`
-a request carries, so a replayed AI cell streams onto the table and
-can be aborted; the web controller sets `streaming` for the duration
-(the same busy state a chat request drives). Flow failures set
+a request carries plus `onStep` (a `StepUpdate` as each transformation
+starts), so a replayed AI cell streams onto the table and can be
+aborted; the web controller sets `streaming` for the duration (the
+same busy state a chat request drives). While the replay runs the
+controller exposes `flowRun: FlowRunState | null` — name, 1-based
+`step`/`totalSteps`, the running step's `describeStep` label,
+`rowsDone`/`rowsTotal`, and a
+`log` capped at the newest 500 lines — rendered by the modal
+`FlowRunDialog` (`data-flow-run-dialog`, progress bar, collapsed-by-
+default log, Cancel via `cancelFlowRun()`). A flow replay sets
+`flowRun` immediately; a chat request sets it lazily, on the first
+AI-cell chunk its replay streams (`name` is the request text), so a
+JS/SQL-only request never shows the dialog. `Runner.request` carries
+the same optional `onStep` callback `setSpec` does. Flow failures set
 `WebController.errorDialog: string | null` — rendered by the shared
 `ErrorDialog` overlay (both layouts), dismissed with
-`dismissErrorDialog()` (`data-tt-error-dialog`).
+`dismissErrorDialog()` (`data-tt-error-dialog`); a cancel is not a
+failure — it surfaces as the info toast
+`Flow cancelled — table unchanged.` instead.
 
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on

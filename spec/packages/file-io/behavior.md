@@ -132,6 +132,13 @@ pretty-printed JSON `{ version: 2, source, spec }` with a trailing newline.
 `source` is the basename of `spec.table`, or `input.csv` when the spec has
 no table.
 
+`parseFlow(text)` is the inverse — the browser's flow reader (the CLI's
+`execute` keeps its own path-based loader). It parses the text as JSON,
+accepts `version` 1 or 2, validates `spec` through `validateTablePlan`,
+and returns `{ source, spec }` (`source` falls back to `""` when the file
+carries none). Anything else — bad JSON, another `version`, a spec the
+schema rejects — throws with a message the host can show as-is.
+
 ## Demo page
 
 The demo (`demo.html` + `demo.ts`, deployed under `/demos/file-io/`) drives

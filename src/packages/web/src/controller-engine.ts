@@ -9,12 +9,23 @@ import {
   type ChunkUpdate,
   type HeadlessRunner,
   type RequestAudio,
+  type StepUpdate,
 } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { defaultModel, defaultCellModel } from '@tamedtable/model-config';
 import type { FetchLike } from '@tamedtable/file-io';
 import { requestBody, requestUrl } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
+import type { FlowRunState } from './controller-types.ts';
+
+/** Newest log lines the flow-run dialog keeps — a bound, not a transcript. */
+const FLOW_LOG_MAX = 500;
+
+/** One log-worthy cell value: short, single-line, quoted when stringy. */
+function flowLogValue(v: unknown): string {
+  const s = v === null || v === undefined ? 'null' : JSON.stringify(v);
+  return s.length > 60 ? `${s.slice(0, 57)}…` : s;
+}
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
 
@@ -168,26 +179,34 @@ export class EngineManager {
     return this.loadedSource?.spec.columns.map((c) => c.id) ?? [];
   }
 
+  // #OpenFlow
   /** Replace the current spec, replaying its transformations onto the loaded
-   *  source rows (the Open & run .flow path). Runs like a request: `streaming`
-   *  is set for the duration, AI cells paint onto the overlay as chunks land,
-   *  and Cancel aborts the replay. Throws when the replay fails. */
-  async applySpec(spec: TablePlan): Promise<void> {
+   *  source rows (the Open & run .flow path). Runs like a request — AI cells
+   *  paint onto the overlay as chunks land — behind the flow-run dialog:
+   *  `host.flowRun` carries live step/row progress and the event log named
+   *  after the picked `.flow` file, and the dialog's Cancel aborts through
+   *  the same controller the chat Stop uses. setSpec commits only when the
+   *  whole replay finishes, so a cancel or failure leaves the previous spec
+   *  and rows untouched. Throws when the replay fails or is cancelled. */
+  async applySpec(spec: TablePlan, name: string): Promise<void> {
     const runner = this.ensureHeadless();
     const ownAbort = new AbortController();
     this.activeAbort = ownAbort;
     this.host.streaming = true;
     this.overlay.clear();
+    const feed = this.flowRunFeed(name, 'immediate', spec.transformations.length);
     this.host.notify();
-    const onChunk = (u: ChunkUpdate): void => {
-      this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
-      this.scheduleOverlayFlush();
-    };
+
     try {
-      await runner.setSpec(spec, { signal: ownAbort.signal, onChunk });
+      await runner.setSpec(spec, {
+        signal: ownAbort.signal,
+        onStep: feed.onStep,
+        onChunk: feed.onChunk,
+      });
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
+      this.host.flowRun = null;
       this.overlay.clear();
       if (this.overlayTimer) {
         clearTimeout(this.overlayTimer);
@@ -231,14 +250,17 @@ export class EngineManager {
     this.host.savedLabel = null;
     this.host.notify();
 
+    // The flow-run dialog rides along, deferred: it appears only if the
+    // request's replay streams an AI cell (#OpenFlow). The feed also paints
+    // the overlay, so the wrapper only forwards the caller's onChunk.
+    const feed = this.flowRunFeed(opts?.label ?? text, 'on-first-chunk');
     const onChunk = (u: ChunkUpdate): void => {
       opts?.onChunk?.(u);
-      this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
-      this.scheduleOverlayFlush();
+      feed.onChunk(u);
     };
 
     try {
-      await runner.request(text, { signal, onChunk, audio: opts?.audio, onTranscript: opts?.onTranscript });
+      await runner.request(text, { signal, onChunk, onStep: feed.onStep, audio: opts?.audio, onTranscript: opts?.onTranscript });
       this.host.patch.record({
         label: opts?.label ?? text,
         prevSpec,
@@ -247,6 +269,7 @@ export class EngineManager {
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
+      this.host.flowRun = null;
       this.overlay.clear();
       if (this.overlayTimer) {
         clearTimeout(this.overlayTimer);
@@ -259,6 +282,48 @@ export class EngineManager {
   /** Cancel the in-flight request, if any. */
   cancelActive(): void {
     this.activeAbort?.abort();
+  }
+
+  // #OpenFlow
+  /** Build the flow-run dialog's event feed for one run named `name`: the
+   *  returned handlers keep `host.flowRun` (step/row progress + capped log)
+   *  current and paint streamed cells onto the overlay. `publish` decides
+   *  when the dialog appears: 'immediate' for a flow replay, 'on-first-chunk'
+   *  for a chat request — the trigger is the first AI-cell result, so a
+   *  request whose steps are all deterministic never raises the dialog. */
+  private flowRunFeed(
+    name: string,
+    publish: 'immediate' | 'on-first-chunk',
+    totalSteps = 0,
+  ): { onStep: (u: StepUpdate) => void; onChunk: (u: ChunkUpdate) => void } {
+    const run: FlowRunState = { name, step: 0, totalSteps, label: '', rowsDone: 0, rowsTotal: 0, log: [] };
+    let visible = publish === 'immediate';
+    if (visible) this.host.flowRun = run;
+    const appendLog = (line: string): void => {
+      run.log.push(line);
+      if (run.log.length > FLOW_LOG_MAX) run.log.splice(0, run.log.length - FLOW_LOG_MAX);
+    };
+    return {
+      onStep: (u) => {
+        run.step = u.index + 1;
+        run.totalSteps = u.total;
+        run.label = u.label;
+        run.rowsTotal = u.rows;
+        run.rowsDone = 0;
+        appendLog(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows`);
+        if (visible) this.host.notify();
+      },
+      onChunk: (u) => {
+        run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
+        appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
+        if (!visible) {
+          visible = true;
+          this.host.flowRun = run;
+        }
+        this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
+        this.scheduleOverlayFlush();
+      },
+    };
   }
 
   currentRows(): Row[] {

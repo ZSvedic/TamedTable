@@ -23,6 +23,7 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  FlowRunState,
   VoiceStatus,
   WebControllerOptions,
 } from './controller-types.ts';
@@ -41,6 +42,8 @@ export interface ControllerHost {
   selection: CellRef | null;
   savedLabel: string | null;
   dialog: DialogKind;
+  /** Live progress of a running flow replay, or null — the flow-run dialog. */
+  flowRun: FlowRunState | null;
   urlDialogOpen: boolean;
   sampleDialogOpen: boolean;
   errorDialog: string | null;

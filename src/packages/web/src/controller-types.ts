@@ -115,3 +115,23 @@ export type VoiceStatus = 'idle' | 'recording' | 'latched' | 'sending';
 export type ContinuousStatus = 'idle' | 'listening' | 'sending';
 
 export type DialogKind = 'open' | 'save-flow' | 'save-data' | null;
+
+// #OpenFlow
+/** Live progress of a running flow replay — drives the flow-run dialog.
+ *  Mutated in place by the engine's step/chunk callbacks; the notification
+ *  hub's revision bump tells React to re-read it. */
+export interface FlowRunState {
+  /** The opened .flow file's name — the dialog title. */
+  name: string;
+  /** 1-based index of the running transformation (0 until the first starts). */
+  step: number;
+  totalSteps: number;
+  /** The running transformation's describeStep label ("mutate EventGroup (AI)"). */
+  label: string;
+  /** Rows streamed so far in the running step (AI-cell steps only). */
+  rowsDone: number;
+  /** Rows entering the running step. */
+  rowsTotal: number;
+  /** Newest-last event feed, capped at the newest 500 lines. */
+  log: string[];
+}

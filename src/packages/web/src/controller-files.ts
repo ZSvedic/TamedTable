@@ -8,14 +8,15 @@ import {
   fetchTable,
   formatForExtension,
   loadCodec,
+  parseFlow,
   parseTable,
   serializeFlow,
   type FormatId,
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
-import { validateTablePlan, type TablePlan } from '@tamedtable/core';
-import { checkFlowInputColumns, specHasLlmCell } from '@tamedtable/headless';
+import type { TablePlan } from '@tamedtable/core';
+import { checkFlowInputColumns, isCancelled, specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { RecentsStore, type RecentEntry } from './recents.ts';
@@ -70,9 +71,12 @@ export class FilesManager {
     }
   }
 
+  // #OpenFlow
   /** "Open .flow & run on current data…" — pick a saved `.flow` and replay
    *  its transformations onto the currently-loaded table's source as one
-   *  history entry (a single undo restores the previous spec). Failures — an
+   *  history entry (a single undo restores the previous spec). The replay
+   *  runs behind the flow-run dialog (engine.applySpec): live progress, an
+   *  event log, and a Cancel that leaves the table untouched. Failures — an
    *  unreadable flow, a flow reading columns the table lacks, AI cells with
    *  no provider key — raise the modal error dialog, not a fading toast. */
   async openFlow(): Promise<void> {
@@ -85,7 +89,7 @@ export class FilesManager {
     try {
       const picked = await this.host.file.pickOpen(['.flow']);
       if (!picked) return;
-      const spec = FilesManager.parseFlow(picked);
+      const spec = FilesManager.parseFlowFile(picked);
       const mismatch = checkFlowInputColumns(spec, this.host.engine.sourceColumns());
       if (mismatch) {
         this.host.errorDialog = `${picked.name} does not fit the current table. ${mismatch}`;
@@ -99,7 +103,7 @@ export class FilesManager {
         return;
       }
       const prevSpec = structuredClone(this.host.engine.currentSpec());
-      await this.host.engine.applySpec(spec);
+      await this.host.engine.applySpec(spec, picked.name);
       this.host.patch.record({
         label: `Ran ${picked.name}`,
         prevSpec,
@@ -111,27 +115,25 @@ export class FilesManager {
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
       );
     } catch (e) {
-      this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
+      // The dialog's Cancel is a deliberate stop, not a failure — the replay
+      // left the table untouched, so a quiet toast is enough.
+      if (isCancelled(e)) this.host.pushToast('info', 'Flow cancelled — table unchanged.');
+      else this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
     } finally {
       this.host.dialog = null;
       this.host.notify();
     }
   }
 
-  /** Parse and validate a picked `.flow` file (JSON, version 1 or 2, a
-   *  well-formed spec). Throws with a user-readable message. */
-  private static parseFlow(picked: PickedFile): TablePlan {
-    type FlowFile = { version?: number; spec?: unknown };
-    let flow: FlowFile;
+  /** Parse and validate a picked `.flow` file through file-io's parseFlow
+   *  (JSON, version 1 or 2, the one TablePlan schema), prefixing errors
+   *  with the file's name. */
+  private static parseFlowFile(picked: PickedFile): TablePlan {
     try {
-      flow = JSON.parse(new TextDecoder().decode(picked.bytes)) as FlowFile;
-    } catch {
-      throw new Error(`${picked.name} is not a valid .flow file (invalid JSON).`);
+      return parseFlow(new TextDecoder().decode(picked.bytes)).spec;
+    } catch (e) {
+      throw new Error(`${picked.name}: ${(e as Error).message}`);
     }
-    if (flow.version !== 1 && flow.version !== 2) {
-      throw new Error(`${picked.name}: version must be 1 or 2 (got ${flow.version ?? 'none'}).`);
-    }
-    return validateTablePlan(flow.spec);
   }
 
   /** Load a file dropped onto the empty page — the drag-and-drop counterpart

@@ -18,6 +18,15 @@ Feature: Filter customer records
       When export as "filter-output.jsonl"
       Then "filter-output.jsonl" matches the expected output
 
+  Rule: A committed request is stamped on the spec as provenance
+
+    @headless
+    Scenario: The request text becomes query metadata on the transformations it adds
+      Given load "filter-input.csv"
+      When query "Show only customers in the USA"
+      Then every transformation the request added carries "Show only customers in the USA" as query metadata
+      And a saved flow carries the same query metadata
+
   Rule: Surface-specific UX flows
 
     @cli

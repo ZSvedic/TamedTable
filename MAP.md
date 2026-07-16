@@ -19,6 +19,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | Performance benchmark | [#BenchPerf](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BenchPerf&type=code) | ✓ | - | - | [performance.feature](spec/test-cases/performance.feature) |
 | Model & batch-size sweep | [#BenchSweep](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BenchSweep&type=code) | - | - | - | [benchmarks/README.md](benchmarks/README.md) (dev tool: `@tamedtable/bench`) |
 | Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) |
+| Open and run a flow | [#OpenFlow](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23OpenFlow&type=code) | ✓ | - | ✓ | [web.feature](spec/test-cases/web.feature) (dialog UX) + [open-flow.feature](spec/test-cases/open-flow.feature) (replay progress/cancel) |
 | Pivot and unpivot | [#PivotData](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PivotData&type=code) | ✓ | ✓ | ✓ | [pivot.feature](spec/test-cases/pivot.feature) |
 | Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) |
 | Settings panel | [#SettingsCards](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SettingsCards&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
