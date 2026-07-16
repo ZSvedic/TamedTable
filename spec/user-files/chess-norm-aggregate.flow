@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "source": "TournamentSearch.csv",
+  "spec": {
+    "table": "TournamentSearch.csv",
+    "columns": [
+      {
+        "id": "EventGroupKey"
+      },
+      {
+        "id": "total_players"
+      },
+      {
+        "id": "sections"
+      },
+      {
+        "id": "latest_year"
+      },
+      {
+        "id": "locations"
+      },
+      {
+        "id": "sample_tournaments"
+      }
+    ],
+    "transformations": [
+      {
+        "kind": "mutate",
+        "columns": "Tempo igre",
+        "value": {
+          "llm": "Normalize this chess time control notation into a standard concise form. Input: '{Tempo igre}'. Use common chess notation such as 90+30, 3+2, 40/90+30, 90+30;30+30, or a clear equivalent when multiple phases are stated. Interpret minutes and seconds carefully: increment/delay after + is in seconds unless explicitly written otherwise; main time is in minutes unless explicitly written otherwise. Preserve meaningful multi-phase controls and move-count phases (for example 40 moves in 90 minutes followed by 30 minutes with 30 second increment). Remove irrelevant wording, extra spaces, localization, and inconsistent punctuation. Reply with ONLY the normalized time control and nothing else. If the input is empty, missing, not a time control, or cannot be normalized safely, reply with the literal word: null"
+        },
+        "query": "Kolona Tempo igre je formatirana šaroliko, molim te unificiraj prema uobičajenim šahovskim pravilima za zapisivanje tempa igre."
+      },
+      {
+        "kind": "filter",
+        "pred": {
+          "js": "(() => { const fed = String(row.FED ?? '').trim().toUpperCase(); const loc = String(row.Lokacija ?? '').toLowerCase(); const isCroatia = fed === 'CRO' || fed === 'HR' || loc.includes('hrvatska') || loc.includes('croatia'); if (!isCroatia) return false; const parseYear = (v) => { const s = String(v ?? '').trim(); if (!s) return null; let m = s.match(/(20\\d{2}|19\\d{2})/); if (m) return Number(m[1]); return null; }; const y = parseYear(row.do) ?? parseYear(row.od) ?? parseYear(row['Zadnja izmjena']); if (y == null) return false; const currentYear = new Date().getFullYear(); return y >= currentYear - 3 && y <= currentYear; })()"
+        },
+        "query": "Agregiraj po događanju za što se treba koristit heuristika iz imena turnirskih skupina, organizatora, glavnog sudca, mjesta igre, vremena igre i slično te agregirati stupac N koji je broj igrača i dobiti rang listu najvećih turnira u Hrvatskoj u zadnjih par godina."
+      },
+      {
+        "kind": "mutate",
+        "columns": "EventGroupKey",
+        "value": {
+          "llm": "Decide the canonical event name/group for this Croatian chess tournament row, so that sections, age groups, rating groups, rounds, and variants of the same event can be aggregated together. Use the tournament name, organizer, chief arbiter, playing venue/location, dates, time control, event id, and other row context. Prefer a concise stable Croatian/English event name without section labels such as A/B/C, U12/U16, rating bands, open/rapid/blitz subgroup wording unless that wording identifies a genuinely separate event. Tournament: '{Turnir}'. Organizer(s): '{Organizator(i)}'. Chief arbiter: '{Glavni sudac}'. Location: '{Lokacija}'. Start date: '{od}'. End date: '{do}'. Time control: '{Tempo igre}'. EventID: '{EventID}'. Same-row context: {*}. Reply with ONLY the canonical event/group name and nothing else. If the input cannot be processed, reply with the literal word: null"
+        },
+        "query": "Agregiraj po događanju za što se treba koristit heuristika iz imena turnirskih skupina, organizatora, glavnog sudca, mjesta igre, vremena igre i slično te agregirati stupac N koji je broj igrača i dobiti rang listu najvećih turnira u Hrvatskoj u zadnjih par godina."
+      },
+      {
+        "kind": "group",
+        "by": [
+          "EventGroupKey"
+        ],
+        "agg": {
+          "total_players": {
+            "js": "rows.reduce((a, r) => { const raw = String(r.n ?? r.N ?? '').replace(/[^0-9.-]/g, ''); const val = Number(raw); return a + (Number.isFinite(val) ? val : 0); }, 0)"
+          },
+          "sections": {
+            "js": "rows.length"
+          },
+          "latest_year": {
+            "js": "(() => { const years = rows.map(r => { const s = String(r.do ?? r.od ?? r['Zadnja izmjena'] ?? ''); const m = s.match(/(20\\d{2}|19\\d{2})/); return m ? Number(m[1]) : null; }).filter(y => y != null); return years.length ? Math.max(...years) : null; })()"
+          },
+          "locations": {
+            "js": "Array.from(new Set(rows.map(r => String(r.Lokacija ?? '').trim()).filter(Boolean))).slice(0,5).join('; ')"
+          },
+          "sample_tournaments": {
+            "js": "Array.from(new Set(rows.map(r => String(r.Turnir ?? '').trim()).filter(Boolean))).slice(0,5).join('; ')"
+          }
+        },
+        "query": "Agregiraj po događanju za što se treba koristit heuristika iz imena turnirskih skupina, organizatora, glavnog sudca, mjesta igre, vremena igre i slično te agregirati stupac N koji je broj igrača i dobiti rang listu najvećih turnira u Hrvatskoj u zadnjih par godina."
+      },
+      {
+        "kind": "sort",
+        "by": [
+          {
+            "key": {
+              "js": "Number(row.total_players) || 0"
+            },
+            "dir": "desc"
+          }
+        ],
+        "query": "Agregiraj po događanju za što se treba koristit heuristika iz imena turnirskih skupina, organizatora, glavnog sudca, mjesta igre, vremena igre i slično te agregirati stupac N koji je broj igrača i dobiti rang listu najvećih turnira u Hrvatskoj u zadnjih par godina."
+      }
+    ]
+  }
+}
