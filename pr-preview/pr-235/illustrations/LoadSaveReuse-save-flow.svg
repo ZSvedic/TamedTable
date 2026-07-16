@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Save the recipe — ":save-flow tidy.flow" -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <!-- prompt chip -->
+  <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
+  <text x="34" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#96BED7">:save-flow</text>
+  <text x="130" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">tidy.flow</text>
+  <!-- recipe card: the saved step -->
+  <g font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#281C60">
+    <g>
+      <circle cx="34" cy="134" r="9" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="34" y="138" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60" text-anchor="middle">1</text>
+      <text x="52" y="138">normalize the phone numbers</text>
+    </g>
+    <text x="52" y="158" font-size="10.5" fill="#6A6280">the transformation, saved to replay later</text>
+  </g>
+  <!-- saved file tag -->
+  <rect x="262" y="74" width="80" height="120" rx="6" fill="#F6F2EB" stroke="#DCDCDC"/>
+  <path d="M276 86 h36 l8 8 v44 q0 4 -4 4 h-40 q-4 0 -4 -4 v-48 q0 -4 4 -4 Z" fill="#FFFFFF" stroke="#96BED7"/>
+  <text x="302" y="156" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#281C60" text-anchor="middle">.flow</text>
+  <text x="302" y="182" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="10" fill="#6A6280" text-anchor="middle">1 step</text>
+</svg>
