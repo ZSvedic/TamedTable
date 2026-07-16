@@ -27,6 +27,18 @@ Feature: Filter customer records
       Then every transformation the request added carries "Show only customers in the USA" as query metadata
       And a saved flow carries the same query metadata
 
+  Rule: Deterministic filters are ordered before AI transformations
+
+    # One request implying both a structural filter and a per-row AI step:
+    # the filter must come first, so the per-row model calls run only on
+    # the rows that survive it (spec/prompt-app-edit.md SYSTEM_PROMPT rule).
+    @headless
+    Scenario: A filter implied by the same request runs before the AI step
+      Given load "customers-input.csv"
+      When query "Keep only customers whose Country is exactly 'USA', then normalize their phone numbers"
+      Then transformation 1 is a "filter"
+      And transformation 2 is a "mutate"
+
   Rule: Surface-specific UX flows
 
     @cli
