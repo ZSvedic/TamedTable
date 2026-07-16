@@ -801,6 +801,13 @@ minutes, so the run gets progress, a log, and a way out:
   exactly as it was — nothing half-applied — with an info toast
   (`Flow cancelled — table unchanged.`) instead of the error dialog.
 
+The same dialog fronts a **chat request** the moment its replay streams
+its first AI cell — the trigger is the first cell result arriving, so a
+request whose transformations are all deterministic (JS/SQL) never
+raises it. The title is the request's text instead of a file name, and
+Cancel stops the request exactly like the chat Stop button. The dialog
+is a shared overlay, so the phone layout gets the same modal.
+
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
 three open actions stacked as buttons — **Open sample…**, **Open

@@ -122,7 +122,7 @@ export interface HeadlessRunner {
    *  the browser (no filesystem); an unregistered name falls back to reading
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
-  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
+  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   /** Replace the spec, replaying its transformations onto the loaded source
    *  rows. Accepts the same streaming/abort options a request carries plus
    *  `onStep`, which fires as each transformation starts — so a replayed
@@ -810,7 +810,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #MainLoop
   async request(
     text: string,
-    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
+    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
   ): Promise<void> {
     this.requireLoaded();
     if (this.busy || this.sql.hasLingeringSql()) throw new Error('Runner: a request is already in progress.');
@@ -876,7 +876,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         }
 
         try {
-          const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk);
+          const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk, callOpts.onStep);
           abortIf(signal);
           this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;

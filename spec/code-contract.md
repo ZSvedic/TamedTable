@@ -115,7 +115,7 @@ interface Runner {
   // against these rows instead of reading the file by path — lets joins run
   // in the browser. An unregistered name falls back to the by-path read.
   registerLookup(name: string, rows: Row[]): void;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   // Replace the spec and replay it against the source. `opts` serves a long
   // replay (the web's flow-open #OpenFlow): `onStep` fires as each
   // transformation starts, `onChunk` streams AI-cell results, and aborting
@@ -766,7 +766,11 @@ controller exposes `flowRun: FlowRunState | null` — name, 1-based
 `step`/`totalSteps`, running `kind`, `rowsDone`/`rowsTotal`, and a
 `log` capped at the newest 500 lines — rendered by the modal
 `FlowRunDialog` (`data-flow-run-dialog`, progress bar, collapsed-by-
-default log, Cancel via `cancelFlowRun()`). Flow failures set
+default log, Cancel via `cancelFlowRun()`). A flow replay sets
+`flowRun` immediately; a chat request sets it lazily, on the first
+AI-cell chunk its replay streams (`name` is the request text), so a
+JS/SQL-only request never shows the dialog. `Runner.request` carries
+the same optional `onStep` callback `setSpec` does. Flow failures set
 `WebController.errorDialog: string | null` — rendered by the shared
 `ErrorDialog` overlay (both layouts), dismissed with
 `dismissErrorDialog()` (`data-tt-error-dialog`); a cancel is not a

@@ -56,7 +56,7 @@ export function FlowRunDialog({ controller }: { controller: WebController }): Re
           flexDirection: 'column',
         }}
       >
-        {/* header */}
+        {/* header — the name is a file name or a whole chat request, so wrap */}
         <div
           style={{
             flex: '0 0 auto',
@@ -66,6 +66,7 @@ export function FlowRunDialog({ controller }: { controller: WebController }): Re
             fontSize: typography.size.md,
             fontWeight: 600,
             color: t.ink,
+            overflowWrap: 'anywhere',
           }}
         >
           Running {run.name}

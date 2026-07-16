@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import type { ChunkUpdate } from '@tamedtable/headless';
 import { loadCsv } from '@tamedtable/core';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
+import { webController } from './web-file-port.ts';
 
 const DEFAULT_INPUT = join(SPEC_TC_DIR, 'customers-input.csv');
 
@@ -65,6 +66,18 @@ When('user cancels the operation after at least one chunk has completed', async 
     /* expected: Runner: cancelled */
   }
   ctx.cancelLatencyMs = Date.now() - cancelAt;
+});
+
+// #OpenFlow — the flow-run dialog on a chat request: raised by the first
+// streamed AI cell (titled with the request text), gone when the run ends.
+Then('the run dialog is shown for {string}', function (this: TamedTableWorld, text: string) {
+  const run = webController(this).flowRun;
+  assert.ok(run, 'expected flowRun to be set once a chunk streamed');
+  assert.equal(run!.name, text);
+});
+
+Then('the run dialog is closed', function (this: TamedTableWorld) {
+  assert.equal(webController(this).flowRun, null);
 });
 
 Then('processing stops within 2 seconds', function (this: TamedTableWorld) {
