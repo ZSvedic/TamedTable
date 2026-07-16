@@ -36,10 +36,6 @@ When('the user clicks cell {string}', async function (this: object, cell: string
   await page(this).click(`[data-tv-cell="${cell}"]`);
 });
 
-Then('the footer selection reads {string}', async function (this: object, expected: string) {
-  await expectText(page(this), '[data-tv-selection]', expected);
-});
-
 When(
   'the user edits cell {string} to {string}',
   async function (this: object, cell: string, value: string) {
@@ -121,8 +117,4 @@ When('the user toggles streaming', async function (this: object) {
 
 Then('the streaming banner is visible', async function (this: object) {
   await page(this).waitForSelector('[data-tv-streaming]');
-});
-
-Then('the footer status is {string}', async function (this: object, expected: string) {
-  await page(this).waitForSelector(`[data-tv-status="${expected}"]`);
 });

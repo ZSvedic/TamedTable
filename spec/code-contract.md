@@ -258,6 +258,7 @@ interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;   // success path: primary expr per appended transformation
+  steps: string[];             // success path: describeStep label per appended transformation
   cellSamples: CellSample[];   // per-column LLM replies for {llm} mutate transformations
   modelCalls: Array<{ model: string; calls: number }>;   // distinct models, first-call order
   inputTokens: number;
@@ -282,7 +283,9 @@ before the call settles, carrying a `RequestDebugInfo`. The
 recovery-budget-exhausted error also carries the same struct on its
 `debug` field. `expressions` is populated on a successful request (one
 entry per appended transformation, `label` naming the field — `pred`,
-`value`, …); `cellSamples` captures up to 3 per-row LLM before→after
+`value`, …); `steps` carries the matching `describeStep` label per
+appended transformation (the web chat's one-line-per-step reply);
+`cellSamples` captures up to 3 per-row LLM before→after
 pairs for each column that uses a `{llm}` mutate transformation (empty
 array when no such transformations ran); `turns` carries the failure
 detail; `modelCalls`, `inputTokens`, `outputTokens`, and `elapsedMs`
@@ -702,20 +705,23 @@ Provider, key, and model config flow through `ResolvedConfig` from
 surface below.
 
 ```ts
-// pagination — rows per page is a WebController-owned view setting with a
-// default of 20 (the spec never carries a page size); the page index is
+// pagination — rows per page is a WebController-owned view setting (the
+// spec never carries a page size), sized to one AI-cell concurrency wave:
+// (opts.batchSize ?? DEFAULT_BATCH_SIZE) × (opts.chunkSize ?? DEFAULT_CHUNK_SIZE)
+// — 100 with the defaults — so a streaming page fills wave by wave. The
+// defaults are exported by @tamedtable/headless (env-var-aware, see
+// TAMEDTABLE_BATCH_SIZE / TAMEDTABLE_CHUNK_SIZE above). The page index is
 // 1-based and clamps to [1, pageCount()]
-WebController.pageSize: number;          // view setting, default 20
+WebController.pageSize: number;          // view setting, batchSize × chunkSize
 WebController.pageRows(): Row[];         // the current page's slice
 WebController.currentPage(): number;
 WebController.pageCount(): number;
 WebController.totalRows(): number;
 WebController.goToPage(page: number): void;
 
-// selection + activity — drive the status footer
+// selection — view state (tints the cell; feeds the voice prompt context)
 WebController.selection: { row: number; column: string } | null;
 WebController.selectCell(row: number, column: string): void;
-WebController.activityStatus(): 'idle' | 'running' | 'saved';
 
 // model — async: rebuilds the engine with the new model and replays
 // the current spec against the source, preserving the loaded table
@@ -781,22 +787,26 @@ source rows, recording one patch-journal entry labelled
 a request carries plus `onStep` (a `StepUpdate` as each transformation
 starts), so a replayed AI cell streams onto the table and can be
 aborted; the web controller sets `streaming` for the duration (the
-same busy state a chat request drives). While the replay runs the
-controller exposes `flowRun: FlowRunState | null` — name, 1-based
+same busy state a chat request drives). While any run streams — a flow
+replay or a chat request, published as soon as the run starts — the
+controller exposes `runProgress: RunProgress | null`: 1-based
 `step`/`totalSteps`, the running step's `describeStep` label,
-`rowsDone`/`rowsTotal`, and a
-`log` capped at the newest 500 lines — rendered by the modal
-`FlowRunDialog` (`data-flow-run-dialog`, progress bar, collapsed-by-
-default log, Cancel via `cancelFlowRun()`). A flow replay sets
-`flowRun` immediately; a chat request sets it lazily, on the first
-AI-cell chunk its replay streams (`name` is the request text), so a
-JS/SQL-only request never shows the dialog. `Runner.request` carries
-the same optional `onStep` callback `setSpec` does. Flow failures set
+`rowsDone`/`rowsTotal`, and a `log` capped at the newest 500 lines.
+The chat panel renders it inline as the live progress block
+(`progress` prop: status line, thin bar, live `request detail` log);
+the mobile streaming banner shows the same status line with a stop
+icon (`data-mob-stop`) wired to `cancelRequest()`. `Runner.request`
+carries the same optional `onStep` callback `setSpec` does. Opening a
+flow posts a `Run <flow name>` user chat bubble before the replay
+starts, and a successful replay's assistant reply lists one
+`describeStep` line per transformation above the
+`Ran <flow> — N rows, M columns.` summary. Flow failures set
 `WebController.errorDialog: string | null` — rendered by the shared
 `ErrorDialog` overlay (both layouts), dismissed with
 `dismissErrorDialog()` (`data-tt-error-dialog`); a cancel is not a
 failure — it surfaces as the info toast
-`Flow cancelled — table unchanged.` instead.
+`Flow cancelled — table unchanged.` plus the same sentence as an
+assistant chat line, so the `Run <flow>` bubble is never left dangling.
 
 At a viewport width of 768 px and below `AppShell` renders
 `<MobileShell>` (a `useIsMobile()` media-query hook flips it live on

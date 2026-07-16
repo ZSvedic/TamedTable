@@ -100,9 +100,6 @@ export interface CellRef {
   column: string;
 }
 
-/** What the engine is doing, for the status footer. */
-export type ActivityStatus = 'idle' | 'running' | 'saved';
-
 /** Microphone state — drives the MicButton's ring, controls, and spinner.
  *  `recording` while the button is held (push-to-talk); `latched` after a quick
  *  tap turned recording on hands-free, showing the cancel (✕) / send (✓)
@@ -117,12 +114,11 @@ export type ContinuousStatus = 'idle' | 'listening' | 'sending';
 export type DialogKind = 'open' | 'save-flow' | 'save-data' | null;
 
 // #OpenFlow
-/** Live progress of a running flow replay — drives the flow-run dialog.
- *  Mutated in place by the engine's step/chunk callbacks; the notification
- *  hub's revision bump tells React to re-read it. */
-export interface FlowRunState {
-  /** The opened .flow file's name — the dialog title. */
-  name: string;
+/** Live progress of the streaming run — a flow replay or a chat request.
+ *  Drives the chat panel's inline progress block and the mobile streaming
+ *  banner. Mutated in place by the engine's step/chunk callbacks; the
+ *  notification hub's revision bump tells React to re-read it. */
+export interface RunProgress {
   /** 1-based index of the running transformation (0 until the first starts). */
   step: number;
   totalSteps: number;

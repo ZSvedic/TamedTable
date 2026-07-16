@@ -1,7 +1,8 @@
 # #DebugOut
 # Debug block — the [debug] output the REPL prints after a
-# natural-language request. See spec/behavior.md § CLI/REPL.
-Feature: Debug output
+# natural-language request — plus the step-line progress the REPL
+# narrates while the request runs. See spec/behavior.md § CLI/REPL.
+Feature: Debug and progress output
 
   After every natural-language request the REPL prints a compact,
   on-by-default [debug] block: the executed expression(s) and a one-line
@@ -22,6 +23,18 @@ Feature: Debug output
       And REPL stdout contains "[debug] pred:"
       And REPL stdout contains "tokens ("
       And REPL stdout contains "×"
+
+  Rule: The REPL narrates a step line as each transformation starts
+
+    @cli
+    Scenario: A request prints its step line while it runs
+      When user enters the REPL with "customers-input.csv" and types:
+        """
+        validate dob is non-empty
+        exit
+        """
+      Then REPL exit code is 0
+      And REPL stdout contains "step 1/1 — validate (js)"
 
   Rule: Surfaces that make no model call print no debug block
 

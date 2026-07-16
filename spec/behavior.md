@@ -170,10 +170,11 @@ progress reaches the CLI and the web UI.
 <!-- #DebugOut -->
 Once per request — on success and on failure — headless reports a debug
 summary: the patch attempt of each recovery turn, the primary
-expression of each transformation a successful request appended, the
-model calls made, the input and output token totals, and the elapsed
-time. The CLI renders this into its debug block; other callers may
-ignore it.
+expression and the human step label of each transformation a successful
+request appended, the model calls made, the input and output token
+totals, and the elapsed time. The CLI renders this into its debug
+block, and the web chat's reply lines come from the step labels; other
+callers may ignore it.
 
 <!-- #CancelOp -->
 Cancellation is a four-step sequence:
@@ -276,6 +277,21 @@ summary names both:
 
 The token counts and elapsed time vary from run to run; the rest of the
 block is determined by the spec.
+
+While a request (or a replayed flow) runs, the REPL narrates progress
+the same way the web chat does. As each transformation starts it prints
+one step line:
+
+```
+step 1/2 — mutate Country (AI) · 424 rows
+```
+
+While an AI-cell step streams, a `<rows done>/<total> rows` counter
+follows the step line. Whether the counter rewrites in place follows
+the same stdout TTY check as page-size autodetect: interactive runs
+update one line (carriage return, no scrollback spam); non-TTY runs
+print only the step lines, so piped transcripts stay deterministic.
+Quiet programmatic runners print no progress.
 
 The REPL runs in one of two modes, chosen automatically from whether stdin
 is a TTY:
@@ -780,37 +796,46 @@ phone layout the same way). The same dialog surfaces an unreadable or
 invalid flow file (`Could not run flow …`) and a flow with `{llm}`
 cells when the selected provider's key is missing. When the checks
 pass, the flow's transformations replay onto the current table's
-source, streaming AI cells onto the table as they compute. The replay
-replaces the spec as one history entry, so a single undo returns to
-the table as it was, and a chat message reports the result
-(`Ran <flow> — N rows, M columns.`). Sample files to try this with
+source, streaming AI cells onto the table as they compute. The run
+starts by posting `Run <flow>` into the chat as a user-style bubble, so
+the thread records what was asked the same way a typed request does.
+The replay replaces the spec as one history entry, so a single undo
+returns to the table as it was, and the assistant reply reports the
+result: one line per step (the step labels below) followed by
+`Ran <flow> — N rows, M columns.`. Sample files to try this with
 live in `spec/user-files/`.
 
-While the flow runs, a modal **flow-run dialog** <!-- #OpenFlow -->
-fronts the streaming state — a large file with AI cells can take
-minutes, so the run gets progress, a log, and a way out:
+While a run streams — a replayed flow or a chat request — the chat
+thread itself shows **live run progress** <!-- #OpenFlow --> in place
+of a modal, the way coding agents narrate their work inline. A large
+file with AI cells can take minutes, so the run gets progress, a log,
+and a way out:
 
-- A progress readout — `Step i of N — <step label>`, plus
-  `rows done / total` while an AI-cell step streams — over a progress bar
-  that advances step by step (fractionally within a streaming step). The
-  label is derived from the step itself — kind, target columns/keys, and
-  an expression marker, e.g. `mutate EventGroup (AI)`, `filter (js)`,
+- Under the pulsing `Running…` line, a status line —
+  `Step i of N — <step label>`, plus `rows done / total` while an
+  AI-cell step streams — over a thin progress bar that advances step by
+  step (fractionally within a streaming step). The label is derived from
+  the step itself — kind, target columns/keys, and an expression marker,
+  e.g. `mutate EventGroup (AI)`, `filter (js)`,
   `group by EventGroup → total_players, sections, …` — so a step that
   calls the per-row model is recognizable by its `(AI)` marker.
-- An expandable **Log**, collapsed by default, that feeds one line per
-  event as the run progresses: each step as it starts, and each streamed
-  cell (`<column> · row <n>: <before> → <after>`). Only the newest 500
-  lines are kept — a bound, not a transcript.
-- A **Cancel** button. Cancelling aborts the replay and leaves the table
-  exactly as it was — nothing half-applied — with an info toast
-  (`Flow cancelled — table unchanged.`) instead of the error dialog.
+- A **request detail** toggle, collapsed by default, that expands a
+  read-only box feeding one line per event as the run progresses: each
+  step as it starts, and each streamed cell
+  (`<column> · row <n>: <before> → <after>`), pinned to the newest
+  line. Only the newest 500 lines are kept — a bound, not a transcript.
+- The chat input's **Stop** button (send swaps to stop while a request
+  streams) cancels either kind of run. Cancelling aborts the replay and
+  leaves the table exactly as it was — nothing half-applied — with an
+  info toast (`Flow cancelled — table unchanged.`, plus a matching chat
+  line) for a flow, and the usual cancelled-request handling for a chat
+  request.
 
-The same dialog fronts a **chat request** the moment its replay streams
-its first AI cell — the trigger is the first cell result arriving, so a
-request whose transformations are all deterministic (JS/SQL) never
-raises it. The title is the request's text instead of a file name, and
-Cancel stops the request exactly like the chat Stop button. The dialog
-is a shared overlay, so the phone layout gets the same modal.
+The progress state is published as soon as the run starts, for flows
+and chat requests alike — a deterministic (JS/SQL) request just flashes
+its steps briefly. On the phone layout, where no chat sidebar is
+visible, the table's streaming banner carries the same status line and
+a stop icon (see the narrow-viewport section).
 
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
@@ -885,19 +910,22 @@ CLI — the same SQL engine runs client-side. It loads on the first SQL
 request of a session, so a session that only ever loads a CSV or JSONL
 and runs plain transformations never pays for it.
 
-The table view paginates. Rows display one fixed-size page at a time —
-twenty rows by default; the page size is a view setting the web shell
-owns — with a pager that jumps to the first, previous, next, last,
-or a numbered page. Paging is a view concern, like the CLI's
-viewport: it never touches the spec, so it survives requests, undo, and
-redo. Loading a file opens page one; a request that shortens the table
-clamps the current page back into range.
+The table view paginates. Rows display one fixed-size page at a time
+with a pager that jumps to the first, previous, next, last, or a
+numbered page. The page size is a view setting the web shell owns,
+sized to one AI-cell **concurrency wave** — rows per batch × batches in
+flight (100 rows with the defaults; see the env vars in
+[code-contract.md](code-contract.md#configuration)) — so while an AI
+step streams, the visible page fills in as each wave of concurrent
+batches lands. Paging is a view concern, like the CLI's viewport: it
+never touches the spec, so it survives requests, undo, and redo.
+Loading a file opens page one; a request that shortens the table clamps
+the current page back into range.
 
-A status footer under the table reports the current selection and what
-the engine is doing. Clicking a cell selects it, and the footer names
-it `R<row> · <column>`. The footer also shows whether the app is idle,
-running a request, or has just saved — a save reads as saved until the
-next edit, request, or load returns it to idle.
+Clicking a cell selects it — the cell tints and outlines. Selection is
+view state (it feeds the voice prompt's context); saving is confirmed
+by its toast, and run activity shows in the chat thread, so the table
+carries no separate status readout.
 
 The settings panel shows three provider accordion cards stacked vertically:
 Google, OpenAI, Anthropic. On open, no card is expanded. Clicking a collapsed
@@ -988,12 +1016,14 @@ chat does not parse colon commands — undo/redo and the saves are toolbar
 actions (the dock's Undo and the app bar's Save menu on mobile), and a
 typed `:undo` goes to the model as plain text.
 
-After a successful request, the assistant chat bubble shows the
-transformed expressions — up to 7 lines with bodies truncated to 100
-characters each (long code expressions trim the same as prompt text, so
-the thread stays scannable); overflow renders as `… and N more`. Model, token, and
-elapsed-time stats are not shown in the bubble; they appear only in the
-expandable detail panel.
+After a successful request, the assistant chat bubble shows one line
+per appended step — the same human step labels the live progress uses
+(`mutate EventGroup (AI)`, `filter (js)`), not the generated code — up
+to 7 lines, with overflow rendered as `… and N more`. A request that
+appended no step (say, one that only removed a transformation) replies
+`Done.`. The generated expressions, model, token, and elapsed-time
+stats are not shown in the bubble; they appear only in the expandable
+detail panel.
 
 Clicking **request detail** below an assistant message expands an
 inline panel with three sections. A small copy icon to the right of the
@@ -1046,6 +1076,12 @@ or the engine changes.
   scrolling right never exposes the tinted page background behind the
   cells — and a tour spotlight anchored to the table covers the visible
   columns wherever the page is scrolled.
+- While a run streams, the table's sticky banner is the phone's stand-in
+  for the chat thread's live progress (no sidebar is visible): it shows
+  the same `Step i of N — <step label> · rows done / total` status line
+  and a stop icon that cancels the run like the desktop Stop button.
+  Before the first step lands it reads `Streaming results…`, as the
+  desktop banner always does.
 - A persistent **bottom dock** carries five buttons — **Menu**,
   **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is

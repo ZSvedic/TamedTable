@@ -68,16 +68,22 @@ When('user cancels the operation after at least one chunk has completed', async 
   ctx.cancelLatencyMs = Date.now() - cancelAt;
 });
 
-// #OpenFlow — the flow-run dialog on a chat request: raised by the first
-// streamed AI cell (titled with the request text), gone when the run ends.
-Then('the run dialog is shown for {string}', function (this: TamedTableWorld, text: string) {
-  const run = webController(this).flowRun;
-  assert.ok(run, 'expected flowRun to be set once a chunk streamed');
-  assert.equal(run!.name, text);
+// #OpenFlow — the chat thread's live run progress on a chat request:
+// published when the run starts, gone when the run ends.
+Then('the run progress reports at least {int} row(s) done', function (this: TamedTableWorld, n: number) {
+  const run = webController(this).runProgress;
+  assert.ok(run, 'expected runProgress to be set while the request streams');
+  assert.ok(run!.rowsDone >= n, `expected at least ${n} rows done, got ${run!.rowsDone}`);
 });
 
-Then('the run dialog is closed', function (this: TamedTableWorld) {
-  assert.equal(webController(this).flowRun, null);
+Then('the run progress log is not empty', function (this: TamedTableWorld) {
+  const run = webController(this).runProgress;
+  assert.ok(run, 'expected runProgress to be set while the request streams');
+  assert.ok(run!.log.length > 0, 'expected the run progress log to have lines');
+});
+
+Then('the run progress is cleared', function (this: TamedTableWorld) {
+  assert.equal(webController(this).runProgress, null);
 });
 
 Then('processing stops within 2 seconds', function (this: TamedTableWorld) {

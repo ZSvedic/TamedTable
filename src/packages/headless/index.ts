@@ -77,7 +77,7 @@ function nameList(names: string[], cap = 4): string {
 // #OpenFlow
 /** A deterministic, human-friendly one-liner for a transformation, derived
  *  entirely from its own fields — no model call, nothing stored. Shown by the
- *  flow-run dialog's status line and log so each step names its target and
+ *  run-progress status line and log so each step names its target and
  *  flags per-row model work with an `(AI)` marker: `mutate EventGroup (AI)`,
  *  `filter (js)`, `group by EventGroup → total_players, sections, …`,
  *  `sort by Name desc`. */
@@ -126,6 +126,9 @@ export interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;
+  /** describeStep label per appended transformation (success path) — the web
+   *  chat's one-line-per-step reply. */
+  steps: string[];
   cellSamples: CellSample[];
   modelCalls: Array<{ model: string; calls: number }>;
   inputTokens: number;
@@ -216,8 +219,10 @@ export function resolveCellModelId(mainId: string, explicitCellModel?: string): 
 }
 const DEFAULT_MAX_RETRIES = 6;
 const DEFAULT_RPM = Number(process.env.TAMEDTABLE_RPM ?? 40);
-const DEFAULT_CHUNK_SIZE = Number(process.env.TAMEDTABLE_CHUNK_SIZE ?? 5);
-const DEFAULT_BATCH_SIZE = Number(process.env.TAMEDTABLE_BATCH_SIZE ?? 20);
+// Exported so hosts can derive wave-aligned view settings (the web page size
+// is one concurrency wave: batch size × batches in flight).
+export const DEFAULT_CHUNK_SIZE = Number(process.env.TAMEDTABLE_CHUNK_SIZE ?? 5);
+export const DEFAULT_BATCH_SIZE = Number(process.env.TAMEDTABLE_BATCH_SIZE ?? 20);
 
 // Prompts live in spec/prompt-app-edit.md so SCRIBE can tune them without touching src/.
 // File is parsed once at module load; top-level `## ` headers delimit sections.
@@ -697,7 +702,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     userRequest: string,
     turns: RequestDebugTurn[],
     expressions: Array<{ label: string; body: string }>,
-    elapsedMs: number
+    elapsedMs: number,
+    steps: string[] = []
   ): RequestDebugInfo {
     const order: string[] = [];
     const counts = new Map<string, number>();
@@ -713,6 +719,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       userRequest,
       turns,
       expressions,
+      steps,
       cellSamples: this.cellSampleLog,
       modelCalls: order.map((m) => ({ model: m, calls: counts.get(m)! })),
       inputTokens,
@@ -934,10 +941,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
-          const expressions = diffPlans(specBefore, this.spec)
-            .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation')
-            .flatMap((p) => transformationExpressions(p.transformation));
-          this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt));
+          const added = diffPlans(specBefore, this.spec)
+            .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation');
+          const expressions = added.flatMap((p) => transformationExpressions(p.transformation));
+          const steps = added.map((p) => describeStep(p.transformation));
+          this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt, steps));
           return;
         } catch (e) {
           if (signal?.aborted || isCancelled(e)) throw new Error(CANCELLED);

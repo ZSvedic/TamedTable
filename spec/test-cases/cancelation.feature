@@ -28,12 +28,14 @@ Feature: Cancel long-running LLM transformation
     Then Phone column still shows normalized values
     And Country column shows pre-transformation values
 
-  # #OpenFlow — the flow-run dialog also fronts a chat request, appearing on
-  # the first AI cell its replay streams (a JS-only request never raises it).
+  # #OpenFlow — the chat thread's live run progress fronts a chat request:
+  # published when the run starts, row counts ticking as AI cells stream,
+  # cleared when the run ends.
   @web
-  Scenario: The run dialog fronts a chat request once it streams AI cells
+  Scenario: Live run progress tracks a chat request and clears on cancel
     When query "Normalize Country names" via LLM
     And at least one chunk has completed
-    Then the run dialog is shown for "Normalize Country names"
+    Then the run progress reports at least 1 row done
+    And the run progress log is not empty
     When user cancels the operation after at least one chunk has completed
-    Then the run dialog is closed
+    Then the run progress is cleared

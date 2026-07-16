@@ -64,7 +64,6 @@ export class ConfigManager {
       next.model !== this.host.config.model || next.cellModel !== this.host.config.cellModel;
     this.host.config = next;
     writeStoredConfig(next);
-    this.host.savedLabel = null;
 
     if (modelChanged && this.host.engine.hasRunner() && this.host.loaded) {
       const spec = structuredClone(this.host.engine.currentSpec());

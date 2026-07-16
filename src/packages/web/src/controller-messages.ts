@@ -98,19 +98,15 @@ export function userFacingMessage(error: unknown, provider?: string): string {
   return describeError(error, provider).message;
 }
 
-/** A one-line-per-expression summary of a committed request, for the chat. */
+/** A one-line-per-step summary of a committed request, for the chat: the
+ *  human step labels, not the generated code — that lives in the request
+ *  detail panel. */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  // Short enough that a dense code expression stays a line or two in the
-  // sidebar — the full body lives in the request detail panel.
-  const MAX_BODY = 100;
   const MAX_LINES = 7;
-  const allHead = info.expressions.map((e) => {
-    const body = e.body.length > MAX_BODY ? e.body.slice(0, MAX_BODY) + '…' : e.body;
-    return `${e.label}: ${body}`;
-  });
+  if (info.steps.length === 0) return 'Done.';
   const head =
-    allHead.length > MAX_LINES
-      ? [...allHead.slice(0, MAX_LINES), `… and ${allHead.length - MAX_LINES} more`]
-      : allHead;
+    info.steps.length > MAX_LINES
+      ? [...info.steps.slice(0, MAX_LINES), `… and ${info.steps.length - MAX_LINES} more`]
+      : info.steps;
   return head.join('\n');
 }

@@ -15,8 +15,8 @@ import {
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
-import type { TablePlan } from '@tamedtable/core';
-import { checkFlowInputColumns, isCancelled, specHasLlmCell } from '@tamedtable/headless';
+import type { TablePlan, Transformation } from '@tamedtable/core';
+import { checkFlowInputColumns, describeStep, isCancelled, specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { RecentsStore, type RecentEntry } from './recents.ts';
@@ -74,11 +74,12 @@ export class FilesManager {
   // #OpenFlow
   /** "Open .flow & run on current data…" — pick a saved `.flow` and replay
    *  its transformations onto the currently-loaded table's source as one
-   *  history entry (a single undo restores the previous spec). The replay
-   *  runs behind the flow-run dialog (engine.applySpec): live progress, an
-   *  event log, and a Cancel that leaves the table untouched. Failures — an
-   *  unreadable flow, a flow reading columns the table lacks, AI cells with
-   *  no provider key — raise the modal error dialog, not a fading toast. */
+   *  history entry (a single undo restores the previous spec). The run posts
+   *  a `Run <flow>` user bubble, then replays behind the chat's live run
+   *  progress (engine.applySpec): step/row progress, an event log, and the
+   *  Stop button, which leaves the table untouched. Failures — an unreadable
+   *  flow, a flow reading columns the table lacks, AI cells with no provider
+   *  key — raise the modal error dialog, not a fading toast. */
   async openFlow(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before running a flow.');
@@ -86,6 +87,7 @@ export class FilesManager {
     }
     this.host.dialog = 'open';
     this.host.notify();
+    let started: string | null = null;
     try {
       const picked = await this.host.file.pickOpen(['.flow']);
       if (!picked) return;
@@ -103,22 +105,34 @@ export class FilesManager {
         return;
       }
       const prevSpec = structuredClone(this.host.engine.currentSpec());
-      await this.host.engine.applySpec(spec, picked.name);
+      started = picked.name;
+      this.host.pushMessage('user', `Run ${picked.name}`);
+      await this.host.engine.applySpec(spec);
       this.host.patch.record({
         label: `Ran ${picked.name}`,
         prevSpec,
         nextSpec: structuredClone(this.host.engine.currentSpec()),
       });
       this.recentsStore.record({ kind: 'flow', label: picked.name });
-      this.host.pushMessage(
-        'assistant',
+      // One line per step (the same labels the live progress showed), then
+      // the summary — the reply mirrors a chat request's per-step reply.
+      this.host.pushMessage('assistant', [
+        ...spec.transformations.map((t) => describeStep(t as Transformation)),
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-      );
+      ].join('\n'));
     } catch (e) {
-      // The dialog's Cancel is a deliberate stop, not a failure — the replay
-      // left the table untouched, so a quiet toast is enough.
-      if (isCancelled(e)) this.host.pushToast('info', 'Flow cancelled — table unchanged.');
-      else this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
+      // Stop is a deliberate cancel, not a failure — the replay left the
+      // table untouched, so a quiet toast plus a chat line closing the
+      // `Run <flow>` bubble is enough.
+      if (isCancelled(e)) {
+        this.host.pushToast('info', 'Flow cancelled — table unchanged.');
+        this.host.pushMessage('assistant', 'Flow cancelled — table unchanged.');
+      } else {
+        this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
+        // A run that had already started leaves its `Run <flow>` bubble in
+        // the thread — close it with the same error the dialog shows.
+        if (started) this.host.pushMessage('assistant', `Error: Could not run flow: ${(e as Error).message}`);
+      }
     } finally {
       this.host.dialog = null;
       this.host.notify();
@@ -305,7 +319,6 @@ export class FilesManager {
 
   private reportSave(outcome: SaveOutcome): void {
     if (outcome.status === 'cancelled') return;
-    this.host.savedLabel = outcome.name;
     this.host.pushToast(
       'info',
       outcome.status === 'downloaded'

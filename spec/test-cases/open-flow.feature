@@ -1,7 +1,7 @@
 # #OpenFlow
-# The replay progress/cancel seam behind the web's flow-run dialog — the
+# The replay progress/cancel seam behind the web's live run progress — the
 # same setSpec the "Open .flow & run on current data…" path drives (the
-# dialog UX itself is covered by web.feature § "A saved flow can be opened
+# chat UX itself is covered by web.feature § "A saved flow can be opened
 # and run on the current table"). Offline: filter.flow is deterministic
 # ({js} only), so no model call and no cassette.
 Feature: Flow replay progress and cancel

@@ -8,7 +8,6 @@ import { TableView } from './components/TableView.tsx';
 import { SettingsPanel } from './components/SettingsPanel.tsx';
 import { OpenUrlDialog } from './components/OpenUrlDialog.tsx';
 import { OpenSampleDialog } from './components/OpenSampleDialog.tsx';
-import { FlowRunDialog } from './components/FlowRunDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
 import { ErrorDialog } from './components/ErrorDialog.tsx';
 import { TutorialPanel } from './components/TutorialPanel.tsx';
@@ -58,7 +57,6 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
       <TutorialPanel controller={controller} />
       <OpenSampleDialog controller={controller} />
       <OpenUrlDialog controller={controller} />
-      <FlowRunDialog controller={controller} />
       <ErrorDialog controller={controller} />
       <Toasts controller={controller} />
     </div>

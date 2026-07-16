@@ -7,8 +7,22 @@ import { useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { typography } from '@tamedtable/ui-kit';
 import { Button, ThemeProvider, useTheme } from '@tamedtable/ui-kit/components';
-import type { ChatPanelMessage, ChatRequestDetail, VoiceButtonStatus } from './index.ts';
+import type { ChatPanelMessage, ChatRequestDetail, ChatRunProgress, VoiceButtonStatus } from './index.ts';
 import { ChatPanel, MicButton } from './components.tsx';
+
+const SAMPLE_PROGRESS: ChatRunProgress = {
+  step: 2,
+  totalSteps: 5,
+  label: 'mutate Country (AI)',
+  rowsDone: 300,
+  rowsTotal: 424,
+  log: [
+    'step 1/5 — filter (js) · 424 rows',
+    'step 2/5 — mutate Country (AI) · 424 rows',
+    'Country · row 299: "USA" → "United States"',
+    'Country · row 300: "UK" → "United Kingdom"',
+  ],
+};
 
 const SAMPLE_DETAIL: ChatRequestDetail = {
   userRequest: 'normalize the phone column',
@@ -52,6 +66,7 @@ function Demo(): ReactNode {
         inputId="demo-chat-input"
         messages={messages}
         streaming={streaming}
+        progress={streaming ? SAMPLE_PROGRESS : null}
         requestCount={messages.filter((m) => m.role === 'user').length}
         prefill={prefill}
         disabledHint={disabledHint}
