@@ -1,8 +1,9 @@
 // #MobileShell
 // The three bottom panes that take the dock's place: a text composer
 // (KeyboardSheet), the voice recorder (VoiceSheet), and the undo timeline
-// (HistorySheet). Each renders at the same fixed height so swapping between
-// them never resizes the region under the table.
+// (HistorySheet). Voice and History share one fixed height so swapping
+// between them never resizes the region under the table; the composer is only
+// as tall as its input row — the OS keyboard right below it does the rest.
 import { useEffect, useRef, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
@@ -11,11 +12,12 @@ import type { VoiceStatus } from '../../controller.ts';
 
 const SHEET_H = 300;
 
-const sheetBase = (t: Theme): React.CSSProperties => ({
+const sheetBase = (t: Theme, fixedHeight?: number): React.CSSProperties => ({
   flex: '0 0 auto',
   // Grow by the home-indicator inset and pad it back, so the sheet keeps its
-  // content height and nothing sits under the iOS home indicator.
-  height: `calc(${SHEET_H}px + env(safe-area-inset-bottom))`,
+  // content height and nothing sits under the iOS home indicator. The
+  // composer passes no fixedHeight — it hugs its input row.
+  height: fixedHeight != null ? `calc(${fixedHeight}px + env(safe-area-inset-bottom))` : undefined,
   paddingBottom: 'env(safe-area-inset-bottom)',
   boxSizing: 'border-box',
   display: 'flex',
@@ -31,6 +33,7 @@ export function KeyboardSheet({
   onDraft,
   onSend,
   onClose,
+  lifted,
   inputId,
 }: {
   t: Theme;
@@ -38,6 +41,9 @@ export function KeyboardSheet({
   onDraft: (v: string) => void;
   onSend: () => void;
   onClose: () => void;
+  /** True while the sheet rides above the OS keyboard — the keyboard covers
+   *  the home indicator, so the safe-area padding would be dead space. */
+  lifted: boolean;
   inputId?: string;
 }): ReactNode {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -46,8 +52,12 @@ export function KeyboardSheet({
   }, []);
   const hasDraft = draft.trim() !== '';
   return (
-    <div className="tt-sheet" data-mob-sheet="keyboard" style={sheetBase(t)}>
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+    <div
+      className="tt-sheet"
+      data-mob-sheet="keyboard"
+      style={{ ...sheetBase(t), ...(lifted ? { paddingBottom: 0 } : null) }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: space.px8, padding: space.px10 }}>
           <button
             type="button"
@@ -182,7 +192,7 @@ export function VoiceSheet({
   const recording = status === 'recording';
   const sending = status === 'sending';
   return (
-    <div className="tt-sheet" data-mob-sheet="voice" style={{ ...sheetBase(t), padding: '16px 16px calc(18px + env(safe-area-inset-bottom))' }}>
+    <div className="tt-sheet" data-mob-sheet="voice" style={{ ...sheetBase(t, SHEET_H), padding: '16px 16px calc(18px + env(safe-area-inset-bottom))' }}>
       <div
         style={{
           flex: 1,
@@ -321,7 +331,7 @@ export function HistorySheet({
     </button>
   );
   return (
-    <div className="tt-sheet" data-mob-sheet="history" style={sheetBase(t)}>
+    <div className="tt-sheet" data-mob-sheet="history" style={sheetBase(t, SHEET_H)}>
       <div
         style={{
           display: 'flex',
