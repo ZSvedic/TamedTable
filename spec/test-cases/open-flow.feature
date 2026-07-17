@@ -13,6 +13,7 @@ Feature: Flow replay progress and cancel
       Given load "filter-input.csv"
       When the flow "filter.flow" replays with progress tracking
       Then the replay reported step 1 of 1 labelled "filter (js)" over 10 rows
+      And step 1 reported the expression "pred: row.Country === 'USA'"
       And the replayed table has 4 rows
 
     @headless

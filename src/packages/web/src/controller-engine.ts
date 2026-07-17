@@ -27,6 +27,12 @@ function flowLogValue(v: unknown): string {
   return s.length > 60 ? `${s.slice(0, 57)}…` : s;
 }
 
+/** One log-worthy expression body: an AI prompt or a long SQL fragment can
+ *  run to hundreds of characters — cap it, the label already names the step. */
+function flowLogExpr(body: string): string {
+  return body.length > 200 ? `${body.slice(0, 197)}…` : body;
+}
+
 const PLACEHOLDER_KEY = 'tamedtable-web';
 
 export class EngineManager {
@@ -305,6 +311,9 @@ export class EngineManager {
         run.rowsTotal = u.rows;
         run.rowsDone = 0;
         appendLog(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows`);
+        // The exact code behind the label — the detail box shows what the
+        // step runs, not just its name.
+        for (const e of u.expressions) appendLog(`  ${e.label}: ${flowLogExpr(e.body)}`);
         this.host.notify();
       },
       onChunk: (u) => {

@@ -141,14 +141,21 @@ type ChunkUpdate = {
 };
 
 // One replayed transformation starting: its 0-based index, the run's total,
-// its kind, a human-friendly label, and the row count entering it. Steps a
-// replay skips (the unchanged-prefix reuse) are not reported. `label` comes
+// its kind, a human-friendly label, the row count entering it, and its
+// expressions. Steps a replay skips (the unchanged-prefix reuse) are not
+// reported. `label` comes
 // from `describeStep(t)` — a deterministic one-liner derived from the
 // transformation's own fields: the kind, its target columns/keys, and the
 // expression shape as a marker — `(js)`, `(sql)`, or `(AI)` when the step
 // calls the cell model. Examples: `mutate EventGroup (AI)`, `filter (js)`,
 // `group by EventGroup → total_players, sections, …`, `sort by Name desc`.
-type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+// `expressions` comes from `transformationExpressions(t)` — the exact
+// JS/SQL/prompt bodies behind the label — so a progress log can show what
+// the step runs, not just its name.
+type StepUpdate = {
+  index: number; total: number; kind: string; label: string; rows: number;
+  expressions: Array<{ label: string; body: string }>;
+};
 function describeStep(t: Transformation): string;
 
 /** Spoken audio riding along on the patch turn (web voice input). When set,

@@ -54,9 +54,18 @@ export type ChunkUpdate = {
 
 // #OpenFlow
 /** One replayed transformation starting: its 0-based index, the run's total,
- *  its kind, its describeStep label, and the row count entering it. Steps a
- *  replay skips (the unchanged-prefix reuse) are not reported. */
-export type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+ *  its kind, its describeStep label, the row count entering it, and its
+ *  transformationExpressions — the exact JS/SQL/prompt bodies behind the
+ *  label, so a progress log can show what the step runs, not just its name.
+ *  Steps a replay skips (the unchanged-prefix reuse) are not reported. */
+export type StepUpdate = {
+  index: number;
+  total: number;
+  kind: string;
+  label: string;
+  rows: number;
+  expressions: Array<{ label: string; body: string }>;
+};
 
 // ── describeStep — human-friendly one-liner per transformation ───────────────
 
@@ -946,6 +955,17 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         try {
           const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk, callOpts.onStep);
           abortIf(signal);
+          // Zero-rows guard (spec/behavior.md § Headless): a patch that
+          // evaluates to an empty table from a non-empty source is almost
+          // always a predicate mis-parsing real cell values — reject it into
+          // the recovery loop instead of silently emptying the table.
+          if (newRows.length === 0 && this.sourceRows.length > 0) {
+            throw new Error(
+              `the transformations left the table with 0 rows (the source has ${this.sourceRows.length}). ` +
+              'A filter or join predicate almost certainly mis-parses the real cell values ' +
+              '(date/number formats, code casing). Emit a more tolerant patch — never one that empties the table.'
+            );
+          }
           this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
@@ -1056,7 +1076,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       // Report the step before the abort check, so a cancel fired from inside
       // the onStep callback stops the replay before the step runs.
       const t = next[i] as Transformation;
-      onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length });
+      onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length, expressions: transformationExpressions(t) });
       abortIf(signal);
       rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk);
     }

@@ -51,6 +51,13 @@ Then('the replay reported step {int} of {int} labelled {string} over {int} rows'
   );
 });
 
+Then('step {int} reported the expression {string}', function (this: TamedTableWorld, step: number, expected: string) {
+  const u = replayCtx.get(this)?.steps[step - 1];
+  assert.ok(u, `no step ${step} reported`);
+  const lines = u!.expressions.map((e) => `${e.label}: ${e.body}`);
+  assert.ok(lines.includes(expected), `expressions were: ${lines.join(' | ') || '(none)'}`);
+});
+
 Then('the replayed table has {int} rows', function (this: TamedTableWorld, n: number) {
   assert.equal(this.ensureRunner().currentRows().length, n);
 });

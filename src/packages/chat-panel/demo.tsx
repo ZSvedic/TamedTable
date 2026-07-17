@@ -18,7 +18,9 @@ const SAMPLE_PROGRESS: ChatRunProgress = {
   rowsTotal: 424,
   log: [
     'step 1/5 — filter (js) · 424 rows',
+    "  pred: row.FED === 'CRO'",
     'step 2/5 — mutate Country (AI) · 424 rows',
+    '  value: Normalize this country name to its English short form…',
     'Country · row 299: "USA" → "United States"',
     'Country · row 300: "UK" → "United Kingdom"',
   ],

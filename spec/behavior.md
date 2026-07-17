@@ -129,8 +129,8 @@ cancel. It doesn't print to a terminal or own any I/O beyond what the runner
 needs.
 
 The LLM only changes the spec through one tool — call it the *patch tool* —
-that takes a list of RFC 6902 operations. The harness rejects four LLM
-mistakes inline and feeds them back through the recovery loop:
+that takes a list of RFC 6902 operations. The harness rejects five LLM
+mistakes and feeds them back through the recovery loop:
 
 - an empty operations list;
 - a patch that applies cleanly but leaves the spec identical to before;
@@ -141,7 +141,14 @@ mistakes inline and feeds them back through the recovery loop:
 - a patch that leaves a `validate` reading a column no step before it
   provides. The predicate would test a value that doesn't exist yet — every
   row would fail — so the rejection names the missing column and tells the
-  model to order the step that computes it before the `validate`.
+  model to order the step that computes it before the `validate`;
+- a patch that applies and evaluates but leaves the table with **0 rows**
+  when the source has rows. In practice that is a predicate mis-parsing
+  the real cell values (a date format the SQL didn't guess, a code with
+  different casing), so instead of silently emptying the table the
+  rejection names the row counts and asks for a more tolerant patch. A
+  request that keeps failing this way exhausts the recovery budget and
+  fails loudly — the table is never replaced by an empty one.
 
 <!-- #LLMCells -->
 LLM-backed transformations evaluate a prompt template per row. The runtime:
@@ -825,7 +832,10 @@ and a way out:
   calls the per-row model is recognizable by its `(AI)` marker.
 - A **request detail** toggle, collapsed by default, that expands a
   read-only box feeding one line per event as the run progresses: each
-  step as it starts, and each streamed cell
+  step as it starts — followed by the step's expression lines
+  (`pred: row.Country === 'USA'`, an AI cell's prompt), truncated, so
+  the detail shows the exact code behind the label rather than
+  repeating the status line — and each streamed cell
   (`<column> · row <n>: <before> → <after>`), pinned to the newest
   line. Only the newest 500 lines are kept — a bound, not a transcript.
 - The chat input's **Stop** button (send swaps to stop while a request

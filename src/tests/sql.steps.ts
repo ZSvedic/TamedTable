@@ -31,6 +31,7 @@ interface ScriptedState {
   requests: string[];          // every request body the script answered
   slowServedAt?: number;       // when the slow-aggregate patch went out
   invalidServed?: boolean;     // recovery: first turn invalid, retry corrected
+  emptyServed?: boolean;       // recovery: first turn empties the table, retry corrected
   ignoreInterrupt?: boolean;   // serve the drain-sized aggregate instead
   realInterrupt?: typeof DuckDBConnection.prototype.interrupt;
 }
@@ -66,6 +67,10 @@ const addMutate = (col: string, sql: string): unknown[] => [
   { op: 'add', path: '/transformations/-', value: { kind: 'mutate', columns: col, value: { sql } } },
 ];
 
+const addJsFilter = (js: string): unknown[] => [
+  { op: 'add', path: '/transformations/-', value: { kind: 'filter', pred: { js } } },
+];
+
 /** Maps a model-call body to a canned patch, or undefined to fall through. */
 function routeScripted(body: string, state: ScriptedState): string | undefined {
   if (body.includes('introduces an invalid SQL fragment')) {
@@ -74,6 +79,14 @@ function routeScripted(body: string, state: ScriptedState): string | undefined {
       return toolUseBody(addMutate('PhoneLen', INVALID_SQL));
     }
     return toolUseBody(addMutate('PhoneLen', 'length(Phone)'));
+  }
+  if (body.includes('(first filters out every row)')) {
+    if (!state.emptyServed) {
+      state.emptyServed = true;
+      // A predicate that matches nothing — the shape of a mis-parsed date/code.
+      return toolUseBody(addJsFilter('false'));
+    }
+    return toolUseBody(addJsFilter("row.Country === 'USA'"));
   }
   if (/Compute (a|the) slow SQL aggregate/.test(body)) {
     state.slowServedAt = Date.now();
@@ -245,6 +258,26 @@ When('the spec patch is applied', async function (this: TamedTableWorld) {
   } catch (e) {
     this.lastRequestOutcome = { ok: false, error: e as Error, specBefore, specAfter: runner.currentSpec() };
   }
+});
+
+Given('a request whose first patch filters out every row', function (this: TamedTableWorld) {
+  requireScripted(this);
+  // The script recognises this text: the first patch turn answers with a
+  // filter matching no row, the retry with the corrected USA filter.
+  recoveryRequest.set(this, 'Keep only USA customers (first filters out every row)');
+});
+
+Then('the recovery loop receives a zero-rows rejection', function (this: TamedTableWorld) {
+  const state = requireScripted(this);
+  const retry = state.requests.find((b) => b.includes('evaluation failed'));
+  assert.ok(retry, 'no recovery turn reached the model');
+  assert.ok(/0 rows/.test(retry), `recovery prompt lacks the zero-rows rejection: ${retry.slice(0, 400)}`);
+});
+
+Then('the corrected retry keeps {int} rows', function (this: TamedTableWorld, n: number) {
+  const outcome = this.lastRequestOutcome;
+  assert.ok(outcome?.ok, `expected the retry to commit, got: ${outcome?.error?.message ?? 'no outcome'}`);
+  assert.equal(this.ensureRunner().currentRows().length, n);
 });
 
 Then('the recovery loop receives the DuckDB error message', function (this: TamedTableWorld) {
