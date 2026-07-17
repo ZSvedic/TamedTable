@@ -1092,6 +1092,16 @@ or the engine changes.
   scrolling right never exposes the tinted page background behind the
   cells — and a tour spotlight anchored to the table covers the visible
   columns wherever the page is scrolled.
+- **Pinch-to-zoom zooms the table, not the chrome.** The browser's own
+  page zoom would shrink the app bar, dock, and sheets along with the
+  cells (fixed elements scale with the page), so the phone layout
+  suppresses it and handles the pinch itself: a two-finger pinch over
+  the table scales just the table — cells, header, and index column
+  together — between 0.5× and 2×, anchored at the fingers' midpoint.
+  The app bar, dock, and sheets keep their natural size at any zoom,
+  the frozen header still sticks right under the app bar, and the
+  zoomed table still scrolls as the page. The zoom resets to 1× when a
+  new file is opened.
 - While a run streams, the table's sticky banner is the phone's stand-in
   for the chat thread's live progress (no sidebar is visible): it shows
   the same `Step i of N — <step label> · rows done / total` status line
@@ -1115,8 +1125,14 @@ or the engine changes.
   entries). Below them: a dark-mode toggle, Settings, and Tours.
 - **Type**, **Speak**, and **History** each raise a **sheet** that takes
   the dock's place at the bottom, so the table stays in view above it:
-  - **Type** is a composer — a one-line field with a send button, in a
-    sheet only as tall as the field itself. The phone's own keyboard
+  - **Type** is a composer — a field with a send button, in a sheet
+    only as tall as the field itself. The field starts one line tall
+    and **grows with the draft** — a pasted or typed long text wraps
+    and the field expands line by line up to five lines, then scrolls
+    inside (the way phone messaging apps behave); it shrinks back as
+    text is deleted and returns to one line when the draft clears. The
+    send button stays anchored at the field's bottom edge as it grows.
+    The phone's own keyboard
     does the typing, and the sheet rides on top of it: phone browsers
     slide the keyboard over the page without moving `fixed` elements,
     so the bottom region tracks the visual viewport and rises by the

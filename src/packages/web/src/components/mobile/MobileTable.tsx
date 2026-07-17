@@ -23,6 +23,10 @@ function cellText(value: unknown): string {
 export interface MobileTableProps {
   id?: string;
   t: Theme;
+  /** Pinch-to-zoom factor (useTableZoom). Applied via the CSS `zoom` property
+   *  so the layout — and with it the document scroll range — scales along;
+   *  the sticky offsets aimed at the unzoomed fixed app bar divide it back. */
+  zoom?: number;
   columns: string[];
   rows: Row[];
   pageStart: number;
@@ -39,6 +43,7 @@ export interface MobileTableProps {
 export function MobileTable({
   id,
   t,
+  zoom = 1,
   columns,
   rows,
   pageStart,
@@ -48,9 +53,13 @@ export function MobileTable({
   progress,
   onStop,
 }: MobileTableProps): ReactNode {
+  // Lengths inside the zoomed subtree render multiplied by the zoom; offsets
+  // that must line up with the unzoomed chrome (the fixed app bar) or the
+  // unzoomed viewport divide it back out.
+  const stickyTop = zoom === 1 ? APPBAR_OFFSET : `calc(${APPBAR_OFFSET} / ${zoom})`;
   const headerCell: CSSProperties = {
     position: 'sticky',
-    top: APPBAR_OFFSET,
+    top: stickyTop,
     zIndex: 2,
     background: t.surface2,
     color: t.ink2,
@@ -87,14 +96,22 @@ export function MobileTable({
     <div
       id={id}
       data-mob-table=""
-      style={{ flex: 1, width: 'max-content', minWidth: '100%', background: t.surface }}
+      style={{
+        flex: 1,
+        width: 'max-content',
+        // 100% of the parent renders zoom× wide — divide back so the surface
+        // still spans at least the full viewport when zoomed out.
+        minWidth: zoom === 1 ? '100%' : `calc(100% / ${zoom})`,
+        background: t.surface,
+        zoom,
+      }}
     >
       {streaming && (
         <div
           data-mob-streaming=""
           style={{
             position: 'sticky',
-            top: APPBAR_OFFSET,
+            top: stickyTop,
             zIndex: 5,
             padding: `${space.px6}px ${space.px12}px`,
             background: t.accentSoft,
@@ -111,7 +128,7 @@ export function MobileTable({
           <span
             style={{
               position: 'sticky',
-              left: space.px12,
+              left: space.px12 / zoom,
               maxWidth: 'calc(100vw - 24px)',
               display: 'inline-flex',
               alignItems: 'center',
