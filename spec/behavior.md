@@ -1096,8 +1096,10 @@ or the engine changes.
   for the chat thread's live progress (no sidebar is visible): it shows
   the same `Step i of N — <step label> · rows done / total` status line
   and a stop icon that cancels the run like the desktop Stop button.
-  Before the first step lands it reads `Streaming results…`, as the
-  desktop banner always does.
+  Before the first step lands — the model is still writing the patch —
+  it reads `Running…`. The status line and stop icon stay pinned to the
+  visible left edge while the page scrolls sideways (the banner spans
+  the whole table width; its content must not scroll off screen).
 - A persistent **bottom dock** carries five buttons — **Menu**,
   **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is
