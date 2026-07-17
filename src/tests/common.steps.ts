@@ -3,15 +3,15 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { access, readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
-import { readJsonl, type TablePlan } from '@tamedtable/core';
+import { readJsonl, type TablePlan, type Transformation } from '@tamedtable/core';
+import { describeStep } from '@tamedtable/headless';
 import { serializeFlow } from '@tamedtable/file-io';
 import { runCli } from '@tamedtable/cli';
-import { TamedTableWorld, SRC_DIR, SPEC_TC_DIR, TEMP_DIR } from './world.ts';
+import { TamedTableWorld, SPEC_TC_DIR, TEMP_DIR, fixturePath } from './world.ts';
 
-// A bare name resolves to a committed fixture under spec/test-cases/.
-// A name containing a slash is treated as src/-relative (= cwd when cucumber
-// runs), so feature files can point generated outputs at ../temp/.
-const fixture = (name: string) => (name.includes('/') ? join(SRC_DIR, name) : join(SPEC_TC_DIR, name));
+// Fixture resolution lives in world.ts (fixturePath) — shared with the
+// flow-replay steps so `user-reports/…` names resolve everywhere.
+const fixture = fixturePath;
 
 // Generated test outputs (export-as, execute --output) go to temp/, never into
 // the committed spec/test-cases/ dir. Golden -expected.jsonl files stay fixtures.
@@ -111,17 +111,31 @@ Then('{string} matches the expected output', async function (this: TamedTableWor
 });
 
 // ── Query-provenance metadata (spec/behavior.md § Data model) ───────────────
-// A committed request stamps its text as `query` on every transformation it
-// added or changed; a saved .flow carries the stamp inside the spec verbatim.
+// A committed request stamps its text as `query` on the FIRST transformation
+// it added or changed and a `name` (the describeStep label) on every one;
+// a saved .flow carries the stamps inside the spec verbatim.
 
-Then('every transformation the request added carries {string} as query metadata', function (this: TamedTableWorld, text: string) {
-  const outcome = this.lastRequestOutcome;
+/** The transformations the last committed request added or changed, in spec
+ *  order — the set stampQueries stamped. */
+function addedByLastRequest(world: TamedTableWorld): Transformation[] {
+  const outcome = world.lastRequestOutcome;
   assert.ok(outcome?.ok && outcome.specAfter, 'expected a committed request');
-  const prior = new Set(outcome.specBefore.transformations.map((t) => JSON.stringify(t)));
-  const added = outcome.specAfter.transformations.filter((t) => !prior.has(JSON.stringify(t)));
+  const prior = new Set(outcome!.specBefore.transformations.map((t) => JSON.stringify(t)));
+  const added = outcome!.specAfter!.transformations.filter((t) => !prior.has(JSON.stringify(t)));
   assert.ok(added.length > 0, 'expected the request to add at least one transformation');
-  for (const t of added) {
-    assert.equal((t as { query?: string }).query, text, `transformation ${JSON.stringify(t)}`);
+  return added as Transformation[];
+}
+
+Then('the request text is stamped once as query metadata', function (this: TamedTableWorld) {
+  const added = addedByLastRequest(this);
+  const stamped = added.filter((t) => typeof (t as { query?: string }).query === 'string');
+  assert.equal(stamped.length, 1, `expected exactly one query stamp, got ${stamped.length}`);
+  assert.equal(stamped[0], added[0], 'the query stamp must sit on the first added transformation');
+});
+
+Then('every transformation the request added carries its step label as name metadata', function (this: TamedTableWorld) {
+  for (const t of addedByLastRequest(this)) {
+    assert.equal((t as { name?: string }).name, describeStep(t), `transformation ${JSON.stringify(t)}`);
   }
 });
 

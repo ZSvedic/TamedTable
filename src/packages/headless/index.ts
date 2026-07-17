@@ -401,16 +401,16 @@ const RECOVERY_GUIDANCE = [
 ].join(' ');
 
 /** @internal — exported for unit tests. The spec as the model sees it: each
- *  transformation's `query` provenance stripped. The model neither reads nor
- *  edits the metadata, and stripping keeps patch-turn and Python-export
- *  prompts byte-identical to a spec that never carried it — so recorded
- *  cassettes keep replaying. */
+ *  transformation's `query`/`name` provenance stripped. The model neither
+ *  reads nor edits the metadata, and stripping keeps patch-turn and
+ *  Python-export prompts byte-identical to a spec that never carried it — so
+ *  recorded cassettes keep replaying. */
 export function stripQueryMetadata(spec: TablePlan): TablePlan {
   const transformations = spec.transformations as Transformation[];
-  if (!transformations.some((t) => 'query' in t)) return spec;
+  if (!transformations.some((t) => 'query' in t || 'name' in t)) return spec;
   return {
     ...spec,
-    transformations: transformations.map(({ query: _query, ...t }) => t as Transformation),
+    transformations: transformations.map(({ query: _query, name: _name, ...t }) => t as Transformation),
   };
 }
 
@@ -450,19 +450,27 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
 }
 
 // #Patch
-/** @internal — exported for unit tests. Stamp `query` provenance on every
- *  transformation the committed turn added or changed — any transformation
- *  whose JSON has no identical counterpart in the pre-request spec. A step
- *  untouched by the turn keeps its earlier stamp (its JSON, stamp included,
- *  matches `before`); a step the patch rewrote is restamped with the latest
- *  request. */
+/** @internal — exported for unit tests. Stamp provenance on the
+ *  transformations the committed turn added or changed — any transformation
+ *  whose JSON has no identical counterpart in the pre-request spec: `query`
+ *  (the request text, verbatim) on the FIRST such transformation only, so a
+ *  multi-step request writes its text once, and `name` (the describeStep
+ *  label) on every one. A step untouched by the turn keeps its earlier
+ *  stamps (its JSON, stamps included, matches `before`); a step the patch
+ *  rewrote is restamped with the latest request. */
 export function stampQueries(spec: TablePlan, before: TablePlan, query: string): TablePlan {
   const prior = new Set(before.transformations.map((t) => JSON.stringify(t)));
+  let queryStamped = false;
   return {
     ...spec,
-    transformations: (spec.transformations as Transformation[]).map((t) =>
-      prior.has(JSON.stringify(t)) ? t : { ...t, query }
-    ),
+    transformations: (spec.transformations as Transformation[]).map((t) => {
+      if (prior.has(JSON.stringify(t))) return t;
+      const stamped: Transformation = queryStamped
+        ? { ...t, name: describeStep(t) }
+        : { ...t, query, name: describeStep(t) };
+      queryStamped = true;
+      return stamped;
+    }),
   };
 }
 

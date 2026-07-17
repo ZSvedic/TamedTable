@@ -36,13 +36,17 @@ against the source. No LLM call.
 
 Every transformation remembers the request that produced it. When a request
 commits, its text — for a spoken request, the transcript — is stamped
-verbatim onto each transformation the turn added or changed, as `query`
-metadata. The stamp is provenance only: the engine ignores it, and the
-patch model never sees it (it is stripped from the spec before every
-model turn). Because it lives inside the spec, a saved `.flow` carries
-it, so the file records not just what each step does but what the user
-asked for — in the user's own words and language. Undo removes a
-transformation and its stamp together; a step later changed by another
+verbatim as `query` metadata onto the **first** transformation the turn
+added or changed, and every added-or-changed transformation gets a short
+human `name` (its step label, e.g. `mutate _event_group (AI)`). Reading a
+saved file top-down, a `query` opens a request's group of steps and the
+`name`s identify each step — the request is written once, not repeated on
+every step. The stamps are provenance only: the engine ignores them, and
+the patch model never sees them (they are stripped from the spec before
+every model turn). Because they live inside the spec, a saved `.flow`
+carries them, so the file records not just what each step does but what
+the user asked for — in the user's own words and language. Undo removes a
+transformation and its stamps together; a step later changed by another
 request carries that later request.
 
 Per-turn token budget stays constant regardless of table size or conversation
@@ -801,9 +805,9 @@ starts by posting `Run <flow>` into the chat as a user-style bubble, so
 the thread records what was asked the same way a typed request does.
 The replay replaces the spec as one history entry, so a single undo
 returns to the table as it was, and the assistant reply reports the
-result: one line per step (the step labels below) followed by
-`Ran <flow> — N rows, M columns.`. Sample files to try this with
-live in `spec/user-files/`.
+result: an `Executed steps:` numbered list (the step labels below)
+followed by `Ran <flow> — N rows, M columns.`. Sample files to try
+this with live in `spec/user-files/`.
 
 While a run streams — a replayed flow or a chat request — the chat
 thread itself shows **live run progress** <!-- #OpenFlow --> in place
@@ -1016,14 +1020,16 @@ chat does not parse colon commands — undo/redo and the saves are toolbar
 actions (the dock's Undo and the app bar's Save menu on mobile), and a
 typed `:undo` goes to the model as plain text.
 
-After a successful request, the assistant chat bubble shows one line
-per appended step — the same human step labels the live progress uses
-(`mutate EventGroup (AI)`, `filter (js)`), not the generated code — up
-to 7 lines, with overflow rendered as `… and N more`. A request that
+After a successful request, the assistant chat bubble replies with an
+`Executed steps:` heading and a numbered line per appended step — the
+same human step labels the live progress uses (`1. mutate EventGroup
+(AI)`, `2. filter (js)`), not the generated code — up to 7 numbered
+lines, with overflow rendered as `… and N more`. A request that
 appended no step (say, one that only removed a transformation) replies
-`Done.`. The generated expressions, model, token, and elapsed-time
-stats are not shown in the bubble; they appear only in the expandable
-detail panel.
+`Done.`. A flow replay's reply takes the same shape, with
+`Ran <flow> — N rows, M columns.` as its closing line. The generated
+expressions, model, token, and elapsed-time stats are not shown in the
+bubble; they appear only in the expandable detail panel.
 
 Clicking **request detail** below an assistant message expands an
 inline panel with three sections. A small copy icon to the right of the

@@ -35,7 +35,8 @@ type Transformation =
   | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // #PivotData
 
 // Every Transformation variant also accepts optional provenance metadata:
-//   query?: string   // the chat request (voice: the transcript) that created or last changed the step
+//   query?: string   // the chat request (voice: the transcript) — stamped on the FIRST step a turn added/changed
+//   name?: string    // the step's describeStep label — stamped on EVERY step a turn added/changed
 
 type Row = Record<string, unknown>;
 
@@ -67,15 +68,19 @@ loop). It does *not* check whether a JS body compiles or whether an
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
 
-`query` is provenance metadata, accepted on every transformation kind. The
-runner stamps it at commit time: the request's text (voice: the transcript)
-lands verbatim on each transformation the committed turn added or changed —
-"changed" meaning its JSON has no identical counterpart in the pre-request
-spec. The engine never reads it, and the spec shown to the model — the
-patch turn and the Python-export turn — has it stripped, so the model
-neither sees nor edits it and prompts stay byte-identical for cassette
-replay. Since it rides inside `transformations`, `serializeFlow` carries
-it into saved `.flow` files unchanged and `execute` accepts it back.
+`query` and `name` are provenance metadata, accepted on every
+transformation kind. The runner stamps them at commit time on the
+transformations the committed turn added or changed — "changed" meaning
+the JSON has no identical counterpart in the pre-request spec. The
+request's text (voice: the transcript) lands verbatim as `query` on the
+**first** such transformation only — so a multi-step request writes its
+text once, opening the group — while **every** such transformation gets
+`name`, its `describeStep` label (`mutate _event_group (AI)`). The engine
+never reads either, and the spec shown to the model — the patch turn and
+the Python-export turn — has both stripped, so the model neither sees nor
+edits them and prompts stay byte-identical for cassette replay. Since
+they ride inside `transformations`, `serializeFlow` carries them into
+saved `.flow` files unchanged and `execute` accepts them back.
 
 The type accepts the full `Expr` union everywhere, but the engine
 evaluates only some shapes per slot today; an unsupported shape throws
@@ -646,7 +651,12 @@ Before each SQL-touching transformation runs, the current rows are
 materialized as a table `t` (`CREATE TABLE` with every column
 `VARCHAR` — SQL fragments cast as needed — filled by batched
 `INSERT`s of 100 rows); any prior `t` is dropped first, so SQL always
-sees the latest committed state. Errors from
+sees the latest committed state. Column identifiers are **quoted** in
+the DDL (embedded `"` doubled), so a column named after a reserved
+word (`do`, `od`) or carrying punctuation (`Organizator(i)`) registers
+cleanly; DuckDB matches identifiers case-insensitively even when
+quoted (unlike Postgres), so fragments like `lower(Country)` still
+resolve. Errors from
 DuckDB (parse, type, runtime) feed back through the recovery loop as
 plain strings, no stack traces.
 

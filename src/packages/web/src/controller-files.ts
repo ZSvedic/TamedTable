@@ -114,10 +114,11 @@ export class FilesManager {
         nextSpec: structuredClone(this.host.engine.currentSpec()),
       });
       this.recentsStore.record({ kind: 'flow', label: picked.name });
-      // One line per step (the same labels the live progress showed), then
-      // the summary — the reply mirrors a chat request's per-step reply.
+      // A numbered line per step (the same labels the live progress showed),
+      // then the summary — the reply mirrors a chat request's per-step reply.
       this.host.pushMessage('assistant', [
-        ...spec.transformations.map((t) => describeStep(t as Transformation)),
+        'Executed steps:',
+        ...spec.transformations.map((t, i) => `${i + 1}. ${describeStep(t as Transformation)}`),
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
       ].join('\n'));
     } catch (e) {

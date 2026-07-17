@@ -3,10 +3,9 @@
 import { When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { parseFlow } from '@tamedtable/file-io';
 import type { HeadlessRunner, StepUpdate } from '@tamedtable/headless';
-import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
+import { TamedTableWorld, fixturePath } from './world.ts';
 
 // Per-World replay context for the progress/cancel scenarios.
 const replayCtx = new WeakMap<TamedTableWorld, { steps: StepUpdate[]; error?: Error }>();
@@ -15,7 +14,7 @@ const headlessRunner = (world: TamedTableWorld): HeadlessRunner =>
   world.ensureRunner() as unknown as HeadlessRunner;
 
 async function readFlowSpec(filename: string) {
-  return parseFlow(await readFile(join(SPEC_TC_DIR, filename), 'utf8')).spec;
+  return parseFlow(await readFile(fixturePath(filename), 'utf8')).spec;
 }
 
 When('the flow {string} replays with progress tracking', async function (this: TamedTableWorld, filename: string) {
@@ -58,4 +57,10 @@ Then('the replayed table has {int} rows', function (this: TamedTableWorld, n: nu
 
 Then('the replayed spec has {int} transformations', function (this: TamedTableWorld, n: number) {
   assert.equal(this.ensureRunner().currentSpec().transformations.length, n);
+});
+
+Then('replayed row {int} has {string} = {string}', function (this: TamedTableWorld, row: number, column: string, expected: string) {
+  const r = this.ensureRunner().currentRows()[row - 1];
+  assert.ok(r, `no row ${row}`);
+  assert.equal(String(r[column]), expected);
 });

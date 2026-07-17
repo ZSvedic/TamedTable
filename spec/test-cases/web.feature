@@ -110,7 +110,8 @@ Feature: Web front-end
       When user selects "filter.flow"
       Then the table has 4 rows
       And the chat shows a user message "Run filter.flow"
-      And the last assistant reply shows "filter (js)"
+      And the last assistant reply shows "Executed steps:"
+      And the last assistant reply shows "1. filter (js)"
       And the last assistant reply shows "Ran filter.flow — 4 rows, 4 columns."
       And a single undo returns the table to 10 rows
 
