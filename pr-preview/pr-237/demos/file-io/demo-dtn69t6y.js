@@ -28330,7 +28330,7 @@ var ExprSchema = exports_external.union([
   exports_external.object({ sql: exports_external.string() }).strict()
 ]);
 var JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
-var QueryMeta = { query: exports_external.string().optional() };
+var QueryMeta = { query: exports_external.string().optional(), name: exports_external.string().optional() };
 var TransformationUnionSchema = exports_external.discriminatedUnion("kind", [
   exports_external.object({ kind: exports_external.literal("filter"), pred: ExprSchema, ...QueryMeta }).strict(),
   exports_external.object({ kind: exports_external.literal("mutate"), columns: ColumnsField, value: ExprSchema, ...QueryMeta }).strict(),

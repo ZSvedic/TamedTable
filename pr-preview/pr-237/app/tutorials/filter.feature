@@ -20,12 +20,24 @@ Feature: Filter customer records
 
   Rule: A committed request is stamped on the spec as provenance
 
+    # The request text lands as `query` on the FIRST transformation the turn
+    # added (written once, opening the group); EVERY added transformation gets
+    # a short human `name` — its step label — so a saved flow reads top-down
+    # as request → named steps without repeating the request per step.
     @headless
-    Scenario: The request text becomes query metadata on the transformations it adds
+    Scenario: The request text becomes query metadata on the transformation it adds
       Given load "filter-input.csv"
       When query "Show only customers in the USA"
-      Then every transformation the request added carries "Show only customers in the USA" as query metadata
+      Then the request text is stamped once as query metadata
+      And every transformation the request added carries its step label as name metadata
       And a saved flow carries the same query metadata
+
+    @headless
+    Scenario: A multi-step request stamps its query only on the first added step
+      Given load "customers-input.csv"
+      When query "Keep only customers whose Country is exactly 'USA', then normalize their phone numbers"
+      Then the request text is stamped once as query metadata
+      And every transformation the request added carries its step label as name metadata
 
   Rule: Deterministic filters are ordered before AI transformations
 
