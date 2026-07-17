@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, TYPING_MS_PER_CHAR, type Theme } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
-import type { ChatPanelMessage, ChatRequestDetail } from './index.ts';
+import type { ChatPanelMessage, ChatRequestDetail, ChatRunProgress } from './index.ts';
 
 const CP_CSS =
   '@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
@@ -234,10 +234,127 @@ function AssistantMessage({
   );
 }
 
+/** Live progress block under the Running… line: status line, thin bar, and a
+ *  collapsed "request detail" toggle expanding the run's live event log.
+ *  Unmounts with the run, so the next run starts collapsed. */
+function RunProgress({ t, progress }: { t: Theme; progress: ChatRunProgress }): ReactNode {
+  const [open, setOpen] = useState(false);
+  const logRef = useRef<HTMLPreElement>(null);
+
+  // Keep the expanded log pinned to its newest line.
+  useEffect(() => {
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [progress.log.length, open]);
+
+  // Whole completed steps, plus the streaming step's row fraction.
+  const fraction =
+    progress.totalSteps === 0
+      ? 0
+      : Math.min(
+          1,
+          (Math.max(0, progress.step - 1) +
+            (progress.rowsTotal > 0 ? progress.rowsDone / progress.rowsTotal : 0)) /
+            progress.totalSteps,
+        );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: space.px6, marginLeft: space.px14 }}>
+      <div
+        data-cp-progress=""
+        style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2 }}
+      >
+        {progress.step === 0
+          ? 'Starting…'
+          : `Step ${progress.step} of ${progress.totalSteps} — ${progress.label}` +
+            (progress.rowsTotal > 0 && progress.rowsDone > 0
+              ? ` · ${progress.rowsDone} / ${progress.rowsTotal} rows`
+              : '')}
+      </div>
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(fraction * 100)}
+        style={{
+          height: 4,
+          borderRadius: space.radiusSm,
+          background: t.surface3,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            width: `${fraction * 100}%`,
+            height: '100%',
+            background: t.accent,
+            transition: 'width 120ms ease',
+          }}
+        />
+      </div>
+      <button
+        type="button"
+        data-cp-progress-toggle=""
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          background: 'transparent',
+          border: 0,
+          padding: 0,
+          cursor: 'pointer',
+          color: t.ink3,
+          fontFamily: typography.ui,
+          fontSize: typography.size.xs,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: space.px4,
+          alignSelf: 'flex-start',
+        }}
+      >
+        <span
+          style={{
+            display: 'inline-flex',
+            transition: 'transform .15s',
+            transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+          }}
+        >
+          <Icon name="chevron" size={12} />
+        </span>
+        request detail
+      </button>
+      {open && (
+        <pre
+          ref={logRef}
+          data-cp-progress-log=""
+          style={{
+            margin: 0,
+            padding: '8px 10px',
+            background: t.surface3,
+            color: t.ink3,
+            fontFamily: typography.mono,
+            fontSize: typography.size.xs,
+            lineHeight: 1.55,
+            borderRadius: space.radiusSm,
+            border: `1px solid ${t.line}`,
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'anywhere',
+            overflowY: 'auto',
+            maxHeight: 200,
+          }}
+        >
+          {progress.log.join('\n')}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 export interface ChatPanelProps {
   messages: ChatPanelMessage[];
   /** True while a request runs — shows Running…, swaps send for stop. */
   streaming: boolean;
+  /** Live progress of the streaming run, or null — rendered as a block under
+   *  the Running… line (status line, thin bar, live request-detail log). */
+  progress?: ChatRunProgress | null;
   /** Committed-transformation count for the header readout. */
   requestCount: number;
   /** Non-null text syncs into the draft (tutorial prefill-chat steps). */
@@ -267,6 +384,7 @@ export interface ChatPanelProps {
 export function ChatPanel({
   messages,
   streaming,
+  progress = null,
   requestCount,
   prefill = null,
   disabledHint = null,
@@ -477,23 +595,26 @@ export function ChatPanel({
           ),
         )}
         {streaming && (
-          <div
-            data-cp-running=""
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: space.px8,
-              color: t.ink2,
-              fontFamily: typography.ui,
-              fontSize: typography.size.sm,
-            }}
-          >
-            <span
-              className="cp-pulse"
-              style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }}
-            />
-            Running…
-          </div>
+          <>
+            <div
+              data-cp-running=""
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: space.px8,
+                color: t.ink2,
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+              }}
+            >
+              <span
+                className="cp-pulse"
+                style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }}
+              />
+              Running…
+            </div>
+            {progress && <RunProgress t={t} progress={progress} />}
+          </>
         )}
       </div>
 

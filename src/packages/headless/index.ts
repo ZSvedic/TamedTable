@@ -54,9 +54,18 @@ export type ChunkUpdate = {
 
 // #OpenFlow
 /** One replayed transformation starting: its 0-based index, the run's total,
- *  its kind, its describeStep label, and the row count entering it. Steps a
- *  replay skips (the unchanged-prefix reuse) are not reported. */
-export type StepUpdate = { index: number; total: number; kind: string; label: string; rows: number };
+ *  its kind, its describeStep label, the row count entering it, and its
+ *  transformationExpressions — the exact JS/SQL/prompt bodies behind the
+ *  label, so a progress log can show what the step runs, not just its name.
+ *  Steps a replay skips (the unchanged-prefix reuse) are not reported. */
+export type StepUpdate = {
+  index: number;
+  total: number;
+  kind: string;
+  label: string;
+  rows: number;
+  expressions: Array<{ label: string; body: string }>;
+};
 
 // ── describeStep — human-friendly one-liner per transformation ───────────────
 
@@ -77,7 +86,7 @@ function nameList(names: string[], cap = 4): string {
 // #OpenFlow
 /** A deterministic, human-friendly one-liner for a transformation, derived
  *  entirely from its own fields — no model call, nothing stored. Shown by the
- *  flow-run dialog's status line and log so each step names its target and
+ *  run-progress status line and log so each step names its target and
  *  flags per-row model work with an `(AI)` marker: `mutate EventGroup (AI)`,
  *  `filter (js)`, `group by EventGroup → total_players, sections, …`,
  *  `sort by Name desc`. */
@@ -126,6 +135,9 @@ export interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;
+  /** describeStep label per appended transformation (success path) — the web
+   *  chat's one-line-per-step reply. */
+  steps: string[];
   cellSamples: CellSample[];
   modelCalls: Array<{ model: string; calls: number }>;
   inputTokens: number;
@@ -216,8 +228,10 @@ export function resolveCellModelId(mainId: string, explicitCellModel?: string): 
 }
 const DEFAULT_MAX_RETRIES = 6;
 const DEFAULT_RPM = Number(process.env.TAMEDTABLE_RPM ?? 40);
-const DEFAULT_CHUNK_SIZE = Number(process.env.TAMEDTABLE_CHUNK_SIZE ?? 5);
-const DEFAULT_BATCH_SIZE = Number(process.env.TAMEDTABLE_BATCH_SIZE ?? 20);
+// Exported so hosts can derive wave-aligned view settings (the web page size
+// is one concurrency wave: batch size × batches in flight).
+export const DEFAULT_CHUNK_SIZE = Number(process.env.TAMEDTABLE_CHUNK_SIZE ?? 5);
+export const DEFAULT_BATCH_SIZE = Number(process.env.TAMEDTABLE_BATCH_SIZE ?? 20);
 
 // Prompts live in spec/prompt-app-edit.md so SCRIBE can tune them without touching src/.
 // File is parsed once at module load; top-level `## ` headers delimit sections.
@@ -396,16 +410,16 @@ const RECOVERY_GUIDANCE = [
 ].join(' ');
 
 /** @internal — exported for unit tests. The spec as the model sees it: each
- *  transformation's `query` provenance stripped. The model neither reads nor
- *  edits the metadata, and stripping keeps patch-turn and Python-export
- *  prompts byte-identical to a spec that never carried it — so recorded
- *  cassettes keep replaying. */
+ *  transformation's `query`/`name` provenance stripped. The model neither
+ *  reads nor edits the metadata, and stripping keeps patch-turn and
+ *  Python-export prompts byte-identical to a spec that never carried it — so
+ *  recorded cassettes keep replaying. */
 export function stripQueryMetadata(spec: TablePlan): TablePlan {
   const transformations = spec.transformations as Transformation[];
-  if (!transformations.some((t) => 'query' in t)) return spec;
+  if (!transformations.some((t) => 'query' in t || 'name' in t)) return spec;
   return {
     ...spec,
-    transformations: transformations.map(({ query: _query, ...t }) => t as Transformation),
+    transformations: transformations.map(({ query: _query, name: _name, ...t }) => t as Transformation),
   };
 }
 
@@ -445,19 +459,27 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
 }
 
 // #Patch
-/** @internal — exported for unit tests. Stamp `query` provenance on every
- *  transformation the committed turn added or changed — any transformation
- *  whose JSON has no identical counterpart in the pre-request spec. A step
- *  untouched by the turn keeps its earlier stamp (its JSON, stamp included,
- *  matches `before`); a step the patch rewrote is restamped with the latest
- *  request. */
+/** @internal — exported for unit tests. Stamp provenance on the
+ *  transformations the committed turn added or changed — any transformation
+ *  whose JSON has no identical counterpart in the pre-request spec: `query`
+ *  (the request text, verbatim) on the FIRST such transformation only, so a
+ *  multi-step request writes its text once, and `name` (the describeStep
+ *  label) on every one. A step untouched by the turn keeps its earlier
+ *  stamps (its JSON, stamps included, matches `before`); a step the patch
+ *  rewrote is restamped with the latest request. */
 export function stampQueries(spec: TablePlan, before: TablePlan, query: string): TablePlan {
   const prior = new Set(before.transformations.map((t) => JSON.stringify(t)));
+  let queryStamped = false;
   return {
     ...spec,
-    transformations: (spec.transformations as Transformation[]).map((t) =>
-      prior.has(JSON.stringify(t)) ? t : { ...t, query }
-    ),
+    transformations: (spec.transformations as Transformation[]).map((t) => {
+      if (prior.has(JSON.stringify(t))) return t;
+      const stamped: Transformation = queryStamped
+        ? { ...t, name: describeStep(t) }
+        : { ...t, query, name: describeStep(t) };
+      queryStamped = true;
+      return stamped;
+    }),
   };
 }
 
@@ -697,7 +719,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     userRequest: string,
     turns: RequestDebugTurn[],
     expressions: Array<{ label: string; body: string }>,
-    elapsedMs: number
+    elapsedMs: number,
+    steps: string[] = []
   ): RequestDebugInfo {
     const order: string[] = [];
     const counts = new Map<string, number>();
@@ -713,6 +736,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       userRequest,
       turns,
       expressions,
+      steps,
       cellSamples: this.cellSampleLog,
       modelCalls: order.map((m) => ({ model: m, calls: counts.get(m)! })),
       inputTokens,
@@ -931,13 +955,25 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         try {
           const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk, callOpts.onStep);
           abortIf(signal);
+          // Zero-rows guard (spec/behavior.md § Headless): a patch that
+          // evaluates to an empty table from a non-empty source is almost
+          // always a predicate mis-parsing real cell values — reject it into
+          // the recovery loop instead of silently emptying the table.
+          if (newRows.length === 0 && this.sourceRows.length > 0) {
+            throw new Error(
+              `the transformations left the table with 0 rows (the source has ${this.sourceRows.length}). ` +
+              'A filter or join predicate almost certainly mis-parses the real cell values ' +
+              '(date/number formats, code casing). Emit a more tolerant patch — never one that empties the table.'
+            );
+          }
           this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
           turn.outcome = 'committed';
-          const expressions = diffPlans(specBefore, this.spec)
-            .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation')
-            .flatMap((p) => transformationExpressions(p.transformation));
-          this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt));
+          const added = diffPlans(specBefore, this.spec)
+            .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation');
+          const expressions = added.flatMap((p) => transformationExpressions(p.transformation));
+          const steps = added.map((p) => describeStep(p.transformation));
+          this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt, steps));
           return;
         } catch (e) {
           if (signal?.aborted || isCancelled(e)) throw new Error(CANCELLED);
@@ -1040,7 +1076,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       // Report the step before the abort check, so a cancel fired from inside
       // the onStep callback stops the replay before the step runs.
       const t = next[i] as Transformation;
-      onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length });
+      onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length, expressions: transformationExpressions(t) });
       abortIf(signal);
       rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk);
     }

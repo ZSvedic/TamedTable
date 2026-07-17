@@ -1,12 +1,11 @@
 // #OpenFlow — step defs for spec/test-cases/open-flow.feature: the setSpec
-// progress and cancel seam the web's flow-run dialog drives.
+// progress and cancel seam the web's live run progress drives.
 import { When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { parseFlow } from '@tamedtable/file-io';
 import type { HeadlessRunner, StepUpdate } from '@tamedtable/headless';
-import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
+import { TamedTableWorld, fixturePath } from './world.ts';
 
 // Per-World replay context for the progress/cancel scenarios.
 const replayCtx = new WeakMap<TamedTableWorld, { steps: StepUpdate[]; error?: Error }>();
@@ -15,7 +14,7 @@ const headlessRunner = (world: TamedTableWorld): HeadlessRunner =>
   world.ensureRunner() as unknown as HeadlessRunner;
 
 async function readFlowSpec(filename: string) {
-  return parseFlow(await readFile(join(SPEC_TC_DIR, filename), 'utf8')).spec;
+  return parseFlow(await readFile(fixturePath(filename), 'utf8')).spec;
 }
 
 When('the flow {string} replays with progress tracking', async function (this: TamedTableWorld, filename: string) {
@@ -52,10 +51,23 @@ Then('the replay reported step {int} of {int} labelled {string} over {int} rows'
   );
 });
 
+Then('step {int} reported the expression {string}', function (this: TamedTableWorld, step: number, expected: string) {
+  const u = replayCtx.get(this)?.steps[step - 1];
+  assert.ok(u, `no step ${step} reported`);
+  const lines = u!.expressions.map((e) => `${e.label}: ${e.body}`);
+  assert.ok(lines.includes(expected), `expressions were: ${lines.join(' | ') || '(none)'}`);
+});
+
 Then('the replayed table has {int} rows', function (this: TamedTableWorld, n: number) {
   assert.equal(this.ensureRunner().currentRows().length, n);
 });
 
 Then('the replayed spec has {int} transformations', function (this: TamedTableWorld, n: number) {
   assert.equal(this.ensureRunner().currentSpec().transformations.length, n);
+});
+
+Then('replayed row {int} has {string} = {string}', function (this: TamedTableWorld, row: number, column: string, expected: string) {
+  const r = this.ensureRunner().currentRows()[row - 1];
+  assert.ok(r, `no row ${row}`);
+  assert.equal(String(r[column]), expected);
 });

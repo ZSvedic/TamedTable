@@ -21,10 +21,11 @@ export const ExprSchema: z.ZodTypeAny = z.union([
 
 const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
 
-// Provenance metadata every kind accepts: the chat request (voice: the
-// transcript) that created or last changed the step. The runner stamps it at
-// commit; the engine ignores it; the model never sees it.
-const QueryMeta = { query: z.string().optional() };
+// Provenance metadata every kind accepts. The runner stamps it at commit:
+// `query` — the chat request (voice: the transcript) — on the first step a
+// turn added or changed; `name` — the step's human describeStep label — on
+// every one. The engine ignores both; the model never sees them.
+const QueryMeta = { query: z.string().optional(), name: z.string().optional() };
 
 const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('filter'), pred: ExprSchema, ...QueryMeta }).strict(),
@@ -92,7 +93,7 @@ export type Expr =
   | { sql: string };
 
 /** Provenance metadata on every Transformation kind — see QueryMeta above. */
-type WithQuery = { query?: string };
+type WithQuery = { query?: string; name?: string };
 
 export type Transformation =
   | ({ kind: 'filter'; pred: Expr } & WithQuery)

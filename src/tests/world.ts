@@ -12,9 +12,19 @@ import { cassetteFetch, type FetchLike } from './cassette.ts';
 // This file lives at src/tests/world.ts.
 export const SRC_DIR = join(import.meta.dirname, '..');
 export const REPO_ROOT = join(SRC_DIR, '..');
+export const SPEC_DIR = join(REPO_ROOT, 'spec');
 export const SPEC_TC_DIR = join(REPO_ROOT, 'spec/test-cases');
 export const TEMP_DIR = join(REPO_ROOT, 'temp');
 export const CASSETTE_DIR = join(REPO_ROOT, 'cassettes');
+
+/** Resolve a Gherkin fixture name: a bare name is a committed fixture under
+ *  spec/test-cases/; `user-reports/…` resolves under spec/ (user-reported
+ *  regression fixtures); any other slash is src/-relative (= cwd when
+ *  cucumber runs), so feature files can point generated outputs at ../temp/. */
+export function fixturePath(name: string): string {
+  if (name.startsWith('user-reports/')) return join(SPEC_DIR, name);
+  return name.includes('/') ? join(SRC_DIR, name) : join(SPEC_TC_DIR, name);
+}
 
 export type RunnerKind = 'headless' | 'cli' | 'web';
 

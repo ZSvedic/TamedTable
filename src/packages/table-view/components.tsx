@@ -5,7 +5,6 @@
 export {
   TableView,
   type TableViewProps,
-  type TableStatus,
   type CellSelection,
 } from './TableView.tsx';
 export { Pagination } from './Pagination.tsx';

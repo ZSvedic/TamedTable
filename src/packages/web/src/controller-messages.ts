@@ -98,19 +98,13 @@ export function userFacingMessage(error: unknown, provider?: string): string {
   return describeError(error, provider).message;
 }
 
-/** A one-line-per-expression summary of a committed request, for the chat. */
+/** The chat reply for a committed request: an "Executed steps:" heading and
+ *  a numbered line per appended step — the human step labels, not the
+ *  generated code (that lives in the request detail panel). */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  // Short enough that a dense code expression stays a line or two in the
-  // sidebar — the full body lives in the request detail panel.
-  const MAX_BODY = 100;
   const MAX_LINES = 7;
-  const allHead = info.expressions.map((e) => {
-    const body = e.body.length > MAX_BODY ? e.body.slice(0, MAX_BODY) + '…' : e.body;
-    return `${e.label}: ${body}`;
-  });
-  const head =
-    allHead.length > MAX_LINES
-      ? [...allHead.slice(0, MAX_LINES), `… and ${allHead.length - MAX_LINES} more`]
-      : allHead;
-  return head.join('\n');
+  if (info.steps.length === 0) return 'Done.';
+  const lines = info.steps.slice(0, MAX_LINES).map((s, i) => `${i + 1}. ${s}`);
+  if (info.steps.length > MAX_LINES) lines.push(`… and ${info.steps.length - MAX_LINES} more`);
+  return ['Executed steps:', ...lines].join('\n');
 }

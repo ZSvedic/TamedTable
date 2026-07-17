@@ -219,6 +219,16 @@ Then('the file is delivered as a download', function (this: TamedTableWorld) {
   assert.ok(last && last.status === 'downloaded', `expected a download, got ${last?.status ?? 'nothing'}`);
 });
 
+// ── Chat thread ────────────────────────────────────────────────────────────
+
+Then('the chat shows a user message {string}', function (this: TamedTableWorld, text: string) {
+  const messages = controller(this).messages;
+  assert.ok(
+    messages.some((m) => m.role === 'user' && m.text === text),
+    `no user message "${text}". Messages: ${messages.map((m) => `${m.role}: ${m.text}`).join(' | ') || '(none)'}`,
+  );
+});
+
 // ── Toasts ─────────────────────────────────────────────────────────────────
 
 Then('a toast shows {string}', function (this: TamedTableWorld, needle: string) {
@@ -321,7 +331,7 @@ Then(
   },
 );
 
-// ── Status footer ──────────────────────────────────────────────────────────
+// ── Cell selection ─────────────────────────────────────────────────────────
 
 When(
   'user selects the cell at row {int} column {string}',
@@ -339,10 +349,6 @@ Then(
 
 Then('no cell is selected', function (this: TamedTableWorld) {
   assert.equal(controller(this).selection, null);
-});
-
-Then('the status footer reports {string}', function (this: TamedTableWorld, status: string) {
-  assert.equal(controller(this).activityStatus(), status);
 });
 
 // ── Model picker ───────────────────────────────────────────────────────────

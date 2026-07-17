@@ -54,6 +54,7 @@ export function ChatSidebar({
       inputId="tutorial-chat-input"
       messages={controller.messages}
       streaming={controller.streaming}
+      progress={controller.runProgress}
       requestCount={controller.history().length}
       prefill={controller.tutorialPrefill}
       // Staying in a finished tour: the cassette can't answer new requests, so

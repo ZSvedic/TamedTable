@@ -80,7 +80,6 @@ function Demo(): ReactNode {
           report(`reorder ${order.join(',')}`);
         }}
         streaming={streaming}
-        status={streaming ? 'running' : 'idle'}
       />
 
       <pre

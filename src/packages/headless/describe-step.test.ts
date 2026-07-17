@@ -1,5 +1,5 @@
 // #OpenFlow — unit tests for describeStep, the derived one-line step label
-// the flow-run dialog shows. Shapes mirror a real user flow (chess
+// the live run progress shows. Shapes mirror a real user flow (chess
 // tournaments): an AI clustering mutate, js filters, a grouped aggregation.
 import { describe, it, expect } from 'bun:test';
 import { describeStep } from './index.ts';

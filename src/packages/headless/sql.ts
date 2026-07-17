@@ -78,10 +78,13 @@ export class SqlSession {
     const seen = new Set<string>();
     for (const row of rows) for (const k of Object.keys(row)) if (!seen.has(k)) { seen.add(k); cols.push(k); }
     // All columns ingest as VARCHAR; SQL fragments cast to numeric/date as
-    // needed. Identifiers are NOT quoted in DDL so DuckDB stores them
-    // case-insensitively, matching the LLM's `lower(Country)` style usage
-    // (quoted identifiers would force exact-case matches and break that).
-    const colDefs = cols.map((c) => `${c} VARCHAR`).join(', ');
+    // needed. Identifiers ARE quoted in DDL (embedded `"` doubled): a column
+    // named after a reserved word (`do`) or carrying punctuation
+    // (`Organizator(i)`) must register cleanly. Safe for the LLM's
+    // `lower(Country)` style usage because DuckDB — unlike Postgres — matches
+    // identifiers case-insensitively even when they were created quoted.
+    const quoteId = (c: string) => `"${c.replace(/"/g, '""')}"`;
+    const colDefs = cols.map((c) => `${quoteId(c)} VARCHAR`).join(', ');
     await conn.run(`CREATE TABLE ${name} (${colDefs})`);
     const sqlValue = (v: unknown) => {
       if (v === null || v === undefined) return 'NULL';

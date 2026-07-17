@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "source": "chess-tournaments.csv",
+  "spec": {
+    "table": "chess-tournaments.csv",
+    "columns": [
+      { "id": "Organizator(i)" },
+      { "id": "ukupno_igraca" },
+      { "id": "zadnji_kraj" }
+    ],
+    "transformations": [
+      {
+        "kind": "filter",
+        "pred": {
+          "sql": "FED = 'CRO' AND try_cast(\"do\" AS DATE) >= DATE '2020-01-01'"
+        }
+      },
+      {
+        "kind": "group",
+        "by": ["Organizator(i)"],
+        "agg": {
+          "ukupno_igraca": { "sql": "sum(try_cast(N AS DOUBLE))" },
+          "zadnji_kraj": { "sql": "max(\"do\")" }
+        }
+      },
+      {
+        "kind": "sort",
+        "by": [{ "key": { "js": "Number(row.ukupno_igraca) || 0" }, "dir": "desc" }]
+      }
+    ]
+  }
+}

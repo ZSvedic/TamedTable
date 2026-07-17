@@ -55,7 +55,6 @@ export class PatchManager {
     const spec = this.journal.jumpTo(index);
     if (!spec) return;
     await this.host.engine.ensureHeadless().setSpec(spec);
-    this.host.savedLabel = null;
     this.host.selection = null;
     this.host.notify();
   }
@@ -69,7 +68,6 @@ export class PatchManager {
       return;
     }
     await this.host.engine.ensureHeadless().setSpec(entry.prevSpec);
-    this.host.savedLabel = null;
     this.host.selection = null;
     this.host.notify();
   }
@@ -81,7 +79,6 @@ export class PatchManager {
       return;
     }
     await this.host.engine.ensureHeadless().setSpec(entry.nextSpec);
-    this.host.savedLabel = null;
     this.host.selection = null;
     this.host.notify();
   }
@@ -128,7 +125,6 @@ export class PatchManager {
       prevSpec,
       nextSpec: structuredClone(runner.currentSpec()),
     });
-    this.host.savedLabel = null;
     this.host.notify();
   }
 }

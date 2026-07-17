@@ -11,6 +11,7 @@ import {
   type HeadlessRunnerOptions,
   type PlanEdit,
   type RequestDebugInfo,
+  type StepUpdate,
 } from '@tamedtable/headless';
 import { HELP_TEXT } from './help.ts';
 import {
@@ -33,7 +34,7 @@ export interface CliRunnerOptions extends HeadlessRunnerOptions {
 
 export interface CliRunner {
   loadInput(path: string): Promise<void>;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
@@ -180,6 +181,11 @@ class CliRunnerImpl implements CliRunner {
   private redoStack: JournalEntry[] = [];
   private highlight: RegExp | undefined;
   private loadedPath = '';
+  // Live progress: rows entering the running step, the streamed-row counter,
+  // and whether an in-place (TTY) counter line is open and needs a newline.
+  private stepRowsTotal = 0;
+  private rowsDone = 0;
+  private progressLineOpen = false;
 
   constructor(opts: CliRunnerOptions) {
     this.stdout = opts.stdout ?? process.stdout;
@@ -192,11 +198,32 @@ class CliRunnerImpl implements CliRunner {
     });
   }
 
+  /** One line as each transformation starts — the same step labels the web
+   *  chat's live progress shows. */
+  private printStep(u: StepUpdate): void {
+    if (this.quiet) return;
+    this.closeProgressLine();
+    this.stepRowsTotal = u.rows;
+    this.rowsDone = 0;
+    this.stdout.write(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows\n`);
+  }
+
+  /** Streamed-row counter for an AI-cell step. Interactive runs rewrite one
+   *  line in place; non-TTY runs print only the step lines, so piped
+   *  transcripts stay deterministic. */
   private printChunk(u: ChunkUpdate): void {
     if (this.quiet) return;
-    const before = u.before === null || u.before === undefined ? '' : String(u.before);
-    const after = u.after === null || u.after === undefined ? 'null' : String(u.after);
-    this.stdout.write(`running … row ${u.rowIndex + 1}: ${u.column} "${before}" → "${after}"\n`);
+    if (!(this.stdout as { isTTY?: boolean }).isTTY) return;
+    this.rowsDone = Math.max(this.rowsDone, u.rowIndex + 1);
+    this.stdout.write(`\r  ${this.rowsDone}/${this.stepRowsTotal} rows`);
+    this.progressLineOpen = true;
+  }
+
+  /** Finish an in-place counter line before any other output. */
+  private closeProgressLine(): void {
+    if (!this.progressLineOpen) return;
+    this.stdout.write('\n');
+    this.progressLineOpen = false;
   }
 
   private printPlanEdits(items: PlanEdit[]): void {
@@ -207,6 +234,9 @@ class CliRunnerImpl implements CliRunner {
 
   private printDebug(info: RequestDebugInfo): void {
     if (this.quiet) return;
+    // onDebug fires on success and failure — either way the in-place counter
+    // line must end before the next block starts.
+    this.closeProgressLine();
     // The success-path block prints here, before the table reprint. A failed
     // request renders via renderError instead, so its error line comes first.
     if (info.turns.some((t) => t.outcome === 'committed')) writeDebugBlock(info, this.stdout);
@@ -290,9 +320,14 @@ class CliRunnerImpl implements CliRunner {
     if (!this.quiet) this.printTable();
   }
 
-  async request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void> {
+  async request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void> {
     const prevSpec = structuredClone(this.headless.currentSpec());
-    await this.headless.request(text, opts);
+    try {
+      await this.headless.request(text, { ...opts, onStep: opts?.onStep ?? ((u) => this.printStep(u)) });
+    } finally {
+      // A cancelled or failed request must not leave the counter line open.
+      this.closeProgressLine();
+    }
     const newSpec = structuredClone(this.headless.currentSpec());
     this.journal.push({ request: text, prevSpec, newSpec, status: 'committed' });
     this.redoStack = [];

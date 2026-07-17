@@ -9,8 +9,9 @@
 // select-and-scroll.
 import type { CSSProperties, ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
+import { Icon } from '@tamedtable/ui-kit/components';
 import type { Row } from '@tamedtable/core';
-import type { CellRef } from '../../controller.ts';
+import type { CellRef, RunProgress } from '../../controller.ts';
 import { APPBAR_OFFSET } from './layout.ts';
 
 const IDX_W = 40;
@@ -28,6 +29,11 @@ export interface MobileTableProps {
   selection: CellRef | null;
   onSelect: (row: number, column: string) => void;
   streaming?: boolean;
+  /** Live run progress — the phone's stand-in for the chat progress block
+   *  (no sidebar is visible): its status line rides the streaming banner. */
+  progress?: RunProgress | null;
+  /** Cancels the streaming run — the banner's stop icon. */
+  onStop?: () => void;
 }
 
 export function MobileTable({
@@ -39,6 +45,8 @@ export function MobileTable({
   selection,
   onSelect,
   streaming,
+  progress,
+  onStop,
 }: MobileTableProps): ReactNode {
   const headerCell: CSSProperties = {
     position: 'sticky',
@@ -88,9 +96,6 @@ export function MobileTable({
             position: 'sticky',
             top: APPBAR_OFFSET,
             zIndex: 5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: space.px8,
             padding: `${space.px6}px ${space.px12}px`,
             background: t.accentSoft,
             color: t.ink,
@@ -99,8 +104,53 @@ export function MobileTable({
             borderBottom: `1px solid ${t.line}`,
           }}
         >
-          <span className="tt-pulse" style={{ width: 6, height: 6, borderRadius: 3, background: t.accent }} />
-          Streaming results…
+          {/* Sticky left pins the status to the visible edge while the page
+              scrolls the table sideways. The span must stay content-sized —
+              a full-width (flex: 1) span leaves sticky no room to shift, so
+              the content would scroll off screen with the banner. */}
+          <span
+            style={{
+              position: 'sticky',
+              left: space.px12,
+              maxWidth: 'calc(100vw - 24px)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: space.px8,
+            }}
+          >
+            <span className="tt-pulse" style={{ flex: '0 0 auto', width: 6, height: 6, borderRadius: 3, background: t.accent }} />
+            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {progress && progress.step > 0
+                ? `Step ${progress.step} of ${progress.totalSteps} — ${progress.label}` +
+                  (progress.rowsTotal > 0 && progress.rowsDone > 0
+                    ? ` · ${progress.rowsDone} / ${progress.rowsTotal} rows`
+                    : '')
+                : 'Running…'}
+            </span>
+            {onStop && (
+              <button
+                type="button"
+                data-mob-stop=""
+                onClick={onStop}
+                title="Stop the running request"
+                style={{
+                  flex: '0 0 auto',
+                  height: 24,
+                  width: 24,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: `1px solid ${t.err}`,
+                  borderRadius: space.radiusSm,
+                  background: 'transparent',
+                  color: t.err,
+                  cursor: 'pointer',
+                }}
+              >
+                <Icon name="stop" size={12} />
+              </button>
+            )}
+          </span>
         </div>
       )}
       <table

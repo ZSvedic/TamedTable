@@ -335,6 +335,8 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
             selection={controller.selection}
             onSelect={(row, column) => controller.selectCell(row, column)}
             streaming={busy}
+            progress={controller.runProgress}
+            onStop={() => controller.cancelRequest()}
           />
         </>
       ) : (
