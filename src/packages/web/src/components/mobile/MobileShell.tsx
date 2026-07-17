@@ -19,6 +19,7 @@ import { Lockup } from '@tamedtable/toolbar/components';
 import type { WebController } from '../../controller.ts';
 import { useController } from '../../hooks/useController.ts';
 import { useKeyboardInset } from '../../hooks/useKeyboardInset.ts';
+import { useTableZoom } from '../../hooks/useTableZoom.ts';
 import { Dock, type DockAction } from './Dock.tsx';
 import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
@@ -200,6 +201,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   const pageCount = controller.pageCount();
   const pageStart = (page - 1) * controller.pageSize;
   const fileName = spec.table ? spec.table.split('/').pop() ?? spec.table : 'table';
+  const tableZoom = useTableZoom(spec.table ?? '');
 
   const voiceStatus = controller.voiceStatus;
   const tourActive = controller.isTutorialActive();
@@ -329,6 +331,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
           <MobileTable
             id="tutorial-table-view"
             t={t}
+            zoom={tableZoom}
             columns={columns}
             rows={rows}
             pageStart={pageStart}

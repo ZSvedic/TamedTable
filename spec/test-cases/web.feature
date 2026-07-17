@@ -313,7 +313,9 @@ Feature: Web front-end
     raises the Type sheet exactly when that target is the chat composer, so
     the composer the tour spotlights is on screen. The layout halves of the
     phone rules — the page is the table's scroller under a frozen header,
-    and on desktop nothing scrolls the page — are browser facts checked in
+    pinch-to-zoom scales the table but never the app bar or dock, the Type
+    composer grows with the draft up to five lines, and on desktop nothing
+    scrolls the page — are browser facts checked in
     src/packages/web/e2e/mobile.e2e.ts.
 
     @web
