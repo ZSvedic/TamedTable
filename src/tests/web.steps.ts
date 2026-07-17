@@ -434,10 +434,10 @@ Then('loading fails with {string}', function (this: TamedTableWorld, needle: str
 import { ALL_MODELS, type Provider as ModelProvider } from '@tamedtable/model-config';
 
 Then('the settings panel shows {int} provider cards', function (this: TamedTableWorld, n: number) {
-  // The three providers are always shown: gemini, openai, anthropic
-  assert.equal(n, 3, `expected 3 provider cards, got ${n}`);
-  // Verify the controller knows about all three
-  const providers: ModelProvider[] = ['gemini', 'openai', 'anthropic'];
+  // The four providers are always shown: gemini, openai, anthropic, openrouter
+  const providers: ModelProvider[] = ['gemini', 'openai', 'anthropic', 'openrouter'];
+  assert.equal(n, providers.length, `expected ${providers.length} provider cards, got ${n}`);
+  // Verify the catalogue backs every card
   for (const p of providers) {
     const models = ALL_MODELS.filter((m) => m.provider === p);
     assert.ok(models.length > 0, `No models for provider "${p}" in ALL_MODELS`);
@@ -474,6 +474,7 @@ Then('the expanded card body shows env hint {string}', function (this: TamedTabl
     gemini: 'GEMINI_API_KEY',
     openai: 'OPENAI_API_KEY',
     anthropic: 'ANTHROPIC_API_KEY',
+    openrouter: 'OPENROUTER_API_KEY',
   };
   assert.equal(
     expectedHint[expanded],

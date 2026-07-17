@@ -26,6 +26,7 @@ stored preferences:
   anthropicKey: "sk-ant-…",
   geminiKey: null,
   openaiKey: null,
+  openrouterKey: null,
   model: "claude-sonnet-4-6",
   cellModel: "claude-haiku-4-5"
 }
@@ -39,6 +40,7 @@ When the user switches to Gemini in the settings panel:
   anthropicKey: null,
   geminiKey: "AIza…",
   openaiKey: null,
+  openrouterKey: null,
   model: "gemini-3.5-flash",
   cellModel: "gemini-3.1-flash-lite"
 }
@@ -53,20 +55,23 @@ a single JSON object with **two sections**:
 - `models` — every available model with its per-Mtok prices. This list mirrors
   [`benchmarks/models.jsonl`](../../../benchmarks/models.jsonl) (same ids, same
   prices); every catalogue id must have a pricing row there (a bench test
-  enforces it). Membership rule: the catalogue equals `models.jsonl` minus
-  rows marked `runnable: false`, and each entry's `voiceInput` mirrors that
-  row's `audioInput`. `ALL_MODELS` is this array, imported — code never duplicates
-  the list, and this spec intentionally doesn't either (a copy here went stale
-  once already).
-- `defaults` — for each provider, the `primary` and `secondary` model ids.
-  Exposed as `DEFAULTS`.
+  enforces it). Membership rule: for the paid providers the catalogue equals
+  `models.jsonl` minus rows marked `runnable: false`; for OpenRouter only the
+  `defaults` pick gets a catalogue entry — the other `:free` rows are
+  bench-only sweep candidates, not app choices. Each entry's `voiceInput`
+  mirrors its row's `audioInput`. `ALL_MODELS` is this array, imported — code
+  never duplicates the list, and this spec intentionally doesn't either (a
+  copy here went stale once already).
+- `defaults` — for each provider, the `primary` and `secondary` model ids,
+  plus an optional `batchSize` when the provider's cell model has a
+  benchmarked sweet spot. Exposed as `DEFAULTS`.
 
 Each `models` entry carries:
 
 - `id` — the provider's exact API model id (verified against provider docs
   before any change; never invent or guess an id)
 - `name` — short display name
-- `provider` — `gemini` | `openai` | `anthropic`
+- `provider` — `gemini` | `openai` | `anthropic` | `openrouter`
 - `temperature` — whether the model still accepts a `temperature` sampling
   parameter (see `acceptsTemperature` below)
 - `voiceInput` — whether the model accepts audio input
@@ -80,6 +85,14 @@ decides the two roles. The current defaults:
 | gemini | `gemini-3.5-flash` | `gemini-3.1-flash-lite` |
 | openai | `gpt-5.5` | `gpt-5.4-mini` |
 | anthropic | `claude-sonnet-4-6` | `claude-haiku-4-5` |
+| openrouter | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` |
+
+OpenRouter is the free tier: one model fills both roles, at $0. Its defaults
+row also pins `batchSize: 5` — the [2026-07-17 benchmark](../../../process/journal/2026-07-17-free-model-benchmark-run.md)
+measured `cohere/north-mini-code:free` at 96% accuracy at batch 5 and sharply
+worse at 40+, so the engine batches cells in fives for this provider.
+`defaultBatchSize(provider)` returns that pinned size, or `undefined` for
+providers without one (their engine keeps its own default).
 
 ## Config resolution
 
@@ -89,24 +102,34 @@ env always wins. The rules:
 1. If `GEMINI_API_KEY` is set in env → provider is gemini, geminiKey is that value.
 2. Else if `OPENAI_API_KEY` is set in env → provider is openai, openaiKey is that value.
 3. Else if `ANTHROPIC_API_KEY` is set in env → provider is anthropic, anthropicKey is that value.
-4. Else use `stored.provider`, falling back to "gemini" — the provider whose
+4. Else if `OPENROUTER_API_KEY` is set in env → provider is openrouter,
+   openrouterKey is that value — last so a paid key always outranks the free
+   tier when both are present.
+5. Else use `stored.provider`, falling back to "gemini" — the provider whose
    defaults every committed cassette is recorded with, so key-free replay
    (tests, tours) resolves the models the recordings used.
-5. `TAMEDTABLE_MODEL` in env overrides the primary model from stored.
-6. Keys not present in env keep their stored values (or null).
-7. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`.
-8. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`.
-9. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't, replace it with `defaultCellModel(provider)`.
+6. `TAMEDTABLE_MODEL` in env overrides the primary model from stored.
+7. Keys not present in env keep their stored values (or null).
+8. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`.
+9. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`.
+10. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't, replace it with `defaultCellModel(provider)`.
 
-When multiple provider keys are set in env, gemini wins, then openai, then anthropic.
+When multiple provider keys are set in env, gemini wins, then openai, then
+anthropic, then openrouter.
 
 `defaultModel(provider)` returns the `defaults[provider].primary` id (falling
 back to the provider's first catalogue entry). Currently: `claude-sonnet-4-6`
-for anthropic, `gemini-3.5-flash` for gemini, `gpt-5.5` for openai.
+for anthropic, `gemini-3.5-flash` for gemini, `gpt-5.5` for openai,
+`cohere/north-mini-code:free` for openrouter.
 
 `defaultCellModel(provider)` returns the `defaults[provider].secondary` id
 (falling back to that provider's primary default). Currently: `claude-haiku-4-5`
-for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai.
+for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai,
+`cohere/north-mini-code:free` for openrouter.
+
+`defaultBatchSize(provider)` returns the `defaults[provider].batchSize`
+pin, or `undefined` when the provider has none. Currently: `5` for
+openrouter, `undefined` for the rest.
 
 `providerFor(modelId)` returns:
 
@@ -120,12 +143,14 @@ for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai.
   served by Cerebras never land on the OpenAI provider
 - `openai` for any other id starting with `gpt-`
 
-The return type is `EngineProvider = Provider | 'cerebras' | 'openrouter'`.
-Cerebras and OpenRouter are **bench-only** providers: the engine routes their
-ids to each one's OpenAI-compatible endpoint (both free tiers), the benchmark
-sweeps them, but they have no catalogue entry, no `defaults` row, and no
-chooser card, and `resolveConfig` never resolves them — the app's `Provider`
-type stays the three above.
+The return type is `EngineProvider = Provider | 'cerebras'`. OpenRouter is a
+full app provider — chooser card, catalogue entry, `defaults` row, resolved
+by `resolveConfig`; the engine routes its ids to OpenRouter's OpenAI-compatible
+endpoint. Cerebras stays **bench-only**: the engine routes its ids the same
+way and the benchmark sweeps them, but it has no catalogue entry, no
+`defaults` row, and no chooser card, and `resolveConfig` never resolves it.
+Non-default `:free` ids (the other OpenRouter benchmark rows) are likewise
+sweep-only — routable by the engine, absent from the catalogue.
 
 `acceptsTemperature(modelId)` reports whether a model still accepts a
 `temperature` sampling parameter. The newest models (Anthropic Opus 4.8/4.7,
@@ -137,7 +162,8 @@ including unknown ids, so new models default to the safe no-temperature path.
 The headless engine calls it to decide whether to send `temperature: 0`.
 
 `keyFor(config)` returns the API key for `config.provider` — `geminiKey` when
-the provider is gemini, `openaiKey` when openai, otherwise `anthropicKey` — or
+the provider is gemini, `openaiKey` when openai, `openrouterKey` when
+openrouter, otherwise `anthropicKey` — or
 null when that provider's key is unset. Every surface that needs "the key for
 the active provider" (the CLI, the web controller) uses this one helper so the
 provider→key mapping lives in a single place.
@@ -165,7 +191,8 @@ served from the same origin).
 ## Reading from env
 
 `readConfigFromEnv()` reads `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, `TAMEDTABLE_MODEL`, and `TAMEDTABLE_CELL_MODEL` from
+`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `TAMEDTABLE_MODEL`, and
+`TAMEDTABLE_CELL_MODEL` from
 `process.env` and returns them as a plain Record suitable for passing as
 `resolveConfig`'s first argument. It
 is in a separate `env.ts` export so environments without `process` (browser
@@ -176,13 +203,13 @@ code) never import it. Call it only on Node/Bun surfaces.
 The CLI resolves config with `resolveConfig(readConfigFromEnv(), {})`, then
 takes the active provider's key with `keyFor(config)` and forwards it to the
 headless runner. The help text mentions `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-and `OPENAI_API_KEY`.
+`OPENAI_API_KEY`, and `OPENROUTER_API_KEY`.
 
 ## Model chooser component
 
-`ModelChooser` is the provider accordion UI: three cards — Google, OpenAI,
-Anthropic — each with an API-key field (masked, with an eye toggle to reveal
-it). **The user picks a provider, not individual models.** Each expanded card
+`ModelChooser` is the provider accordion UI: four cards — Google, OpenAI,
+Anthropic, OpenRouter — each with an API-key field (masked, with an eye toggle
+to reveal it). **The user picks a provider, not individual models.** Each expanded card
 shows that provider's two fixed defaults **read-only** — a Primary row (the
 patch-turn model, which carries voice input) and a Secondary row (the per-row
 cell model) — each with its model id and per-Mtok price (`$in in / $out out`).
@@ -198,6 +225,7 @@ provider's key page, opening in a new tab:
 - Google → `https://aistudio.google.com/apikey`
 - OpenAI → `https://platform.openai.com/api-keys`
 - Anthropic → `https://console.anthropic.com/settings/keys`
+- OpenRouter → `https://openrouter.ai/settings/keys`
 
 These URLs are provider metadata baked into the component. Two optional host-
 supplied help links frame the cards, both opening in a new tab; the host

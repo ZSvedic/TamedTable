@@ -15,11 +15,14 @@
     { "id": "claude-opus-4-8",        "name": "Opus 4.8",             "provider": "anthropic", "temperature": false, "voiceInput": false, "inUsdPerMtok": 5,    "outUsdPerMtok": 25   },
     { "id": "claude-sonnet-4-6",      "name": "Sonnet 4.6",           "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
     { "id": "claude-sonnet-4-5",      "name": "Sonnet 4.5",           "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
-    { "id": "claude-haiku-4-5",       "name": "Haiku 4.5",            "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 1,    "outUsdPerMtok": 5    }
+    { "id": "claude-haiku-4-5",       "name": "Haiku 4.5",            "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 1,    "outUsdPerMtok": 5    },
+
+    { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 }
   ],
   "defaults": {
-    "gemini":    { "primary": "gemini-3.5-flash",  "secondary": "gemini-3.1-flash-lite" },
-    "openai":    { "primary": "gpt-5.5",           "secondary": "gpt-5.4-mini" },
-    "anthropic": { "primary": "claude-sonnet-4-6", "secondary": "claude-haiku-4-5" }
+    "gemini":     { "primary": "gemini-3.5-flash",  "secondary": "gemini-3.1-flash-lite" },
+    "openai":     { "primary": "gpt-5.5",           "secondary": "gpt-5.4-mini" },
+    "anthropic":  { "primary": "claude-sonnet-4-6", "secondary": "claude-haiku-4-5" },
+    "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5 }
   }
 }

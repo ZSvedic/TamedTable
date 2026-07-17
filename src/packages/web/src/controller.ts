@@ -16,7 +16,7 @@
 
 import type { ChunkUpdate, RequestAudio, RequestDebugInfo, TimelineStep } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
-import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
+import { resolveConfig, defaultBatchSize, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig } from '@tamedtable/model-config/storage';
@@ -69,6 +69,16 @@ export type {
  *  spec — so this lives on the controller, not the spec. */
 const PAGE_SIZE = 20;
 
+/** A page holds this many cell batches when the provider pins a batch size. */
+const BATCHES_PER_PAGE = 5;
+
+/** The page size for a provider: five batches when its defaults pin a cell
+ *  batch size (openrouter: 5 × 5 = 25), the plain default otherwise. */
+export function pageSizeFor(provider: Provider): number {
+  const batch = defaultBatchSize(provider);
+  return batch ? batch * BATCHES_PER_PAGE : PAGE_SIZE;
+}
+
 // #WebShell
 export class WebController implements ControllerHost {
   readonly opts: WebControllerOptions;
@@ -111,7 +121,8 @@ export class WebController implements ControllerHost {
   messages: ChatMessage[] = [];
   lastDebug: RequestDebugInfo | undefined;
   /** Rows per table page — a view setting the controller owns (the spec
-   *  never carries a page size). */
+   *  never carries a page size). Re-derived from the provider on config
+   *  changes: five batches when the provider pins a cell batch size. */
   pageSize = PAGE_SIZE;
   /** The selected cell, or null — drives the status footer. */
   selection: CellRef | null = null;
@@ -138,6 +149,7 @@ export class WebController implements ControllerHost {
       opts.env ?? (typeof process !== 'undefined' ? process.env : {});
     // Precedence: env vars > opts.config > stored config > defaults.
     this.config = resolveConfig(envVars, { ...readStoredConfig(), ...opts.config });
+    this.pageSize = pageSizeFor(this.config.provider);
 
     // Built first so pushToast can record every toast from the moment the
     // controller exists.

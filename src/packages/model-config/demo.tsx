@@ -25,6 +25,7 @@ function Demo() {
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',
     anthropic: stored.anthropicKey ?? '',
+    openrouter: stored.openrouterKey ?? '',
   });
   const [expanded, setExpanded] = useState<Provider | null>(null);
 
@@ -38,12 +39,13 @@ function Demo() {
     geminiKey: keys.gemini || null,
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
+    openrouterKey: keys.openrouter || null,
   });
 
   // Persist every change to the blob the main app reads (and vice versa).
   useEffect(() => {
     writeStoredConfig(resolved);
-  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey]);
+  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
 
   // ── Test call state ───────────────────────────────────────────────────────
 

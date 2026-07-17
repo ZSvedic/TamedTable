@@ -300,10 +300,10 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `CEREBRAS_API_KEY` | — | Cerebras key (free tier). Bench-only: read by the engine when a `zai-*` / `gpt-oss-*` model id routes to Cerebras, and by `bench sweep`/`bench label`. Never resolved by `resolveConfig`, so it can't select the app's provider. |
-| `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Bench-only, same rules as `CEREBRAS_API_KEY`: read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter. The account's privacy settings must allow free model publication or every `:free` call 404s. |
+| `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter, by `bench sweep`/`bench label`, and by `resolveConfig` (lowest env priority — any paid key outranks it). The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras), `meta-llama/llama-3.3-70b-instruct:free` (OpenRouter). |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
@@ -686,8 +686,8 @@ chunk — the CSV/JSON golden path never fetches it.
 
 `WebController.sendChat` routes a text request through the selected
 provider: the engine builds the matching SDK client from `config.model`
-and the active provider's key (`config.geminiKey`, `config.openaiKey`, or
-`config.anthropicKey`). It rejects before any network call when the
+and the active provider's key (`config.geminiKey`, `config.openaiKey`,
+`config.anthropicKey`, or `config.openrouterKey`). It rejects before any network call when the
 *selected provider's* key is null or empty, surfacing a provider-named
 toast such as `Text requests require a Google API key — open Settings and
 add one.` A key for a different provider does not satisfy the check.
@@ -705,9 +705,10 @@ surface below.
 
 ```ts
 // pagination — rows per page is a WebController-owned view setting with a
-// default of 20 (the spec never carries a page size); the page index is
-// 1-based and clamps to [1, pageCount()]
-WebController.pageSize: number;          // view setting, default 20
+// default of 20 (the spec never carries a page size); when the provider's
+// defaults pin a cell batch size the page is 5 batches (openrouter: 5×5=25);
+// the page index is 1-based and clamps to [1, pageCount()]
+WebController.pageSize: number;          // view setting, default 20 (25 on openrouter)
 WebController.pageRows(): Row[];         // the current page's slice
 WebController.currentPage(): number;
 WebController.pageCount(): number;
@@ -903,7 +904,7 @@ Redaction is a hard contract, verified by an `@regression` scenario:
 - string values matching `/sk-[A-Za-z0-9_-]+/` or `/AIza[A-Za-z0-9_-]+/`
   become `[redacted]`;
 - object keys matching `authorization`, `x-api-key`, or any `*Key`
-  (`anthropicKey`, `geminiKey`, `openaiKey`) are dropped whole;
+  (`anthropicKey`, `geminiKey`, `openaiKey`, `openrouterKey`) are dropped whole;
 - the config snapshot is taken with the `*Key` fields already omitted.
 
 Four capture points wire into existing code, no logic duplicated: the
@@ -988,8 +989,8 @@ and batching show up in the measurement.
 → [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini" | "openai";  // app providers — catalogue, chooser, resolveConfig
-type EngineProvider = Provider | "cerebras" | "openrouter";  // engine routing — the extra two are bench-only (no chooser card, no catalogue entry)
+type Provider = "anthropic" | "gemini" | "openai" | "openrouter";  // app providers — catalogue, chooser, resolveConfig
+type EngineProvider = Provider | "cerebras";  // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
 
@@ -998,6 +999,7 @@ interface ResolvedConfig {
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
+  openrouterKey: string | null;
   model: string;      // primary — writes the spec patch (and carries voice)
   cellModel: string;  // secondary — fills per-row cells; always same-provider as model
 }
@@ -1012,10 +1014,11 @@ const ALL_MODELS: readonly ModelDef[];  // imported from models.json — the cat
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
+function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
 function providerFor(modelId: string): EngineProvider;
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
-function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey)
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey / openrouterKey)
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
 
 ```ts

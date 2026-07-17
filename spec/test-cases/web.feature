@@ -341,6 +341,14 @@ Feature: Web front-end
       And the first row on the current page has ID "21"
 
     @web
+    # OpenRouter pins cell batch 5, so a page holds five batches: 5 × 5 = 25.
+    Scenario: Selecting the OpenRouter provider sets the page to five batches
+      When user selects the provider "openrouter"
+      Then the current page shows 25 rows
+      When user selects the provider "gemini"
+      Then the current page shows 20 rows
+
+    @web
     Scenario: The last page shows only the remaining rows
       When user goes to page 3
       Then the current page shows 6 rows
@@ -408,10 +416,10 @@ Feature: Web front-end
   Rule: The settings panel shows accordion provider cards
 
     @web
-    Scenario: Settings panel opens with three provider cards
+    Scenario: Settings panel opens with four provider cards
       Given the TamedTable web app
       When user opens the settings panel
-      Then the settings panel shows 3 provider cards
+      Then the settings panel shows 4 provider cards
       And no provider card is expanded
 
     @web
@@ -462,6 +470,17 @@ Feature: Web front-end
       And user clicks the provider card "anthropic"
       Then the expanded card body shows env hint "ANTHROPIC_API_KEY"
       And the configured provider is "anthropic"
+
+    @web
+    # The free tier: OpenRouter's single $0 model fills both roles.
+    Scenario: Clicking the OpenRouter card selects the free provider and models
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "openrouter"
+      Then the expanded card body shows env hint "OPENROUTER_API_KEY"
+      And the configured provider is "openrouter"
+      And the configured model is "cohere/north-mini-code:free"
+      And the configured cellModel is "cohere/north-mini-code:free"
 
     @web
     Scenario: Settings panel opens with the currently selected provider card expanded

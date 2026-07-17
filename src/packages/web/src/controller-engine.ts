@@ -12,7 +12,7 @@ import {
   type StepUpdate,
 } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
-import { defaultModel, defaultCellModel } from '@tamedtable/model-config';
+import { defaultModel, defaultCellModel, defaultBatchSize } from '@tamedtable/model-config';
 import type { FetchLike } from '@tamedtable/file-io';
 import { requestBody, requestUrl } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
@@ -115,7 +115,10 @@ export class EngineManager {
       model: replaying ? defaultModel(replayProvider) : this.host.config.model,
       cellModel: replaying ? defaultCellModel(replayProvider) : this.host.config.cellModel,
       fetch: this.makeFetch(),
-      batchSize: this.host.opts.batchSize,
+      // Host opts win; otherwise the provider's pinned cell batch (openrouter:
+      // 5). Replay keeps the engine default — cassettes recorded with it.
+      batchSize: this.host.opts.batchSize
+        ?? (replaying ? undefined : defaultBatchSize(this.host.config.provider)),
       chunkSize: this.host.opts.chunkSize,
       onDebug: (info) => {
         this.host.lastDebug = info;

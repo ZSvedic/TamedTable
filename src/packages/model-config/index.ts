@@ -4,14 +4,13 @@
 
 import catalogue from './models.json' with { type: 'json' };
 
-export type Provider = 'anthropic' | 'gemini' | 'openai';
+export type Provider = 'anthropic' | 'gemini' | 'openai' | 'openrouter';
 
-/** Providers the engine can route a model id to. Cerebras and OpenRouter are
- *  bench-only: the engine calls each one's OpenAI-compatible endpoint (both
- *  free tiers), the benchmark sweeps their models, but they have no catalogue
- *  entry, no defaults row, and no chooser card — `resolveConfig` never
- *  resolves them. */
-export type EngineProvider = Provider | 'cerebras' | 'openrouter';
+/** Providers the engine can route a model id to. Cerebras is bench-only: the
+ *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
+ *  sweeps its models, but it has no catalogue entry, no defaults row, and no
+ *  chooser card — `resolveConfig` never resolves it. */
+export type EngineProvider = Provider | 'cerebras';
 
 export interface ModelDef {
   id: string;
@@ -26,10 +25,13 @@ export interface ModelDef {
   outUsdPerMtok: number;
 }
 
-/** The primary + secondary (cell) model ids chosen as a provider's defaults. */
+/** The primary + secondary (cell) model ids chosen as a provider's defaults,
+ *  plus an optional pinned cell batch size where the benchmark found a sweet
+ *  spot (openrouter: 5). */
 export interface ProviderDefaults {
   primary: string;
   secondary: string;
+  batchSize?: number;
 }
 
 export interface ResolvedConfig {
@@ -37,6 +39,7 @@ export interface ResolvedConfig {
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
+  openrouterKey: string | null;
   /** Primary model: writes the spec patch each turn (and carries voice input). */
   model: string;
   /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
@@ -79,6 +82,13 @@ export function defaultCellModel(provider: Provider): string {
   return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
 }
 
+/** The provider's pinned cell batch size from `defaults`, or undefined when it
+ *  has none (the engine then keeps its own default). Openrouter pins 5 — the
+ *  2026-07-17 benchmark's north-mini sweet spot. */
+export function defaultBatchSize(provider: Provider): number | undefined {
+  return DEFAULTS[provider]?.batchSize;
+}
+
 /** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids.
  *  Slash-containing ids are OpenRouter's vendor/model form and no other
  *  provider's ids contain one, so that rule goes first; `gpt-oss-` is checked
@@ -109,6 +119,7 @@ export function acceptsTemperature(modelId: string): boolean {
 export function keyFor(config: ResolvedConfig): string | null {
   if (config.provider === 'gemini') return config.geminiKey;
   if (config.provider === 'openai') return config.openaiKey;
+  if (config.provider === 'openrouter') return config.openrouterKey;
   return config.anthropicKey;
 }
 
@@ -120,11 +131,13 @@ export function keyFor(config: ResolvedConfig): string | null {
  *   1. GEMINI_API_KEY in env → provider=gemini, geminiKey=value
  *   2. OPENAI_API_KEY in env → provider=openai, openaiKey=value
  *   3. ANTHROPIC_API_KEY in env → provider=anthropic, anthropicKey=value
- *   4. stored.provider (fallback: "gemini" — the provider every committed
+ *   4. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value —
+ *      last, so a paid key always outranks the free tier
+ *   5. stored.provider (fallback: "gemini" — the provider every committed
  *      cassette records with, so key-free replay resolves the taped models)
- *   5. TAMEDTABLE_MODEL in env overrides stored model
- *   6. Final model must belong to resolved provider; if not, use defaultModel
- *   7. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
+ *   6. TAMEDTABLE_MODEL in env overrides stored model
+ *   7. Final model must belong to resolved provider; if not, use defaultModel
+ *   8. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
  *      model must also belong to the provider, else use defaultCellModel
  */
 export function resolveConfig(
@@ -132,13 +145,15 @@ export function resolveConfig(
   stored: Partial<ResolvedConfig>,
 ): ResolvedConfig {
   let provider: Provider;
-  let anthropicKey: string | null = stored.anthropicKey ?? null;
-  let geminiKey: string | null    = stored.geminiKey ?? null;
-  let openaiKey: string | null    = stored.openaiKey ?? null;
+  let anthropicKey: string | null  = stored.anthropicKey ?? null;
+  let geminiKey: string | null     = stored.geminiKey ?? null;
+  let openaiKey: string | null     = stored.openaiKey ?? null;
+  let openrouterKey: string | null = stored.openrouterKey ?? null;
 
-  const envGemini    = env['GEMINI_API_KEY'];
-  const envOpenai    = env['OPENAI_API_KEY'];
-  const envAnthropic = env['ANTHROPIC_API_KEY'];
+  const envGemini     = env['GEMINI_API_KEY'];
+  const envOpenai     = env['OPENAI_API_KEY'];
+  const envAnthropic  = env['ANTHROPIC_API_KEY'];
+  const envOpenrouter = env['OPENROUTER_API_KEY'];
 
   if (envGemini) {
     provider = 'gemini';
@@ -149,6 +164,9 @@ export function resolveConfig(
   } else if (envAnthropic) {
     provider = 'anthropic';
     anthropicKey = envAnthropic;
+  } else if (envOpenrouter) {
+    provider = 'openrouter';
+    openrouterKey = envOpenrouter;
   } else {
     provider = stored.provider ?? 'gemini';
   }
@@ -169,5 +187,5 @@ export function resolveConfig(
     cellModel = defaultCellModel(provider);
   }
 
-  return { provider, anthropicKey, geminiKey, openaiKey, model, cellModel };
+  return { provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel };
 }

@@ -13,6 +13,7 @@ import {
 } from '@tamedtable/model-config';
 import { writeStoredConfig } from '@tamedtable/model-config/storage';
 import { userFacingMessage } from './controller-messages.ts';
+import { pageSizeFor } from './controller.ts';
 import type { ControllerHost } from './controller-context.ts';
 
 export class ConfigManager {
@@ -63,6 +64,10 @@ export class ConfigManager {
     const modelChanged =
       next.model !== this.host.config.model || next.cellModel !== this.host.config.cellModel;
     this.host.config = next;
+    // The page follows the provider: five batches when its defaults pin a
+    // cell batch size (openrouter), the plain default otherwise. currentPage()
+    // clamps on read, so no page bookkeeping is needed here.
+    this.host.pageSize = pageSizeFor(next.provider);
     writeStoredConfig(next);
     this.host.savedLabel = null;
 
@@ -93,7 +98,7 @@ export class ConfigManager {
   /** Clear every provider key — "no API key is set" regardless of provider.
    *  @deprecated Use setConfig with explicit null keys instead. */
   clearApiKey(): void {
-    void this.setConfig({ anthropicKey: null, geminiKey: null, openaiKey: null });
+    void this.setConfig({ anthropicKey: null, geminiKey: null, openaiKey: null, openrouterKey: null });
   }
 
   /** @deprecated Use setConfig({ model }) instead. */

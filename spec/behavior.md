@@ -451,7 +451,8 @@ language request — e.g. "normalize phone numbers", "sort by DOB desc".
 Requests are additive; use :undo to revert the last one.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires
-ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
+ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or
+OPENROUTER_API_KEY in env.
 ```
 
 Ctrl-C while a request runs cancels it and rolls back the half-applied
@@ -503,7 +504,8 @@ Usage:
   tamedtable --help, -h, help        Show this usage screen.
   tamedtable --version, -v           Print the version and exit.
 
-The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in env.
+The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or
+OPENROUTER_API_KEY in env.
 ```
 
 Provider and model resolution uses `@tamedtable/model-config`; see
@@ -888,7 +890,10 @@ and runs plain transformations never pays for it.
 The table view paginates. Rows display one fixed-size page at a time —
 twenty rows by default; the page size is a view setting the web shell
 owns — with a pager that jumps to the first, previous, next, last,
-or a numbered page. Paging is a view concern, like the CLI's
+or a numbered page. When the active provider's defaults pin a cell batch
+size (OpenRouter's 5), the page holds five batches instead — 5 × 5 = 25
+rows — so one page of AI cells fills in five engine calls; switching
+provider re-derives the page size and clamps the current page into range. Paging is a view concern, like the CLI's
 viewport: it never touches the spec, so it survives requests, undo, and
 redo. Loading a file opens page one; a request that shortens the table
 clamps the current page back into range.
@@ -899,8 +904,8 @@ it `R<row> · <column>`. The footer also shows whether the app is idle,
 running a request, or has just saved — a save reads as saved until the
 next edit, request, or load returns it to idle.
 
-The settings panel shows three provider accordion cards stacked vertically:
-Google, OpenAI, Anthropic. On open, no card is expanded. Clicking a collapsed
+The settings panel shows four provider accordion cards stacked vertically:
+Google, OpenAI, Anthropic, OpenRouter. On open, no card is expanded. Clicking a collapsed
 card expands it and selects that provider; clicking an already-open card
 collapses it without changing the provider. Opening a card collapses any other
 open card.
@@ -908,22 +913,24 @@ open card.
 Each card header (always visible, clickable) shows a radio knob, the provider
 name and tagline, and a voice badge on the right edge. The voice badge is green
 with a microphone icon when the provider supports voice input, or grey "No voice
-input" when it does not. Google shows the green badge; OpenAI and Anthropic show
-grey.
+input" when it does not. Google shows the green badge; OpenAI, Anthropic, and
+OpenRouter show grey.
 
 Text requests route through the selected provider — pick Google and a text
 request goes to Gemini, pick OpenAI and it goes to OpenAI, pick Anthropic and it
 goes to Anthropic. A natural-language chat request therefore needs a key for the
 selected provider: when that provider's key is missing the request never fires
 and a toast names the provider it needs, e.g. `Text requests require a Google API
-key — open Settings and add one.` (or `an OpenAI` / `an Anthropic`). A key for a
+key — open Settings and add one.` (or `an OpenAI` / `an Anthropic` / `an
+OpenRouter`). A key for a
 different provider does not satisfy the requirement — selecting Google still
 needs a Google key even when an Anthropic key is set. This is the same provider
 the voice mic already uses, so text and voice share one key per provider.
 
 When a card is open its body shows an API key field with a show/hide toggle, a
 grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
-.env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`
+.env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`,
+`or set OPENROUTER_API_KEY in .env`
 respectively), and that provider's two fixed default models **read-only** — a
 **Primary** row (the patch-turn model, which carries voice input) and a
 **Secondary** row (the per-row cell model), each with its model id and per-Mtok
