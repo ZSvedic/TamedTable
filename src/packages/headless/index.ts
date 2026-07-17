@@ -203,6 +203,7 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   gemini: DEFAULT_CELL_MODEL,
   anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
+  cerebras: 'gpt-oss-120b',
 };
 
 /** @internal — exported for unit tests. Pick the model for per-cell LLM
@@ -742,6 +743,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       // broadly-compatible endpoint for the GPT models in the catalogue.
       const openai = createOpenAI({ apiKey: key, ...fetchOpt });
       this.providerCache = (modelId: string) => openai.chat(modelId);
+    } else if (detected === 'cerebras') {
+      // Bench-only free provider: an OpenAI-compatible endpoint, so the same
+      // Chat Completions path as OpenAI, pointed at Cerebras.
+      const key = apiKey ?? process.env.CEREBRAS_API_KEY;
+      if (!key) throw new Error('CEREBRAS_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
+      this.providerCache = (modelId: string) => cerebras.chat(modelId);
     } else {
       // Anthropic (default)
       const key = apiKey ?? process.env.ANTHROPIC_API_KEY;

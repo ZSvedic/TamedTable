@@ -9,13 +9,14 @@
 //   report [name]                  print the results table
 //
 // sample/chart/report run offline. label/sweep make live calls and need the
-// matching provider key (ANTHROPIC_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY).
+// matching provider key (ANTHROPIC_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY /
+// CEREBRAS_API_KEY — the last is the free-tier provider).
 // This is the Phase-2 entry point; Phase 1 ships it ready to run.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHeadlessRunner } from '@tamedtable/headless';
-import { providerFor, type Provider } from '@tamedtable/model-config';
+import { providerFor, type EngineProvider } from '@tamedtable/model-config';
 import { runSweep, grid, type SweepResult } from './sweep.ts';
 import { scoreAccuracy, canonical, type Label } from './score.ts';
 import { modelTradeoffChart, batchSweepChart } from './charts.ts';
@@ -39,9 +40,10 @@ const DEFAULT_MODELS = ['claude-sonnet-4-5', 'claude-haiku-4-5', 'gemini-3.1-fla
 const DEFAULT_BATCHES = [1, 5, 10, 20, 40, 80];
 const DEFAULT_LABELER = 'claude-fable-5';
 
-function keyFor(provider: Provider): string | undefined {
-  if (provider === 'gemini') return process.env.GEMINI_API_KEY;
-  if (provider === 'openai') return process.env.OPENAI_API_KEY;
+function keyFor(provider: EngineProvider): string | undefined {
+  if (provider === 'gemini')   return process.env.GEMINI_API_KEY;
+  if (provider === 'openai')   return process.env.OPENAI_API_KEY;
+  if (provider === 'cerebras') return process.env.CEREBRAS_API_KEY;
   return process.env.ANTHROPIC_API_KEY;
 }
 

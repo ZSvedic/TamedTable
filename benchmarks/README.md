@@ -33,10 +33,11 @@ call) never shows up. This benchmark adds that axis.
 {"id","name","provider","inUsdPerMtok","outUsdPerMtok","cacheWriteMult","cacheReadMult","contextWindow","maxOutput","audioInput","runnable","notes"}
 ```
 
-`inUsdPerMtok` / `outUsdPerMtok` are USD per million tokens (Standard paid tier).
-`cacheWriteMult` / `cacheReadMult` scale the input rate for cached tokens (1.25 /
-0.1 on Anthropic; providers with implicit caching use 1 / 0.1). A unit test
-asserts every shipped catalogue model has a row here.
+`inUsdPerMtok` / `outUsdPerMtok` are USD per million tokens (Standard paid tier;
+Cerebras rows are its free developer tier, so both are 0). `cacheWriteMult` /
+`cacheReadMult` scale the input rate for cached tokens (1.25 / 0.1 on Anthropic;
+providers with implicit caching use 1 / 0.1). A unit test asserts every shipped
+catalogue model has a row here.
 
 ## The task
 
@@ -51,7 +52,8 @@ varies the **cell model** and **batch size**.
 
 All commands run from `src/`. `sample`, `chart`, and `report` are offline;
 `label` and `sweep` make live calls and need the matching provider key
-(`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`).
+(`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` /
+`CEREBRAS_API_KEY`).
 
 ```
 bun run bench:sample 150     # draw ~150 rows from the fixture → ground-truth/music-sample.csv
@@ -64,6 +66,26 @@ bun run bench:report         # print the results table
 Defaults: cell models `claude-sonnet-4-5, claude-haiku-4-5, gemini-3.1-flash-lite,
 gpt-5.4-mini`; batch sizes `1, 5, 10, 20, 40, 80`; labeller `claude-fable-5`.
 Override with `--models=…`, `--batches=…`, `--out=name` on `sweep`.
+
+## Free provider (Cerebras)
+
+The fourth provider is [Cerebras's free developer tier](https://cloud.cerebras.ai)
+— `zai-glm-4.7` (primary/patch role) and `gpt-oss-120b` (cell role), both $0,
+served over an OpenAI-compatible endpoint. It was picked over the other free
+tiers because its limits (30 req/min, 14,400 req/day, ~1M tokens/day as of
+2026-07) are the only ones that fit both the sweep (~170 calls per model) and
+real app use — OpenRouter's `:free` tier caps at 50 requests/day. Sign up
+(no credit card), export `CEREBRAS_API_KEY`, then:
+
+```
+bun run bench:sweep --models=zai-glm-4.7,gpt-oss-120b --out=free-models
+bun run bench:report free-models
+```
+
+Caveat: free-tier lineups rotate without notice (Cerebras went from ~12 free
+models to 2 in May 2026) — if a model id 404s, check the current list at
+[inference-docs.cerebras.ai](https://inference-docs.cerebras.ai) and update
+`models.jsonl` + the `providerFor` prefixes together.
 
 ## Ground truth
 

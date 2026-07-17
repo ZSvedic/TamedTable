@@ -121,6 +121,17 @@ Feature: Model config
       When providerFor is called with "gpt-5.4-mini"
       Then the result is "openai"
 
+    @headless
+    Scenario: providerFor returns cerebras for a zai-* id
+      When providerFor is called with "zai-glm-4.7"
+      Then the result is "cerebras"
+
+    @headless
+    # gpt-oss- must be checked before gpt-, else these ids would land on openai.
+    Scenario: providerFor returns cerebras for a gpt-oss-* id
+      When providerFor is called with "gpt-oss-120b"
+      Then the result is "cerebras"
+
   Rule: acceptsTemperature
 
     @headless

@@ -12,12 +12,13 @@ import {
   DEFAULTS,
   type ResolvedConfig,
   type Provider,
+  type EngineProvider,
 } from '@tamedtable/model-config';
 import { readStoredConfig, writeStoredConfig, clearStoredConfig } from './storage.ts';
 
 interface ModelConfigCtx {
   resolved?: ResolvedConfig;
-  providerResult?: Provider;
+  providerResult?: EngineProvider;
   modelResult?: string;
   keyResult?: string | null;
   boolResult?: boolean;

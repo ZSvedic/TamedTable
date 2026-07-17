@@ -114,9 +114,10 @@ export async function runSweep(configs: SweepConfig[], ctx: SweepContext): Promi
  *  crosses providers. Uses the provider's mid-tier model. */
 function defaultPrimaryFor(cellModel: string): string {
   switch (providerFor(cellModel)) {
-    case 'gemini': return 'gemini-3.5-flash';
-    case 'openai': return 'gpt-5.5';
-    default:       return 'claude-sonnet-4-6';
+    case 'gemini':   return 'gemini-3.5-flash';
+    case 'openai':   return 'gpt-5.5';
+    case 'cerebras': return 'zai-glm-4.7';
+    default:         return 'claude-sonnet-4-6';
   }
 }
 

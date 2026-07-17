@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export type Provider = 'anthropic' | 'gemini' | 'openai';
+export type Provider = 'anthropic' | 'gemini' | 'openai' | 'cerebras';
 
 export interface ModelSpec {
   id: string;

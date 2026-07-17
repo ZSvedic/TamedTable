@@ -7,11 +7,26 @@ test('loadModels parses benchmarks/models.jsonl', () => {
   expect(models.length).toBeGreaterThan(0);
   for (const m of models) {
     expect(typeof m.id).toBe('string');
-    expect(['anthropic', 'gemini', 'openai']).toContain(m.provider);
-    expect(m.inUsdPerMtok).toBeGreaterThan(0);
-    expect(m.outUsdPerMtok).toBeGreaterThan(0);
+    expect(['anthropic', 'gemini', 'openai', 'cerebras']).toContain(m.provider);
+    // Cerebras free-tier rows are priced 0/0; every other row must be positive.
+    if (m.provider === 'cerebras') {
+      expect(m.inUsdPerMtok).toBe(0);
+      expect(m.outUsdPerMtok).toBe(0);
+    } else {
+      expect(m.inUsdPerMtok).toBeGreaterThan(0);
+      expect(m.outUsdPerMtok).toBeGreaterThan(0);
+    }
     expect(m.contextWindow).toBeGreaterThan(0);
     expect(typeof m.audioInput).toBe('boolean');
+  }
+});
+
+test('the free Cerebras models are listed and priced at zero', () => {
+  for (const id of ['zai-glm-4.7', 'gpt-oss-120b']) {
+    const spec = specFor(id);
+    expect(spec?.provider).toBe('cerebras');
+    expect(spec?.inUsdPerMtok).toBe(0);
+    expect(spec?.outUsdPerMtok).toBe(0);
   }
 });
 

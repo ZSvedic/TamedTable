@@ -6,6 +6,12 @@ import catalogue from './models.json' with { type: 'json' };
 
 export type Provider = 'anthropic' | 'gemini' | 'openai';
 
+/** Providers the engine can route a model id to. Cerebras is bench-only: the
+ *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
+ *  sweeps its models, but it has no catalogue entry, no defaults row, and no
+ *  chooser card — `resolveConfig` never resolves it. */
+export type EngineProvider = Provider | 'cerebras';
+
 export interface ModelDef {
   id: string;
   name: string;
@@ -72,10 +78,14 @@ export function defaultCellModel(provider: Provider): string {
   return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
 }
 
-/** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids. */
-export function providerFor(modelId: string): Provider {
-  if (modelId.startsWith('gemini-')) return 'gemini';
-  if (modelId.startsWith('gpt-'))    return 'openai';
+/** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids.
+ *  `gpt-oss-` is checked before `gpt-`, so the open-weight OpenAI models
+ *  served by Cerebras never land on the OpenAI provider. */
+export function providerFor(modelId: string): EngineProvider {
+  if (modelId.startsWith('gemini-'))  return 'gemini';
+  if (modelId.startsWith('zai-'))     return 'cerebras';
+  if (modelId.startsWith('gpt-oss-')) return 'cerebras';
+  if (modelId.startsWith('gpt-'))     return 'openai';
   return 'anthropic';
 }
 

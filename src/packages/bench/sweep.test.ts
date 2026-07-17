@@ -57,6 +57,24 @@ test('runConfig scores accuracy against labels and prices the tally', async () =
   expect(r.costUsd).toBeGreaterThan(0);
 });
 
+test('runConfig maps a Cerebras cell model to the cerebras provider and its patch default', async () => {
+  const r = await runConfig(
+    { cellModel: 'gpt-oss-120b', batchSize: 20 },
+    {
+      inputCsv: '/ignored/by/fake.csv',
+      request: 'Add a boolean column Music',
+      idColumn: 'videoId',
+      targetColumn: 'Music',
+      labels: [{ id: 'a', expected: true }],
+      baseFetch,
+      runnerFactory: (opts) => fakeRunner(opts.fetch, opts.cellModel!),
+    },
+  );
+  expect(r.provider).toBe('cerebras');
+  expect(r.primaryModel).toBe('zai-glm-4.7');
+  expect(r.costUsd).toBe(0); // free tier — both models priced 0/0
+});
+
 test('runSweep runs every config; grid expands the cross product', async () => {
   const configs = grid(['claude-sonnet-4-5', 'claude-haiku-4-5'], [10, 40]);
   expect(configs).toHaveLength(4);
