@@ -300,9 +300,10 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `CEREBRAS_API_KEY` | — | Cerebras key (free tier). Bench-only: read by the engine when a `zai-*` / `gpt-oss-*` model id routes to Cerebras, and by `bench sweep`/`bench label`. Never resolved by `resolveConfig`, so it can't select the app's provider. |
+| `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Bench-only, same rules as `CEREBRAS_API_KEY`: read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter. The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras). |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras), `meta-llama/llama-3.3-70b-instruct:free` (OpenRouter). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
@@ -988,7 +989,7 @@ and batching show up in the measurement.
 
 ```ts
 type Provider = "anthropic" | "gemini" | "openai";  // app providers — catalogue, chooser, resolveConfig
-type EngineProvider = Provider | "cerebras";        // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
+type EngineProvider = Provider | "cerebras" | "openrouter";  // engine routing — the extra two are bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
 
@@ -1169,7 +1170,9 @@ the only provider wired for voice. The engine routes OpenAI models through the
 Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
 compatibility; Cerebras models (`zai-*` / `gpt-oss-*` ids) take the same
 Chat Completions path against `https://api.cerebras.ai/v1` with
-`CEREBRAS_API_KEY`.
+`CEREBRAS_API_KEY`, and OpenRouter models (slash-containing
+`vendor/model:free` ids) against `https://openrouter.ai/api/v1` with
+`OPENROUTER_API_KEY`.
 
 Text and voice requests route through the selected provider:
 `ensureHeadless` builds the engine with `config.model` / `config.cellModel`

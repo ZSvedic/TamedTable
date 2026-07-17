@@ -6,11 +6,12 @@ import catalogue from './models.json' with { type: 'json' };
 
 export type Provider = 'anthropic' | 'gemini' | 'openai';
 
-/** Providers the engine can route a model id to. Cerebras is bench-only: the
- *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
- *  sweeps its models, but it has no catalogue entry, no defaults row, and no
- *  chooser card — `resolveConfig` never resolves it. */
-export type EngineProvider = Provider | 'cerebras';
+/** Providers the engine can route a model id to. Cerebras and OpenRouter are
+ *  bench-only: the engine calls each one's OpenAI-compatible endpoint (both
+ *  free tiers), the benchmark sweeps their models, but they have no catalogue
+ *  entry, no defaults row, and no chooser card — `resolveConfig` never
+ *  resolves them. */
+export type EngineProvider = Provider | 'cerebras' | 'openrouter';
 
 export interface ModelDef {
   id: string;
@@ -79,9 +80,12 @@ export function defaultCellModel(provider: Provider): string {
 }
 
 /** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids.
- *  `gpt-oss-` is checked before `gpt-`, so the open-weight OpenAI models
- *  served by Cerebras never land on the OpenAI provider. */
+ *  Slash-containing ids are OpenRouter's vendor/model form and no other
+ *  provider's ids contain one, so that rule goes first; `gpt-oss-` is checked
+ *  before `gpt-`, so the open-weight OpenAI models served by Cerebras never
+ *  land on the OpenAI provider. */
 export function providerFor(modelId: string): EngineProvider {
+  if (modelId.includes('/'))          return 'openrouter';
   if (modelId.startsWith('gemini-'))  return 'gemini';
   if (modelId.startsWith('zai-'))     return 'cerebras';
   if (modelId.startsWith('gpt-oss-')) return 'cerebras';

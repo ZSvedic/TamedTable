@@ -67,14 +67,15 @@ Defaults: cell models `claude-sonnet-4-5, claude-haiku-4-5, gemini-3.1-flash-lit
 gpt-5.4-mini`; batch sizes `1, 5, 10, 20, 40, 80`; labeller `claude-fable-5`.
 Override with `--models=…`, `--batches=…`, `--out=name` on `sweep`.
 
-## Free provider (Cerebras)
+## Free providers (Cerebras, OpenRouter)
 
-The fourth provider is [Cerebras's free developer tier](https://cloud.cerebras.ai)
-— `zai-glm-4.7` (primary/patch role) and `gpt-oss-120b` (cell role), both $0,
-served over an OpenAI-compatible endpoint. It was picked over the other free
-tiers because its limits (30 req/min, 14,400 req/day, ~1M tokens/day as of
-2026-07) are the only ones that fit both the sweep (~170 calls per model) and
-real app use — OpenRouter's `:free` tier caps at 50 requests/day. Sign up
+Two bench-only free providers sit next to the paid three, both OpenAI-compatible,
+both $0 in `models.jsonl`. Neither appears in the app's provider chooser.
+
+**Cerebras** ([cloud.cerebras.ai](https://cloud.cerebras.ai)) — `zai-glm-4.7`
+(primary/patch role) and `gpt-oss-120b` (cell role). The highest free limits
+(30 req/min, 14,400 req/day, ~1M tokens/day as of 2026-07): the only free tier
+that fits both the full sweep (~170 calls per model) and real app use. Sign up
 (no credit card), export `CEREBRAS_API_KEY`, then:
 
 ```
@@ -82,10 +83,32 @@ bun run bench:sweep --models=zai-glm-4.7,gpt-oss-120b --out=free-models
 bun run bench:report free-models
 ```
 
-Caveat: free-tier lineups rotate without notice (Cerebras went from ~12 free
-models to 2 in May 2026) — if a model id 404s, check the current list at
-[inference-docs.cerebras.ai](https://inference-docs.cerebras.ai) and update
-`models.jsonl` + the `providerFor` prefixes together.
+**OpenRouter** ([openrouter.ai](https://openrouter.ai)) — one no-credit-card
+signup unlocks ~25 `:free` models from many vendors; ids look like
+`qwen/qwen3-coder:free` (primary pick — strongest free tool caller) and
+`meta-llama/llama-3.3-70b-instruct:free` (cell pick). Three gotchas:
+
+1. **Privacy toggle.** `:free` endpoints return 404 (`No endpoints found
+   matching your data policy`) until the account's
+   [privacy settings](https://openrouter.ai/settings/privacy) allow free model
+   publication — free models may train on your prompts.
+2. **20 req/min.** The engine's default is 40, so cap it with `TAMEDTABLE_RPM=20`.
+3. **~50 req/day on a $0 account** (1,000/day after a one-time $10 credit
+   purchase that never expires). The full grid won't fit in 50 — drop batch
+   size 1 (alone 120 calls):
+
+```
+TAMEDTABLE_RPM=20 bun run bench:sweep \
+  --models=qwen/qwen3-coder:free,meta-llama/llama-3.3-70b-instruct:free \
+  --batches=10,20,40,80 --out=free-openrouter
+```
+
+Caveat for both: free lineups rotate without notice (Cerebras went from ~12
+free models to 2 in May 2026; OpenRouter `:free` models come and go weekly) —
+if a model id 404s, check the provider's current list
+([inference-docs.cerebras.ai](https://inference-docs.cerebras.ai),
+[openrouter.ai/models](https://openrouter.ai/models)) and update
+`models.jsonl` + the `providerFor` rules together.
 
 ## Ground truth
 

@@ -75,6 +75,24 @@ test('runConfig maps a Cerebras cell model to the cerebras provider and its patc
   expect(r.costUsd).toBe(0); // free tier — both models priced 0/0
 });
 
+test('runConfig maps an OpenRouter cell model to the openrouter provider and its patch default', async () => {
+  const r = await runConfig(
+    { cellModel: 'meta-llama/llama-3.3-70b-instruct:free', batchSize: 20 },
+    {
+      inputCsv: '/ignored/by/fake.csv',
+      request: 'Add a boolean column Music',
+      idColumn: 'videoId',
+      targetColumn: 'Music',
+      labels: [{ id: 'a', expected: true }],
+      baseFetch,
+      runnerFactory: (opts) => fakeRunner(opts.fetch, opts.cellModel!),
+    },
+  );
+  expect(r.provider).toBe('openrouter');
+  expect(r.primaryModel).toBe('qwen/qwen3-coder:free');
+  expect(r.costUsd).toBe(0); // free plan — both models priced 0/0
+});
+
 test('runSweep runs every config; grid expands the cross product', async () => {
   const configs = grid(['claude-sonnet-4-5', 'claude-haiku-4-5'], [10, 40]);
   expect(configs).toHaveLength(4);

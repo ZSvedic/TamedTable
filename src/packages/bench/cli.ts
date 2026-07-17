@@ -10,7 +10,7 @@
 //
 // sample/chart/report run offline. label/sweep make live calls and need the
 // matching provider key (ANTHROPIC_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY /
-// CEREBRAS_API_KEY — the last is the free-tier provider).
+// CEREBRAS_API_KEY / OPENROUTER_API_KEY — the last two are free tiers).
 // This is the Phase-2 entry point; Phase 1 ships it ready to run.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -19,7 +19,7 @@ import { createHeadlessRunner } from '@tamedtable/headless';
 import { providerFor, type EngineProvider } from '@tamedtable/model-config';
 import { runSweep, grid, type SweepResult } from './sweep.ts';
 import { scoreAccuracy, canonical, type Label } from './score.ts';
-import { modelTradeoffChart, batchSweepChart } from './charts.ts';
+import { modelTradeoffChart, batchSweepChart, fileSlug } from './charts.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const BENCH = join(ROOT, 'benchmarks');
@@ -41,9 +41,10 @@ const DEFAULT_BATCHES = [1, 5, 10, 20, 40, 80];
 const DEFAULT_LABELER = 'claude-fable-5';
 
 function keyFor(provider: EngineProvider): string | undefined {
-  if (provider === 'gemini')   return process.env.GEMINI_API_KEY;
-  if (provider === 'openai')   return process.env.OPENAI_API_KEY;
-  if (provider === 'cerebras') return process.env.CEREBRAS_API_KEY;
+  if (provider === 'gemini')     return process.env.GEMINI_API_KEY;
+  if (provider === 'openai')     return process.env.OPENAI_API_KEY;
+  if (provider === 'cerebras')   return process.env.CEREBRAS_API_KEY;
+  if (provider === 'openrouter') return process.env.OPENROUTER_API_KEY;
   return process.env.ANTHROPIC_API_KEY;
 }
 
@@ -133,7 +134,7 @@ function cmdChart(name: string, batch: number | undefined, subtitle: string | un
     modelTradeoffChart(results, { batchSize: refBatch, title: `Accuracy vs cost per task (batch ${refBatch})`, subtitle }));
   console.log(`Wrote ${rel(join(CHARTS_DIR, 'model-tradeoff.svg'))} (batch ${refBatch})`);
   for (const cellModel of [...new Set(results.map((r) => r.cellModel))]) {
-    const file = join(CHARTS_DIR, `batch-${cellModel}.svg`);
+    const file = join(CHARTS_DIR, `batch-${fileSlug(cellModel)}.svg`);
     writeFileSync(file, batchSweepChart(results, cellModel, { subtitle }));
     console.log(`Wrote ${rel(file)}`);
   }

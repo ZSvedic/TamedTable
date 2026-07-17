@@ -204,6 +204,7 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
   cerebras: 'gpt-oss-120b',
+  openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
 };
 
 /** @internal — exported for unit tests. Pick the model for per-cell LLM
@@ -750,6 +751,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('CEREBRAS_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
+    } else if (detected === 'openrouter') {
+      // Bench-only free provider, same OpenAI-compatible path as Cerebras.
+      // :free models 404 unless the account's privacy settings allow free
+      // model publication — see benchmarks/README.md.
+      const key = apiKey ?? process.env.OPENROUTER_API_KEY;
+      if (!key) throw new Error('OPENROUTER_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const openrouter = createOpenAI({ apiKey: key, baseURL: 'https://openrouter.ai/api/v1', ...fetchOpt });
+      this.providerCache = (modelId: string) => openrouter.chat(modelId);
     } else {
       // Anthropic (default)
       const key = apiKey ?? process.env.ANTHROPIC_API_KEY;

@@ -110,6 +110,9 @@ for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai.
 
 `providerFor(modelId)` returns:
 
+- `openrouter` for any id containing `/` — every OpenRouter id is
+  vendor-prefixed (`qwen/qwen3-coder:free`), and no other provider's ids
+  contain a slash, so this rule is checked first
 - `anthropic` for any id starting with `claude-`
 - `gemini` for any id starting with `gemini-`
 - `cerebras` for any id starting with `zai-` or `gpt-oss-` — the `gpt-oss-`
@@ -117,12 +120,12 @@ for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai.
   served by Cerebras never land on the OpenAI provider
 - `openai` for any other id starting with `gpt-`
 
-The return type is `EngineProvider = Provider | 'cerebras'`. Cerebras is a
-**bench-only** provider: the engine routes its ids to Cerebras's
-OpenAI-compatible endpoint (free tier), the benchmark sweeps them, but it has
-no catalogue entry, no `defaults` row, and no chooser card, and
-`resolveConfig` never resolves it — the app's `Provider` type stays the three
-above.
+The return type is `EngineProvider = Provider | 'cerebras' | 'openrouter'`.
+Cerebras and OpenRouter are **bench-only** providers: the engine routes their
+ids to each one's OpenAI-compatible endpoint (both free tiers), the benchmark
+sweeps them, but they have no catalogue entry, no `defaults` row, and no
+chooser card, and `resolveConfig` never resolves them — the app's `Provider`
+type stays the three above.
 
 `acceptsTemperature(modelId)` reports whether a model still accepts a
 `temperature` sampling parameter. The newest models (Anthropic Opus 4.8/4.7,

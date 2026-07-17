@@ -8,10 +8,16 @@ import type { SweepResult } from './sweep.ts';
 
 // Okabe-Ito, mapped by provider so a model keeps one colour across both charts.
 const PROVIDER_COLOR: Record<string, string> = {
-  anthropic: '#D55E00', // vermillion
-  gemini: '#0072B2',    // blue
-  openai: '#009E73',    // bluish green
+  anthropic: '#D55E00',  // vermillion
+  gemini: '#0072B2',     // blue
+  openai: '#009E73',     // bluish green
+  cerebras: '#CC79A7',   // reddish purple
+  openrouter: '#E69F00', // orange
 };
+
+/** Model id → safe chart filename fragment. OpenRouter ids carry `/` and `:`
+ *  (`qwen/qwen3-coder:free`), which would otherwise nest or break the path. */
+export const fileSlug = (id: string) => id.replace(/[/:]/g, '-').replace(/-+/g, '-');
 const FALLBACK_COLOR = '#999999';
 const INK = '#222222';
 const GRID = '#e5e5e5';

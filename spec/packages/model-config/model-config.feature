@@ -132,6 +132,17 @@ Feature: Model config
       When providerFor is called with "gpt-oss-120b"
       Then the result is "cerebras"
 
+    @headless
+    # Every OpenRouter id is vendor-prefixed with a slash; no other provider's ids contain one.
+    Scenario: providerFor returns openrouter for a vendor/model id
+      When providerFor is called with "qwen/qwen3-coder:free"
+      Then the result is "openrouter"
+
+    @headless
+    Scenario: providerFor returns openrouter even when the vendor segment looks like another provider
+      When providerFor is called with "meta-llama/llama-3.3-70b-instruct:free"
+      Then the result is "openrouter"
+
   Rule: acceptsTemperature
 
     @headless

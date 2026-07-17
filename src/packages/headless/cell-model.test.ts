@@ -33,4 +33,12 @@ describe('resolveCellModelId', () => {
     expect(resolveCellModelId('zai-glm-4.7', 'gpt-oss-120b')).toBe('gpt-oss-120b');
     expect(resolveCellModelId('gpt-oss-120b', 'claude-haiku-4-5')).toBe('gpt-oss-120b');
   });
+
+  it('routes OpenRouter (bench-only) main models to the OpenRouter cell fallback', () => {
+    expect(resolveCellModelId('qwen/qwen3-coder:free')).toBe('meta-llama/llama-3.3-70b-instruct:free');
+    expect(resolveCellModelId('qwen/qwen3-coder:free', 'meta-llama/llama-3.3-70b-instruct:free'))
+      .toBe('meta-llama/llama-3.3-70b-instruct:free');
+    expect(resolveCellModelId('qwen/qwen3-coder:free', 'claude-haiku-4-5'))
+      .toBe('meta-llama/llama-3.3-70b-instruct:free');
+  });
 });

@@ -1,15 +1,16 @@
 import { test, expect } from 'bun:test';
 import { ALL_MODELS } from '@tamedtable/model-config';
-import { loadModels, priceFor, specFor, costFor, FALLBACK_SPEC } from './pricing.ts';
+import { loadModels, priceFor, specFor, costFor, FALLBACK_SPEC, type Provider } from './pricing.ts';
 
 test('loadModels parses benchmarks/models.jsonl', () => {
   const models = loadModels();
   expect(models.length).toBeGreaterThan(0);
+  const freeProviders = new Set(['cerebras', 'openrouter']);
   for (const m of models) {
     expect(typeof m.id).toBe('string');
-    expect(['anthropic', 'gemini', 'openai', 'cerebras']).toContain(m.provider);
-    // Cerebras free-tier rows are priced 0/0; every other row must be positive.
-    if (m.provider === 'cerebras') {
+    expect(['anthropic', 'gemini', 'openai', 'cerebras', 'openrouter']).toContain(m.provider);
+    // Free-tier rows (Cerebras, OpenRouter) are priced 0/0; every other row must be positive.
+    if (freeProviders.has(m.provider)) {
       expect(m.inUsdPerMtok).toBe(0);
       expect(m.outUsdPerMtok).toBe(0);
     } else {
@@ -21,10 +22,16 @@ test('loadModels parses benchmarks/models.jsonl', () => {
   }
 });
 
-test('the free Cerebras models are listed and priced at zero', () => {
-  for (const id of ['zai-glm-4.7', 'gpt-oss-120b']) {
+test('the free models are listed under their free provider and priced at zero', () => {
+  const expected: Record<string, Provider> = {
+    'zai-glm-4.7': 'cerebras',
+    'gpt-oss-120b': 'cerebras',
+    'qwen/qwen3-coder:free': 'openrouter',
+    'meta-llama/llama-3.3-70b-instruct:free': 'openrouter',
+  };
+  for (const [id, provider] of Object.entries(expected)) {
     const spec = specFor(id);
-    expect(spec?.provider).toBe('cerebras');
+    expect(spec?.provider).toBe(provider);
     expect(spec?.inUsdPerMtok).toBe(0);
     expect(spec?.outUsdPerMtok).toBe(0);
   }

@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { modelTradeoffChart, batchSweepChart } from './charts.ts';
+import { modelTradeoffChart, batchSweepChart, fileSlug } from './charts.ts';
 import type { SweepResult } from './sweep.ts';
 
 function res(partial: Partial<SweepResult>): SweepResult {
@@ -43,4 +43,9 @@ test('batchSweepChart draws three panels and a point per batch size', () => {
   expect(svg).toContain('Batch size');
   // 3 batch sizes × 3 panels = 9 points
   expect((svg.match(/<circle /g) ?? []).length).toBe(9);
+});
+
+test('fileSlug makes OpenRouter ids safe for chart filenames', () => {
+  expect(fileSlug('qwen/qwen3-coder:free')).toBe('qwen-qwen3-coder-free');
+  expect(fileSlug('claude-haiku-4-5')).toBe('claude-haiku-4-5'); // plain ids pass through
 });
