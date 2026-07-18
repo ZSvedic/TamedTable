@@ -20,9 +20,10 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
 
   // Local key state — one entry per provider. Initialized from current config.
   const [keys, setKeys] = useState<Record<Provider, string>>({
-    gemini:    cfg.geminiKey    ?? '',
-    openai:    cfg.openaiKey    ?? '',
-    anthropic: cfg.anthropicKey ?? '',
+    gemini:     cfg.geminiKey     ?? '',
+    openai:     cfg.openaiKey     ?? '',
+    anthropic:  cfg.anthropicKey  ?? '',
+    openrouter: cfg.openrouterKey ?? '',
   });
 
   if (!controller.settingsOpen) return null;
@@ -30,9 +31,10 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   const handleKeyChange = (p: Provider, value: string): void => {
     setKeys((prev) => ({ ...prev, [p]: value }));
     // Live-save the key
-    if (p === 'gemini')    void controller.setConfig({ geminiKey:    value.trim() || null });
-    if (p === 'openai')    void controller.setConfig({ openaiKey:    value.trim() || null });
-    if (p === 'anthropic') void controller.setConfig({ anthropicKey: value.trim() || null });
+    if (p === 'gemini')     void controller.setConfig({ geminiKey:     value.trim() || null });
+    if (p === 'openai')     void controller.setConfig({ openaiKey:     value.trim() || null });
+    if (p === 'anthropic')  void controller.setConfig({ anthropicKey:  value.trim() || null });
+    if (p === 'openrouter') void controller.setConfig({ openrouterKey: value.trim() || null });
   };
 
   // The app theme, expressed as the chooser's --mc-* variables.

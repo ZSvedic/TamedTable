@@ -17,7 +17,7 @@
 import { DEFAULT_BATCH_SIZE, DEFAULT_CHUNK_SIZE } from '@tamedtable/headless';
 import type { ChunkUpdate, RequestAudio, RequestDebugInfo, TimelineStep } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
-import { resolveConfig, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
+import { resolveConfig, defaultBatchSize, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig } from '@tamedtable/model-config/storage';
@@ -64,6 +64,15 @@ export type {
   WebSettings,
 };
 
+/** The page size for a provider: one AI-cell concurrency wave — rows per
+ *  batch × batches in flight. Host opts win; otherwise the provider's pinned
+ *  cell batch (openrouter: 5 × 5 = 25) or the engine default (20 × 5 = 100). */
+export function pageSizeFor(provider: Provider, opts: WebControllerOptions): number {
+  const batch = opts.batchSize ?? defaultBatchSize(provider) ?? DEFAULT_BATCH_SIZE;
+  return batch * (opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
+}
+
+
 // #WebShell
 export class WebController implements ControllerHost {
   readonly opts: WebControllerOptions;
@@ -108,7 +117,9 @@ export class WebController implements ControllerHost {
   lastDebug: RequestDebugInfo | undefined;
   /** Rows per table page — a view setting the controller owns (the spec
    *  never carries a page size), sized to one AI-cell concurrency wave so a
-   *  streaming page fills in as each wave of concurrent batches lands. */
+   *  streaming page fills in as each wave of concurrent batches lands.
+   *  Re-derived on config changes: the wave shrinks with the provider's
+   *  pinned cell batch size. */
   pageSize: number;
   /** The selected cell, or null — tints the cell and feeds the voice prompt. */
   selection: CellRef | null = null;
@@ -127,15 +138,15 @@ export class WebController implements ControllerHost {
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
     this.file = opts.file;
-    // One concurrency wave per page: rows per batch × batches in flight
-    // (100 with the defaults), so a streaming page fills wave by wave.
-    this.pageSize = (opts.batchSize ?? DEFAULT_BATCH_SIZE) * (opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
     // In the browser we avoid importing process.env — guard with typeof check.
     // Tests pass opts.env = {} to suppress real API keys from the shell.
     const envVars: Record<string, string | undefined> =
       opts.env ?? (typeof process !== 'undefined' ? process.env : {});
     // Precedence: env vars > opts.config > stored config > defaults.
     this.config = resolveConfig(envVars, { ...readStoredConfig(), ...opts.config });
+    // One concurrency wave per page (100 with the defaults, 25 on openrouter),
+    // so a streaming page fills wave by wave.
+    this.pageSize = pageSizeFor(this.config.provider, opts);
 
     // Built first so pushToast can record every toast from the moment the
     // controller exists.

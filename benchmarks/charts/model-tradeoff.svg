@@ -1,37 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="480" viewBox="0 0 760 480" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
 <rect width="760" height="480" fill="#ffffff"/>
-<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Accuracy vs cost per task (batch 20)</text>
+<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Accuracy vs cost per task (batch 5)</text>
+<text x="64" y="42" font-size="11" fill="#888888">OpenRouter :free models, 120-row fixture, 2026-07-17</text>
 <line x1="64" y1="424.0" x2="610" y2="424.0" stroke="#e5e5e5"/>
 <text x="56" y="428.0" font-size="11" text-anchor="end" fill="#222222">0%</text>
-<line x1="64" y1="330.0" x2="610" y2="330.0" stroke="#e5e5e5"/>
-<text x="56" y="334.0" font-size="11" text-anchor="end" fill="#222222">25%</text>
-<line x1="64" y1="236.0" x2="610" y2="236.0" stroke="#e5e5e5"/>
-<text x="56" y="240.0" font-size="11" text-anchor="end" fill="#222222">50%</text>
-<line x1="64" y1="142.0" x2="610" y2="142.0" stroke="#e5e5e5"/>
-<text x="56" y="146.0" font-size="11" text-anchor="end" fill="#222222">75%</text>
-<line x1="64" y1="48.0" x2="610" y2="48.0" stroke="#e5e5e5"/>
-<text x="56" y="52.0" font-size="11" text-anchor="end" fill="#222222">100%</text>
-<line x1="64.0" y1="48" x2="64.0" y2="424" stroke="#e5e5e5"/>
+<line x1="64" y1="333.0" x2="610" y2="333.0" stroke="#e5e5e5"/>
+<text x="56" y="337.0" font-size="11" text-anchor="end" fill="#222222">25%</text>
+<line x1="64" y1="242.0" x2="610" y2="242.0" stroke="#e5e5e5"/>
+<text x="56" y="246.0" font-size="11" text-anchor="end" fill="#222222">50%</text>
+<line x1="64" y1="151.0" x2="610" y2="151.0" stroke="#e5e5e5"/>
+<text x="56" y="155.0" font-size="11" text-anchor="end" fill="#222222">75%</text>
+<line x1="64" y1="60.0" x2="610" y2="60.0" stroke="#e5e5e5"/>
+<text x="56" y="64.0" font-size="11" text-anchor="end" fill="#222222">100%</text>
+<line x1="64.0" y1="60" x2="64.0" y2="424" stroke="#e5e5e5"/>
 <text x="64.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0000</text>
-<line x1="200.5" y1="48" x2="200.5" y2="424" stroke="#e5e5e5"/>
-<text x="200.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0500</text>
-<line x1="337.0" y1="48" x2="337.0" y2="424" stroke="#e5e5e5"/>
-<text x="337.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.1000</text>
-<line x1="473.5" y1="48" x2="473.5" y2="424" stroke="#e5e5e5"/>
-<text x="473.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.1500</text>
-<line x1="610.0" y1="48" x2="610.0" y2="424" stroke="#e5e5e5"/>
-<text x="610.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.2000</text>
+<line x1="200.5" y1="60" x2="200.5" y2="424" stroke="#e5e5e5"/>
+<text x="200.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0000</text>
+<line x1="337.0" y1="60" x2="337.0" y2="424" stroke="#e5e5e5"/>
+<text x="337.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0001</text>
+<line x1="473.5" y1="60" x2="473.5" y2="424" stroke="#e5e5e5"/>
+<text x="473.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0001</text>
+<line x1="610.0" y1="60" x2="610.0" y2="424" stroke="#e5e5e5"/>
+<text x="610.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0001</text>
 <text x="337" y="468" font-size="12" text-anchor="middle" fill="#222222">Average cost per task (USD)</text>
-<circle cx="112.1" cy="63.7" r="5" fill="#0072B2"/>
-<text x="120.1" y="67.7" font-size="11" fill="#0072B2">gemini-3.1-flash-lite</text>
-<circle cx="416.4" cy="66.8" r="5" fill="#0072B2"/>
-<text x="424.4" y="70.8" font-size="11" fill="#0072B2">gemini-3.5-flash</text>
-<circle cx="401.1" cy="66.8" r="5" fill="#0072B2"/>
-<text x="409.1" y="70.8" font-size="11" fill="#0072B2">gemini-3.1-pro-preview</text>
-<circle cx="98.9" cy="88.7" r="5" fill="#009E73"/>
-<text x="106.9" y="92.7" font-size="11" fill="#009E73">gpt-5.4-mini</text>
-<circle cx="197.6" cy="66.8" r="5" fill="#D55E00"/>
-<text x="205.6" y="70.8" font-size="11" fill="#D55E00">claude-sonnet-4-5</text>
-<circle cx="105.1" cy="95.0" r="5" fill="#D55E00"/>
-<text x="113.1" y="99.0" font-size="11" fill="#D55E00">claude-haiku-4-5</text>
+<circle cx="64.0" cy="114.6" r="5" fill="#E69F00"/>
+<text x="72.0" y="118.6" font-size="11" fill="#E69F00">tencent/hy3:free</text>
+<circle cx="64.0" cy="75.2" r="5" fill="#E69F00"/>
+<text x="72.0" y="79.2" font-size="11" fill="#E69F00">cohere/north-mini-code:free</text>
 </svg>

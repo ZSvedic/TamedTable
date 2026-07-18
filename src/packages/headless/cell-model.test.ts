@@ -27,4 +27,18 @@ describe('resolveCellModelId', () => {
     expect(resolveCellModelId('gpt-5.5', 'claude-haiku-4-5')).toBe('gpt-5.4-mini');
     expect(resolveCellModelId('gemini-3.5-flash', 'gpt-5.4-mini')).toBe('gemini-3.1-flash-lite');
   });
+
+  it('routes Cerebras (bench-only) main models to the Cerebras cell fallback', () => {
+    expect(resolveCellModelId('zai-glm-4.7')).toBe('gpt-oss-120b');
+    expect(resolveCellModelId('zai-glm-4.7', 'gpt-oss-120b')).toBe('gpt-oss-120b');
+    expect(resolveCellModelId('gpt-oss-120b', 'claude-haiku-4-5')).toBe('gpt-oss-120b');
+  });
+
+  it('routes OpenRouter (bench-only) main models to the OpenRouter cell fallback', () => {
+    expect(resolveCellModelId('qwen/qwen3-coder:free')).toBe('meta-llama/llama-3.3-70b-instruct:free');
+    expect(resolveCellModelId('qwen/qwen3-coder:free', 'meta-llama/llama-3.3-70b-instruct:free'))
+      .toBe('meta-llama/llama-3.3-70b-instruct:free');
+    expect(resolveCellModelId('qwen/qwen3-coder:free', 'claude-haiku-4-5'))
+      .toBe('meta-llama/llama-3.3-70b-instruct:free');
+  });
 });

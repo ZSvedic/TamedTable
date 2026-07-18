@@ -39,21 +39,30 @@ Feature: Model config
       And the resolved anthropicKey is null
       And the resolved geminiKey is null
 
+    @headless
+    Scenario: OPENROUTER_API_KEY in env sets provider and key
+      When resolveConfig is called with env OPENROUTER_API_KEY="sk-or-test"
+      Then the resolved provider is "openrouter"
+      And the resolved openrouterKey is "sk-or-test"
+      And the resolved anthropicKey is null
+
     # Precedence: when several provider keys are present, Gemini beats OpenAI
-    # beats Anthropic. Anthropic is present (and loses) in every row, so its key
+    # beats Anthropic beats OpenRouter — a paid key always outranks the free
+    # tier. Anthropic is present (and loses) in the first rows, so its key
     # is nulled each time. Single-key resolution is covered by the scenarios above.
     @headless
-    Scenario Outline: <present> in env — <winner> wins over Anthropic
+    Scenario Outline: <present> in env — <winner> wins
       When resolveConfig is called with env keys "<keys>"
       Then the resolved provider is "<winner>"
       And the resolved <winnerKey> is set
-      And the resolved anthropicKey is null
 
       Examples:
-        | present            | keys                                              | winner | winnerKey |
-        | Anthropic + Gemini | ANTHROPIC_API_KEY, GEMINI_API_KEY                 | gemini | geminiKey |
-        | All three          | ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY | gemini | geminiKey |
-        | Anthropic + OpenAI | ANTHROPIC_API_KEY, OPENAI_API_KEY                 | openai | openaiKey |
+        | present               | keys                                              | winner    | winnerKey    |
+        | Anthropic + Gemini    | ANTHROPIC_API_KEY, GEMINI_API_KEY                 | gemini    | geminiKey    |
+        | All three paid        | ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY | gemini    | geminiKey    |
+        | Anthropic + OpenAI    | ANTHROPIC_API_KEY, OPENAI_API_KEY                 | openai    | openaiKey    |
+        | Anthropic + OpenRouter| ANTHROPIC_API_KEY, OPENROUTER_API_KEY             | anthropic | anthropicKey |
+        | OpenAI + OpenRouter   | OPENAI_API_KEY, OPENROUTER_API_KEY                | openai    | openaiKey    |
 
   Rule: resolveConfig respects stored values
 
@@ -121,6 +130,28 @@ Feature: Model config
       When providerFor is called with "gpt-5.4-mini"
       Then the result is "openai"
 
+    @headless
+    Scenario: providerFor returns cerebras for a zai-* id
+      When providerFor is called with "zai-glm-4.7"
+      Then the result is "cerebras"
+
+    @headless
+    # gpt-oss- must be checked before gpt-, else these ids would land on openai.
+    Scenario: providerFor returns cerebras for a gpt-oss-* id
+      When providerFor is called with "gpt-oss-120b"
+      Then the result is "cerebras"
+
+    @headless
+    # Every OpenRouter id is vendor-prefixed with a slash; no other provider's ids contain one.
+    Scenario: providerFor returns openrouter for a vendor/model id
+      When providerFor is called with "qwen/qwen3-coder:free"
+      Then the result is "openrouter"
+
+    @headless
+    Scenario: providerFor returns openrouter even when the vendor segment looks like another provider
+      When providerFor is called with "meta-llama/llama-3.3-70b-instruct:free"
+      Then the result is "openrouter"
+
   Rule: acceptsTemperature
 
     @headless
@@ -174,6 +205,12 @@ Feature: Model config
       When keyFor is called
       Then the key result is null
 
+    @headless
+    Scenario: keyFor returns the openrouter key when provider is openrouter
+      Given a resolved config for provider "openrouter" with openrouterKey "sk-or-w"
+      When keyFor is called
+      Then the key result is "sk-or-w"
+
   Rule: defaultModel
 
     @headless
@@ -191,6 +228,12 @@ Feature: Model config
       When defaultModel is called with "openai"
       Then the result is "gpt-5.5"
 
+    @headless
+    # The free tier: one model fills both roles, so primary = the north-mini pick.
+    Scenario: defaultModel for openrouter returns the free north-mini pick
+      When defaultModel is called with "openrouter"
+      Then the result is "cohere/north-mini-code:free"
+
   Rule: defaultCellModel
 
     @headless
@@ -207,6 +250,26 @@ Feature: Model config
     Scenario: defaultCellModel for gemini returns gemini-3.1-flash-lite
       When defaultCellModel is called with "gemini"
       Then the result is "gemini-3.1-flash-lite"
+
+    @headless
+    Scenario: defaultCellModel for openrouter returns the same free north-mini pick
+      When defaultCellModel is called with "openrouter"
+      Then the result is "cohere/north-mini-code:free"
+
+  Rule: defaultBatchSize pins the benchmarked cell batch
+
+    The 2026-07-17 free-model benchmark measured north-mini at 96% accuracy at
+    batch 5 and sharply worse at 40+; openrouter is the only provider with a pin.
+
+    @headless
+    Scenario: defaultBatchSize for openrouter returns 5
+      When defaultBatchSize is called with "openrouter"
+      Then the numeric result is 5
+
+    @headless
+    Scenario: defaultBatchSize for gemini is undefined
+      When defaultBatchSize is called with "gemini"
+      Then the numeric result is undefined
 
   Rule: ALL_MODELS catalogue
 
@@ -255,6 +318,13 @@ Feature: Model config
     Scenario: gemini-3.5-flash is priced 1.5 in and 9 out
       Then the model "gemini-3.5-flash" costs 1.5 in and 9 out per Mtok
 
+    @headless
+    # The free tier's single catalogue entry: $0 both ways, no voice.
+    Scenario: The openrouter catalogue entry is the free north-mini pick
+      Then ALL_MODELS contains the model "cohere/north-mini-code:free"
+      And the model "cohere/north-mini-code:free" has voiceInput false
+      And the model "cohere/north-mini-code:free" costs 0 in and 0 out per Mtok
+
   Rule: DEFAULTS names each provider's two roles
 
     @headless
@@ -262,10 +332,11 @@ Feature: Model config
       Then DEFAULTS names the <provider> primary "<primary>" and secondary "<secondary>"
 
       Examples:
-        | provider  | primary           | secondary             |
-        | gemini    | gemini-3.5-flash  | gemini-3.1-flash-lite |
-        | openai    | gpt-5.5           | gpt-5.4-mini          |
-        | anthropic | claude-sonnet-4-6 | claude-haiku-4-5      |
+        | provider   | primary                     | secondary                   |
+        | gemini     | gemini-3.5-flash            | gemini-3.1-flash-lite       |
+        | openai     | gpt-5.5                     | gpt-5.4-mini                |
+        | anthropic  | claude-sonnet-4-6           | claude-haiku-4-5            |
+        | openrouter | cohere/north-mini-code:free | cohere/north-mini-code:free |
 
   Rule: storage.ts persists config in localStorage
 
@@ -356,6 +427,24 @@ Feature: Model config
       Then the "openai" card's Get-API-key link opens "https://platform.openai.com/api-keys" in a new tab
       When the user clicks the "Anthropic" provider card
       Then the "anthropic" card's Get-API-key link opens "https://console.anthropic.com/settings/keys" in a new tab
+      When the user clicks the "OpenRouter" provider card
+      Then the "openrouter" card's Get-API-key link opens "https://openrouter.ai/settings/keys" in a new tab
+
+    @web
+    # The free tier: one $0 model fills both roles.
+    Scenario: Selecting OpenRouter pins the free model in both roles
+      Given the model-config demo page
+      When the user clicks the "OpenRouter" provider card
+      Then the demo shows resolved provider "openrouter"
+      And the demo shows resolved model "cohere/north-mini-code:free"
+      And the demo shows resolved cellModel "cohere/north-mini-code:free"
+      And the "primary" default row shows the price "$0 in / $0 out"
+
+    @web
+    Scenario: The OpenRouter card shows its env-var hint
+      Given the model-config demo page
+      When the user clicks the "OpenRouter" provider card
+      Then the "openrouter" card shows the env hint "or set OPENROUTER_API_KEY in .env"
 
     @web
     Scenario: The chooser shows a general how-to-get-a-key help link

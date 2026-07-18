@@ -5,6 +5,7 @@ import {
   resolveConfig,
   defaultModel,
   defaultCellModel,
+  defaultBatchSize,
   providerFor,
   acceptsTemperature,
   keyFor,
@@ -12,15 +13,18 @@ import {
   DEFAULTS,
   type ResolvedConfig,
   type Provider,
+  type EngineProvider,
 } from '@tamedtable/model-config';
 import { readStoredConfig, writeStoredConfig, clearStoredConfig } from './storage.ts';
 
 interface ModelConfigCtx {
   resolved?: ResolvedConfig;
-  providerResult?: Provider;
+  providerResult?: EngineProvider;
   modelResult?: string;
   keyResult?: string | null;
   boolResult?: boolean;
+  numberResult?: number | undefined;
+  numberResultSet?: boolean;
 }
 
 // The only shape these steps need from the cucumber World — state hangs off
@@ -61,6 +65,13 @@ When(
   'resolveConfig is called with env OPENAI_API_KEY={string}',
   function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ OPENAI_API_KEY: key }, {});
+  },
+);
+
+When(
+  'resolveConfig is called with env OPENROUTER_API_KEY={string}',
+  function (this: ModelConfigWorld, key: string) {
+    ctx(this).resolved = resolveConfig({ OPENROUTER_API_KEY: key }, {});
   },
 );
 
@@ -208,6 +219,13 @@ Then(
   },
 );
 
+Then(
+  'the resolved openrouterKey is {string}',
+  function (this: ModelConfigWorld, expected: string) {
+    assert.equal(ctx(this).resolved?.openrouterKey, expected);
+  },
+);
+
 // Non-null check on a named resolved key field (geminiKey / openaiKey / …),
 // used by the precedence outline where the winning key varies per row.
 Then(
@@ -230,6 +248,22 @@ Given(
       anthropicKey: anthropic || null,
       geminiKey: gemini || null,
       openaiKey: openai || null,
+      openrouterKey: null,
+      model: defaultModel(provider as Provider),
+      cellModel: defaultCellModel(provider as Provider),
+    };
+  },
+);
+
+Given(
+  'a resolved config for provider {string} with openrouterKey {string}',
+  function (this: ModelConfigWorld, provider: string, openrouterKey: string) {
+    ctx(this).resolved = {
+      provider: provider as Provider,
+      anthropicKey: null,
+      geminiKey: null,
+      openaiKey: null,
+      openrouterKey: openrouterKey || null,
       model: defaultModel(provider as Provider),
       cellModel: defaultCellModel(provider as Provider),
     };
@@ -286,6 +320,30 @@ When(
   'defaultCellModel is called with {string}',
   function (this: ModelConfigWorld, provider: string) {
     ctx(this).modelResult = defaultCellModel(provider as Provider);
+  },
+);
+
+When(
+  'defaultBatchSize is called with {string}',
+  function (this: ModelConfigWorld, provider: string) {
+    ctx(this).numberResult = defaultBatchSize(provider as Provider);
+    ctx(this).numberResultSet = true;
+  },
+);
+
+Then(
+  'the numeric result is {int}',
+  function (this: ModelConfigWorld, expected: number) {
+    assert.ok(ctx(this).numberResultSet, 'no numeric call was made');
+    assert.equal(ctx(this).numberResult, expected);
+  },
+);
+
+Then(
+  'the numeric result is undefined',
+  function (this: ModelConfigWorld) {
+    assert.ok(ctx(this).numberResultSet, 'no numeric call was made');
+    assert.equal(ctx(this).numberResult, undefined);
   },
 );
 

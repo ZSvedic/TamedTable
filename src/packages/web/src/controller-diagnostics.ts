@@ -321,7 +321,7 @@ export class DiagnosticsManager {
 
   /** The config without the per-provider key fields, then redacted. */
   private configSnapshot(): Record<string, unknown> {
-    const { anthropicKey: _a, geminiKey: _g, openaiKey: _o, ...rest } = this.host.config as ResolvedConfig;
+    const { anthropicKey: _a, geminiKey: _g, openaiKey: _o, openrouterKey: _r, ...rest } = this.host.config as ResolvedConfig;
     void _a;
     void _g;
     void _o;

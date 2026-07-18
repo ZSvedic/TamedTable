@@ -91,6 +91,14 @@ const PROVIDERS: ProviderMeta[] = [
     keyPlaceholder: 'sk-ant-…',
     keyUrl: 'https://console.anthropic.com/settings/keys',
   },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    tagline: 'Free models',
+    envHint: 'or set OPENROUTER_API_KEY in .env',
+    keyPlaceholder: 'sk-or-…',
+    keyUrl: 'https://openrouter.ai/settings/keys',
+  },
 ];
 
 // ── Inline icons (no host icon set) ────────────────────────────────────────
@@ -133,7 +141,7 @@ export function ModelChooser({
   onKeyChange,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
-    gemini: false, openai: false, anthropic: false,
+    gemini: false, openai: false, anthropic: false, openrouter: false,
   });
 
   const toggleReveal = (p: Provider): void => {

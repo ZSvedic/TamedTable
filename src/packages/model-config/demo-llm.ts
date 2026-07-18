@@ -40,6 +40,7 @@ function keyFor(cfg: ResolvedConfig): string {
   const key =
     cfg.provider === 'gemini' ? cfg.geminiKey :
     cfg.provider === 'openai' ? cfg.openaiKey :
+    cfg.provider === 'openrouter' ? cfg.openrouterKey :
     cfg.anthropicKey;
   if (!key) throw new Error(`No API key set for ${cfg.provider}.`);
   return key;
@@ -92,6 +93,18 @@ async function callOpenAI(key: string, model: string, content: unknown): Promise
   return text;
 }
 
+// OpenRouter is OpenAI-compatible; only the host differs.
+async function callOpenRouter(key: string, model: string, content: unknown): Promise<string> {
+  const data = (await post(
+    'https://openrouter.ai/api/v1/chat/completions',
+    { authorization: `Bearer ${key}` },
+    { model, messages: [{ role: 'user', content }] },
+  )) as OpenAIResponse;
+  const text = (data.choices?.[0]?.message?.content ?? '').trim();
+  if (!text) throw new Error('OpenRouter returned no text.');
+  return text;
+}
+
 async function callAnthropic(key: string, model: string, text: string): Promise<string> {
   const data = (await post(
     'https://api.anthropic.com/v1/messages',
@@ -114,6 +127,7 @@ export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise
   const key = keyFor(cfg);
   if (cfg.provider === 'gemini') return callGemini(key, cfg.model, [{ text }]);
   if (cfg.provider === 'openai') return callOpenAI(key, cfg.model, text);
+  if (cfg.provider === 'openrouter') return callOpenRouter(key, cfg.model, text);
   return callAnthropic(key, cfg.model, text);
 }
 

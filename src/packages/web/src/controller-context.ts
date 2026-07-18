@@ -55,6 +55,8 @@ export interface ControllerHost {
   goldenRows: Row[] | null;
   tutorialPrefill: string | null;
   pageNum: number;
+  /** Rows per table page — re-derived from the provider on config changes. */
+  pageSize: number;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
