@@ -102,7 +102,8 @@ Then('{string} matches the expected output', async function (this: TamedTableWor
   if (this.goldenPath!.endsWith('.csv')) {
     const golden = await readFile(this.goldenPath!, 'utf8');
     const actual = await readFile(output(filename), 'utf8');
-    assert.equal(actual.replace(/\r\n/g, '\n').trimEnd(), golden.replace(/\r\n/g, '\n').trimEnd());
+    const norm = (s: string) => s.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').trimEnd();
+    assert.equal(norm(actual), norm(golden));
     return;
   }
   const golden = await readJsonl(this.goldenPath!);
