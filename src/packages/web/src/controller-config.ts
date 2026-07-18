@@ -29,6 +29,8 @@ export class ConfigManager {
 
   openSettings(): void {
     this.host.settingsOpen = true;
+    // The confirmation only ever states a save made this visit.
+    this.host.settingsSaved = false;
     this.host.notify();
   }
 
@@ -69,6 +71,7 @@ export class ConfigManager {
     // currentPage() clamps on read, so no page bookkeeping is needed here.
     this.host.pageSize = pageSizeFor(next.provider, this.host.opts);
     writeStoredConfig(next);
+    if (this.host.settingsOpen) this.host.settingsSaved = true;
 
     if (modelChanged && this.host.engine.hasRunner() && this.host.loaded) {
       const spec = structuredClone(this.host.engine.currentSpec());

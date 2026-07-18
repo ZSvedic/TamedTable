@@ -469,6 +469,22 @@ Then('the provider card {string} is collapsed', function (this: TamedTableWorld,
   assert.notEqual(expanded, provider, `expected "${provider}" to be collapsed, but it is expanded`);
 });
 
+When('user closes the settings panel', function (this: TamedTableWorld) {
+  controller(this).closeSettings();
+});
+
+Then('the settings panel shows no save confirmation', function (this: TamedTableWorld) {
+  assert.equal(controller(this).settingsSaved, false, 'expected no save confirmation');
+});
+
+Then(
+  'the settings panel shows the save confirmation {string}',
+  function (this: TamedTableWorld, text: string) {
+    assert.equal(text, 'All changes saved');
+    assert.equal(controller(this).settingsSaved, true, 'expected the save confirmation to show');
+  },
+);
+
 Then('the configured provider is {string}', function (this: TamedTableWorld, provider: string) {
   assert.equal(controller(this).getConfig().provider, provider);
 });

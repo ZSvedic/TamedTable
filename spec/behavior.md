@@ -985,7 +985,12 @@ sits directly below it, and a "How to change primary and secondary models?" link
 Changes apply immediately — selecting a provider card calls
 `controller.clickProviderCard(p)`, which pins that provider and its two fixed
 defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
-"Close" button; there is no separate "Save" button. Switching provider changes
+"Close" button; there is no separate "Save" button. Because saving is silent,
+the footer confirms it Google-Docs-style: quiet grey text reading "All changes
+saved" appears left of the Close button after the first change made while the
+panel is open — typing a key or picking a provider — and stays until the panel
+closes. Opening the panel starts with no confirmation text, so it only ever
+states a save that actually happened this visit. Switching provider changes
 the models, which rebuilds the engine and replays the current transformations
 against the source, so the table on screen is preserved and the new models drive
 the next request. Full detail in

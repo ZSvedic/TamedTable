@@ -48,6 +48,7 @@ export interface ControllerHost {
   errorDialog: string | null;
   settingsOpen: boolean;
   expandedProvider: Provider | null;
+  settingsSaved: boolean;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;

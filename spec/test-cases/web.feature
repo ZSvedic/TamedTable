@@ -484,6 +484,37 @@ Feature: Web front-end
       And user opens the settings panel
       Then the provider card "openai" is expanded
 
+  Rule: The settings footer confirms saves Google-Docs-style
+
+    @web
+    Scenario: Opening the settings panel shows no save confirmation
+      Given the TamedTable web app
+      When user opens the settings panel
+      Then the settings panel shows no save confirmation
+
+    @web
+    Scenario: Saving an API key shows "All changes saved"
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user saves the API key "sk-ant-example-key"
+      Then the settings panel shows the save confirmation "All changes saved"
+
+    @web
+    Scenario: Picking a provider card shows "All changes saved"
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "gemini"
+      Then the settings panel shows the save confirmation "All changes saved"
+
+    @web
+    Scenario: Reopening the settings panel clears the save confirmation
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user saves the API key "sk-ant-example-key"
+      And user closes the settings panel
+      And user opens the settings panel
+      Then the settings panel shows no save confirmation
+
   Rule: Provider API errors surface descriptive messages
 
     @web
