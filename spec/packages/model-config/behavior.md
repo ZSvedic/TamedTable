@@ -250,6 +250,15 @@ the per-provider reveal toggle. It never touches storage or the network:
 - `primaryModel`, `secondaryModel` — the provider's two default model ids,
   shown read-only
 - `expandedProvider` — which card shows its body, or null
+- `savedProvider` — the provider whose config the host most recently saved, or
+  null. That card's header shows a `✓ Saved` badge between the provider name
+  and the voice badge, green fading to grey (see `savedFadeMs`).
+- `savedSeq` — a counter the host bumps on every save; keying the badge on it
+  restarts the green phase even when `savedProvider` is unchanged (repeated
+  keystrokes in the same key field)
+- `savedFadeMs` — how long the badge stays green before fading to grey
+  (default 3000 ms); the web app passes its standard toast duration for the
+  badge text
 - `byokHelpUrl`, `changeModelsHelpUrl` — the two optional help-link URLs above
 - `onProviderClick(p)` — a card header was clicked
 - `onKeyChange(p, value)` — the user typed in a key field
@@ -298,5 +307,6 @@ setting the variables on any wrapping element: `--mc-ink`, `--mc-ink3`,
 For tests, each element carries a stable data attribute:
 `data-mc-card`, `data-mc-key`, `data-mc-reveal`, `data-mc-keyurl` (all keyed by
 provider id), each read-only default row `data-mc-model` (keyed by model id)
-plus `data-mc-role` (`"primary"` or `"secondary"`), `data-mc-byok` on the
+plus `data-mc-role` (`"primary"` or `"secondary"`), `data-mc-saved` on the
+`✓ Saved` badge (keyed by provider id), `data-mc-byok` on the
 top BYOK help link, and `data-mc-changemodels` on the bottom FAQ link.

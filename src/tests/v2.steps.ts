@@ -127,8 +127,8 @@ Given('{string} contains a row with FullName {string}',
     // Descriptive assertion on the fixture itself; ALSO ensures the file is
     // loaded so subsequent transformations run against it. Rules without a
     // Background don't inherit the parent rule's `load` step.
-    const text = await readFile(join(SPEC_TC_DIR, file), 'utf8');
-    const lines = text.split('\n').filter(Boolean);
+    const text = (await readFile(join(SPEC_TC_DIR, file), 'utf8')).replace(/^\uFEFF/, '');
+    const lines = text.split(/\r?\n/).filter(Boolean);
     const hit = lines.some((l) => l.split(',', 2)[1] === fullName);
     assert.ok(hit, `expected fixture ${file} to contain FullName "${fullName}". Lines:\n${lines.join('\n')}`);
     if (!this.runner) {

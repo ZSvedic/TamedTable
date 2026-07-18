@@ -985,7 +985,14 @@ sits directly below it, and a "How to change primary and secondary models?" link
 Changes apply immediately — selecting a provider card calls
 `controller.clickProviderCard(p)`, which pins that provider and its two fixed
 defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
-"Close" button; there is no separate "Save" button. Switching provider changes
+"Close" button; there is no separate "Save" button. Because saving is silent,
+each change confirms inline on the card it touched: a `✓ Saved` badge appears
+in that provider's card header, right of the provider name and left of the
+voice badge. It starts green and fades to grey after the standard toast time
+for that text (the 3-second toast floor); each new save — every keystroke in a
+key field, every provider pick — restarts the green phase. The badge marks
+only the most recently saved provider's card and clears when the panel opens,
+so it never claims a save from an earlier visit. Switching provider changes
 the models, which rebuilds the engine and replays the current transformations
 against the source, so the table on screen is preserved and the new models drive
 the next request. Full detail in

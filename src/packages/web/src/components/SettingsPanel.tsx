@@ -3,7 +3,7 @@
 // chooser's props/callbacks to WebController and injects the app theme via
 // the --mc-* CSS custom properties on the wrapping element.
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { space, typography } from '@tamedtable/ui-kit';
+import { space, typography, toastDurationMs } from '@tamedtable/ui-kit';
 import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
@@ -131,6 +131,9 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             secondaryModel={cfg.cellModel}
             keys={keys}
             expandedProvider={controller.expandedProvider}
+            savedProvider={controller.savedProvider}
+            savedSeq={controller.savedSeq}
+            savedFadeMs={toastDurationMs('✓ Saved')}
             byokHelpUrl="../BYOK-setup.html"
             changeModelsHelpUrl="../FAQ.html#change-models"
             onProviderClick={(p) => void controller.clickProviderCard(p)}
@@ -216,7 +219,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           )}
         </div>
 
-        {/* footer — Close only (changes are live) */}
+        {/* footer — Close only (changes are live; each save confirms with the
+            standard "All changes saved" toast) */}
         <div
           style={{
             flex: '0 0 auto',
