@@ -173,14 +173,14 @@ Feature: Voice input
       Then the continuous status is "idle"
 
   # #TutorialMode
-  # A runnable, key-free voice tour for the marketing "Speak instead of type"
-  # deep link. Run as a plain @web scenario it records/replays voice.json via
-  # the `speak` step (same request the mic release issues); played as a
-  # @tour tour it replays that same cassette with no key (see
-  # tutorial.feature). The clip is the committed English "Normalize DOB column".
-  Rule: A spoken tour normalizes a column key-free
+  # The runnable, key-free spoken scenario — CI coverage for the voice
+  # pipeline. It records/replays voice.json via the `speak` step (same request
+  # the mic release issues). The marketing voice story now opens the Process
+  # language showcase tour (showcase-language.feature), whose first step
+  # replays this same committed "Normalize DOB column" clip.
+  Rule: A spoken request normalizes a column key-free
 
-    @web @tour @cat-language
+    @web
     Scenario: Normalize DOB by voice
       Given the TamedTable web app
       And load "customers-input.csv"

@@ -8,7 +8,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | Cancellation | [#CancelOp](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CancelOp&type=code) | ✓ | ✓ | ✓ | [cancelation.feature](spec/test-cases/cancelation.feature) |
 | CLI flags and discovery | [#CliFlags](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23CliFlags&type=code) | - | ✓ | - | [cli-flags.feature](spec/test-cases/cli-flags.feature) |
 | Column split | [#ColSplit](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ColSplit&type=code) | ✓ | ✓ | ✓ | [colsplit.feature](spec/test-cases/colsplit.feature) |
-| Data normalization | [#DataNorm](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DataNorm&type=code) | ✓ | ✓ | ✓ | [clean-up.feature](spec/test-cases/clean-up.feature) (phone/country/dates tours; also exercised by multilingual & loadsave) |
+| Data normalization | [#DataNorm](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DataNorm&type=code) | ✓ | ✓ | ✓ | [clean-up.feature](spec/test-cases/clean-up.feature) (phone/country/dates scenarios; also exercised by multilingual & loadsave) |
 | Debug output | [#DebugOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23DebugOut&type=code) | ✓ | ✓ | - | [debug.feature](spec/test-cases/debug.feature) |
 | Deduplication | [#Dedupe](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Dedupe&type=code) | ✓ | ✓ | ✓ | [dedupe.feature](spec/test-cases/dedupe.feature) |
 | Diagnostics log | [#Diagnostics](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Diagnostics&type=code) | - | - | ✓ | [diagnostics.feature](spec/test-cases/diagnostics.feature) |

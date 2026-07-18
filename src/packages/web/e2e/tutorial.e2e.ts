@@ -33,44 +33,46 @@ function nextBtn(page: Page) {
 test('Tours button opens the panel with scenario names', async ({ page }) => {
   await page.getByRole('button', { name: 'Tours', exact: true }).click();
   const p = panel(page);
-  await expect(p.getByRole('option', { name: 'Filter by Country' })).toBeAttached();
-  await expect(p.getByRole('option', { name: 'Count customers per country' })).toBeAttached();
-  await expect(p.getByRole('option', { name: /Left join/ })).toBeAttached();
-  await expect(p.getByRole('option', { name: /Split FullName/ })).toBeAttached();
-  await expect(p.getByRole('option', { name: /Drop duplicates/ })).toBeAttached();
+  // One showcase tour per homepage section (Load/save and Lazy AI have none).
+  await expect(p.getByRole('option', { name: 'Clean up a messy customer list' })).toBeAttached();
+  await expect(p.getByRole('option', { name: 'Enrich a purchase ledger' })).toBeAttached();
+  await expect(p.getByRole('option', { name: 'Classify a support inbox' })).toBeAttached();
+  await expect(p.getByRole('option', { name: 'Audit an order sheet' })).toBeAttached();
+  await expect(p.getByRole('option', { name: 'Handle feedback in five languages' })).toBeAttached();
+  await expect(p.getByRole('option', { name: 'Shape a quarterly sales report' })).toBeAttached();
 });
 
 test('clicking a tour starts it at the first stop', async ({ page }) => {
-  await startTour(page, 'Filter by Country');
-  // Filter by Country: load → query → terminal = 3 stops.
-  await expect(progress(page)).toHaveText('1 of 3');
+  await startTour(page, 'Clean up a messy customer list');
+  // Clean up showcase: load → 4 queries → terminal = 6 stops.
+  await expect(progress(page)).toHaveText('1 of 6');
 });
 
 test('Next advances to the second stop', async ({ page }) => {
-  await startTour(page, 'Filter by Country');
-  await expect(progress(page)).toHaveText('1 of 3');
+  await startTour(page, 'Clean up a messy customer list');
+  await expect(progress(page)).toHaveText('1 of 6');
 
   await nextBtn(page).click();
 
-  await expect(progress(page)).toHaveText('2 of 3');
+  await expect(progress(page)).toHaveText('2 of 6');
   // There is no Previous button — the tour only moves forward.
   await expect(page.locator('.driver-popover-prev-btn')).toBeHidden();
 });
 
-test('Next works for the Left join tour', async ({ page }) => {
-  await startTour(page, /Left join/);
-  // Left join: load → query → terminal = 3 stops (the lookup fixture loads
-  // implicitly with the query; verification steps are dropped).
-  await expect(progress(page)).toHaveText('1 of 3');
+test('Next works for the tour with a hidden lookup step', async ({ page }) => {
+  await startTour(page, 'Shape a quarterly sales report');
+  // Be exact showcase: load → 5 queries → terminal = 7 stops (the lookup
+  // fixture loads implicitly before the tour; verification steps are dropped).
+  await expect(progress(page)).toHaveText('1 of 7');
 
   await nextBtn(page).click();
 
-  await expect(progress(page)).toHaveText('2 of 3');
+  await expect(progress(page)).toHaveText('2 of 7');
 });
 
 test('Cancel exits the tour and starting it again restarts it', async ({ page }) => {
-  await startTour(page, 'Filter by Country');
-  await expect(progress(page)).toHaveText('1 of 3');
+  await startTour(page, 'Clean up a messy customer list');
+  await expect(progress(page)).toHaveText('1 of 6');
 
   // Esc cancels the tour (Driver.js default). The popover goes away and the
   // app returns to the empty state — the panel reopens only on Finish/Done.
@@ -78,25 +80,25 @@ test('Cancel exits the tour and starting it again restarts it', async ({ page })
   await expect(page.locator('.driver-popover')).toBeHidden();
 
   // Starting the tour again restarts from the first stop.
-  await startTour(page, 'Filter by Country');
-  await expect(progress(page)).toHaveText('1 of 3');
+  await startTour(page, 'Clean up a messy customer list');
+  await expect(progress(page)).toHaveText('1 of 6');
 });
 
 test('Arrow-right advances; there is no ← key', async ({ page }) => {
-  await startTour(page, 'Filter by Country');
-  await expect(progress(page)).toHaveText('1 of 3');
+  await startTour(page, 'Clean up a messy customer list');
+  await expect(progress(page)).toHaveText('1 of 6');
 
   await page.keyboard.press('ArrowRight');
-  await expect(progress(page)).toHaveText('2 of 3');
+  await expect(progress(page)).toHaveText('2 of 6');
 
   // ← does nothing: the tour never steps back.
   await page.keyboard.press('ArrowLeft');
-  await expect(progress(page)).toHaveText('2 of 3');
+  await expect(progress(page)).toHaveText('2 of 6');
 });
 
 test('Escape key cancels the tour', async ({ page }) => {
-  await startTour(page, 'Filter by Country');
-  await expect(progress(page)).toHaveText('1 of 3');
+  await startTour(page, 'Clean up a messy customer list');
+  await expect(progress(page)).toHaveText('1 of 6');
 
   await page.keyboard.press('Escape');
   await expect(page.locator('.driver-popover')).toBeHidden();

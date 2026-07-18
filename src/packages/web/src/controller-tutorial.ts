@@ -93,7 +93,7 @@ export class TutorialManager {
   }
 
   /** `@tour` tours grouped by their `@cat-…` category, in homepage order
-   *  (the seven sections from `TUTORIAL_CATEGORIES`). Empty categories are
+   *  (the eight sections from `TUTORIAL_CATEGORIES`). Empty categories are
    *  dropped so the panel shows only populated sections. */
   tutorialGroups(): { title: string; names: string[] }[] {
     const tours = this.manifest.filter((t) => t.tags.includes('@tour'));
@@ -178,6 +178,10 @@ export class TutorialManager {
 
   async nextStep(): Promise<void> {
     if (this.tutorialStepIndex === null || !this.activeTour) return;
+    // A showcase tour chains query steps; the previous step's replayed request
+    // may still be streaming, and the prefill-chat execute guard refuses to
+    // send during a stream. Wait it out so a fast Next never skips a query.
+    await this.pending;
     const total = this.activeTour.steps.length;
     if (this.tutorialStepIndex >= total) return; // already done
 

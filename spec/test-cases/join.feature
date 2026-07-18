@@ -8,7 +8,7 @@ Feature: Lookup join
       Given load "customers-input.csv"
       And load the lookup table "join-country-codes.csv" with columns "Country, ISO, Region"
 
-    @headless @cli @web @tour @cat-deterministic
+    @headless @cli @web
     Scenario: Left join enriches each customer with ISO and Region
       Given the expected output is "join-tour-expected.jsonl"
       When query "Join with join-country-codes.csv on Country to add ISO and Region"

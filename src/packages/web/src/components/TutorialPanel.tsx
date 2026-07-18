@@ -185,7 +185,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                               letterSpacing: '0.06em',
                             }}
                           >
-                            {/* Group number (01–07), in homepage section order. */}
+                            {/* Group number (01–08), in homepage section order. */}
                             <span style={{ fontFamily: typography.mono, color: t.ink4, marginRight: space.px8 }}>
                               {String(gi + 1).padStart(2, '0')}
                             </span>

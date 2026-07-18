@@ -122,14 +122,14 @@ test.describe('phone width', () => {
     await page.locator('[data-mob-menu-item="Tours…"]').click();
 
     // The shared TutorialPanel — same overlay as desktop. Clicking a tour starts it.
-    await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Filter by Country' }).click();
+    await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Clean up a messy customer list' }).click();
 
     const progress = page.locator('.driver-popover-progress-text');
-    await expect(progress).toHaveText('1 of 3');
+    await expect(progress).toHaveText('1 of 6');
 
-    // Step 1 (load) loads the sample; step 2 is the chat step.
+    // Step 1 (load) loads the sample; step 2 is the first chat step.
     await page.locator('.driver-popover-next-btn').click();
-    await expect(progress).toHaveText('2 of 3');
+    await expect(progress).toHaveText('2 of 6');
     await expect(page.locator('#tutorial-table-view')).toBeVisible();
 
     // The shell opens the Type sheet so the spotlight lands on the visible
@@ -142,9 +142,16 @@ test.describe('phone width', () => {
     // leaves the popover nowhere to sit and breaks the layout. Scroll the page
     // right first: the spotlight must still cover the visible table, not just
     // the un-scrolled left region.
+    // Walk the remaining chat steps; each Next waits out the replayed request.
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('3 of 6');
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('4 of 6');
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('5 of 6');
     await page.evaluate(() => window.scrollTo(200, 0));
     await page.locator('.driver-popover-next-btn').click();
-    await expect(progress).toHaveText('3 of 3');
+    await expect(progress).toHaveText('6 of 6');
     await expect(page.locator('.driver-popover')).toContainText('Voilà');
     const fit = await page.evaluate(() => {
       const spot = document.querySelector('.driver-active-element')!.getBoundingClientRect();

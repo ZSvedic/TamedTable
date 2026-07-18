@@ -1343,21 +1343,27 @@ exact request) fails loudly with a toast rather than hanging.
 
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
-into the seven marketing feature categories** — Clean up, Enrich & extract,
-Classify, Validate, Process language, Be exact, and Load, save & reuse —
-numbered 01–07, in the same order as the homepage sections. A scenario's group comes
-from its `@cat-…` tag (e.g. `@cat-cleanup`); empty categories are omitted.
-Load, save & reuse has no tours — by the time a visitor cares about saving,
-they have already loaded a file and run a query — so the panel shows the first
-six groups.
+into the eight marketing feature categories** — Lazy AI execution, Clean up,
+Enrich & extract, Classify, Validate, Process language, Be exact, and Load,
+save & reuse — numbered 01–08, in the same order as the homepage sections. A
+scenario's group comes from its `@cat-…` tag (e.g. `@cat-cleanup`); empty
+categories are omitted.
+Each category holds **one showcase tour**: a single story that loads one
+sample file and walks through every feature of its homepage section in
+sequence — the `showcase-*.feature` files. Two categories have no tour, so
+the panel shows six groups: Load, save & reuse (by the time a visitor cares
+about saving, they have already loaded a file and run a query) and Lazy AI
+execution (its tour script, `showcase-lazy-ai.feature`, records and joins the
+panel together with the lazy-execution implementation).
 **Clicking a tour starts it immediately** — there is no separate Play step. A
 tour the visitor has played to the end carries a **green checkmark** in the list
 (remembered across reloads), so it is easy to see what is left to try.
 Below the groups, a **Dev** dropdown lists every `@web` scenario that is *not*
-`@tour`, so a developer can smoke-test any scenario without opening the
-`.feature` file; picking one starts it too. The homepage "Show me →" links
-deep-link into these tours, one per feature item; the Load, save & reuse
-homepage section is informational only, with no "Show me →" links.
+`@tour` — including the atomic per-feature scenarios that back CI — so a
+developer can smoke-test any scenario without opening the `.feature` file;
+picking one starts it too. Every "Show me →" link in a homepage section
+deep-links into that section's showcase tour; the Load, save & reuse and Lazy
+AI execution sections are informational only, with no "Show me →" links.
 
 A `load the lookup table …` step (a join's second input) is a **silent
 prerequisite**, not a tour step: the file is written before the tour starts and
@@ -1383,7 +1389,9 @@ never exceeds the screen: a target larger than the viewport (the table) is
 highlighted by its visible top region, so the popover always has room below
 it. Each step is **highlighted first** and **executed only when the user
 clicks Next** — the action runs as the tour advances, not at the moment the
-step appears, and it runs **once**.
+step appears, and it runs **once**. A showcase tour chains several query
+steps, so Next first waits for the previous step's replayed request to
+finish — a fast clicker can never skip a query.
 
 The **last stop is terminal**: it is numbered **"M of M"** and its popover
 shows a completion message — `Voilà, "<tour name>" is done.` — with two
@@ -1484,7 +1492,7 @@ could not work once the homepage began opening each tour in a new tab — a fres
 tab has no history to go back to.)
 
 Production links use the deployed base, e.g.
-`https://www.tamedtable.com/app/?feature=filter.feature&scenario=Filter+by+Country`.
+`https://www.tamedtable.com/app/?feature=showcase-cleanup.feature&scenario=Clean+up+a+messy+customer+list`.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 

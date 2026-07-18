@@ -6,7 +6,7 @@ Feature: Row and dataset validation
 
     # customers-missing-phone.csv is customers-input.csv with 3 phones blanked,
     # so the flag-empty-phone demo actually has something to flag.
-    @headless @cli @web @tour @cat-validate
+    @headless @cli @web
     Scenario: Flag rows with empty Phone
       Given load "customers-missing-phone.csv"
       And the expected output is "validate-phone-expected.jsonl"
@@ -57,15 +57,15 @@ Feature: Row and dataset validation
       And the request commits
 
   # #TutorialMode
-  # Marketing "Validate" tours — one per homepage item. Key-free @tour tours
-  # deep-linked from the homepage; each loads its sample, runs the phrase, and
-  # replays from validate.json. @cat-validate groups them in the panel.
-  Rule: Each Validate tour runs its phrase key-free
+  # Atomic "Validate" scenarios — CI coverage, one per feature. Each loads its
+  # sample, runs the phrase, and replays from validate.json. The section's
+  # marketing tour is the single story in showcase-validate.feature.
+  Rule: Each Validate phrase runs key-free
 
     # "Looks fake" is a semantic judgment, so the edit is two steps: an {llm}
     # mutate computing a yes/no column, then a {js} validate reading it. The
     # yes/no column is internal plumbing — the user sees only _valid/_validation.
-    @web @tour @cat-validate
+    @web
     Scenario: Flag emails that look fake
       Given the TamedTable web app
       And load "emails.csv"
@@ -83,7 +83,7 @@ Feature: Row and dataset validation
 
     # The predicate must round-trip the day: JS Date rolls 2024-02-30 over to
     # March 1, so an isNaN guard alone can never catch day-overflow dates.
-    @web @tour @cat-validate
+    @web
     Scenario: Flag any impossible birth date
       Given the TamedTable web app
       And load "birthdates.csv"
@@ -98,7 +98,7 @@ Feature: Row and dataset validation
     # The mutate that computes the yes/no column MUST precede the validate that
     # reads it — the runtime rejects the reverse order (see spec/behavior.md
     # § Headless) and the recovery loop asks the model for a corrected patch.
-    @web @tour @cat-validate
+    @web
     Scenario: Check the city matches the country
       Given the TamedTable web app
       And load "citycountry.csv"
@@ -116,7 +116,7 @@ Feature: Row and dataset validation
 
     # Same two-step semantic-judgment shape as the fake-emails tour: a plain
     # range check can never catch the missing-zero desk lamp.
-    @web @tour @cat-validate
+    @web
     Scenario: Flag prices that seem wrong
       Given the TamedTable web app
       And load "prices.csv"

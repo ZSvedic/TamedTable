@@ -1321,7 +1321,7 @@ voice turn and replays key-free.
 | `openTutorial()` | Sets `tutorialOpen = true`. |
 | `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
 | `tutorialScenarioNames(): string[]` | Names of `@tour` tours (flat list). |
-| `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the seven marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
+| `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the eight marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tour` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup — the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |

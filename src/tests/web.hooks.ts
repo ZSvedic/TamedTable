@@ -10,6 +10,8 @@ import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-p
 // the manifest, feature source, fixtures, and cassettes straight from disk —
 // the lazy loaders the browser fetches same-origin.
 const TUTORIAL_FEATURES = [
+  'showcase-cleanup.feature', 'showcase-enrich.feature', 'showcase-classify.feature',
+  'showcase-validate.feature', 'showcase-language.feature', 'showcase-exact.feature',
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
   'voice.feature', 'sort.feature', 'multilingual.feature',

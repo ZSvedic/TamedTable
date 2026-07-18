@@ -14,12 +14,12 @@ Feature: Sort rows by a key
       And "sort-topn-output.jsonl" matches the expected output
 
   # #TutorialMode
-  # Marketing "Deterministic → Sort or top-N" tour. Key-free @tour tour
-  # deep-linked from the homepage; loads a sample, runs the phrase, and replays
-  # from sort.json. @cat-deterministic groups it with filter/dedupe/join/pivot.
-  Rule: The Sort top-N tour runs its phrase key-free
+  # Atomic "Sort or top-N" scenario — CI coverage; loads a sample, runs the
+  # phrase, and replays from sort.json. The Be exact section's marketing tour
+  # is the single story in showcase-exact.feature.
+  Rule: The Sort top-N phrase runs key-free
 
-    @web @tour @cat-deterministic
+    @web
     Scenario: Sort by revenue, top 10
       Given the TamedTable web app
       And load "sales.csv"
