@@ -18,7 +18,7 @@ wrong.
 
 - A new AI step runs on the current page immediately — that preview is the point.
 - The run-all estimate dialog shows whenever more than one page of rows is pending.
-- The large-file dialog has no "don't ask again" checkbox. Small files never see it.
+- The large-file dialog: small files never see it.
 - Shuffle is a view: seeded, `#` column keeps original row numbers, saving keeps
   original order.
 - Deterministic steps (JS, SQL, filter, sort, dedupe) still run on all rows at once.
@@ -41,7 +41,8 @@ per section, one tab, all of that section's features demonstrated as a single st
 - Sections (from the marketing-brief feature table): Clean up, Enrich & extract,
   Classify, Validate, Language, Deterministic, Load & save. Condense where two sections
   tell one story better.
-- Add a new top section **Big files**: opens a large sample (add one, tens of thousands
+
+- Add a new top section **Lazy AI execution**: opens a large sample (add one, tens of thousands
   of rows), points at the shuffle badge, the pending-pages marks in the pager, the
   "N of M rows evaluated" readout, and ends highlighting the run-on-all estimate dialog —
   shown, not executed, so it needs no key and costs nothing.
