@@ -469,13 +469,24 @@ Then('the provider card {string} is collapsed', function (this: TamedTableWorld,
   assert.notEqual(expanded, provider, `expected "${provider}" to be collapsed, but it is expanded`);
 });
 
-Then(
-  'exactly {int} toast shows {string}',
-  function (this: TamedTableWorld, n: number, needle: string) {
-    const matching = controller(this).toasts.filter((t) => t.message.includes(needle));
-    assert.equal(matching.length, n, `expected ${n} toast(s) containing "${needle}", got ${matching.length}`);
-  },
-);
+When('user closes the settings panel', function (this: TamedTableWorld) {
+  controller(this).closeSettings();
+});
+
+Then('no provider card shows a Saved badge', function (this: TamedTableWorld) {
+  const saved = controller(this).savedProvider;
+  assert.equal(saved, null, `expected no Saved badge, but "${saved}" shows one`);
+});
+
+Then('the provider card {string} shows the Saved badge', function (this: TamedTableWorld, provider: string) {
+  const saved = controller(this).savedProvider;
+  assert.equal(saved, provider, `expected the Saved badge on "${provider}", got "${saved}"`);
+});
+
+Then('the Saved badge has restarted {int} times', function (this: TamedTableWorld, n: number) {
+  const seq = controller(this).savedSeq;
+  assert.equal(seq, n, `expected the badge to have restarted ${n} times, got ${seq}`);
+});
 
 Then('the configured provider is {string}', function (this: TamedTableWorld, provider: string) {
   assert.equal(controller(this).getConfig().provider, provider);

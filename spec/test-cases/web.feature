@@ -484,35 +484,45 @@ Feature: Web front-end
       And user opens the settings panel
       Then the provider card "openai" is expanded
 
-  Rule: Settings changes confirm with the standard toast
+  Rule: Settings changes confirm with a Saved badge on the touched card
 
     @web
-    Scenario: Opening the settings panel shows no toast
+    Scenario: Opening the settings panel shows no Saved badge
       Given the TamedTable web app
       When user opens the settings panel
-      Then no toast is shown
+      Then no provider card shows a Saved badge
 
     @web
-    Scenario: Saving an API key shows the "All changes saved" toast
+    Scenario: Saving an API key shows the Saved badge on that provider's card
       Given the TamedTable web app
       When user opens the settings panel
       And user saves the API key "sk-ant-example-key"
-      Then a toast shows "All changes saved"
+      Then the provider card "anthropic" shows the Saved badge
 
     @web
-    Scenario: Picking a provider card shows the "All changes saved" toast
+    Scenario: Picking a provider card shows the Saved badge on it
       Given the TamedTable web app
       When user opens the settings panel
       And user clicks the provider card "gemini"
-      Then a toast shows "All changes saved"
+      Then the provider card "gemini" shows the Saved badge
 
     @web
-    Scenario: Repeated saves never stack confirmation toasts
+    Scenario: Each save restarts the badge's green phase
       Given the TamedTable web app
       When user opens the settings panel
       And user saves the API key "sk-ant"
       And user saves the API key "sk-ant-example-key"
-      Then exactly 1 toast shows "All changes saved"
+      Then the provider card "anthropic" shows the Saved badge
+      And the Saved badge has restarted 2 times
+
+    @web
+    Scenario: Reopening the settings panel clears the Saved badge
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user saves the API key "sk-ant-example-key"
+      And user closes the settings panel
+      And user opens the settings panel
+      Then no provider card shows a Saved badge
 
   Rule: Provider API errors surface descriptive messages
 

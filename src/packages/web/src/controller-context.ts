@@ -24,7 +24,6 @@ import type {
   ContinuousStatus,
   DialogKind,
   RunProgress,
-  Toast,
   VoiceStatus,
   WebControllerOptions,
 } from './controller-types.ts';
@@ -49,7 +48,8 @@ export interface ControllerHost {
   errorDialog: string | null;
   settingsOpen: boolean;
   expandedProvider: Provider | null;
-  toasts: Toast[];
+  savedProvider: Provider | null;
+  savedSeq: number;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;

@@ -29,6 +29,8 @@ export class ConfigManager {
 
   openSettings(): void {
     this.host.settingsOpen = true;
+    // The Saved badge only ever states a save made this visit.
+    this.host.savedProvider = null;
     this.host.notify();
   }
 
@@ -69,13 +71,18 @@ export class ConfigManager {
     // currentPage() clamps on read, so no page bookkeeping is needed here.
     this.host.pageSize = pageSizeFor(next.provider, this.host.opts);
     writeStoredConfig(next);
-    // Typing a key saves on every keystroke — never stack a second
-    // confirmation while one is still on screen.
-    if (
-      this.host.settingsOpen &&
-      !this.host.toasts.some((t) => t.message === 'All changes saved')
-    ) {
-      this.host.pushToast('info', 'All changes saved');
+    // Confirm the save on the card it touched: the provider set explicitly,
+    // or the one whose key field the partial carries.
+    const savedFor: Provider | null =
+      partial.provider ??
+      (partial.geminiKey !== undefined ? 'gemini'
+        : partial.openaiKey !== undefined ? 'openai'
+        : partial.anthropicKey !== undefined ? 'anthropic'
+        : partial.openrouterKey !== undefined ? 'openrouter'
+        : null);
+    if (this.host.settingsOpen && savedFor) {
+      this.host.savedProvider = savedFor;
+      this.host.savedSeq++;
     }
 
     if (modelChanged && this.host.engine.hasRunner() && this.host.loaded) {
