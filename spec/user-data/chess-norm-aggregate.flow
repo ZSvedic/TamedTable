@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "source": "TournamentSearch.csv",
+  "source": "chess-tournaments-original.csv",
   "spec": {
-    "table": "TournamentSearch.csv",
+    "table": "chess-tournaments-original.csv",
     "columns": [
       {
         "id": "EventGroupKey"

@@ -10,7 +10,7 @@ import { runCli } from '@tamedtable/cli';
 import { TamedTableWorld, SPEC_TC_DIR, TEMP_DIR, fixturePath } from './world.ts';
 
 // Fixture resolution lives in world.ts (fixturePath) — shared with the
-// flow-replay steps so `user-reports/…` names resolve everywhere.
+// flow-replay steps so `user-data/…` names resolve everywhere.
 const fixture = fixturePath;
 
 // Generated test outputs (export-as, execute --output) go to temp/, never into

@@ -42,14 +42,14 @@ Feature: SQL expressions
   Rule: {sql} runs over reserved-word and punctuated column names
 
     # @regression — user-reported 2026-07-17 (PR #237, fixtures in
-    # spec/user-reports/): a chess-tournament CSV whose columns include the
+    # spec/user-data/): a chess-tournament CSV whose columns include the
     # reserved word `do` and the punctuated `Organizator(i)` made every {sql}
     # step fail with `Parser Error: syntax error at or near "do"` — the DuckDB
     # relation was CREATEd with unquoted identifiers.
     @headless @regression
     Scenario: A {sql} flow replays over columns named `do` and `Organizator(i)`
-      Given load "user-reports/chess-tournaments.csv"
-      When the flow "user-reports/chess-croatia-sql.flow" replays with progress tracking
+      Given load "user-data/chess-tournaments.csv"
+      When the flow "user-data/chess-croatia-sql.flow" replays with progress tracking
       Then the replayed table has 2 rows
       And replayed row 1 has "Organizator(i)" = "ŠK Zagreb"
       And replayed row 1 has "ukupno_igraca" = "102"

@@ -816,7 +816,7 @@ The replay replaces the spec as one history entry, so a single undo
 returns to the table as it was, and the assistant reply reports the
 result: an `Executed steps:` numbered list (the step labels below)
 followed by `Ran <flow> — N rows, M columns.`. Sample files to try
-this with live in `spec/user-files/`.
+this with live in `spec/user-data/`.
 
 While a run streams — a replayed flow or a chat request — the chat
 thread itself shows **live run progress** <!-- #OpenFlow --> in place
