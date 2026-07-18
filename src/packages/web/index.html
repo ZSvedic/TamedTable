@@ -2,9 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- The page scale is locked: browser pinch zoom would shrink the phone
+         layout's fixed chrome (app bar, dock) along with the table, so the
+         mobile shell zooms the table itself instead (useTableZoom). Android
+         honors this lock; iOS ignores it and is handled by the same hook via
+         gesture events. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>TamedTable</title>
     <meta name="theme-color" content="#281C60" />

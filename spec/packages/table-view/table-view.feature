@@ -54,7 +54,7 @@ Feature: Table view package
     Scenario: Clicking a cell selects it
       Given the table-view demo page
       When the user clicks cell "2:name"
-      Then the footer selection reads "R3 · name"
+      Then the demo event log shows "select 2:name"
 
     @web
     Scenario: Double-clicking edits a cell and Enter commits
@@ -96,4 +96,3 @@ Feature: Table view package
       Given the table-view demo page
       When the user toggles streaming
       Then the streaming banner is visible
-      And the footer status is "running"

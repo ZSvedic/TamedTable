@@ -72,7 +72,6 @@ Feature: Web front-end
       And user selects the provider "gemini"
       When user says "Save as Python"
       Then a toast shows "Exporting to Python requires a Google API key"
-      And the status footer reports "idle"
 
     @web
     Scenario: Without File System Access support, saving falls back to a download
@@ -89,7 +88,7 @@ Feature: Web front-end
       When user says "Save data"
       Then the suggested save name ends with ".parquet"
       When user saves as "out.parquet"
-      Then the status footer reports "saved"
+      Then a toast shows "Saved out.parquet."
 
     @web
     Scenario: Save as writes a copy in a different format
@@ -98,7 +97,7 @@ Feature: Web front-end
       When user says "Save as JSONL"
       Then the suggested save name ends with ".jsonl"
       When user saves as "out.jsonl"
-      Then the status footer reports "saved"
+      Then a toast shows "Saved out.jsonl."
 
   Rule: A saved flow can be opened and run on the current table
 
@@ -110,6 +109,10 @@ Feature: Web front-end
       Then display Open File dialog
       When user selects "filter.flow"
       Then the table has 4 rows
+      And the chat shows a user message "Run filter.flow"
+      And the last assistant reply shows "Executed steps:"
+      And the last assistant reply shows "1. filter (js)"
+      And the last assistant reply shows "Ran filter.flow — 4 rows, 4 columns."
       And a single undo returns the table to 10 rows
 
     @web
@@ -310,7 +313,9 @@ Feature: Web front-end
     raises the Type sheet exactly when that target is the chat composer, so
     the composer the tour spotlights is on screen. The layout halves of the
     phone rules — the page is the table's scroller under a frozen header,
-    and on desktop nothing scrolls the page — are browser facts checked in
+    pinch-to-zoom scales the table but never the app bar or dock, the Type
+    composer grows with the draft up to five lines, and on desktop nothing
+    scrolls the page — are browser facts checked in
     src/packages/web/e2e/mobile.e2e.ts.
 
     @web
@@ -328,65 +333,55 @@ Feature: Web front-end
       Given the TamedTable web app
       And load "paginate-input.csv"
 
+    # The page size is one AI-cell concurrency wave: batch size × concurrent
+    # batches = 20 × 5 = 100 rows with the defaults, so a streaming page
+    # fills in wave by wave.
     @web
     Scenario: A freshly loaded table opens on the first page
       Then the table spans 3 pages
       And the current page is 1
-      And the current page shows 20 rows
+      And the current page shows 100 rows
 
     @web
     Scenario: Moving to the next page shows the following rows
       When user goes to page 2
-      Then the current page shows 20 rows
-      And the first row on the current page has ID "21"
+      Then the current page shows 100 rows
+      And the first row on the current page has ID "101"
 
     @web
-    # OpenRouter pins cell batch 5, so a page holds five batches: 5 × 5 = 25.
-    Scenario: Selecting the OpenRouter provider sets the page to five batches
+    # OpenRouter pins cell batch 5, so its wave — and page — is 5 × 5 = 25;
+    # switching back to a provider without a pin restores the 100-row wave.
+    Scenario: Selecting the OpenRouter provider shrinks the page to its wave
       When user selects the provider "openrouter"
       Then the current page shows 25 rows
       When user selects the provider "gemini"
-      Then the current page shows 20 rows
+      Then the current page shows 100 rows
 
     @web
     Scenario: The last page shows only the remaining rows
       When user goes to page 3
-      Then the current page shows 6 rows
-      And the first row on the current page has ID "41"
+      Then the current page shows 46 rows
+      And the first row on the current page has ID "201"
 
     @web
     Scenario: Paging past the last page clamps to the last page
       When user goes to page 99
       Then the current page is 3
 
-  Rule: A status footer reports selection and activity
+  Rule: Clicking a cell selects it
 
     Background:
       Given the TamedTable web app
       And load "customers-input.csv"
 
     @web
-    Scenario: A freshly loaded table is idle with no cell selected
-      Then the status footer reports "idle"
-      And no cell is selected
+    Scenario: A freshly loaded table has no cell selected
+      Then no cell is selected
 
     @web
-    Scenario: Selecting a cell reports its location in the footer
+    Scenario: Selecting a cell records its location
       When user selects the cell at row 3 column "Country"
       Then the selected cell is row 3 column "Country"
-
-    @web
-    Scenario: Saving data marks the footer as saved
-      When user says "Save data"
-      And user saves as "customers-output.jsonl"
-      Then the status footer reports "saved"
-
-    @web
-    Scenario: Editing a cell returns the footer to idle after a save
-      When user says "Save data"
-      And user saves as "customers-output.jsonl"
-      And user edits cell at row 1 column "Country" to "United States"
-      Then the status footer reports "idle"
 
   Rule: The settings panel selects the engine model
 

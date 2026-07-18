@@ -27,6 +27,23 @@ export interface ChatPanelMessage {
   reportable?: boolean;
 }
 
+/** Live progress of the streaming run — the host owns and mutates the state
+ *  (step/row counts from the engine's step/chunk callbacks); the panel renders
+ *  a status line, a thin progress bar, and a live "request detail" log. */
+export interface ChatRunProgress {
+  /** 1-based index of the running step (0 until the first starts). */
+  step: number;
+  totalSteps: number;
+  /** The running step's human label ("mutate EventGroup (AI)"). */
+  label: string;
+  /** Rows streamed so far in the running step (AI-cell steps only). */
+  rowsDone: number;
+  /** Rows entering the running step. */
+  rowsTotal: number;
+  /** Newest-last event feed (bounded by the host). */
+  log: string[];
+}
+
 /** Mic button state — drives the red ring (recording while held), the
  *  cancel/send controls (`latched`, after a quick tap), and the spinner
  *  (sending). */

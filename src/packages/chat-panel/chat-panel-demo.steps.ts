@@ -72,6 +72,18 @@ When('the user clicks the chat stop button', async function (this: object) {
   await page(this).click('[data-cp-stop]');
 });
 
+Then('the run progress line shows {string}', async function (this: object, expected: string) {
+  await expectText(page(this), '[data-cp-progress]', expected);
+});
+
+When('the user expands the run progress detail', async function (this: object) {
+  await page(this).click('[data-cp-progress-toggle]');
+});
+
+Then('the run progress log shows {string}', async function (this: object, expected: string) {
+  await expectText(page(this), '[data-cp-progress-log]', expected);
+});
+
 Then('the chat event log shows {string}', async function (this: object, expected: string) {
   await expectText(page(this), '#out', expected);
 });

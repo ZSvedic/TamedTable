@@ -48,7 +48,7 @@ Feature: Export a flow as a Python script
       And user says "Save as Python"
       Then the suggested save name ends with ".py"
       When user saves as "customers-flow.py"
-      Then the status footer reports "saved"
+      Then a toast shows "Saved customers-flow.py."
 
   Rule: :save-py refuses a flow that cannot run deterministically
 

@@ -14,6 +14,7 @@
 // see controller-context.ts. The delegating methods keep the public surface on
 // one object; each method's contract is documented on the manager it calls.
 
+import { DEFAULT_BATCH_SIZE, DEFAULT_CHUNK_SIZE } from '@tamedtable/headless';
 import type { ChunkUpdate, RequestAudio, RequestDebugInfo, TimelineStep } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, defaultBatchSize, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
@@ -31,12 +32,11 @@ import { ConfigManager } from './controller-config.ts';
 import { TutorialManager } from './controller-tutorial.ts';
 import { DiagnosticsManager, type DiagEvent } from './controller-diagnostics.ts';
 import type {
-  ActivityStatus,
   CellRef,
   ChatMessage,
   ContinuousStatus,
   DialogKind,
-  FlowRunState,
+  RunProgress,
   Toast,
   TutorialManifestEntry,
   TutorialSources,
@@ -50,13 +50,12 @@ import type {
 export { detectFormat, userFacingMessage, summarizeDebug };
 export type { DiagEvent };
 export type {
-  ActivityStatus,
   CellRef,
   ChatMessage,
   ContinuousStatus,
   DialogKind,
-  FlowRunState,
   ResolvedConfig,
+  RunProgress,
   Toast,
   TutorialManifestEntry,
   TutorialSources,
@@ -65,19 +64,14 @@ export type {
   WebSettings,
 };
 
-/** Rows shown per table page. Paging is a view concern — it never enters the
- *  spec — so this lives on the controller, not the spec. */
-const PAGE_SIZE = 20;
-
-/** A page holds this many cell batches when the provider pins a batch size. */
-const BATCHES_PER_PAGE = 5;
-
-/** The page size for a provider: five batches when its defaults pin a cell
- *  batch size (openrouter: 5 × 5 = 25), the plain default otherwise. */
-export function pageSizeFor(provider: Provider): number {
-  const batch = defaultBatchSize(provider);
-  return batch ? batch * BATCHES_PER_PAGE : PAGE_SIZE;
+/** The page size for a provider: one AI-cell concurrency wave — rows per
+ *  batch × batches in flight. Host opts win; otherwise the provider's pinned
+ *  cell batch (openrouter: 5 × 5 = 25) or the engine default (20 × 5 = 100). */
+export function pageSizeFor(provider: Provider, opts: WebControllerOptions): number {
+  const batch = opts.batchSize ?? defaultBatchSize(provider) ?? DEFAULT_BATCH_SIZE;
+  return batch * (opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
 }
+
 
 // #WebShell
 export class WebController implements ControllerHost {
@@ -107,8 +101,9 @@ export class WebController implements ControllerHost {
   expandedProvider: Provider | null = null;
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
-  /** Live progress of a running flow replay, or null — the flow-run dialog. */
-  flowRun: FlowRunState | null = null; // #OpenFlow
+  /** Live progress of the streaming run (flow replay or chat request), or
+   *  null — the chat panel's inline progress block. */
+  runProgress: RunProgress | null = null; // #OpenFlow
   /** Whether the Open URL modal dialog is showing. */
   urlDialogOpen = false;
   /** Whether the Open-sample picker dialog is showing. */
@@ -121,10 +116,12 @@ export class WebController implements ControllerHost {
   messages: ChatMessage[] = [];
   lastDebug: RequestDebugInfo | undefined;
   /** Rows per table page — a view setting the controller owns (the spec
-   *  never carries a page size). Re-derived from the provider on config
-   *  changes: five batches when the provider pins a cell batch size. */
-  pageSize = PAGE_SIZE;
-  /** The selected cell, or null — drives the status footer. */
+   *  never carries a page size), sized to one AI-cell concurrency wave so a
+   *  streaming page fills in as each wave of concurrent batches lands.
+   *  Re-derived on config changes: the wave shrinks with the provider's
+   *  pinned cell batch size. */
+  pageSize: number;
+  /** The selected cell, or null — tints the cell and feeds the voice prompt. */
   selection: CellRef | null = null;
   /** Microphone state — drives the MicButton's red ring and spinner. */
   voiceStatus: VoiceStatus = 'idle';
@@ -132,8 +129,6 @@ export class WebController implements ControllerHost {
   continuousStatus: ContinuousStatus = 'idle';
   /** 1-based page index over the derived rows, clamped on read. */
   pageNum = 1;
-  /** Filename of the most recent save, cleared by the next state change. */
-  savedLabel: string | null = null;
   tutorialOpen = false;
   /** Rows loaded for a show-golden step, or null when not in a golden step. */
   goldenRows: Row[] | null = null;
@@ -149,7 +144,9 @@ export class WebController implements ControllerHost {
       opts.env ?? (typeof process !== 'undefined' ? process.env : {});
     // Precedence: env vars > opts.config > stored config > defaults.
     this.config = resolveConfig(envVars, { ...readStoredConfig(), ...opts.config });
-    this.pageSize = pageSizeFor(this.config.provider);
+    // One concurrency wave per page (100 with the defaults, 25 on openrouter),
+    // so a streaming page fills wave by wave.
+    this.pageSize = pageSizeFor(this.config.provider, opts);
 
     // Built first so pushToast can record every toast from the moment the
     // controller exists.
@@ -268,11 +265,9 @@ export class WebController implements ControllerHost {
     }
   }
 
-  /** Cancel the in-flight request, if any. */
+  /** Cancel the in-flight request or flow replay, if any — the chat Stop
+   *  button and the mobile banner's stop icon. */
   cancelRequest(): void { this.engine.cancelActive(); }
-
-  /** Cancel the running flow replay — the flow-run dialog's Cancel. */
-  cancelFlowRun(): void { this.engine.cancelActive(); } // #OpenFlow
 
   // ── View accessors (never throw — safe before a file is loaded) ───────────
 
@@ -299,19 +294,12 @@ export class WebController implements ControllerHost {
     this.notify();
   }
 
-  // ── Selection + activity (the status footer) ──────────────────────────────
+  // ── Selection (view state — tints the cell) ───────────────────────────────
 
   /** Select a cell by 0-based row index and column id. */
   selectCell(row: number, column: string): void {
     this.selection = { row, column };
     this.notify();
-  }
-
-  /** What the engine is doing, for the status footer. */
-  activityStatus(): ActivityStatus {
-    if (this.streaming) return 'running';
-    if (this.savedLabel) return 'saved';
-    return 'idle';
   }
 
   // ── Undo / redo + browser gestures (→ patch) ───────────────────────────────

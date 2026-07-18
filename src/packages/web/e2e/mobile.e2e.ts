@@ -342,6 +342,115 @@ test.describe('phone — the page is the table scroller', () => {
     expect(Math.abs(m.gap), 'the sticky header must sit right under the app bar').toBeLessThanOrEqual(1);
   });
 
+  test('pinch-to-zoom scales the table only — the app bar and dock keep their size', async ({
+    page,
+  }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-open="Open sample…"]').click();
+    await page
+      .locator('[data-tb-sample-dialog] [data-tb-sample]', { hasText: 'customers-input.csv' })
+      .first()
+      .click();
+    await expect(page.locator('[data-mob-cell]').first()).toBeVisible({ timeout: 30_000 });
+
+    const chromeBefore = await page.evaluate(() => ({
+      barH: document.querySelector('[data-mob-appbar=""]')!.getBoundingClientRect().height,
+      dockH: document.querySelector('[data-mob-dock=""]')!.getBoundingClientRect().height,
+    }));
+
+    // Synthesize a two-finger spread over the table (Playwright has no pinch
+    // primitive): 100px apart → 300px apart is a ×3 gesture, which the shell
+    // must clamp to the 2× ceiling.
+    const pinch = (fromXs: [number, number], toXs: [number, number]) =>
+      page.evaluate(([from, to]) => {
+        const el = document.querySelector('[data-mob-table=""]')!;
+        const mk = (id: number, x: number) =>
+          new Touch({ identifier: id, target: el, clientX: x, clientY: 300, pageX: x, pageY: 300 + window.scrollY });
+        const fire = (type: string, xs: number[]) => {
+          const touches = xs.map((x, i) => mk(i + 1, x));
+          el.dispatchEvent(
+            new TouchEvent(type, { bubbles: true, cancelable: true, touches, changedTouches: touches, targetTouches: touches }),
+          );
+        };
+        fire('touchstart', from);
+        fire('touchmove', to);
+        fire('touchend', []);
+      }, [fromXs, toXs] as const);
+
+    await pinch([150, 250], [100, 400]);
+    const zoomedIn = await page.evaluate(() => ({
+      zoom: Number(getComputedStyle(document.querySelector('[data-mob-table=""]')!).zoom),
+      barH: document.querySelector('[data-mob-appbar=""]')!.getBoundingClientRect().height,
+      barTop: document.querySelector('[data-mob-appbar=""]')!.getBoundingClientRect().top,
+      dockH: document.querySelector('[data-mob-dock=""]')!.getBoundingClientRect().height,
+    }));
+    expect(zoomedIn.zoom, 'a ×3 spread must clamp to the 2× ceiling').toBe(2);
+    expect(zoomedIn.barH, 'the app bar must not scale with the table').toBe(chromeBefore.barH);
+    expect(zoomedIn.dockH, 'the dock must not scale with the table').toBe(chromeBefore.dockH);
+    expect(zoomedIn.barTop, 'the app bar must stay pinned').toBe(0);
+
+    // The frozen header still sticks right under the app bar while zoomed.
+    await page.evaluate(() => window.scrollTo(0, 150));
+    const gap = await page.evaluate(() => {
+      const th = document.querySelector('[data-mob-table] thead th')!.getBoundingClientRect();
+      const bar = document.querySelector('[data-mob-appbar=""]')!.getBoundingClientRect();
+      return Math.round(th.top - bar.bottom);
+    });
+    expect(Math.abs(gap), 'the zoomed header must still sit under the app bar').toBeLessThanOrEqual(1);
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    // Pinch far in the other way: clamps at the 0.5× floor, and the shrunken
+    // table still paints its surface across the full viewport width.
+    await pinch([50, 350], [190, 210]);
+    const zoomedOut = await page.evaluate(() => ({
+      zoom: Number(getComputedStyle(document.querySelector('[data-mob-table=""]')!).zoom),
+      wrapW: document.querySelector('[data-mob-table=""]')!.getBoundingClientRect().width,
+      viewport: window.innerWidth,
+    }));
+    expect(zoomedOut.zoom, 'a deep pinch must clamp to the 0.5× floor').toBe(0.5);
+    expect(zoomedOut.wrapW, 'the zoomed-out surface must still cover the viewport').toBeGreaterThanOrEqual(
+      zoomedOut.viewport,
+    );
+  });
+
+  test('the Type composer grows with the draft up to five lines, then scrolls inside', async ({
+    page,
+  }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-open="Open sample…"]').click();
+    await page
+      .locator('[data-tb-sample-dialog] [data-tb-sample]', { hasText: 'customers-input.csv' })
+      .first()
+      .click();
+    await expect(page.locator('[data-mob-cell]').first()).toBeVisible({ timeout: 30_000 });
+
+    await page.locator('[data-mob-dock="type"]').click();
+    const input = page.locator('#tutorial-chat-input');
+    await expect(input).toBeVisible();
+
+    // The resize runs in a React effect after the input event, so poll.
+    const height = () => input.evaluate((el) => el.getBoundingClientRect().height);
+    const oneLine = await height();
+
+    // Three lines: taller than one, by roughly two line-heights.
+    await input.fill('line one\nline two\nline three');
+    await expect.poll(height, { message: 'the field must grow with the draft' }).toBeGreaterThan(oneLine + 30);
+    const threeLines = await height();
+
+    // Twelve lines: capped at the five-line ceiling — the extra scrolls inside.
+    await input.fill(Array.from({ length: 12 }, (_, i) => `line ${i + 1}`).join('\n'));
+    await expect
+      .poll(() => input.evaluate((el) => el.scrollHeight > el.clientHeight + 1), {
+        message: 'past the cap the field must scroll inside',
+      })
+      .toBe(true);
+    expect(await height(), 'the field must stop growing at the cap').toBeLessThan(threeLines + 3 * 30);
+
+    // Clearing shrinks back to one line.
+    await input.fill('');
+    await expect.poll(height, { message: 'an empty draft must return to one line' }).toBe(oneLine);
+  });
+
   test('Settings on a phone offers Add to home screen', async ({ page }) => {
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-dock="menu"]').click();

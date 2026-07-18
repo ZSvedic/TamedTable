@@ -13,6 +13,7 @@ The human-authored contract for TamedTable: what the system does, the types it e
 | [packages/](packages/README.md) | Per-package specs — layout rules in its README |
 | [test-cases/](test-cases/) | Gherkin features + fixtures, named as below |
 | [user-files/](user-files/) | Real user-contributed files for manual testing (e.g. a `.flow` + its source CSV for the Open & run flow) — not used by the automated suite |
+| [user-reports/](user-reports/README.md) | User-reported failing inputs distilled into replayable fixtures; the `@regression` scenarios that replay them live in `test-cases/` with the capability they test |
 
 The structural rule: library packages (self-contained, demo-able) get per-package specs under [packages/](packages/README.md); app surfaces (`cli`, `headless`, `web`) share [behavior.md](behavior.md) + [test-cases/](test-cases/) because one scenario must prove all three surfaces.
 

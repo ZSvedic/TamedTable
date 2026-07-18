@@ -16,8 +16,6 @@ import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { TableRow } from './index.ts';
 import { Pagination } from './Pagination.tsx';
 
-export type TableStatus = 'idle' | 'running' | 'saved';
-
 export interface CellSelection {
   row: number;
   column: string;
@@ -41,18 +39,11 @@ export interface TableViewProps {
   onEditCell: (row: number, column: string, value: string) => void;
   onReorderColumns: (order: string[]) => void;
   streaming?: boolean;
-  status: TableStatus;
 }
 
 function cellText(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
-
-const STATUS_LABEL: Record<TableStatus, string> = {
-  idle: 'Idle',
-  running: 'Running',
-  saved: 'Saved',
-};
 
 /** Floor for a resized column — keeps the resize handle grabbable. */
 const MIN_COL_W = 48;
@@ -79,7 +70,6 @@ export function TableView({
   onEditCell,
   onReorderColumns,
   streaming,
-  status,
 }: TableViewProps): ReactNode {
   const t = useTheme();
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
@@ -429,45 +419,6 @@ export function TableView({
         </span>
         <span style={{ flex: 1 }} />
         <Pagination page={page} pageCount={pageCount} onPageChange={onPageChange} />
-      </div>
-
-      {/* status footer */}
-      <div
-        style={{
-          flex: '0 0 auto',
-          height: 24,
-          display: 'flex',
-          alignItems: 'center',
-          gap: space.px10,
-          padding: `0 ${space.px12}px`,
-          borderTop: `1px solid ${t.line}`,
-          background: t.surface2,
-          fontFamily: typography.mono,
-          fontSize: typography.size.xs,
-          color: t.ink3,
-        }}
-      >
-        <span data-tv-selection="" style={{ color: selection ? t.ink2 : t.ink4 }}>
-          {selection ? `R${selection.row + 1} · ${selection.column}` : 'no selection'}
-        </span>
-        <span style={{ color: t.ink4 }}>·</span>
-        <span>UTF-8</span>
-        <span style={{ flex: 1 }} />
-        <span
-          data-tv-status={status}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6 }}
-        >
-          <span
-            className={status === 'running' ? 'tv-pulse' : undefined}
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              background: status === 'running' ? t.accent : status === 'saved' ? t.ok : t.ink4,
-            }}
-          />
-          {STATUS_LABEL[status]}
-        </span>
       </div>
     </div>
   );

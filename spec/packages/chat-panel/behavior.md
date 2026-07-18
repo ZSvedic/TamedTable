@@ -16,6 +16,7 @@ The web app's wrapper binds `WebController`:
 <ChatPanel
   inputId="tutorial-chat-input"
   messages={controller.messages} streaming={controller.streaming}
+  progress={controller.runProgress}
   requestCount={controller.history().length}
   prefill={controller.tutorialPrefill}
   onSend={(text) => controller.sendChat(text)}
@@ -36,6 +37,13 @@ debug objects fit without a headless dependency. `reportable: true` marks a
 message the user can flag as a bug — the classification (app error vs
 guidance error) is the host's job; the panel only renders the action.
 
+`ChatRunProgress` is the live progress the host feeds while a run
+streams: `{ step, totalSteps, label, rowsDone, rowsTotal, log }` —
+1-based `step` (0 until the first starts), the running step's human
+label, the streamed-row counts for an AI-cell step, and the newest-last
+event log lines. The host owns the state and mutates it in place; the
+panel just renders whatever it is passed.
+
 ## ChatPanel component (`./components` entry, react peer dependency)
 
 - Header: "Requests", the transformation count (`requestCount`, with
@@ -45,6 +53,14 @@ guidance error) is the host's job; the panel only renders the action.
   `Error:` (the prefix is stripped for display). With no messages, the
   host's `emptyState` renders instead. While streaming, a pulsing
   "Running…" line follows the list.
+- Live run progress: while streaming, a non-null `progress` prop renders
+  a block under the Running… line — a status line
+  (`Step i of N — <label>`, `· rows done / total` while `rowsTotal > 0`
+  and `rowsDone > 0`; `Starting…` until the first step), a thin progress
+  bar advancing step by step (fractionally within a streaming step), and
+  a collapsed "request detail" toggle that expands a read-only log box
+  streaming `progress.log`, pinned to its newest line. The block
+  unmounts when streaming ends, so the next run starts collapsed.
 - Request detail: an assistant message with `debug` gets a collapsed
   "request detail" toggle and a copy button; expanded, it shows the request,
   model/token/elapsed summary, per-turn ops, and cell samples — the same
@@ -65,8 +81,9 @@ guidance error) is the host's job; the panel only renders the action.
 
 Stable attributes: `data-cp-message="user|assistant"`, `data-cp-error`,
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
-`data-cp-stop`, plus the app's existing `data-testid="mic-button"` /
-`"copy-debug"`.
+`data-cp-stop`, `data-cp-running`, `data-cp-progress`,
+`data-cp-progress-toggle`, `data-cp-progress-log`, plus the app's existing
+`data-testid="mic-button"` / `"copy-debug"`.
 
 ## MicButton component
 
@@ -93,7 +110,8 @@ The demo (`demo.html` + `demo.tsx`, deployed under `/demos/chat-panel/`)
 mounts ChatPanel over plain React state: sending appends the user message
 and an echoed assistant reply, buttons inject an error reply (guidance — no
 Report bug), an app-error reply (`reportable`, no detail), and a reportable
-reply with request detail, a streaming toggle drives the Running…/stop state, a
-prefill button exercises the draft sync, and the demo MicButton cycles
-recording → sending → idle. Every callback appends to the `#out` event log,
+reply with request detail, a streaming toggle drives the Running…/stop state
+together with a sample run progress (step line, bar, live request-detail
+log), a prefill button exercises the draft sync, and the demo MicButton
+cycles recording → sending → idle. Every callback appends to the `#out` event log,
 non-empty on load — the demo smoke test's ready signal.

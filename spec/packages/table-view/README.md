@@ -1,6 +1,6 @@
 # table-view
 
-The table display: paged grid with selection, inline cell editing, column drag-reorder, column resize, streaming banner, status footer, and the pure pagination model (`clampPage`, `pageCountFor`, `pageSlice`, `buildPageList`).
+The table display: paged grid with selection, inline cell editing, column drag-reorder, column resize, streaming banner, and the pure pagination model (`clampPage`, `pageCountFor`, `pageSlice`, `buildPageList`).
 
 | What | Where |
 |---|---|

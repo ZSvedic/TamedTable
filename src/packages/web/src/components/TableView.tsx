@@ -167,7 +167,6 @@ export function TableView({ controller }: { controller: WebController }): ReactN
       onEditCell={(row, column, value) => void controller.editCell(row, column, value)}
       onReorderColumns={(order) => void controller.reorderColumns(order)}
       streaming={controller.streaming}
-      status={controller.activityStatus()}
     />
   );
 }

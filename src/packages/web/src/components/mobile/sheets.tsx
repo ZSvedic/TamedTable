@@ -12,6 +12,12 @@ import type { VoiceStatus } from '../../controller.ts';
 
 const SHEET_H = 300;
 
+// The composer's line height and its growth ceiling: the field grows with the
+// draft up to five lines, then scrolls inside (the messaging-app behavior).
+const COMPOSER_LINE_H = 22;
+const COMPOSER_PAD_V = 9;
+const COMPOSER_MAX_H = 5 * COMPOSER_LINE_H + 2 * COMPOSER_PAD_V;
+
 const sheetBase = (t: Theme, fixedHeight?: number): React.CSSProperties => ({
   flex: '0 0 auto',
   // Grow by the home-indicator inset and pad it back, so the sheet keeps its
@@ -50,6 +56,14 @@ export function KeyboardSheet({
   useEffect(() => {
     ref.current?.focus();
   }, []);
+  // Auto-grow: size the field to its content on every draft change (collapse
+  // to a line first so deletions shrink it), capped at the five-line ceiling.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = `${COMPOSER_LINE_H + 2 * COMPOSER_PAD_V}px`;
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_H)}px`;
+  }, [draft]);
   const hasDraft = draft.trim() !== '';
   return (
     <div
@@ -85,7 +99,8 @@ export function KeyboardSheet({
               flex: 1,
               boxSizing: 'border-box',
               display: 'flex',
-              alignItems: 'center',
+              // Bottom-anchor the send button while the field grows upward.
+              alignItems: 'flex-end',
               gap: space.px8,
               minHeight: 40,
               border: `1.5px solid ${t.accent}`,
@@ -119,10 +134,12 @@ export function KeyboardSheet({
                 background: 'transparent',
                 fontFamily: typography.ui,
                 fontSize: typography.size.base,
-                lineHeight: '22px',
+                lineHeight: `${COMPOSER_LINE_H}px`,
                 color: t.ink,
-                maxHeight: 80,
-                padding: 0,
+                height: COMPOSER_LINE_H + 2 * COMPOSER_PAD_V,
+                maxHeight: COMPOSER_MAX_H,
+                overflowY: 'auto',
+                padding: `${COMPOSER_PAD_V}px 0`,
               }}
             />
             <button
@@ -135,6 +152,7 @@ export function KeyboardSheet({
                 width: 28,
                 height: 28,
                 flex: '0 0 auto',
+                marginBottom: 6, // centered in the one-line row, bottom-anchored as it grows
                 borderRadius: '50%',
                 border: 'none',
                 display: 'flex',

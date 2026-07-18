@@ -16,15 +16,21 @@ import { defaultModel, defaultCellModel, defaultBatchSize } from '@tamedtable/mo
 import type { FetchLike } from '@tamedtable/file-io';
 import { requestBody, requestUrl } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
-import type { FlowRunState } from './controller-types.ts';
+import type { RunProgress } from './controller-types.ts';
 
-/** Newest log lines the flow-run dialog keeps — a bound, not a transcript. */
+/** Newest log lines the run-progress feed keeps — a bound, not a transcript. */
 const FLOW_LOG_MAX = 500;
 
 /** One log-worthy cell value: short, single-line, quoted when stringy. */
 function flowLogValue(v: unknown): string {
   const s = v === null || v === undefined ? 'null' : JSON.stringify(v);
   return s.length > 60 ? `${s.slice(0, 57)}…` : s;
+}
+
+/** One log-worthy expression body: an AI prompt or a long SQL fragment can
+ *  run to hundreds of characters — cap it, the label already names the step. */
+function flowLogExpr(body: string): string {
+  return body.length > 200 ? `${body.slice(0, 197)}…` : body;
 }
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
@@ -185,19 +191,20 @@ export class EngineManager {
   // #OpenFlow
   /** Replace the current spec, replaying its transformations onto the loaded
    *  source rows (the Open & run .flow path). Runs like a request — AI cells
-   *  paint onto the overlay as chunks land — behind the flow-run dialog:
-   *  `host.flowRun` carries live step/row progress and the event log named
-   *  after the picked `.flow` file, and the dialog's Cancel aborts through
-   *  the same controller the chat Stop uses. setSpec commits only when the
-   *  whole replay finishes, so a cancel or failure leaves the previous spec
-   *  and rows untouched. Throws when the replay fails or is cancelled. */
-  async applySpec(spec: TablePlan, name: string): Promise<void> {
+   *  paint onto the overlay as chunks land — behind the chat's live run
+   *  progress: `host.runProgress` carries step/row progress and the event
+   *  log, and the chat Stop button (or the mobile banner's stop icon) aborts
+   *  through the same controller a chat request uses. setSpec commits only
+   *  when the whole replay finishes, so a cancel or failure leaves the
+   *  previous spec and rows untouched. Throws when the replay fails or is
+   *  cancelled. */
+  async applySpec(spec: TablePlan): Promise<void> {
     const runner = this.ensureHeadless();
     const ownAbort = new AbortController();
     this.activeAbort = ownAbort;
     this.host.streaming = true;
     this.overlay.clear();
-    const feed = this.flowRunFeed(name, 'immediate', spec.transformations.length);
+    const feed = this.runProgressFeed(spec.transformations.length);
     this.host.notify();
 
     try {
@@ -209,7 +216,7 @@ export class EngineManager {
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
-      this.host.flowRun = null;
+      this.host.runProgress = null;
       this.overlay.clear();
       if (this.overlayTimer) {
         clearTimeout(this.overlayTimer);
@@ -232,7 +239,6 @@ export class EngineManager {
     this.overlay.clear();
     this.host.pageNum = 1;
     this.host.selection = null;
-    this.host.savedLabel = null;
     this.host.notify();
   }
 
@@ -250,13 +256,12 @@ export class EngineManager {
     this.host.streaming = true;
     this.overlay.clear();
     this.host.selection = null;
-    this.host.savedLabel = null;
     this.host.notify();
 
-    // The flow-run dialog rides along, deferred: it appears only if the
-    // request's replay streams an AI cell (#OpenFlow). The feed also paints
-    // the overlay, so the wrapper only forwards the caller's onChunk.
-    const feed = this.flowRunFeed(opts?.label ?? text, 'on-first-chunk');
+    // The chat's live run progress rides along from the start (#OpenFlow) —
+    // a deterministic request just flashes its steps briefly. The feed also
+    // paints the overlay, so the wrapper only forwards the caller's onChunk.
+    const feed = this.runProgressFeed();
     const onChunk = (u: ChunkUpdate): void => {
       opts?.onChunk?.(u);
       feed.onChunk(u);
@@ -272,7 +277,7 @@ export class EngineManager {
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
-      this.host.flowRun = null;
+      this.host.runProgress = null;
       this.overlay.clear();
       if (this.overlayTimer) {
         clearTimeout(this.overlayTimer);
@@ -288,20 +293,15 @@ export class EngineManager {
   }
 
   // #OpenFlow
-  /** Build the flow-run dialog's event feed for one run named `name`: the
-   *  returned handlers keep `host.flowRun` (step/row progress + capped log)
-   *  current and paint streamed cells onto the overlay. `publish` decides
-   *  when the dialog appears: 'immediate' for a flow replay, 'on-first-chunk'
-   *  for a chat request — the trigger is the first AI-cell result, so a
-   *  request whose steps are all deterministic never raises the dialog. */
-  private flowRunFeed(
-    name: string,
-    publish: 'immediate' | 'on-first-chunk',
+  /** Build the live run-progress event feed for one run: the returned
+   *  handlers keep `host.runProgress` (step/row progress + capped log)
+   *  current — published immediately, for flow replays and chat requests
+   *  alike — and paint streamed cells onto the overlay. */
+  private runProgressFeed(
     totalSteps = 0,
   ): { onStep: (u: StepUpdate) => void; onChunk: (u: ChunkUpdate) => void } {
-    const run: FlowRunState = { name, step: 0, totalSteps, label: '', rowsDone: 0, rowsTotal: 0, log: [] };
-    let visible = publish === 'immediate';
-    if (visible) this.host.flowRun = run;
+    const run: RunProgress = { step: 0, totalSteps, label: '', rowsDone: 0, rowsTotal: 0, log: [] };
+    this.host.runProgress = run;
     const appendLog = (line: string): void => {
       run.log.push(line);
       if (run.log.length > FLOW_LOG_MAX) run.log.splice(0, run.log.length - FLOW_LOG_MAX);
@@ -314,15 +314,14 @@ export class EngineManager {
         run.rowsTotal = u.rows;
         run.rowsDone = 0;
         appendLog(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows`);
-        if (visible) this.host.notify();
+        // The exact code behind the label — the detail box shows what the
+        // step runs, not just its name.
+        for (const e of u.expressions) appendLog(`  ${e.label}: ${flowLogExpr(e.body)}`);
+        this.host.notify();
       },
       onChunk: (u) => {
         run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
         appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
-        if (!visible) {
-          visible = true;
-          this.host.flowRun = run;
-        }
         this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
         this.scheduleOverlayFlush();
       },

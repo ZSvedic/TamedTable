@@ -64,12 +64,11 @@ export class ConfigManager {
     const modelChanged =
       next.model !== this.host.config.model || next.cellModel !== this.host.config.cellModel;
     this.host.config = next;
-    // The page follows the provider: five batches when its defaults pin a
-    // cell batch size (openrouter), the plain default otherwise. currentPage()
-    // clamps on read, so no page bookkeeping is needed here.
-    this.host.pageSize = pageSizeFor(next.provider);
+    // The page follows the provider: its concurrency wave shrinks with a
+    // pinned cell batch size (openrouter: 25) and is 100 otherwise.
+    // currentPage() clamps on read, so no page bookkeeping is needed here.
+    this.host.pageSize = pageSizeFor(next.provider, this.host.opts);
     writeStoredConfig(next);
-    this.host.savedLabel = null;
 
     if (modelChanged && this.host.engine.hasRunner() && this.host.loaded) {
       const spec = structuredClone(this.host.engine.currentSpec());
