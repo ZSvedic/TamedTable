@@ -17278,6 +17278,9 @@ function ModelChooser({
   secondaryModel,
   keys,
   expandedProvider,
+  savedProvider,
+  savedSeq,
+  savedFadeMs = 3000,
   byokHelpUrl,
   changeModelsHelpUrl,
   onProviderClick,
@@ -17292,6 +17295,18 @@ function ModelChooser({
   const toggleReveal = (p) => {
     setRevealed((prev) => ({ ...prev, [p]: !prev[p] }));
   };
+  const savedBadge = (p) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+    "data-mc-saved": p,
+    style: {
+      fontFamily: fontUi,
+      fontSize: 11.5,
+      fontWeight: 500,
+      flexShrink: 0,
+      animation: `mc-saved-fade 400ms ease ${savedFadeMs}ms forwards`,
+      color: ok
+    },
+    children: "✓ Saved"
+  }, savedSeq, false, undefined, this);
   const voiceBadge = (hasVoice) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
     style: {
       display: "inline-flex",
@@ -17500,6 +17515,9 @@ function ModelChooser({
   return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
     style: { display: "flex", flexDirection: "column", gap: 8 },
     children: [
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("style", {
+        children: `@keyframes mc-saved-fade { to { color: ${ink3}; } }`
+      }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime.jsxDEV("p", {
         style: {
           margin: 0,
@@ -17572,6 +17590,7 @@ function ModelChooser({
                     }, undefined, false, undefined, this)
                   ]
                 }, undefined, true, undefined, this),
+                savedProvider === meta.id && savedBadge(meta.id),
                 voiceBadge(hasVoice)
               ]
             }, undefined, true, undefined, this),
