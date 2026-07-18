@@ -29,6 +29,8 @@ export class ConfigManager {
 
   openSettings(): void {
     this.host.settingsOpen = true;
+    // The Saved badge only ever states a save made this visit.
+    this.host.savedProvider = null;
     this.host.notify();
   }
 
@@ -69,6 +71,19 @@ export class ConfigManager {
     // currentPage() clamps on read, so no page bookkeeping is needed here.
     this.host.pageSize = pageSizeFor(next.provider, this.host.opts);
     writeStoredConfig(next);
+    // Confirm the save on the card it touched: the provider set explicitly,
+    // or the one whose key field the partial carries.
+    const savedFor: Provider | null =
+      partial.provider ??
+      (partial.geminiKey !== undefined ? 'gemini'
+        : partial.openaiKey !== undefined ? 'openai'
+        : partial.anthropicKey !== undefined ? 'anthropic'
+        : partial.openrouterKey !== undefined ? 'openrouter'
+        : null);
+    if (this.host.settingsOpen && savedFor) {
+      this.host.savedProvider = savedFor;
+      this.host.savedSeq++;
+    }
 
     if (modelChanged && this.host.engine.hasRunner() && this.host.loaded) {
       const spec = structuredClone(this.host.engine.currentSpec());

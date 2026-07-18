@@ -21,6 +21,15 @@ export interface ModelChooserProps {
   secondaryModel: string;
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
+  /** Provider whose config the host most recently saved, or null. That card's
+   * header shows a "✓ Saved" badge, green fading to grey after savedFadeMs. */
+  savedProvider?: Provider | null;
+  /** Bumped by the host on every save — keys the badge so each save restarts
+   * its green phase even when savedProvider is unchanged. */
+  savedSeq?: number;
+  /** How long the badge stays green before fading to grey. The host passes its
+   * standard toast duration; defaults to 3000 ms. */
+  savedFadeMs?: number;
   /** Optional URL for a general "how to get an API key" help link, shown at the
    * top below the explainer. The host supplies the path so the component
    * carries no site URL. */
@@ -135,6 +144,9 @@ export function ModelChooser({
   secondaryModel,
   keys,
   expandedProvider,
+  savedProvider,
+  savedSeq,
+  savedFadeMs = 3000,
   byokHelpUrl,
   changeModelsHelpUrl,
   onProviderClick,
@@ -149,6 +161,26 @@ export function ModelChooser({
   };
 
   // ── sub-renderers ───────────────────────────────────────────────────────
+
+  // "✓ Saved" confirmation on the card whose config just saved: green while
+  // fresh, then fades to the grey of the surrounding metadata. Keyed on
+  // savedSeq so every save replays the animation from green.
+  const savedBadge = (p: Provider): ReactNode => (
+    <span
+      key={savedSeq}
+      data-mc-saved={p}
+      style={{
+        fontFamily: fontUi,
+        fontSize: 11.5,
+        fontWeight: 500,
+        flexShrink: 0,
+        animation: `mc-saved-fade 400ms ease ${savedFadeMs}ms forwards`,
+        color: ok,
+      }}
+    >
+      ✓ Saved
+    </span>
+  );
 
   const voiceBadge = (hasVoice: boolean): ReactNode => (
     <span
@@ -380,6 +412,8 @@ export function ModelChooser({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Keyframes for the Saved badge's green→grey fade. */}
+      <style>{`@keyframes mc-saved-fade { to { color: ${ink3}; } }`}</style>
       {/* Generic role explainer — once, above the provider cards. */}
       <p
         style={{
@@ -446,6 +480,7 @@ export function ModelChooser({
                   {meta.tagline}
                 </span>
               </span>
+              {savedProvider === meta.id && savedBadge(meta.id)}
               {voiceBadge(hasVoice)}
             </button>
 

@@ -99,6 +99,12 @@ export class WebController implements ControllerHost {
   settingsOpen = false;
   /** Provider card expanded in the settings panel, or null when none is. */
   expandedProvider: Provider | null = null;
+  /** Provider whose config most recently saved while the panel is open — its
+   *  card header shows the "✓ Saved" badge. Cleared on panel open. */
+  savedProvider: Provider | null = null;
+  /** Bumped on every settings save; keys the badge so each save restarts its
+   *  green phase. */
+  savedSeq = 0;
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or

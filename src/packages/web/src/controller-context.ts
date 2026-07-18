@@ -48,6 +48,8 @@ export interface ControllerHost {
   errorDialog: string | null;
   settingsOpen: boolean;
   expandedProvider: Provider | null;
+  savedProvider: Provider | null;
+  savedSeq: number;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;
