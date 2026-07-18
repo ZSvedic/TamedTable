@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- #VoicePort + #VoiceInput demo — manual, isolated test of the voice-input
+     package: press-and-hold recording, hands-free VAD capture, and
+     buildVoicePrompt. No LLM here — the app makes the model call.
+     Run: bun packages/voice-input/demo.html -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>voice-input demo</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font: 14px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 60rem; padding: 1.5rem; }
+      h1 { font-size: 1.3rem; margin-bottom: 0.2rem; }
+      h2 { font-size: 1rem; margin: 1.6rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.7; }
+      .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 0.4rem 0; }
+      button { padding: 0.35rem 0.85rem; border-radius: 7px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+      button.primary { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 600; }
+      button.on { background: #16a34a; border-color: #16a34a; color: #fff; }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      input, label.field { font: inherit; }
+      input[type='number'] { padding: 0.3rem 0.4rem; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; width: 6rem; }
+      label.field { display: grid; gap: 0.15rem; }
+      label.field > span { opacity: 0.65; font-size: 0.82rem; }
+      pre { padding: 0.5rem; background: color-mix(in srgb, currentColor 8%, transparent); border-radius: 6px; overflow: auto; }
+      .kv { display: grid; grid-template-columns: 11rem 1fr; gap: 0.15rem 0.8rem; }
+      .kv dt { opacity: 0.65; }
+      .kv dd { margin: 0; }
+      .pass { color: #16a34a; font-weight: 600; }
+      .fail { color: #dc2626; font-weight: 600; }
+      .mono, #vi-state, #hf-state { font-family: ui-monospace, monospace; }
+      .hint { opacity: 0.65; font-size: 0.85rem; margin: 0.2rem 0; }
+    </style>
+  <script type="module" crossorigin src="/pr-preview/pr-243/demos/voice-input/demo-agzb3qm1.js"></script></head>
+  <body>
+    <h1>voice-input — record, hands-free &amp; prompt</h1>
+    <p class="hint">
+      The package's three jobs: capture a clip by <strong>press-and-hold</strong>,
+      capture turns <strong>hands-free</strong> with a client-side VAD, and build
+      the instruction text sent with the audio. No LLM here — a captured turn is
+      just a clip you can play; the app makes the model call.
+    </p>
+
+    <h2>Capabilities</h2>
+    <dl class="kv" id="caps"></dl>
+
+    <h2>Press-and-hold (VoicePort)</h2>
+    <div class="row">
+      <button id="vi-start">Start recording</button>
+      <button id="vi-stop" disabled>Stop → WAV</button>
+      <button id="vi-cancel" disabled>Cancel</button>
+      <span id="vi-state">idle</span>
+    </div>
+    <div class="row">
+      <span id="vi-result">—</span>
+      <audio id="vi-audio" controls style="display: none;"></audio>
+    </div>
+
+    <h2>Hands-free (ContinuousVoicePort + VAD)</h2>
+    <div class="row">
+      <button id="hf-toggle" class="primary">▶ Start hands-free</button>
+      <span>State: <span id="hf-state">idle</span></span>
+    </div>
+    <div class="row">
+      <span id="hf-result">—</span>
+      <audio id="hf-audio" controls style="display: none;"></audio>
+    </div>
+    <p id="hf-err" class="hint" style="color: #dc2626"></p>
+    <div class="row">
+      <strong style="opacity: 0.7">Presets:</strong>
+      <button data-preset="snappy">Snappy</button>
+      <button data-preset="balanced">Balanced</button>
+      <button data-preset="relaxed">Relaxed (default)</button>
+    </div>
+    <div class="row">
+      <label class="field"><span>redemptionMs — silence before a turn</span><input id="redemptionMs" type="number" min="100" max="3000" step="50" /></label>
+      <label class="field"><span>minSpeechMs — ignore blips under</span><input id="minSpeechMs" type="number" min="0" max="2000" step="50" /></label>
+    </div>
+    <p class="hint">
+      <strong>redemptionMs</strong> is the delay you feel — the silence the VAD
+      waits before sending a turn. Lower = snappier. Changes apply live. The VAD
+      model/wasm load from a CDN on first start.
+    </p>
+
+    <h2>buildVoicePrompt — sample context</h2>
+    <pre id="out"></pre>
+
+    
+  </body>
+</html>
