@@ -3,7 +3,7 @@
 This doc is the task spec for the "pay only for the rows you look at" change: lazy AI
 execution, the table-grid upgrades, and the tour/homepage restructure that presents them.
 It directs future sessions; it is not itself a spec — `spec/behavior.md` stays canonical
-and gets updated in phase 2. Work runs in three phases with a human review gate after
+and gets updated in phase 2. Work runs in four phases with a human review gate after
 each. Do not start a phase before the previous one is approved.
 
 ## The customer story
@@ -54,10 +54,14 @@ per section, one tab, all of that section's features demonstrated as a single st
 - Deliverable: updated brief, homepage, tour list and scripts, the large sample file.
   The human edits copy directly; wait for approval.
 
-## Phase 2 — app UX spec (review gate)
+## Phase 2 — app UX spec + HTML mockup (review gate)
 
-Write the behavior into `spec/behavior.md` + `spec/code-contract.md` and Gherkin
-scenarios (red). No implementation yet.
+Write the behavior into `spec/behavior.md` + `spec/code-contract.md`, and build **one
+self-contained HTML file** that mocks up every changed UI element — the large-file
+dialog, the pager marks and evaluated-rows readout, the run-on-all estimate dialog with
+progress bar, the grid with highlighted cells / hover previous value / header sort /
+filter row — using the ui-kit look, static data, no app code. The human reviews and
+approves that file before anything else moves. No implementation, no Gherkin yet.
 
 - **Large-file dialog** on loading a file bigger than one page: one sentence of
   explanation, radio Shuffled sample (default) / Original order.
@@ -75,9 +79,34 @@ scenarios (red). No implementation yet.
     dependency rule).
   - A filter row under the header (view state; same rule for AI columns).
   - Double-click on a column separator autofits that column to its content.
-- Deliverable: updated specs and red Gherkin; wait for approval.
+- Deliverable: updated specs and the mockup HTML; wait for approval.
 
-## Phase 3 — implementation (TDD until green)
+## Phase 3 — illustrations and Gherkin (review gate)
+
+**Illustrations.** Regenerate the homepage set per `process/prompts/prompt-illustrate.md`.
+Illustrations stay **one per feature** (the button-swaps-the-stage interaction survives);
+what changes is where "Show me →" goes: every button in a section opens that section's
+**showcase tour**, deep-linked to the step that demonstrates the clicked feature (the
+tour player gains a step parameter). Regenerate only illustrations whose feature or copy
+changed, and draw the new set for the Lazy AI execution section (shuffle badge, pager
+marks, estimate dialog).
+
+**Gherkin.** Write the scenarios (red) for the approved specs, including the lazy-AI
+edge cases:
+
+- Page boundary: last page shorter than a full page evaluates exactly its rows.
+- Provider switch mid-session resizes pages; row state and indicators stay correct.
+- Undo of an AI step lowers row marks; redo restores them without new AI calls.
+- Cancel mid-run keeps finished rows; re-run touches only pending and failed rows.
+- Failure mid-page (quota, network) marks exactly the failed rows; one-row retry works.
+- Shuffled view + header sort: sort applies to the shuffled sample; save keeps
+  original order.
+- Dependency rule declined: the step is absent from spec, table, and undo history.
+- Edit a cell on a page whose AI steps are pending: the edit survives evaluation.
+- Save with nothing pending writes directly — no dialog.
+- A one-page file: no dialog, fully eager, byte-identical to today's behavior.
+
+## Phase 4 — implementation (TDD until green)
 
 1. **Row state**: each row tracks the spec-step prefix applied to it. All indicators
    derive from row state, never stored per page (page size changes with provider).
@@ -87,8 +116,9 @@ scenarios (red). No implementation yet.
    The dependency rule blocks on the run-all confirmation.
 3. **Shuffle**: a seeded permutation over row indices, view-level only.
 4. **Order**: ① row state + lazy evaluation, ② run-on-all + save + estimates,
-   ③ load dialog + shuffle, ④ indicators + grid upgrades, ⑤ simple mode + big-files
-   tour recording. One PR per slice; `cd src && bun run test` green before each.
+   ③ load dialog + shuffle, ④ indicators + grid upgrades, ⑤ simple mode + Lazy AI
+   execution tour recording. One PR per slice; `cd src && bun run test` green before
+   each.
 
 ## Acceptance criteria
 
@@ -105,5 +135,5 @@ scenarios (red). No implementation yet.
    autofits the column.
 9. Simple mode restores table-wide runs, with the estimate dialog when >1 page pends.
 10. Batch CLI output for a saved flow is byte-identical before and after.
-11. The homepage links one showcase tour per section; the Big files tour runs without
-    an API key.
+11. The homepage links one showcase tour per section, with "Show me →" deep-linking to
+    the feature's step; the Lazy AI execution tour runs without an API key.
