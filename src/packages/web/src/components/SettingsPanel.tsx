@@ -216,31 +216,17 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           )}
         </div>
 
-        {/* footer — changes save live; a Google-Docs-style confirmation sits
-            left of Close once anything saved this visit */}
+        {/* footer — Close only (changes are live; each save confirms with the
+            standard "All changes saved" toast) */}
         <div
           style={{
             flex: '0 0 auto',
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: space.px8,
             padding: space.px14,
             borderTop: `1px solid ${t.line}`,
           }}
         >
-          {controller.settingsSaved && (
-            <span
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                color: t.ink3,
-                marginRight: 'auto',
-              }}
-            >
-              All changes saved
-            </span>
-          )}
           <Button variant="chrome" onClick={() => controller.closeSettings()}>
             Close
           </Button>

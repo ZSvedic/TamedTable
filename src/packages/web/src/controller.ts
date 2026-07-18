@@ -99,9 +99,6 @@ export class WebController implements ControllerHost {
   settingsOpen = false;
   /** Provider card expanded in the settings panel, or null when none is. */
   expandedProvider: Provider | null = null;
-  /** True once a config change saved while the settings panel is open — the
-   *  footer's "All changes saved" confirmation. Reset on panel open. */
-  settingsSaved = false;
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or

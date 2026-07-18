@@ -484,36 +484,35 @@ Feature: Web front-end
       And user opens the settings panel
       Then the provider card "openai" is expanded
 
-  Rule: The settings footer confirms saves Google-Docs-style
+  Rule: Settings changes confirm with the standard toast
 
     @web
-    Scenario: Opening the settings panel shows no save confirmation
+    Scenario: Opening the settings panel shows no toast
       Given the TamedTable web app
       When user opens the settings panel
-      Then the settings panel shows no save confirmation
+      Then no toast is shown
 
     @web
-    Scenario: Saving an API key shows "All changes saved"
+    Scenario: Saving an API key shows the "All changes saved" toast
       Given the TamedTable web app
       When user opens the settings panel
       And user saves the API key "sk-ant-example-key"
-      Then the settings panel shows the save confirmation "All changes saved"
+      Then a toast shows "All changes saved"
 
     @web
-    Scenario: Picking a provider card shows "All changes saved"
+    Scenario: Picking a provider card shows the "All changes saved" toast
       Given the TamedTable web app
       When user opens the settings panel
       And user clicks the provider card "gemini"
-      Then the settings panel shows the save confirmation "All changes saved"
+      Then a toast shows "All changes saved"
 
     @web
-    Scenario: Reopening the settings panel clears the save confirmation
+    Scenario: Repeated saves never stack confirmation toasts
       Given the TamedTable web app
       When user opens the settings panel
+      And user saves the API key "sk-ant"
       And user saves the API key "sk-ant-example-key"
-      And user closes the settings panel
-      And user opens the settings panel
-      Then the settings panel shows no save confirmation
+      Then exactly 1 toast shows "All changes saved"
 
   Rule: Provider API errors surface descriptive messages
 
