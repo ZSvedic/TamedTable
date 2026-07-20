@@ -187,6 +187,26 @@ Feature: Tutorial panel
       Then the current rows count is 20
       And no toast is shown
 
+    # Regression: the voice step plays its clip for seconds before the request
+    # fires. A second Next inside that window must be ignored — re-executing
+    # would fire a second, unrecorded voice request, and double-advancing would
+    # skip the next query, desyncing every later step from the cassette.
+    @web @regression
+    Scenario: A double Next during the voice step executes it once
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Handle feedback in five languages" is selected
+      And user plays the tutorial
+      And user advances to the next tutorial step
+      When user advances to the next tutorial step twice rapidly
+      And the tutorial settles
+      Then the spec has 1 transformation
+      And no toast is shown
+      When user advances to the last tutorial step
+      And the tutorial settles
+      Then no toast is shown
+      And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
+
   Rule: A lookup-table step is a silent prerequisite, not a tour step
 
     # `load the lookup table …` writes a file the join query reads; the user never

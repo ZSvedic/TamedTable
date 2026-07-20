@@ -1391,7 +1391,9 @@ it. Each step is **highlighted first** and **executed only when the user
 clicks Next** — the action runs as the tour advances, not at the moment the
 step appears, and it runs **once**. A showcase tour chains several query
 steps, so Next first waits for the previous step's replayed request to
-finish — a fast clicker can never skip a query.
+finish, and a Next clicked while a step is still executing (a voice clip
+playing, a query running) is ignored — a fast clicker can never skip a step
+or fire one twice.
 
 The **last stop is terminal**: it is numbered **"M of M"** and its popover
 shows a completion message — `Voilà, "<tour name>" is done.` — with two
@@ -1441,7 +1443,10 @@ step maps to one of five actions:
   cassette with **no API key**, exactly like a `prefill-chat` step does for typed
   requests. The **Speak** control is highlighted — the mic button on desktop, the
   **Speak** dock button on the phone — and the popover reads **"Speak and run the
-  query"**. The clip plays for you; nothing is recorded.
+  query"**. The clip plays for you; nothing is recorded. The mic button shows
+  whenever a tour is playing, key or no key — outside a tour it needs a
+  voice-capable model and a key, but a key-free voice step replays a recorded
+  Gemini turn and must have a mic to spotlight.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its

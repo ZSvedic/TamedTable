@@ -176,7 +176,22 @@ export class TutorialManager {
     this.host.notify();
   }
 
+  /** True while nextStep is executing a step — a re-entrant Next (clicked
+   *  during a voice clip's seconds-long playback, say) is ignored, or it would
+   *  fire the step a second time and double-advance past the next one. */
+  private advancing = false;
+
   async nextStep(): Promise<void> {
+    if (this.advancing) return;
+    this.advancing = true;
+    try {
+      await this.advanceStep();
+    } finally {
+      this.advancing = false;
+    }
+  }
+
+  private async advanceStep(): Promise<void> {
     if (this.tutorialStepIndex === null || !this.activeTour) return;
     // A showcase tour chains query steps; the previous step's replayed request
     // may still be streaming, and the prefill-chat execute guard refuses to

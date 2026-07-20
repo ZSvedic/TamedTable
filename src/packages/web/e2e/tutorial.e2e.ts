@@ -70,6 +70,19 @@ test('Next works for the tour with a hidden lookup step', async ({ page }) => {
   await expect(progress(page)).toHaveText('2 of 7');
 });
 
+test('the voice showcase tour replays whole, key-free', async ({ page }) => {
+  await startTour(page, 'Handle feedback in five languages');
+  // Process language showcase: load → voice → 4 queries → terminal = 7 stops.
+  // The voice step plays its clip before the request fires; each later stop
+  // waits for the previous replayed request, so the walk is click → assert.
+  await expect(progress(page)).toHaveText('1 of 7');
+  for (let n = 2; n <= 7; n++) {
+    await nextBtn(page).click();
+    await expect(progress(page)).toHaveText(`${n} of 7`, { timeout: 20_000 });
+  }
+  await expect(page.locator('.driver-popover')).toContainText('Voilà');
+});
+
 test('Cancel exits the tour and starting it again restarts it', async ({ page }) => {
   await startTour(page, 'Clean up a messy customer list');
   await expect(progress(page)).toHaveText('1 of 6');
