@@ -267,7 +267,7 @@ section { padding: 52px 0; }
 }
 .feat-dot.active { background: var(--ink); border-color: var(--ink); }
 .feat-demo {
-  align-self: flex-end;
+  align-self: center;
   font-family: var(--font-body); font-size: 13px; font-weight: 600;
   background: var(--btn-bg); color: var(--btn-fg); text-decoration: none;
   padding: 7px 14px; border-radius: 7px; transition: filter .15s;
