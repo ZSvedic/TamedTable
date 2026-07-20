@@ -66,6 +66,9 @@ export interface WebControllerOptions {
   env?: Record<string, string | undefined>;
   batchSize?: number;
   chunkSize?: number;
+  /** Explicit rows-per-page override. Tests use it to keep a scenario on one
+   *  page (fully eager, #LazyExec) while shrinking the engine's batches. */
+  pageSize?: number;
   /** Bundled feature + fixture sources for the Tutorial panel. When omitted,
    *  the Tutorial button is present but shows no scenarios. */
   tutorialSources?: TutorialSources;

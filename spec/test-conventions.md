@@ -13,10 +13,9 @@ modes.
 iteration. A scenario that calls the model needs a committed cassette to replay
 offline — one missing its tape is tagged `@needs-recording` and excluded from
 the default run until `bun run test:record` makes the tape (record mode includes
-those scenarios). Today the tag sits on the scenarios awaiting the lazy-execution
-implementation — the Lazy AI execution tour script
-(`showcase-lazy-ai.feature`) and the edge cases in `lazy-exec.feature` —
-which record once the UI they point at ships. (`datanorm.feature` was removed — its strict byte-golden NL
+those scenarios). No scenario carries the tag today — the last holdouts, the
+Lazy AI execution tour and the `lazy-exec.feature` edge cases, recorded when
+the lazy-execution implementation landed. (`datanorm.feature` was removed — its strict byte-golden NL
 assertions were brittle and never recorded, and the normalization behavior is
 covered offline by the clean-up / loadsave / multilingual scenarios.)
 

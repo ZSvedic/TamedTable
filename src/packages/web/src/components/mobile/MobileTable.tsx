@@ -38,6 +38,17 @@ export interface MobileTableProps {
   progress?: RunProgress | null;
   /** Cancels the streaming run — the banner's stop icon. */
   onStop?: () => void;
+  // #LazyExec — row state + column-menu marks (the menu itself is the
+  // shell's bottom sheet; a header tap opens it).
+  /** Original row numbers (1-based) — kept while the view is shuffled. */
+  rowNumbers?: number[];
+  /** Per-visible-row status: pending washes the number cell, failed reds it. */
+  rowStatus?: Array<'pending' | 'failed' | undefined>;
+  /** The active column-menu sort/filters, marked in the headers. */
+  sort?: { column: string; dir: 'asc' | 'desc' } | null;
+  filters?: Record<string, string>;
+  /** A header tap opens the column menu (bottom sheet) when present. */
+  onHeaderTap?: (column: string) => void;
 }
 
 export function MobileTable({
@@ -52,6 +63,11 @@ export function MobileTable({
   streaming,
   progress,
   onStop,
+  rowNumbers,
+  rowStatus,
+  sort,
+  filters,
+  onHeaderTap,
 }: MobileTableProps): ReactNode {
   // Lengths inside the zoomed subtree render multiplied by the zoom; offsets
   // that must line up with the unzoomed chrome (the fixed app bar) or the
@@ -193,11 +209,24 @@ export function MobileTable({
                 fontWeight: 400,
               }}
             >
-              #
+              Row #
             </th>
             {columns.map((col) => (
-              <th key={col} style={{ ...headerCell, minWidth: 96 }}>
+              <th
+                key={col}
+                data-mob-header={col}
+                onClick={onHeaderTap ? () => onHeaderTap(col) : undefined}
+                style={{ ...headerCell, minWidth: 96, cursor: onHeaderTap ? 'pointer' : undefined }}
+              >
                 {col}
+                {sort?.column === col && (
+                  <span style={{ color: t.accent, fontSize: 9, marginLeft: 4 }}>
+                    {sort.dir === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+                {filters?.[col] !== undefined && (
+                  <span style={{ color: t.accent, fontSize: 10, marginLeft: 4 }}>∇</span>
+                )}
               </th>
             ))}
           </tr>
@@ -205,9 +234,11 @@ export function MobileTable({
         <tbody>
           {rows.map((row, ri) => {
             const absRow = pageStart + ri;
+            const status = rowStatus?.[ri];
             return (
               <tr key={absRow}>
                 <td
+                  data-mob-rowstatus={status}
                   style={{
                     ...bodyCell,
                     position: 'sticky',
@@ -216,11 +247,15 @@ export function MobileTable({
                     width: IDX_W,
                     minWidth: IDX_W,
                     textAlign: 'right',
-                    color: t.ink4,
-                    background: t.surface2,
+                    color: status === 'failed' ? t.onRec : t.ink4,
+                    background:
+                      status === 'failed' ? t.err
+                      : status === 'pending' ? t.accentSoft
+                      : t.surface2,
+                    opacity: status === 'pending' ? 0.7 : undefined,
                   }}
                 >
-                  {absRow + 1}
+                  {rowNumbers?.[ri] ?? absRow + 1}
                 </td>
                 {columns.map((col) => {
                   const isSel = selection?.row === absRow && selection.column === col;

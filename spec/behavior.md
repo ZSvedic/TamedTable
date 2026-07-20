@@ -1265,7 +1265,7 @@ behavior unchanged.
 1. Open a 25,000-row file. The **large-file dialog** asks once — one click
    on **Load shuffled** (the primary default) or **Load in original order**.
 2. Type *"add a Category column"*. The visible page fills within one
-   concurrency wave; the readout says **20 of 25,000 rows evaluated** and
+   concurrency wave; the readout says **100 of 25,000 rows evaluated** and
    the pager marks every other page as pending.
 3. Page around. Opening a page evaluates exactly that page's lagging rows —
    never more than one page of AI calls is in flight at a time.

@@ -54,12 +54,14 @@ export class PatchManager {
   async jumpTo(index: number): Promise<void> {
     const spec = this.journal.jumpTo(index);
     if (!spec) return;
-    await this.host.engine.ensureHeadless().setSpec(spec);
+    await this.host.engine.applySpecCached(spec);
     this.host.selection = null;
     this.host.notify();
   }
 
   // ── Undo / redo ──────────────────────────────────────────────────────────
+  // Both replay through the cache-only path (#LazyExec): undo lowers the row
+  // marks, redo restores them from the cell cache — never a new AI call.
 
   async undo(): Promise<void> {
     const entry = this.journal.takeUndo();
@@ -67,7 +69,7 @@ export class PatchManager {
       this.host.pushToast('info', 'Nothing to undo.');
       return;
     }
-    await this.host.engine.ensureHeadless().setSpec(entry.prevSpec);
+    await this.host.engine.applySpecCached(entry.prevSpec);
     this.host.selection = null;
     this.host.notify();
   }
@@ -78,7 +80,7 @@ export class PatchManager {
       this.host.pushToast('info', 'Nothing to redo.');
       return;
     }
-    await this.host.engine.ensureHeadless().setSpec(entry.nextSpec);
+    await this.host.engine.applySpecCached(entry.nextSpec);
     this.host.selection = null;
     this.host.notify();
   }
@@ -88,6 +90,7 @@ export class PatchManager {
   /** A cell edit becomes a `mutate` keyed by row index — an ordinary,
    *  undoable spec patch that replays against the source. */
   async editCell(rowIndex: number, column: string, value: string): Promise<void> {
+    const before = this.host.engine.rawRows()[rowIndex]?.[column];
     await this.applySpecChange(`edit ${column} row ${rowIndex + 1}`, (spec) => ({
       ...spec,
       transformations: [
@@ -99,6 +102,21 @@ export class PatchManager {
             js: `i === ${rowIndex} ? ${JSON.stringify(value)} : row[${JSON.stringify(column)}]`,
           },
         },
+      ],
+    }));
+    // The edited cell tints like any other change (#LazyExec grid upgrades).
+    this.host.engine.noteChangedCell(rowIndex, column, before);
+  }
+
+  /** The column menu's Delete column — a spec step, the same patch a chat
+   *  request would commit (#LazyExec: not view state, fully undoable). */
+  async deleteColumn(column: string): Promise<void> {
+    await this.applySpecChange(`delete column ${column}`, (spec) => ({
+      ...spec,
+      columns: spec.columns.filter((c) => c.id !== column),
+      transformations: [
+        ...spec.transformations,
+        { kind: 'select' as const, columns: spec.columns.map((c) => c.id).filter((id) => id !== column) },
       ],
     }));
   }
@@ -119,7 +137,7 @@ export class PatchManager {
     const runner = this.host.engine.ensureHeadless();
     if (!this.host.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const prevSpec = structuredClone(runner.currentSpec());
-    await runner.setSpec(build(prevSpec));
+    await this.host.engine.applySpecCached(build(prevSpec));
     this.journal.record({
       label,
       prevSpec,

@@ -102,8 +102,11 @@ the host owns every piece of state, the grid renders and reports:
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for
 tests: `data-tv-header`, `data-tv-resize`, `data-tv-cell="<absRow>:<col>"`,
-`data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-menu="<col>"`,
-`data-tv-sort`, `data-tv-filtered="<col>"`.
+`data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-menu="<col>"`
+(the ⋮ button), `data-tv-colmenu="<col>"` (the open menu, with
+`data-tv-menu-item` entries and `data-tv-filter-input`), `data-tv-sort`,
+`data-tv-filtered="<col>"`, `data-tv-rowstatus`, `data-tv-changed`, and
+`data-tv-pending` (a marked pager button).
 
 ## Pagination component
 

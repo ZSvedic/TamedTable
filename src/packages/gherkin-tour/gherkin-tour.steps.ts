@@ -157,6 +157,8 @@ function makeStep(kind: string, arg: string): TourStep {
     case 'play-audio':    action = { kind: 'play-audio',  filename: arg }; break;
     case 'golden-source': action = { kind: 'golden-source', filename: arg }; break;
     case 'show-golden':   action = { kind: 'show-golden' };                break;
+    case 'load-shuffled': action = { kind: 'load-shuffled' };              break;
+    case 'open-estimate': action = { kind: 'open-estimate' };              break;
     case 'display':       action = { kind: 'display' };                    break;
     default: throw new Error(`unknown action kind "${kind}"`);
   }

@@ -29,6 +29,170 @@ import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
 
+// #LazyExec — the slim banner under the app bar: the evaluated-rows readout,
+// the retry action, and a compact Run all button (behavior.md § progress
+// indicators). Hidden while nothing is pending or failed.
+function LazyBanner({ t, controller }: { t: Theme; controller: WebController }): ReactNode {
+  const readout = controller.evaluatedReadout();
+  if (!readout) return null;
+  const pending = readout.total - readout.done - readout.failed;
+  const linkBtn: CSSProperties = {
+    border: 'none',
+    background: 'transparent',
+    padding: 0,
+    cursor: 'pointer',
+    fontFamily: typography.ui,
+    fontSize: typography.size.xs,
+    textDecoration: 'underline',
+  };
+  return (
+    <div
+      data-mob-lazybanner=""
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: space.px8,
+        padding: `${space.px4}px ${space.px10}px`,
+        borderBottom: `1px solid ${t.line}`,
+        background: t.surface2,
+        fontFamily: typography.ui,
+        fontSize: typography.size.xs,
+        color: t.ink3,
+      }}
+    >
+      <span style={{ whiteSpace: 'nowrap' }}>
+        <b style={{ color: t.ink2 }}>{readout.done.toLocaleString()} of {readout.total.toLocaleString()}</b> evaluated
+      </span>
+      {readout.failed > 0 && (
+        <button type="button" data-mob-retry="" onClick={() => void controller.retryFailedRows()} style={{ ...linkBtn, color: t.err }}>
+          Retry {readout.failed}
+        </button>
+      )}
+      <span style={{ flex: 1 }} />
+      {pending > 0 && (
+        <button
+          type="button"
+          data-mob-runall=""
+          onClick={() => void controller.runOnAllRows()}
+          style={{
+            border: 'none',
+            borderRadius: space.radiusSm,
+            padding: '3px 9px',
+            background: t.ink,
+            color: t.surface,
+            cursor: 'pointer',
+            fontFamily: typography.ui,
+            fontSize: typography.size.xs,
+            fontWeight: 600,
+          }}
+        >
+          Run all
+        </button>
+      )}
+    </div>
+  );
+}
+
+// #LazyExec — the phone's column menu, a bottom sheet like every other phone
+// dialog: Sort ascending/descending, a contains-match filter row, and Delete
+// column (a spec step). Sort/filter on an AI column go through the same
+// dependency gate the desktop menu uses.
+function ColumnMenuSheet({
+  t,
+  controller,
+  col,
+  onClose,
+}: {
+  t: Theme;
+  controller: WebController;
+  col: string;
+  onClose: () => void;
+}): ReactNode {
+  const [filterDraft, setFilterDraft] = useState(controller.viewFilters()[col] ?? '');
+  const sort = controller.viewSort();
+  const item: CSSProperties = {
+    display: 'block',
+    width: '100%',
+    padding: '11px 14px',
+    border: 'none',
+    borderBottom: `1px solid ${t.line}`,
+    background: 'transparent',
+    color: t.ink,
+    textAlign: 'left',
+    fontFamily: typography.ui,
+    fontSize: typography.size.base,
+    cursor: 'pointer',
+  };
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 40,
+        background: t.overlay,
+        display: 'flex',
+        alignItems: 'flex-end',
+      }}
+    >
+      <div
+        data-mob-colmenu={col}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          background: t.surface,
+          borderTop: `1px solid ${t.line2}`,
+          borderRadius: `${space.radius}px ${space.radius}px 0 0`,
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div style={{ padding: '12px 14px', fontFamily: typography.ui, fontSize: typography.size.sm, fontWeight: 600, color: t.ink2 }}>
+          {col}
+        </div>
+        <button type="button" data-mob-menu-item="sort-asc" style={item}
+          onClick={() => { void controller.setViewSort(col, sort?.column === col && sort.dir === 'asc' ? null : 'asc'); onClose(); }}>
+          {sort?.column === col && sort.dir === 'asc' ? '✓ ' : ''}Sort ascending
+        </button>
+        <button type="button" data-mob-menu-item="sort-desc" style={item}
+          onClick={() => { void controller.setViewSort(col, sort?.column === col && sort.dir === 'desc' ? null : 'desc'); onClose(); }}>
+          {sort?.column === col && sort.dir === 'desc' ? '✓ ' : ''}Sort descending
+        </button>
+        <div style={{ display: 'flex', gap: space.px8, padding: '11px 14px', borderBottom: `1px solid ${t.line}` }}>
+          <input
+            data-mob-filter-input=""
+            value={filterDraft}
+            placeholder={`${col} contains…`}
+            onChange={(e) => setFilterDraft(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '6px 8px',
+              border: `1px solid ${t.line2}`,
+              borderRadius: space.radiusSm,
+              background: t.surface,
+              color: t.ink,
+              fontFamily: typography.ui,
+              fontSize: typography.size.sm,
+              outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            data-mob-menu-item="filter"
+            onClick={() => { void controller.setViewFilter(col, filterDraft); onClose(); }}
+            style={{ ...item, width: 'auto', borderBottom: 'none', padding: '6px 10px', color: t.ink2 }}
+          >
+            Filter
+          </button>
+        </div>
+        <button type="button" data-mob-menu-item="delete" style={{ ...item, color: t.err, borderBottom: 'none' }}
+          onClick={() => { void controller.deleteColumn(col); onClose(); }}>
+          Delete column
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** The app bar's shell: pinned to the top of the screen, clearing the notch. */
 function fixedBarStyle(borderColor: string, background: string): CSSProperties {
   return {
@@ -53,6 +217,7 @@ function AppBar({
   pageCount,
   onPrev,
   onNext,
+  pendingDot,
 }: {
   t: Theme;
   fileName: string;
@@ -60,6 +225,8 @@ function AppBar({
   pageCount: number;
   onPrev: () => void;
   onNext: () => void;
+  /** #LazyExec — pages with pending rows exist: the pager carries a dot. */
+  pendingDot?: boolean;
 }): ReactNode {
   const navBtn = (dir: 'prev' | 'next', on: (() => void) | null): ReactNode => (
     <button
@@ -102,6 +269,21 @@ function AppBar({
         <span style={{ fontFamily: typography.mono, fontSize: typography.size.xs, color: t.ink3, marginLeft: 6 }}>
           · {page} of {pageCount}
         </span>
+        {pendingDot && (
+          <span
+            data-mob-pending-dot=""
+            title="Some pages have rows the AI steps have not reached yet"
+            style={{
+              display: 'inline-block',
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: t.accent,
+              marginLeft: 4,
+              verticalAlign: 'super',
+            }}
+          />
+        )}
       </div>
       {navBtn('next', page < pageCount ? onNext : null)}
     </div>
@@ -188,6 +370,8 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
 
   const [inputMode, setInputMode] = useState<InputMode>('none');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // #LazyExec — the column whose menu (bottom sheet) is open, or null.
+  const [menuCol, setMenuCol] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [now, setNow] = useState(0);
   const kbInset = useKeyboardInset();
@@ -325,9 +509,11 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
             fileName={fileName}
             page={page}
             pageCount={pageCount}
-            onPrev={() => controller.goToPage(page - 1)}
-            onNext={() => controller.goToPage(page + 1)}
+            onPrev={() => void controller.goToPage(page - 1)}
+            onNext={() => void controller.goToPage(page + 1)}
+            pendingDot={controller.pendingPages().length > 0}
           />
+          <LazyBanner t={t} controller={controller} />
           <MobileTable
             id="tutorial-table-view"
             t={t}
@@ -340,7 +526,15 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
             streaming={busy}
             progress={controller.runProgress}
             onStop={() => controller.cancelRequest()}
+            rowNumbers={controller.pageRowNumbers()}
+            rowStatus={controller.pageRowStatus()}
+            sort={controller.viewSort()}
+            filters={controller.viewFilters()}
+            onHeaderTap={(col) => setMenuCol(col)}
           />
+          {menuCol !== null && (
+            <ColumnMenuSheet t={t} controller={controller} col={menuCol} onClose={() => setMenuCol(null)} />
+          )}
         </>
       ) : (
         <>

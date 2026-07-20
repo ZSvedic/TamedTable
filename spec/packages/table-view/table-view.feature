@@ -96,3 +96,71 @@ Feature: Table view package
       Given the table-view demo page
       When the user toggles streaming
       Then the streaming banner is visible
+
+  Rule: The column menu sorts, filters, autofits, and deletes — the host applies
+
+    # #LazyExec grid upgrades: sort/filter are host view state reported
+    # through callbacks; the header shows the ▲/▼ and funnel marks.
+    @web
+    Scenario: Sort descending from the column menu reorders and marks the header
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Sort descending"
+      Then the "age" header shows the "desc" sort indicator
+      And the demo event log shows "sort age desc"
+
+    @web
+    Scenario: Picking the active direction clears the sort
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Sort descending"
+      And the user opens the "age" column menu
+      And the user picks "Sort descending"
+      Then the demo event log shows "sort age off"
+
+    @web
+    Scenario: A filter narrows the rows and marks the header with a funnel
+      Given the table-view demo page
+      When the user opens the "city" column menu
+      And the user filters by "Osaka"
+      Then the demo range reads "1–10 of 19 rows"
+      And the "city" header carries a funnel mark
+      And the demo event log shows "filter city=Osaka"
+
+    @web
+    Scenario: Delete column reports to the host
+      Given the table-view demo page
+      When the user opens the "city" column menu
+      And the user picks "Delete column"
+      Then the demo event log shows "delete city"
+
+    @web
+    Scenario: Autofit sizes a stretched column back to its content
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 200 px right
+      And the user opens the "name" column menu
+      And the user picks "Autofit width"
+      Then the "name" header is narrower than 200 px
+
+  Rule: Row marks, pager dots, and changed cells surface the host's row state
+
+    @web
+    Scenario: Pending and failed rows mark their Row # cell
+      Given the table-view demo page
+      Then the row numbered 7 is marked "failed"
+      And page 10 carries a pending dot
+      When the user clicks page 10
+      Then 5 rows on the page are marked "pending"
+
+    @web
+    Scenario: An edited cell tints as changed and remembers the previous value
+      Given the table-view demo page
+      When the user edits cell "0:name" to "Grace"
+      Then cell "0:name" is marked changed with previous value "Person 1"
+
+    @web
+    Scenario: Sorting keeps original numbers in the Row # column
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Sort descending"
+      Then the first row number is not 1

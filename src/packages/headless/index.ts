@@ -152,6 +152,48 @@ export type PlanEdit =
   | { kind: 'add-transformation'; transformation: Transformation }
   | { kind: 'remove-transformation'; transformation: Transformation };
 
+// #LazyExec
+// Cell sentinels for the web shell's page-first scheduling
+// (spec/code-contract.md § Lazy AI execution). A lazy replay leaves the cells
+// it skipped holding a pending sentinel and the cells whose call failed
+// holding a failed sentinel — row state is then derivable from the data
+// itself, so it survives deterministic reshaping, undo/redo, and engine
+// rebuilds with no index bookkeeping. Value-shaped (not identity-based) so
+// structuredClone copies still test true. The batch path never sees them:
+// without `cellFilter`/`onCellError` no sentinel is ever written.
+export function pendingCell(): unknown {
+  return { __ttPending: true };
+}
+export function isPendingCell(v: unknown): boolean {
+  return typeof v === 'object' && v !== null && (v as { __ttPending?: unknown }).__ttPending === true;
+}
+export function failedCell(error: string): unknown {
+  return { __ttFailed: error };
+}
+export function isFailedCell(v: unknown): v is { __ttFailed: string } {
+  return typeof v === 'object' && v !== null && typeof (v as { __ttFailed?: unknown }).__ttFailed === 'string';
+}
+
+/** Thrown by request() when the host's confirmSpec hook declines the patch —
+ *  the dependency rule's "leave the step out entirely" outcome. */
+export const DECLINED = 'Runner: declined';
+export function isDeclined(e: unknown): boolean {
+  return (e as Error)?.message === DECLINED;
+}
+
+/** Lazy-evaluation hooks a replay accepts (web shell only — the CLI and the
+ *  batch path never pass them, keeping their output byte-identical). */
+export interface LazyEvalOpts {
+  /** Per-cell gate for {llm} mutate/split steps: return false to leave the
+   *  cell pending (no model call, no cache entry). `rowIndex` is the row's
+   *  index in the step's input rows. */
+  cellFilter?: (transformationIndex: number, rowIndex: number) => boolean;
+  /** Per-cell failure capture: when set, a cell call that still fails after
+   *  retries writes a failed-cell sentinel and reports here instead of
+   *  failing the whole step. Absent → the step throws (fail-fast). */
+  onCellError?: (u: { transformationIndex: number; rowIndex: number; column: string; error: string }) => void;
+}
+
 export interface HeadlessRunnerOptions {
   model?: string;
   cellModel?: string;
@@ -165,6 +207,9 @@ export interface HeadlessRunnerOptions {
   onChunk?: (update: ChunkUpdate) => void;
   onPlanEdits?: (items: PlanEdit[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
+  /** Fires once per model call with its token usage — the web shell's
+   *  estimate math accumulates these (#LazyExec). */
+  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number }) => void;
   signal?: AbortSignal;
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
@@ -187,20 +232,30 @@ export interface HeadlessRunner {
    *  the browser (no filesystem); an unregistered name falls back to reading
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
-  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
+  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void; confirmSpec?: (next: TablePlan, prev: TablePlan) => Promise<boolean>; } & LazyEvalOpts): Promise<void>;
   /** Replace the spec, replaying its transformations onto the loaded source
    *  rows. Accepts the same streaming/abort options a request carries plus
    *  `onStep`, which fires as each transformation starts — so a replayed
    *  flow streams, reports progress, and can be cancelled (the Open & run
    *  flow path); aborting throws `Runner: cancelled` with the previous spec
-   *  and rows untouched. */ // #OpenFlow
-  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
+   *  and rows untouched. `fresh` skips the derived-prefix shortcut and
+   *  replays from the source — a lazy re-evaluation pass needs unchanged
+   *  steps to run again so a widened cellFilter can fill their pending
+   *  cells (cached cells replay without a call). */ // #OpenFlow #LazyExec
+  setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; fresh?: boolean } & LazyEvalOpts): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
   /** One model call: translate the current flow into a standalone
    *  Python script. Returns the script source. */
   exportPython(): Promise<string>;
+  // #LazyExec — web-shell seams. adoptState swaps in a spec + derived rows
+  // with no replay and no model call (provider switch keeps evaluated rows);
+  // the cache accessors carry the per-cell result cache across an engine
+  // rebuild so redo/resume stay free.
+  adoptState(spec: TablePlan, rows: Row[]): Promise<void>;
+  cellCacheEntries(): Array<[string, unknown]>;
+  seedCellCache(entries: Array<[string, unknown]>): void;
 }
 
 // #ConfigEnv
@@ -709,11 +764,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   private recordCall(model: string, usage: { inputTokens?: number; outputTokens?: number } | undefined): void {
-    this.callLog.push({
+    const entry = {
       model,
       inputTokens: usage?.inputTokens ?? 0,
       outputTokens: usage?.outputTokens ?? 0,
-    });
+    };
+    this.callLog.push(entry);
+    this.opts.onUsage?.(entry);
   }
 
   // #DebugOut
@@ -891,20 +948,38 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   async setSpec(
     spec: TablePlan,
-    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void } = {},
+    opts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; fresh?: boolean } & LazyEvalOpts = {},
   ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
-    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk, opts.onStep);
+    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk, opts.onStep, opts, opts.fresh);
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;
   }
 
+  // #LazyExec — web-shell seams (see the interface docs).
+  async adoptState(spec: TablePlan, rows: Row[]): Promise<void> {
+    const validated = validateTablePlan(spec);
+    if (this.sourcePath) validated.table = this.sourcePath;
+    this.spec = syncColumnsToRows(validated, rows);
+    this.derivedRows = rows;
+    await this.sql.resetTable();
+    this.loaded = true;
+  }
+
+  cellCacheEntries(): Array<[string, unknown]> {
+    return [...this.cellResultCache.entries()];
+  }
+
+  seedCellCache(entries: Array<[string, unknown]>): void {
+    for (const [k, v] of entries) this.cellResultCache.set(k, v);
+  }
+
   // #MainLoop
   async request(
     text: string,
-    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void } = {}
+    callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void; confirmSpec?: (next: TablePlan, prev: TablePlan) => Promise<boolean> } & LazyEvalOpts = {}
   ): Promise<void> {
     this.requireLoaded();
     if (this.busy || this.sql.hasLingeringSql()) throw new Error('Runner: a request is already in progress.');
@@ -959,6 +1034,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           continue;
         }
 
+        // #LazyExec — the dependency rule's gate: the host inspects the
+        // applied-but-not-yet-replayed spec and may decline it (or widen its
+        // cellFilter to run all rows first). Declining drops the patch with
+        // no spec change, no history entry, and no recovery turn.
+        if (callOpts.confirmSpec && !(await callOpts.confirmSpec(tried.spec, this.spec))) {
+          throw new Error(DECLINED);
+        }
+
         if (onPlanEdits) {
           // The edit printer runs inside this callback. A formatting bug in
           // it must drop an edit line, never fail an otherwise-good request —
@@ -970,7 +1053,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         }
 
         try {
-          const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk, callOpts.onStep);
+          const newRows = await this.replay(tried.spec, this.sourceRows, signal, onChunk, callOpts.onStep, callOpts);
           abortIf(signal);
           // Zero-rows guard (spec/behavior.md § Headless): a patch that
           // evaluates to an empty table from a non-empty source is almost
@@ -1071,11 +1154,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     sourceRows: Row[],
     signal: AbortSignal | undefined,
     onChunk: ((u: ChunkUpdate) => void) | undefined,
-    onStep?: (u: StepUpdate) => void
+    onStep?: (u: StepUpdate) => void,
+    lazy?: LazyEvalOpts,
+    fresh?: boolean
   ): Promise<Row[]> {
     const prev = this.spec.transformations;
     const next = spec.transformations;
     const reuseDerivedAsPrefix =
+      !fresh &&
       next.length >= prev.length &&
       this.derivedRows.length > 0 &&
       prev.every((p, i) => JSON.stringify(p) === JSON.stringify(next[i]));
@@ -1095,7 +1181,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const t = next[i] as Transformation;
       onStep?.({ index: i, total: next.length, kind: t.kind, label: describeStep(t), rows: rows.length, expressions: transformationExpressions(t) });
       abortIf(signal);
-      rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk);
+      rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk, lazy);
     }
     return rows;
   }
@@ -1106,7 +1192,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     t: Transformation,
     tIndex: number,
     signal: AbortSignal | undefined,
-    onChunk: ((u: ChunkUpdate) => void) | undefined
+    onChunk: ((u: ChunkUpdate) => void) | undefined,
+    lazy?: LazyEvalOpts
   ): Promise<Row[]> {
     switch (t.kind) {
       case 'filter':
@@ -1117,10 +1204,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       case 'mutate':
         if ('sql' in t.value) return this.sql.applyMutateSql(rows, t as typeof t & { value: { sql: string } }, signal);
         if ('js' in t.value) return applyMutateJs(rows, t as typeof t & { value: { js: string } });
-        return this.applyMutateLlm(rows, t as typeof t & { value: { llm: string; model?: string } }, tIndex, signal, onChunk);
+        return this.applyMutateLlm(rows, t as typeof t & { value: { llm: string; model?: string } }, tIndex, signal, onChunk, lazy);
       case 'validate': return applyValidateJs(rows, t);
       case 'group':    return this.applyGroup(rows, t, tIndex, signal, onChunk);
-      case 'split':    return this.applySplitT(rows, t, signal);
+      case 'split':    return this.applySplitT(rows, t, signal, tIndex, lazy);
       case 'pivot':    return applyPivot(rows, t);
       case 'unpivot':  return applyUnpivot(rows, t);
       case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd(), this.lookupTables);
@@ -1248,25 +1335,32 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private async applySplitT(
     rows: Row[],
     t: Extract<Transformation, { kind: 'split' }>,
-    signal: AbortSignal | undefined
+    signal: AbortSignal | undefined,
+    tIndex?: number,
+    lazy?: LazyEvalOpts
   ): Promise<Row[]> {
     if (typeof t.on === 'object' && !(t.on instanceof RegExp) && 'llm' in t.on) {
-      return this.applySplitLlm(rows, t as typeof t & { on: { llm: string; model?: string } }, signal);
+      return this.applySplitLlm(rows, t as typeof t & { on: { llm: string; model?: string } }, signal, tIndex ?? 0, lazy);
     }
     return applySplit(rows, t);
   }
 
   /** LLM-backed split: render the {llm} `on` template per row, ask the
    *  cell model to break the cell into parts, then pad/concat to `into`'s
-   *  arity exactly as a literal or regex split would. */
+   *  arity exactly as a literal or regex split would. A lazy cellFilter
+   *  (#LazyExec) leaves excluded rows' target cells pending. */
   private async applySplitLlm(
     rows: Row[],
     t: Extract<Transformation, { kind: 'split' }> & { on: { llm: string; model?: string } },
-    signal: AbortSignal | undefined
+    signal: AbortSignal | undefined,
+    tIndex: number,
+    lazy?: LazyEvalOpts
   ): Promise<Row[]> {
     validateTemplate(t.on.llm, rows);
+    const included = (i: number): boolean => !lazy?.cellFilter || lazy.cellFilter(tIndex, i);
     const replies = await Promise.all(
-      rows.map((row) => {
+      rows.map((row, i) => {
+        if (!included(i)) return Promise.resolve(undefined);
         const cell = row[t.from];
         if (cell === null || cell === undefined || cell === '') return Promise.resolve(null);
         return this.callLlmCell(renderPrompt(t.on.llm, row), t.on.model, signal);
@@ -1274,6 +1368,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     );
     return rows.map((row, i) => {
       const out: Row = { ...row };
+      if (!included(i)) {
+        for (const col of t.into) out[col] = pendingCell();
+        if (t.drop) delete out[t.from];
+        return out;
+      }
       const reply = replies[i];
       const parts = reply === null || reply === undefined
         ? t.into.map(() => null)
@@ -1289,7 +1388,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     t: Extract<Transformation, { kind: 'mutate' }> & { value: { llm: string; model?: string } },
     tIndex: number,
     signal: AbortSignal | undefined,
-    onChunk: ((u: ChunkUpdate) => void) | undefined
+    onChunk: ((u: ChunkUpdate) => void) | undefined,
+    lazy?: LazyEvalOpts
   ): Promise<Row[]> {
     const cols = Array.isArray(t.columns) ? t.columns : [t.columns];
     const template = t.value.llm;
@@ -1299,15 +1399,32 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const batchSize = Math.max(1, this.opts.batchSize ?? DEFAULT_BATCH_SIZE);
     const chunkSize = Math.max(1, this.opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
     const out: Row[] = rows.map((r) => ({ ...r }));
-    const batches: Array<{ start: number; rows: Row[] }> = [];
-    for (let i = 0; i < rows.length; i += batchSize) {
-      batches.push({ start: i, rows: rows.slice(i, i + batchSize) });
+    // #LazyExec — rows the cellFilter excludes never spend a model call:
+    // a cell whose rendered prompt is already cached refills silently (this
+    // is what makes undo/redo, resume, and provider re-replays free), the
+    // rest get a pending sentinel. Batches form over the included rows only,
+    // so a page-sized filter costs exactly one page of calls.
+    const includedIdx: number[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      if (!lazy?.cellFilter || lazy.cellFilter(tIndex, i)) { includedIdx.push(i); continue; }
+      const key = this.cacheKey(perCellModel, renderPrompt(template, rows[i]!, exclude));
+      const cached = this.cellResultCache.has(key) ? this.cellResultCache.get(key) : pendingCell();
+      for (const c of cols) out[i]![c] = cached;
+    }
+    const batches: Array<{ idx: number[]; rows: Row[] }> = [];
+    for (let i = 0; i < includedIdx.length; i += batchSize) {
+      const idx = includedIdx.slice(i, i + batchSize);
+      batches.push({ idx, rows: idx.map((r) => rows[r]!) });
     }
     for (let g = 0; g < batches.length; g += chunkSize) {
       abortIf(signal);
       const group = batches.slice(g, g + chunkSize);
       const groupResults = await Promise.all(
-        group.map((b) => this.evalLlmBatch(template, b.rows, perCellModel, signal, exclude))
+        group.map((b) =>
+          this.evalLlmBatch(template, b.rows, perCellModel, signal, exclude,
+            lazy?.onCellError
+              ? (j, error) => { for (const c of cols) lazy.onCellError!({ transformationIndex: tIndex, rowIndex: b.idx[j]!, column: c, error }); }
+              : undefined))
       );
       abortIf(signal);
       for (let gi = 0; gi < group.length; gi++) {
@@ -1315,10 +1432,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         const results = groupResults[gi]!;
         for (let j = 0; j < b.rows.length; j++) {
           const value = results[j];
-          const rowIndex = b.start + j;
+          const rowIndex = b.idx[j]!;
           for (const c of cols) {
             const before = out[rowIndex]![c];
             out[rowIndex]![c] = value;
+            // A failed cell keeps its sentinel out of the stream and samples —
+            // the host learns about it through onCellError, not a chunk.
+            if (isFailedCell(value)) continue;
             onChunk?.({ transformationIndex: tIndex, rowIndex, column: c, before, after: value });
             // Collect up to 3 before→after samples per column for debug info.
             let entry = this.cellSampleLog.find((s) => s.column === c);
@@ -1342,7 +1462,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     rows: Row[],
     perCellModel: string | undefined,
     signal?: AbortSignal,
-    excludeColumns?: string[]
+    excludeColumns?: string[],
+    onCellFail?: (rowIdx: number, error: string) => void
   ): Promise<unknown[]> {
     if (rows.length === 0) return [];
     const prompts = rows.map((r) => renderPrompt(template, r, excludeColumns));
@@ -1354,9 +1475,34 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       else pending.push({ idx: i, prompt: prompts[i]! });
     }
     if (pending.length === 0) return results;
-    const fetched = await this.callLlmCells(pending.map((p) => p.prompt), perCellModel, signal);
+    let fetched: unknown[];
+    if (!onCellFail) {
+      fetched = await this.callLlmCells(pending.map((p) => p.prompt), perCellModel, signal);
+    } else {
+      // #LazyExec — failure capture: a batch call that errors falls back to
+      // per-cell calls so one poisoned row fails alone; a per-cell error
+      // becomes a failed sentinel (reported, uncached) instead of failing
+      // the step. Cancellation still propagates.
+      try {
+        fetched = await this.callLlmCells(pending.map((p) => p.prompt), perCellModel, signal);
+      } catch (e) {
+        if (signal?.aborted || isCancelled(e)) throw e;
+        fetched = await Promise.all(pending.map(async (p) => {
+          try {
+            return await this.callLlmCell(p.prompt, perCellModel, signal);
+          } catch (cellErr) {
+            if (signal?.aborted || isCancelled(cellErr)) throw cellErr;
+            const message = (cellErr as Error).message;
+            onCellFail(p.idx, message);
+            return failedCell(message);
+          }
+        }));
+      }
+    }
     for (let k = 0; k < pending.length; k++) {
       results[pending[k]!.idx] = fetched[k];
+      // Failed cells are never cached — a retry must call again.
+      if (isFailedCell(fetched[k])) continue;
       this.cellResultCache.set(this.cacheKey(perCellModel, pending[k]!.prompt), fetched[k]);
     }
     return results;

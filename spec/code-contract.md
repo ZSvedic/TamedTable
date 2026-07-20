@@ -1008,6 +1008,33 @@ entry. Grid-side types (changed-cell metadata, sort/filter/autofit/retry
 callbacks) live in the table-view package spec
 ([spec/packages/table-view/behavior.md](packages/table-view/behavior.md)).
 
+### The engine's lazy seams
+
+The headless runner stays eager; the web shell schedules it through four
+optional seams, all invisible to the CLI and the batch path:
+
+- **`cellFilter(transformationIndex, rowIndex)`** on `request`/`setSpec` —
+  an excluded `{llm}` cell refills from the per-cell result cache when its
+  rendered prompt is cached (free), else it holds a **pending sentinel**.
+  Row state derives from the sentinels in the data itself, which is what
+  lets it survive deterministic reshaping, undo/redo, and engine rebuilds
+  with no index bookkeeping.
+- **`onCellError`** — with it set, a cell call that still fails after
+  retries writes a **failed sentinel** (never cached) and reports, instead
+  of failing the step; a failing batch call falls back to per-cell calls so
+  one poisoned row fails alone. Without it the step throws, so the request
+  preview keeps today's fail-fast error surface.
+- **`confirmSpec(next, prev)`** on `request` — the dependency rule's gate,
+  called after the patch validates and before it replays; `false` throws
+  `DECLINED`, which the web shell swallows (no history entry, no error).
+- **`adoptState(spec, rows)` + `cellCacheEntries`/`seedCellCache`** — a
+  provider switch rebuilds the engine but adopts the derived rows and the
+  cell cache verbatim: evaluated rows keep their values, no call is made.
+
+`onUsage` (per-call token usage) feeds the estimate accumulators. `setSpec`'s
+`fresh` flag forces a full replay from the source, so a widened `cellFilter`
+can fill pending cells in unchanged steps.
+
 ## One schema, richer sort keys, and Python export
 
 → [behavior.md — One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)

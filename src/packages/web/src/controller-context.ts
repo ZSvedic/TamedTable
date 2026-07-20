@@ -18,6 +18,8 @@ import type { VoiceManager } from './controller-voice.ts';
 import type { ConfigManager } from './controller-config.ts';
 import type { TutorialManager } from './controller-tutorial.ts';
 import type { DiagnosticsManager } from './controller-diagnostics.ts';
+import type { LazyManager, RunAllDialogState } from './controller-lazy.ts';
+import type { ViewManager } from './controller-view.ts';
 import type {
   CellRef,
   ChatMessage,
@@ -59,6 +61,11 @@ export interface ControllerHost {
   pageNum: number;
   /** Rows per table page — re-derived from the provider on config changes. */
   pageSize: number;
+  // #LazyExec
+  /** The large-file dialog (Load shuffled / original order), or null. */
+  largeFileDialog: { name: string; rowCount: number } | null;
+  /** The run-on-all estimate/confirmation dialog, or null. */
+  runAllDialog: RunAllDialogState | null;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
@@ -77,4 +84,6 @@ export interface ControllerHost {
   readonly settingsMgr: ConfigManager;
   readonly tutorial: TutorialManager;
   readonly diagnostics: DiagnosticsManager;
+  readonly lazy: LazyManager;
+  readonly view: ViewManager;
 }

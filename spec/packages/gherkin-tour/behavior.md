@@ -54,19 +54,29 @@ match by `(feature, name)`.
 | Step text | Action `kind` |
 |---|---|
 | `load "X"` | `load-file` (filename `X`) |
+| `user drops the file "X" onto the empty page` | `load-file` (filename `X`) |
 | `load the lookup table "X" with columns "…"` | `load-lookup` (filename `X`) |
 | `query "Y"` | `prefill-chat` (text `Y`) |
 | `the expected output is "X"` | `golden-source` (filename `X`) |
 | `compare with the expected output` | `show-golden` |
 | `speak "X"` | `play-audio` (filename `X`) |
+| `user loads the shuffled sample` | `load-shuffled` |
+| `user opens the run-on-all estimate dialog` | `open-estimate` |
 | anything else | `display` |
+
+The two lazy-execution stops (#LazyExec) drive the Lazy AI execution tour:
+`load-shuffled` resolves the host's large-file dialog with the shuffled
+sample, `open-estimate` opens the run-on-all estimate dialog (shown, not
+executed). Both adapter methods are optional — a host without the lazy UI
+treats the stops as narration.
 
 Only the text matters — the keyword (`Given`/`When`/`Then`/`And`/`But`) does not.
 
 ### What survives into `steps`
 
 A tour reads **load → query**, so only the executable stops are kept:
-`load-file`, `load-lookup`, `prefill-chat`, `play-audio`. Dropped:
+`load-file`, `load-lookup`, `prefill-chat`, `play-audio`, `load-shuffled`,
+`open-estimate`. Dropped:
 
 - **`display`** (verifications, narration) — test machinery, not a tour stop.
 - **`golden-source`** — lifted onto the scenario's `golden` field (first wins).

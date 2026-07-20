@@ -248,10 +248,14 @@ export class VoiceManager {
     const columns = spec.columns.map((c) => c.id);
     const ctx: VoiceContext = { filename, columns };
     if (this.host.selection) {
-      const value = this.host.engine.displayRows()[this.host.selection.row]?.[this.host.selection.column];
+      // The selection is a view position (#LazyExec) — map it back to the
+      // derived row the model should be told about.
+      const derived = this.host.view.viewOrder(this.host.engine.rawRows())[this.host.selection.row]
+        ?? this.host.selection.row;
+      const value = this.host.engine.displayRows()[derived]?.[this.host.selection.column];
       ctx.selectedCell = {
         col: this.host.selection.column,
-        row: this.host.selection.row,
+        row: derived,
         value: value === undefined || value === null ? '' : String(value),
       };
     }

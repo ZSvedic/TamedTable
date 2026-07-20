@@ -17,6 +17,7 @@ const TUTORIAL_FEATURES = [
   'voice.feature', 'sort.feature', 'multilingual.feature',
   'clean-up.feature', 'enrich.feature', 'classify.feature',
   'language-ai.feature', 'loadsave.feature',
+  'showcase-lazy-ai.feature', 'lazy-exec.feature',
 ];
 
 /** Build TutorialSources from disk: a lightweight manifest plus on-demand
@@ -83,6 +84,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       config: opts.apiKey ? { geminiKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,
+      pageSize: opts.pageSize,
       tutorialSources,
     });
   };

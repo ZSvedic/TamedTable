@@ -6,6 +6,9 @@
 // turn into the patch journal.
 import {
   createHeadlessRunner,
+  isDeclined,
+  isFailedCell,
+  isPendingCell,
   type ChunkUpdate,
   type HeadlessRunner,
   type RequestAudio,
@@ -45,6 +48,11 @@ export class EngineManager {
   // long LLM transformation runs (the engine commits only when it finishes).
   private readonly overlay = new Map<string, unknown>();
   private overlayTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // #LazyExec — cells the last spec step changed, keyed "<derivedRow>:<col>"
+  // → the previous value. The grid tints them and shows the old value on
+  // hover. Reset when a new request starts; cleared by undo/redo/jump.
+  readonly changedCells = new Map<string, unknown>();
 
   private activeAbort: AbortController | null = null;
 
@@ -129,6 +137,8 @@ export class EngineManager {
       onDebug: (info) => {
         this.host.lastDebug = info;
       },
+      // #LazyExec — the estimate math accumulates per-call token usage.
+      onUsage: (u) => this.host.lazy.recordUsage(u),
     });
     this.builtForReplay = replaying;
     return this.headless;
@@ -146,10 +156,14 @@ export class EngineManager {
     this.headless = undefined;
   }
 
-  /** Rebuild the engine for a model change with a file loaded, reapplying the
-   *  current spec onto the freshly-loaded source. Replays from the cached
-   *  source rows (no filesystem) when present, else re-reads the path. */
+  /** Rebuild the engine for a model change with a file loaded. The derived
+   *  rows and the per-cell result cache carry over verbatim (#LazyExec):
+   *  evaluated rows keep their values, pending rows stay pending, and not a
+   *  single model call is made — indicators re-derive from the same data. */
   async rebuildForModelChange(spec: TablePlan): Promise<void> {
+    const old = this.headless;
+    const rows = old?.currentRows();
+    const cache = old?.cellCacheEntries();
     this.headless = undefined;
     const runner = this.ensureHeadless();
     if (this.loadedSource) {
@@ -157,7 +171,10 @@ export class EngineManager {
     } else {
       await runner.loadInput(this.host.sourcePath);
     }
-    await runner.setSpec(spec);
+    // Seed after the load — commitSource clears the cell cache.
+    if (cache) runner.seedCellCache(cache);
+    if (rows) await runner.adoptState(spec, rows);
+    else await runner.setSpec(spec);
   }
 
   // ── Runner interface (drives the shared, surface-agnostic scenarios) ─────
@@ -212,18 +229,43 @@ export class EngineManager {
         signal: ownAbort.signal,
         onStep: feed.onStep,
         onChunk: feed.onChunk,
+        // #LazyExec — a replayed flow's AI cells fill the rows in view, like
+        // a chat request; the rest stays pending behind the indicators.
+        cellFilter: this.host.lazy.requestCellFilter(),
       });
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
       this.host.runProgress = null;
       this.overlay.clear();
+      this.displayCache = null;
       if (this.overlayTimer) {
         clearTimeout(this.overlayTimer);
         this.overlayTimer = undefined;
       }
       this.host.notify();
     }
+  }
+
+  /** Drop the memoized sentinel-blanked rows (#LazyExec) — call after any
+   *  in-place mutation of the derived rows. */
+  invalidateDisplay(): void {
+    this.displayCache = null;
+  }
+
+  /** Apply a spec through the cache only (#LazyExec): no cell may spend a
+   *  model call — evaluated cells refill from the cell cache, unevaluated
+   *  cells stay pending. Undo, redo, history jumps, and gesture patches ride
+   *  this path, so none of them ever costs an AI call. */
+  async applySpecCached(spec: TablePlan): Promise<void> {
+    await this.ensureHeadless().setSpec(spec, { fresh: true, cellFilter: () => false });
+    this.changedCells.clear();
+    this.displayCache = null;
+  }
+
+  /** Note a single-cell change (the inline-edit gesture) for the tint. */
+  noteChangedCell(derivedRow: number, column: string, before: unknown): void {
+    this.changedCells.set(`${derivedRow}:${column}`, before ?? null);
   }
 
   /** Shared post-load bookkeeping for loadInput / loadParsed: cache the source
@@ -239,6 +281,9 @@ export class EngineManager {
     this.overlay.clear();
     this.host.pageNum = 1;
     this.host.selection = null;
+    this.host.lazy.reset();
+    this.host.view.reset();
+    this.displayCache = null;
     this.host.notify();
   }
 
@@ -261,24 +306,50 @@ export class EngineManager {
     // The chat's live run progress rides along from the start (#OpenFlow) —
     // a deterministic request just flashes its steps briefly. The feed also
     // paints the overlay, so the wrapper only forwards the caller's onChunk.
+    this.changedCells.clear();
     const feed = this.runProgressFeed();
+    // #LazyExec — the preview window's throughput seeds the estimate math.
+    const started = Date.now();
+    const callsBefore = this.host.lazy.cellCallCount();
+    let chunkCount = 0;
     const onChunk = (u: ChunkUpdate): void => {
+      chunkCount++;
       opts?.onChunk?.(u);
       feed.onChunk(u);
     };
 
     try {
-      await runner.request(text, { signal, onChunk, onStep: feed.onStep, audio: opts?.audio, onTranscript: opts?.onTranscript });
+      await runner.request(text, {
+        signal,
+        onChunk,
+        onStep: feed.onStep,
+        audio: opts?.audio,
+        onTranscript: opts?.onTranscript,
+        // #LazyExec — an AI step evaluates the rows in view; everything
+        // already evaluated refills from the cell cache. The dependency rule
+        // gates the commit when a new step reads an AI-made column.
+        cellFilter: this.host.lazy.requestCellFilter(),
+        confirmSpec: (next, prev) => this.host.lazy.confirmPatch(next, prev),
+      });
       this.host.patch.record({
         label: opts?.label ?? text,
         prevSpec,
         nextSpec: structuredClone(runner.currentSpec()),
       });
+    } catch (e) {
+      // A declined dependency confirmation drops the patch silently — no
+      // spec change, no history entry, no error surface.
+      if (!isDeclined(e)) throw e;
     } finally {
+      if (this.host.lazy.cellCallCount() > callsBefore) {
+        this.host.lazy.recordTiming(Date.now() - started, chunkCount);
+      }
+      this.host.lazy.requestSettled();
       this.activeAbort = null;
       this.host.streaming = false;
       this.host.runProgress = null;
       this.overlay.clear();
+      this.displayCache = null;
       if (this.overlayTimer) {
         clearTimeout(this.overlayTimer);
         this.overlayTimer = undefined;
@@ -323,6 +394,9 @@ export class EngineManager {
         run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
         appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
         this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
+        // #LazyExec — remember the previous value for the changed-cell tint.
+        const key = `${u.rowIndex}:${u.column}`;
+        if (!this.changedCells.has(key)) this.changedCells.set(key, u.before ?? null);
         this.scheduleOverlayFlush();
       },
     };
@@ -362,10 +436,43 @@ export class EngineManager {
     return this.ensureHeadless().currentSpec();
   }
 
-  /** The current rows with any in-flight streaming chunks painted on top. */
+  /** The derived rows exactly as the engine holds them — sentinels included.
+   *  The lazy scan and the view mapping key on this array's identity. */
+  rawRows(): Row[] {
+    if (!this.host.loaded) return [];
+    return this.ensureHeadless().currentRows();
+  }
+
+  // Memoized sentinel-blanked copy of the derived rows (#LazyExec): pending
+  // and failed cells display as empty. Keyed on the derived array identity;
+  // skipped entirely when no cell carries a sentinel.
+  private displayCache: { rowsRef: Row[]; rows: Row[] } | null = null;
+
+  private blankSentinels(rows: Row[]): Row[] {
+    if (this.displayCache && this.displayCache.rowsRef === rows) return this.displayCache.rows;
+    let any = false;
+    const mapped = rows.map((row) => {
+      let patched: Row | undefined;
+      for (const k of Object.keys(row)) {
+        const v = row[k];
+        if (isPendingCell(v) || isFailedCell(v)) {
+          patched = patched ?? { ...row };
+          patched[k] = null;
+        }
+      }
+      if (patched) any = true;
+      return patched ?? row;
+    });
+    const result = any ? mapped : rows;
+    this.displayCache = { rowsRef: rows, rows: result };
+    return result;
+  }
+
+  /** The current rows with sentinels blanked and any in-flight streaming
+   *  chunks painted on top. */
   displayRows(): Row[] {
     if (!this.host.loaded) return [];
-    const rows = this.ensureHeadless().currentRows();
+    const rows = this.blankSentinels(this.ensureHeadless().currentRows());
     if (this.overlay.size === 0) return rows;
     return rows.map((row, i) => {
       let patched: Row | undefined;
@@ -377,5 +484,12 @@ export class EngineManager {
       }
       return patched ?? row;
     });
+  }
+
+  // #LazyExec — the run-all progress dialog's event feed reuses the chat
+  // request-detail log format ("column · row n: before → after").
+  appendRunLog(feed: RunProgress, u: ChunkUpdate): void {
+    feed.log.push(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
+    if (feed.log.length > FLOW_LOG_MAX) feed.log.splice(0, feed.log.length - FLOW_LOG_MAX);
   }
 }

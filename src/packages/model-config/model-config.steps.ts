@@ -251,6 +251,7 @@ Given(
       openrouterKey: null,
       model: defaultModel(provider as Provider),
       cellModel: defaultCellModel(provider as Provider),
+      alwaysRunAll: false,
     };
   },
 );
@@ -266,6 +267,7 @@ Given(
       openrouterKey: openrouterKey || null,
       model: defaultModel(provider as Provider),
       cellModel: defaultCellModel(provider as Provider),
+      alwaysRunAll: false,
     };
   },
 );

@@ -30,6 +30,7 @@ const tutorialFeatureNames = [
   'voice.feature', 'sort.feature', 'multilingual.feature',
   'clean-up.feature', 'enrich.feature', 'classify.feature',
   'language-ai.feature', 'loadsave.feature',
+  'showcase-lazy-ai.feature', 'lazy-exec.feature',
 ];
 
 const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {

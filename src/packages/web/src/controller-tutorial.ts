@@ -235,6 +235,10 @@ export class TutorialManager {
     this.activeTour = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
+    // #LazyExec — a tour can end with the estimate or large-file dialog
+    // open (the lazy tour's finale shows the estimate); close both.
+    this.host.lazy.declineRunAll();
+    this.host.files.dismissLargeFile();
     // Leaving replay mode: the tour owned the engine (pinned config, replaced
     // dataset), so drop it and return to the empty state. Browsing the panel
     // without ever playing leaves the user's own table untouched.
@@ -362,6 +366,10 @@ export class TutorialManager {
       case 'load-lookup': return 'tutorial-open-btn';
       case 'prefill-chat': return 'tutorial-chat-input';
       case 'play-audio': return 'tutorial-speak';
+      case 'load-shuffled': return 'tutorial-load-shuffled';
+      // Highlighted while the step is still pending — the dialog it opens
+      // does not exist yet, so the spotlight lands on the button instead.
+      case 'open-estimate': return 'tutorial-runall-btn';
       case 'show-golden':
       case 'golden-source':
       case 'display': return 'tutorial-table-view';
@@ -434,6 +442,16 @@ export class TutorialManager {
         // Normally pre-written in playTutorial (lookups are not tour steps), but
         // kept here for any caller that steps a load-lookup directly.
         await this.writeLookup(action.filename);
+        break;
+      // #LazyExec — the Lazy AI execution tour's two clicks.
+      case 'load-shuffled':
+        await this.host.files.resolveLargeFile(true);
+        break;
+      case 'open-estimate':
+        // Shown, not executed: the estimate dialog opens and waits; the
+        // parked promise resolves when the visitor (or the tour's cleanup)
+        // confirms or declines.
+        void this.host.lazy.runOnAllRows('run-all');
         break;
       case 'prefill-chat':
         // The query is already typed into the chat box (animated in when this

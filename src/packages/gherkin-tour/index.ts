@@ -5,6 +5,11 @@ export type TourAction =
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }
   | { kind: 'play-audio';    filename: string }
+  // #LazyExec — the Lazy AI execution tour's two clicks: resolve the
+  // large-file dialog with the shuffled sample, and open the run-on-all
+  // estimate dialog (shown, not executed).
+  | { kind: 'load-shuffled'                    }
+  | { kind: 'open-estimate'                    }
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -18,6 +23,14 @@ export interface TourScenario { name: string; tags: string[]; steps: TourStep[];
 function classify(text: string): TourAction {
   const load = text.match(/^load "(.+)"$/);
   if (load) return { kind: 'load-file', filename: load[1]! };
+
+  // The drop phrasing is a load too — the lazy tour uses it so the same step
+  // drives the browser's drop path (which raises the large-file dialog).
+  const drop = text.match(/^user drops the file "(.+)" onto the empty page$/);
+  if (drop) return { kind: 'load-file', filename: drop[1]! };
+
+  if (text === 'user loads the shuffled sample') return { kind: 'load-shuffled' };
+  if (text === 'user opens the run-on-all estimate dialog') return { kind: 'open-estimate' };
 
   const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup) return { kind: 'load-lookup', filename: lookup[1]! };
@@ -205,6 +218,10 @@ export interface TourAdapter {
   /** `goldenFile` is the scenario's lifted `golden`, or undefined when none. */
   showGolden(goldenFile: string | undefined): Promise<void>;
   playAudio(filename: string): Promise<void>;
+  // #LazyExec — optional: hosts without the lazy-execution UI treat both as
+  // narration-only stops.
+  loadShuffled?(): Promise<void>;
+  openEstimate?(): Promise<void>;
   /** DOM id of the element a step should spotlight, or null for none. */
   elementIdFor(action: TourAction): string | null;
   /** Called once when the tour finishes — the host decides what comes next
@@ -338,6 +355,8 @@ export class TourDriver implements TourCursor {
       case 'prefill-chat': await this.adapter.prefillChat(action.text);     break;
       case 'show-golden':  await this.adapter.showGolden(this.tour?.golden); break;
       case 'play-audio':   await this.adapter.playAudio(action.filename);   break;
+      case 'load-shuffled': await this.adapter.loadShuffled?.();            break;
+      case 'open-estimate': await this.adapter.openEstimate?.();            break;
       case 'golden-source':
       case 'display': break;
     }

@@ -118,3 +118,79 @@ When('the user toggles streaming', async function (this: object) {
 Then('the streaming banner is visible', async function (this: object) {
   await page(this).waitForSelector('[data-tv-streaming]');
 });
+
+// ── Grid upgrades (#LazyExec): column menu, row marks, changed cells ────────
+
+When('the user opens the {string} column menu', async function (this: object, col: string) {
+  await page(this).click(`[data-tv-menu="${col}"]`);
+});
+
+When('the user picks {string}', async function (this: object, label: string) {
+  const item = {
+    'Sort ascending': 'sort-asc',
+    'Sort descending': 'sort-desc',
+    'Autofit width': 'autofit',
+    'Delete column': 'delete',
+  }[label];
+  assert.ok(item, `unknown menu item "${label}"`);
+  await page(this).click(`[data-tv-menu-item="${item}"]`);
+});
+
+When('the user filters by {string}', async function (this: object, text: string) {
+  const p = page(this);
+  await p.click('[data-tv-menu-item="filter"]');
+  await p.fill('[data-tv-filter-input]', text);
+  await p.press('[data-tv-filter-input]', 'Enter');
+});
+
+Then(
+  'the {string} header shows the {string} sort indicator',
+  async function (this: object, col: string, dir: string) {
+    const found = await page(this).$(`[data-tv-header="${col}"] [data-tv-sort="${dir}"]`);
+    assert.ok(found, `expected a ${dir} sort indicator on "${col}"`);
+  },
+);
+
+Then('the {string} header carries a funnel mark', async function (this: object, col: string) {
+  const found = await page(this).$(`[data-tv-header="${col}"][data-tv-filtered="${col}"]`);
+  assert.ok(found, `expected a funnel mark on "${col}"`);
+});
+
+Then('the {string} header is narrower than {int} px', async function (this: object, col: string, max: number) {
+  const width = await page(this).$eval(
+    `[data-tv-header="${col}"]`,
+    (el) => el.getBoundingClientRect().width,
+  );
+  assert.ok(width < max, `expected "${col}" narrower than ${max}px, got ${width}`);
+});
+
+Then('the row numbered {int} is marked {string}', async function (this: object, num: number, status: string) {
+  const texts = await page(this).$$eval(
+    `td[data-tv-rowstatus="${status}"]`,
+    (els) => els.map((el) => el.textContent?.trim()),
+  );
+  assert.ok(texts.includes(String(num)), `expected row ${num} marked ${status}, got [${texts.join(', ')}]`);
+});
+
+Then('{int} rows on the page are marked {string}', async function (this: object, n: number, status: string) {
+  const count = await page(this).$$eval(`td[data-tv-rowstatus="${status}"]`, (els) => els.length);
+  assert.equal(count, n);
+});
+
+Then('page {int} carries a pending dot', async function (this: object, n: number) {
+  const found = await page(this).$(`[data-tv-page="${n}"][data-tv-pending]`);
+  assert.ok(found, `expected a pending dot on page ${n}`);
+});
+
+Then(
+  'cell {string} is marked changed with previous value {string}',
+  async function (this: object, cell: string, previous: string) {
+    const title = await page(this).getAttribute(`[data-tv-cell="${cell}"][data-tv-changed]`, 'title');
+    assert.ok(title?.includes(`was: ${previous}`), `expected "was: ${previous}", got "${title}"`);
+  },
+);
+
+Then('the first row number is not {int}', async function (this: object, n: number) {
+  const first = await page(this).$eval('tbody tr td', (el) => el.textContent?.trim());
+  assert.notEqual(first, String(n));
+});

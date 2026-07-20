@@ -308,8 +308,9 @@ Then('history entry {int} is labelled {string}', function (this: TamedTableWorld
 
 // ── Pagination ─────────────────────────────────────────────────────────────
 
-When('user goes to page {int}', function (this: TamedTableWorld, page: number) {
-  controller(this).goToPage(page);
+When('user goes to page {int}', async function (this: TamedTableWorld, page: number) {
+  // Opening a page evaluates its lagging rows (#LazyExec) — await that.
+  await controller(this).goToPage(page);
 });
 
 Then('the table spans {int} page(s)', function (this: TamedTableWorld, n: number) {
@@ -594,4 +595,252 @@ Given('the LLM API returns a 401 unauthorized error', function (this: TamedTable
         { status: 401, headers: { 'content-type': 'application/json' } },
       ),
     );
+});
+
+// ── Lazy AI execution (#LazyExec) ────────────────────────────────────────────
+
+/** Poll until `cond` returns truthy (dialogs appear asynchronously while a
+ *  request or run is in flight). */
+async function waitFor(cond: () => boolean, ms = 30_000): Promise<void> {
+  const deadline = Date.now() + ms;
+  while (!cond()) {
+    if (Date.now() > deadline) throw new Error('waitFor: condition not met in time');
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
+Then('the evaluated-rows readout shows {string}', function (this: TamedTableWorld, expected: string) {
+  const r = controller(this).evaluatedReadout();
+  assert.ok(r, 'expected the evaluated-rows readout to be visible');
+  assert.equal(`${r.done} of ${r.total} rows evaluated`, expected);
+});
+
+Then('no evaluated-rows readout is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).evaluatedReadout(), null);
+});
+
+Then('the pager marks the pages with pending rows', function (this: TamedTableWorld) {
+  const pages = controller(this).pendingPages();
+  assert.ok(pages.length > 0, 'expected at least one pending page mark');
+  assert.ok(!pages.includes(1), 'the evaluated first page must not be marked');
+});
+
+Then('no pager button carries a pending mark', function (this: TamedTableWorld) {
+  assert.deepEqual(controller(this).pendingPages(), []);
+});
+
+Then('no large-file dialog is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).largeFileDialog, null);
+});
+
+Then('no estimate dialog is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).runAllDialog, null);
+});
+
+// ── Failures + retry ─────────────────────────────────────────────────────────
+
+Given('the LLM API fails for rows {string}', function (this: TamedTableWorld, markers: string) {
+  // Fail any model call whose body mentions one of the marked rows; every
+  // other call passes through to the cassette recorder (or the live API).
+  const marks = markers.split(',').map((s) => s.trim()).filter(Boolean);
+  const inner = this.runnerOpts?.fetch;
+  ctxOf(this).mockLlmFetch = (input, init) => {
+    const body = typeof init?.body === 'string' ? init.body : '';
+    if (marks.some((m) => body.includes(m))) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ error: { code: 400, message: 'Injected cell failure', status: 'INVALID_ARGUMENT' } }),
+          { status: 400, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+    }
+    if (inner) return Promise.resolve(inner(input, init));
+    return fetch(input as Parameters<typeof fetch>[0], init);
+  };
+});
+
+Given('the LLM API recovers', function (this: TamedTableWorld) {
+  ctxOf(this).mockLlmFetch = undefined;
+});
+
+Then('exactly {int} rows on the current page are marked failed', function (this: TamedTableWorld, n: number) {
+  const failed = controller(this).pageRowStatus().filter((s) => s === 'failed');
+  assert.equal(failed.length, n);
+});
+
+Then('the readout offers to retry {int} failed row(s)', function (this: TamedTableWorld, n: number) {
+  const r = controller(this).evaluatedReadout();
+  assert.ok(r, 'expected the evaluated-rows readout to be visible');
+  assert.equal(r.failed, n);
+});
+
+When('user retries the failed rows', async function (this: TamedTableWorld) {
+  await controller(this).retryFailedRows();
+});
+
+Then('no row is marked failed', function (this: TamedTableWorld) {
+  assert.equal(controller(this).evaluatedReadout()?.failed ?? 0, 0);
+});
+
+// ── Run on all rows + the estimate dialog ────────────────────────────────────
+
+When('user starts running on all rows', function (this: TamedTableWorld) {
+  const pending = controller(this).runOnAllRows();
+  pending.catch(() => {});
+  ctxOf(this).pending = pending;
+});
+
+When('user runs on all rows', async function (this: TamedTableWorld) {
+  await controller(this).runOnAllRows();
+});
+
+Then(
+  'the estimate dialog shows the rows remaining, estimated tokens, cost, and time',
+  async function (this: TamedTableWorld) {
+    const c = controller(this);
+    await waitFor(() => c.runAllDialog !== null);
+    const e = c.runAllDialog!.estimate;
+    assert.ok(e.rowsRemaining > 0, 'rowsRemaining must be positive');
+    assert.ok(e.estTokens > 0, 'estTokens must be positive');
+    assert.ok(e.estUsd > 0, 'estUsd must be positive');
+    assert.ok(e.estSeconds > 0, 'estSeconds must be positive');
+  },
+);
+
+When('user confirms the run', async function (this: TamedTableWorld) {
+  controller(this).confirmRunAll();
+  await ctxOf(this).pending;
+});
+
+When('user confirms the run and cancels after the first chunk', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  // Cancel synchronously inside the first chunk's notify — deterministic in
+  // record and replay: the first wave is already computed (and cached), the
+  // next wave's abort check stops the run.
+  let cancelled = false;
+  const unsubscribe = c.subscribe(() => {
+    if (!cancelled && c.runProgress && c.runProgress.rowsDone >= 1) {
+      cancelled = true;
+      c.cancelRunAll();
+    }
+  });
+  try {
+    c.confirmRunAll();
+    await ctxOf(this).pending;
+  } finally {
+    unsubscribe();
+  }
+  assert.ok(cancelled, 'expected the run to have streamed at least one chunk');
+});
+
+// ── The dependency rule ──────────────────────────────────────────────────────
+
+When('query {string} without waiting', function (this: TamedTableWorld, text: string) {
+  const pending = controller(this).request(text);
+  pending.catch(() => {});
+  ctxOf(this).pending = pending;
+});
+
+Then('the run-all confirmation is shown', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  await waitFor(() => c.runAllDialog !== null);
+  assert.ok(c.runAllDialog);
+});
+
+When('user declines the run-all confirmation', async function (this: TamedTableWorld) {
+  controller(this).declineRunAll();
+  await ctxOf(this).pending;
+});
+
+Then('the spec contains no filter transformation', function (this: TamedTableWorld) {
+  const kinds = controller(this).currentSpec().transformations.map((t) => (t as { kind: string }).kind);
+  assert.ok(!kinds.includes('filter'), `expected no filter step, got [${kinds.join(', ')}]`);
+});
+
+Then('no history entry was added for the declined step', function (this: TamedTableWorld) {
+  assert.equal(controller(this).history().length, 1);
+});
+
+// ── Undo / redo row state ────────────────────────────────────────────────────
+
+When('user redoes the last change without any model call', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  const before = c.cellCallCount();
+  await c.redo();
+  assert.equal(c.cellCallCount(), before, 'redo must be served from the cell cache');
+});
+
+// ── The large-file dialog + the shuffled view ────────────────────────────────
+
+Then(
+  'the large-file dialog offers {string} and {string}',
+  function (this: TamedTableWorld, _primary: string, _secondary: string) {
+    const d = controller(this).largeFileDialog;
+    assert.ok(d, 'expected the large-file dialog to be showing');
+    assert.ok(d.rowCount > 0);
+  },
+);
+
+When('user loads the shuffled sample', async function (this: TamedTableWorld) {
+  await controller(this).loadShuffled();
+});
+
+When('user loads the file in original order', async function (this: TamedTableWorld) {
+  await controller(this).loadOriginalOrder();
+});
+
+Then('the Row # column keeps the original row numbers', function (this: TamedTableWorld) {
+  const c = controller(this);
+  const nums = c.pageRowNumbers();
+  const rows = c.pageRows();
+  assert.ok(nums.length > 0);
+  assert.ok(!nums.every((n, i) => n === i + 1), 'expected a shuffled view, got sequential row numbers');
+  // Each displayed row really is the derived row its number claims.
+  const derived = c.displayRows();
+  nums.forEach((n, i) => assert.deepEqual(rows[i], derived[n - 1]));
+});
+
+When(
+  'user sorts column {string} descending from the column menu',
+  async function (this: TamedTableWorld, column: string) {
+    await controller(this).setViewSort(column, 'desc');
+  },
+);
+
+Then('the view is sorted by {string} descending', function (this: TamedTableWorld, column: string) {
+  const values = controller(this).pageRows().map((r) => Number(r[column]));
+  for (let i = 1; i < values.length; i++) {
+    assert.ok(values[i - 1]! >= values[i]!, `row ${i} breaks the descending order`);
+  }
+});
+
+Then('the saved file keeps the original row order', function (this: TamedTableWorld) {
+  const port = ctxOf(this).filePort!;
+  const saved = [...port.saved.values()].at(-1);
+  assert.ok(saved, 'expected a saved file');
+  const lines = saved.split('\n');
+  // The source is ordered P00001, P00002, … — the shuffled view must not
+  // leak into the file.
+  assert.ok(lines[1]!.startsWith('P00001,'), `expected P00001 first, got ${lines[1]}`);
+  assert.ok(lines[2]!.startsWith('P00002,'), `expected P00002 second, got ${lines[2]}`);
+});
+
+Then('every row on the current page has a non-null {string}', function (this: TamedTableWorld, column: string) {
+  const rows = controller(this).pageRows();
+  assert.ok(rows.length > 0);
+  for (const row of rows) {
+    assert.ok(row[column] !== null && row[column] !== undefined && row[column] !== '', 'expected a value');
+  }
+});
+
+Given('the setting {string} is on', async function (this: TamedTableWorld, setting: string) {
+  assert.equal(setting, 'Always run on all rows', `unknown setting "${setting}"`);
+  await controller(this).setConfig({ alwaysRunAll: true });
+});
+
+When('user opens the run-on-all estimate dialog', function (this: TamedTableWorld) {
+  // Shown, not executed: the estimate dialog opens and waits for a choice.
+  const pending = controller(this).runOnAllRows();
+  pending.catch(() => {});
+  ctxOf(this).pending = pending;
 });

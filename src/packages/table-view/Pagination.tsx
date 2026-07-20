@@ -10,13 +10,18 @@ export function Pagination({
   page,
   pageCount,
   onPageChange,
+  markedPages,
 }: {
   page: number;
   pageCount: number;
   onPageChange: (page: number) => void;
+  /** 1-based pages carrying pending rows — each gets a small dot mark
+   *  (#LazyExec). */
+  markedPages?: number[];
 }): ReactNode {
   const t = useTheme();
   const pages = buildPageList(page, pageCount);
+  const marked = new Set(markedPages ?? []);
 
   const cell: CSSProperties = {
     height: 24,
@@ -75,10 +80,13 @@ export function Pagination({
             key={p}
             type="button"
             data-tv-page={p}
+            data-tv-pending={marked.has(p) ? '' : undefined}
+            title={marked.has(p) ? 'This page has rows the AI steps have not reached yet' : undefined}
             onClick={() => onPageChange(p)}
             aria-current={p === page ? 'page' : undefined}
             style={{
               ...cell,
+              position: 'relative',
               cursor: 'pointer',
               color: p === page ? t.ink : t.ink2,
               fontWeight: p === page ? 600 : 500,
@@ -87,6 +95,19 @@ export function Pagination({
             }}
           >
             {p}
+            {marked.has(p) && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 1,
+                  right: 1,
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  background: t.accent,
+                }}
+              />
+            )}
           </button>
         ),
       )}

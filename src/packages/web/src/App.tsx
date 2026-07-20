@@ -10,6 +10,7 @@ import { OpenUrlDialog } from './components/OpenUrlDialog.tsx';
 import { OpenSampleDialog } from './components/OpenSampleDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
 import { ErrorDialog } from './components/ErrorDialog.tsx';
+import { LargeFileDialog, RunAllDialog } from './components/LazyDialogs.tsx';
 import { TutorialPanel } from './components/TutorialPanel.tsx';
 import { MobileShell } from './components/mobile/MobileShell.tsx';
 import { useIsMobile } from './hooks/useIsMobile.ts';
@@ -57,6 +58,8 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
       <TutorialPanel controller={controller} />
       <OpenSampleDialog controller={controller} />
       <OpenUrlDialog controller={controller} />
+      <LargeFileDialog controller={controller} />
+      <RunAllDialog controller={controller} />
       <ErrorDialog controller={controller} />
       <Toasts controller={controller} />
     </div>
