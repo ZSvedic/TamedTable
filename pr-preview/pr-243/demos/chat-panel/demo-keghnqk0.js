@@ -17398,6 +17398,8 @@ var SHEET_CSS = "@keyframes uk-sheet-kf { from { opacity: 0; transform: translat
 // packages/chat-panel/ChatPanel.tsx
 var import_react5 = __toESM(require_react(), 1);
 var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
+var INPUT_MIN_H = 68;
+var INPUT_MAX_H = 240;
 var CP_CSS = "@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }";
 function UserBubble({ t, children }) {
   return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
@@ -17720,12 +17722,22 @@ function ChatPanel({
   emptyState,
   helpLines = [],
   micButton,
-  fill = false
+  fill = false,
+  width = 360
 }) {
   const t = useTheme();
   const [draft, setDraft] = import_react5.useState("");
   const [focused, setFocused] = import_react5.useState(false);
   const [helpOpen, setHelpOpen] = import_react5.useState(false);
+  const inputRef = import_react5.useRef(null);
+  import_react5.useEffect(() => {
+    const el = inputRef.current;
+    if (!el)
+      return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(INPUT_MIN_H, Math.min(INPUT_MAX_H, el.scrollHeight))}px`;
+    el.style.overflowY = el.scrollHeight > INPUT_MAX_H ? "auto" : "hidden";
+  }, [draft]);
   const typing = import_react5.useRef({
     typed: null,
     timer: null
@@ -17787,7 +17799,7 @@ function ChatPanel({
   };
   return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("aside", {
     style: {
-      width: fill ? "100%" : 360,
+      width: fill ? "100%" : width,
       height: fill ? "100%" : undefined,
       flex: fill ? "1 1 auto" : "0 0 auto",
       minHeight: 0,
@@ -17958,15 +17970,16 @@ function ChatPanel({
               border: `1px solid ${focused ? t.accent : t.line2}`,
               boxShadow: focused ? `0 0 0 3px ${t.ring}` : "none",
               borderRadius: space.radius,
-              padding: "8px 8px 6px 10px",
+              padding: "8px 10px 6px 10px",
               display: "flex",
-              alignItems: "flex-end",
-              gap: space.px8,
+              flexDirection: "column",
+              gap: space.px6,
               transition: "border-color .12s, box-shadow .12s"
             },
             children: [
               /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("textarea", {
                 id: inputId,
+                ref: inputRef,
                 value: draft,
                 onChange: (e) => setDraft(e.target.value),
                 onFocus: () => setFocused(true),
@@ -17981,7 +17994,7 @@ function ChatPanel({
                 disabled,
                 rows: 3,
                 style: {
-                  flex: 1,
+                  width: "100%",
                   resize: "none",
                   border: "none",
                   outline: "none",
@@ -17992,38 +18005,43 @@ function ChatPanel({
                   color: disabled ? t.ink3 : t.ink
                 }
               }, undefined, false, undefined, this),
-              disabled ? null : micButton,
-              streaming ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-stop": "",
-                onClick: onCancel,
-                title: "Stop the running request",
-                style: {
-                  ...sendBtn,
-                  border: `1px solid ${t.err}`,
-                  background: "transparent",
-                  color: t.err
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "stop"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
-                type: "button",
-                "data-cp-send": "",
-                onClick: send,
-                disabled: !hasDraft,
-                title: "Send (Enter)",
-                style: {
-                  ...sendBtn,
-                  border: "none",
-                  background: hasDraft ? t.accent : t.surface3,
-                  color: hasDraft ? t.inkOnAcc : t.ink3,
-                  cursor: hasDraft ? "pointer" : "default"
-                },
-                children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
-                  name: "send"
-                }, undefined, false, undefined, this)
-              }, undefined, false, undefined, this)
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: space.px8 },
+                children: [
+                  disabled ? null : micButton,
+                  streaming ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+                    type: "button",
+                    "data-cp-stop": "",
+                    onClick: onCancel,
+                    title: "Stop the running request",
+                    style: {
+                      ...sendBtn,
+                      border: `1px solid ${t.err}`,
+                      background: "transparent",
+                      color: t.err
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                      name: "stop"
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
+                    type: "button",
+                    "data-cp-send": "",
+                    onClick: send,
+                    disabled: !hasDraft,
+                    title: "Send (Enter)",
+                    style: {
+                      ...sendBtn,
+                      border: "none",
+                      background: hasDraft ? t.accent : t.surface3,
+                      color: hasDraft ? t.inkOnAcc : t.ink3,
+                      cursor: hasDraft ? "pointer" : "default"
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                      name: "send"
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {

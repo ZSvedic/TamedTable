@@ -17428,6 +17428,22 @@ function buildPageList(current, total) {
   }
   return out;
 }
+function defaultColumnWidth(title) {
+  return Math.max(120, Math.min(240, Math.round(title.length * 8) + 48));
+}
+function urlHref(value) {
+  if (typeof value !== "string")
+    return null;
+  const s = value.trim();
+  if (!/^https?:\/\/\S+$/.test(s))
+    return null;
+  try {
+    const u = new URL(s);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 
 // packages/table-view/TableView.tsx
 var import_react5 = __toESM(require_react(), 1);
@@ -17533,7 +17549,6 @@ function cellText(value) {
   return value === null || value === undefined ? "" : String(value);
 }
 var MIN_COL_W = 48;
-var DEFAULT_COL_W = 120;
 var TV_CSS = "@keyframes tv-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .tv-pulse { animation: tv-pulse-kf 1.2s ease-in-out infinite; }" + " .tv-th .tv-grip { opacity: 0; transition: opacity 0.15s; }" + " .tv-th:hover .tv-grip { opacity: 1; }";
 function TableView({
   id,
@@ -17560,7 +17575,8 @@ function TableView({
   onDeleteColumn,
   markedPages,
   barLeft,
-  barRight
+  barRight,
+  onCopyCell
 }) {
   const t = useTheme();
   const [editing, setEditing] = import_react5.useState(null);
@@ -17580,6 +17596,26 @@ function TableView({
     setEditing(null);
     onEditCell(row, col, draft);
   };
+  import_react5.useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== "c")
+        return;
+      if (!selection || editing)
+        return;
+      const live = typeof window !== "undefined" ? window.getSelection()?.toString() : "";
+      if (live)
+        return;
+      const rowIdx = selection.row - pageStart;
+      const row = rows[rowIdx];
+      if (!row)
+        return;
+      const text = cellText(row[selection.column]);
+      navigator.clipboard?.writeText(text).catch(() => {});
+      onCopyCell?.(selection.row, selection.column, text);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selection, editing, rows, pageStart, onCopyCell]);
   const dropOn = (target) => {
     if (!dragCol || dragCol === target) {
       setDragCol(null);
@@ -17636,7 +17672,7 @@ function TableView({
     const snap = snapshotWidths();
     setWidths(snap);
     const startX = e.clientX;
-    const startW = snap[col] ?? DEFAULT_COL_W;
+    const startW = snap[col] ?? defaultColumnWidth(col);
     const move = (ev) => setWidths({ ...snap, [col]: Math.max(MIN_COL_W, startW + ev.clientX - startX) });
     const up = () => {
       window.removeEventListener("mousemove", move);
@@ -17647,7 +17683,7 @@ function TableView({
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);
   };
-  const colW = (col) => widths?.[col] ?? DEFAULT_COL_W;
+  const colW = (col) => widths?.[col] ?? defaultColumnWidth(col);
   const tableW = widths ? colW("#") + columns.reduce((sum, c) => sum + colW(c), 0) : undefined;
   const headerCell = {
     position: "sticky",
@@ -17775,11 +17811,12 @@ function TableView({
                         style: {
                           ...headerCell,
                           cursor: "grab",
-                          background: dragCol === col ? t.accentSoft : t.surface2
+                          background: dragCol === col ? t.accentSoft : t.surface2,
+                          paddingRight: hasMenu ? 30 : undefined
                         },
                         children: [
                           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                            style: { display: "inline-flex", alignItems: "center", gap: space.px6 },
+                            style: { display: "inline-flex", alignItems: "center", gap: space.px6, maxWidth: "100%" },
                             children: [
                               /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
                                 className: "tv-grip",
@@ -17821,17 +17858,18 @@ function TableView({
                             style: {
                               position: "absolute",
                               top: "50%",
-                              right: 10,
+                              right: 9,
                               transform: "translateY(-50%)",
-                              width: 16,
-                              height: 18,
+                              width: 18,
+                              height: 20,
                               padding: 0,
                               border: "none",
-                              borderRadius: 3,
-                              background: menu?.col === col ? t.accentSoft : "transparent",
-                              color: t.ink3,
+                              borderRadius: 4,
+                              background: menu?.col === col ? t.accentSoft : t.surface3,
+                              color: t.ink2,
                               cursor: "pointer",
-                              fontSize: 12,
+                              fontSize: 14,
+                              fontWeight: 700,
                               lineHeight: 1
                             },
                             children: "⋮"
@@ -17928,7 +17966,17 @@ function TableView({
                                 padding: `0 ${space.px10}px`,
                                 height: space.rowH
                               }
-                            }, undefined, false, undefined, this) : cellText(row?.[col])
+                            }, undefined, false, undefined, this) : (() => {
+                              const href = urlHref(row?.[col]);
+                              return href ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("a", {
+                                "data-tv-link": "",
+                                href,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                style: { color: "inherit", textDecoration: "underline", textDecorationColor: t.accent },
+                                children: cellText(row?.[col])
+                              }, undefined, false, undefined, this) : cellText(row?.[col]);
+                            })()
                           }, col, false, undefined, this);
                         })
                       ]
@@ -18173,7 +18221,8 @@ function sampleRows() {
     ID: i + 1,
     name: `Person ${i + 1}`,
     age: 20 + i * 7 % 50,
-    city: CITIES[i % CITIES.length]
+    city: CITIES[i % CITIES.length],
+    site: i % 3 === 0 ? `https://example.org/p/${i + 1}` : "justify.me"
   }));
 }
 function compare(a, b) {
@@ -18186,7 +18235,7 @@ function compare(a, b) {
 function Demo() {
   const t = useTheme();
   const [rows, setRows] = import_react6.useState(sampleRows);
-  const [columns, setColumns] = import_react6.useState(["ID", "name", "age", "city"]);
+  const [columns, setColumns] = import_react6.useState(["ID", "name", "age", "city", "site"]);
   const [page, setPage] = import_react6.useState(1);
   const [selection, setSelection] = import_react6.useState(null);
   const [streaming, setStreaming] = import_react6.useState(false);
@@ -18292,7 +18341,8 @@ function Demo() {
           setColumns((cols) => cols.filter((c) => c !== column));
           report(`delete ${column}`);
         },
-        markedPages: [10]
+        markedPages: [10],
+        onCopyCell: (row, column, text) => report(`copy ${row}:${column}=${text}`)
       }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("pre", {
         id: "out",
