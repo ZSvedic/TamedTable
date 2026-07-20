@@ -32,6 +32,18 @@ Feature: Voice input
       When user selects the provider "gemini"
       Then the mic button is hidden
 
+    # Regression: the voice step of a key-free tour spotlights the mic; hiding
+    # it for lack of a key left the Driver.js overlay with no target and the
+    # tour stuck on its first stop.
+    @web @regression
+    Scenario: The mic is visible while a key-free tour plays
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And the API key has not been set
+      And the tutorial "Handle feedback in five languages" is selected
+      When user plays the tutorial
+      Then the mic button is shown
+
     @web
     Scenario: The mic is shown when Google is selected with a Gemini key
       Given the TamedTable web app
