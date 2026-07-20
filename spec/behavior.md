@@ -1321,8 +1321,10 @@ shuffle.
 - Pager buttons for pages with pending rows carry a small dot mark.
 - Pending rows are subtly marked (a muted wash on the Row # cell); failed
   rows are distinctly marked (a red Row # cell).
-- On the phone, the app-bar pager carries the same dot marks and the
-  streaming banner area shows the readout.
+- On the phone, the app-bar pager carries the same dot mark, and a slim
+  banner under the app bar carries the readout, the retry action, and a
+  compact **Run all** button; the estimate and large-file dialogs — and the
+  grid's column menu — open as bottom sheets, like every other phone dialog.
 
 ### Run on all rows and Save
 
