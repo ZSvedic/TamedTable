@@ -16,7 +16,9 @@ Feature: Lazy AI execution showcase tour
     Scenario: Clean 25,000 rows for cents
       Given the TamedTable web app
       And load "showcase-lazy-input.csv"
-      Then the large-file dialog offers a shuffled sample and the shuffle badge is shown
+      Then the large-file dialog offers "Load shuffled" and "Load in original order"
+      When user loads the shuffled sample
+      Then the Row # column keeps the original row numbers
       When query "add a Category column: kitchen, electronics, clothing, sports, or other"
       Then no toast is shown
       And the evaluated-rows readout shows "20 of 25000 rows evaluated"
