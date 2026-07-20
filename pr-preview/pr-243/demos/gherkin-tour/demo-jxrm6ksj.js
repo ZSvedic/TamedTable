@@ -3,6 +3,13 @@ function classify(text) {
   const load = text.match(/^load "(.+)"$/);
   if (load)
     return { kind: "load-file", filename: load[1] };
+  const drop = text.match(/^user drops the file "(.+)" onto the empty page$/);
+  if (drop)
+    return { kind: "load-file", filename: drop[1] };
+  if (text === "user loads the shuffled sample")
+    return { kind: "load-shuffled" };
+  if (text === "user opens the run-on-all estimate dialog")
+    return { kind: "open-estimate" };
   const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup)
     return { kind: "load-lookup", filename: lookup[1] };
@@ -201,6 +208,12 @@ class TourDriver {
         break;
       case "play-audio":
         await this.adapter.playAudio(action.filename);
+        break;
+      case "load-shuffled":
+        await this.adapter.loadShuffled?.();
+        break;
+      case "open-estimate":
+        await this.adapter.openEstimate?.();
         break;
       case "golden-source":
       case "display":
@@ -1173,6 +1186,8 @@ var adapter = {
       case "play-audio":
       case "show-golden":
       case "golden-source":
+      case "load-shuffled":
+      case "open-estimate":
       case "display":
         return "table-view";
     }

@@ -17437,10 +17437,12 @@ var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
 function Pagination({
   page,
   pageCount,
-  onPageChange
+  onPageChange,
+  markedPages
 }) {
   const t = useTheme();
   const pages = buildPageList(page, pageCount);
+  const marked = new Set(markedPages ?? []);
   const cell = {
     height: 24,
     minWidth: 24,
@@ -17492,18 +17494,34 @@ function Pagination({
       }, `e${i}`, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("button", {
         type: "button",
         "data-tv-page": p,
+        "data-tv-pending": marked.has(p) ? "" : undefined,
+        title: marked.has(p) ? "This page has rows the AI steps have not reached yet" : undefined,
         onClick: () => onPageChange(p),
         "aria-current": p === page ? "page" : undefined,
         style: {
           ...cell,
+          position: "relative",
           cursor: "pointer",
           color: p === page ? t.ink : t.ink2,
           fontWeight: p === page ? 600 : 500,
           borderColor: p === page ? t.line2 : "transparent",
           background: p === page ? t.surface : "transparent"
         },
-        children: p
-      }, p, false, undefined, this)),
+        children: [
+          p,
+          marked.has(p) && /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+            style: {
+              position: "absolute",
+              top: 1,
+              right: 1,
+              width: 5,
+              height: 5,
+              borderRadius: "50%",
+              background: t.accent
+            }
+          }, undefined, false, undefined, this)
+        ]
+      }, p, true, undefined, this)),
       nav("next")
     ]
   }, undefined, true, undefined, this);
@@ -17530,14 +17548,29 @@ function TableView({
   onSelectCell,
   onEditCell,
   onReorderColumns,
-  streaming
+  streaming,
+  rowNumbers,
+  rowNumberHint,
+  rowStatus,
+  changedCells,
+  sort,
+  filters,
+  onSortChange,
+  onFilterChange,
+  onDeleteColumn,
+  markedPages,
+  barLeft,
+  barRight
 }) {
   const t = useTheme();
   const [editing, setEditing] = import_react5.useState(null);
   const [draft, setDraft] = import_react5.useState("");
   const [dragCol, setDragCol] = import_react5.useState(null);
   const [widths, setWidths] = import_react5.useState(null);
+  const [menu, setMenu] = import_react5.useState(null);
+  const [filterDraft, setFilterDraft] = import_react5.useState(null);
   const tableRef = import_react5.useRef(null);
+  const hasMenu = Boolean(onSortChange || onFilterChange || onDeleteColumn);
   const firstRow = totalRows === 0 ? 0 : pageStart + 1;
   const lastRow = pageStart + rows.length;
   const commitEdit = () => {
@@ -17564,18 +17597,43 @@ function TableView({
     setDragCol(null);
     onReorderColumns(order);
   };
+  const snapshotWidths = () => {
+    const snap = { ...widths ?? {} };
+    const table = tableRef.current;
+    if (!widths && table) {
+      table.querySelectorAll("thead th").forEach((th, i) => {
+        snap[i === 0 ? "#" : columns[i - 1] ?? "#"] = th.getBoundingClientRect().width;
+      });
+    }
+    return snap;
+  };
+  const autofit = (col) => {
+    const table = tableRef.current;
+    if (!table)
+      return;
+    const snap = snapshotWidths();
+    const colIdx = columns.indexOf(col) + 1;
+    const probe = document.createElement("span");
+    probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;` + `font-family:${typography.mono};font-size:${typography.size.sm}px;`;
+    document.body.appendChild(probe);
+    let max = 0;
+    table.querySelectorAll("tr").forEach((tr) => {
+      const cell = tr.children[colIdx];
+      if (!cell)
+        return;
+      probe.textContent = cell.textContent ?? "";
+      max = Math.max(max, probe.getBoundingClientRect().width);
+    });
+    probe.remove();
+    setWidths({ ...snap, [col]: Math.max(MIN_COL_W, Math.min(640, Math.ceil(max) + 2 * space.px10 + 4)) });
+  };
   const startResize = (col, e) => {
     e.preventDefault();
     e.stopPropagation();
     const table = tableRef.current;
     if (!table)
       return;
-    const snap = { ...widths ?? {} };
-    if (!widths) {
-      table.querySelectorAll("thead th").forEach((th, i) => {
-        snap[i === 0 ? "#" : columns[i - 1] ?? "#"] = th.getBoundingClientRect().width;
-      });
-    }
+    const snap = snapshotWidths();
     setWidths(snap);
     const startX = e.clientX;
     const startW = snap[col] ?? DEFAULT_COL_W;
@@ -17694,18 +17752,21 @@ function TableView({
                   children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
                     children: [
                       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
+                        title: rowNumberHint,
                         style: {
                           ...headerCell,
                           textAlign: "right",
                           color: t.ink4,
                           fontFamily: typography.mono,
-                          fontWeight: 400
+                          fontWeight: 400,
+                          cursor: rowNumberHint ? "help" : undefined
                         },
-                        children: "#"
+                        children: "Row #"
                       }, undefined, false, undefined, this),
                       columns.map((col) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
                         className: "tv-th",
                         "data-tv-header": col,
+                        "data-tv-filtered": filters?.[col] !== undefined ? col : undefined,
                         draggable: true,
                         onDragStart: () => setDragCol(col),
                         onDragOver: (e) => e.preventDefault(),
@@ -17728,18 +17789,67 @@ function TableView({
                                   size: 12
                                 }, undefined, false, undefined, this)
                               }, undefined, false, undefined, this),
-                              col
+                              col,
+                              sort?.column === col && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                                "data-tv-sort": sort.dir,
+                                style: { color: t.accent, fontSize: 9 },
+                                children: sort.dir === "asc" ? "▲" : "▼"
+                              }, undefined, false, undefined, this),
+                              filters?.[col] !== undefined && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                                title: `Filtered: contains "${filters[col]}"`,
+                                style: { color: t.accent, fontSize: 10 },
+                                children: "∇"
+                              }, undefined, false, undefined, this)
                             ]
                           }, undefined, true, undefined, this),
+                          hasMenu && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                            type: "button",
+                            className: "tv-menu-btn",
+                            "data-tv-menu": col,
+                            title: "Column menu",
+                            draggable: true,
+                            onDragStart: (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            },
+                            onClick: (e) => {
+                              e.stopPropagation();
+                              setFilterDraft(null);
+                              const r = e.currentTarget.getBoundingClientRect();
+                              setMenu(menu?.col === col ? null : { col, x: r.right, y: r.bottom + 2 });
+                            },
+                            style: {
+                              position: "absolute",
+                              top: "50%",
+                              right: 10,
+                              transform: "translateY(-50%)",
+                              width: 16,
+                              height: 18,
+                              padding: 0,
+                              border: "none",
+                              borderRadius: 3,
+                              background: menu?.col === col ? t.accentSoft : "transparent",
+                              color: t.ink3,
+                              cursor: "pointer",
+                              fontSize: 12,
+                              lineHeight: 1
+                            },
+                            children: "⋮"
+                          }, undefined, false, undefined, this),
                           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
                             "data-tv-resize": col,
-                            title: "Drag to resize",
+                            title: "Drag to resize · double-click to autofit",
                             draggable: true,
                             onDragStart: (e) => {
                               e.preventDefault();
                               e.stopPropagation();
                             },
                             onMouseDown: (e) => startResize(col, e),
+                            onDoubleClick: (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              autofit(col);
+                            },
                             style: {
                               position: "absolute",
                               top: 0,
@@ -17757,23 +17867,30 @@ function TableView({
                 /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tbody", {
                   children: rows.map((row, ri) => {
                     const absRow = pageStart + ri;
+                    const status = rowStatus?.[ri];
                     return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
                       children: [
                         /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
+                          "data-tv-rowstatus": status,
+                          title: status === "pending" ? "Pending — AI steps have not reached this row yet" : status === "failed" ? "Failed — retry from the readout below" : undefined,
                           style: {
                             ...bodyCell,
-                            color: t.ink4,
+                            color: status === "failed" ? t.onRec : t.ink4,
                             textAlign: "right",
-                            background: t.surface2
+                            background: status === "failed" ? t.err : status === "pending" ? t.accentSoft : t.surface2,
+                            opacity: status === "pending" ? 0.7 : undefined
                           },
-                          children: absRow + 1
+                          children: rowNumbers?.[ri] ?? absRow + 1
                         }, undefined, false, undefined, this),
                         columns.map((col) => {
                           const isEditing = editing?.row === absRow && editing.col === col;
                           const isSelected = selection?.row === absRow && selection.column === col;
+                          const changed = changedCells?.[`${absRow}:${col}`];
+                          const isChanged = changedCells !== undefined && `${absRow}:${col}` in changedCells;
                           return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
                             "data-tv-cell": `${absRow}:${col}`,
-                            title: "Click to select · double-click to edit",
+                            "data-tv-changed": isChanged ? "" : undefined,
+                            title: isChanged ? `was: ${changed === null || changed === undefined || changed === "" ? "(empty)" : String(changed)}` : "Click to select · double-click to edit",
                             onClick: () => onSelectCell(absRow, col),
                             onDoubleClick: () => {
                               setEditing({ row: absRow, col });
@@ -17782,8 +17899,8 @@ function TableView({
                             style: {
                               ...bodyCell,
                               padding: isEditing ? 0 : bodyCell.padding,
-                              background: isSelected && !isEditing ? t.accentSoft : undefined,
-                              boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : undefined
+                              background: isSelected && !isEditing ? t.accentSoft : isChanged ? t.accentSoft : undefined,
+                              boxShadow: isEditing ? `inset 0 0 0 2px ${t.accent}` : isSelected ? `inset 0 0 0 1.5px ${t.accent}` : undefined
                             },
                             children: isEditing ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("input", {
                               autoFocus: true,
@@ -17832,6 +17949,37 @@ function TableView({
           ]
         }, undefined, true, undefined, this)
       }, undefined, false, undefined, this),
+      menu && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(ColumnMenu, {
+        col: menu.col,
+        x: menu.x,
+        y: menu.y,
+        sortDir: sort?.column === menu.col ? sort.dir : null,
+        filterText: filters?.[menu.col] ?? "",
+        filterDraft,
+        setFilterDraft,
+        onSort: (dir) => {
+          setMenu(null);
+          onSortChange?.(menu.col, dir);
+        },
+        onFilter: (text) => {
+          setMenu(null);
+          setFilterDraft(null);
+          onFilterChange?.(menu.col, text);
+        },
+        onAutofit: () => {
+          const c = menu.col;
+          setMenu(null);
+          autofit(c);
+        },
+        onDelete: onDeleteColumn ? () => {
+          setMenu(null);
+          onDeleteColumn(menu.col);
+        } : undefined,
+        onClose: () => {
+          setMenu(null);
+          setFilterDraft(null);
+        }
+      }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
         style: {
           flex: "0 0 auto",
@@ -17866,13 +18014,150 @@ function TableView({
               " rows"
             ]
           }, undefined, true, undefined, this),
+          barLeft,
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
             style: { flex: 1 }
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Pagination, {
             page,
             pageCount,
-            onPageChange
+            onPageChange,
+            markedPages
+          }, undefined, false, undefined, this),
+          barRight
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+function ColumnMenu({
+  col,
+  x,
+  y,
+  sortDir,
+  filterText,
+  filterDraft,
+  setFilterDraft,
+  onSort,
+  onFilter,
+  onAutofit,
+  onDelete,
+  onClose
+}) {
+  const t = useTheme();
+  const item = {
+    display: "block",
+    width: "100%",
+    padding: `${space.px6}px ${space.px12}px`,
+    border: "none",
+    background: "transparent",
+    color: t.ink,
+    textAlign: "left",
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 400,
+    cursor: "pointer",
+    whiteSpace: "nowrap"
+  };
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+        onClick: (e) => {
+          e.stopPropagation();
+          onClose();
+        },
+        style: { position: "fixed", inset: 0, zIndex: 30, cursor: "default" }
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+        "data-tv-colmenu": col,
+        onClick: (e) => e.stopPropagation(),
+        style: {
+          position: "fixed",
+          top: y,
+          left: x,
+          transform: "translateX(-100%)",
+          zIndex: 31,
+          minWidth: 160,
+          padding: `${space.px6}px 0`,
+          background: t.surface,
+          border: `1px solid ${t.line2}`,
+          borderRadius: space.radius,
+          boxShadow: t.shadowLg,
+          fontWeight: 400,
+          textAlign: "left",
+          whiteSpace: "nowrap",
+          cursor: "default"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            type: "button",
+            "data-tv-menu-item": "sort-asc",
+            style: item,
+            onClick: () => onSort(sortDir === "asc" ? null : "asc"),
+            children: [
+              sortDir === "asc" ? "✓ " : "",
+              "Sort ascending"
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            type: "button",
+            "data-tv-menu-item": "sort-desc",
+            style: item,
+            onClick: () => onSort(sortDir === "desc" ? null : "desc"),
+            children: [
+              sortDir === "desc" ? "✓ " : "",
+              "Sort descending"
+            ]
+          }, undefined, true, undefined, this),
+          filterDraft === null ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            type: "button",
+            "data-tv-menu-item": "filter",
+            style: item,
+            onClick: () => setFilterDraft(filterText),
+            children: [
+              "Filter…",
+              filterText ? ` (${filterText})` : ""
+            ]
+          }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { display: "flex", gap: space.px6, padding: `2px ${space.px12}px` },
+            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("input", {
+              autoFocus: true,
+              "data-tv-filter-input": "",
+              value: filterDraft,
+              placeholder: `${col} contains…`,
+              onChange: (e) => setFilterDraft(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter")
+                  onFilter(filterDraft);
+                else if (e.key === "Escape")
+                  onClose();
+              },
+              style: {
+                width: 130,
+                padding: "3px 6px",
+                border: `1px solid ${t.line2}`,
+                borderRadius: space.radiusSm,
+                background: t.surface,
+                color: t.ink,
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                outline: "none"
+              }
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            type: "button",
+            "data-tv-menu-item": "autofit",
+            style: item,
+            onClick: onAutofit,
+            children: "Autofit width"
+          }, undefined, false, undefined, this),
+          onDelete && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            type: "button",
+            "data-tv-menu-item": "delete",
+            style: { ...item, color: t.err },
+            onClick: onDelete,
+            children: "Delete column"
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this)
@@ -17891,6 +18176,13 @@ function sampleRows() {
     city: CITIES[i % CITIES.length]
   }));
 }
+function compare(a, b) {
+  const an = Number(a);
+  const bn = Number(b);
+  if (Number.isFinite(an) && Number.isFinite(bn))
+    return an - bn;
+  return String(a ?? "") < String(b ?? "") ? -1 : String(a ?? "") > String(b ?? "") ? 1 : 0;
+}
 function Demo() {
   const t = useTheme();
   const [rows, setRows] = import_react6.useState(sampleRows);
@@ -17898,10 +18190,28 @@ function Demo() {
   const [page, setPage] = import_react6.useState(1);
   const [selection, setSelection] = import_react6.useState(null);
   const [streaming, setStreaming] = import_react6.useState(false);
+  const [sort, setSort] = import_react6.useState(null);
+  const [filters, setFilters] = import_react6.useState({});
+  const [changed, setChanged] = import_react6.useState({});
   const [log, setLog] = import_react6.useState(["ready"]);
   const report = (event) => setLog((l) => [...l, event]);
-  const pageCount = pageCountFor(rows.length, PAGE_SIZE);
+  let order = rows.map((_, i) => i);
+  for (const [col, text] of Object.entries(filters)) {
+    const needle = text.toLowerCase();
+    order = order.filter((i) => String(rows[i]?.[col] ?? "").toLowerCase().includes(needle));
+  }
+  if (sort) {
+    const sign = sort.dir === "desc" ? -1 : 1;
+    order = order.slice().sort((a, b) => sign * compare(rows[a]?.[sort.column], rows[b]?.[sort.column]));
+  }
+  const viewRows = order.map((i) => rows[i]);
+  const pageCount = pageCountFor(viewRows.length, PAGE_SIZE);
   const current = clampPage(page, pageCount);
+  const pageOrder = pageSlice(order, current, PAGE_SIZE);
+  const statusFor = (i) => {
+    const idn = Number(rows[i]?.ID);
+    return idn === 7 ? "failed" : idn > 90 ? "pending" : undefined;
+  };
   return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
     style: { height: "100vh", display: "flex", flexDirection: "column" },
     children: [
@@ -17931,9 +18241,9 @@ function Demo() {
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(TableView, {
         columns,
-        rows: pageSlice(rows, current, PAGE_SIZE),
+        rows: pageSlice(viewRows, current, PAGE_SIZE),
         pageStart: (current - 1) * PAGE_SIZE,
-        totalRows: rows.length,
+        totalRows: viewRows.length,
         page: current,
         pageCount,
         onPageChange: (p) => {
@@ -17946,14 +18256,43 @@ function Demo() {
           report(`select ${row}:${column}`);
         },
         onEditCell: (row, column, value) => {
-          setRows((all) => all.map((r, i) => i === row ? { ...r, [column]: value } : r));
+          const src = order[row];
+          setChanged((c) => ({ ...c, [`${row}:${column}`]: rows[src]?.[column] ?? null }));
+          setRows((all) => all.map((r, i) => i === src ? { ...r, [column]: value } : r));
           report(`edit ${row}:${column}=${value}`);
         },
-        onReorderColumns: (order) => {
-          setColumns(order);
-          report(`reorder ${order.join(",")}`);
+        onReorderColumns: (colOrder) => {
+          setColumns(colOrder);
+          report(`reorder ${colOrder.join(",")}`);
         },
-        streaming
+        streaming,
+        rowNumbers: pageOrder.map((i) => i + 1),
+        rowNumberHint: "Original row numbers",
+        rowStatus: pageOrder.map(statusFor),
+        changedCells: changed,
+        sort,
+        filters,
+        onSortChange: (column, dir) => {
+          setSort(dir ? { column, dir } : null);
+          report(`sort ${column} ${dir ?? "off"}`);
+        },
+        onFilterChange: (column, text) => {
+          setFilters((f) => {
+            const next = { ...f };
+            if (text.trim() === "")
+              delete next[column];
+            else
+              next[column] = text;
+            return next;
+          });
+          setPage(1);
+          report(`filter ${column}=${text}`);
+        },
+        onDeleteColumn: (column) => {
+          setColumns((cols) => cols.filter((c) => c !== column));
+          report(`delete ${column}`);
+        },
+        markedPages: [10]
       }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("pre", {
         id: "out",

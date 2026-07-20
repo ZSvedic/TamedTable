@@ -17199,7 +17199,16 @@ function resolveConfig(env, stored) {
   if (providerFor(cellModel) !== provider) {
     cellModel = defaultCellModel(provider);
   }
-  return { provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel };
+  return {
+    provider,
+    anthropicKey,
+    geminiKey,
+    openaiKey,
+    openrouterKey,
+    model,
+    cellModel,
+    alwaysRunAll: stored.alwaysRunAll ?? false
+  };
 }
 
 // packages/model-config/ModelChooser.tsx
