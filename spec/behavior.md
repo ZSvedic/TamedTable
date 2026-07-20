@@ -1262,8 +1262,8 @@ behavior unchanged.
 
 ### Worked example
 
-1. Open a 25,000-row file. The **large-file dialog** asks once — work on a
-   **Shuffled sample** (the default) or in **Original order**.
+1. Open a 25,000-row file. The **large-file dialog** asks once — one click
+   on **Load shuffled** (the primary default) or **Load in original order**.
 2. Type *"add a Category column"*. The visible page fills within one
    concurrency wave; the readout says **20 of 25,000 rows evaluated** and
    the pager marks every other page as pending.
@@ -1294,29 +1294,33 @@ reached it), or **failed** (its cell call errored — the row keeps the error).
 Every indicator derives from row state, never from stored pages — the page
 size changes with the provider, row state doesn't. Undo lowers a row's mark;
 redo restores it from the cell cache with no new AI calls; cancelling a run
-keeps whatever finished. A failed row is retried individually.
+keeps whatever finished. Failed rows are retried together from the readout's
+**Retry N failed rows** action.
 
 ### The large-file dialog and the shuffled view
 
 Loading a file bigger than one page raises the large-file dialog: one
-sentence ("Work page by page; saving keeps every row."), two radios —
-**Shuffled sample**, the default, or **Original order** — and Open. A file
-that fits one page never sees the dialog and behaves exactly as today.
+sentence ("Work page by page; saving preserves original row order.") and two
+one-click choices — **Load shuffled**, the primary default, and **Load in
+original order**. A file that fits one page never sees the dialog and
+behaves exactly as today.
 
-Shuffle is a **view**: a seeded permutation over the source rows. The `#`
-column keeps original row numbers, a **shuffle badge** next to the file
-readout names the mode, and saving always writes the original order. The
+Shuffle is a **view**: a seeded permutation over the source rows. The grid's
+**Row #** column — the usual first, frozen row-number column, shown shuffled
+or not — keeps the original row numbers, and its header carries a hover hint
+while the view is shuffled ("Original row numbers — the view is shuffled;
+saving keeps this order."). Saving always writes the original order. The
 seed derives from the file, so reopening the same file reproduces the same
 shuffle.
 
 ### Progress indicators
 
 - The pagination bar gains a readout on its left — **N of M rows
-  evaluated** — visible whenever an AI step has pending rows.
+  evaluated** — visible whenever an AI step has pending rows, followed by a
+  **Retry N failed rows** action when any row has failed.
 - Pager buttons for pages with pending rows carry a small dot mark.
-- Pending rows are subtly marked (a muted wash on the row-number cell);
-  failed rows are distinctly marked (a red row-number cell) and carry a
-  per-row **retry** control.
+- Pending rows are subtly marked (a muted wash on the Row # cell); failed
+  rows are distinctly marked (a red Row # cell).
 - On the phone, the app-bar pager carries the same dot marks and the
   streaming banner area shows the readout.
 
@@ -1333,10 +1337,14 @@ timed from the observed rows-per-second so far — previewing a page is what
 makes the estimate possible.
 
 Confirming swaps the dialog body for a progress bar with a live `rows done /
-total` count and a **Cancel** button. Finished rows are always kept: cancel
-stops the queue, and the next run touches only pending and failed rows. When
-the run was started from **Save**, the save itself happens when the run
-completes; with nothing pending, Save skips straight to writing the file.
+total` count, a **Cancel** button, and a **Show log** expander — collapsed
+by default, the same bounded event feed the chat's request detail shows
+(each step, then each streamed cell as `column · row n: before → after`,
+newest pinned, newest 500 lines kept) — so the user can sample transformed
+data while the run streams. Finished rows are always kept: cancel stops the
+queue, and the next run touches only pending and failed rows. When the run
+was started from **Save**, the save itself happens when the run completes;
+with nothing pending, Save skips straight to writing the file.
 
 ### The dependency rule
 
@@ -1357,16 +1365,22 @@ like every other setting.
 
 ### Grid upgrades
 
-The table grid grows four behaviors, specified in
-[spec/packages/table-view/behavior.md](packages/table-view/behavior.md):
-cells changed by the last step highlight and hovering one shows the previous
-value; clicking a header sorts by that column with a direction indicator; a
-filter row under the header narrows the visible rows; and double-clicking a
-column separator autofits the column to its content. Header sort and the
-filter row are **view state**, like paging and shuffle — they never touch
-the spec and leave no history entry — but on an AI-made column they trigger
-the dependency rule first. A chat request ("sort by revenue") stays a spec
-step, exactly as today.
+The table grid grows these behaviors, specified in
+[spec/packages/table-view/behavior.md](packages/table-view/behavior.md).
+Cells changed by the last step highlight, and hovering one shows the
+previous value. Every column header ends in a **⋮ column menu** — Sort
+ascending, Sort descending, Filter…, Autofit width, and Delete column — with
+the state shown in the header itself: a ▲/▼ sort indicator and a funnel
+mark when a filter is active. Sort and filter live behind the menu rather
+than a bare header click because on an AI-made column they can trigger a
+table-wide run (the dependency rule) — the menu makes them a deliberate act,
+and it keeps the header clean and tappable on the phone. They stay **view
+state**, like paging and shuffle: no spec change, no history entry. Delete
+column is the exception — it is a spec step, the same patch asking in chat
+would produce. Column separators are visible; hovering one shows the resize
+cursor and double-clicking it (or the menu's Autofit width) fits the column
+to its content on the current page. A chat request ("sort by revenue")
+stays a spec step, exactly as today.
 
 The reviewed phase-2 mockup of every element above is
 [spec/mockups/lazy-ai.html](mockups/lazy-ai.html).

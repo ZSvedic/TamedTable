@@ -78,25 +78,32 @@ the host owns every piece of state, the grid renders and reports:
 - **Changed cells** — the host passes per-cell changed flags with previous
   values; a changed cell tints, and hovering it shows a small
   `was: <previous>` tooltip.
-- **Header sort** — clicking a header (not its grip or resize handle) cycles
-  ascending → descending → off and shows a ▲/▼ indicator;
-  `onSortChange(column, dir | null)` reports it. View state: the host sorts
-  the rows it passes in, no spec patch is produced.
-- **Filter row** — an optional row of per-column inputs under the header;
-  `onFilterChange(column, text)` reports each edit and the host narrows the
-  rows (contains-match). Same view-state rule.
-- **Autofit** — double-clicking a resize handle sizes that column to its
-  widest rendered cell (plus padding), same fixed-layout snapshot as a drag
-  resize.
+- **Column menu** — every data header ends in a **⋮** button (revealed on
+  hover, always tappable on touch) opening a per-column menu: **Sort
+  ascending**, **Sort descending** (picking the active direction clears it),
+  **Filter…** (a small input popover, contains-match), **Autofit width**,
+  and **Delete column**. Sort and filter report through
+  `onSortChange(column, dir | null)` / `onFilterChange(column, text)` and
+  are view state — the host reorders or narrows the rows it passes in.
+  Delete reports `onDeleteColumn(column)`; what it means is the host's call
+  (in the app it commits a spec step). The header itself shows the state:
+  a ▲/▼ sort indicator and a funnel mark when a filter is active.
+- **Autofit** — the menu entry, or double-clicking a visible column
+  separator (the resize handle already shows the `col-resize` cursor),
+  sizes that column to its widest cell on the current page (plus padding),
+  same fixed-layout snapshot as a drag resize.
 - **Row status marks** — rows carry an optional status: `pending` washes the
-  row-number cell muted, `failed` marks it red and adds a retry control
-  wired to `onRetryRow(absoluteRow)`.
+  row-number cell muted, `failed` marks it red. Retry is a host affordance
+  (the app's pagination-bar readout), not a grid control.
+- The row-number column's header reads **Row #** and accepts a host-supplied
+  hover hint (the app explains original numbering while the view is
+  shuffled).
 
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for
 tests: `data-tv-header`, `data-tv-resize`, `data-tv-cell="<absRow>:<col>"`,
-`data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-sort`,
-`data-tv-filter="<col>"`, `data-tv-retry="<absRow>"`.
+`data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-menu="<col>"`,
+`data-tv-sort`, `data-tv-filtered="<col>"`.
 
 ## Pagination component
 

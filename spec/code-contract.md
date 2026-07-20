@@ -965,7 +965,6 @@ interface RowState {
 // invariant is ≤ one page of AI calls in flight at a time.
 rowStates(): readonly RowState[];
 evaluateRows(indices: number[], signal?: AbortSignal): Promise<void>;
-retryRow(index: number): Promise<void>;
 
 // Estimates — extrapolated from the rows already evaluated.
 interface RunEstimate {
@@ -981,14 +980,16 @@ interface RunEstimate {
 // WebController additions.
 runEstimate(): RunEstimate | null;      // null when nothing is pending
 runOnAllRows(): Promise<void>;          // estimate-gated (> 1 page pending);
-                                        // progress + cancel; finished rows kept
-retryRow(absRow: number): Promise<void>;
-evaluatedReadout(): { done: number; total: number } | null;
+                                        // progress + log + cancel; finished rows kept
+retryFailedRows(): Promise<void>;       // the readout's "Retry N failed rows"
+evaluatedReadout(): { done: number; total: number; failed: number } | null;
 pendingPages(): number[];               // 1-based pages carrying pending rows
 
-// View state — never in the spec, never a history entry. Sort and filter on
-// an AI-made column call the dependency-rule confirmation first; declining
-// leaves the view unchanged.
+// View state — never in the spec, never a history entry. Sort and filter
+// (both reached through the grid's per-column ⋮ menu) on an AI-made column
+// call the dependency-rule confirmation first; declining leaves the view
+// unchanged. Delete column, also in the menu, is NOT view state: it commits
+// the same spec patch a chat request would.
 interface TableViewState {
   shuffleSeed: number | null;                        // file-derived; null = original order
   sort: { column: string; dir: 'asc' | 'desc' } | null;
