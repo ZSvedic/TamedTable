@@ -223,6 +223,7 @@ export function TableView({ controller }: { controller: WebController }): ReactN
       onFilterChange={(column, text) => void controller.setViewFilter(column, text)}
       onDeleteColumn={(column) => void controller.deleteColumn(column)}
       markedPages={controller.pendingPages()}
+      onCopyCell={() => controller.pushToast('info', 'Cell copied.')}
       barLeft={<EvaluatedReadout controller={controller} t={t} />}
       barRight={
         readout && readout.done + readout.failed < readout.total ? (

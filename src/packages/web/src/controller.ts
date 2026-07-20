@@ -150,6 +150,8 @@ export class WebController implements ControllerHost {
   largeFileDialog: { name: string; rowCount: number } | null = null;
   /** The run-on-all estimate/confirmation dialog, or null. */
   runAllDialog: RunAllDialogState | null = null;
+  /** The post-run save confirmation — a save picker needs a fresh click. */
+  saveReadyDialog = false;
 
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
@@ -383,9 +385,14 @@ export class WebController implements ControllerHost {
   runOnAllRows(): Promise<boolean> { return this.lazy.runOnAllRows('run-all'); }
   /** The readout's "Retry N failed rows". */
   retryFailedRows(): Promise<void> { return this.lazy.retryFailedRows(); }
-  /** Confirm / decline the run-all estimate dialog. */
+  /** Confirm / decline the run-all estimate dialog; `applyEvaluatedOnly` is
+   *  the column-menu gates' middle choice. */
   confirmRunAll(): void { this.lazy.confirmRunAll(); }
+  applyEvaluatedOnly(): void { this.lazy.applyEvaluatedOnly(); }
   declineRunAll(): void { this.lazy.declineRunAll(); }
+  /** The post-run save confirmation (a save picker needs a fresh click). */
+  confirmSaveReady(): Promise<void> { return this.files.confirmSaveReady(); }
+  dismissSaveReady(): void { this.files.dismissSaveReady(); }
   /** Cancel the in-flight run-all — finished rows are kept. */
   cancelRunAll(): void { this.lazy.cancelRun(); }
   /** Await any queued lazy evaluation (tests). */
@@ -403,15 +410,17 @@ export class WebController implements ControllerHost {
   /** Per-column contains-match filters. */
   viewFilters(): Record<string, string> { return { ...this.view.filters }; }
   /** Sort from the column menu. On an AI-made column with pending rows the
-   *  dependency rule shows the run-all confirmation first; declining leaves
-   *  the view unchanged. */
+   *  dependency rule shows the run-all confirmation first — with a middle
+   *  "Sort evaluated rows" choice (missing values sink to the end);
+   *  declining leaves the view unchanged. */
   async setViewSort(column: string, dir: 'asc' | 'desc' | null): Promise<void> {
-    if (dir !== null && !(await this.lazy.gateViewRead(column, 'sort'))) return;
+    if (dir !== null && (await this.lazy.gateViewApply(column, 'sort')) === 'skip') return;
     this.view.setSort(column, dir);
   }
-  /** Filter from the column menu — same dependency gate as sort. */
+  /** Filter from the column menu — same gate as sort ("Filter evaluated
+   *  rows" hides unevaluated rows from the narrowed view). */
   async setViewFilter(column: string, text: string): Promise<void> {
-    if (text.trim() !== '' && !(await this.lazy.gateViewRead(column, 'filter'))) return;
+    if (text.trim() !== '' && (await this.lazy.gateViewApply(column, 'filter')) === 'skip') return;
     this.view.setFilter(column, text);
   }
   /** Delete a column — a spec step, exactly what the chat patch would do. */

@@ -194,3 +194,17 @@ Then('the first row number is not {int}', async function (this: object, n: numbe
   const first = await page(this).$eval('tbody tr td', (el) => el.textContent?.trim());
   assert.notEqual(first, String(n));
 });
+
+When('the user presses the copy shortcut', async function (this: object) {
+  await page(this).keyboard.press('ControlOrMeta+c');
+});
+
+Then('cell {string} holds a link to {string}', async function (this: object, cell: string, href: string) {
+  const got = await page(this).getAttribute(`[data-tv-cell="${cell}"] a[data-tv-link]`, 'href');
+  assert.equal(got, href);
+});
+
+Then('cell {string} holds no link', async function (this: object, cell: string) {
+  const link = await page(this).$(`[data-tv-cell="${cell}"] a`);
+  assert.equal(link, null);
+});

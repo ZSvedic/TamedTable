@@ -844,3 +844,95 @@ When('user opens the run-on-all estimate dialog', function (this: TamedTableWorl
   pending.catch(() => {});
   ctxOf(this).pending = pending;
 });
+
+// ── Column-menu gates: the evaluated-rows preview (#LazyExec) ────────────────
+
+When(
+  'user sorts column {string} descending from the column menu without waiting',
+  function (this: TamedTableWorld, column: string) {
+    const pending = controller(this).setViewSort(column, 'desc');
+    pending.catch(() => {});
+    ctxOf(this).pending = pending;
+  },
+);
+
+When('user chooses to apply to evaluated rows only', async function (this: TamedTableWorld) {
+  controller(this).applyEvaluatedOnly();
+  await ctxOf(this).pending;
+});
+
+Then(
+  'the first page is sorted by {string} descending with no blanks',
+  function (this: TamedTableWorld, column: string) {
+    const values = controller(this).pageRows().map((r) => String(r[column] ?? ''));
+    assert.ok(values.length > 0);
+    for (const v of values) assert.ok(v !== '', 'expected only evaluated rows on the first page');
+    for (let i = 1; i < values.length; i++) {
+      assert.ok(values[i - 1]! >= values[i]!, `row ${i} breaks the descending order`);
+    }
+  },
+);
+
+// ── Honest progress + streaming pages (#LazyExec) ────────────────────────────
+
+When(
+  'user opens page {int} and sees the streaming banner while it evaluates',
+  async function (this: TamedTableWorld, page: number) {
+    const c = controller(this);
+    let sawStreaming = false;
+    const unsubscribe = c.subscribe(() => {
+      if (c.streaming) sawStreaming = true;
+    });
+    try {
+      await c.goToPage(page);
+    } finally {
+      unsubscribe();
+    }
+    assert.ok(sawStreaming, 'expected the streaming banner while the page evaluated');
+  },
+);
+
+When('user confirms the run watching its progress', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  const peak = { done: 0, total: 0 };
+  const unsubscribe = c.subscribe(() => {
+    if (c.runProgress) {
+      peak.done = Math.max(peak.done, c.runProgress.rowsDone);
+      peak.total = Math.max(peak.total, c.runProgress.rowsTotal);
+    }
+  });
+  try {
+    c.confirmRunAll();
+    await ctxOf(this).pending;
+  } finally {
+    unsubscribe();
+  }
+  ctxOf(this).runPeak = peak;
+});
+
+Then(
+  'the run-all progress peaked at {int} of {int} rows',
+  function (this: TamedTableWorld, done: number, total: number) {
+    const peak = ctxOf(this).runPeak;
+    assert.ok(peak, 'no run was watched');
+    assert.equal(peak.total, total);
+    assert.equal(peak.done, done, `progress peaked at ${peak.done}, expected ${done}`);
+  },
+);
+
+// ── The post-run save confirmation (#LazyExec) ───────────────────────────────
+
+Then('the save-ready dialog is shown', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  await waitFor(() => c.saveReadyDialog);
+});
+
+Then('no save dialog was opened yet', function (this: TamedTableWorld) {
+  assert.ok(!ctxOf(this).filePort?.saveCalled, 'the save picker must wait for a fresh click');
+});
+
+When('user clicks Save file in the save-ready dialog', function (this: TamedTableWorld) {
+  const pending = controller(this).confirmSaveReady();
+  pending.catch(() => {});
+  ctxOf(this).pending = pending;
+});

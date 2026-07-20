@@ -20,6 +20,9 @@ function sampleRows(): TableRow[] {
     name: `Person ${i + 1}`,
     age: 20 + ((i * 7) % 50),
     city: CITIES[i % CITIES.length],
+    // Every third row holds a real URL (renders as a link); the rest hold
+    // dotted-but-not-URL text that must stay plain.
+    site: i % 3 === 0 ? `https://example.org/p/${i + 1}` : 'justify.me',
   }));
 }
 
@@ -34,7 +37,7 @@ function compare(a: unknown, b: unknown): number {
 function Demo(): ReactNode {
   const t = useTheme();
   const [rows, setRows] = useState<TableRow[]>(sampleRows);
-  const [columns, setColumns] = useState(['ID', 'name', 'age', 'city']);
+  const [columns, setColumns] = useState(['ID', 'name', 'age', 'city', 'site']);
   const [page, setPage] = useState(1);
   const [selection, setSelection] = useState<CellSelection | null>(null);
   const [streaming, setStreaming] = useState(false);
@@ -141,6 +144,7 @@ function Demo(): ReactNode {
           report(`delete ${column}`);
         }}
         markedPages={[10]}
+        onCopyCell={(row, column, text) => report(`copy ${row}:${column}=${text}`)}
       />
 
       <pre

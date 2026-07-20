@@ -43,14 +43,18 @@ function EmptyChat(): ReactNode {
 export function ChatSidebar({
   controller,
   fill = false,
+  width,
 }: {
   controller: WebController;
   fill?: boolean;
+  /** Sidebar width — the desktop shell's resize handle feeds this. */
+  width?: number;
 }): ReactNode {
   useController(controller);
   return (
     <ChatPanel
       fill={fill}
+      width={width}
       inputId="tutorial-chat-input"
       messages={controller.messages}
       streaming={controller.streaming}

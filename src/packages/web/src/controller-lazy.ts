@@ -43,6 +43,10 @@ export interface RowState {
 /** Why the run-all confirmation is showing — picks the dialog's copy. */
 export type RunAllReason = 'run-all' | 'save' | 'dependency' | 'sort' | 'filter';
 
+/** How the dialog resolved: run everything, apply over the evaluated rows
+ *  only (the column-menu gates' middle choice), or leave things unchanged. */
+export type RunAllChoice = 'run' | 'partial' | 'skip';
+
 export interface RunAllDialogState {
   estimate: RunEstimate;
   reason: RunAllReason;
@@ -83,7 +87,7 @@ export class LazyManager {
   // dependency-rule run-all, read by the request's cellFilter.
   private allowAllOnce = false;
 
-  private dialogResolve: ((ok: boolean) => void) | null = null;
+  private dialogResolve: ((choice: RunAllChoice) => void) | null = null;
 
   private scanCache: Scan | null = null;
 
@@ -201,8 +205,10 @@ export class LazyManager {
 
   /** Fold one call-making evaluation window into the throughput observation
    *  (the estimate's rows-per-second). The engine reports the request
-   *  preview's window; evaluation passes report their own. */
-  recordTiming(elapsedMs: number, rows: number): void {
+   *  preview's window; evaluation passes report their own. `chunks` is the
+   *  raw chunk count — divided by the spec's per-row chunk factor here. */
+  recordTiming(elapsedMs: number, chunks: number): void {
+    const rows = chunks / this.chunkFactor();
     if (rows <= 0 || elapsedMs <= 0) return;
     this.callMs += elapsedMs;
     this.callRows += rows;
@@ -270,12 +276,14 @@ export class LazyManager {
     if (this.host.config.alwaysRunAll) {
       const added = { columns: [], transformations: next.transformations.slice(prev.transformations.length) };
       const total = this.host.engine.rawRows().length;
-      if (specHasLlmCell(added) && total > this.host.pageSize) return this.askRunAll('run-all', total);
+      if (specHasLlmCell(added) && total > this.host.pageSize) {
+        return (await this.askRunAll('run-all', total)) === 'run';
+      }
       return true;
     }
     if (this.pendingCount() + this.failedCount() === 0) return true;
     if (!newStepsReadAiColumns(prev, next)) return true;
-    const ok = await this.askRunAll('dependency');
+    const ok = (await this.askRunAll('dependency')) === 'run';
     if (ok) this.allowAllOnce = true;
     return ok;
   }
@@ -309,9 +317,24 @@ export class LazyManager {
     await this.evaluatePass(target);
   }
 
+  /** Chunks emitted per fully-evaluated row: one per {llm}-mutate target
+   *  column across the spec. Divides raw chunk counts into row counts, so a
+   *  two-AI-column spec never reports "2,282 / 1,382 rows done". */
+  private chunkFactor(): number {
+    let factor = 0;
+    for (const t of this.host.engine.displaySpec().transformations as Transformation[]) {
+      if (t.kind === 'mutate' && typeof t.value === 'object' && t.value !== null && 'llm' in t.value) {
+        factor += Array.isArray(t.columns) ? t.columns.length : 1;
+      }
+    }
+    return Math.max(1, factor);
+  }
+
   /** One evaluation pass: replay the current spec fresh with the cell filter
    *  set to `target` (cached cells refill everywhere for free), capturing
-   *  per-cell failures. Re-marks failures the pass did not retry. */
+   *  per-cell failures. Re-marks failures the pass did not retry. While it
+   *  makes calls the shell streams: the banner shows and each landed chunk
+   *  paints onto the display overlay, so an opening page fills in live. */
   private async evaluatePass(
     target: Set<number>,
     opts: { signal?: AbortSignal; feed?: RunProgress } = {},
@@ -321,11 +344,19 @@ export class LazyManager {
     const failures: Array<{ rowIndex: number; column: string; error: string }> = [];
     const started = Date.now();
     const callsBefore = this.cellCalls;
+    const factor = this.chunkFactor();
     let chunks = 0;
+    const showStream = target.size > 0 && !this.host.streaming;
+    if (showStream) {
+      this.host.streaming = true;
+      this.host.notify();
+    }
     const onChunk = (u: ChunkUpdate): void => {
       chunks++;
+      this.host.engine.paintChunk(u);
       if (opts.feed) {
-        opts.feed.rowsDone = Math.max(opts.feed.rowsDone, chunks);
+        // Rows, not cells: a spec with two AI columns lands two chunks per row.
+        opts.feed.rowsDone = Math.min(opts.feed.rowsTotal, Math.floor(chunks / factor));
         this.host.engine.appendRunLog(opts.feed, u);
         this.host.notify();
       }
@@ -342,6 +373,8 @@ export class LazyManager {
       for (const f of failures) this.failedInfo.set(f.rowIndex, { column: f.column, error: f.error });
       this.remarkFailures();
       if (this.cellCalls > callsBefore) this.recordTiming(Date.now() - started, chunks);
+      if (showStream) this.host.streaming = false;
+      this.host.engine.clearOverlay();
       this.invalidateScan();
       this.host.engine.invalidateDisplay();
       this.host.notify();
@@ -373,10 +406,36 @@ export class LazyManager {
     const remaining = pending.size + failed.size;
     if (remaining === 0) return true;
     if (remaining > this.host.pageSize) {
-      const ok = await this.askRunAll(reason);
-      if (!ok) return false;
+      const choice = await this.askRunAll(reason);
+      if (choice !== 'run') return false;
     }
     return this.runAll();
+  }
+
+  /** The column-menu gate for sort/filter on an AI-made column: 'proceed'
+   *  (nothing pending, not an AI column, or everything just evaluated),
+   *  'partial' (apply over the evaluated rows only — missing values sink or
+   *  hide), or 'skip' (leave the view unchanged). */
+  async gateViewApply(column: string, reason: RunAllReason): Promise<'proceed' | 'partial' | 'skip'> {
+    await this.settle();
+    const { pending, failed } = this.scan();
+    const remaining = pending.size + failed.size;
+    if (remaining === 0) return 'proceed';
+    const aiCols = aiMadeColumns(this.host.engine.displaySpec());
+    if (!aiCols.has(column)) return 'proceed';
+    // One page or less just runs, without ceremony — same as run-all.
+    if (remaining <= this.host.pageSize) {
+      await this.runAll();
+      return 'proceed';
+    }
+    const choice = await this.askRunAll(reason);
+    if (choice === 'run') {
+      await this.runAll();
+      // A cancelled run still applied everything that finished — the view
+      // then behaves like the evaluated-only choice.
+      return 'proceed';
+    }
+    return choice === 'partial' ? 'partial' : 'skip';
   }
 
   /** The readout's "Retry N failed rows" — re-calls exactly the failed rows. */
@@ -400,15 +459,6 @@ export class LazyManager {
     return this.runAbort !== null;
   }
 
-  /** The dependency gate for view reads (column-menu sort/filter): reading
-   *  an AI-made column across all rows needs every row evaluated first.
-   *  Returns true when the read may proceed. */
-  async gateViewRead(column: string, reason: RunAllReason): Promise<boolean> {
-    if (this.pendingCount() + this.failedCount() === 0) return true;
-    const aiCols = aiMadeColumns(this.host.engine.displaySpec());
-    if (!aiCols.has(column)) return true;
-    return this.runOnAllRows(reason);
-  }
 
   private async runAll(): Promise<boolean> {
     const { pending, failed } = this.scan();
@@ -446,27 +496,32 @@ export class LazyManager {
 
   // ── The estimate / run-all confirmation dialog ───────────────────────────
 
-  private askRunAll(reason: RunAllReason, rowsOverride?: number): Promise<boolean> {
+  private askRunAll(reason: RunAllReason, rowsOverride?: number): Promise<RunAllChoice> {
     const estimate = this.runEstimate()
       ?? { rowsRemaining: rowsOverride ?? 0, estTokens: 0, estUsd: 0, estSeconds: 0 };
     this.host.runAllDialog = { estimate, reason };
     this.host.notify();
-    return new Promise<boolean>((resolve) => {
-      this.dialogResolve = (ok: boolean) => {
+    return new Promise<RunAllChoice>((resolve) => {
+      this.dialogResolve = (choice: RunAllChoice) => {
         this.host.runAllDialog = null;
         this.dialogResolve = null;
         this.host.notify();
-        resolve(ok);
+        resolve(choice);
       };
     });
   }
 
   confirmRunAll(): void {
-    this.dialogResolve?.(true);
+    this.dialogResolve?.('run');
+  }
+
+  /** The column-menu gates' middle choice: apply over evaluated rows only. */
+  applyEvaluatedOnly(): void {
+    this.dialogResolve?.('partial');
   }
 
   declineRunAll(): void {
-    this.dialogResolve?.(false);
+    this.dialogResolve?.('skip');
   }
 
   /** Reset all lazy state on a fresh load. */

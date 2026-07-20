@@ -36,7 +36,7 @@ export function formatUsd(usd: number): string {
   return usd > 0 ? '<$0.001' : '$0.00';
 }
 
-const CONFIRM_LABELS: Record<RunAllReason, { title: string; note: string; confirm: string; decline: string }> = {
+const CONFIRM_LABELS: Record<RunAllReason, { title: string; note: string; confirm: string; decline: string; partial?: string }> = {
   'run-all': {
     title: 'Run on all rows?',
     note: '',
@@ -57,15 +57,17 @@ const CONFIRM_LABELS: Record<RunAllReason, { title: string; note: string; confir
   },
   sort: {
     title: 'Run on all rows?',
-    note: 'Sorting by an AI column needs every row evaluated first.',
+    note: 'Sorting by an AI column needs every row evaluated first — or sort what is already computed, free (unevaluated rows sink to the end).',
     confirm: 'Run all & sort',
     decline: "Don't sort",
+    partial: 'Sort evaluated rows',
   },
   filter: {
     title: 'Run on all rows?',
-    note: 'Filtering by an AI column needs every row evaluated first.',
+    note: 'Filtering by an AI column needs every row evaluated first — or filter what is already computed, free (unevaluated rows stay hidden).',
     confirm: 'Run all & filter',
     decline: "Don't filter",
+    partial: 'Filter evaluated rows',
   },
 };
 
@@ -134,6 +136,37 @@ export function LargeFileDialog({ controller }: { controller: WebController }): 
   );
 }
 
+// #LazyExec — the post-run save confirmation. Running rows consumed the
+// original click's user gesture, and browsers refuse a save picker outside
+// one — so the picker opens from this dialog's fresh click instead of
+// throwing "Must be handling a user gesture".
+export function SaveReadyDialog({ controller }: { controller: WebController }): ReactNode {
+  useController(controller);
+  const t = useTheme();
+  const isMobile = useIsMobile();
+  if (!controller.saveReadyDialog) return null;
+  return (
+    <Overlay isMobile={isMobile}>
+      <div data-tt-saveready-dialog="" role="dialog" onClick={(e) => e.stopPropagation()} style={cardStyle(t, isMobile)}>
+        <div style={{ fontFamily: typography.ui, fontSize: typography.size.md, fontWeight: 600, color: t.ink }}>
+          All rows evaluated
+        </div>
+        <div style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2, lineHeight: 1.5 }}>
+          The table is fully evaluated and ready to write.
+        </div>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8 }}>
+          <Button variant="ghost" data-tt-saveready-cancel="" onClick={() => controller.dismissSaveReady()}>
+            Not now
+          </Button>
+          <Button variant="primary" data-tt-saveready-confirm="" onClick={() => void controller.confirmSaveReady()}>
+            Save file…
+          </Button>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+
 export function RunAllDialog({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
@@ -172,6 +205,11 @@ export function RunAllDialog({ controller }: { controller: WebController }): Rea
               <Button variant="ghost" data-tt-runall-decline="" onClick={() => controller.declineRunAll()}>
                 {CONFIRM_LABELS[confirm.reason].decline}
               </Button>
+              {CONFIRM_LABELS[confirm.reason].partial && (
+                <Button variant="chrome" data-tt-runall-partial="" onClick={() => controller.applyEvaluatedOnly()}>
+                  {CONFIRM_LABELS[confirm.reason].partial}
+                </Button>
+              )}
               <Button variant="primary" data-tt-runall-confirm="" onClick={() => controller.confirmRunAll()}>
                 {CONFIRM_LABELS[confirm.reason].confirm}
               </Button>

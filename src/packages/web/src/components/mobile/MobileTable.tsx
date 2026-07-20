@@ -11,6 +11,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import type { Row } from '@tamedtable/core';
+import { urlHref } from '@tamedtable/table-view';
 import type { CellRef, RunProgress } from '../../controller.ts';
 import { APPBAR_OFFSET } from './layout.ts';
 
@@ -274,6 +275,15 @@ export function MobileTable({
                     >
                       {value === null || value === undefined ? (
                         <span style={{ color: t.ink4 }}>{value === null ? 'null' : ''}</span>
+                      ) : urlHref(value) ? (
+                        <a
+                          href={urlHref(value)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'inherit', textDecoration: 'underline', textDecorationColor: t.accent }}
+                        >
+                          {cellText(value)}
+                        </a>
                       ) : (
                         cellText(value)
                       )}

@@ -762,7 +762,10 @@ half-applied spec change reverts.
 
 The browser front-end mirrors the CLI's interaction shape
 — a chat sidebar for natural-language requests and the table view to
-the right of it. Cell editing and column-reorder happen through normal
+the right of it. The boundary between the two is a drag handle: hovering
+it shows the column-resize cursor, dragging it resizes the sidebar
+(clamped to a sensible range), and the width persists like a setting.
+Cell editing and column-reorder happen through normal
 browser gestures but ultimately produce spec patches — the same shape
 the LLM produces — so undo/redo, history, and replay against the source
 all work unchanged. Scrolling and column-resize (dragging the boundary
@@ -1318,6 +1321,9 @@ shuffle.
 - The pagination bar gains a readout on its left — **N of M rows
   evaluated** — visible whenever an AI step has pending rows, followed by a
   **Retry N failed rows** action when any row has failed.
+- Opening a page with lagging rows shows the same **Streaming results…**
+  banner a chat request shows, and the page's cells fill in live as each
+  batch lands — never a silent, frozen page.
 - Pager buttons for pages with pending rows carry a small dot mark.
 - Pending rows are subtly marked (a muted wash on the Row # cell); failed
   rows are distinctly marked (a red Row # cell).
@@ -1344,9 +1350,13 @@ by default, the same bounded event feed the chat's request detail shows
 (each step, then each streamed cell as `column · row n: before → after`,
 newest pinned, newest 500 lines kept) — so the user can sample transformed
 data while the run streams. Finished rows are always kept: cancel stops the
-queue, and the next run touches only pending and failed rows. When the run
-was started from **Save**, the save itself happens when the run completes;
-with nothing pending, Save skips straight to writing the file.
+queue, and the next run touches only pending and failed rows. The progress
+counts **rows**, never cells — a spec with two AI columns still tops out at
+the table's row count. When the run was started from **Save**, a
+**save-ready confirmation** follows the run: browsers only open a save
+picker inside a user gesture, and the run consumed the original click, so
+one more click ("Save file…") writes the file. With nothing pending, Save
+skips straight to writing the file.
 
 ### The dependency rule
 
@@ -1356,6 +1366,12 @@ needs every row evaluated first, so it raises the same run-all confirmation
 before it applies. Declining leaves the step out entirely: not in the spec,
 not in the table, not in history. Chat requests that only add or transform
 other columns never trigger it.
+
+The column menu's sort and filter offer a third, middle choice — **Sort
+evaluated rows** / **Filter evaluated rows**: apply the view over what is
+already computed, free. Sorting sinks unevaluated rows to the end (both
+directions); filtering never matches them. With one page previewed this is
+"sort just this page"; with several, everything evaluated participates.
 
 ### Simple mode
 

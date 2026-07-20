@@ -150,3 +150,54 @@ Feature: Lazy AI execution edge cases
       When user confirms the run
       Then every row has a non-null "Segment"
       And no evaluated-rows readout is shown
+
+  Rule: The column-menu gates offer a free evaluated-rows preview
+
+    @web
+    Scenario: Sorting an AI column can preview just the evaluated rows
+      Given load "paginate-input.csv"
+      When query "add a Segment column: consumer or business"
+      Then the evaluated-rows readout shows "100 of 246 rows evaluated"
+      When user sorts column "Segment" descending from the column menu without waiting
+      Then the run-all confirmation is shown
+      When user chooses to apply to evaluated rows only
+      Then the first page is sorted by "Segment" descending with no blanks
+      And the evaluated-rows readout shows "100 of 246 rows evaluated"
+
+  Rule: Progress is honest and pages stream in
+
+    @web
+    Scenario: Opening a pending page streams its rows in
+      Given load "paginate-input.csv"
+      When query "add a Segment column: consumer or business"
+      When user opens page 2 and sees the streaming banner while it evaluates
+      Then every row on the current page has a non-null "Segment"
+
+    # Two AI columns land two chunks per row — the progress divides, so it
+    # never reports more rows done than the table has.
+    @web
+    Scenario: Run-all progress counts rows, not cells
+      Given load "paginate-input.csv"
+      When query "add a Segment column: consumer or business"
+      And query "add a Tier column: basic or premium, based on the Segment value"
+      When user starts running on all rows
+      Then the estimate dialog shows the rows remaining, estimated tokens, cost, and time
+      When user confirms the run watching its progress
+      Then the run-all progress peaked at 146 of 146 rows
+      And every row has a non-null "Tier"
+
+    # A save that had to run rows first parks behind one more click — the
+    # browser only opens a save picker inside a user gesture, and the run
+    # consumed the original one.
+    @web
+    Scenario: Save with pending rows runs first, then writes on a fresh click
+      Given load "paginate-input.csv"
+      When query "add a Segment column: consumer or business"
+      When user says "Save data"
+      Then the run-all confirmation is shown
+      When user confirms the run
+      Then the save-ready dialog is shown
+      And no save dialog was opened yet
+      When user clicks Save file in the save-ready dialog
+      Then display Save File dialog
+      When user saves as "paginate-input.csv"

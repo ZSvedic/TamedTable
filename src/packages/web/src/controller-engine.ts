@@ -253,6 +253,22 @@ export class EngineManager {
     this.displayCache = null;
   }
 
+  // #LazyExec — lazy evaluation passes stream like a request: each landed
+  // chunk paints onto the display overlay (batched notify), and the pass
+  // clears it once the derived rows carry the values.
+  paintChunk(u: ChunkUpdate): void {
+    this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
+    this.scheduleOverlayFlush();
+  }
+
+  clearOverlay(): void {
+    this.overlay.clear();
+    if (this.overlayTimer) {
+      clearTimeout(this.overlayTimer);
+      this.overlayTimer = undefined;
+    }
+  }
+
   /** Apply a spec through the cache only (#LazyExec): no cell may spend a
    *  model call — evaluated cells refill from the cell cache, unevaluated
    *  cells stay pending. Undo, redo, history jumps, and gesture patches ride

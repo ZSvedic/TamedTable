@@ -70,10 +70,13 @@ panel just renders whatever it is passed.
   the message. It sits on the request-detail row when `debug` is present,
   or stands alone under the message text otherwise (an app error without a
   detail). Messages without `reportable` never show it.
-- Input row: a textarea (Enter sends, Shift+Enter for a newline; send is
-  disabled on an empty draft), the host's `micButton` slot, and send — or a
-  stop button that fires `onCancel` while streaming. A non-null `prefill`
-  syncs into the draft (tutorial prefill-chat steps).
+- Input row: a full-width textarea over an actions row (the host's
+  `micButton` slot and send — or a stop button that fires `onCancel` while
+  streaming). Enter sends, Shift+Enter for a newline; send is disabled on an
+  empty draft. The textarea starts three lines tall and grows with the
+  draft up to ten lines; past that it scrolls internally, so the scrollbar
+  sits at the box's right edge and never between the text and the buttons.
+  A non-null `prefill` syncs into the draft (tutorial prefill-chat steps).
 - Disabled state: a non-null `disabledHint` disables the textarea and send
   button, clears the draft, shows the hint as the greyed placeholder, and
   hides the `micButton` slot — the host's "input is off, here is why" state

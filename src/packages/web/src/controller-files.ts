@@ -307,18 +307,52 @@ export class FilesManager {
   /** Save the current rows via the Save dialog, in the format the table was
    *  loaded as — CSV, JSONL, Parquet, or Arrow — so you get back what you
    *  opened. Falls back to JSONL when the source format is unknown. */
+  // #LazyExec — a save that had to run rows first parks here: the run
+  // consumed the click's user gesture, and the browser refuses a save picker
+  // outside one, so the save-ready dialog asks for one more click.
+  private pendingSave: { format: FormatId; keepSourceName: boolean } | null = null;
+
   async saveData(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before saving data.');
       return;
     }
-    // #LazyExec — a saved file always contains fully evaluated rows: rows
-    // still pending raise the same estimate/confirmation flow first (one
-    // page or less just runs); declining cancels the save. With nothing
-    // pending, Save skips straight to writing the file.
-    if (!(await this.host.lazy.runOnAllRows('save'))) return;
     const format = formatForExtension(this.host.sourcePath || '') ?? 'jsonl';
-    await this.writeData(format, { keepSourceName: true });
+    await this.saveGated(format, { keepSourceName: true });
+  }
+
+  /** #LazyExec — the evaluated-rows gate shared by Save and Save as: rows
+   *  still pending raise the estimate/confirmation flow first (one page or
+   *  less just runs); declining cancels the save. When a run happened, the
+   *  file picker would fall outside the original click's user gesture — the
+   *  save-ready dialog collects a fresh click instead of erroring. With
+   *  nothing pending, Save skips straight to writing the file. */
+  private async saveGated(format: FormatId, opts: { keepSourceName: boolean }): Promise<void> {
+    const hadWork =
+      this.host.lazy.pendingCount() + this.host.lazy.failedCount() > 0;
+    if (!(await this.host.lazy.runOnAllRows('save'))) return;
+    if (hadWork) {
+      this.pendingSave = { format, ...opts };
+      this.host.saveReadyDialog = true;
+      this.host.notify();
+      return;
+    }
+    await this.writeData(format, opts);
+  }
+
+  /** The save-ready dialog's "Save file…" click — a fresh user gesture. */
+  async confirmSaveReady(): Promise<void> {
+    const pending = this.pendingSave;
+    this.pendingSave = null;
+    this.host.saveReadyDialog = false;
+    this.host.notify();
+    if (pending) await this.writeData(pending.format, { keepSourceName: pending.keepSourceName });
+  }
+
+  dismissSaveReady(): void {
+    this.pendingSave = null;
+    this.host.saveReadyDialog = false;
+    this.host.notify();
   }
 
   /** Save a copy of the current rows in a chosen format — the "Save as <format>"
@@ -331,8 +365,7 @@ export class FilesManager {
       return;
     }
     // #LazyExec — same evaluated-rows gate as the default Save.
-    if (!(await this.host.lazy.runOnAllRows('save'))) return;
-    await this.writeData(format, { keepSourceName: false });
+    await this.saveGated(format, { keepSourceName: false });
   }
 
   /** Shared save path: serialize the rows in `format` and open the Save dialog.

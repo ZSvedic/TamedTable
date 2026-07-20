@@ -66,6 +66,8 @@ export interface ControllerHost {
   largeFileDialog: { name: string; rowCount: number } | null;
   /** The run-on-all estimate/confirmation dialog, or null. */
   runAllDialog: RunAllDialogState | null;
+  /** The post-run save confirmation — a save picker needs a fresh click. */
+  saveReadyDialog: boolean;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;

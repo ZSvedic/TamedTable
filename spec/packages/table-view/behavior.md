@@ -98,6 +98,18 @@ the host owns every piece of state, the grid renders and reports:
 - The row-number column's header reads **Row #** and accepts a host-supplied
   hover hint (the app explains original numbering while the view is
   shuffled).
+- **Copy** — with a cell selected (and not editing), Cmd/Ctrl+C copies its
+  text to the clipboard and reports `onCopyCell(row, column, text)`; a live
+  text selection anywhere on the page takes precedence (the browser copy is
+  never hijacked).
+- **URL cells** — a cell whose entire value is a valid `http(s)://` URL
+  renders as a link (new tab). Nothing looser: no bare-domain guessing, a
+  value that merely contains a dot stays plain text.
+- **Headers** — the ⋮ menu button is visually distinct, and header text
+  reserves space for it: a title that doesn't fit ellipsizes ("Cat…")
+  instead of running under the button. Under fixed layout, a column with no
+  measured width defaults to one sized to its title (clamped to a sensible
+  range).
 
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for

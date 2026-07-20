@@ -164,3 +164,33 @@ Feature: Table view package
       When the user opens the "age" column menu
       And the user picks "Sort descending"
       Then the first row number is not 1
+
+  Rule: Cells copy, URLs link, and headers stay legible
+
+    @headless
+    Scenario: The default column width follows the title, clamped
+      Then defaultColumnWidth of "ID" is 120
+      And defaultColumnWidth of "Category" is 120
+      And defaultColumnWidth of "Subcategory or theme" is 208
+      And defaultColumnWidth of "An absurdly long column title nobody should type" is 240
+
+    @headless
+    Scenario: Only strict http URLs count as links
+      Then urlHref of "https://example.org/p/1" is "https://example.org/p/1"
+      And urlHref of "http://a.b/c?d=1" is "http://a.b/c?d=1"
+      And urlHref of "justify.me" is null
+      And urlHref of "see https://example.org" is null
+      And urlHref of "ftp://example.org" is null
+
+    @web
+    Scenario: Cmd or Ctrl+C copies the selected cell
+      Given the table-view demo page
+      When the user clicks cell "2:name"
+      And the user presses the copy shortcut
+      Then the demo event log shows "copy 2:name=Person 3"
+
+    @web
+    Scenario: A URL cell renders as a link and a dotted word does not
+      Given the table-view demo page
+      Then cell "0:site" holds a link to "https://example.org/p/1"
+      And cell "1:site" holds no link

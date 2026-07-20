@@ -5,6 +5,7 @@
 // The pulse and grip-reveal animations ship inside the component so the grid
 // looks the same standalone (demo page) and inside an app.
 import {
+  useEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -13,7 +14,7 @@ import {
 } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
-import type { TableRow } from './index.ts';
+import { defaultColumnWidth, urlHref, type TableRow } from './index.ts';
 import { Pagination } from './Pagination.tsx';
 
 export interface CellSelection {
@@ -68,6 +69,8 @@ export interface TableViewProps {
   barLeft?: ReactNode;
   /** Right slot in the pagination bar, after the pager (Run on all rows). */
   barRight?: ReactNode;
+  /** Fires after Cmd/Ctrl+C copied the selected cell's text. */
+  onCopyCell?: (row: number, column: string, text: string) => void;
 }
 
 function cellText(value: unknown): string {
@@ -76,8 +79,6 @@ function cellText(value: unknown): string {
 
 /** Floor for a resized column — keeps the resize handle grabbable. */
 const MIN_COL_W = 48;
-/** Width given to a column that appears after the resize snapshot was taken. */
-const DEFAULT_COL_W = 120;
 
 const TV_CSS =
   '@keyframes tv-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
@@ -111,6 +112,7 @@ export function TableView({
   markedPages,
   barLeft,
   barRight,
+  onCopyCell,
 }: TableViewProps): ReactNode {
   const t = useTheme();
   const [editing, setEditing] = useState<{ row: number; col: string } | null>(null);
@@ -136,6 +138,26 @@ export function TableView({
     setEditing(null);
     onEditCell(row, col, draft);
   };
+
+  // Cmd/Ctrl+C copies the selected cell's text — without entering edit mode.
+  // A live text selection anywhere on the page wins (never hijack the
+  // browser's own copy), and editing keeps the textarea's native copy.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== 'c') return;
+      if (!selection || editing) return;
+      const live = typeof window !== 'undefined' ? window.getSelection()?.toString() : '';
+      if (live) return;
+      const rowIdx = selection.row - pageStart;
+      const row = rows[rowIdx];
+      if (!row) return;
+      const text = cellText(row[selection.column]);
+      void navigator.clipboard?.writeText(text).catch(() => {});
+      onCopyCell?.(selection.row, selection.column, text);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selection, editing, rows, pageStart, onCopyCell]);
 
   const dropOn = (target: string): void => {
     if (!dragCol || dragCol === target) {
@@ -203,7 +225,7 @@ export function TableView({
     const snap = snapshotWidths();
     setWidths(snap);
     const startX = e.clientX;
-    const startW = snap[col] ?? DEFAULT_COL_W;
+    const startW = snap[col] ?? defaultColumnWidth(col);
     const move = (ev: MouseEvent): void =>
       setWidths({ ...snap, [col]: Math.max(MIN_COL_W, startW + ev.clientX - startX) });
     const up = (): void => {
@@ -216,7 +238,7 @@ export function TableView({
     window.addEventListener('mouseup', up);
   };
 
-  const colW = (col: string): number => widths?.[col] ?? DEFAULT_COL_W;
+  const colW = (col: string): number => widths?.[col] ?? defaultColumnWidth(col);
   const tableW = widths ? colW('#') + columns.reduce((sum, c) => sum + colW(c), 0) : undefined;
 
   const headerCell: CSSProperties = {
@@ -351,9 +373,12 @@ export function TableView({
                       ...headerCell,
                       cursor: 'grab',
                       background: dragCol === col ? t.accentSoft : t.surface2,
+                      // Reserve room for the ⋮ button so a long title
+                      // ellipsizes ("Cat…") instead of running under it.
+                      paddingRight: hasMenu ? 30 : undefined,
                     }}
                   >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6, maxWidth: '100%' }}>
                       <span className="tv-grip" style={{ color: t.ink4 }}>
                         <Icon name="grip" size={12} />
                       </span>
@@ -388,17 +413,20 @@ export function TableView({
                         style={{
                           position: 'absolute',
                           top: '50%',
-                          right: 10,
+                          right: 9,
                           transform: 'translateY(-50%)',
-                          width: 16,
-                          height: 18,
+                          width: 18,
+                          height: 20,
                           padding: 0,
                           border: 'none',
-                          borderRadius: 3,
-                          background: menu?.col === col ? t.accentSoft : 'transparent',
-                          color: t.ink3,
+                          borderRadius: 4,
+                          // A visible chip, not a ghost: the reserved header
+                          // padding keeps title text from running under it.
+                          background: menu?.col === col ? t.accentSoft : t.surface3,
+                          color: t.ink2,
                           cursor: 'pointer',
-                          fontSize: 12,
+                          fontSize: 14,
+                          fontWeight: 700,
                           lineHeight: 1,
                         }}
                       >
@@ -524,7 +552,24 @@ export function TableView({
                               }}
                             />
                           ) : (
-                            cellText(row?.[col])
+                            (() => {
+                              // Strict URL cells render as links; everything
+                              // else — including bare domains — stays text.
+                              const href = urlHref(row?.[col]);
+                              return href ? (
+                                <a
+                                  data-tv-link=""
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ color: 'inherit', textDecoration: 'underline', textDecorationColor: t.accent }}
+                                >
+                                  {cellText(row?.[col])}
+                                </a>
+                              ) : (
+                                cellText(row?.[col])
+                              );
+                            })()
                           )}
                         </td>
                       );
