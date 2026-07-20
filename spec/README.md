@@ -11,6 +11,7 @@ The human-authored contract for TamedTable: what the system does, the types it e
 | [writing-style.md](writing-style.md) | Writing style for all markdown in the repo |
 | [test-conventions.md](test-conventions.md) | How the Gherkin suite is organized and kept small — tags, outlining levers, cross-file DRY decisions |
 | [packages/](packages/README.md) | Per-package specs — layout rules in its README |
+| [mockups/](mockups/) | Static HTML mockups reviewed at a phase gate — currently the lazy-execution UI ([lazy-ai.html](mockups/lazy-ai.html)) |
 | [test-cases/](test-cases/) | Gherkin features + fixtures, named as below |
 | [user-data/](user-data/README.md) | Real user-contributed files: minimal repro fixtures the `@regression` scenarios in `test-cases/` replay, plus the `-original` full files kept for manual testing |
 

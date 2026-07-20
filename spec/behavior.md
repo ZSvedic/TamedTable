@@ -1250,6 +1250,129 @@ The report lists events newest first.
 
 → [code-contract.md — Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
 
+## Lazy AI execution (#LazyExec)
+
+An AI step runs on the page you are looking at, not on the whole table:
+preview the result on a screenful of rows for cents, then run the rest — with
+the price and time shown first — only when it looks right. This section owns
+the web app's page-first execution: row state, the large-file dialog and the
+shuffled view, the progress indicators, the run-on-all and save confirmation,
+and Simple mode. Deterministic steps and the batch CLI keep their eager
+behavior unchanged.
+
+### Worked example
+
+1. Open a 25,000-row file. The **large-file dialog** asks once — work on a
+   **Shuffled sample** (the default) or in **Original order**.
+2. Type *"add a Category column"*. The visible page fills within one
+   concurrency wave; the readout says **20 of 25,000 rows evaluated** and
+   the pager marks every other page as pending.
+3. Page around. Opening a page evaluates exactly that page's lagging rows —
+   never more than one page of AI calls is in flight at a time.
+4. Click **Run on all rows**. The estimate dialog shows rows remaining,
+   estimated tokens, cost, and time; confirm and a progress bar with a
+   cancel button takes over. Cancelling keeps every finished row — a re-run
+   touches only pending and failed rows.
+5. **Save.** Nothing pending → the file writes immediately, in the original
+   row order. Rows still pending → the same estimate dialog first, because a
+   saved file always contains fully evaluated rows.
+
+### The page is the unit of AI work
+
+Only steps with `{llm}` cells are lazy. A new AI step evaluates the rows in
+view immediately — that preview is the point — and leaves the rest pending.
+Deterministic steps (`{js}`, `{sql}`, filter, sort, dedupe, group, join,
+pivot, split) run on all rows at once, exactly as today: they are effectively
+free. The batch CLI (`execute`) stays fully eager — no pages, no dialogs —
+so a saved flow's output is byte-identical to today's.
+
+### Row state
+
+Each row tracks the spec-step prefix already applied to it; a row is
+**evaluated** (caught up with the spec), **pending** (an AI step hasn't
+reached it), or **failed** (its cell call errored — the row keeps the error).
+Every indicator derives from row state, never from stored pages — the page
+size changes with the provider, row state doesn't. Undo lowers a row's mark;
+redo restores it from the cell cache with no new AI calls; cancelling a run
+keeps whatever finished. A failed row is retried individually.
+
+### The large-file dialog and the shuffled view
+
+Loading a file bigger than one page raises the large-file dialog: one
+sentence ("Work page by page; saving keeps every row."), two radios —
+**Shuffled sample**, the default, or **Original order** — and Open. A file
+that fits one page never sees the dialog and behaves exactly as today.
+
+Shuffle is a **view**: a seeded permutation over the source rows. The `#`
+column keeps original row numbers, a **shuffle badge** next to the file
+readout names the mode, and saving always writes the original order. The
+seed derives from the file, so reopening the same file reproduces the same
+shuffle.
+
+### Progress indicators
+
+- The pagination bar gains a readout on its left — **N of M rows
+  evaluated** — visible whenever an AI step has pending rows.
+- Pager buttons for pages with pending rows carry a small dot mark.
+- Pending rows are subtly marked (a muted wash on the row-number cell);
+  failed rows are distinctly marked (a red row-number cell) and carry a
+  per-row **retry** control.
+- On the phone, the app-bar pager carries the same dot marks and the
+  streaming banner area shows the readout.
+
+### Run on all rows and Save
+
+A **Run on all rows** button sits in the pagination bar, right side, shown
+only while rows are pending. It and **Save** share one confirmation flow:
+when more than one page of rows is pending, an **estimate dialog** shows
+rows remaining, estimated tokens, estimated cost, and estimated time before
+anything runs; one page or less just runs without ceremony. The estimates
+are honest extrapolations of the preview: mean tokens per evaluated row ×
+rows remaining, priced at the selected cell model's catalogue rates, and
+timed from the observed rows-per-second so far — previewing a page is what
+makes the estimate possible.
+
+Confirming swaps the dialog body for a progress bar with a live `rows done /
+total` count and a **Cancel** button. Finished rows are always kept: cancel
+stops the queue, and the next run touches only pending and failed rows. When
+the run was started from **Save**, the save itself happens when the run
+completes; with nothing pending, Save skips straight to writing the file.
+
+### The dependency rule
+
+A step that *reads* an AI-made column across all rows — sort by it, filter
+by it, reference it in a `{js}`/`{sql}` expression, group or pivot on it —
+needs every row evaluated first, so it raises the same run-all confirmation
+before it applies. Declining leaves the step out entirely: not in the spec,
+not in the table, not in history. Chat requests that only add or transform
+other columns never trigger it.
+
+### Simple mode
+
+A settings toggle — **Always run on all rows**, under an **Execution**
+heading below the provider cards — restores table-wide execution: each AI
+step runs on every row immediately, with the estimate dialog appearing first
+whenever more than one page of rows would run. Off by default; persisted
+like every other setting.
+
+### Grid upgrades
+
+The table grid grows four behaviors, specified in
+[spec/packages/table-view/behavior.md](packages/table-view/behavior.md):
+cells changed by the last step highlight and hovering one shows the previous
+value; clicking a header sorts by that column with a direction indicator; a
+filter row under the header narrows the visible rows; and double-clicking a
+column separator autofits the column to its content. Header sort and the
+filter row are **view state**, like paging and shuffle — they never touch
+the spec and leave no history entry — but on an AI-made column they trigger
+the dependency rule first. A chat request ("sort by revenue") stays a spec
+step, exactly as today.
+
+The reviewed phase-2 mockup of every element above is
+[spec/mockups/lazy-ai.html](mockups/lazy-ai.html).
+
+→ [code-contract.md — Lazy AI execution](code-contract.md#lazy-ai-execution-lazyexec)
+
 ## Voice input (#VoiceInput)
 
 Voice input lets the user speak a request instead of typing it. It is a

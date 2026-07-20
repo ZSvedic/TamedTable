@@ -945,6 +945,68 @@ missing fingerprint; and `reportMessageBug` records a user report
 produced it — `RequestDebugInfo.userRequest` when present, else the nearest
 user message above — both truncated to `MAX_BODY`).
 
+## Lazy AI execution (#LazyExec)
+
+Types and surfaces for page-first AI execution
+([behavior.md — Lazy AI execution](behavior.md#lazy-ai-execution-lazyexec)).
+The batch CLI and the headless `Runner` batch path are untouched — laziness
+is a web-shell scheduling policy over the same engine.
+
+```ts
+// Row state — one entry per source row, held by the engine manager.
+type RowStatus = 'evaluated' | 'pending' | 'failed';
+interface RowState {
+  applied: number;     // spec-step prefix already applied to this row
+  status: RowStatus;   // derived from `applied` vs the spec, plus the last error
+  error?: string;      // failed rows only — the per-row cell failure message
+}
+
+// Scheduler (engine manager). Evaluating rows in view is the default; the
+// invariant is ≤ one page of AI calls in flight at a time.
+rowStates(): readonly RowState[];
+evaluateRows(indices: number[], signal?: AbortSignal): Promise<void>;
+retryRow(index: number): Promise<void>;
+
+// Estimates — extrapolated from the rows already evaluated.
+interface RunEstimate {
+  rowsRemaining: number;
+  estTokens: number;    // mean in+out tokens per evaluated row × rowsRemaining
+  estUsd: number;       // estTokens priced at the cell model's catalogue rates
+                        // (inUsdPerMtok / outUsdPerMtok in models.json — the
+                        // catalogue a unit test keeps in sync with
+                        // benchmarks/models.jsonl)
+  estSeconds: number;   // rowsRemaining / observed rows-per-second so far
+}
+
+// WebController additions.
+runEstimate(): RunEstimate | null;      // null when nothing is pending
+runOnAllRows(): Promise<void>;          // estimate-gated (> 1 page pending);
+                                        // progress + cancel; finished rows kept
+retryRow(absRow: number): Promise<void>;
+evaluatedReadout(): { done: number; total: number } | null;
+pendingPages(): number[];               // 1-based pages carrying pending rows
+
+// View state — never in the spec, never a history entry. Sort and filter on
+// an AI-made column call the dependency-rule confirmation first; declining
+// leaves the view unchanged.
+interface TableViewState {
+  shuffleSeed: number | null;                        // file-derived; null = original order
+  sort: { column: string; dir: 'asc' | 'desc' } | null;
+  filters: Record<string, string>;                   // per-column contains-match
+}
+
+// Settings — persisted alongside the provider settings.
+alwaysRunAll: boolean;   // Simple mode: "Always run on all rows", default false
+```
+
+The dependency rule applies at patch commit: a transformation that reads an
+AI-made column across all rows (sort/filter keys, a `{js}`/`{sql}` expression
+referencing it, group/pivot keys) triggers the run-all confirmation before
+the patch commits; a decline drops the patch — no spec change, no history
+entry. Grid-side types (changed-cell metadata, sort/filter/autofit/retry
+callbacks) live in the table-view package spec
+([spec/packages/table-view/behavior.md](packages/table-view/behavior.md)).
+
 ## One schema, richer sort keys, and Python export
 
 → [behavior.md — One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)

@@ -71,10 +71,32 @@ A row-number column, sticky headers, and the visible rows. Gestures:
 - A 0-row table states "This table has 0 rows."; the range readout shows
   `<first>–<last> of <total> rows`.
 
+Grid upgrades for lazy AI execution
+([behavior.md § Lazy AI execution](../../behavior.md#lazy-ai-execution-lazyexec));
+the host owns every piece of state, the grid renders and reports:
+
+- **Changed cells** — the host passes per-cell changed flags with previous
+  values; a changed cell tints, and hovering it shows a small
+  `was: <previous>` tooltip.
+- **Header sort** — clicking a header (not its grip or resize handle) cycles
+  ascending → descending → off and shows a ▲/▼ indicator;
+  `onSortChange(column, dir | null)` reports it. View state: the host sorts
+  the rows it passes in, no spec patch is produced.
+- **Filter row** — an optional row of per-column inputs under the header;
+  `onFilterChange(column, text)` reports each edit and the host narrows the
+  rows (contains-match). Same view-state rule.
+- **Autofit** — double-clicking a resize handle sizes that column to its
+  widest rendered cell (plus padding), same fixed-layout snapshot as a drag
+  resize.
+- **Row status marks** — rows carry an optional status: `pending` washes the
+  row-number cell muted, `failed` marks it red and adds a retry control
+  wired to `onRetryRow(absoluteRow)`.
+
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for
 tests: `data-tv-header`, `data-tv-resize`, `data-tv-cell="<absRow>:<col>"`,
-`data-tv-edit`, `data-tv-range`, `data-tv-streaming`.
+`data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-sort`,
+`data-tv-filter="<col>"`, `data-tv-retry="<absRow>"`.
 
 ## Pagination component
 
