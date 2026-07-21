@@ -206,10 +206,11 @@ export class FilesManager {
 
   private async commitParsed(name: string, rows: Row[], spec: TablePlan): Promise<void> {
     await this.host.engine.loadParsed(rows, spec);
-    this.host.pushMessage(
-      'assistant',
-      `Loaded ${name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-    );
+    const loaded = `Loaded ${name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`;
+    this.host.pushMessage('assistant', loaded);
+    // #Diagnostics — a load fires no toast; log it so a report names the file
+    // the user was working on.
+    this.host.diagnostics.recordActivity(loaded);
   }
 
   /** Show the Open URL modal dialog. */

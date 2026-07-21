@@ -174,18 +174,19 @@ Feature: Lazy AI execution edge cases
       Then every row on the current page has a non-null "Segment"
       And the newly evaluated cells carry the changed marker
 
-    # Regression: with a sort active the order is pinned — rows evaluated on
-    # a tail page must fill in place, not re-sort out from under the reader.
-    # Re-applying the sort (or Run all & sort) folds the new values in.
+    # Regression (feedback round 4): with a sort active, opening a tail page
+    # evaluates it and then folds those rows into the sort — a sorted view must
+    # read sorted on every page, not leave later pages in their pre-sort order.
     @web
-    Scenario: A sorted view holds still while tail pages evaluate
+    Scenario: Paging a sorted AI column keeps each page sorted
       Given load "paginate-input.csv"
       When query "add a Language column: the official language spoken in each City"
-      When user sorts column "Language" descending from the column menu without waiting
+      When user sorts column "Language" ascending from the column menu without waiting
       Then the run-all confirmation is shown
       When user chooses to apply to evaluated rows only
-      When user goes to page 2 and the rows stay put while they evaluate
-      Then every row on the current page has a non-null "Language"
+      Then the current page is sorted by "Language" ascending
+      When user goes to page 2
+      Then the current page is sorted by "Language" ascending
       # Opening page 2 evaluates exactly page 2 — even though the ten cities
       # cycle and page 3's answers are already cached, page 3 stays pending
       # behind its pager mark until the reader opens it.
@@ -252,3 +253,13 @@ Feature: Lazy AI execution edge cases
       Then every evaluated cell on the current page carries the changed marker
       When user goes to page 3
       Then every evaluated cell on the current page carries the changed marker
+
+    # Regression (feedback round 4): ordinary successful work must reach the
+    # diagnostics log. A completed request never fires a toast, so before this
+    # the log held only saves/errors — a report copied after running a query
+    # was empty, with no trace of the query that misbehaved.
+    @web
+    Scenario: A completed request lands in the diagnostics log
+      Given load "paginate-input.csv"
+      When user sends the chat message "add a Segment column: consumer or business"
+      Then a diagnostics event records the completed request naming "Segment"

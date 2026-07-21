@@ -943,7 +943,7 @@ Redaction is a hard contract, verified by an `@regression` scenario:
   (`anthropicKey`, `geminiKey`, `openaiKey`, `openrouterKey`) are dropped whole;
 - the config snapshot is taken with the `*Key` fields already omitted.
 
-Four capture points wire into existing code, no logic duplicated: the
+Capture points wire into existing code, no logic duplicated: the
 controller's `pushToast` path records every toast; `EngineManager`'s
 fetch records a failed model request (method, URL, `fingerprint` from
 `@tamedtable/cassette`, and the body truncated to `MAX_BODY`); the same
@@ -952,6 +952,13 @@ missing fingerprint; and `reportMessageBug` records a user report
 (`source: 'user-report'`, the flagged reply's text and the request that
 produced it — `RequestDebugInfo.userRequest` when present, else the nearest
 user message above — both truncated to `MAX_BODY`).
+
+`recordActivity(message)` (`source: 'activity'`) records the ordinary
+successful actions that never surface as a toast — a file load and a
+completed chat request (the executed-steps summary) — so a report copied
+after normal work is not empty. Without it the log would hold only saves,
+errors, and copies, and a "my query did the wrong thing" report would carry
+no trace of the query.
 
 ## Lazy AI execution (#LazyExec)
 

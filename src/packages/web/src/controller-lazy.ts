@@ -391,6 +391,10 @@ export class LazyManager {
       // empty-target pass (the cache-only refill after a cancel) changes
       // nothing new, so it never re-marks.
       if (target.size > 0) this.host.engine.recordFilled(before, false);
+      // #LazyExec — the page streamed in under the pinned order (rows filled in
+      // place); now that it has settled, fold the newly evaluated rows into the
+      // sort so the page reads sorted. Pending rows sink to the end.
+      this.host.view.refreshSortOrder();
       if (this.cellCalls > callsBefore) this.recordTiming(Date.now() - started, chunks);
       if (showStream) this.host.streaming = false;
       this.host.engine.clearOverlay();

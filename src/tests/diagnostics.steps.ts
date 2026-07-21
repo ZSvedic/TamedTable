@@ -16,6 +16,18 @@ function requestEvents(world: TamedTableWorld): Array<Record<string, unknown>> {
     .filter((c) => typeof c.fingerprint === 'string');
 }
 
+Then(
+  'a diagnostics event records the completed request naming {string}',
+  function (this: TamedTableWorld, needle: string) {
+    const events = controller(this).diagnosticsEvents();
+    const hit = events.some(
+      (e) => e.context.source === 'activity' && e.message.includes(needle),
+    );
+    const seen = events.map((e) => `${e.context.source ?? '?'}:${e.message}`);
+    assert.ok(hit, `no activity event naming "${needle}"; saw: ${JSON.stringify(seen)}`);
+  },
+);
+
 Then('a diagnostics event records a request fingerprint', function (this: TamedTableWorld) {
   const fps = requestEvents(this).map((c) => c.fingerprint as string);
   assert.ok(fps.length > 0, 'no diagnostics event carried a request fingerprint');

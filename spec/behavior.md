@@ -1436,10 +1436,14 @@ cursor and double-clicking it (or the menu's Autofit width) fits the column
 to its content on the current page. A chat request ("sort by revenue")
 stays a spec step, exactly as today.
 
-The view sort **pins its order when it applies**: rows evaluated afterwards
-fill in place instead of re-sorting out from under the page being read.
-Re-applying the sort (or the gate's "Run all & sort") folds the new values
-into the order.
+The view sort **holds a page still while its rows stream in** — they fill in
+place, not re-sort out from under the reader — and then **folds them into the
+order once the page settles**, so every page opened is sorted as far as it is
+evaluated. Newly evaluated rows join the sorted block; rows still pending sink
+to the end behind their pager marks. (A page's rows can shift position as they
+join the order — that is what a sorted view of a growing evaluated set means.)
+A complete sort of a not-yet-evaluated column still needs every value, which
+the gate's "Run all & sort" computes at once.
 
 The reviewed phase-2 mockup of every element above is
 [spec/mockups/lazy-ai.html](mockups/lazy-ai.html).

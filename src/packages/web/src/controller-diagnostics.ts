@@ -178,6 +178,13 @@ export class DiagnosticsManager {
     });
   }
 
+  /** Record an ordinary successful action that never surfaces as a toast — a
+   *  file load, a completed chat request — so a report copied after normal work
+   *  reflects what the user did instead of coming up empty. */
+  recordActivity(message: string): void {
+    this.record('info', message.slice(0, MAX_BODY), { source: 'activity' });
+  }
+
   /** Record a chat reply the user flagged with Report bug — the reply's text
    *  plus the request that produced it, both truncated like request bodies. */
   recordUserReport(messageText: string, userRequest?: string): void {

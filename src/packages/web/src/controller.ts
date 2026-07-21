@@ -277,7 +277,12 @@ export class WebController implements ControllerHost {
       const debug = this.lastDebug;
       // A wrong answer is a bug even when nothing turned red — every reply to
       // a completed request carries the Report bug action.
-      this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug, true);
+      const reply = debug ? summarizeDebug(debug) : 'Done.';
+      this.pushMessage('assistant', reply, debug, true);
+      // #Diagnostics — a completed request fires no toast, so log it explicitly
+      // (with the request in recentMessages) — else a report copied after a
+      // query would have no trace of it.
+      this.diagnostics.recordActivity(reply);
     } catch (e) {
       const debug = (e as { debug?: RequestDebugInfo }).debug;
       const { message, reportable } = describeError(e, this.config.provider);

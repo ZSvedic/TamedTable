@@ -857,9 +857,27 @@ When(
   },
 );
 
+When(
+  'user sorts column {string} ascending from the column menu without waiting',
+  function (this: TamedTableWorld, column: string) {
+    const pending = controller(this).setViewSort(column, 'asc');
+    pending.catch(() => {});
+    ctxOf(this).pending = pending;
+  },
+);
+
 When('user chooses to apply to evaluated rows only', async function (this: TamedTableWorld) {
   controller(this).applyEvaluatedOnly();
   await ctxOf(this).pending;
+});
+
+Then('the current page is sorted by {string} ascending', function (this: TamedTableWorld, column: string) {
+  const values = controller(this).pageRows().map((r) => String(r[column] ?? ''));
+  assert.ok(values.length > 0);
+  for (const v of values) assert.ok(v !== '', 'expected only evaluated rows on the page');
+  for (let i = 1; i < values.length; i++) {
+    assert.ok(values[i - 1]! <= values[i]!, `row ${i} ("${values[i]}") breaks the ascending order after "${values[i - 1]}"`);
+  }
 });
 
 Then(
@@ -944,18 +962,6 @@ Then('the newly evaluated cells carry the changed marker', function (this: Tamed
   const rows = c.pageRows().length;
   assert.ok(marked >= rows, `expected ≥${rows} changed-cell marks on the page, got ${marked}`);
 });
-
-When(
-  'user goes to page {int} and the rows stay put while they evaluate',
-  async function (this: TamedTableWorld, page: number) {
-    const c = controller(this);
-    const start = (page - 1) * c.pageSize;
-    const before = c.viewRows().slice(start, start + c.pageSize).map((r) => r.ID);
-    await c.goToPage(page);
-    const after = c.pageRows().map((r) => r.ID);
-    assert.deepEqual(after, before, 'the sorted view re-ordered out from under the reader');
-  },
-);
 
 // ── The tab guard (#LazyExec — behavior.md § Web UI) ─────────────────────────
 
