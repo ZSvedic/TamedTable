@@ -17399,6 +17399,7 @@ function ModelChooser({
       style: {
         display: "flex",
         alignItems: "center",
+        flexWrap: "wrap",
         gap: 8,
         padding: "7px 6px",
         borderRadius: radiusSm,
@@ -17419,7 +17420,8 @@ function ModelChooser({
           children: role
         }, undefined, false, undefined, this),
         /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-          style: { fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1 },
+          "data-mc-model-id": modelId,
+          style: { fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1, whiteSpace: "nowrap" },
           children: modelId
         }, undefined, false, undefined, this),
         voiceTag(m?.voiceInput ?? false),
