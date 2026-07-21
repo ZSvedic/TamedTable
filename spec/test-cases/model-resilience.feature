@@ -20,3 +20,17 @@ Feature: Resilience to imperfect model output
       Given a patch that adds a mutate whose JSON-encoded value contains an invalid backslash escape
       When the runner decodes and applies that patch
       Then the patch applies and the spec gains one mutate transformation
+
+  Rule: A patch that only declares a column is sent back
+
+    # Seen live on OpenRouter's free tier: "Add country column" came back as
+    # a bare `columns` entry with no transformation writing it — a committed
+    # silent no-op. The runner now rejects it into the recovery loop, and
+    # the retry carries the computing step.
+    @headless @scripted
+    Scenario: A declared-but-unwritten column is rejected into the recovery loop
+      Given load "customers-input.csv"
+      And a request whose first patch only declares the new column
+      When the spec patch is applied
+      Then the recovery loop receives a declared-but-unwritten rejection
+      And the corrected retry computes column "CountryCode"

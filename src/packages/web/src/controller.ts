@@ -453,6 +453,15 @@ export class WebController implements ControllerHost {
   }
   reorderColumns(order: string[]): Promise<void> { return this.patch.reorderColumns(order); }
 
+  /** Whether closing the tab would lose work: a loaded table with any
+   *  committed transformation or an undoable step. The browser shell wires
+   *  this to `beforeunload` — a stray refresh must not silently discard
+   *  evaluated rows or edits. */
+  hasUnsavedWork(): boolean {
+    if (!this.loaded) return false;
+    return this.displaySpec().transformations.length > 0 || this.canUndo();
+  }
+
   // ── File dialogs (→ files) ─────────────────────────────────────────────────
 
   openCsv(): Promise<void> { return this.files.openCsv(); }

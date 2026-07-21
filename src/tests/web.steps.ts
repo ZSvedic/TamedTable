@@ -936,3 +936,32 @@ When('user clicks Save file in the save-ready dialog', function (this: TamedTabl
   pending.catch(() => {});
   ctxOf(this).pending = pending;
 });
+
+Then('the newly evaluated cells carry the changed marker', function (this: TamedTableWorld) {
+  const c = controller(this);
+  const marked = Object.keys(c.pageChangedCells()).length;
+  const rows = c.pageRows().length;
+  assert.ok(marked >= rows, `expected ≥${rows} changed-cell marks on the page, got ${marked}`);
+});
+
+When(
+  'user goes to page {int} and the rows stay put while they evaluate',
+  async function (this: TamedTableWorld, page: number) {
+    const c = controller(this);
+    const start = (page - 1) * c.pageSize;
+    const before = c.viewRows().slice(start, start + c.pageSize).map((r) => r.ID);
+    await c.goToPage(page);
+    const after = c.pageRows().map((r) => r.ID);
+    assert.deepEqual(after, before, 'the sorted view re-ordered out from under the reader');
+  },
+);
+
+// ── The tab guard (#LazyExec — behavior.md § Web UI) ─────────────────────────
+
+Then('leaving the page needs no confirmation', function (this: TamedTableWorld) {
+  assert.equal(controller(this).hasUnsavedWork(), false);
+});
+
+Then('leaving the page asks for confirmation', function (this: TamedTableWorld) {
+  assert.equal(controller(this).hasUnsavedWork(), true);
+});

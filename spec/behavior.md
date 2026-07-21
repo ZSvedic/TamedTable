@@ -707,6 +707,14 @@ recovery loop, naming the missing column. Steps whose output columns
 can't be known without running them (`join`, `pivot`) suspend the check
 for the transformations after them.
 
+The mirror-image guard: a patch that **declares** a new column in
+`columns` that no transformation writes (no `mutate`/`split`/`validate`
+targets it, it is not a source key, and no reshaping step could produce
+it) is rejected the same way — declaring a column never fills it, so
+committing would be a silent no-op. Weak models produce exactly this
+shape ("add a Country column" → a bare `columns` entry); the rejection
+tells them to add the computing step.
+
 ### `pivot` and `unpivot` transformations (#PivotData)
 
 `pivot` reshapes long → wide. Shape: `{ kind: "pivot", index:
@@ -765,6 +773,11 @@ The browser front-end mirrors the CLI's interaction shape
 the right of it. The boundary between the two is a drag handle: hovering
 it shows the column-resize cursor, dragging it resizes the sidebar
 (clamped to a sensible range), and the width persists like a setting.
+
+Closing or refreshing the tab with **work in progress** — any committed
+transformation, or an undoable step — first raises the browser's own
+are-you-sure confirmation, so a stray refresh cannot silently discard
+evaluated rows or edits. A tab with nothing to lose closes freely.
 Cell editing and column-reorder happen through normal
 browser gestures but ultimately produce spec patches — the same shape
 the LLM produces — so undo/redo, history, and replay against the source
@@ -1385,8 +1398,9 @@ like every other setting.
 
 The table grid grows these behaviors, specified in
 [spec/packages/table-view/behavior.md](packages/table-view/behavior.md).
-Cells changed by the last step highlight, and hovering one shows the
-previous value. Every column header ends in a **⋮ column menu** — Sort
+Cells changed by the most recent action highlight — a chat step's preview,
+a page-open evaluation, a run-all or a retry each reset the marks to the
+cells they filled — and hovering one shows the previous value. Every column header ends in a **⋮ column menu** — Sort
 ascending, Sort descending, Filter…, Autofit width, and Delete column — with
 the state shown in the header itself: a ▲/▼ sort indicator and a funnel
 mark when a filter is active. Sort and filter live behind the menu rather
@@ -1399,6 +1413,11 @@ would produce. Column separators are visible; hovering one shows the resize
 cursor and double-clicking it (or the menu's Autofit width) fits the column
 to its content on the current page. A chat request ("sort by revenue")
 stays a spec step, exactly as today.
+
+The view sort **pins its order when it applies**: rows evaluated afterwards
+fill in place instead of re-sorting out from under the page being read.
+Re-applying the sort (or the gate's "Run all & sort") folds the new values
+into the order.
 
 The reviewed phase-2 mockup of every element above is
 [spec/mockups/lazy-ai.html](mockups/lazy-ai.html).

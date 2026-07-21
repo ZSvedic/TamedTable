@@ -556,3 +556,16 @@ Feature: Web front-end
       And the LLM API returns a 429 rate-limit error
       When user sends the chat message "norm dob col"
       Then a toast shows "Rate limited by the Google API. Wait a minute and try again."
+
+  Rule: Work in progress guards the tab
+
+    # The browser shell wires this to beforeunload: refreshing or closing
+    # with anything to lose raises the browser's own confirmation first —
+    # evaluated rows and edits cost real work (behavior.md § Web UI).
+    @web
+    Scenario: Refreshing with work in progress warns first
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      Then leaving the page needs no confirmation
+      When user edits cell at row 1 column "Country" to "United States"
+      Then leaving the page asks for confirmation

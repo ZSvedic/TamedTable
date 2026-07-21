@@ -172,6 +172,23 @@ Feature: Lazy AI execution edge cases
       When query "add a Segment column: consumer or business"
       When user opens page 2 and sees the streaming banner while it evaluates
       Then every row on the current page has a non-null "Segment"
+      And the newly evaluated cells carry the changed marker
+
+    # Regression: with a sort active the order is pinned — rows evaluated on
+    # a tail page must fill in place, not re-sort out from under the reader.
+    # Re-applying the sort (or Run all & sort) folds the new values in.
+    @web
+    Scenario: A sorted view holds still while tail pages evaluate
+      Given load "paginate-input.csv"
+      When query "add a Language column: the official language spoken in each City"
+      When user sorts column "Language" descending from the column menu without waiting
+      Then the run-all confirmation is shown
+      When user chooses to apply to evaluated rows only
+      When user goes to page 2 and the rows stay put while they evaluate
+      Then every row on the current page has a non-null "Language"
+      # The ten cities cycle, so by now every distinct prompt is cached and
+      # the tail refilled free — nothing is left pending.
+      And no evaluated-rows readout is shown
 
     # Two AI columns land two chunks per row — the progress divides, so it
     # never reports more rows done than the table has.

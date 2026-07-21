@@ -351,9 +351,13 @@ export class LazyManager {
       this.host.streaming = true;
       this.host.notify();
     }
+    // This pass is now the most recent action — its cells take over the
+    // changed-cell marks (a chat step's marks clear here, and vice versa).
+    if (target.size > 0) this.host.engine.changedCells.clear();
     const onChunk = (u: ChunkUpdate): void => {
       chunks++;
       this.host.engine.paintChunk(u);
+      if (target.has(u.rowIndex)) this.host.engine.noteChangedCell(u.rowIndex, u.column, u.before ?? null);
       if (opts.feed) {
         // Rows, not cells: a spec with two AI columns lands two chunks per row.
         opts.feed.rowsDone = Math.min(opts.feed.rowsTotal, Math.floor(chunks / factor));

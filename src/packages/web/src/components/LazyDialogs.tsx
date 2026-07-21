@@ -202,7 +202,9 @@ export function RunAllDialog({ controller }: { controller: WebController }): Rea
               <span style={value}>{formatSeconds(confirm.estimate.estSeconds)}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8, borderTop: `1px solid ${t.line}`, paddingTop: space.px12 }}>
-              <Button variant="ghost" data-tt-runall-decline="" onClick={() => controller.declineRunAll()}>
+              {/* chrome, not ghost: next to two more buttons a borderless
+                  decline reads as a label. */}
+              <Button variant="chrome" data-tt-runall-decline="" onClick={() => controller.declineRunAll()}>
                 {CONFIRM_LABELS[confirm.reason].decline}
               </Button>
               {CONFIRM_LABELS[confirm.reason].partial && (

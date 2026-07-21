@@ -625,6 +625,38 @@ export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[
  *  first column no earlier step provides, or undefined when the flow fits.
  *  `join` and `pivot` add columns that can't be enumerated statically, so
  *  they suspend the check for later steps; `{sql}` expressions aren't parsed. */
+/** @internal — exported for unit tests. The declared-but-unwritten guard
+ *  (spec/behavior.md § Headless): a patch may not add a `columns` entry that
+ *  no transformation writes. Returns the rejection message, or undefined.
+ *  Reshaping steps (`group`, `pivot`, `unpivot`, `join`) produce columns
+ *  dynamically, so their presence suspends the check. */
+export function checkDeclaredColumnsWritten(
+  next: TablePlan,
+  prev: TablePlan,
+  sourceColumns: string[],
+): string | undefined {
+  const prevIds = new Set(prev.columns.map((c) => c.id));
+  const added = next.columns.map((c) => c.id).filter((id) => !prevIds.has(id));
+  if (added.length === 0) return undefined;
+  const steps = next.transformations as Transformation[];
+  if (steps.some((t) => t.kind === 'group' || t.kind === 'pivot' || t.kind === 'unpivot' || t.kind === 'join')) {
+    return undefined;
+  }
+  const written = new Set<string>(sourceColumns);
+  for (const t of steps) {
+    if (t.kind === 'mutate') for (const c of Array.isArray(t.columns) ? t.columns : [t.columns]) written.add(c);
+    else if (t.kind === 'split') for (const c of t.into) written.add(c);
+    else if (t.kind === 'validate') { written.add('_valid'); written.add('_validation'); }
+  }
+  const ghost = added.find((id) => !written.has(id));
+  if (!ghost) return undefined;
+  return (
+    `the patch declares a new column "${ghost}" but no transformation computes it — ` +
+    `declaring a column never fills it. Add a transformation that writes "${ghost}" ` +
+    `(for semantic values, a mutate with an {llm} template).`
+  );
+}
+
 export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]): string | undefined {
   let available = new Set(sourceColumns);
   let unknowable = false;
@@ -1031,6 +1063,23 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           turn.sentBack = orderError;
           lastError = orderError;
           prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${orderError}`);
+          continue;
+        }
+
+        // The mirror guard: a patch that only DECLARES a new column — no
+        // transformation writes it — would commit as a silent no-op. Weak
+        // models produce exactly this shape; send it back for the computing
+        // step (spec/behavior.md § Headless).
+        const ghostError = checkDeclaredColumnsWritten(
+          tried.spec,
+          this.spec,
+          this.sourceRows.length ? Object.keys(this.sourceRows[0]!) : [],
+        );
+        if (ghostError) {
+          turn.outcome = 'rejected';
+          turn.sentBack = ghostError;
+          lastError = ghostError;
+          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${ghostError}`);
           continue;
         }
 

@@ -181,8 +181,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
                     color: t.ink3,
                   }}
                 >
-                  Off, AI steps preview on the visible page first — run the rest when it looks
-                  right. On, every AI step runs the whole table immediately.
+                  If on, every AI step runs the whole table immediately (not recommended for
+                  large tables).
                 </span>
               </span>
             </label>

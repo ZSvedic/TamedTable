@@ -52,6 +52,16 @@ controller.subscribe(() => {
   // Intentionally empty — config is persisted inside the controller.
 });
 
+// #LazyExec — a stray refresh must not silently discard work in progress
+// (evaluated rows cost real money). With anything to lose, the browser's own
+// are-you-sure confirmation gates the unload; a clean tab closes freely.
+window.addEventListener('beforeunload', (e) => {
+  if (!controller.hasUnsavedWork()) return;
+  e.preventDefault();
+  // Chrome still requires returnValue to be set for the prompt to show.
+  e.returnValue = '';
+});
+
 // Deep link: ?feature=<file>&scenario=<name> opens the named tour and plays
 // it; ?tours (any value) opens the Tours panel chooser instead — the
 // homepage's "take a guided tour" links use it. Reading the URL belongs here

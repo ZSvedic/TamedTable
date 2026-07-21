@@ -32,6 +32,7 @@ interface ScriptedState {
   slowServedAt?: number;       // when the slow-aggregate patch went out
   invalidServed?: boolean;     // recovery: first turn invalid, retry corrected
   emptyServed?: boolean;       // recovery: first turn empties the table, retry corrected
+  declareServed?: boolean;     // recovery: first turn only declares a column, retry computes it
   ignoreInterrupt?: boolean;   // serve the drain-sized aggregate instead
   realInterrupt?: typeof DuckDBConnection.prototype.interrupt;
 }
@@ -79,6 +80,14 @@ function routeScripted(body: string, state: ScriptedState): string | undefined {
       return toolUseBody(addMutate('PhoneLen', INVALID_SQL));
     }
     return toolUseBody(addMutate('PhoneLen', 'length(Phone)'));
+  }
+  if (body.includes('(first only declares the column)')) {
+    if (!state.declareServed) {
+      state.declareServed = true;
+      // The weak-model shape seen live: a bare columns entry, no step.
+      return toolUseBody([{ op: 'add', path: '/columns/-', value: { id: 'CountryCode' } }]);
+    }
+    return toolUseBody(addMutate('CountryCode', "upper(substr(Country, 1, 2))"));
   }
   if (body.includes('(first filters out every row)')) {
     if (!state.emptyServed) {
@@ -309,4 +318,24 @@ Then('every remaining row has Country in \\({string}, {string}\\)', function (th
     const country = String(rows[i]!.Country);
     assert.ok([a, b].includes(country), `row ${i}: unexpected Country "${country}"`);
   }
+});
+
+Given('a request whose first patch only declares the new column', function (this: TamedTableWorld) {
+  requireScripted(this);
+  // The script recognises this text: the first patch turn answers with a
+  // bare columns entry (no transformation), the retry with the mutate.
+  recoveryRequest.set(this, 'Add a CountryCode column (first only declares the column)');
+});
+
+Then('the recovery loop receives a declared-but-unwritten rejection', function (this: TamedTableWorld) {
+  const state = requireScripted(this);
+  const retry = state.requests.find((b) => b.includes('no transformation computes it'));
+  assert.ok(retry, 'no declared-but-unwritten rejection reached the model');
+});
+
+Then('the corrected retry computes column {string}', function (this: TamedTableWorld, col: string) {
+  const outcome = this.lastRequestOutcome;
+  assert.ok(outcome?.ok, `expected the retry to commit, got: ${outcome?.error?.message ?? 'no outcome'}`);
+  const rows = this.ensureRunner().currentRows();
+  assert.ok(rows.every((r) => r[col] !== null && r[col] !== undefined), `column ${col} is not filled`);
 });

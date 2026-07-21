@@ -378,11 +378,15 @@ export function TableView({
                       paddingRight: hasMenu ? 30 : undefined,
                     }}
                   >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: space.px6, maxWidth: '100%' }}>
-                      <span className="tv-grip" style={{ color: t.ink4 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: space.px6, maxWidth: '100%' }}>
+                      <span className="tv-grip" style={{ flex: '0 0 auto', color: t.ink4 }}>
                         <Icon name="grip" size={12} />
                       </span>
-                      {col}
+                      {/* The title gets its own ellipsizing box — text-overflow
+                          on the th cannot reach inside the flex row. */}
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {col}
+                      </span>
                       {/* The header itself shows the view state: ▲/▼ for the
                           active sort, a funnel while a filter narrows. */}
                       {sort?.column === col && (
