@@ -17653,16 +17653,24 @@ function TableView({
     const probe = document.createElement("span");
     probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;` + `font-family:${typography.mono};font-size:${typography.size.sm}px;`;
     document.body.appendChild(probe);
-    let max = 0;
-    table.querySelectorAll("tr").forEach((tr) => {
+    let dataMax = 0;
+    table.querySelectorAll("tbody tr").forEach((tr) => {
       const cell = tr.children[colIdx];
       if (!cell)
         return;
       probe.textContent = cell.textContent ?? "";
-      max = Math.max(max, probe.getBoundingClientRect().width);
+      dataMax = Math.max(dataMax, probe.getBoundingClientRect().width);
     });
+    const dataW = Math.ceil(dataMax) + 2 * space.px10 + 4;
+    probe.style.fontFamily = typography.ui;
+    probe.style.fontWeight = "600";
+    probe.textContent = col;
+    const titleW = Math.ceil(probe.getBoundingClientRect().width);
     probe.remove();
-    setWidths({ ...snap, [col]: Math.max(MIN_COL_W, Math.min(640, Math.ceil(max) + 2 * space.px10 + 4)) });
+    const marks = (sort?.column === col ? 15 : 0) + (filters?.[col] !== undefined ? 17 : 0);
+    const grip = 18;
+    const headerW = space.px10 + grip + titleW + marks + (hasMenu ? 30 : space.px10);
+    setWidths({ ...snap, [col]: Math.max(MIN_COL_W, Math.min(640, Math.max(dataW, headerW))) });
   };
   const startResize = (col, e) => {
     e.preventDefault();
@@ -17829,6 +17837,7 @@ function TableView({
                                 }, undefined, false, undefined, this)
                               }, undefined, false, undefined, this),
                               /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                                "data-tv-title": col,
                                 style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
                                 children: col
                               }, undefined, false, undefined, this),
@@ -18116,6 +18125,7 @@ function ColumnMenu({
     cursor: "pointer",
     whiteSpace: "nowrap"
   };
+  const sep = { height: 1, margin: `${space.px6}px 0`, background: t.line };
   return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
     children: [
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
@@ -18166,6 +18176,9 @@ function ColumnMenu({
               "Sort descending"
             ]
           }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: sep
+          }, undefined, false, undefined, this),
           filterDraft === null ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
             type: "button",
             "data-tv-menu-item": "filter",
@@ -18202,6 +18215,16 @@ function ColumnMenu({
               }
             }, undefined, false, undefined, this)
           }, undefined, false, undefined, this),
+          filterText && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+            type: "button",
+            "data-tv-menu-item": "remove-filter",
+            style: item,
+            onClick: () => onFilter(""),
+            children: "Remove filter"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: sep
+          }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
             type: "button",
             "data-tv-menu-item": "autofit",
@@ -18209,13 +18232,20 @@ function ColumnMenu({
             onClick: onAutofit,
             children: "Autofit width"
           }, undefined, false, undefined, this),
-          onDelete && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
-            type: "button",
-            "data-tv-menu-item": "delete",
-            style: { ...item, color: t.err },
-            onClick: onDelete,
-            children: "Delete column"
-          }, undefined, false, undefined, this)
+          onDelete && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+                style: sep
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                type: "button",
+                "data-tv-menu-item": "delete",
+                style: { ...item, color: t.err },
+                onClick: onDelete,
+                children: "Delete column"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this)
     ]
