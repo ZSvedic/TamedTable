@@ -18,7 +18,7 @@ import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
 import type { WebController } from '../../controller.ts';
 import { useController } from '../../hooks/useController.ts';
-import { useKeyboardInset } from '../../hooks/useKeyboardInset.ts';
+import { useKeyboardInset, bottomInset } from '../../hooks/useKeyboardInset.ts';
 import { useTableZoom } from '../../hooks/useTableZoom.ts';
 import { Dock, type DockAction } from './Dock.tsx';
 import { MobileTable } from './MobileTable.tsx';
@@ -563,9 +563,10 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
 
       {/* bottom region: the dock, or one of the input sheets in its place —
           pinned to the bottom of the screen while the page scrolls the table.
-          The OS keyboard slides over the page without moving fixed elements,
-          so the region rises by the keyboard's height (0 while it's down). */}
-      <div data-mob-bottom="" style={{ position: 'fixed', bottom: kbInset, left: 0, right: 0, zIndex: 20 }}>
+          Only the Type composer rides the keyboard; the dock and the other
+          sheets stay pinned (bottomInset gates the lift), so a stray
+          visual-viewport shift while scrolling can't make them jitter. */}
+      <div data-mob-bottom="" style={{ position: 'fixed', bottom: bottomInset(inputMode === 'keyboard', kbInset), left: 0, right: 0, zIndex: 20 }}>
         {inputMode === 'keyboard' ? (
           <KeyboardSheet
             t={t}
