@@ -8,6 +8,7 @@ import type { FormatId } from '@tamedtable/file-io';
 import type { ResolvedConfig } from '@tamedtable/model-config';
 import { TamedTableWorld, SPEC_TC_DIR } from './world.ts';
 import { webController as controller, webCtx as ctxOf } from './web-file-port.ts';
+import { aiMadeColumns } from '../packages/web/src/controller-lazy.ts';
 
 interface SavedFlow {
   version: number;
@@ -965,3 +966,23 @@ Then('leaving the page needs no confirmation', function (this: TamedTableWorld) 
 Then('leaving the page asks for confirmation', function (this: TamedTableWorld) {
   assert.equal(controller(this).hasUnsavedWork(), true);
 });
+
+Then(
+  'every evaluated cell on the current page carries the changed marker',
+  function (this: TamedTableWorld) {
+    const c = controller(this);
+    const changed = c.pageChangedCells();
+    const status = c.pageRowStatus();
+    const rows = c.pageRows();
+    const aiCols = [...aiMadeColumns(c.displaySpec())];
+    const start = (c.currentPage() - 1) * c.pageSize;
+    let unmarked = 0;
+    for (let p = 0; p < rows.length; p++) {
+      if (status[p] !== undefined) continue; // pending/failed — shows no value
+      for (const col of aiCols) {
+        if (!(`${start + p}:${col}` in changed)) unmarked++;
+      }
+    }
+    assert.equal(unmarked, 0, `${unmarked} filled AI cell(s) on the page lack the changed marker`);
+  },
+);

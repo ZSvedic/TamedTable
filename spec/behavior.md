@@ -711,9 +711,15 @@ The mirror-image guard: a patch that **declares** a new column in
 `columns` that no transformation writes (no `mutate`/`split`/`validate`
 targets it, it is not a source key, and no reshaping step could produce
 it) is rejected the same way — declaring a column never fills it, so
-committing would be a silent no-op. Weak models produce exactly this
-shape ("add a Country column" → a bare `columns` entry); the rejection
-tells them to add the computing step.
+committing would be a silent no-op. The no-op is silent because the
+committed `columns` are reconciled against the derived rows' actual keys
+(`syncColumnsToRows`): a declared column that no row carries is dropped,
+so the grid — which renders exactly the reconciled `columns` — shows
+nothing, not even an empty header. That reconciliation is deliberate
+(the grid only shows data-backed columns); the fix belongs at the patch,
+not the grid. Weak models produce exactly this shape ("add a Country
+column" → a bare `columns` entry); the rejection tells them to add the
+computing step.
 
 ### `pivot` and `unpivot` transformations (#PivotData)
 
@@ -1398,9 +1404,18 @@ like every other setting.
 
 The table grid grows these behaviors, specified in
 [spec/packages/table-view/behavior.md](packages/table-view/behavior.md).
-Cells changed by the most recent action highlight — a chat step's preview,
-a page-open evaluation, a run-all or a retry each reset the marks to the
-cells they filled — and hovering one shows the previous value. Every column header ends in a **⋮ column menu** — Sort
+Cells the current chat request filled highlight. A new chat request resets
+the marker; the lazy passes that finish that request's AI columns — a
+page-open evaluation, a run-all, a retry — each **add** the cells they fill,
+so a column tints uniformly as the reader pages through it rather than
+showing only the last page touched. A cell counts as filled when its shown
+value changes: a blank pending cell becomes a value (from a live call *or* a
+free cache refill — a page-open seeds the cache, so opening one page can
+quietly fill the rest), or an existing value is overwritten. Marking the
+data's actual change, not just the cells a live call streamed, is what keeps
+a shuffled or sorted view from tinting one block and leaving an identically
+filled block below it bare. Hovering a changed cell shows the previous
+value. Every column header ends in a **⋮ column menu** — Sort
 ascending, Sort descending, Filter…, Autofit width, and Delete column — with
 the state shown in the header itself: a ▲/▼ sort indicator and a funnel
 mark when a filter is active. Sort and filter live behind the menu rather

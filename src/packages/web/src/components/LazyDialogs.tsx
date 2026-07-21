@@ -124,7 +124,7 @@ export function LargeFileDialog({ controller }: { controller: WebController }): 
           Work page by page; saving preserves original row order.
         </div>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8 }}>
-          <Button variant="ghost" data-tt-load-original="" onClick={() => void controller.loadOriginalOrder()}>
+          <Button variant="chrome" data-tt-load-original="" onClick={() => void controller.loadOriginalOrder()}>
             Load in original order
           </Button>
           <Button variant="primary" data-tt-load-shuffled="" onClick={() => void controller.loadShuffled()}>
@@ -155,7 +155,7 @@ export function SaveReadyDialog({ controller }: { controller: WebController }): 
           The table is fully evaluated and ready to write.
         </div>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8 }}>
-          <Button variant="ghost" data-tt-saveready-cancel="" onClick={() => controller.dismissSaveReady()}>
+          <Button variant="chrome" data-tt-saveready-cancel="" onClick={() => controller.dismissSaveReady()}>
             Not now
           </Button>
           <Button variant="primary" data-tt-saveready-confirm="" onClick={() => void controller.confirmSaveReady()}>
@@ -278,7 +278,7 @@ export function RunAllDialog({ controller }: { controller: WebController }): Rea
               </pre>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="ghost" data-tt-runall-cancel="" onClick={() => controller.cancelRunAll()}>
+              <Button variant="chrome" data-tt-runall-cancel="" onClick={() => controller.cancelRunAll()}>
                 Cancel
               </Button>
             </div>

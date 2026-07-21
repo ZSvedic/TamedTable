@@ -20,6 +20,7 @@ import type { FetchLike } from '@tamedtable/file-io';
 import { requestBody, requestUrl } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
 import type { RunProgress } from './controller-types.ts';
+import { aiMadeColumns } from './controller-lazy.ts';
 
 /** Newest log lines the run-progress feed keeps — a bound, not a transcript. */
 const FLOW_LOG_MAX = 500;
@@ -221,6 +222,8 @@ export class EngineManager {
     this.activeAbort = ownAbort;
     this.host.streaming = true;
     this.overlay.clear();
+    this.changedCells.clear();
+    const beforeRows = this.snapshotRows();
     const feed = this.runProgressFeed(spec.transformations.length);
     this.host.notify();
 
@@ -233,6 +236,8 @@ export class EngineManager {
         // a chat request; the rest stays pending behind the indicators.
         cellFilter: this.host.lazy.requestCellFilter(),
       });
+      // #LazyExec — mark the cells the flow filled on its preview page.
+      this.recordFilled(beforeRows, true);
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
@@ -284,6 +289,47 @@ export class EngineManager {
     this.changedCells.set(`${derivedRow}:${column}`, before ?? null);
   }
 
+  // #LazyExec — the changed-cell tint means "filled by the current request".
+  // A pass records what it changed by diffing the AI-made columns' shown
+  // values (a pending/failed sentinel reads as blank) against `before`: a cell
+  // that went blank→value (a live call OR a free cache refill — a page-open
+  // seeds the cache, so one page's pass can quietly fill the rest) or was
+  // overwritten counts as filled; a cache refill that reproduces the same
+  // value does not. Diffing the data — not trusting which cells a live call
+  // streamed through onChunk — is what keeps a shuffled or sorted view from
+  // tinting one block and leaving an identically filled block below it bare.
+  // `reset` starts a new request's marks; page-open, run-all, and retry passes
+  // pass `false` so an AI column tints uniformly as the reader pages through
+  // it. Earlier marks keep their recorded previous value (the hover tooltip).
+  recordFilled(before: Row[], reset: boolean): void {
+    if (reset) this.changedCells.clear();
+    const runner = this.ensureHeadless();
+    const after = runner.currentRows();
+    const cols = aiMadeColumns(runner.currentSpec());
+    if (cols.size === 0) return;
+    const shown = (v: unknown): unknown =>
+      isPendingCell(v) || isFailedCell(v) ? undefined : v;
+    for (let i = 0; i < after.length; i++) {
+      const a = after[i];
+      if (!a) continue;
+      const b = before[i];
+      for (const c of cols) {
+        if (!(c in a)) continue;
+        const av = shown(a[c]);
+        if (av === undefined) continue; // still blank — not filled
+        const bv = b && c in b ? shown(b[c]) : undefined;
+        if (bv === av) continue; // unchanged (an already-evaluated cache refill)
+        if (!this.changedCells.has(`${i}:${c}`)) this.changedCells.set(`${i}:${c}`, bv ?? null);
+      }
+    }
+  }
+
+  /** Snapshot the derived rows (shallow per row) so a pass can diff what it
+   *  filled once it settles. */
+  snapshotRows(): Row[] {
+    return this.ensureHeadless().currentRows().map((r) => ({ ...r }));
+  }
+
   /** Shared post-load bookkeeping for loadInput / loadParsed: cache the source
    *  for model-change rebuilds and reset the per-load view state. */
   private afterLoad(runner: HeadlessRunner, sourcePath: string): void {
@@ -322,7 +368,10 @@ export class EngineManager {
     // The chat's live run progress rides along from the start (#OpenFlow) —
     // a deterministic request just flashes its steps briefly. The feed also
     // paints the overlay, so the wrapper only forwards the caller's onChunk.
+    // #LazyExec — this request resets the changed-cell tint; recordFilled
+    // marks what it changed once it commits (diffed against this snapshot).
     this.changedCells.clear();
+    const beforeRows = this.snapshotRows();
     const feed = this.runProgressFeed();
     // #LazyExec — the preview window's throughput seeds the estimate math.
     const started = Date.now();
@@ -352,6 +401,8 @@ export class EngineManager {
         prevSpec,
         nextSpec: structuredClone(runner.currentSpec()),
       });
+      // #LazyExec — mark the cells this request filled on its preview page.
+      this.recordFilled(beforeRows, true);
     } catch (e) {
       // A declined dependency confirmation drops the patch silently — no
       // spec change, no history entry, no error surface.
@@ -410,9 +461,9 @@ export class EngineManager {
         run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
         appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
         this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
-        // #LazyExec — remember the previous value for the changed-cell tint.
-        const key = `${u.rowIndex}:${u.column}`;
-        if (!this.changedCells.has(key)) this.changedCells.set(key, u.before ?? null);
+        // #LazyExec — the changed-cell tint is recorded by recordFilled once
+        // the pass settles (it diffs the data so free cache refills count too),
+        // not per streamed chunk; the overlay above is just the live paint.
         this.scheduleOverlayFlush();
       },
     };

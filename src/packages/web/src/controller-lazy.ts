@@ -341,6 +341,9 @@ export class LazyManager {
   ): Promise<void> {
     const runner = this.host.engine.ensureHeadless();
     const spec = structuredClone(runner.currentSpec());
+    // #LazyExec — snapshot the rows this pass starts from, so recordFilled can
+    // diff exactly what it filled once it settles (below).
+    const before = this.host.engine.snapshotRows();
     const failures: Array<{ rowIndex: number; column: string; error: string }> = [];
     const started = Date.now();
     const callsBefore = this.cellCalls;
@@ -351,13 +354,9 @@ export class LazyManager {
       this.host.streaming = true;
       this.host.notify();
     }
-    // This pass is now the most recent action — its cells take over the
-    // changed-cell marks (a chat step's marks clear here, and vice versa).
-    if (target.size > 0) this.host.engine.changedCells.clear();
     const onChunk = (u: ChunkUpdate): void => {
       chunks++;
       this.host.engine.paintChunk(u);
-      if (target.has(u.rowIndex)) this.host.engine.noteChangedCell(u.rowIndex, u.column, u.before ?? null);
       if (opts.feed) {
         // Rows, not cells: a spec with two AI columns lands two chunks per row.
         opts.feed.rowsDone = Math.min(opts.feed.rowsTotal, Math.floor(chunks / factor));
@@ -376,6 +375,12 @@ export class LazyManager {
     } finally {
       for (const f of failures) this.failedInfo.set(f.rowIndex, { column: f.column, error: f.error });
       this.remarkFailures();
+      // #LazyExec — a page-open / run-all / retry pass belongs to the current
+      // request's turn, so it accumulates its fills into the changed-cell tint
+      // (reset=false) rather than resetting to just the page it touched. An
+      // empty-target pass (the cache-only refill after a cancel) changes
+      // nothing new, so it never re-marks.
+      if (target.size > 0) this.host.engine.recordFilled(before, false);
       if (this.cellCalls > callsBefore) this.recordTiming(Date.now() - started, chunks);
       if (showStream) this.host.streaming = false;
       this.host.engine.clearOverlay();

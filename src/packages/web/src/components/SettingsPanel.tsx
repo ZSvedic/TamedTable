@@ -219,7 +219,9 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               <Button variant="chrome" onClick={() => void controller.copyDiagnosticsReport()}>
                 Copy diagnostics report
               </Button>
-              <Button variant="ghost" onClick={() => controller.clearDiagnostics()}>
+              {/* chrome, not ghost: a borderless text action next to two real
+                  buttons reads as a label, not a button. */}
+              <Button variant="chrome" onClick={() => controller.clearDiagnostics()}>
                 Clear diagnostics
               </Button>
             </div>
