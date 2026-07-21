@@ -375,6 +375,16 @@ export class LazyManager {
     } finally {
       for (const f of failures) this.failedInfo.set(f.rowIndex, { column: f.column, error: f.error });
       this.remarkFailures();
+      // #LazyExec — opening a page evaluates exactly that page's rows. The
+      // engine's fresh replay also refills every OTHER pending row whose prompt
+      // is already cached (repeated data seeds them from an earlier page), which
+      // would silently complete the whole table and drop the pager marks and the
+      // readout mid-review. Undo that: restore the pending sentinel on any
+      // off-target row that was pending before the pass. The value stays in the
+      // cell cache, so opening that page later refills it free. An empty-target
+      // pass is the cancel-path refill, whose whole job is to pull finished rows
+      // back from the cache — it must keep them, so it is exempt.
+      if (target.size > 0) this.remarkPending(before, target);
       // #LazyExec — a page-open / run-all / retry pass belongs to the current
       // request's turn, so it accumulates its fills into the changed-cell tint
       // (reset=false) rather than resetting to just the page it touched. An
@@ -387,6 +397,26 @@ export class LazyManager {
       this.invalidateScan();
       this.host.engine.invalidateDisplay();
       this.host.notify();
+    }
+  }
+
+  /** Restore the pending sentinel on off-target rows the engine free-refilled
+   *  from cache, so a page-open pass fills exactly its page and the rest stay
+   *  pending (see the caller). Only rows that were pending before the pass are
+   *  touched — already-evaluated rows keep their value, failed rows keep their
+   *  failure. */
+  private remarkPending(before: Row[], target: Set<number>): void {
+    const aiCols = aiMadeColumns(this.host.engine.displaySpec());
+    if (aiCols.size === 0) return;
+    const rows = this.host.engine.rawRows();
+    for (let i = 0; i < rows.length; i++) {
+      if (target.has(i)) continue;
+      const brow = before[i];
+      const row = rows[i];
+      if (!brow || !row) continue;
+      for (const c of aiCols) {
+        if (isPendingCell(brow[c])) row[c] = brow[c];
+      }
     }
   }
 

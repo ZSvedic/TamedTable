@@ -186,9 +186,24 @@ Feature: Lazy AI execution edge cases
       When user chooses to apply to evaluated rows only
       When user goes to page 2 and the rows stay put while they evaluate
       Then every row on the current page has a non-null "Language"
-      # The ten cities cycle, so by now every distinct prompt is cached and
-      # the tail refilled free — nothing is left pending.
-      And no evaluated-rows readout is shown
+      # Opening page 2 evaluates exactly page 2 — even though the ten cities
+      # cycle and page 3's answers are already cached, page 3 stays pending
+      # behind its pager mark until the reader opens it.
+      And the evaluated-rows readout shows "200 of 246 rows evaluated"
+
+    # Regression (feedback round 3): opening a pending page evaluates only that
+    # page. Repeated data (the ten cities cycle) means page 2's answers are
+    # already cached from page 1, but filling page 2 must not silently complete
+    # page 3 — the readout climbs 100 → 200, and the pager keeps a pending mark.
+    @web
+    Scenario: Opening a page evaluates only that page, even when the rest is cached
+      Given load "paginate-input.csv"
+      When query "add a Language column: the official language spoken in each City"
+      Then the evaluated-rows readout shows "100 of 246 rows evaluated"
+      And the pager marks the pages with pending rows
+      When user goes to page 2
+      Then the evaluated-rows readout shows "200 of 246 rows evaluated"
+      And the pager marks the pages with pending rows
 
     # Two AI columns land two chunks per row — the progress divides, so it
     # never reports more rows done than the table has.

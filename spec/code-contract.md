@@ -879,6 +879,14 @@ under the localStorage key `tamedtable.diagnostics` and mirrored in
 memory. It lives in the web package (`controller-diagnostics.ts`); the
 controller composes a `DiagnosticsManager` alongside its other managers.
 
+localStorage is the source of truth, the in-memory mirror a cache: the
+manager re-reads the persisted log before every read (`diagnosticsEvents`,
+`diagnosticsReport`) and before appending each event, then persists. Every
+tab on the origin shares one key — the live app and any pr-preview build
+included — so without that re-read a report copied from one tab would miss
+(or, on the next event, clobber) events another tab wrote. Re-reading keeps
+the newest-first report honest across tabs.
+
 ```ts
 type DiagLevel = 'error' | 'warn' | 'info';
 

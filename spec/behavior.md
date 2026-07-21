@@ -1303,10 +1303,17 @@ behavior unchanged.
 
 Only steps with `{llm}` cells are lazy. A new AI step evaluates the rows in
 view immediately — that preview is the point — and leaves the rest pending.
-Deterministic steps (`{js}`, `{sql}`, filter, sort, dedupe, group, join,
-pivot, split) run on all rows at once, exactly as today: they are effectively
-free. The batch CLI (`execute`) stays fully eager — no pages, no dialogs —
-so a saved flow's output is byte-identical to today's.
+Opening a pending page then evaluates **exactly that page's** lagging rows:
+progress climbs one page at a time (100 → 200 → …), and the other pages stay
+pending with their pager marks until the reader opens them. That holds even
+when repeated data means a page's answers are already cached from an earlier
+page — the cache makes filling that page free when it opens, but it never
+silently completes pages the reader hasn't looked at, which would drop the
+marks and the readout mid-review. Deterministic steps (`{js}`, `{sql}`,
+filter, sort, dedupe, group, join, pivot, split) run on all rows at once,
+exactly as today: they are effectively free. The batch CLI (`execute`) stays
+fully eager — no pages, no dialogs — so a saved flow's output is
+byte-identical to today's.
 
 ### Row state
 

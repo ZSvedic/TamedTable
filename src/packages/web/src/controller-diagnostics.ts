@@ -192,11 +192,13 @@ export class DiagnosticsManager {
 
   /** The log, chronological (newest last), as a fresh array. */
   list(): DiagEvent[] {
+    this.sync();
     return [...this.events];
   }
 
   /** The markdown report, newest event first. */
   report(): string {
+    this.sync();
     const generatedAt = nowIso();
     return buildReportMarkdown(appVersion(), this.configSnapshot(), this.events, generatedAt);
   }
@@ -293,6 +295,10 @@ export class DiagnosticsManager {
       message: redactString(message),
       context: redactValue({ ...this.gatherContext(), ...context }) as Record<string, unknown>,
     };
+    // Append onto the latest persisted log, not this tab's frozen mirror, so a
+    // second tab on the origin (a pr-preview build) never clobbers the other's
+    // events — every tab appends to the shared key.
+    this.sync();
     this.events = evictEvents([...this.events, event], MAX_EVENTS, MAX_BYTES);
     this.persist();
   }
@@ -328,14 +334,22 @@ export class DiagnosticsManager {
     return redactValue(rest) as Record<string, unknown>;
   }
 
-  private load(): void {
+  /** Refresh the in-memory mirror from the persisted log. localStorage is the
+   *  source of truth and is shared by every tab on the origin (the live app
+   *  and any pr-preview build), so reads and appends start from what is
+   *  actually stored — never a mirror frozen at this tab's load time. */
+  private sync(): void {
     try {
       if (typeof localStorage === 'undefined') return;
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) this.events = JSON.parse(raw) as DiagEvent[];
+      this.events = raw ? (JSON.parse(raw) as DiagEvent[]) : [];
     } catch {
-      /* corrupt or unavailable storage — start empty in memory */
+      /* corrupt or unavailable storage — keep the in-memory mirror */
     }
+  }
+
+  private load(): void {
+    this.sync();
   }
 
   private persist(): void {

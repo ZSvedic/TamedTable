@@ -1,12 +1,14 @@
 // #Diagnostics — unit tests for the pure redaction + ring-buffer helpers.
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, afterEach } from 'bun:test';
 import {
   redactString,
   redactValue,
   evictEvents,
   buildReportMarkdown,
+  DiagnosticsManager,
   type DiagEvent,
 } from './controller-diagnostics.ts';
+import type { ControllerHost } from './controller-context.ts';
 
 function ev(message: string, context: Record<string, unknown> = {}): DiagEvent {
   return { ts: '2026-06-25T00:00:00.000Z', level: 'info', message, context };
@@ -88,6 +90,74 @@ describe('evictEvents', () => {
   it('never drops the only remaining event even if it exceeds the cap', () => {
     const kept = evictEvents([ev('lonely', { pad: 'x'.repeat(5000) })], 50, 10);
     expect(kept.length).toBe(1);
+  });
+});
+
+// A localStorage double so two managers can share one persisted log — the
+// real cross-tab situation (the live app and a pr-preview build share the
+// tamedtable.com origin, so one localStorage key).
+function installLocalStorage(): { store: Map<string, string>; restore: () => void } {
+  const store = new Map<string, string>();
+  const original = (globalThis as { localStorage?: Storage }).localStorage;
+  (globalThis as { localStorage?: Storage }).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+    key: () => null,
+    length: 0,
+  } as Storage;
+  return {
+    store,
+    restore: () => {
+      if (original) (globalThis as { localStorage?: Storage }).localStorage = original;
+      else delete (globalThis as { localStorage?: Storage }).localStorage;
+    },
+  };
+}
+
+/** A minimal host — the diagnostics manager only reads config/tutorial/engine
+ *  context and never mutates anything else. */
+function fakeHost(): ControllerHost {
+  return {
+    config: { provider: 'gemini', model: 'm', cellModel: 'cm' },
+    tutorial: { selectedTourName: () => undefined, replayCassetteName: () => undefined },
+    engine: { displaySpec: () => ({ columns: [], transformations: [] }) },
+    messages: [],
+    notify: () => {},
+    pushToast: () => {},
+  } as unknown as ControllerHost;
+}
+
+describe('DiagnosticsManager cross-tab sync', () => {
+  let ls: ReturnType<typeof installLocalStorage> | null = null;
+  afterEach(() => {
+    ls?.restore();
+    ls = null;
+  });
+
+  it('a report reflects events another tab persisted after this one loaded', () => {
+    ls = installLocalStorage();
+    // Tab A (the "report" tab) opens first and holds an empty log.
+    const tabA = new DiagnosticsManager(fakeHost());
+    // Tab B (the "work" tab) records the recent action.
+    const tabB = new DiagnosticsManager(fakeHost());
+    tabB.recordToast('info', 'Loaded paginate-input.csv — 246 rows, 3 columns.');
+    // Copying the report from Tab A must show B's event, not a stale blank.
+    expect(tabA.report()).toContain('Loaded paginate-input.csv');
+    expect(tabA.list().some((e) => e.message.includes('Loaded paginate-input.csv'))).toBe(true);
+  });
+
+  it('a new event does not clobber events another tab persisted', () => {
+    ls = installLocalStorage();
+    const tabA = new DiagnosticsManager(fakeHost());
+    const tabB = new DiagnosticsManager(fakeHost());
+    tabA.recordToast('info', 'event-from-A');
+    tabB.recordToast('info', 'event-from-B');
+    // Both events survive in the shared log, newest last.
+    const messages = new DiagnosticsManager(fakeHost()).list().map((e) => e.message);
+    expect(messages).toContain('event-from-A');
+    expect(messages).toContain('event-from-B');
   });
 });
 
