@@ -89,6 +89,15 @@ When(
   },
 );
 
+When(
+  'the user double-clicks the right edge of the {string} header',
+  async function (this: object, col: string) {
+    const p = page(this);
+    const handle = (await p.locator(`[data-tv-resize="${col}"]`).boundingBox())!;
+    await p.mouse.dblclick(handle.x + handle.width / 2, handle.y + handle.height / 2);
+  },
+);
+
 Then(
   'the {string} header is about {int} px wider',
   async function (this: object, col: string, delta: number) {
@@ -153,7 +162,11 @@ Then(
 
 Then('the {string} header carries a funnel mark', async function (this: object, col: string) {
   const found = await page(this).$(`[data-tv-header="${col}"][data-tv-filtered="${col}"]`);
-  assert.ok(found, `expected a funnel mark on "${col}"`);
+  assert.ok(found, `expected the header "${col}" to be marked filtered`);
+  // The mark is a funnel icon (an SVG), not a look-alike text glyph — so it
+  // reads as "filter", distinct from the ▲/▼ sort arrows.
+  const funnel = await page(this).$(`[data-tv-filter-mark="${col}"] svg`);
+  assert.ok(funnel, `expected a funnel icon on "${col}"`);
 });
 
 Then('the {string} header is narrower than {int} px', async function (this: object, col: string, max: number) {

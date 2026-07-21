@@ -142,6 +142,15 @@ Feature: Table view package
       And the user picks "Autofit width"
       Then the "name" header is narrower than 200 px
 
+    # Plan acceptance criterion 8: double-clicking the column separator autofits
+    # it, the same as the menu's Autofit width.
+    @web
+    Scenario: Double-clicking a column separator autofits it
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 200 px right
+      And the user double-clicks the right edge of the "name" header
+      Then the "name" header is narrower than 200 px
+
   Rule: Row marks, pager dots, and changed cells surface the host's row state
 
     @web

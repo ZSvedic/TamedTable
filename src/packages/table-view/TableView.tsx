@@ -376,6 +376,10 @@ export function TableView({
                       // Reserve room for the ⋮ button so a long title
                       // ellipsizes ("Cat…") instead of running under it.
                       paddingRight: hasMenu ? 30 : undefined,
+                      // The title ellipsizes in its own inner box, so the cell
+                      // itself need not clip — letting the resize handle straddle
+                      // the column border instead of sitting just left of it.
+                      overflow: 'visible',
                     }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: space.px6, maxWidth: '100%' }}>
@@ -395,8 +399,12 @@ export function TableView({
                         </span>
                       )}
                       {filters?.[col] !== undefined && (
-                        <span title={`Filtered: contains "${filters[col]}"`} style={{ color: t.accent, fontSize: 10 }}>
-                          ∇
+                        <span
+                          data-tv-filter-mark={col}
+                          title={`Filtered: contains "${filters[col]}"`}
+                          style={{ flex: '0 0 auto', display: 'inline-flex', color: t.accent }}
+                        >
+                          <Icon name="funnel" size={11} />
                         </span>
                       )}
                     </span>
@@ -457,8 +465,12 @@ export function TableView({
                       style={{
                         position: 'absolute',
                         top: 0,
-                        right: 0,
-                        width: 8,
+                        // Straddle the column border (the cell's right edge)
+                        // instead of sitting just inside it, so the resize
+                        // cursor appears when the pointer is on the visible
+                        // boundary — not ~5px to its left.
+                        right: -3,
+                        width: 10,
                         height: '100%',
                         cursor: 'col-resize',
                       }}
