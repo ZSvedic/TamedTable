@@ -17816,17 +17816,20 @@ function TableView({
                         },
                         children: [
                           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                            style: { display: "inline-flex", alignItems: "center", gap: space.px6, maxWidth: "100%" },
+                            style: { display: "flex", alignItems: "center", gap: space.px6, maxWidth: "100%" },
                             children: [
                               /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
                                 className: "tv-grip",
-                                style: { color: t.ink4 },
+                                style: { flex: "0 0 auto", color: t.ink4 },
                                 children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
                                   name: "grip",
                                   size: 12
                                 }, undefined, false, undefined, this)
                               }, undefined, false, undefined, this),
-                              col,
+                              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                                style: { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                                children: col
+                              }, undefined, false, undefined, this),
                               sort?.column === col && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
                                 "data-tv-sort": sort.dir,
                                 style: { color: t.accent, fontSize: 9 },
