@@ -1357,6 +1357,10 @@ shuffle.
   banner under the app bar carries the readout, the retry action, and a
   compact **Run all** button; the estimate and large-file dialogs — and the
   grid's column menu — open as bottom sheets, like every other phone dialog.
+  The phone column menu (a header tap opens it) carries Sort ascending /
+  descending, a contains-match Filter row, **Remove filter** when a filter is
+  set, and Delete column. It has no Autofit — phone columns auto-size to their
+  content and are not resizable, so there is nothing to fit.
 
 ### Run on all rows and Save
 

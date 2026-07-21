@@ -184,6 +184,13 @@ function ColumnMenuSheet({
             Filter
           </button>
         </div>
+        {/* Only when a filter is set — clear it in one tap. */}
+        {controller.viewFilters()[col] && (
+          <button type="button" data-mob-menu-item="remove-filter" style={item}
+            onClick={() => { void controller.setViewFilter(col, ''); onClose(); }}>
+            Remove filter
+          </button>
+        )}
         <button type="button" data-mob-menu-item="delete" style={{ ...item, color: t.err, borderBottom: 'none' }}
           onClick={() => { void controller.deleteColumn(col); onClose(); }}>
           Delete column

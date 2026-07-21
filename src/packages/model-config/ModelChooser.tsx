@@ -288,6 +288,10 @@ export function ModelChooser({
         style={{
           display: 'flex',
           alignItems: 'center',
+          // Wrap on a narrow phone: the voice tag and price drop to a second
+          // line instead of squeezing the model id into a ragged three-line
+          // column.
+          flexWrap: 'wrap',
           gap: 8,
           padding: '7px 6px',
           borderRadius: radiusSm,
@@ -308,7 +312,7 @@ export function ModelChooser({
         >
           {role}
         </span>
-        <span style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1 }}>
+        <span data-mc-model-id={modelId} style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1, whiteSpace: 'nowrap' }}>
           {modelId}
         </span>
         {voiceTag(m?.voiceInput ?? false)}
