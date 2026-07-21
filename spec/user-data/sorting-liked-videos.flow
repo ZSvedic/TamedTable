@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "source": "performance-liked-videos.csv",
+  "spec": {
+    "table": "performance-liked-videos.csv",
+    "columns": [
+      {
+        "id": "title"
+      },
+      {
+        "id": "Category"
+      },
+      {
+        "id": "Subcategory"
+      },
+      {
+        "id": "url"
+      },
+      {
+        "id": "channel"
+      },
+      {
+        "id": "duration"
+      },
+      {
+        "id": "thumbnail"
+      },
+      {
+        "id": "videoId"
+      }
+    ],
+    "transformations": [
+      {
+        "kind": "mutate",
+        "columns": "Category",
+        "value": {
+          "llm": "Classify this YouTube video into exactly one of the following categories: Music, Education, Funny, News, Sports, Gaming, Automotive, Boating, Ambience, Unknown, Other.\nVideo Title: '{title}'\nChannel: '{channel}'\nReply with ONLY the category name from the list and nothing else. If the input cannot be processed, reply with the literal word: null"
+        },
+        "query": "I am trying to make sense of this list of youtube videos. Add columns right to the title col:\n* Column Category: Music, Education, Funny, News, Sports, Gaming, Automotive, Boating, Ambience, Unknown, Other\n* Column Subcategory: for music add genre, for education topic, for sports type of sports like cycling/MTB/Judo etc.",
+        "name": "mutate Category (AI)"
+      },
+      {
+        "kind": "mutate",
+        "columns": "Subcategory",
+        "value": {
+          "llm": "Provide a subcategory for this YouTube video based on its category, title, and channel.\nVideo Title: '{title}'\nChannel: '{channel}'\nCategory: '{Category}'\nRules:\n- If Category is 'Music', provide the genre (e.g., Rock, Pop, Classical, Lo-Fi, Electronic, etc.).\n- If Category is 'Education', provide the topic (e.g., History, Mathematics, Science, Coding, Philosophy, etc.).\n- If Category is 'Sports', provide the specific type of sport (e.g., Cycling, MTB, Judo, Football, Basketball, etc.).\n- For other categories, provide a brief 1-2 word subcategory or topic.\nReply with ONLY the subcategory name (1-2 words) and nothing else. If the input cannot be processed or no subcategory is applicable, reply with the literal word: null"
+        },
+        "name": "mutate Subcategory (AI)"
+      }
+    ]
+  }
+}
