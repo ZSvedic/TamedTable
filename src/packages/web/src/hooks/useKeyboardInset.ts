@@ -17,6 +17,15 @@ export function keyboardInset(
   return Math.max(0, Math.round(innerHeight - vv.height - vv.offsetTop));
 }
 
+/** How far the bottom region lifts off the screen bottom. Only the Type
+ *  composer rides the keyboard; the dock and the Speak/History sheets stay
+ *  pinned. Gating on `composerOpen` keeps a stray visual-viewport inset —
+ *  reported mid-scroll as the address bar collapses or the table rubber-bands
+ *  at its end — from lifting the pinned chrome, the scroll-to-bottom jitter. */
+export function bottomInset(composerOpen: boolean, keyboardInset: number): number {
+  return composerOpen ? keyboardInset : 0;
+}
+
 /** Live keyboard inset — 0 while the keyboard is down or on browsers without
  *  the VisualViewport API. */
 export function useKeyboardInset(): number {

@@ -1171,10 +1171,14 @@ or the engine changes.
     The phone's own keyboard
     does the typing, and the sheet rides on top of it: phone browsers
     slide the keyboard over the page without moving `fixed` elements,
-    so the bottom region tracks the visual viewport and rises by the
+    so the composer sheet tracks the visual viewport and rises by the
     keyboard's height — the field always stays visible, with no dead
-    space between it and the keys. Sending runs the request and lowers
-    the sheet; the chevron-down button lowers it without sending.
+    space between it and the keys. Only the composer follows the
+    keyboard this way; the dock and the Speak/History sheets stay pinned
+    to the screen bottom, so a transient visual-viewport shift (the
+    address bar collapsing, rubber-band overscroll at the end of the
+    table) never lifts them mid-scroll. Sending runs the request and
+    lowers the sheet; the chevron-down button lowers it without sending.
   - **Speak** records (a live waveform, nothing recognized yet); the send
     button stops recording, transcribes, runs the request, and lowers the
     sheet on its own. Cancel discards.
