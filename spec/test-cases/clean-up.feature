@@ -1,11 +1,11 @@
 # #TutorialMode
-# Marketing "Clean up" tours — one per homepage item. Each is a key-free @tour
-# tour (deep-linked from the homepage "Show me →") that loads a sample, runs the
-# exact phrase a user would type, and replays its model call from clean-up.json.
-# @cat-cleanup groups them into the "Clean up" panel section.
-Feature: Clean up tours
+# Atomic "Clean up" scenarios — CI coverage, one per feature. Each loads a
+# sample, runs the exact phrase a user would type, and replays its model call
+# from clean-up.json. The section's marketing tour is the single story in
+# showcase-cleanup.feature; these stay browsable via the panel's Dev dropdown.
+Feature: Clean up scenarios
 
-  Rule: Each Clean up tour runs its phrase key-free
+  Rule: Each Clean up phrase runs key-free
 
     Background:
       Given the TamedTable web app
@@ -13,14 +13,14 @@ Feature: Clean up tours
 
     # A normalized phone is a + and digits — a letter (the l-for-1 garble) or a
     # bare local number leaking through is a bad recording, not a style choice.
-    @web @tour @cat-cleanup
+    @web
     Scenario: Normalize the phone numbers
       When query "normalize the phone numbers"
       Then the spec has 1 transformation
       And no toast is shown
       And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
-    @web @tour @cat-cleanup
+    @web
     Scenario: Make the country names consistent
       Given the expected output is "cleanup-countries-expected.jsonl"
       When query "make the country names consistent"
@@ -32,7 +32,7 @@ Feature: Clean up tours
     # write the same value into each. Rows I003/I008/I009 carry the miscapitalized
     # names ("mcdonald", "van der berg", "o'neil"); non-Latin names (rows
     # I017-I020) must pass through unchanged, never be nulled as "unrecognizable".
-    @web @tour @cat-cleanup
+    @web
     Scenario: Fix the capitalization of names
       When query "fix the capitalization of names"
       Then the spec has 2 transformations
@@ -49,7 +49,7 @@ Feature: Clean up tours
 
     # Rows I009 and I015 carry the homepage's flagship ambiguity: the same 03/04
     # date read as March 4 on the US row and April 3 on the German row.
-    @web @tour @cat-cleanup
+    @web
     Scenario: Clean up the birth dates
       Given the expected output is "cleanup-dob-expected.jsonl"
       When query "clean up the birth dates"

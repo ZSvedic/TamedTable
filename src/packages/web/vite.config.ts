@@ -23,11 +23,14 @@ const cassetteDir = join(here, '../../../cassettes');
 // /cassettes/. That keeps page load small and lets a key-free visitor play a
 // full tour by replaying the tour's cassette.
 const tutorialFeatureNames = [
+  'showcase-cleanup.feature', 'showcase-enrich.feature', 'showcase-classify.feature',
+  'showcase-validate.feature', 'showcase-language.feature', 'showcase-exact.feature',
   'filter.feature', 'aggregate.feature', 'join.feature',
   'colsplit.feature', 'dedupe.feature', 'pivot.feature', 'validate.feature',
   'voice.feature', 'sort.feature', 'multilingual.feature',
   'clean-up.feature', 'enrich.feature', 'classify.feature',
   'language-ai.feature', 'loadsave.feature',
+  'showcase-lazy-ai.feature', 'lazy-exec.feature',
 ];
 
 const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {

@@ -71,10 +71,58 @@ A row-number column, sticky headers, and the visible rows. Gestures:
 - A 0-row table states "This table has 0 rows."; the range readout shows
   `<first>–<last> of <total> rows`.
 
+Grid upgrades for lazy AI execution
+([behavior.md § Lazy AI execution](../../behavior.md#lazy-ai-execution-lazyexec));
+the host owns every piece of state, the grid renders and reports:
+
+- **Changed cells** — the host passes per-cell changed flags with previous
+  values; a changed cell tints, and hovering it shows a small
+  `was: <previous>` tooltip.
+- **Column menu** — every data header ends in a **⋮** button (revealed on
+  hover, always tappable on touch) opening a per-column menu, grouped by
+  hairline separators: **Sort ascending** / **Sort descending** (picking the
+  active direction clears it) · **Filter…** (a small input popover,
+  contains-match) / **Remove filter** (shown only when a filter is set, it
+  reports an empty filter) · **Autofit width** · **Delete column**. Sort and
+  filter report through `onSortChange(column, dir | null)` /
+  `onFilterChange(column, text)` and are view state — the host reorders or
+  narrows the rows it passes in. Delete reports `onDeleteColumn(column)`; what
+  it means is the host's call (in the app it commits a spec step). The header
+  itself shows the state: a ▲/▼ sort indicator and a funnel mark (an SVG
+  funnel icon, distinct from the sort arrows) when a filter is active.
+- **Autofit** — the menu entry, or double-clicking a visible column
+  separator (the resize handle straddles the border and shows the
+  `col-resize` cursor there), sizes that column to the wider of its widest
+  data cell on the current page and its own header (title plus the grip and ⋮
+  chrome), plus padding — so a short value never hides the column name. Same
+  fixed-layout snapshot as a drag resize.
+- **Row status marks** — rows carry an optional status: `pending` washes the
+  row-number cell muted, `failed` marks it red. Retry is a host affordance
+  (the app's pagination-bar readout), not a grid control.
+- The row-number column's header reads **Row #** and accepts a host-supplied
+  hover hint (the app explains original numbering while the view is
+  shuffled).
+- **Copy** — with a cell selected (and not editing), Cmd/Ctrl+C copies its
+  text to the clipboard and reports `onCopyCell(row, column, text)`; a live
+  text selection anywhere on the page takes precedence (the browser copy is
+  never hijacked).
+- **URL cells** — a cell whose entire value is a valid `http(s)://` URL
+  renders as a link (new tab). Nothing looser: no bare-domain guessing, a
+  value that merely contains a dot stays plain text.
+- **Headers** — the ⋮ menu button is visually distinct, and header text
+  reserves space for it: a title that doesn't fit ellipsizes ("Cat…")
+  instead of running under the button. Under fixed layout, a column with no
+  measured width defaults to one sized to its title (clamped to a sensible
+  range).
+
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for
 tests: `data-tv-header`, `data-tv-resize`, `data-tv-cell="<absRow>:<col>"`,
-`data-tv-edit`, `data-tv-range`, `data-tv-streaming`.
+`data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-menu="<col>"`
+(the ⋮ button), `data-tv-colmenu="<col>"` (the open menu, with
+`data-tv-menu-item` entries and `data-tv-filter-input`), `data-tv-sort`,
+`data-tv-filtered="<col>"`, `data-tv-rowstatus`, `data-tv-changed`, and
+`data-tv-pending` (a marked pager button).
 
 ## Pagination component
 

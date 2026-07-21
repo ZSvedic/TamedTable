@@ -44,3 +44,26 @@ export function buildPageList(current: number, total: number): Array<number | 'â
   }
   return out;
 }
+
+/** Default fixed-layout width for a column with no measured width: sized to
+ *  its title (mono-ish glyph estimate + menu/padding slack), clamped so a
+ *  one-letter column stays grabbable and a paragraph-long title cannot eat
+ *  the table. */
+export function defaultColumnWidth(title: string): number {
+  return Math.max(120, Math.min(240, Math.round(title.length * 8) + 48));
+}
+
+/** The href for a cell that is a link, or null. Deliberately strict: only a
+ *  string whose entire value parses as an http(s) URL counts â€” no bare-domain
+ *  guessing ("justify.me" stays plain text). */
+export function urlHref(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const s = value.trim();
+  if (!/^https?:\/\/\S+$/.test(s)) return null;
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;
+  } catch {
+    return null;
+  }
+}

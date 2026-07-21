@@ -140,6 +140,54 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             onKeyChange={handleKeyChange}
           />
 
+          {/* #LazyExec — Simple mode: every AI step runs table-wide at once,
+              with the estimate dialog gating runs of more than one page. */}
+          <div style={{ marginTop: space.px16 }}>
+            <div
+              style={{
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                fontWeight: 600,
+                color: t.ink,
+                marginBottom: space.px8,
+              }}
+            >
+              Execution
+            </div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: space.px8,
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                color: t.ink2,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                data-tt-always-run-all=""
+                checked={cfg.alwaysRunAll}
+                onChange={(e) => void controller.setConfig({ alwaysRunAll: e.target.checked })}
+                style={{ marginTop: 2 }}
+              />
+              <span>
+                Always run on all rows
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: typography.size.xs,
+                    color: t.ink3,
+                  }}
+                >
+                  If on, every AI step runs the whole table immediately (not recommended for
+                  large tables).
+                </span>
+              </span>
+            </label>
+          </div>
+
           {/* #Diagnostics — send the maintainers a redacted bug report */}
           <div style={{ marginTop: space.px16 }}>
             <div
@@ -171,7 +219,9 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               <Button variant="chrome" onClick={() => void controller.copyDiagnosticsReport()}>
                 Copy diagnostics report
               </Button>
-              <Button variant="ghost" onClick={() => controller.clearDiagnostics()}>
+              {/* chrome, not ghost: a borderless text action next to two real
+                  buttons reads as a label, not a button. */}
+              <Button variant="chrome" onClick={() => controller.clearDiagnostics()}>
                 Clear diagnostics
               </Button>
             </div>

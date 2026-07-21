@@ -31,6 +31,8 @@ import { VoiceManager } from './controller-voice.ts';
 import { ConfigManager } from './controller-config.ts';
 import { TutorialManager } from './controller-tutorial.ts';
 import { DiagnosticsManager, type DiagEvent } from './controller-diagnostics.ts';
+import { LazyManager, type RunAllDialogState, type RunAllReason, type RunEstimate } from './controller-lazy.ts';
+import { ViewManager, type ViewSort } from './controller-view.ts';
 import type {
   CellRef,
   ChatMessage,
@@ -48,7 +50,7 @@ import type {
 // Public surface re-exports — keep existing imports through this module
 // working without forcing every component to update its import path.
 export { detectFormat, userFacingMessage, summarizeDebug };
-export type { DiagEvent };
+export type { DiagEvent, RunAllDialogState, RunAllReason, RunEstimate, ViewSort };
 export type {
   CellRef,
   ChatMessage,
@@ -68,6 +70,7 @@ export type {
  *  batch × batches in flight. Host opts win; otherwise the provider's pinned
  *  cell batch (openrouter: 5 × 5 = 25) or the engine default (20 × 5 = 100). */
 export function pageSizeFor(provider: Provider, opts: WebControllerOptions): number {
+  if (opts.pageSize) return opts.pageSize;
   const batch = opts.batchSize ?? defaultBatchSize(provider) ?? DEFAULT_BATCH_SIZE;
   return batch * (opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
 }
@@ -86,6 +89,8 @@ export class WebController implements ControllerHost {
   readonly settingsMgr: ConfigManager;
   readonly tutorial: TutorialManager;
   readonly diagnostics: DiagnosticsManager;
+  readonly lazy: LazyManager;
+  readonly view: ViewManager;
 
   private readonly listeners = new Set<() => void>();
   private revision = 0;
@@ -140,6 +145,13 @@ export class WebController implements ControllerHost {
   goldenRows: Row[] | null = null;
   /** Text pre-filled into the chat input by a prefill-chat step, or null. */
   tutorialPrefill: string | null = null;
+  // #LazyExec
+  /** The large-file dialog (Load shuffled / Load in original order), or null. */
+  largeFileDialog: { name: string; rowCount: number } | null = null;
+  /** The run-on-all estimate/confirmation dialog, or null. */
+  runAllDialog: RunAllDialogState | null = null;
+  /** The post-run save confirmation — a save picker needs a fresh click. */
+  saveReadyDialog = false;
 
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
@@ -163,6 +175,8 @@ export class WebController implements ControllerHost {
     this.voice = new VoiceManager(this);
     this.settingsMgr = new ConfigManager(this);
     this.tutorial = new TutorialManager(this);
+    this.view = new ViewManager(this);
+    this.lazy = new LazyManager(this);
   }
 
   // ── Subscription (for React's useSyncExternalStore) ──────────────────────
@@ -263,7 +277,12 @@ export class WebController implements ControllerHost {
       const debug = this.lastDebug;
       // A wrong answer is a bug even when nothing turned red — every reply to
       // a completed request carries the Report bug action.
-      this.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug, true);
+      const reply = debug ? summarizeDebug(debug) : 'Done.';
+      this.pushMessage('assistant', reply, debug, true);
+      // #Diagnostics — a completed request fires no toast, so log it explicitly
+      // (with the request in recentMessages) — else a report copied after a
+      // query would have no trace of it.
+      this.diagnostics.recordActivity(reply);
     } catch (e) {
       const debug = (e as { debug?: RequestDebugInfo }).debug;
       const { message, reportable } = describeError(e, this.config.provider);
@@ -282,27 +301,139 @@ export class WebController implements ControllerHost {
   /** Current rows with any in-flight streaming chunks painted on top. */
   displayRows(): Row[] { return this.engine.displayRows(); }
 
-  // ── Pagination (view state — never touches the spec) ──────────────────────
+  // ── Pagination + view pipeline (view state — never touches the spec) ──────
+  // #LazyExec — displayed rows run derived → shuffle → filters → sort → page;
+  // view positions map back to derived indices through viewOrder.
 
-  totalRows(): number { return this.displayRows().length; }
+  totalRows(): number { return this.viewRows().length; }
   pageCount(): number { return pageCountFor(this.totalRows(), this.pageSize); }
 
   /** The current 1-based page, clamped — so a request that shortens the table
    *  pulls the page back into range with no extra bookkeeping. */
   currentPage(): number { return clampPage(this.pageNum, this.pageCount()); }
 
-  /** The slice of derived rows shown on the current page. */
-  pageRows(): Row[] { return pageSlice(this.displayRows(), this.currentPage(), this.pageSize); }
+  /** All display rows in view order (shuffle/filter/sort applied). */
+  viewRows(): Row[] {
+    const rows = this.displayRows();
+    const order = this.view.viewOrder(this.engine.rawRows());
+    if (order.length === rows.length && order.every((v, i) => v === i)) return rows;
+    return order.map((i) => rows[i]!);
+  }
 
-  /** Jump to a page; out-of-range values clamp to the nearest edge. */
-  goToPage(page: number): void {
+  /** The slice of view rows shown on the current page. */
+  pageRows(): Row[] { return pageSlice(this.viewRows(), this.currentPage(), this.pageSize); }
+
+  /** Original (derived) row numbers for the current page — the Row # column
+   *  keeps them while the view is shuffled. 1-based. */
+  pageRowNumbers(): number[] {
+    const order = this.view.viewOrder(this.engine.rawRows());
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return order.slice(start, start + this.pageSize).map((i) => i + 1);
+  }
+
+  /** Row status marks for the current page ('pending' | 'failed' | undefined). */
+  pageRowStatus(): Array<'pending' | 'failed' | undefined> {
+    const order = this.view.viewOrder(this.engine.rawRows());
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return order.slice(start, start + this.pageSize).map((i) => {
+      const s = this.lazy.rowStatus(i);
+      return s === 'evaluated' ? undefined : s;
+    });
+  }
+
+  /** Map a view-absolute row position to its derived row index. */
+  viewToDerived(viewIndex: number): number {
+    const order = this.view.viewOrder(this.engine.rawRows());
+    return order[viewIndex] ?? viewIndex;
+  }
+
+  /** Cells the last step changed on the current page, keyed
+   *  "<viewAbsRow>:<column>" → previous value (the hover tooltip). */
+  pageChangedCells(): Record<string, unknown> {
+    if (this.engine.changedCells.size === 0) return {};
+    const order = this.view.viewOrder(this.engine.rawRows());
+    const start = (this.currentPage() - 1) * this.pageSize;
+    const out: Record<string, unknown> = {};
+    for (let pos = start; pos < Math.min(order.length, start + this.pageSize); pos++) {
+      const derived = order[pos]!;
+      for (const [key, before] of this.engine.changedCells) {
+        const sep = key.indexOf(':');
+        if (Number(key.slice(0, sep)) !== derived) continue;
+        out[`${pos}:${key.slice(sep + 1)}`] = before;
+      }
+    }
+    return out;
+  }
+
+  /** Jump to a page; out-of-range values clamp to the nearest edge. Opening
+   *  a page with lagging rows queues exactly those rows for evaluation
+   *  (#LazyExec) — await the returned promise to observe the filled page. */
+  goToPage(page: number): Promise<void> {
     this.pageNum = clampPage(page, this.pageCount());
     this.notify();
+    this.lazy.scheduleVisible();
+    return this.lazy.settle();
   }
+
+  // ── Lazy execution surface (#LazyExec) ────────────────────────────────────
+
+  /** The pagination-bar readout ("N of M rows evaluated"), or null. */
+  evaluatedReadout(): { done: number; total: number; failed: number } | null {
+    return this.lazy.evaluatedReadout();
+  }
+  /** 1-based pages carrying pending rows — the pager dots. */
+  pendingPages(): number[] { return this.lazy.pendingPages(); }
+  /** The run-on-all estimate, or null when nothing is pending. */
+  runEstimate(): RunEstimate | null { return this.lazy.runEstimate(); }
+  /** Run every pending/failed row, behind the estimate dialog when more than
+   *  one page remains. */
+  runOnAllRows(): Promise<boolean> { return this.lazy.runOnAllRows('run-all'); }
+  /** The readout's "Retry N failed rows". */
+  retryFailedRows(): Promise<void> { return this.lazy.retryFailedRows(); }
+  /** Confirm / decline the run-all estimate dialog; `applyEvaluatedOnly` is
+   *  the column-menu gates' middle choice. */
+  confirmRunAll(): void { this.lazy.confirmRunAll(); }
+  applyEvaluatedOnly(): void { this.lazy.applyEvaluatedOnly(); }
+  declineRunAll(): void { this.lazy.declineRunAll(); }
+  /** The post-run save confirmation (a save picker needs a fresh click). */
+  confirmSaveReady(): Promise<void> { return this.files.confirmSaveReady(); }
+  dismissSaveReady(): void { this.files.dismissSaveReady(); }
+  /** Cancel the in-flight run-all — finished rows are kept. */
+  cancelRunAll(): void { this.lazy.cancelRun(); }
+  /** Await any queued lazy evaluation (tests). */
+  lazySettle(): Promise<void> { return this.lazy.settle(); }
+  /** Total cell-model calls so far (tests assert redo makes none). */
+  cellCallCount(): number { return this.lazy.cellCallCount(); }
+  /** Load the table stashed behind the large-file dialog. */
+  loadShuffled(): Promise<void> { return this.files.resolveLargeFile(true); }
+  loadOriginalOrder(): Promise<void> { return this.files.resolveLargeFile(false); }
+
+  // ── Column-menu view state (#LazyExec — view, never the spec) ─────────────
+
+  /** The active view sort, or null. */
+  viewSort(): ViewSort | null { return this.view.sort; }
+  /** Per-column contains-match filters. */
+  viewFilters(): Record<string, string> { return { ...this.view.filters }; }
+  /** Sort from the column menu. On an AI-made column with pending rows the
+   *  dependency rule shows the run-all confirmation first — with a middle
+   *  "Sort evaluated rows" choice (missing values sink to the end);
+   *  declining leaves the view unchanged. */
+  async setViewSort(column: string, dir: 'asc' | 'desc' | null): Promise<void> {
+    if (dir !== null && (await this.lazy.gateViewApply(column, 'sort')) === 'skip') return;
+    this.view.setSort(column, dir);
+  }
+  /** Filter from the column menu — same gate as sort ("Filter evaluated
+   *  rows" hides unevaluated rows from the narrowed view). */
+  async setViewFilter(column: string, text: string): Promise<void> {
+    if (text.trim() !== '' && (await this.lazy.gateViewApply(column, 'filter')) === 'skip') return;
+    this.view.setFilter(column, text);
+  }
+  /** Delete a column — a spec step, exactly what the chat patch would do. */
+  deleteColumn(column: string): Promise<void> { return this.patch.deleteColumn(column); }
 
   // ── Selection (view state — tints the cell) ───────────────────────────────
 
-  /** Select a cell by 0-based row index and column id. */
+  /** Select a cell by 0-based view-absolute row index and column id. */
   selectCell(row: number, column: string): void {
     this.selection = { row, column };
     this.notify();
@@ -321,9 +452,20 @@ export class WebController implements ControllerHost {
   undo(): Promise<void> { return this.patch.undo(); }
   redo(): Promise<void> { return this.patch.redo(); }
   editCell(rowIndex: number, column: string, value: string): Promise<void> {
-    return this.patch.editCell(rowIndex, column, value);
+    // The grid reports view-absolute positions; the patch keys on the
+    // derived row index (which the Row # column shows).
+    return this.patch.editCell(this.viewToDerived(rowIndex), column, value);
   }
   reorderColumns(order: string[]): Promise<void> { return this.patch.reorderColumns(order); }
+
+  /** Whether closing the tab would lose work: a loaded table with any
+   *  committed transformation or an undoable step. The browser shell wires
+   *  this to `beforeunload` — a stray refresh must not silently discard
+   *  evaluated rows or edits. */
+  hasUnsavedWork(): boolean {
+    if (!this.loaded) return false;
+    return this.displaySpec().transformations.length > 0 || this.canUndo();
+  }
 
   // ── File dialogs (→ files) ─────────────────────────────────────────────────
 

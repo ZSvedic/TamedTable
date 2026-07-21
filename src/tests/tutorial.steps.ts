@@ -35,6 +35,13 @@ When('user advances to the next tutorial step', async function (this: TamedTable
   await controller(this).nextStep();
 });
 
+// Two overlapping Next clicks — the second lands while the first step is still
+// executing and must be ignored (behavior.md § Tutorial mode).
+When('user advances to the next tutorial step twice rapidly', async function (this: TamedTableWorld) {
+  const c = controller(this);
+  await Promise.all([c.nextStep(), c.nextStep()]);
+});
+
 When('user cancels the tutorial', function (this: TamedTableWorld) {
   controller(this).cancelTutorial();
 });

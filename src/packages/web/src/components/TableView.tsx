@@ -3,7 +3,7 @@
 // the empty state stays here: it is app copy wired to the app's file dialogs.
 import { useState, type DragEvent, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
-import { useTheme, Icon, type IconName } from '@tamedtable/ui-kit/components';
+import { useTheme, Button, Icon, type IconName } from '@tamedtable/ui-kit/components';
 import { Mark } from '@tamedtable/toolbar/components';
 import { TableView as TableGrid } from '@tamedtable/table-view/components';
 import type { WebController } from '../controller.ts';
@@ -144,6 +144,46 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
   );
 }
 
+// #LazyExec — the pagination-bar readout: "N of M rows evaluated", plus the
+// "Retry N failed rows" action while any row has failed.
+export function EvaluatedReadout({ controller, t }: { controller: WebController; t: Theme }): ReactNode {
+  const readout = controller.evaluatedReadout();
+  if (!readout) return null;
+  return (
+    <span
+      data-tt-readout=""
+      style={{ fontFamily: typography.ui, fontSize: typography.size.xs, color: t.ink3, whiteSpace: 'nowrap' }}
+    >
+      <span style={{ color: t.ink2, fontWeight: 600 }}>
+        {readout.done.toLocaleString()} of {readout.total.toLocaleString()}
+      </span>{' '}
+      rows evaluated
+      {readout.failed > 0 && (
+        <>
+          {' · '}
+          <button
+            type="button"
+            data-tt-retry=""
+            onClick={() => void controller.retryFailedRows()}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              color: t.err,
+              cursor: 'pointer',
+              fontFamily: typography.ui,
+              fontSize: typography.size.xs,
+              textDecoration: 'underline',
+            }}
+          >
+            Retry {readout.failed} failed row{readout.failed === 1 ? '' : 's'}
+          </button>
+        </>
+      )}
+    </span>
+  );
+}
+
 export function TableView({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
@@ -152,6 +192,7 @@ export function TableView({ controller }: { controller: WebController }): ReactN
     return <EmptyState controller={controller} t={t} />;
   }
 
+  const readout = controller.evaluatedReadout();
   return (
     <TableGrid
       id="tutorial-table-view"
@@ -161,12 +202,39 @@ export function TableView({ controller }: { controller: WebController }): ReactN
       totalRows={controller.totalRows()}
       page={controller.currentPage()}
       pageCount={controller.pageCount()}
-      onPageChange={(p) => controller.goToPage(p)}
+      onPageChange={(p) => void controller.goToPage(p)}
       selection={controller.selection}
       onSelectCell={(row, column) => controller.selectCell(row, column)}
       onEditCell={(row, column, value) => void controller.editCell(row, column, value)}
       onReorderColumns={(order) => void controller.reorderColumns(order)}
       streaming={controller.streaming}
+      // #LazyExec — row state, view state, and the grid upgrades.
+      rowNumbers={controller.pageRowNumbers()}
+      rowNumberHint={
+        controller.view.shuffleSeed !== null
+          ? 'Original row numbers — the view is shuffled; saving keeps this order.'
+          : undefined
+      }
+      rowStatus={controller.pageRowStatus()}
+      changedCells={controller.pageChangedCells()}
+      sort={controller.viewSort()}
+      filters={controller.viewFilters()}
+      onSortChange={(column, dir) => void controller.setViewSort(column, dir)}
+      onFilterChange={(column, text) => void controller.setViewFilter(column, text)}
+      onDeleteColumn={(column) => void controller.deleteColumn(column)}
+      markedPages={controller.pendingPages()}
+      onCopyCell={() => controller.pushToast('info', 'Cell copied.')}
+      barLeft={<EvaluatedReadout controller={controller} t={t} />}
+      barRight={
+        readout && readout.done + readout.failed < readout.total ? (
+          // The id is the lazy tour's spotlight target for its estimate step.
+          <span id="tutorial-runall-btn" data-tt-runall="" style={{ display: 'inline-flex' }}>
+            <Button variant="primary" onClick={() => void controller.runOnAllRows()}>
+              Run on all rows
+            </Button>
+          </span>
+        ) : undefined
+      }
     />
   );
 }

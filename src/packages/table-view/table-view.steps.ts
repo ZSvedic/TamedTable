@@ -4,7 +4,7 @@
 // spec/packages/README.md); they import nothing from the app harness.
 import { Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { buildPageList, clampPage, pageCountFor, pageSlice } from './index.ts';
+import { buildPageList, clampPage, defaultColumnWidth, pageCountFor, pageSlice, urlHref } from './index.ts';
 
 Then(
   'pageCountFor {int} rows at size {int} is {int}',
@@ -34,3 +34,15 @@ Then(
     assert.equal(buildPageList(current, total).join(','), expected);
   },
 );
+
+Then('defaultColumnWidth of {string} is {int}', function (title: string, expected: number) {
+  assert.equal(defaultColumnWidth(title), expected);
+});
+
+Then('urlHref of {string} is {string}', function (value: string, expected: string) {
+  assert.equal(urlHref(value), expected);
+});
+
+Then('urlHref of {string} is null', function (value: string) {
+  assert.equal(urlHref(value), null);
+});

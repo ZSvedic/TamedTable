@@ -1,12 +1,12 @@
 # #TutorialMode
-# Marketing "Language" tours (text). Key-free @tour tours deep-linked from the
-# homepage; each loads its sample, runs the phrase, and replays from
-# language-ai.json. @cat-language groups them with the voice and multilingual tours.
-Feature: Language tours
+# Atomic "Language" scenarios (text) — CI coverage, one per feature. Each
+# loads its sample, runs the phrase, and replays from language-ai.json. The
+# section's marketing tour is the single story in showcase-language.feature.
+Feature: Language scenarios
 
-  Rule: Each Language tour runs its phrase key-free
+  Rule: Each Language phrase runs key-free
 
-    @web @tour @cat-language
+    @web
     Scenario: Summarize each review in one line
       Given the TamedTable web app
       And load "reviews.csv"
@@ -16,7 +16,7 @@ Feature: Language tours
       And no toast is shown
       And compare with the expected output
 
-    @web @tour @cat-language
+    @web
     Scenario: Translate the comments to English
       Given the TamedTable web app
       And load "comments.csv"
@@ -26,7 +26,7 @@ Feature: Language tours
       And no toast is shown
       And compare with the expected output
 
-    @web @tour @cat-language
+    @web
     Scenario: Tag the language of every comment
       Given the TamedTable web app
       And load "comments.csv"

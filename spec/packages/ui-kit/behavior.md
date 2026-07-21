@@ -68,6 +68,13 @@ All components are pure — props in, callbacks out — and carry stable
   test fails CI if the catalogue drifts.
 - `Button({ children, onClick?, disabled?, variant?, title? })` — variants
   `ghost` (default), `chrome`, `primary`, `danger` (`data-uk-button`).
+  `ghost` is borderless: reserve it for buttons whose affordance is already
+  obvious from context — an **icon-bearing button in the toolbar row**, where
+  the icon and the toolbar frame read as clickable. A **text-only action in a
+  panel or dialog** must not be `ghost`; borderless text reads as a label, so
+  give it `chrome` (a bordered secondary button) or `primary`/`danger` as its
+  weight warrants — even a dismissive "Cancel"/"Not now" next to a primary
+  action.
 - `MenuButton({ children, sections, disabled?, title?, id?, align? })` — a
   plain dropdown button: one trigger (label plus chevron, no split default
   action) that opens a grouped menu. `sections` is a list of

@@ -248,26 +248,26 @@ section { padding: 52px 0; }
    fires on mouseup regardless of any selection). */
 .feat-item .fcmd, .feat-item .fnote { -webkit-user-select: text; user-select: text; }
 
-.feat-visual {
-  border: 1px solid var(--silver); border-radius: var(--radius);
-  background: var(--paper); overflow: hidden; display: flex; flex-direction: column;
-}
+.feat-visual { display: flex; flex-direction: column; gap: 14px; }
+/* The stage is the card; the dots sit inside it, over the illustration, and
+   the one "Show me →" button for the section's tour sits below the card. */
 .feat-stage {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  padding: 26px; min-height: 280px; background: var(--stage);
+  position: relative; flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 26px 26px 40px; min-height: 280px; background: var(--stage);
+  border: 1px solid var(--silver); border-radius: var(--radius); overflow: hidden;
 }
 .feat-stage img { width: 100%; max-width: 380px; height: auto; }
-.feat-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 18px; border-top: 1px solid var(--line); background: var(--paper);
+.feat-dots {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
 }
-.feat-dots { display: flex; gap: 8px; }
 .feat-dot {
   width: 10px; height: 10px; border-radius: 50%; cursor: pointer; padding: 0;
   background: transparent; border: 2px solid var(--silver); transition: background .12s, border-color .12s;
 }
 .feat-dot.active { background: var(--ink); border-color: var(--ink); }
 .feat-demo {
+  align-self: center;
   font-family: var(--font-body); font-size: 13px; font-weight: 600;
   background: var(--btn-bg); color: var(--btn-fg); text-decoration: none;
   padding: 7px 14px; border-radius: 7px; transition: filter .15s;

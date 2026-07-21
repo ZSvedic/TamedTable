@@ -12,15 +12,15 @@ Feature: Multilingual requests
     Background:
       Given load "customers-input.csv"
 
-    @headless @web @tour @cat-language
+    @headless @web
     Scenario: Normalize phone numbers in Spanish
       When query "normaliza los números de teléfono"
       Then a phone-normalization transformation is added
       And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
     # The non-Spanish text variants share one shape; an outline keeps them
-    # together. (Spanish stays a standalone @tour above — the homepage deep-links
-    # it by exact name, and the tour parser skips outlines.)
+    # together. (Spanish stays a standalone scenario above — the Process
+    # language showcase tour ends with the same Spanish ask.)
     @headless @web
     Scenario Outline: <language> text request
       When query "<phrase>"

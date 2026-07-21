@@ -32,6 +32,18 @@ Feature: Voice input
       When user selects the provider "gemini"
       Then the mic button is hidden
 
+    # Regression: the voice step of a key-free tour spotlights the mic; hiding
+    # it for lack of a key left the Driver.js overlay with no target and the
+    # tour stuck on its first stop.
+    @web @regression
+    Scenario: The mic is visible while a key-free tour plays
+      Given the TamedTable web app
+      And a stub microphone that returns recorded audio
+      And the API key has not been set
+      And the tutorial "Handle feedback in five languages" is selected
+      When user plays the tutorial
+      Then the mic button is shown
+
     @web
     Scenario: The mic is shown when Google is selected with a Gemini key
       Given the TamedTable web app
@@ -173,14 +185,14 @@ Feature: Voice input
       Then the continuous status is "idle"
 
   # #TutorialMode
-  # A runnable, key-free voice tour for the marketing "Speak instead of type"
-  # deep link. Run as a plain @web scenario it records/replays voice.json via
-  # the `speak` step (same request the mic release issues); played as a
-  # @tour tour it replays that same cassette with no key (see
-  # tutorial.feature). The clip is the committed English "Normalize DOB column".
-  Rule: A spoken tour normalizes a column key-free
+  # The runnable, key-free spoken scenario — CI coverage for the voice
+  # pipeline. It records/replays voice.json via the `speak` step (same request
+  # the mic release issues). The marketing voice story now opens the Process
+  # language showcase tour (showcase-language.feature), whose first step
+  # replays this same committed "Normalize DOB column" clip.
+  Rule: A spoken request normalizes a column key-free
 
-    @web @tour @cat-language
+    @web
     Scenario: Normalize DOB by voice
       Given the TamedTable web app
       And load "customers-input.csv"

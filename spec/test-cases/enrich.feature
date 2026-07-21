@@ -1,15 +1,15 @@
 # #TutorialMode
-# Marketing "Enrich & extract" tours — one per homepage item. Key-free @tour
-# tours deep-linked from the homepage; each loads its sample, runs the phrase, and
-# replays from enrich.json. @cat-enrich groups them in the panel.
-Feature: Enrich and extract tours
+# Atomic "Enrich & extract" scenarios — CI coverage, one per feature. Each
+# loads its sample, runs the phrase, and replays from enrich.json. The
+# section's marketing tour is the single story in showcase-enrich.feature.
+Feature: Enrich and extract scenarios
 
-  Rule: Each Enrich tour runs its phrase key-free
+  Rule: Each Enrich phrase runs key-free
 
     # Free-form addresses have no consistent delimiter, so the edit is one
     # {llm} extraction per part — a comma split can never separate
     # "Mountain View CA 94043" into City, State, and Zip.
-    @web @tour @cat-enrich
+    @web
     Scenario: Split the address into its parts
       Given the TamedTable web app
       And load "address.csv"
@@ -23,7 +23,7 @@ Feature: Enrich and extract tours
       And the row where "Name" is "Ana" has "City" equal to "London"
       And the row where "Name" is "Ana" has "Zip" equal to "NW1 6XE"
 
-    @web @tour @cat-enrich
+    @web
     Scenario: Fill the country from the city column
       Given the TamedTable web app
       And load "cities.csv"
@@ -33,7 +33,7 @@ Feature: Enrich and extract tours
       And no toast is shown
       And compare with the expected output
 
-    @web @tour @cat-enrich
+    @web
     Scenario: Add the industry for each company
       Given the TamedTable web app
       And load "companies.csv"
@@ -47,7 +47,7 @@ Feature: Enrich and extract tours
     # "current year" guess — a memo without a year would extract null. The
     # phrase asks for refunds as negative so the amounts are signed money
     # movements, not bare digits copied off the memo.
-    @web @tour @cat-enrich
+    @web
     Scenario: Extract the amount and date from the memo
       Given the TamedTable web app
       And load "memos.csv"

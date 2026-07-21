@@ -1,12 +1,12 @@
 # #TutorialMode
-# Marketing "Classify" tours — one per homepage item. Key-free @tour tours
-# deep-linked from the homepage; each loads its sample, runs the phrase, and
-# replays from classify.json. @cat-classify groups them in the panel.
-Feature: Classify tours
+# Atomic "Classify" scenarios — CI coverage, one per feature. Each loads its
+# sample, runs the phrase, and replays from classify.json. The section's
+# marketing tour is the single story in showcase-classify.feature.
+Feature: Classify scenarios
 
-  Rule: Each Classify tour runs its phrase key-free
+  Rule: Each Classify phrase runs key-free
 
-    @web @tour @cat-classify
+    @web
     Scenario: Label each ticket as billing, bug, or feature
       Given the TamedTable web app
       And load "tickets.csv"
@@ -18,7 +18,7 @@ Feature: Classify tours
 
     # Categories, not a 1–5 score: inside the app tour a bare number never
     # says which end of the scale is good, so the phrase names its labels.
-    @web @tour @cat-classify
+    @web
     Scenario: Classify sentiment into positive, negative and neutral
       Given the TamedTable web app
       And load "reviews.csv"
@@ -30,7 +30,7 @@ Feature: Classify tours
 
     # Regression: the numeric seniority scores the {llm} key returns sorted as
     # text, putting the CTO 4th of 5.
-    @web @tour @cat-classify @regression
+    @web @regression
     Scenario: Sort the titles by seniority
       Given the TamedTable web app
       And load "titles.csv"
@@ -43,7 +43,7 @@ Feature: Classify tours
       And no toast is shown
       And compare with the expected output
 
-    @web @tour @cat-classify
+    @web
     Scenario: Split customers into men, women, and unknown
       Given the TamedTable web app
       And load "customers-input.csv"

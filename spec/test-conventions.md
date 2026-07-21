@@ -13,10 +13,11 @@ modes.
 iteration. A scenario that calls the model needs a committed cassette to replay
 offline — one missing its tape is tagged `@needs-recording` and excluded from
 the default run until `bun run test:record` makes the tape (record mode includes
-those scenarios). No scenario carries the tag today; the mechanism is the escape
-hatch for the next one that does. (`datanorm.feature` was removed — its strict
-byte-golden NL assertions were brittle and never recorded, and the normalization
-behavior is covered offline by the clean-up / loadsave / multilingual scenarios.)
+those scenarios). No scenario carries the tag today — the last holdouts, the
+Lazy AI execution tour and the `lazy-exec.feature` edge cases, recorded when
+the lazy-execution implementation landed. (`datanorm.feature` was removed — its strict byte-golden NL
+assertions were brittle and never recorded, and the normalization behavior is
+covered offline by the clean-up / loadsave / multilingual scenarios.)
 
 ## Keeping `.feature` files small
 
@@ -27,9 +28,10 @@ trade something away — use them only where the note below says it's safe.
    and expected values, fold them into one `Scenario Outline` with an `Examples`
    table (see `multilingual.feature`, `model-config.feature`, the `web.feature`
    URL-rejection rule). Two hard exceptions: **`@tour` scenarios must stay
-   one-each** (the tour parser skips outlines and the homepage deep-links each by
-   exact name), and an outline over `@web` non-tour scenarios silently drops them
-   from the browser **Dev dropdown** (same parser skip) — acceptable, but note it.
+   plain scenarios** (the tour parser skips outlines and the homepage deep-links
+   each by exact name), and an outline over `@web` non-tour scenarios silently
+   drops them from the browser **Dev dropdown** (same parser skip) — acceptable,
+   but note it.
 2. **Use the plural assertion steps.** Replace a ladder of `And column "X" exists
    in the spec` with `Then columns exist in the spec: "A", "B", …` (and the
    `columns are absent from the current rows: …` mirror). Column names stay
@@ -52,9 +54,12 @@ describing the failure.
 
 ## Cross-file observations (DRY)
 
-- **Tour scenarios are intentionally one-each, not collapsible** — see lever 1
-  above. The `@tour` scenarios all share the load → phrase → assert shape but
-  must stay separate (parser skips outlines; homepage deep-links by exact name).
+- **One showcase tour per homepage section, atomic scenarios for CI.** The
+  `@tour` scenarios are the `showcase-*.feature` stories — one sample file,
+  several phrases in sequence — and the homepage deep-links each by exact
+  name. The old one-phrase scenarios stay in their per-feature files as plain
+  `@web`/`@cli`/`@headless` CI coverage (and in the panel's Dev dropdown);
+  don't re-tag them `@tour`.
 - **URL validation lives in two layers, by design.**
   `packages/file-io/file-io.feature` owns the library matrix (blank / garbage /
   non-http / network / HTTP-status); `web.feature` keeps one `Scenario Outline`

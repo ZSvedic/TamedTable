@@ -879,6 +879,14 @@ under the localStorage key `tamedtable.diagnostics` and mirrored in
 memory. It lives in the web package (`controller-diagnostics.ts`); the
 controller composes a `DiagnosticsManager` alongside its other managers.
 
+localStorage is the source of truth, the in-memory mirror a cache: the
+manager re-reads the persisted log before every read (`diagnosticsEvents`,
+`diagnosticsReport`) and before appending each event, then persists. Every
+tab on the origin shares one key — the live app and any pr-preview build
+included — so without that re-read a report copied from one tab would miss
+(or, on the next event, clobber) events another tab wrote. Re-reading keeps
+the newest-first report honest across tabs.
+
 ```ts
 type DiagLevel = 'error' | 'warn' | 'info';
 
@@ -935,7 +943,7 @@ Redaction is a hard contract, verified by an `@regression` scenario:
   (`anthropicKey`, `geminiKey`, `openaiKey`, `openrouterKey`) are dropped whole;
 - the config snapshot is taken with the `*Key` fields already omitted.
 
-Four capture points wire into existing code, no logic duplicated: the
+Capture points wire into existing code, no logic duplicated: the
 controller's `pushToast` path records every toast; `EngineManager`'s
 fetch records a failed model request (method, URL, `fingerprint` from
 `@tamedtable/cassette`, and the body truncated to `MAX_BODY`); the same
@@ -944,6 +952,103 @@ missing fingerprint; and `reportMessageBug` records a user report
 (`source: 'user-report'`, the flagged reply's text and the request that
 produced it — `RequestDebugInfo.userRequest` when present, else the nearest
 user message above — both truncated to `MAX_BODY`).
+
+`recordActivity(message)` (`source: 'activity'`) records the ordinary
+successful actions that never surface as a toast — a file load and a
+completed chat request (the executed-steps summary) — so a report copied
+after normal work is not empty. Without it the log would hold only saves,
+errors, and copies, and a "my query did the wrong thing" report would carry
+no trace of the query.
+
+## Lazy AI execution (#LazyExec)
+
+Types and surfaces for page-first AI execution
+([behavior.md — Lazy AI execution](behavior.md#lazy-ai-execution-lazyexec)).
+The batch CLI and the headless `Runner` batch path are untouched — laziness
+is a web-shell scheduling policy over the same engine.
+
+```ts
+// Row state — one entry per source row, held by the engine manager.
+type RowStatus = 'evaluated' | 'pending' | 'failed';
+interface RowState {
+  applied: number;     // spec-step prefix already applied to this row
+  status: RowStatus;   // derived from `applied` vs the spec, plus the last error
+  error?: string;      // failed rows only — the per-row cell failure message
+}
+
+// Scheduler (engine manager). Evaluating rows in view is the default; the
+// invariant is ≤ one page of AI calls in flight at a time.
+rowStates(): readonly RowState[];
+evaluateRows(indices: number[], signal?: AbortSignal): Promise<void>;
+
+// Estimates — extrapolated from the rows already evaluated.
+interface RunEstimate {
+  rowsRemaining: number;
+  estTokens: number;    // mean in+out tokens per evaluated row × rowsRemaining
+  estUsd: number;       // estTokens priced at the cell model's catalogue rates
+                        // (inUsdPerMtok / outUsdPerMtok in models.json — the
+                        // catalogue a unit test keeps in sync with
+                        // benchmarks/models.jsonl)
+  estSeconds: number;   // rowsRemaining / observed rows-per-second so far
+}
+
+// WebController additions.
+runEstimate(): RunEstimate | null;      // null when nothing is pending
+runOnAllRows(): Promise<void>;          // estimate-gated (> 1 page pending);
+                                        // progress + log + cancel; finished rows kept
+retryFailedRows(): Promise<void>;       // the readout's "Retry N failed rows"
+evaluatedReadout(): { done: number; total: number; failed: number } | null;
+pendingPages(): number[];               // 1-based pages carrying pending rows
+
+// View state — never in the spec, never a history entry. Sort and filter
+// (both reached through the grid's per-column ⋮ menu) on an AI-made column
+// call the dependency-rule confirmation first; declining leaves the view
+// unchanged. Delete column, also in the menu, is NOT view state: it commits
+// the same spec patch a chat request would.
+interface TableViewState {
+  shuffleSeed: number | null;                        // file-derived; null = original order
+  sort: { column: string; dir: 'asc' | 'desc' } | null;
+  filters: Record<string, string>;                   // per-column contains-match
+}
+
+// Settings — persisted alongside the provider settings.
+alwaysRunAll: boolean;   // Simple mode: "Always run on all rows", default false
+```
+
+The dependency rule applies at patch commit: a transformation that reads an
+AI-made column across all rows (sort/filter keys, a `{js}`/`{sql}` expression
+referencing it, group/pivot keys) triggers the run-all confirmation before
+the patch commits; a decline drops the patch — no spec change, no history
+entry. Grid-side types (changed-cell metadata, sort/filter/autofit/retry
+callbacks) live in the table-view package spec
+([spec/packages/table-view/behavior.md](packages/table-view/behavior.md)).
+
+### The engine's lazy seams
+
+The headless runner stays eager; the web shell schedules it through four
+optional seams, all invisible to the CLI and the batch path:
+
+- **`cellFilter(transformationIndex, rowIndex)`** on `request`/`setSpec` —
+  an excluded `{llm}` cell refills from the per-cell result cache when its
+  rendered prompt is cached (free), else it holds a **pending sentinel**.
+  Row state derives from the sentinels in the data itself, which is what
+  lets it survive deterministic reshaping, undo/redo, and engine rebuilds
+  with no index bookkeeping.
+- **`onCellError`** — with it set, a cell call that still fails after
+  retries writes a **failed sentinel** (never cached) and reports, instead
+  of failing the step; a failing batch call falls back to per-cell calls so
+  one poisoned row fails alone. Without it the step throws, so the request
+  preview keeps today's fail-fast error surface.
+- **`confirmSpec(next, prev)`** on `request` — the dependency rule's gate,
+  called after the patch validates and before it replays; `false` throws
+  `DECLINED`, which the web shell swallows (no history entry, no error).
+- **`adoptState(spec, rows)` + `cellCacheEntries`/`seedCellCache`** — a
+  provider switch rebuilds the engine but adopts the derived rows and the
+  cell cache verbatim: evaluated rows keep their values, no call is made.
+
+`onUsage` (per-call token usage) feeds the estimate accumulators. `setSpec`'s
+`fresh` flag forces a full replay from the source, so a widened `cellFilter`
+can fill pending cells in unchanged steps.
 
 ## One schema, richer sort keys, and Python export
 
@@ -1321,7 +1426,7 @@ voice turn and replays key-free.
 | `openTutorial()` | Sets `tutorialOpen = true`. |
 | `closeTutorial()` | Sets `tutorialOpen = false`; calls `cancelTutorial()`. |
 | `tutorialScenarioNames(): string[]` | Names of `@tour` tours (flat list). |
-| `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the seven marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
+| `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the eight marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tour` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup — the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
 | `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |

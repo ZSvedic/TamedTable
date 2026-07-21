@@ -15,7 +15,7 @@ import {
   type PickedFile,
   type SaveOutcome,
 } from '@tamedtable/file-io';
-import type { TablePlan, Transformation } from '@tamedtable/core';
+import type { Row, TablePlan, Transformation } from '@tamedtable/core';
 import { checkFlowInputColumns, describeStep, isCancelled, specHasLlmCell } from '@tamedtable/headless';
 import { missingProviderKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
@@ -164,15 +164,53 @@ export class FilesManager {
     }
   }
 
+  // #LazyExec — the table parsed but not yet committed while the large-file
+  // dialog awaits its one-click choice.
+  private pendingLargeFile: { name: string; rows: Row[]; spec: TablePlan } | null = null;
+
   private async loadFromPicked(picked: PickedFile): Promise<void> {
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly — no filesystem, no path round-trip.
     const { rows, spec } = await parseTable(picked.name, picked.bytes);
+    // #LazyExec — a file bigger than one page raises the large-file dialog:
+    // one click on "Load shuffled" (the primary default) or "Load in
+    // original order". A one-page file loads exactly as today.
+    if (rows.length > this.host.pageSize) {
+      this.pendingLargeFile = { name: picked.name, rows, spec };
+      this.host.largeFileDialog = { name: picked.name, rowCount: rows.length };
+      this.host.notify();
+      return;
+    }
+    await this.commitParsed(picked.name, rows, spec);
+  }
+
+  /** Dismiss the large-file dialog without loading (tour cleanup). */
+  dismissLargeFile(): void {
+    if (!this.pendingLargeFile && !this.host.largeFileDialog) return;
+    this.pendingLargeFile = null;
+    this.host.largeFileDialog = null;
+    this.host.notify();
+  }
+
+  /** Resolve the large-file dialog: commit the stashed table, shuffled (a
+   *  seeded view — saving keeps original order) or in original order. */
+  async resolveLargeFile(shuffled: boolean): Promise<void> {
+    const pending = this.pendingLargeFile;
+    if (!pending) return;
+    this.pendingLargeFile = null;
+    this.host.largeFileDialog = null;
+    await this.commitParsed(pending.name, pending.rows, pending.spec);
+    if (shuffled) this.host.view.shuffle(pending.name, pending.rows.length);
+    this.host.notify();
+  }
+
+  private async commitParsed(name: string, rows: Row[], spec: TablePlan): Promise<void> {
     await this.host.engine.loadParsed(rows, spec);
-    this.host.pushMessage(
-      'assistant',
-      `Loaded ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-    );
+    const loaded = `Loaded ${name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`;
+    this.host.pushMessage('assistant', loaded);
+    // #Diagnostics — a load fires no toast; log it so a report names the file
+    // the user was working on.
+    this.host.diagnostics.recordActivity(loaded);
   }
 
   /** Show the Open URL modal dialog. */
@@ -270,13 +308,52 @@ export class FilesManager {
   /** Save the current rows via the Save dialog, in the format the table was
    *  loaded as — CSV, JSONL, Parquet, or Arrow — so you get back what you
    *  opened. Falls back to JSONL when the source format is unknown. */
+  // #LazyExec — a save that had to run rows first parks here: the run
+  // consumed the click's user gesture, and the browser refuses a save picker
+  // outside one, so the save-ready dialog asks for one more click.
+  private pendingSave: { format: FormatId; keepSourceName: boolean } | null = null;
+
   async saveData(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before saving data.');
       return;
     }
     const format = formatForExtension(this.host.sourcePath || '') ?? 'jsonl';
-    await this.writeData(format, { keepSourceName: true });
+    await this.saveGated(format, { keepSourceName: true });
+  }
+
+  /** #LazyExec — the evaluated-rows gate shared by Save and Save as: rows
+   *  still pending raise the estimate/confirmation flow first (one page or
+   *  less just runs); declining cancels the save. When a run happened, the
+   *  file picker would fall outside the original click's user gesture — the
+   *  save-ready dialog collects a fresh click instead of erroring. With
+   *  nothing pending, Save skips straight to writing the file. */
+  private async saveGated(format: FormatId, opts: { keepSourceName: boolean }): Promise<void> {
+    const hadWork =
+      this.host.lazy.pendingCount() + this.host.lazy.failedCount() > 0;
+    if (!(await this.host.lazy.runOnAllRows('save'))) return;
+    if (hadWork) {
+      this.pendingSave = { format, ...opts };
+      this.host.saveReadyDialog = true;
+      this.host.notify();
+      return;
+    }
+    await this.writeData(format, opts);
+  }
+
+  /** The save-ready dialog's "Save file…" click — a fresh user gesture. */
+  async confirmSaveReady(): Promise<void> {
+    const pending = this.pendingSave;
+    this.pendingSave = null;
+    this.host.saveReadyDialog = false;
+    this.host.notify();
+    if (pending) await this.writeData(pending.format, { keepSourceName: pending.keepSourceName });
+  }
+
+  dismissSaveReady(): void {
+    this.pendingSave = null;
+    this.host.saveReadyDialog = false;
+    this.host.notify();
   }
 
   /** Save a copy of the current rows in a chosen format — the "Save as <format>"
@@ -288,7 +365,8 @@ export class FilesManager {
       this.host.pushToast('error', 'Load a file before saving data.');
       return;
     }
-    await this.writeData(format, { keepSourceName: false });
+    // #LazyExec — same evaluated-rows gate as the default Save.
+    await this.saveGated(format, { keepSourceName: false });
   }
 
   /** Shared save path: serialize the rows in `format` and open the Save dialog.

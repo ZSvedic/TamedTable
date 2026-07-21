@@ -8,6 +8,11 @@ import { space, typography, TYPING_MS_PER_CHAR, type Theme } from '@tamedtable/u
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { ChatPanelMessage, ChatRequestDetail, ChatRunProgress } from './index.ts';
 
+// Input growth bounds: three lines minimum, ten maximum (~24px line-height);
+// past the maximum the textarea scrolls internally.
+const INPUT_MIN_H = 68;
+const INPUT_MAX_H = 240;
+
 const CP_CSS =
   '@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
   ' .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }';
@@ -379,6 +384,9 @@ export interface ChatPanelProps {
   /** Fill the parent (width + height 100%) instead of the fixed 360px sidebar
    *  width — used when the panel rises as a mobile bottom sheet. */
   fill?: boolean;
+  /** Sidebar width in px (ignored under `fill`). The host owns resizing —
+   *  the app's drag handle feeds this. Default 360. */
+  width?: number;
 }
 
 export function ChatPanel({
@@ -396,11 +404,24 @@ export function ChatPanel({
   helpLines = [],
   micButton,
   fill = false,
+  width = 360,
 }: ChatPanelProps): ReactNode {
   const t = useTheme();
   const [draft, setDraft] = useState('');
   const [focused, setFocused] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  // The textarea grows with the draft — three lines minimum, ten lines
+  // maximum, then it scrolls internally. Height is measured, not counted:
+  // wrapped lines grow it too.
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(INPUT_MIN_H, Math.min(INPUT_MAX_H, el.scrollHeight))}px`;
+    el.style.overflowY = el.scrollHeight > INPUT_MAX_H ? 'auto' : 'hidden';
+  }, [draft]);
 
   // When a prefill arrives (a tutorial prefill-chat step is highlighted), type
   // it into the draft at the shared TYPING_MS_PER_CHAR cadence so the learner
@@ -461,7 +482,7 @@ export function ChatPanel({
   return (
     <aside
       style={{
-        width: fill ? '100%' : 360,
+        width: fill ? '100%' : width,
         height: fill ? '100%' : undefined,
         flex: fill ? '1 1 auto' : '0 0 auto',
         minHeight: 0,
@@ -626,21 +647,27 @@ export function ChatPanel({
           padding: space.px10,
         }}
       >
+        {/* Full-width textarea over an actions row: the draft grows the box
+            (three lines min, ten max, then internal scroll — so the
+            scrollbar sits at the right edge, never between text and
+            buttons), and the mic/voice/send controls keep a fixed row
+            underneath, the shape every mainstream chat composer uses. */}
         <div
           style={{
             background: t.surface,
             border: `1px solid ${focused ? t.accent : t.line2}`,
             boxShadow: focused ? `0 0 0 3px ${t.ring}` : 'none',
             borderRadius: space.radius,
-            padding: '8px 8px 6px 10px',
+            padding: '8px 10px 6px 10px',
             display: 'flex',
-            alignItems: 'flex-end',
-            gap: space.px8,
+            flexDirection: 'column',
+            gap: space.px6,
             transition: 'border-color .12s, box-shadow .12s',
           }}
         >
           <textarea
             id={inputId}
+            ref={inputRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onFocus={() => setFocused(true)}
@@ -655,7 +682,7 @@ export function ChatPanel({
             disabled={disabled}
             rows={3}
             style={{
-              flex: 1,
+              width: '100%',
               resize: 'none',
               border: 'none',
               outline: 'none',
@@ -666,6 +693,7 @@ export function ChatPanel({
               color: disabled ? t.ink3 : t.ink,
             }}
           />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: space.px8 }}>
           {disabled ? null : micButton}
           {streaming ? (
             <button
@@ -700,6 +728,7 @@ export function ChatPanel({
               <Icon name="send" />
             </button>
           )}
+          </div>
         </div>
         <div
           style={{

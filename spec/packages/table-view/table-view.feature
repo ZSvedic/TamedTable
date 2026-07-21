@@ -96,3 +96,132 @@ Feature: Table view package
       Given the table-view demo page
       When the user toggles streaming
       Then the streaming banner is visible
+
+  Rule: The column menu sorts, filters, autofits, and deletes — the host applies
+
+    # #LazyExec grid upgrades: sort/filter are host view state reported
+    # through callbacks; the header shows the ▲/▼ and funnel marks.
+    @web
+    Scenario: Sort descending from the column menu reorders and marks the header
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Sort descending"
+      Then the "age" header shows the "desc" sort indicator
+      And the demo event log shows "sort age desc"
+
+    @web
+    Scenario: Picking the active direction clears the sort
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Sort descending"
+      And the user opens the "age" column menu
+      And the user picks "Sort descending"
+      Then the demo event log shows "sort age off"
+
+    @web
+    Scenario: A filter narrows the rows and marks the header with a funnel
+      Given the table-view demo page
+      When the user opens the "city" column menu
+      And the user filters by "Osaka"
+      Then the demo range reads "1–10 of 19 rows"
+      And the "city" header carries a funnel mark
+      And the demo event log shows "filter city=Osaka"
+
+    # Feedback G: the menu offers "Remove filter" when a filter is set, so the
+    # column filter can be cleared without retyping.
+    @web
+    Scenario: Remove filter clears an active column filter
+      Given the table-view demo page
+      When the user opens the "city" column menu
+      And the user filters by "Osaka"
+      Then the "city" header carries a funnel mark
+      When the user opens the "city" column menu
+      And the user picks "Remove filter"
+      Then the "city" header carries no funnel mark
+      And the demo range reads "1–10 of 95 rows"
+
+    @web
+    Scenario: Delete column reports to the host
+      Given the table-view demo page
+      When the user opens the "city" column menu
+      And the user picks "Delete column"
+      Then the demo event log shows "delete city"
+
+    @web
+    Scenario: Autofit sizes a stretched column back to its content
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 200 px right
+      And the user opens the "name" column menu
+      And the user picks "Autofit width"
+      Then the "name" header is narrower than 200 px
+
+    # Feedback F: autofit sizes to the wider of the data and the header, so a
+    # column with a short value ("29") never hides its own name ("age").
+    @web
+    Scenario: Autofit keeps the header name visible
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Autofit width"
+      Then the "age" header title is fully visible
+
+    # Plan acceptance criterion 8: double-clicking the column separator autofits
+    # it, the same as the menu's Autofit width.
+    @web
+    Scenario: Double-clicking a column separator autofits it
+      Given the table-view demo page
+      When the user drags the right edge of the "name" header 200 px right
+      And the user double-clicks the right edge of the "name" header
+      Then the "name" header is narrower than 200 px
+
+  Rule: Row marks, pager dots, and changed cells surface the host's row state
+
+    @web
+    Scenario: Pending and failed rows mark their Row # cell
+      Given the table-view demo page
+      Then the row numbered 7 is marked "failed"
+      And page 10 carries a pending dot
+      When the user clicks page 10
+      Then 5 rows on the page are marked "pending"
+
+    @web
+    Scenario: An edited cell tints as changed and remembers the previous value
+      Given the table-view demo page
+      When the user edits cell "0:name" to "Grace"
+      Then cell "0:name" is marked changed with previous value "Person 1"
+
+    @web
+    Scenario: Sorting keeps original numbers in the Row # column
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Sort descending"
+      Then the first row number is not 1
+
+  Rule: Cells copy, URLs link, and headers stay legible
+
+    @headless
+    Scenario: The default column width follows the title, clamped
+      Then defaultColumnWidth of "ID" is 120
+      And defaultColumnWidth of "Category" is 120
+      And defaultColumnWidth of "Subcategory or theme" is 208
+      And defaultColumnWidth of "An absurdly long column title nobody should type" is 240
+
+    @headless
+    Scenario: Only strict http URLs count as links
+      Then urlHref of "https://example.org/p/1" is "https://example.org/p/1"
+      And urlHref of "http://a.b/c?d=1" is "http://a.b/c?d=1"
+      And urlHref of "justify.me" is null
+      And urlHref of "see https://example.org" is null
+      And urlHref of "ftp://example.org" is null
+
+    @web
+    Scenario: Cmd or Ctrl+C copies the selected cell
+      Given the table-view demo page
+      When the user clicks cell "2:name"
+      And the user presses the copy shortcut
+      Then the demo event log shows "copy 2:name=Person 3"
+
+    @web
+    Scenario: A URL cell renders as a link and a dotted word does not
+      Given the table-view demo page
+      Then cell "0:site" holds a link to "https://example.org/p/1"
+      And cell "1:site" holds no link

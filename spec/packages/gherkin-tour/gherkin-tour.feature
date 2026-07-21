@@ -143,6 +143,25 @@ Feature: Gherkin Tour parser
       Then step 1 of scenario 1 has action kind "play-audio"
       And step 1 of scenario 1 has action filename "voice-demo.mp3"
 
+    # #LazyExec — the Lazy AI execution tour's stops: a drop-phrased load,
+    # the large-file dialog's shuffled choice, and the estimate finale.
+    @headless
+    Scenario: The lazy tour's stops classify as loads and lazy actions
+      Given a feature string:
+        """
+        Feature: Demo
+          @tour
+          Scenario: Lazy steps
+            When user drops the file "big.csv" onto the empty page
+            And user loads the shuffled sample
+            And user opens the run-on-all estimate dialog
+        """
+      When parseTours is called
+      Then step 1 of scenario 1 has action kind "load-file"
+      And step 1 of scenario 1 has action filename "big.csv"
+      And step 2 of scenario 1 has action kind "load-shuffled"
+      And step 3 of scenario 1 has action kind "open-estimate"
+
   Rule: Verification steps are dropped; the golden source is lifted
 
     @headless

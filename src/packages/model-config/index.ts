@@ -44,6 +44,10 @@ export interface ResolvedConfig {
   model: string;
   /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
   cellModel: string;
+  /** Simple mode — "Always run on all rows" (#LazyExec): every AI step runs
+   *  table-wide immediately, with the estimate dialog gating runs of more
+   *  than one page. Off by default. */
+  alwaysRunAll: boolean;
 }
 
 export interface StoragePort {
@@ -187,5 +191,8 @@ export function resolveConfig(
     cellModel = defaultCellModel(provider);
   }
 
-  return { provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel };
+  return {
+    provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel,
+    alwaysRunAll: stored.alwaysRunAll ?? false,
+  };
 }

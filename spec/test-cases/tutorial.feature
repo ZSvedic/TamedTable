@@ -11,30 +11,36 @@ Feature: Tutorial panel
       When user opens the tutorial panel
       Then the tutorial panel is shown
 
+    # The tour list holds one showcase story per homepage section; the atomic
+    # per-feature scenarios stay out of it (they live in the Dev dropdown).
     @web
-    Scenario: The clickable list shows only @tour scenario names
+    Scenario: The clickable list shows only the showcase tours
       Given the TamedTable web app
       When user opens the tutorial panel
-      Then the tutorial list includes "Filter by Country"
-      And the tutorial list includes "Normalize the phone numbers"
-      And the tutorial list includes "Left join enriches each customer with ISO and Region"
+      Then the tutorial list includes "Clean up a messy customer list"
+      And the tutorial list includes "Shape a quarterly sales report"
+      And the tutorial list includes "Handle feedback in five languages"
 
     @web
     Scenario: The tutorial list is grouped by feature category
       Given the TamedTable web app
       When user opens the tutorial panel
-      Then the tutorial group "Clean up" includes "Normalize the phone numbers"
-      And the tutorial group "Validate" includes "Flag prices that seem wrong"
-      And the tutorial group "Be exact" includes "Filter by Country"
-      And the tutorial group "Process language" includes "Normalize DOB by voice"
+      Then the tutorial group "Clean up" includes "Clean up a messy customer list"
+      And the tutorial group "Validate" includes "Audit an order sheet"
+      And the tutorial group "Be exact" includes "Shape a quarterly sales report"
+      And the tutorial group "Process language" includes "Handle feedback in five languages"
 
     @web
     Scenario: The Dev dropdown lists @web non-@tour scenarios
       Given the TamedTable web app
       When user opens the tutorial panel
       Then the dev list includes "Aggregate produces one row per distinct by-tuple"
-      And the dev list does not include "Filter by Country"
+      And the dev list includes "Filter by Country"
+      And the dev list does not include "Shape a quarterly sales report"
 
+  # The step-mechanics scenarios below drive "Filter by Country" — an atomic
+  # scenario that is no longer a marketing tour but stays in the manifest (Dev
+  # dropdown), so it still plays; its 3 stops keep these tests short.
   Rule: Playing a tutorial walks through steps
 
     @web
@@ -168,6 +174,38 @@ Feature: Tutorial panel
       When user plays the whole tutorial
       Then the spec has 1 transformation
       And no toast is shown
+
+    # A showcase tour chains several query steps; each Next waits for the
+    # previous replayed request, so the whole story plays key-free end to end
+    # and a fast clicker can never skip a query step.
+    @web
+    Scenario: A multi-step showcase tour plays whole, key-free
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Clean up a messy customer list" is selected
+      When user plays the whole tutorial
+      Then the current rows count is 20
+      And no toast is shown
+
+    # Regression: the voice step plays its clip for seconds before the request
+    # fires. A second Next inside that window must be ignored — re-executing
+    # would fire a second, unrecorded voice request, and double-advancing would
+    # skip the next query, desyncing every later step from the cassette.
+    @web @regression
+    Scenario: A double Next during the voice step executes it once
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Handle feedback in five languages" is selected
+      And user plays the tutorial
+      And user advances to the next tutorial step
+      When user advances to the next tutorial step twice rapidly
+      And the tutorial settles
+      Then the spec has 1 transformation
+      And no toast is shown
+      When user advances to the last tutorial step
+      And the tutorial settles
+      Then no toast is shown
+      And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
   Rule: A lookup-table step is a silent prerequisite, not a tour step
 

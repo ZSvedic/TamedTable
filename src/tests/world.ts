@@ -84,6 +84,7 @@ setWorldConstructor(TamedTableWorld);
 interface RunnerOpts {
   batchSize?: number;
   chunkSize?: number;
+  pageSize?: number;
   fetch?: FetchLike;
   apiKey?: string;
 }
@@ -98,7 +99,10 @@ interface RunnerOpts {
 // #TestUtils #Cassettes
 export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
   const tags = scenario.pickle.tags.map((t) => t.name);
-  const opts: RunnerOpts = tags.includes('@cancel') ? { batchSize: 2, chunkSize: 1 } : {};
+  // @cancel shrinks the engine's batches for a mid-flight abort window; the
+  // explicit pageSize keeps the whole fixture on one page, so the web surface
+  // stays fully eager (#LazyExec) and the recorded cassettes still match.
+  const opts: RunnerOpts = tags.includes('@cancel') ? { batchSize: 2, chunkSize: 1, pageSize: 100 } : {};
 
   const mode = process.env.TAMEDTABLE_CASSETTE;
   if (mode === 'record' || mode === 'replay') {

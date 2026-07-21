@@ -108,6 +108,8 @@ const adapter = {
       case 'play-audio':
       case 'show-golden':
       case 'golden-source':
+      case 'load-shuffled':
+      case 'open-estimate':
       case 'display': return 'table-view';
     }
   },

@@ -38,9 +38,12 @@ export class VoiceManager {
 
   /** True when the mic button should show: the selected model accepts voice
    *  input (catalogue voiceInput flag), the selected provider has a key, and
-   *  a recording port is wired. */
+   *  a recording port is wired. A playing tour is the exception: its voice
+   *  step replays a recorded Gemini turn key-free and spotlights the mic, so
+   *  the button shows while the tour is active even with no key. */
   voiceAvailable(): boolean {
     if (this.voice === undefined) return false;
+    if (this.host.tutorial.isTutorialActive()) return true;
     const model = ALL_MODELS.find((m) => m.id === this.host.config.model);
     return !!model?.voiceInput && !!this.host.settingsMgr.activeApiKey();
   }
@@ -245,10 +248,14 @@ export class VoiceManager {
     const columns = spec.columns.map((c) => c.id);
     const ctx: VoiceContext = { filename, columns };
     if (this.host.selection) {
-      const value = this.host.engine.displayRows()[this.host.selection.row]?.[this.host.selection.column];
+      // The selection is a view position (#LazyExec) — map it back to the
+      // derived row the model should be told about.
+      const derived = this.host.view.viewOrder(this.host.engine.rawRows())[this.host.selection.row]
+        ?? this.host.selection.row;
+      const value = this.host.engine.displayRows()[derived]?.[this.host.selection.column];
       ctx.selectedCell = {
         col: this.host.selection.column,
-        row: this.host.selection.row,
+        row: derived,
         value: value === undefined || value === null ? '' : String(value),
       };
     }

@@ -707,6 +707,20 @@ recovery loop, naming the missing column. Steps whose output columns
 can't be known without running them (`join`, `pivot`) suspend the check
 for the transformations after them.
 
+The mirror-image guard: a patch that **declares** a new column in
+`columns` that no transformation writes (no `mutate`/`split`/`validate`
+targets it, it is not a source key, and no reshaping step could produce
+it) is rejected the same way — declaring a column never fills it, so
+committing would be a silent no-op. The no-op is silent because the
+committed `columns` are reconciled against the derived rows' actual keys
+(`syncColumnsToRows`): a declared column that no row carries is dropped,
+so the grid — which renders exactly the reconciled `columns` — shows
+nothing, not even an empty header. That reconciliation is deliberate
+(the grid only shows data-backed columns); the fix belongs at the patch,
+not the grid. Weak models produce exactly this shape ("add a Country
+column" → a bare `columns` entry); the rejection tells them to add the
+computing step.
+
 ### `pivot` and `unpivot` transformations (#PivotData)
 
 `pivot` reshapes long → wide. Shape: `{ kind: "pivot", index:
@@ -762,7 +776,15 @@ half-applied spec change reverts.
 
 The browser front-end mirrors the CLI's interaction shape
 — a chat sidebar for natural-language requests and the table view to
-the right of it. Cell editing and column-reorder happen through normal
+the right of it. The boundary between the two is a drag handle: hovering
+it shows the column-resize cursor, dragging it resizes the sidebar
+(clamped to a sensible range), and the width persists like a setting.
+
+Closing or refreshing the tab with **work in progress** — any committed
+transformation, or an undoable step — first raises the browser's own
+are-you-sure confirmation, so a stray refresh cannot silently discard
+evaluated rows or edits. A tab with nothing to lose closes freely.
+Cell editing and column-reorder happen through normal
 browser gestures but ultimately produce spec patches — the same shape
 the LLM produces — so undo/redo, history, and replay against the source
 all work unchanged. Scrolling and column-resize (dragging the boundary
@@ -1250,6 +1272,190 @@ The report lists events newest first.
 
 → [code-contract.md — Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
 
+## Lazy AI execution (#LazyExec)
+
+An AI step runs on the page you are looking at, not on the whole table:
+preview the result on a screenful of rows for cents, then run the rest — with
+the price and time shown first — only when it looks right. This section owns
+the web app's page-first execution: row state, the large-file dialog and the
+shuffled view, the progress indicators, the run-on-all and save confirmation,
+and Simple mode. Deterministic steps and the batch CLI keep their eager
+behavior unchanged.
+
+### Worked example
+
+1. Open a 25,000-row file. The **large-file dialog** asks once — one click
+   on **Load shuffled** (the primary default) or **Load in original order**.
+2. Type *"add a Category column"*. The visible page fills within one
+   concurrency wave; the readout says **100 of 25,000 rows evaluated** and
+   the pager marks every other page as pending.
+3. Page around. Opening a page evaluates exactly that page's lagging rows —
+   never more than one page of AI calls is in flight at a time.
+4. Click **Run on all rows**. The estimate dialog shows rows remaining,
+   estimated tokens, cost, and time; confirm and a progress bar with a
+   cancel button takes over. Cancelling keeps every finished row — a re-run
+   touches only pending and failed rows.
+5. **Save.** Nothing pending → the file writes immediately, in the original
+   row order. Rows still pending → the same estimate dialog first, because a
+   saved file always contains fully evaluated rows.
+
+### The page is the unit of AI work
+
+Only steps with `{llm}` cells are lazy. A new AI step evaluates the rows in
+view immediately — that preview is the point — and leaves the rest pending.
+Opening a pending page then evaluates **exactly that page's** lagging rows:
+progress climbs one page at a time (100 → 200 → …), and the other pages stay
+pending with their pager marks until the reader opens them. That holds even
+when repeated data means a page's answers are already cached from an earlier
+page — the cache makes filling that page free when it opens, but it never
+silently completes pages the reader hasn't looked at, which would drop the
+marks and the readout mid-review. Deterministic steps (`{js}`, `{sql}`,
+filter, sort, dedupe, group, join, pivot, split) run on all rows at once,
+exactly as today: they are effectively free. The batch CLI (`execute`) stays
+fully eager — no pages, no dialogs — so a saved flow's output is
+byte-identical to today's.
+
+### Row state
+
+Each row tracks the spec-step prefix already applied to it; a row is
+**evaluated** (caught up with the spec), **pending** (an AI step hasn't
+reached it), or **failed** (its cell call errored — the row keeps the error).
+Every indicator derives from row state, never from stored pages — the page
+size changes with the provider, row state doesn't. Undo lowers a row's mark;
+redo restores it from the cell cache with no new AI calls; cancelling a run
+keeps whatever finished. Failed rows are retried together from the readout's
+**Retry N failed rows** action.
+
+### The large-file dialog and the shuffled view
+
+Loading a file bigger than one page raises the large-file dialog: one
+sentence ("Work page by page; saving preserves original row order.") and two
+one-click choices — **Load shuffled**, the primary default, and **Load in
+original order**. A file that fits one page never sees the dialog and
+behaves exactly as today.
+
+Shuffle is a **view**: a seeded permutation over the source rows. The grid's
+**Row #** column — the usual first, frozen row-number column, shown shuffled
+or not — keeps the original row numbers, and its header carries a hover hint
+while the view is shuffled ("Original row numbers — the view is shuffled;
+saving keeps this order."). Saving always writes the original order. The
+seed derives from the file, so reopening the same file reproduces the same
+shuffle.
+
+### Progress indicators
+
+- The pagination bar gains a readout on its left — **N of M rows
+  evaluated** — visible whenever an AI step has pending rows, followed by a
+  **Retry N failed rows** action when any row has failed.
+- Opening a page with lagging rows shows the same **Streaming results…**
+  banner a chat request shows, and the page's cells fill in live as each
+  batch lands — never a silent, frozen page.
+- Pager buttons for pages with pending rows carry a small dot mark.
+- Pending rows are subtly marked (a muted wash on the Row # cell); failed
+  rows are distinctly marked (a red Row # cell).
+- On the phone, the app-bar pager carries the same dot mark, and a slim
+  banner under the app bar carries the readout, the retry action, and a
+  compact **Run all** button; the estimate and large-file dialogs — and the
+  grid's column menu — open as bottom sheets, like every other phone dialog.
+  The phone column menu (a header tap opens it) carries Sort ascending /
+  descending, a contains-match Filter row, **Remove filter** when a filter is
+  set, and Delete column. It has no Autofit — phone columns auto-size to their
+  content and are not resizable, so there is nothing to fit.
+
+### Run on all rows and Save
+
+A **Run on all rows** button sits in the pagination bar, right side, shown
+only while rows are pending. It and **Save** share one confirmation flow:
+when more than one page of rows is pending, an **estimate dialog** shows
+rows remaining, estimated tokens, estimated cost, and estimated time before
+anything runs; one page or less just runs without ceremony. The estimates
+are honest extrapolations of the preview: mean tokens per evaluated row ×
+rows remaining, priced at the selected cell model's catalogue rates, and
+timed from the observed rows-per-second so far — previewing a page is what
+makes the estimate possible.
+
+Confirming swaps the dialog body for a progress bar with a live `rows done /
+total` count, a **Cancel** button, and a **Show log** expander — collapsed
+by default, the same bounded event feed the chat's request detail shows
+(each step, then each streamed cell as `column · row n: before → after`,
+newest pinned, newest 500 lines kept) — so the user can sample transformed
+data while the run streams. Finished rows are always kept: cancel stops the
+queue, and the next run touches only pending and failed rows. The progress
+counts **rows**, never cells — a spec with two AI columns still tops out at
+the table's row count. When the run was started from **Save**, a
+**save-ready confirmation** follows the run: browsers only open a save
+picker inside a user gesture, and the run consumed the original click, so
+one more click ("Save file…") writes the file. With nothing pending, Save
+skips straight to writing the file.
+
+### The dependency rule
+
+A step that *reads* an AI-made column across all rows — sort by it, filter
+by it, reference it in a `{js}`/`{sql}` expression, group or pivot on it —
+needs every row evaluated first, so it raises the same run-all confirmation
+before it applies. Declining leaves the step out entirely: not in the spec,
+not in the table, not in history. Chat requests that only add or transform
+other columns never trigger it.
+
+The column menu's sort and filter offer a third, middle choice — **Sort
+evaluated rows** / **Filter evaluated rows**: apply the view over what is
+already computed, free. Sorting sinks unevaluated rows to the end (both
+directions); filtering never matches them. With one page previewed this is
+"sort just this page"; with several, everything evaluated participates.
+
+### Simple mode
+
+A settings toggle — **Always run on all rows**, under an **Execution**
+heading below the provider cards — restores table-wide execution: each AI
+step runs on every row immediately, with the estimate dialog appearing first
+whenever more than one page of rows would run. Off by default; persisted
+like every other setting.
+
+### Grid upgrades
+
+The table grid grows these behaviors, specified in
+[spec/packages/table-view/behavior.md](packages/table-view/behavior.md).
+Cells the current chat request filled highlight. A new chat request resets
+the marker; the lazy passes that finish that request's AI columns — a
+page-open evaluation, a run-all, a retry — each **add** the cells they fill,
+so a column tints uniformly as the reader pages through it rather than
+showing only the last page touched. A cell counts as filled when its shown
+value changes: a blank pending cell becomes a value (from a live call *or* a
+free cache refill — a page-open seeds the cache, so opening one page can
+quietly fill the rest), or an existing value is overwritten. Marking the
+data's actual change, not just the cells a live call streamed, is what keeps
+a shuffled or sorted view from tinting one block and leaving an identically
+filled block below it bare. Hovering a changed cell shows the previous
+value. Every column header ends in a **⋮ column menu**, grouped by hairline
+separators — Sort ascending / Sort descending · Filter… / Remove filter (the
+latter only when a filter is set) · Autofit width · Delete column — with
+the state shown in the header itself: a ▲/▼ sort indicator and a funnel
+mark when a filter is active. Autofit sizes the column to the wider of its
+data and its own header, so a short value never hides the column name. Sort and filter live behind the menu rather
+than a bare header click because on an AI-made column they can trigger a
+table-wide run (the dependency rule) — the menu makes them a deliberate act,
+and it keeps the header clean and tappable on the phone. They stay **view
+state**, like paging and shuffle: no spec change, no history entry. Delete
+column is the exception — it is a spec step, the same patch asking in chat
+would produce. Column separators are visible; hovering one shows the resize
+cursor and double-clicking it (or the menu's Autofit width) fits the column
+to its content on the current page. A chat request ("sort by revenue")
+stays a spec step, exactly as today.
+
+The view sort **holds a page still while its rows stream in** — they fill in
+place, not re-sort out from under the reader — and then **folds them into the
+order once the page settles**, so every page opened is sorted as far as it is
+evaluated. Newly evaluated rows join the sorted block; rows still pending sink
+to the end behind their pager marks. (A page's rows can shift position as they
+join the order — that is what a sorted view of a growing evaluated set means.)
+A complete sort of a not-yet-evaluated column still needs every value, which
+the gate's "Run all & sort" computes at once.
+
+The reviewed phase-2 mockup of every element above is
+[spec/mockups/lazy-ai.html](mockups/lazy-ai.html).
+
+→ [code-contract.md — Lazy AI execution](code-contract.md#lazy-ai-execution-lazyexec)
+
 ## Voice input (#VoiceInput)
 
 Voice input lets the user speak a request instead of typing it. It is a
@@ -1343,21 +1549,27 @@ exact request) fails loudly with a toast rather than hanging.
 
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
-into the seven marketing feature categories** — Clean up, Enrich & extract,
-Classify, Validate, Process language, Be exact, and Load, save & reuse —
-numbered 01–07, in the same order as the homepage sections. A scenario's group comes
-from its `@cat-…` tag (e.g. `@cat-cleanup`); empty categories are omitted.
-Load, save & reuse has no tours — by the time a visitor cares about saving,
-they have already loaded a file and run a query — so the panel shows the first
-six groups.
+into the eight marketing feature categories** — Lazy AI execution, Clean up,
+Enrich & extract, Classify, Validate, Process language, Be exact, and Load,
+save & reuse — numbered 01–08, in the same order as the homepage sections. A
+scenario's group comes from its `@cat-…` tag (e.g. `@cat-cleanup`); empty
+categories are omitted.
+Each category holds **one showcase tour**: a single story that loads one
+sample file and walks through every feature of its homepage section in
+sequence — the `showcase-*.feature` files. Two categories have no tour, so
+the panel shows six groups: Load, save & reuse (by the time a visitor cares
+about saving, they have already loaded a file and run a query) and Lazy AI
+execution (its tour script, `showcase-lazy-ai.feature`, records and joins the
+panel together with the lazy-execution implementation).
 **Clicking a tour starts it immediately** — there is no separate Play step. A
 tour the visitor has played to the end carries a **green checkmark** in the list
 (remembered across reloads), so it is easy to see what is left to try.
 Below the groups, a **Dev** dropdown lists every `@web` scenario that is *not*
-`@tour`, so a developer can smoke-test any scenario without opening the
-`.feature` file; picking one starts it too. The homepage "Show me →" links
-deep-link into these tours, one per feature item; the Load, save & reuse
-homepage section is informational only, with no "Show me →" links.
+`@tour` — including the atomic per-feature scenarios that back CI — so a
+developer can smoke-test any scenario without opening the `.feature` file;
+picking one starts it too. Every "Show me →" link in a homepage section
+deep-links into that section's showcase tour; the Load, save & reuse and Lazy
+AI execution sections are informational only, with no "Show me →" links.
 
 A `load the lookup table …` step (a join's second input) is a **silent
 prerequisite**, not a tour step: the file is written before the tour starts and
@@ -1383,7 +1595,11 @@ never exceeds the screen: a target larger than the viewport (the table) is
 highlighted by its visible top region, so the popover always has room below
 it. Each step is **highlighted first** and **executed only when the user
 clicks Next** — the action runs as the tour advances, not at the moment the
-step appears, and it runs **once**.
+step appears, and it runs **once**. A showcase tour chains several query
+steps, so Next first waits for the previous step's replayed request to
+finish, and a Next clicked while a step is still executing (a voice clip
+playing, a query running) is ignored — a fast clicker can never skip a step
+or fire one twice.
 
 The **last stop is terminal**: it is numbered **"M of M"** and its popover
 shows a completion message — `Voilà, "<tour name>" is done.` — with two
@@ -1433,7 +1649,10 @@ step maps to one of five actions:
   cassette with **no API key**, exactly like a `prefill-chat` step does for typed
   requests. The **Speak** control is highlighted — the mic button on desktop, the
   **Speak** dock button on the phone — and the popover reads **"Speak and run the
-  query"**. The clip plays for you; nothing is recorded.
+  query"**. The clip plays for you; nothing is recorded. The mic button shows
+  whenever a tour is playing, key or no key — outside a tour it needs a
+  voice-capable model and a key, but a key-free voice step replays a recorded
+  Gemini turn and must have a mic to spotlight.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its
@@ -1484,7 +1703,7 @@ could not work once the homepage began opening each tour in a new tab — a fres
 tab has no history to go back to.)
 
 Production links use the deployed base, e.g.
-`https://www.tamedtable.com/app/?feature=filter.feature&scenario=Filter+by+Country`.
+`https://www.tamedtable.com/app/?feature=showcase-cleanup.feature&scenario=Clean+up+a+messy+customer+list`.
 
 → [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
 

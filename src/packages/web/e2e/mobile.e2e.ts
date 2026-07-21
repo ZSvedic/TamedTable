@@ -122,14 +122,14 @@ test.describe('phone width', () => {
     await page.locator('[data-mob-menu-item="Tours…"]').click();
 
     // The shared TutorialPanel — same overlay as desktop. Clicking a tour starts it.
-    await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Filter by Country' }).click();
+    await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Clean up a messy customer list' }).click();
 
     const progress = page.locator('.driver-popover-progress-text');
-    await expect(progress).toHaveText('1 of 3');
+    await expect(progress).toHaveText('1 of 6');
 
-    // Step 1 (load) loads the sample; step 2 is the chat step.
+    // Step 1 (load) loads the sample; step 2 is the first chat step.
     await page.locator('.driver-popover-next-btn').click();
-    await expect(progress).toHaveText('2 of 3');
+    await expect(progress).toHaveText('2 of 6');
     await expect(page.locator('#tutorial-table-view')).toBeVisible();
 
     // The shell opens the Type sheet so the spotlight lands on the visible
@@ -142,9 +142,16 @@ test.describe('phone width', () => {
     // leaves the popover nowhere to sit and breaks the layout. Scroll the page
     // right first: the spotlight must still cover the visible table, not just
     // the un-scrolled left region.
+    // Walk the remaining chat steps; each Next waits out the replayed request.
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('3 of 6');
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('4 of 6');
+    await page.locator('.driver-popover-next-btn').click();
+    await expect(progress).toHaveText('5 of 6');
     await page.evaluate(() => window.scrollTo(200, 0));
     await page.locator('.driver-popover-next-btn').click();
-    await expect(progress).toHaveText('3 of 3');
+    await expect(progress).toHaveText('6 of 6');
     await expect(page.locator('.driver-popover')).toContainText('Voilà');
     const fit = await page.evaluate(() => {
       const spot = document.querySelector('.driver-active-element')!.getBoundingClientRect();
@@ -456,5 +463,45 @@ test.describe('phone — the page is the table scroller', () => {
     await page.locator('[data-mob-dock="menu"]').click();
     await page.locator('[data-mob-menu-item="Settings…"]').click();
     await expect(page.getByText('Add to home screen', { exact: true })).toBeVisible();
+  });
+
+  // H — the provider card's model rows must not squeeze the model id into a
+  // ragged multi-line column on a phone; the id stays one line and the price
+  // wraps below it.
+  test('Settings model rows keep the model id on one line', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-dock="menu"]').click();
+    await page.locator('[data-mob-menu-item="Settings…"]').click();
+    // Expand a provider card so its PRIMARY/SECONDARY model rows render.
+    await page.locator('[data-mc-card]:has-text("Google")').click();
+    const id = page.locator('[data-mc-model-id]').first();
+    await expect(id).toBeVisible();
+    const height = await id.evaluate((el) => el.getBoundingClientRect().height);
+    // One mono line is ~18px; a char-wrapped three-line id is ~50px.
+    expect(height, 'the model id must stay on a single line').toBeLessThan(28);
+  });
+
+  // I — the phone column menu offers Remove filter (like the desktop menu) so a
+  // filter can be cleared in one tap. (Autofit has no phone equivalent — mobile
+  // columns auto-size to content and are not resizable.)
+  test('the column menu clears an active filter', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-open="Open sample…"]').click();
+    const picker = page.locator('[data-tb-sample-dialog]');
+    await picker.locator('[data-tb-sample]', { hasText: 'customers-input.csv' }).first().click();
+    await expect(page.locator('[data-mob-cell]').first()).toBeVisible({ timeout: 30_000 });
+
+    // No filter yet → no Remove filter.
+    await page.locator('[data-mob-header]').first().click();
+    await expect(page.locator('[data-mob-colmenu]')).toBeVisible();
+    await expect(page.locator('[data-mob-menu-item="remove-filter"]')).toHaveCount(0);
+    await page.locator('[data-mob-filter-input]').fill('a');
+    await page.locator('[data-mob-menu-item="filter"]').click();
+
+    // Reopen → Remove filter is offered, and clears the filter.
+    await page.locator('[data-mob-header]').first().click();
+    await page.locator('[data-mob-menu-item="remove-filter"]').click();
+    await page.locator('[data-mob-header]').first().click();
+    await expect(page.locator('[data-mob-menu-item="remove-filter"]')).toHaveCount(0);
   });
 });
