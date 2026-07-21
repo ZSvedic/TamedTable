@@ -206,15 +206,27 @@ export function TableView({
       `position:absolute;visibility:hidden;white-space:nowrap;` +
       `font-family:${typography.mono};font-size:${typography.size.sm}px;`;
     document.body.appendChild(probe);
-    let max = 0;
-    table.querySelectorAll('tr').forEach((tr) => {
+    // Body cells — measured in the grid's mono font.
+    let dataMax = 0;
+    table.querySelectorAll('tbody tr').forEach((tr) => {
       const cell = tr.children[colIdx] as HTMLElement | undefined;
       if (!cell) return;
       probe.textContent = cell.textContent ?? '';
-      max = Math.max(max, probe.getBoundingClientRect().width);
+      dataMax = Math.max(dataMax, probe.getBoundingClientRect().width);
     });
+    const dataW = Math.ceil(dataMax) + 2 * space.px10 + 4;
+    // The header — measured in its own (heavier UI) font, plus its chrome: the
+    // drag grip, any sort/filter mark, and the reserved ⋮ button. Autofit must
+    // keep the column's own name readable, not just its data (#LazyExec).
+    probe.style.fontFamily = typography.ui;
+    probe.style.fontWeight = '600';
+    probe.textContent = col;
+    const titleW = Math.ceil(probe.getBoundingClientRect().width);
     probe.remove();
-    setWidths({ ...snap, [col]: Math.max(MIN_COL_W, Math.min(640, Math.ceil(max) + 2 * space.px10 + 4)) });
+    const marks = (sort?.column === col ? 15 : 0) + (filters?.[col] !== undefined ? 17 : 0);
+    const grip = 18; // the grip icon (12) + its gap (6)
+    const headerW = space.px10 + grip + titleW + marks + (hasMenu ? 30 : space.px10);
+    setWidths({ ...snap, [col]: Math.max(MIN_COL_W, Math.min(640, Math.max(dataW, headerW))) });
   };
 
   const startResize = (col: string, e: ReactMouseEvent): void => {
@@ -388,7 +400,7 @@ export function TableView({
                       </span>
                       {/* The title gets its own ellipsizing box — text-overflow
                           on the th cannot reach inside the flex row. */}
-                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span data-tv-title={col} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {col}
                       </span>
                       {/* The header itself shows the view state: ▲/▼ for the
@@ -709,6 +721,8 @@ function ColumnMenu({
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   };
+  // A hairline that groups the menu into sort / filter / fit / delete.
+  const sep: CSSProperties = { height: 1, margin: `${space.px6}px 0`, background: t.line };
   return (
     <>
       {/* Backdrop: closes the menu on any click outside it. */}
@@ -746,6 +760,7 @@ function ColumnMenu({
         <button type="button" data-tv-menu-item="sort-desc" style={item} onClick={() => onSort(sortDir === 'desc' ? null : 'desc')}>
           {sortDir === 'desc' ? '✓ ' : ''}Sort descending
         </button>
+        <div style={sep} />
         {filterDraft === null ? (
           <button type="button" data-tv-menu-item="filter" style={item} onClick={() => setFilterDraft(filterText)}>
             Filter…{filterText ? ` (${filterText})` : ''}
@@ -776,13 +791,23 @@ function ColumnMenu({
             />
           </span>
         )}
+        {/* Only when a filter is set — the affordance to clear it. */}
+        {filterText && (
+          <button type="button" data-tv-menu-item="remove-filter" style={item} onClick={() => onFilter('')}>
+            Remove filter
+          </button>
+        )}
+        <div style={sep} />
         <button type="button" data-tv-menu-item="autofit" style={item} onClick={onAutofit}>
           Autofit width
         </button>
         {onDelete && (
-          <button type="button" data-tv-menu-item="delete" style={{ ...item, color: t.err }} onClick={onDelete}>
-            Delete column
-          </button>
+          <>
+            <div style={sep} />
+            <button type="button" data-tv-menu-item="delete" style={{ ...item, color: t.err }} onClick={onDelete}>
+              Delete column
+            </button>
+          </>
         )}
       </span>
     </>

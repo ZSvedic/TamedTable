@@ -127,6 +127,19 @@ Feature: Table view package
       And the "city" header carries a funnel mark
       And the demo event log shows "filter city=Osaka"
 
+    # Feedback G: the menu offers "Remove filter" when a filter is set, so the
+    # column filter can be cleared without retyping.
+    @web
+    Scenario: Remove filter clears an active column filter
+      Given the table-view demo page
+      When the user opens the "city" column menu
+      And the user filters by "Osaka"
+      Then the "city" header carries a funnel mark
+      When the user opens the "city" column menu
+      And the user picks "Remove filter"
+      Then the "city" header carries no funnel mark
+      And the demo range reads "1–10 of 95 rows"
+
     @web
     Scenario: Delete column reports to the host
       Given the table-view demo page
@@ -141,6 +154,15 @@ Feature: Table view package
       And the user opens the "name" column menu
       And the user picks "Autofit width"
       Then the "name" header is narrower than 200 px
+
+    # Feedback F: autofit sizes to the wider of the data and the header, so a
+    # column with a short value ("29") never hides its own name ("age").
+    @web
+    Scenario: Autofit keeps the header name visible
+      Given the table-view demo page
+      When the user opens the "age" column menu
+      And the user picks "Autofit width"
+      Then the "age" header title is fully visible
 
     # Plan acceptance criterion 8: double-clicking the column separator autofits
     # it, the same as the menu's Autofit width.

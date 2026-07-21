@@ -79,19 +79,23 @@ the host owns every piece of state, the grid renders and reports:
   values; a changed cell tints, and hovering it shows a small
   `was: <previous>` tooltip.
 - **Column menu** — every data header ends in a **⋮** button (revealed on
-  hover, always tappable on touch) opening a per-column menu: **Sort
-  ascending**, **Sort descending** (picking the active direction clears it),
-  **Filter…** (a small input popover, contains-match), **Autofit width**,
-  and **Delete column**. Sort and filter report through
-  `onSortChange(column, dir | null)` / `onFilterChange(column, text)` and
-  are view state — the host reorders or narrows the rows it passes in.
-  Delete reports `onDeleteColumn(column)`; what it means is the host's call
-  (in the app it commits a spec step). The header itself shows the state:
-  a ▲/▼ sort indicator and a funnel mark when a filter is active.
+  hover, always tappable on touch) opening a per-column menu, grouped by
+  hairline separators: **Sort ascending** / **Sort descending** (picking the
+  active direction clears it) · **Filter…** (a small input popover,
+  contains-match) / **Remove filter** (shown only when a filter is set, it
+  reports an empty filter) · **Autofit width** · **Delete column**. Sort and
+  filter report through `onSortChange(column, dir | null)` /
+  `onFilterChange(column, text)` and are view state — the host reorders or
+  narrows the rows it passes in. Delete reports `onDeleteColumn(column)`; what
+  it means is the host's call (in the app it commits a spec step). The header
+  itself shows the state: a ▲/▼ sort indicator and a funnel mark (an SVG
+  funnel icon, distinct from the sort arrows) when a filter is active.
 - **Autofit** — the menu entry, or double-clicking a visible column
-  separator (the resize handle already shows the `col-resize` cursor),
-  sizes that column to its widest cell on the current page (plus padding),
-  same fixed-layout snapshot as a drag resize.
+  separator (the resize handle straddles the border and shows the
+  `col-resize` cursor there), sizes that column to the wider of its widest
+  data cell on the current page and its own header (title plus the grip and ⋮
+  chrome), plus padding — so a short value never hides the column name. Same
+  fixed-layout snapshot as a drag resize.
 - **Row status marks** — rows carry an optional status: `pending` washes the
   row-number cell muted, `failed` marks it red. Retry is a host affordance
   (the app's pagination-bar readout), not a grid control.

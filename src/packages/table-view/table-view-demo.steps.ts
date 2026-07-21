@@ -138,6 +138,7 @@ When('the user picks {string}', async function (this: object, label: string) {
   const item = {
     'Sort ascending': 'sort-asc',
     'Sort descending': 'sort-desc',
+    'Remove filter': 'remove-filter',
     'Autofit width': 'autofit',
     'Delete column': 'delete',
   }[label];
@@ -167,6 +168,21 @@ Then('the {string} header carries a funnel mark', async function (this: object, 
   // reads as "filter", distinct from the ▲/▼ sort arrows.
   const funnel = await page(this).$(`[data-tv-filter-mark="${col}"] svg`);
   assert.ok(funnel, `expected a funnel icon on "${col}"`);
+});
+
+Then('the {string} header carries no funnel mark', async function (this: object, col: string) {
+  const found = await page(this).$(`[data-tv-filter-mark="${col}"]`);
+  assert.ok(!found, `expected no funnel mark on "${col}"`);
+});
+
+Then('the {string} header title is fully visible', async function (this: object, col: string) {
+  // The title span ellipsizes when the column is too narrow — so scrollWidth
+  // exceeds clientWidth exactly when the name is clipped.
+  const clipped = await page(this).$eval(
+    `[data-tv-title="${col}"]`,
+    (el) => el.scrollWidth > el.clientWidth + 1,
+  );
+  assert.ok(!clipped, `the "${col}" header name is clipped after autofit`);
 });
 
 Then('the {string} header is narrower than {int} px', async function (this: object, col: string, max: number) {

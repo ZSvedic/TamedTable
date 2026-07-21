@@ -1422,10 +1422,12 @@ quietly fill the rest), or an existing value is overwritten. Marking the
 data's actual change, not just the cells a live call streamed, is what keeps
 a shuffled or sorted view from tinting one block and leaving an identically
 filled block below it bare. Hovering a changed cell shows the previous
-value. Every column header ends in a **⋮ column menu** — Sort
-ascending, Sort descending, Filter…, Autofit width, and Delete column — with
+value. Every column header ends in a **⋮ column menu**, grouped by hairline
+separators — Sort ascending / Sort descending · Filter… / Remove filter (the
+latter only when a filter is set) · Autofit width · Delete column — with
 the state shown in the header itself: a ▲/▼ sort indicator and a funnel
-mark when a filter is active. Sort and filter live behind the menu rather
+mark when a filter is active. Autofit sizes the column to the wider of its
+data and its own header, so a short value never hides the column name. Sort and filter live behind the menu rather
 than a bare header click because on an AI-made column they can trigger a
 table-wide run (the dependency rule) — the menu makes them a deliberate act,
 and it keeps the header clean and tappable on the phone. They stay **view
