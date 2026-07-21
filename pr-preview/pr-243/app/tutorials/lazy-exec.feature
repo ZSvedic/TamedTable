@@ -218,3 +218,22 @@ Feature: Lazy AI execution edge cases
       When user clicks Save file in the save-ready dialog
       Then display Save File dialog
       When user saves as "paginate-input.csv"
+
+    # Regression (feedback round 3): a page-open evaluation fills the visible
+    # page with live calls AND silently refills every other row whose prompt is
+    # already cached — the ten cities cycle, so the first page seeds them all,
+    # and opening page 2 quietly fills the whole table. Those free refills went
+    # from blank to a value too, so they must carry the changed marker; if only
+    # the live calls are marked, a shuffled or sorted view shows one block
+    # tinted and an identically filled block below it bare. The marker means
+    # "filled by this request", so it accumulates across the pages the reader
+    # opens instead of resetting to the last page.
+    @web
+    Scenario: Every cell an AI column fills carries the changed marker
+      Given load "paginate-input.csv"
+      When query "add a Language column: the official language spoken in each City"
+      Then every evaluated cell on the current page carries the changed marker
+      When user goes to page 2
+      Then every evaluated cell on the current page carries the changed marker
+      When user goes to page 3
+      Then every evaluated cell on the current page carries the changed marker
