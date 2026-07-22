@@ -12,13 +12,13 @@ Feature: Lazy AI execution showcase tour
     @web @tour @cat-lazy
     Scenario: Clean 25,000 rows for cents
       Given the TamedTable web app
-      When user drops the file "showcase-lazy-input.csv" onto the empty page
+      When drop the file "showcase-lazy-input.csv" onto the empty page
       Then the large-file dialog offers "Load shuffled" and "Load in original order"
-      When user loads the shuffled sample
+      When load the shuffled sample
       Then the Row # column keeps the original row numbers
       When query "add a Category column: kitchen, electronics, clothing, sports, or other"
       Then no toast is shown
       And the evaluated-rows readout shows "100 of 25000 rows evaluated"
       And the pager marks the pages with pending rows
-      When user opens the run-on-all estimate dialog
+      When open the run-on-all estimate dialog
       Then the estimate dialog shows the rows remaining, estimated tokens, cost, and time
