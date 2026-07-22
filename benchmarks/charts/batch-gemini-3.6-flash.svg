@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="540" viewBox="0 0 640 540" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<rect width="640" height="540" fill="#ffffff"/>
+<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — gemini-3.6-flash</text>
+<text x="64" y="42" font-size="11" fill="#888888">Gemini lineup, 120-row fixture; 3.6 Flash + 3.5 Flash-Lite run 2026-07-22, rest 2026-07-02</text>
+<text x="64" y="54" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
+<line x1="64" y1="60" x2="616" y2="60" stroke="#e5e5e5"/>
+<line x1="64" y1="180" x2="616" y2="180" stroke="#e5e5e5"/>
+<text x="56" y="64" font-size="10" text-anchor="end" fill="#222222">100%</text>
+<text x="56" y="184" font-size="10" text-anchor="end" fill="#222222">0</text>
+<polyline points="64.0,66.0 91.9,66.0 126.9,70.0 196.8,70.0 336.5,66.0 616.0,65.0" fill="none" stroke="#0072B2" stroke-width="2"/>
+<circle cx="64.0" cy="66.0" r="3.5" fill="#0072B2"/>
+<circle cx="91.9" cy="66.0" r="3.5" fill="#0072B2"/>
+<circle cx="126.9" cy="70.0" r="3.5" fill="#0072B2"/>
+<circle cx="196.8" cy="70.0" r="3.5" fill="#0072B2"/>
+<circle cx="336.5" cy="66.0" r="3.5" fill="#0072B2"/>
+<circle cx="616.0" cy="65.0" r="3.5" fill="#0072B2"/>
+<text x="64" y="214" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
+<line x1="64" y1="220" x2="616" y2="220" stroke="#e5e5e5"/>
+<line x1="64" y1="340" x2="616" y2="340" stroke="#e5e5e5"/>
+<text x="56" y="224" font-size="10" text-anchor="end" fill="#222222">$0.2500</text>
+<text x="56" y="344" font-size="10" text-anchor="end" fill="#222222">0</text>
+<polyline points="64.0,225.5 91.9,283.6 126.9,275.0 196.8,297.0 336.5,306.3 616.0,298.0" fill="none" stroke="#0072B2" stroke-width="2"/>
+<circle cx="64.0" cy="225.5" r="3.5" fill="#0072B2"/>
+<circle cx="91.9" cy="283.6" r="3.5" fill="#0072B2"/>
+<circle cx="126.9" cy="275.0" r="3.5" fill="#0072B2"/>
+<circle cx="196.8" cy="297.0" r="3.5" fill="#0072B2"/>
+<circle cx="336.5" cy="306.3" r="3.5" fill="#0072B2"/>
+<circle cx="616.0" cy="298.0" r="3.5" fill="#0072B2"/>
+<text x="64" y="374" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
+<line x1="64" y1="380" x2="616" y2="380" stroke="#e5e5e5"/>
+<line x1="64" y1="500" x2="616" y2="500" stroke="#e5e5e5"/>
+<text x="56" y="384" font-size="10" text-anchor="end" fill="#222222">200s</text>
+<text x="56" y="504" font-size="10" text-anchor="end" fill="#222222">0</text>
+<polyline points="64.0,409.5 91.9,462.9 126.9,480.7 196.8,487.1 336.5,491.8 616.0,484.2" fill="none" stroke="#0072B2" stroke-width="2"/>
+<circle cx="64.0" cy="409.5" r="3.5" fill="#0072B2"/>
+<circle cx="91.9" cy="462.9" r="3.5" fill="#0072B2"/>
+<circle cx="126.9" cy="480.7" r="3.5" fill="#0072B2"/>
+<circle cx="196.8" cy="487.1" r="3.5" fill="#0072B2"/>
+<circle cx="336.5" cy="491.8" r="3.5" fill="#0072B2"/>
+<circle cx="616.0" cy="484.2" r="3.5" fill="#0072B2"/>
+<text x="64.0" y="520" font-size="11" text-anchor="middle" fill="#222222">1</text>
+<text x="91.9" y="520" font-size="11" text-anchor="middle" fill="#222222">5</text>
+<text x="126.9" y="520" font-size="11" text-anchor="middle" fill="#222222">10</text>
+<text x="196.8" y="520" font-size="11" text-anchor="middle" fill="#222222">20</text>
+<text x="336.5" y="520" font-size="11" text-anchor="middle" fill="#222222">40</text>
+<text x="616.0" y="520" font-size="11" text-anchor="middle" fill="#222222">80</text>
+<text x="340" y="540" font-size="12" text-anchor="middle" fill="#222222">Batch size (rows per model call)</text>
+</svg>

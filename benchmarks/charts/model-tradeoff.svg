@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="480" viewBox="0 0 760 480" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
 <rect width="760" height="480" fill="#ffffff"/>
-<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Accuracy vs cost per task (batch 5)</text>
-<text x="64" y="42" font-size="11" fill="#888888">OpenRouter :free models, 120-row fixture, 2026-07-17</text>
+<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Accuracy vs cost per task (batch 20)</text>
+<text x="64" y="42" font-size="11" fill="#888888">Gemini lineup, 120-row fixture; 3.6 Flash + 3.5 Flash-Lite run 2026-07-22, rest 2026-07-02</text>
 <line x1="64" y1="424.0" x2="610" y2="424.0" stroke="#e5e5e5"/>
 <text x="56" y="428.0" font-size="11" text-anchor="end" fill="#222222">0%</text>
 <line x1="64" y1="333.0" x2="610" y2="333.0" stroke="#e5e5e5"/>
@@ -15,16 +15,22 @@
 <line x1="64.0" y1="60" x2="64.0" y2="424" stroke="#e5e5e5"/>
 <text x="64.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0000</text>
 <line x1="200.5" y1="60" x2="200.5" y2="424" stroke="#e5e5e5"/>
-<text x="200.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0000</text>
+<text x="200.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0500</text>
 <line x1="337.0" y1="60" x2="337.0" y2="424" stroke="#e5e5e5"/>
-<text x="337.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0001</text>
+<text x="337.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.1000</text>
 <line x1="473.5" y1="60" x2="473.5" y2="424" stroke="#e5e5e5"/>
-<text x="473.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0001</text>
+<text x="473.5" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.1500</text>
 <line x1="610.0" y1="60" x2="610.0" y2="424" stroke="#e5e5e5"/>
-<text x="610.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.0001</text>
+<text x="610.0" y="442" font-size="11" text-anchor="middle" fill="#222222">$0.2000</text>
 <text x="337" y="468" font-size="12" text-anchor="middle" fill="#222222">Average cost per task (USD)</text>
-<circle cx="64.0" cy="114.6" r="5" fill="#E69F00"/>
-<text x="72.0" y="118.6" font-size="11" fill="#E69F00">tencent/hy3:free</text>
-<circle cx="64.0" cy="75.2" r="5" fill="#E69F00"/>
-<text x="72.0" y="79.2" font-size="11" fill="#E69F00">cohere/north-mini-code:free</text>
+<circle cx="112.1" cy="75.2" r="5" fill="#0072B2"/>
+<text x="120.1" y="79.2" font-size="11" fill="#0072B2">gemini-3.1-flash-lite</text>
+<circle cx="416.4" cy="78.2" r="5" fill="#0072B2"/>
+<text x="424.4" y="82.2" font-size="11" fill="#0072B2">gemini-3.5-flash</text>
+<circle cx="401.1" cy="78.2" r="5" fill="#0072B2"/>
+<text x="409.1" y="82.2" font-size="11" fill="#0072B2">gemini-3.1-pro-preview</text>
+<circle cx="308.6" cy="90.3" r="5" fill="#0072B2"/>
+<text x="316.6" y="94.3" font-size="11" fill="#0072B2">gemini-3.6-flash</text>
+<circle cx="125.9" cy="81.2" r="5" fill="#0072B2"/>
+<text x="133.9" y="85.2" font-size="11" fill="#0072B2">gemini-3.5-flash-lite</text>
 </svg>
