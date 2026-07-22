@@ -16,10 +16,10 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 ├── benchmarks/              Model & batch-size benchmark data + outputs (no code, runner is @tamedtable/bench).
 │   ├── models.jsonl         The benchmark's model pricing/specs (the app's catalogue is model-config's models.json).
 │   ├── ground-truth/        Labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl).
-│   ├── results/             sweep outputs (JSONL)
-│   └── charts/              generated SVG tradeoff charts
-├── cassettes/               recorded LLM responses the test suite replays — committed data, one JSON per feature
-├── marketing/               everything the public sees + the shared design base — never part of src/
+│   ├── results/             Sweep outputs (JSONL).
+│   └── charts/              Generated SVG tradeoff charts.
+├── cassettes/               Recorded LLM responses the test suite replays — committed data, one JSON per feature.
+├── marketing/               Everything the public sees + the shared design base.
 │   ├── tokens.json          design token master — colors, typography, spacing
 │   ├── brand/               marks, favicons, lockups, brand.md
 │   ├── icons/               UI icon glyphs, one 16×16 SVG per name — source of ui-kit's generated icons.ts
