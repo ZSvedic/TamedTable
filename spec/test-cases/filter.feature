@@ -76,3 +76,14 @@ Feature: Filter customer records
       And the expected output is "filter-expected.jsonl"
       When user runs "tamedtable execute filter.flow --input filter-input.csv --output filter-output.jsonl"
       Then "filter-output.jsonl" matches the expected output
+
+    # #BatchExec --input is a shell path, resolved from the working directory —
+    # never joined onto the .flow file's own dir. The bug was a doubled prefix
+    # (spec/test-cases/spec/test-cases/…) when --input carried a path.
+    @cli @offline
+    Scenario: Execute resolves --input from the working directory, not the flow's dir
+      Given "filter.flow" exists
+      And the expected output is "filter-expected.jsonl"
+      When user runs "tamedtable execute filter.flow --input ../spec/test-cases/filter-input.csv --output filter-cwd-output.jsonl"
+      Then exit code is 0
+      And "filter-cwd-output.jsonl" matches the expected output

@@ -135,9 +135,12 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
 
   const csvCandidate = flags.input ?? flow.source;
   if (!csvCandidate) return fail(1, 'tamedtable execute: no input CSV (no --input and flow has no source)');
-  const abs = (p: string) => (path.isAbsolute(p) ? p : path.join(flowDir, p));
-  const csvPath = abs(csvCandidate);
-  const outputPath = abs(flags.output);
+  // --input and --output are shell paths (relative to cwd, like the <flow> arg);
+  // only the .flow file's embedded `source` is relative to the flow's own dir.
+  const csvPath = flags.input !== undefined
+    ? (await resolveFile(flags.input)) ?? flags.input
+    : (path.isAbsolute(flow.source!) ? flow.source! : path.join(flowDir, flow.source!));
+  const outputPath = path.isAbsolute(flags.output) ? flags.output : path.resolve(flags.output);
 
   // execute doesn't need an API key (no LLM call), but pass one if available so
   // the headless provider can build without throwing on a missing key.
