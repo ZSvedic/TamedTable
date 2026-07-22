@@ -351,7 +351,7 @@ function TableBoard({ theme }) {
       <TableView t={t} cols={COLS_WITH_COUNTRY} colWidths={[...COL_WIDTHS, 110]}
         rows={ROWS_FILTERED_AI.map((r, i) => (i >= 8 ? [...r.slice(0, 6), null] : r))}
         page={1} pageCount={1} totalRows={ROWS_FILTERED_AI.length}
-        selection={{ row: 2, column: 'Email' }} streaming status="running"
+        selection={{ row: 2, column: 'Email' }} streaming
         cellFlag={(row, col) => {
           if (col !== 6) return undefined;
           if (row >= 8) return 'pending';
