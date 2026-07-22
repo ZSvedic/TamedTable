@@ -1,7 +1,9 @@
 {
   "models": [
+    { "id": "gemini-3.6-flash",       "name": "Gemini 3.6 Flash",     "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 7.5  },
     { "id": "gemini-3.5-flash",       "name": "Gemini 3.5 Flash",     "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 9    },
     { "id": "gemini-3.1-pro-preview", "name": "Gemini 3.1 Pro",       "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 2,    "outUsdPerMtok": 12   },
+    { "id": "gemini-3.5-flash-lite",  "name": "Gemini 3.5 Flash-Lite","provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 0.3,  "outUsdPerMtok": 2.5  },
     { "id": "gemini-3.1-flash-lite",  "name": "Gemini 3.1 Flash-Lite","provider": "gemini",    "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.25, "outUsdPerMtok": 1.5  },
     { "id": "gemini-2.5-flash",       "name": "Gemini 2.5 Flash",     "provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 0.3,  "outUsdPerMtok": 2.5  },
     { "id": "gemini-2.5-flash-lite",  "name": "Gemini 2.5 Flash-Lite","provider": "gemini",    "temperature": true , "voiceInput": true,  "inUsdPerMtok": 0.1,  "outUsdPerMtok": 0.4  },
@@ -20,7 +22,7 @@
     { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 }
   ],
   "defaults": {
-    "gemini":     { "primary": "gemini-3.5-flash",  "secondary": "gemini-3.1-flash-lite" },
+    "gemini":     { "primary": "gemini-3.6-flash",  "secondary": "gemini-3.1-flash-lite" },
     "openai":     { "primary": "gpt-5.5",           "secondary": "gpt-5.4-mini" },
     "anthropic":  { "primary": "claude-sonnet-4-6", "secondary": "claude-haiku-4-5" },
     "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5 }

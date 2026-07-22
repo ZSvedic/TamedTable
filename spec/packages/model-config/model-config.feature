@@ -8,7 +8,7 @@ Feature: Model config
     Scenario: Empty env and empty stored yields gemini defaults
       When resolveConfig is called with empty env and empty stored
       Then the resolved provider is "gemini"
-      And the resolved model is "gemini-3.5-flash"
+      And the resolved model is "gemini-3.6-flash"
       And the resolved anthropicKey is null
       And the resolved geminiKey is null
       And the resolved openaiKey is null
@@ -111,7 +111,7 @@ Feature: Model config
     Scenario: A cross-provider TAMEDTABLE_MODEL is coerced to the provider default
       When resolveConfig is called with env GEMINI_API_KEY="AIza-x" and TAMEDTABLE_MODEL="gpt-5.5"
       Then the resolved provider is "gemini"
-      And the resolved model is "gemini-3.5-flash"
+      And the resolved model is "gemini-3.6-flash"
 
   Rule: providerFor
 
@@ -219,9 +219,9 @@ Feature: Model config
       Then the result is "claude-sonnet-4-6"
 
     @headless
-    Scenario: defaultModel for gemini returns gemini-3.5-flash
+    Scenario: defaultModel for gemini returns gemini-3.6-flash
       When defaultModel is called with "gemini"
-      Then the result is "gemini-3.5-flash"
+      Then the result is "gemini-3.6-flash"
 
     @headless
     Scenario: defaultModel for openai returns gpt-5.5
@@ -295,6 +295,10 @@ Feature: Model config
       Then the model "claude-sonnet-4-6" has voiceInput false
 
     @headless
+    Scenario: gemini-3.6-flash has voiceInput true
+      Then the model "gemini-3.6-flash" has voiceInput true
+
+    @headless
     Scenario: gemini-3.5-flash has voiceInput true
       Then the model "gemini-3.5-flash" has voiceInput true
 
@@ -315,6 +319,10 @@ Feature: Model config
       Then every ALL_MODELS entry has inUsdPerMtok and outUsdPerMtok prices
 
     @headless
+    Scenario: gemini-3.6-flash is priced 1.5 in and 7.5 out
+      Then the model "gemini-3.6-flash" costs 1.5 in and 7.5 out per Mtok
+
+    @headless
     Scenario: gemini-3.5-flash is priced 1.5 in and 9 out
       Then the model "gemini-3.5-flash" costs 1.5 in and 9 out per Mtok
 
@@ -333,7 +341,7 @@ Feature: Model config
 
       Examples:
         | provider   | primary                     | secondary                   |
-        | gemini     | gemini-3.5-flash            | gemini-3.1-flash-lite       |
+        | gemini     | gemini-3.6-flash            | gemini-3.1-flash-lite       |
         | openai     | gpt-5.5                     | gpt-5.4-mini                |
         | anthropic  | claude-sonnet-4-6           | claude-haiku-4-5            |
         | openrouter | cohere/north-mini-code:free | cohere/north-mini-code:free |
@@ -395,7 +403,7 @@ Feature: Model config
     Scenario: Selecting a provider pins its default primary and secondary models
       Given the model-config demo page
       When the user clicks the "Google" provider card
-      Then the demo shows resolved model "gemini-3.5-flash"
+      Then the demo shows resolved model "gemini-3.6-flash"
       And the demo shows resolved cellModel "gemini-3.1-flash-lite"
 
     @web
@@ -409,7 +417,7 @@ Feature: Model config
     Scenario: Each default row shows its per-Mtok price
       Given the model-config demo page
       When the user clicks the "Google" provider card
-      Then the "primary" default row shows the price "$1.5 in / $9 out"
+      Then the "primary" default row shows the price "$1.5 in / $7.5 out"
       And the "secondary" default row shows the price "$0.25 in / $1.5 out"
 
     @web

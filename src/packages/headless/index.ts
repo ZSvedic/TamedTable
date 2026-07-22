@@ -259,7 +259,7 @@ export interface HeadlessRunner {
 }
 
 // #ConfigEnv
-const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'gemini-3.5-flash';
+const DEFAULT_MODEL = process.env.TAMEDTABLE_MODEL ?? 'gemini-3.6-flash';
 const DEFAULT_CELL_MODEL = process.env.TAMEDTABLE_CELL_MODEL ?? 'gemini-3.1-flash-lite';
 
 // Per-provider fallbacks for per-row cell calls when the configured cell

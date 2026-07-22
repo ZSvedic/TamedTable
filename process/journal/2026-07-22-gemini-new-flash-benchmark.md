@@ -61,9 +61,11 @@ run unioned with the 2026-07-02 rows) and `benchmarks/charts/batch-gemini-3.6-fl
   slightly less accurate and costs more.
 - **Primary (QM) default: `gemini-3.6-flash` is the better buy** — equal
   accuracy on this proxy task, 17% cheaper output, and Google bills it as the
-  stronger agentic model. The sweep only measures the cell role, so swap the
-  catalogue default after a quick patch-turn sanity check (a `bun run
-  test:record` pass doubles as one, since re-recording cassettes against the
-  new default is part of the swap anyway).
+  stronger agentic model. Switched in the same PR as this report. The
+  committed cassettes were re-keyed in place — the patch-turn model id swapped
+  in each recorded request and the fingerprint recomputed, responses byte-for-
+  byte the ones `gemini-3.5-flash` gave — so the suite replays offline
+  unchanged. A true re-record against `gemini-3.6-flash` (`bun run
+  test:record`) is deferred until the prompt passes human review.
 - **Batch size: no change** — same flat accuracy across batches as every
   earlier Gemini run.
