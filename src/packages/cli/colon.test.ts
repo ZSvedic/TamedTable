@@ -127,7 +127,7 @@ describe('handleColonCommand', () => {
     try {
       await handleColonCommand(`:save-flow ${outFlow}`, h.runner, h.stream);
       const { runCli } = await import('./index.ts');
-      const result = await runCli(['execute', outFlow, '--output', outJsonl.split('/').pop()!]);
+      const result = await runCli(['execute', outFlow, '--output', outJsonl]);
       expect(result.exitCode).toBe(0);
       const replayed = await readJsonl(outJsonl);
       expect(replayed.length).toBe(expectedRows.length);

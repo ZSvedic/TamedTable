@@ -504,8 +504,10 @@ so callers can decide what to do with a failure.
 
 `:save-flow` writes `version: 2`. `execute` <!-- #BatchExec --> accepts a `version` of `1`
 or `2` and validates the spec against the single schema either way; any
-other `version` exits 2. A relative `source` is read relative to the
-`.flow` file's own directory; `--input` overrides it.
+other `version` exits 2. The embedded `source` is read relative to the
+`.flow` file's own directory. A `--input` flag overrides it and — like the
+`<flow>` argument and `--output` — is a shell path resolved relative to the
+current working directory, never re-anchored under the flow's directory.
 
 Exit codes:
 
