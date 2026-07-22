@@ -1,4 +1,4 @@
-# #TutorialMode
+# #Enrich #TutorialMode
 # Atomic "Enrich & extract" scenarios — CI coverage, one per feature. Each
 # loads its sample, runs the phrase, and replays from enrich.json. The
 # section's marketing tour is the single story in showcase-enrich.feature.

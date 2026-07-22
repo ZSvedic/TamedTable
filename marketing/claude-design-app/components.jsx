@@ -333,7 +333,7 @@ function Pagination({ t, page, pageCount, onPageChange }) {
 }
 
 // ── TableView — Silver grid, rowH 28 / headerH 32, selection, inline edit,
-//    drag-reorder grips, streaming banner, pagination + status footers.
+//    drag-reorder grips, streaming banner, pagination footer.
 //    cellFlag(absRow, colIdx) → 'flash' | 'flash2' | 'pending' | undefined.
 function TableView({
   t, cols = SAMPLE_COLS, rows = SAMPLE_ROWS, colWidths,
@@ -475,7 +475,7 @@ function TableView({
         <Pagination t={t} page={page} pageCount={pageCount} onPageChange={onPageChange} />
       </div>
 
-      {/* status footer */}
+      {/* status footer — historical: removed from the shipped app in #237 */}
       <div style={{
         flex: '0 0 auto', height: 24, display: 'flex', alignItems: 'center', gap: TT_S.px10,
         padding: `0 ${TT_S.px12}px`, borderTop: `1px solid ${t.line}`, background: t.surface2,

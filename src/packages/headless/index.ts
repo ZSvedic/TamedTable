@@ -865,9 +865,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
     } else if (detected === 'openrouter') {
-      // Bench-only free provider, same OpenAI-compatible path as Cerebras.
-      // :free models 404 unless the account's privacy settings allow free
-      // model publication — see benchmarks/README.md.
+      // Shipped app provider (the 4th), same OpenAI-compatible path as
+      // Cerebras. :free models 404 unless the account's privacy settings
+      // allow free model publication — see benchmarks/README.md.
       const key = apiKey ?? process.env.OPENROUTER_API_KEY;
       if (!key) throw new Error('OPENROUTER_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const openrouter = createOpenAI({ apiKey: key, baseURL: 'https://openrouter.ai/api/v1', ...fetchOpt });

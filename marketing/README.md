@@ -12,7 +12,7 @@ marketing/
   claude-design-app/     in-browser design canvas (scratch JSX + generated tokens.jsx)
   illustrations/         SVG feature tiles + gallery.html to preview them
   video/                 storyboard + render plan (demo-video-plan.md) for the 20s video
-  web/                   the landing page (index.html + styles.css + main.js)
+  web/                   the landing page (index.html + FAQ.html + styles.css + main.js)
 ```
 
 `web/`'s favicon and illustrations are **symlinks**, not copies — one source of truth. Edit the real file under `brand/` or `illustrations/`; both the homepage and the app pick the change up. Never replace a symlink with a copy.
@@ -40,6 +40,6 @@ A push to `main` that touches `marketing/web/`, `marketing/illustrations/`, or `
 | Add or redraw a feature tile | Follow [process/prompts/prompt-illustrate.md](../process/prompts/prompt-illustrate.md); drop the SVG in `illustrations/`. The homepage sees it through the symlink. |
 | Link to the app | Use `https://www.tamedtable.com/app/…` (not the bare root — that's the homepage now). |
 
-Preview without a build: open `web/index.html` in a browser (the symlinks resolve locally), or `illustrations/_gallery.html` to eyeball all tiles. Fonts load straight from Google Fonts — no offline story, since the app needs network anyway.
+Preview without a build: open `web/index.html` in a browser (the symlinks resolve locally), or `illustrations/gallery.html` to eyeball all tiles. Fonts are self-hosted from `fonts/` — no third-party request.
 
 Any markdown you add here follows [spec/writing-style.md](../spec/writing-style.md).

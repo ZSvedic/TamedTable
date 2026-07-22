@@ -14,9 +14,9 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 </script>
 <link rel="canonical" href="https://www.tamedtable.com/">
 <title>TamedTable — AI ETL in Natural Language</title>
-<meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load a spreadsheet, describe what you want, and watch it transform. No formulas, no code. Source-available, runs on your own API key.">
+<meta name="description" content="TamedTable is an AI ETL (Extract, Transform, Load) tool: load tabular data, describe what you want, and watch it transform. No formulas, no code. Source-available, runs on your own API key.">
 <meta property="og:title" content="TamedTable — AI ETL in Natural Language">
-<meta property="og:description" content="Load a spreadsheet, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load): no formulas, no code. Source-available.">
+<meta property="og:description" content="Load tabular data, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load): no formulas, no code. Source-available.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.tamedtable.com/">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -175,8 +175,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     </div>
   </section>
 
-  <!-- FEATURE 01: Lazy AI execution — informational for now; its tour ships
-       with the lazy-execution implementation. Preview a page, see the price,
+  <!-- FEATURE 01: Lazy AI execution — preview a page, see the price,
        run on all rows only when sure. -->
   <section class="sec-paper">
     <div class="wrap">
@@ -195,6 +194,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             <img class="feat-ill" src="illustrations/LazyAI-shuffle.svg" alt="Previewing an AI step on one page of a big file">
             <div class="feat-dots"></div>
           </div>
+          <a class="feat-demo" target="_blank" rel="noopener" href="#">Show me →</a>
         </div>
       </div>
     </div>
@@ -334,7 +334,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <h2>Be exact</h2>
           <p>The everyday spreadsheet jobs are still here; deterministic and repeatable.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Remove the duplicated rows"</span><span class="fnote">Dedupe</span></button>
+            <button class="feat-item active" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Remove the duplicate rows"</span><span class="fnote">Dedupe</span></button>
             <button class="feat-item" data-ill="illustrations/Deterministic-join.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Join with join-country-codes.csv on Country to add ISO and Region"</span><span class="fnote">Join two tables</span></button>
             <button class="feat-item" data-ill="illustrations/Deterministic-filter.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Show only customers in Europe"</span><span class="fnote">Filter rows — on the column the join just added</span></button>
             <button class="feat-item" data-ill="illustrations/Deterministic-pivot.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Pivot Quarter into columns, with Revenue as the value"</span><span class="fnote">Reshape tall to wide</span></button>
@@ -361,7 +361,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <p>Your work is yours to keep: load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
             <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow from web or CLI</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV or JSONL</span></button>
+            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV, JSONL, Parquet, or Arrow</span></button>
             <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
             <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
             <button class="feat-item" data-ill="illustrations/LoadSaveReuse-undo-redo.svg"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>

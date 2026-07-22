@@ -270,7 +270,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
         </div>
 
         {/* footer — Close only (changes are live; each save confirms with the
-            standard "All changes saved" toast) */}
+            inline ✓ Saved badge on the provider card) */}
         <div
           style={{
             flex: '0 0 auto',

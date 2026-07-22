@@ -1,8 +1,8 @@
 // #FileIO
 // File open/save/url handlers. Drives the FilePort dialogs, parses picked or
 // fetched content through the file-io codec registry and loads the rows
-// directly into the engine (no filesystem), and reports each save into the
-// status footer. App copy and the sample list live toolbar-side; this owns
+// directly into the engine (no filesystem), and confirms each save with a
+// toast. App copy and the sample list live toolbar-side; this owns
 // only the load/save plumbing.
 import {
   fetchTable,

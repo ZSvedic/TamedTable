@@ -56,8 +56,8 @@ Autoplay is muted on the web, so **the video must work silent**; the voiceover
 is a bonus for anyone with sound on and for the social/YouTube cut.
 
 - **Voiceover** — six short lines (`voiceover.txt`), placed at their beats with
-  no speed-up. `audio.mjs` synthesizes them with OpenAI TTS as an *interim*
-  voice, then muxes the track into both ratios as Opus.
+  no speed-up. `gemini-tts.mjs` synthesizes them with Gemini TTS, then muxes
+  the track into both ratios as Opus.
 - **Captions** — the fuller wording burned in, lower third on 16:9, upper area
   on 9:16. The voiceover is the punchier version of the same lines.
 - **Key-phrase call-outs** — a few beats also stamp a short phrase in Ink
@@ -66,23 +66,20 @@ is a bonus for anyone with sound on and for the social/YouTube cut.
 
 ### Getting a better voice
 
-OpenAI TTS is fine for a placeholder but reads a little flat. The pipeline takes
-an external voiceover so a better tool can drop in: put a finished 20s track at
-`out/voiceover-en.wav` and `audio.mjs` muxes it verbatim, skipping TTS.
-
-`voiceover.ssml` is the script marked up with pauses, emphasis, and pacing, plus
-each line's start time. Options, roughly best-voice first:
+The pipeline takes an external voiceover so a better tool can drop in: put a
+finished 20s track at `out/voiceover-en.wav` and mux it verbatim, skipping TTS.
+Options, roughly best-voice first:
 
 - **ElevenLabs** — the most natural and expressive; paste the plain script, pick
   a voice, tune emphasis with punctuation and `<break>`. No full SSML.
-- **Gemini TTS** — `gemini-tts.mjs` auditions it (needs `GEMINI_API_KEY`). It
+- **Gemini TTS** — the shipped pipeline, `gemini-tts.mjs` (needs `GEMINI_API_KEY`). It
   renders the **whole script in one call** (one continuous take, so the voice is
   consistent), then splits that read at its five longest pauses and re-spaces the
   phrases onto the beats by inserting silence only — no per-line clips, which is
   what made the earlier cut sound spliced. Style is a plain-English prompt prefix,
   not SSML. Outputs `out/voice-<voice>.wav` (raw read) and
   `hero-16x9-en-<voice>.webm` per voice for A/B.
-- **Azure Neural TTS** — full SSML (`voiceover.ssml` targets it): `<break>`,
+- **Azure Neural TTS** — full SSML: `<break>`,
   `<emphasis>`, `<prosody>`, expressive styles, and word-level timestamps.
 - **Google Cloud TTS** (Studio / Chirp3-HD voices) — SSML, very natural.
 - **Amazon Polly** (Neural) — SSML, solid and cheap.
@@ -152,9 +149,11 @@ marketing/video/
   demo-video-plan.md      this doc
   timeline.html           the animated scene (camera, captions, call-outs); ?ratio & ?lang
   capture.mjs             drives Playwright -> silent-<ratio>-en.webm
-  audio.mjs               OpenAI TTS (or external wav) + mux -> hero-<ratio>-en.webm
+  gemini-tts.mjs          Gemini TTS + mux -> hero-<ratio>-en.webm
+  encode.mjs              derives the MP4/GIF deliverables from the WebMs
+  fonts.css               data-URI fonts for the timeline render
   voiceover.txt           the voiceover script + delivery notes
-  voiceover.ssml          the same script marked up for Azure/Google/Polly
+  demo-16x9.mp4, demo-9x16.mp4   committed deliverables
   out/                    git-ignored renders
     hero-16x9-en.webm  hero-9x16-en.webm
     voiceover-en.wav   (optional) an external voice; muxed verbatim if present

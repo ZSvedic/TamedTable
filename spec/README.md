@@ -21,7 +21,7 @@ The structural rule: library packages (self-contained, demo-able) get per-packag
 
 App-behavior scenarios in [test-cases/](test-cases/) test the TamedTable app through its surfaces (CLI, headless, web). Files per use case:
 
-- `<usecase>-input.<ext>` — source fixture (committed)
+- `<usecase>-input.<ext>` — source fixture (committed). Feature files whose scenarios each need a different source (validate, classify, enrich, language-ai, sort) name inputs by content instead — `emails.csv`, `tickets.csv`, …
 - `<usecase>-expected.<ext>` — golden output (committed)
 - `<usecase>-output.<ext>` — runtime-generated (gitignored)
 - `<usecase>.flow` — saved flow

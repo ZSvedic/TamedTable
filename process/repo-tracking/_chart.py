@@ -12,8 +12,8 @@ stacked subplots.  Chart 1 shows the full commit history with index-number
 x-axis ticks (every 10).  Chart 2 zooms in on the last 20 commits with full
 short-hash + message labels at 45°.  Both charts use a stacked area for
 process/ spec/ src/ byte sizes and overlay the tracked TOTAL as a line.  The gap
-between the stack top and the TOTAL line is the root files (README.md,
-LICENSE, .gitignore)."""
+between the stack top and the TOTAL line is everything outside those three
+dirs — root files plus benchmarks/, cassettes/, and marketing/."""
 
 import os
 import pandas as pd

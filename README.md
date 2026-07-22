@@ -52,7 +52,7 @@ TamedTable/                  root: README.md, MAP.md (feature + code navigation)
 
 ## Setup
 
-You need [bun](https://bun.sh) and an API key from any one supported provider — Anthropic, Google Gemini, or OpenAI.
+You need [bun](https://bun.sh) and an API key from any one supported provider — Anthropic, Google Gemini, OpenAI, or OpenRouter.
 
 1. Install the project's libraries — a one-time step you repeat only if the
    dependencies change:
@@ -64,6 +64,7 @@ You need [bun](https://bun.sh) and an API key from any one supported provider �
    ANTHROPIC_API_KEY=sk-ant-...      # Anthropic
    GEMINI_API_KEY=...                # Google Gemini
    OPENAI_API_KEY=sk-...             # OpenAI
+   OPENROUTER_API_KEY=sk-or-...      # OpenRouter
    ```
    The runtime picks the provider from the model id (`TAMEDTABLE_MODEL` below), so set the model to one from your provider unless you use the default Gemini model.
 
@@ -133,7 +134,7 @@ Here is every `bun` command the web UI uses, and when you need each:
 
 Why two directories? `bun install` installs libraries for the whole project at once, so it runs from the project root (`src/`); `bun run dev` and `bun run build` belong to the web package, so they run from that package's folder (`src/packages/web/`).
 
-Once the page loads, click **Settings** and paste an API key from any supported provider (Anthropic, Google Gemini, or OpenAI) — the web UI reads the key from a per-tab settings panel, not from `.env`. The Settings panel also picks which model drives requests, and the chosen model selects the provider. Then click **Open sample…** to pick one of the bundled sample files, or use its dropdown for **Open local…** (a file from your computer) or **Open URL…** (a CSV, JSONL, Parquet, or Arrow file by address). Type a request in the chat sidebar and watch cells stream in. Click a cell to select it, double-click to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`, and each save button's dropdown saves in a different format — including **Save as Python** (`:save-py`). The table shows 20 rows per page with a pager along the bottom, and a status footer reports the selected cell and whether the app is idle, running, or saved.
+Once the page loads, click **Settings** and paste an API key from any supported provider (Anthropic, Google Gemini, OpenAI, or OpenRouter) — the web UI reads the key from a per-tab settings panel, not from `.env`. The Settings panel also picks which model drives requests, and the chosen model selects the provider. Then click **Open sample…** to pick one of the bundled sample files, or use its dropdown for **Open local…** (a file from your computer) or **Open URL…** (a CSV, JSONL, Parquet, or Arrow file by address). Type a request in the chat sidebar and watch cells stream in. Click a cell to select it, double-click to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`, and each save button's dropdown saves in a different format — including **Save as Python** (`:save-py`). The table shows one page at a time — sized to one AI-cell concurrency wave (100 rows with the defaults) — with a pager along the bottom; while a request runs, cells stream in wave by wave and progress reports inline in the chat.
 
 There is no server: the web UI calls your chosen provider directly from the browser through the same SDK the CLI uses. File input/output uses the File System Access API where the browser supports it, with a download/upload fallback elsewhere.
 
@@ -221,8 +222,8 @@ The benchmark uses the same model env vars as the rest of the app
 ([Setup](#setup)): `TAMEDTABLE_MODEL` (the patch-turn model) and
 `TAMEDTABLE_CELL_MODEL` (the per-row cell model). Run **online** to benchmark a
 provider other than the committed Gemini cassette, with that provider's key
-in `.env` (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY` — the
-runtime picks the provider from the model id):
+in `.env` (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, or
+`OPENROUTER_API_KEY` — the runtime picks the provider from the model id):
 
 ```
 # Gemini: stronger model for the patch turn, cheapest for the cells
@@ -233,8 +234,8 @@ TAMEDTABLE_MODEL=gpt-5.5 TAMEDTABLE_CELL_MODEL=gpt-5.4-mini bun run bench:live
 ```
 
 `bun run bench` (offline) only covers the committed Gemini cassette; any other
-combination needs an online run. The token tally reads Anthropic, Google, and
-OpenAI usage shapes, so per-model cost is attributed correctly for any provider.
+combination needs an online run. The token tally reads Anthropic, Google, OpenAI, and
+OpenRouter usage shapes, so per-model cost is attributed correctly for any provider.
 
 ### Cost accounting and results
 
