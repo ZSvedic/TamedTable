@@ -14,8 +14,8 @@ This repository is organized by *lifecycle*:
 ```
 TamedTable/                  Root: README.md, MAP.md (feature+code navigation), LICENSE, .gitignore, etc.
 ├── benchmarks/              Model & batch-size benchmark data + outputs (no code, runner is @tamedtable/bench).
-│   ├── models.jsonl         the benchmark's model pricing/specs (the app's catalogue is model-config's models.json)
-│   ├── ground-truth/        labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl)
+│   ├── models.jsonl         The benchmark's model pricing/specs (the app's catalogue is model-config's models.json).
+│   ├── ground-truth/        Labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl).
 │   ├── results/             sweep outputs (JSONL)
 │   └── charts/              generated SVG tradeoff charts
 ├── cassettes/               recorded LLM responses the test suite replays — committed data, one JSON per feature
