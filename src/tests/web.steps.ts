@@ -68,7 +68,9 @@ Then('the configured API key is {string}', function (this: TamedTableWorld, key:
 
 // ── Drag & drop onto the empty page ────────────────────────────────────────
 
-When('user drops the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {
+// Imperative `drop …` (showcase tours) and narrative `user drops …` (functional
+// @web tests) describe the same drag-and-drop; one step def matches both.
+When('(user )drop(s) the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {
   const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
   await controller(this).openDropped(filename, bytes);
 });
@@ -782,7 +784,7 @@ Then(
   },
 );
 
-When('user loads the shuffled sample', async function (this: TamedTableWorld) {
+When('(user )load(s) the shuffled sample', async function (this: TamedTableWorld) {
   await controller(this).loadShuffled();
 });
 
@@ -839,7 +841,7 @@ Given('the setting {string} is on', async function (this: TamedTableWorld, setti
   await controller(this).setConfig({ alwaysRunAll: true });
 });
 
-When('user opens the run-on-all estimate dialog', function (this: TamedTableWorld) {
+When('(user )open(s) the run-on-all estimate dialog', function (this: TamedTableWorld) {
   // Shown, not executed: the estimate dialog opens and waits for a choice.
   const pending = controller(this).runOnAllRows();
   pending.catch(() => {});
