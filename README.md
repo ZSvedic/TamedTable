@@ -52,7 +52,7 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 
 ## Setup
 
-You need [bun](https://bun.sh) and an API key from any one supported provider — Anthropic, Google Gemini, OpenAI, or OpenRouter.
+You need [bun](https://bun.sh) and an API key from any provider — Google, Anthropic, OpenAI, or OpenRouter.
 
 1. Install the project's libraries — a one-time step you repeat only if the
    dependencies change:
@@ -61,8 +61,8 @@ You need [bun](https://bun.sh) and an API key from any one supported provider �
    ```
 2. Put your provider's API key in a `.env` file at the repo root (the loader walks up from `src/` to find it). Use the variable that matches your provider:
    ```
-   ANTHROPIC_API_KEY=sk-ant-...      # Anthropic
    GEMINI_API_KEY=...                # Google Gemini
+   ANTHROPIC_API_KEY=sk-ant-...      # Anthropic
    OPENAI_API_KEY=sk-...             # OpenAI
    OPENROUTER_API_KEY=sk-or-...      # OpenRouter
    ```
@@ -104,9 +104,7 @@ Ctrl-C cancels an in-progress request and rolls back the half-applied transforma
 Batch mode — replay a saved `.flow` against a CSV with no LLM call:
 
 ```
-bun src/packages/cli/index.ts execute spec/test-cases/cleanup.flow \
-    --input spec/test-cases/customers-input.csv \
-    --output temp/out.jsonl
+bun src/packages/cli/index.ts execute spec/test-cases/cleanup.flow --input spec/test-cases/customers-input.csv --output temp/out.jsonl
 ```
 
 Exit codes are documented in [spec/code-contract.md](spec/code-contract.md#cli).
