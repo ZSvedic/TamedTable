@@ -1,9 +1,9 @@
 TamedTable is an AI [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load) tool driven by natural language. Load a CSV, type *"normalize phone numbers"* or say *"drop duplicate emails,"* and the LLM writes a JSON spec that changes the data. Think of TamedTable as a [LLM harness](https://martinfowler.com/articles/harness-engineering.html) for data ETL. 
 
 ## Links
-- Website: [www.TamedTable.com](https://www.TamedTable.com). Tours show major features. 
-- Live app: [Run TamedTable app](https://www.tamedtable.com/app/) directly in the browser, no install needed. 
-- 20-second video demo: normalize phone numbers in plain language.
+- [Website on www.TamedTable.com](https://www.TamedTable.com) shows major features. 
+- [Run live app](https://www.tamedtable.com/app/) directly in the browser, no install needed. 
+- Video: 20-second demo below showh how to normalize phone numbers in plain language.
 
 https://github.com/user-attachments/assets/1bb6857c-32d9-4ff1-9eda-2857b06cd08f
 
