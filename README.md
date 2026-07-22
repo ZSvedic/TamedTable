@@ -20,25 +20,25 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 │   └── charts/              Generated SVG tradeoff charts.
 ├── cassettes/               Recorded LLM responses the test suite replays — committed data, one JSON per feature.
 ├── marketing/               Everything the public sees + the shared design base.
-│   ├── tokens.json          design token master — colors, typography, spacing
-│   ├── brand/               marks, favicons, lockups, brand.md
-│   ├── icons/               UI icon glyphs, one 16×16 SVG per name — source of ui-kit's generated icons.ts
-│   ├── claude-design-app/   in-browser design canvas (scratch JSX + generated tokens.jsx)
-│   ├── illustrations/       SVG feature tiles + gallery
-│   └── web/                 the landing page that ships to the site root
-├── process/                 how the project is built; never deployed
-│   ├── journal/             historic status reports
-│   ├── prompts/             reusable session starters — see AGENTS.md
-│   └── repo-tracking/       commit-size script + chart generator
-├── spec/                    the contract — human-authored / human-blessed
-│   ├── README.md            spec index + test-fixture naming
-│   ├── rationale.md         what TamedTable is and why
-│   ├── behavior.md          what the user sees + what the system does (API-free)
-│   ├── code-contract.md     types, signatures, libraries, env vars, exit codes
-│   ├── prompt-app-edit.md   the LLM prompts (imported by the runtime at init)
-│   ├── writing-style.md     writing style for every markdown file in the repo
-│   ├── packages/            per-package specs — mirrors src/packages/; rules in its README.md
-│   └── test-cases/          Gherkin features + -input/-expected/.flow fixtures
+│   ├── tokens.json          Design token master: colors, typography, spacing.
+│   ├── brand/               Marks, favicons, lockups, brand.md.
+│   ├── icons/               UI icon glyphs, one 16×16 SVG per name. Source of ui-kit's generated icons.ts.
+│   ├── claude-design-app/   Claude Design canvas (scratch JSX + generated tokens.jsx).
+│   ├── illustrations/       SVG feature tiles + gallery.
+│   └── web/                 The landing page that ships to the site root.
+├── process/                 How the project is built; never deployed.
+│   ├── journal/             Historic status reports.
+│   ├── prompts/             Reusable session starters — see AGENTS.md.
+│   └── repo-tracking/       Commit-size script + chart generator.
+├── spec/                    The contract: human-authored / human-blessed.
+│   ├── README.md            Spec index + test-fixture naming.
+│   ├── rationale.md         What and why of TamedTable.
+│   ├── behavior.md          What the user sees + what the system does (API-free).
+│   ├── code-contract.md     API: types, signatures, libraries, env vars, exit codes, etc.
+│   ├── prompt-app-edit.md   The LLM prompts (imported by the runtime at init).
+│   ├── writing-style.md     Writing style for every markdown file in the repo.
+│   ├── packages/            Per-package specs — mirrors src/packages/; rules in its README.md.
+│   └── test-cases/          Gherkin features + `*-input`/`*-expected`/`*.flow` fixtures.
 ├── src/                     the implementation — self-contained, deployable unit
 │   ├── package.json, …      build config; run every bun command from here
 │   ├── node_modules/        gitignored
