@@ -41,7 +41,7 @@ When the user switches to Gemini in the settings panel:
   geminiKey: "AIza…",
   openaiKey: null,
   openrouterKey: null,
-  model: "gemini-3.5-flash",
+  model: "gemini-3.6-flash",
   cellModel: "gemini-3.1-flash-lite"
 }
 ```
@@ -82,7 +82,7 @@ decides the two roles. The current defaults:
 
 | provider | primary (`model`) | secondary (`cellModel`) |
 |---|---|---|
-| gemini | `gemini-3.5-flash` | `gemini-3.1-flash-lite` |
+| gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 | openai | `gpt-5.5` | `gpt-5.4-mini` |
 | anthropic | `claude-sonnet-4-6` | `claude-haiku-4-5` |
 | openrouter | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` |
@@ -119,7 +119,7 @@ anthropic, then openrouter.
 
 `defaultModel(provider)` returns the `defaults[provider].primary` id (falling
 back to the provider's first catalogue entry). Currently: `claude-sonnet-4-6`
-for anthropic, `gemini-3.5-flash` for gemini, `gpt-5.5` for openai,
+for anthropic, `gemini-3.6-flash` for gemini, `gpt-5.5` for openai,
 `cohere/north-mini-code:free` for openrouter.
 
 `defaultCellModel(provider)` returns the `defaults[provider].secondary` id

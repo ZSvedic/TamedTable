@@ -72,7 +72,7 @@ Optional env vars and defaults if you omit them:
 
 | Var | Default | What it does |
 |---|---|---|
-| `TAMEDTABLE_MODEL` | `gemini-3.5-flash` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `claude-sonnet-4-6` (Anthropic) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
+| `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `claude-sonnet-4-6` (Anthropic) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
 | `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the primary model's provider. |
 | `TAMEDTABLE_RPM` | `40` | Per-process request-per-minute cap. Keep it under your provider account's rate limit. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
@@ -180,7 +180,7 @@ bun run test:record      # needs GEMINI_API_KEY (see Setup above)
 ```
 
 Every cassette records with the Gemini provider defaults —
-`gemini-3.5-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for
+`gemini-3.6-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for
 per-row cells — the same models the key-free replay (tests and homepage
 tours) resolves. `test:record` covers the headless and CLI profiles; the
 `@web`-only tour scenarios record through the web profile:
@@ -227,7 +227,7 @@ in `.env` (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, or
 
 ```
 # Gemini: stronger model for the patch turn, cheapest for the cells
-TAMEDTABLE_MODEL=gemini-3.5-flash TAMEDTABLE_CELL_MODEL=gemini-3.1-flash-lite bun run bench:live
+TAMEDTABLE_MODEL=gemini-3.6-flash TAMEDTABLE_CELL_MODEL=gemini-3.1-flash-lite bun run bench:live
 
 # OpenAI
 TAMEDTABLE_MODEL=gpt-5.5 TAMEDTABLE_CELL_MODEL=gpt-5.4-mini bun run bench:live

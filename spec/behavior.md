@@ -276,14 +276,14 @@ tokens and the wall-clock time. For `validate dob is non-empty`:
 
 ```
     [debug] pred: row.DOB && String(row.DOB).length > 0
-    [debug] gemini-3.5-flash ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
+    [debug] gemini-3.6-flash ×1 · 2,118 tokens (2,029 in / 89 out) · 1.9s
 ```
 
 A request that also fills LLM-backed cells calls a second model, so the
 summary names both:
 
 ```
-    [debug] gemini-3.5-flash ×1, gemini-3.1-flash-lite ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
+    [debug] gemini-3.6-flash ×1, gemini-3.1-flash-lite ×2 · 26,540 tokens (25,690 in / 850 out) · 9.7s
 ```
 
 The token counts and elapsed time vary from run to run; the rest of the

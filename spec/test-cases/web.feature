@@ -388,7 +388,7 @@ Feature: Web front-end
     @web
     Scenario: The web app defaults to the Gemini primary and flash-lite cell model
       Given the TamedTable web app
-      Then the configured model is "gemini-3.5-flash"
+      Then the configured model is "gemini-3.6-flash"
       And the configured cellModel is "gemini-3.1-flash-lite"
 
     @web
@@ -404,7 +404,7 @@ Feature: Web front-end
       And load "customers-input.csv"
       When user edits cell at row 1 column "Country" to "United States"
       And user selects the provider "gemini"
-      Then the configured model is "gemini-3.5-flash"
+      Then the configured model is "gemini-3.6-flash"
       And cell at row 1 column "Country" shows "United States"
       And the spec has 1 transformation
 

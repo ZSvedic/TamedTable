@@ -152,3 +152,10 @@ and [`process/journal/2026-07-17-free-model-benchmark-run.md`](../process/journa
   Gemini (partly labeller affinity; the labels are from `gemini-2.5-pro`).
 - **Batching ≥10** cuts cost/time sharply for free on every provider — the
   app's default batch of 20 is in the sweet spot.
+
+A 2026-07-22 follow-up run (`results/gemini-new-flash.jsonl`) benchmarked the
+newly released `gemini-3.6-flash` and `gemini-3.5-flash-lite`: no accuracy
+gain over the lineup above; 3.6 Flash matches 3.5 Flash at a 17% lower output
+price, 3.5 Flash-Lite loses to 3.1 Flash-Lite on both accuracy and price.
+Findings + recommendation:
+[`process/journal/2026-07-22-gemini-new-flash-benchmark.md`](../process/journal/2026-07-22-gemini-new-flash-benchmark.md).
