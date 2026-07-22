@@ -53,7 +53,7 @@ varies the **cell model** and **batch size**.
 All commands run from `src/`. `sample`, `chart`, and `report` are offline;
 `label` and `sweep` make live calls and need the matching provider key
 (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` /
-`CEREBRAS_API_KEY`).
+`OPENROUTER_API_KEY` / `CEREBRAS_API_KEY`).
 
 ```
 bun run bench:sample 150     # draw ~150 rows from the fixture → ground-truth/music-sample.csv
@@ -69,8 +69,9 @@ Override with `--models=…`, `--batches=…`, `--out=name` on `sweep`.
 
 ## Free providers (Cerebras, OpenRouter)
 
-Two bench-only free providers sit next to the paid three, both OpenAI-compatible,
-both $0 in `models.jsonl`. Neither appears in the app's provider chooser.
+Two free providers sit next to the paid three, both OpenAI-compatible, both $0
+in `models.jsonl`. Cerebras is bench-only; OpenRouter graduated to the app's
+fourth provider (its chooser card defaults to `cohere/north-mini-code:free`).
 
 **Cerebras** ([cloud.cerebras.ai](https://cloud.cerebras.ai)) — `zai-glm-4.7`
 (primary/patch role) and `gpt-oss-120b` (cell role). The highest free limits
@@ -85,8 +86,12 @@ bun run bench:report free-models
 
 **OpenRouter** ([openrouter.ai](https://openrouter.ai)) — one no-credit-card
 signup unlocks ~25 `:free` models from many vendors; ids look like
-`qwen/qwen3-coder:free` (primary pick — strongest free tool caller) and
-`meta-llama/llama-3.3-70b-instruct:free` (cell pick). Three gotchas:
+`cohere/north-mini-code:free` (the pick for both roles — 96% cell accuracy at
+batch 5 in the [2026-07-17 run](../process/journal/2026-07-17-free-model-benchmark-run.md),
+and the app's OpenRouter default). The run overturned the on-paper picks:
+`qwen/qwen3-coder:free` and `meta-llama/llama-3.3-70b-instruct:free` never
+completed a call (single saturated host), and `tencent/hy3:free`, the best
+performer, lost its free route on 2026-07-21. Three gotchas:
 
 1. **Privacy toggle.** `:free` endpoints return 404 (`No endpoints found
    matching your data policy`) until the account's
@@ -99,7 +104,7 @@ signup unlocks ~25 `:free` models from many vendors; ids look like
 
 ```
 TAMEDTABLE_RPM=20 bun run bench:sweep \
-  --models=qwen/qwen3-coder:free,meta-llama/llama-3.3-70b-instruct:free \
+  --models=cohere/north-mini-code:free \
   --batches=10,20,40,80 --out=free-openrouter
 ```
 
@@ -132,10 +137,12 @@ Colours are the Okabe-Ito colourblind-safe palette, keyed by provider.
 
 ## Results so far
 
-Real runs committed in `results/phase2-all.jsonl` — all three providers, six
-cell models × six batch sizes (what the charts render from). Findings +
+Real runs committed in `results/phase2-all.jsonl` (the three paid providers,
+six cell models × six batch sizes) and `results/free-openrouter.jsonl` (the
+OpenRouter `:free` sweep — what the free batch charts render from). Findings +
 per-config tables:
-[`process/journal/2026-07-02-model-batch-sweep.md`](../process/journal/2026-07-02-model-batch-sweep.md).
+[`process/journal/2026-07-02-model-batch-sweep.md`](../process/journal/2026-07-02-model-batch-sweep.md)
+and [`process/journal/2026-07-17-free-model-benchmark-run.md`](../process/journal/2026-07-17-free-model-benchmark-run.md).
 
 - **Gemini** (3 cell models): accuracy flat 93–97% across every model and batch
   size, so `gemini-3.1-flash-lite` wins on value (~10× cheaper, same accuracy).

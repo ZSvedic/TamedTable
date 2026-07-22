@@ -351,7 +351,7 @@ function TableBoard({ theme }) {
       <TableView t={t} cols={COLS_WITH_COUNTRY} colWidths={[...COL_WIDTHS, 110]}
         rows={ROWS_FILTERED_AI.map((r, i) => (i >= 8 ? [...r.slice(0, 6), null] : r))}
         page={1} pageCount={1} totalRows={ROWS_FILTERED_AI.length}
-        selection={{ row: 2, column: 'Email' }} streaming status="running"
+        selection={{ row: 2, column: 'Email' }} streaming
         cellFlag={(row, col) => {
           if (col !== 6) return undefined;
           if (row >= 8) return 'pending';
@@ -438,9 +438,9 @@ function OverviewBoard() {
         {li('Tokens are the single source', 'tokens.json is canonical; tokens.jsx and the app\'s ui-kit copy are generated mirrors — incl. the new rec/onRec voice tokens.')}
         {li('ui-kit primitives', 'Button (ghost · chrome · primary · danger), SplitButton, 19 icons, dismissible Toasts, ThemeProvider light/dark.')}
         {li('Toolbar', 'Brand lockup, file readout, Open URL/local split button, Save data / Save flow, undo/redo, theme toggle, Settings, Tutorial.')}
-        {li('TableView', 'Silver grid · 28px rows · 32px header. Selection, inline edit, header drag-reorder, pagination + status footers. LLM cells flash cellHi → cellHi2; pending cells pulse.')}
+        {li('TableView', 'Silver grid · 28px rows · 32px header. Selection, inline edit, header drag-reorder, pagination footer. LLM cells flash cellHi → cellHi2; pending cells pulse.')}
         {li('ChatSidebar', 'Request list with collapsible request-detail strips, input row with send/stop and the press-and-hold MicButton (rec red + pulsing ring).')}
-        {li('Settings & Tutorial', 'Provider accordion (Google / OpenAI / Anthropic) with masked keys and a Primary/Secondary model matrix; guided tutorial scenarios.')}
+        {li('Settings & Tutorial', 'Provider accordion (Google / OpenAI / Anthropic / OpenRouter) with masked keys and a Primary/Secondary model matrix; guided tutorial scenarios.')}
       </div>
       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Mark height={16} />

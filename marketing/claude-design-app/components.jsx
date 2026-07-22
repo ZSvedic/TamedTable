@@ -333,19 +333,18 @@ function Pagination({ t, page, pageCount, onPageChange }) {
 }
 
 // ── TableView — Silver grid, rowH 28 / headerH 32, selection, inline edit,
-//    drag-reorder grips, streaming banner, pagination + status footers.
+//    drag-reorder grips, streaming banner, pagination footer.
 //    cellFlag(absRow, colIdx) → 'flash' | 'flash2' | 'pending' | undefined.
 function TableView({
   t, cols = SAMPLE_COLS, rows = SAMPLE_ROWS, colWidths,
   page = 1, pageCount = 1, pageStart = 0, totalRows,
   selection = null, editing = null, editDraft = '', dragCol = null,
-  streaming = false, status = 'idle', cellFlag,
+  streaming = false, cellFlag,
   onPageChange, onSelectCell, onEditCell, onCommitEdit, onEditDraft, onCancelEdit, onReorderColumns,
 }) {
   const total = totalRows == null ? rows.length : totalRows;
   const firstRow = total === 0 ? 0 : pageStart + 1;
   const lastRow = pageStart + rows.length;
-  const STATUS_LABEL = { idle: 'Idle', running: 'Running', saved: 'Saved' };
   const [localDrag, setLocalDrag] = useState(null);
   const dragging = dragCol != null ? dragCol : localDrag;
 
@@ -475,26 +474,6 @@ function TableView({
         <Pagination t={t} page={page} pageCount={pageCount} onPageChange={onPageChange} />
       </div>
 
-      {/* status footer */}
-      <div style={{
-        flex: '0 0 auto', height: 24, display: 'flex', alignItems: 'center', gap: TT_S.px10,
-        padding: `0 ${TT_S.px12}px`, borderTop: `1px solid ${t.line}`, background: t.surface2,
-        fontFamily: TT_TYPE.mono, fontSize: TT_TYPE.xs, color: t.ink3, whiteSpace: 'nowrap',
-      }}>
-        <span style={{ color: selection ? t.ink2 : t.ink4 }}>
-          {selection ? `R${selection.row + 1} · ${selection.column}` : 'no selection'}
-        </span>
-        <span style={{ color: t.ink4 }}>·</span>
-        <span>UTF-8</span>
-        <span style={{ flex: 1 }} />
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: TT_S.px6 }}>
-          <span className={status === 'running' ? 'tt-pulse' : undefined} style={{
-            width: 6, height: 6, borderRadius: 3,
-            background: status === 'running' ? t.accent : status === 'saved' ? t.ok : t.ink4,
-          }} />
-          {STATUS_LABEL[status]}
-        </span>
-      </div>
     </div>
   );
 }
@@ -1251,7 +1230,6 @@ function AppScreen({ theme = 'light', state = 'loaded', showSettings = false, sh
       cols: SAMPLE_COLS, rows: ROWS_NORMALIZED, colWidths: COL_WIDTHS,
       page: 1, pageCount: 1, totalRows: 20,
       selection: { row: 3, column: 'Phone' },
-      status: state === 'saved' ? 'saved' : 'idle',
     };
   } else if (running) {
     const PENDING_FROM = 7; // AI cells below this row are still pending
@@ -1259,7 +1237,7 @@ function AppScreen({ theme = 'light', state = 'loaded', showSettings = false, sh
       cols: COLS_WITH_COUNTRY, rows: ROWS_FILTERED_AI.map((r, i) => i >= PENDING_FROM ? [...r.slice(0, 6), null] : r),
       colWidths: [...COL_WIDTHS, 110],
       page: 1, pageCount: 1, totalRows: ROWS_FILTERED_AI.length,
-      streaming: true, status: 'running',
+      streaming: true,
       cellFlag: (row, col) => {
         if (col !== 6) return undefined;
         if (row >= PENDING_FROM) return 'pending';

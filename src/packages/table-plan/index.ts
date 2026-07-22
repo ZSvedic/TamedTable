@@ -3,7 +3,7 @@
 // and validator, and the FormatCodec interface every format plugs into. This is
 // the zero-dependency base package both `core` (engine) and `file-io` (codecs,
 // dialogs, fetch) import — the clean DAG `core → file-io → table-plan` with no
-// cycle. Spec: spec/packages/file-io/io-phase0-cleanup.md.
+// cycle. Spec: spec/packages/file-io/behavior.md.
 
 import { z } from 'zod';
 

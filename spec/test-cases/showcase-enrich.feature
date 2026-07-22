@@ -1,4 +1,4 @@
-# #TutorialMode
+# #Enrich #TutorialMode
 # The "Enrich & extract" showcase tour — one purchase ledger gains structure in
 # four asks: address split, country fill, industry lookup, memo extraction.
 # Key-free @tour deep-linked from the homepage; replays from

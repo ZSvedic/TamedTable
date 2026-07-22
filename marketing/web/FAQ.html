@@ -14,7 +14,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 </script>
 <link rel="canonical" href="https://www.tamedtable.com/FAQ">
 <title>Frequently Asked Questions — TamedTable</title>
-<meta name="description" content="TamedTable FAQ — how to bring your own API key (BYOK) from Google, OpenAI, or Anthropic, privacy, and other common questions.">
+<meta name="description" content="TamedTable FAQ — how to bring your own API key (BYOK) from Google, OpenAI, Anthropic, or OpenRouter, privacy, and other common questions.">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
@@ -127,7 +127,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
         <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
         <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
-        <rect x="4" y="0" width="1" height="1" fill="var(--accent)"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--mark-accent)"></rect>
       </svg>
       <span class="wordmark">TamedTable</span>
     </a>
@@ -204,6 +204,15 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             <p>Sign in to the Anthropic Console, then create a key. It is shown <strong>once</strong>, so copy it immediately, because you cannot view it again afterwards.</p>
             <a class="key-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Create an Anthropic API key ↗</a>
           </div>
+
+          <div class="prov-card">
+            <h3 id="byok-openrouter" class="anchored">
+              OpenRouter
+              <button class="copy-link" data-target="byok-openrouter" aria-label="Copy link to OpenRouter"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+            </h3>
+            <p>One no-credit-card signup unlocks free models from many vendors. Create a key, and allow free-model publication in your <a href="https://openrouter.ai/settings/privacy" target="_blank" rel="noopener">privacy settings</a> — free models may train on your prompts.</p>
+            <a class="key-link" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Create an OpenRouter API key ↗</a>
+          </div>
         </div>
 
         <p class="closing">Tip: store the key in your browser or a password manager. Clearing your browser data or switching devices means entering it again. Ready? <a href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app ↗</a></p>
@@ -230,7 +239,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="change-models" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>You pick a <strong>provider</strong> (Google, OpenAI, or Anthropic) in Settings, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk.</p>
+        <p>You pick a <strong>provider</strong> (Google, OpenAI, Anthropic, or OpenRouter) in Settings, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk.</p>
         <p>To change the Primary or Secondary model, or add new models, edit the <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/model-config/models.json" target="_blank" rel="noopener">models.json file</a> and rebuild. (A rebuild is required: the catalogue is compiled into the app bundle, so editing the file in a deployed directory has no effect.)</p>
       </div>
     </section>
@@ -255,7 +264,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       </h2>
       <div class="faq-a">
         <p>There is no privacy policy because you send us no data. TamedTable is purely client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers, because we don't have a server. We don't use cookies and we don't run any analytics. There is simply nothing to regulate.</p>
-        <p>There is no separate EULA either: TamedTable is source-available (<a href="#busl">BUSL</a>), so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">licence on GitHub</a>.</p>
+        <p>There is no separate EULA either: TamedTable is source-available (<a href="#busl">BUSL</a>), so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">license on GitHub</a>.</p>
       </div>
     </section>
 
@@ -277,8 +286,8 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="busl" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>The <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">Business Source License 1.1</a> (BUSL): all the source is public and you can use, modify, self-host, and redistribute it freely, with one restriction, with each release automatically becoming MIT four years after it ships. Projects such as MariaDB, HashiCorp's Terraform and Vault, and Sentry use or used the same licence.</p>
-        <p>The one restriction: selling TamedTable itself, as a product or hosted service, needs a commercial licence from the author. It stops large clouds from monetizing the project without giving back, while the code stays open for everyone else, hence "source-available" rather than OSI-certified "open source".</p>
+        <p>The <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">Business Source License 1.1</a> (BUSL): all the source is public and you can use, modify, self-host, and redistribute it freely, with one restriction, with each release automatically becoming MIT four years after it ships. Projects such as MariaDB, HashiCorp's Terraform and Vault, and Sentry use or used the same license.</p>
+        <p>The one restriction: selling TamedTable itself, as a product or hosted service, needs a commercial license from the author. It stops large clouds from monetizing the project without giving back, while the code stays open for everyone else, hence "source-available" rather than OSI-certified "open source".</p>
       </div>
     </section>
 
@@ -320,7 +329,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <p>Well, you win some, you lose some.</p>
         <p>Yes, you don't have humans micromanaging every line of code. But:</p>
         <ol class="ab-list">
-          <li>AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">over 400 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</li>
+          <li>AI makes having <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec/test-cases" target="_blank" rel="noopener">over 600 test scenarios</a>, a <a href="https://github.com/ZSvedic/TamedTable/tree/main/spec" target="_blank" rel="noopener">detailed specification</a>, and an app broken into <a href="https://github.com/ZSvedic/TamedTable/tree/main/src/packages" target="_blank" rel="noopener">packages</a> really easy. When code becomes cheap, QA and architecture changes become easy.</li>
           <li>This app was developed in two months by a single person. Without AI, the author would need a team of people: a backend dev, a frontend dev, a designer, etc. Those people need to pay their bills, so this software would be proprietary, paid SaaS. TamedTable is a free, source-available, client app, <em>exactly because of AI</em>.</li>
         </ol>
       </div>
@@ -338,7 +347,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
         <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
         <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
-        <rect x="4" y="0" width="1" height="1" fill="var(--accent)"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--mark-accent)"></rect>
       </svg>
       <span class="wordmark">TamedTable</span>
     </a>

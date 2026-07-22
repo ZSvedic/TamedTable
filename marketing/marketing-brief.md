@@ -82,13 +82,13 @@ no signup**. The rows below follow each tour's step order.
 | Language | *"translate the comments to English"* | From any source language |
 | Language | *"summarize each comment in one line"* | Even the 500-word rant |
 | Language | *"normaliza los números de teléfono"* | Ask in any language, voice or text |
-| Deterministic | *"remove the duplicated rows"* | Dedupe |
+| Deterministic | *"remove the duplicate rows"* | Dedupe |
 | Deterministic | *"join the country codes from a second table"* | Join two tables |
 | Deterministic | *"show only customers in Europe"* | Filter rows — on the column the join just added |
 | Deterministic | *"pivot Quarter into columns"* | Reshape tall to wide |
 | Deterministic | *"sort by Q4, descending"* | Sort or top-N |
-| Load, save & reuse | a file or a URL | Loads CSV or JSONL, web or CLI |
-| Load, save & reuse | `:save clean.csv` | Save data to CSV or JSONL |
+| Load, save & reuse | a file or a URL | Loads CSV, JSONL, Parquet, Arrow — web or CLI |
+| Load, save & reuse | `:save clean.csv` | Save data to CSV, JSONL, Parquet, or Arrow |
 | Load, save & reuse | `:save-flow tidy.flow` | Save transformations as a TamedTable script |
 | Load, save & reuse | `:save-py tidy.py` | Save transformations as a Python script |
 | Load, save & reuse | `:undo` / `:redo` | Undo/redo any change |

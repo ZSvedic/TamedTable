@@ -315,7 +315,7 @@ test.describe('phone — the page is the table scroller', () => {
   test('a loaded table scrolls as the document; the header sticks under the app bar', async ({
     page,
   }) => {
-    // A short viewport so 20 rows are guaranteed taller than the screen.
+    // A short viewport so a full page of rows is guaranteed taller than the screen.
     await page.setViewportSize({ width: 390, height: 320 });
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-open="Open sample…"]').click();
@@ -331,7 +331,7 @@ test.describe('phone — the page is the table scroller', () => {
       slack: document.documentElement.scrollHeight - window.innerHeight,
     }));
     expect(layout.tableOverflow, 'the table must not trap vertical scrolling').not.toBe('auto');
-    expect(layout.slack, 'the 20-row page must overflow this short viewport').toBeGreaterThan(100);
+    expect(layout.slack, 'the full page must overflow this short viewport').toBeGreaterThan(100);
 
     // Scroll the page: the app bar stays at the top, the header row glues to it.
     await page.evaluate(() => window.scrollTo(0, 150));

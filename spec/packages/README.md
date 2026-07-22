@@ -1,6 +1,6 @@
 # Package specs
 
-Each subdirectory here specs one library package — a self-contained, browser-safe package with its own public API — and mirrors its implementation in [`src/packages/<name>/`](../../src/packages/). App-level behavior lives in [behavior.md](../behavior.md) and [test-cases/](../test-cases/), not here. The structural rule: only library packages get per-package specs; app surfaces (`cli`, `headless`, `web`) share the app-level spec because one scenario must prove all three surfaces.
+Each subdirectory here specs one library package — a self-contained, browser-safe package with its own public API — and mirrors its implementation in [`src/packages/<name>/`](../../src/packages/). App-level behavior lives in [behavior.md](../behavior.md) and [test-cases/](../test-cases/), not here. The structural rule: only library packages get per-package specs; app surfaces (`cli`, `headless`, `web`) share the app-level spec because one scenario must prove all three surfaces. Three internal libraries are also exempt — `table-plan` and `cassette` are specced in [code-contract.md](../code-contract.md), and `bench` in [benchmarks/README.md](../../benchmarks/README.md) — they ship no demo page and no UI surface of their own.
 
 ## What each package directory holds
 

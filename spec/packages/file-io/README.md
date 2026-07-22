@@ -5,7 +5,8 @@ File input/output for tables: the format **codec registry** (parse/serialize beh
 | What | Where |
 |---|---|
 | Behavior spec (shared contract) | [behavior.md](behavior.md) |
-| Per-format quirks | [formats/csv.md](formats/csv.md), [formats/jsonl.md](formats/jsonl.md) |
+| Per-format quirks | [formats/csv.md](formats/csv.md), [formats/jsonl.md](formats/jsonl.md), [formats/parquet.md](formats/parquet.md), [formats/arrow.md](formats/arrow.md) |
+| Format roadmap | [io-roadmap.md](io-roadmap.md) |
 | Gherkin scenarios | [file-io.feature](file-io.feature) |
 | Code, step defs, demo | [../../../src/packages/file-io/](../../../src/packages/file-io/) |
 | Live demo | https://www.tamedtable.com/demos/file-io/demo.html |

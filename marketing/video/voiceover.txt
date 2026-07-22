@@ -2,10 +2,11 @@
 # The spoken lines are short so each fits its beat at natural pace (no speed-up).
 # The on-screen captions carry the fuller wording; the voiceover is punchier.
 #
-# audio.mjs synthesizes these with OpenAI TTS as an interim voice. For a better
-# voice, use voiceover.ssml in Azure/Google/Polly (or a script tool like
-# ElevenLabs), export one 20s track to out/voiceover-en.wav, and re-run
-# `node audio.mjs` — it muxes that file verbatim instead of calling OpenAI.
+# gemini-tts.mjs synthesizes these with Gemini TTS: it renders the whole
+# script in one continuous take, splits the read at its longest pauses, and
+# lays the phrases onto the beats (see demo-video-plan.md). For an external
+# voice (Azure/Google/Polly/ElevenLabs), export one 20s track to
+# out/voiceover-en.wav and mux it over the silent capture instead.
 #
 # start → spoken line                                  (delivery note)
 0.0s   Talk to your data.                              (warm open, land on "data")

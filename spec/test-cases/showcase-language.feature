@@ -1,4 +1,4 @@
-# #TutorialMode
+# #LanguageAI #TutorialMode
 # The "Process language" showcase tour — one multilingual feedback sheet, five
 # asks: a spoken command, language tagging, translation, one-line summaries,
 # and a request made in Spanish. The language tag lands before the translation

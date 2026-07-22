@@ -2,7 +2,8 @@
 
 Types, signatures, library choices, env vars, exit codes. Section structure
 mirrors [behavior.md](behavior.md); each section links back to its behavior
-twin.
+twin, except a few contract-only sections (Format codecs, Benchmarks, Model
+config) with no user-visible behavior of their own.
 
 ## Data model
 
@@ -325,8 +326,8 @@ Env vars:
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
 
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-or `OPENAI_API_KEY`. `resolveConfig` picks the provider from whichever is set
-(Gemini > OpenAI > Anthropic when several are), and `TAMEDTABLE_MODEL` must
+`OPENAI_API_KEY`, or `OPENROUTER_API_KEY`. `resolveConfig` picks the provider from whichever is set
+(Gemini > OpenAI > Anthropic > OpenRouter when several are), and `TAMEDTABLE_MODEL` must
 name a model from that provider — one from another provider is coerced to
 the provider's default model.
 
@@ -1456,7 +1457,7 @@ voice turn and replays key-free.
 current step clears it (`''`). The `TutorialPanel` passes the tour name to
 `TourUi` as `lastStepDescription: Voilà, "<name>" is done.`, making the final
 step a terminal celebration (see
-[gherkin-tour behavior — Terminal last step](packages/gherkin-tour/behavior.md#terminal-last-step-laststepdescription)).
+[gherkin-tour behavior — TourDriver / TourCursor](packages/gherkin-tour/behavior.md#tourdriver--tourcursor)).
 
 **Execute once.** `TutorialManager` tracks `executedThrough` (highest executed
 step index, `-1` before play; reset on play/select/cancel). `nextStep` runs a

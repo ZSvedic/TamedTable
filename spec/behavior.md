@@ -953,7 +953,7 @@ with a pager that jumps to the first, previous, next, last, or a
 numbered page. The page size is a view setting the web shell owns,
 sized to one AI-cell **concurrency wave** — rows per batch × batches in
 flight (100 rows with the defaults; see the env vars in
-[code-contract.md](code-contract.md#configuration)) — so while an AI
+[code-contract.md](code-contract.md#headless)) — so while an AI
 step streams, the visible page fills in as each wave of concurrent
 batches lands. When the active provider's defaults pin a cell batch
 size (OpenRouter's 5), the wave — and so the page — shrinks with it:
