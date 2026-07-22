@@ -45,7 +45,7 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 │   ├── node_modules/        Git-ignored.
 │   ├── packages/            App (core/headless/cli/web) + library packages. Regenerable from spec/.
 │   └── tests/               App step definitions. Regenerable from Gherkin.
-└── temp/                    Scratch: test outputs, charts, logs, etc., gitignored.
+└── temp/                    Scratch: test outputs, charts, logs. Gitignored.
 ```
 
 `behavior.md` and `code-contract.md` are section-aligned twins: `behavior.md` describes what happens in plain English (no types, no library names); `code-contract.md` carries the matching types, signatures, env vars, and exit codes. Each section in one links to the same section in the other.
