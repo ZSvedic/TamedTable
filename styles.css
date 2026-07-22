@@ -9,6 +9,7 @@
   --ink:            #2A1E5C;   /* primary text / headings */
   --muted:          #6E6597;   /* secondary text on light */
   --accent:         #3D5AF1;   /* accent / primary action (blue) */
+  --mark-accent:    #96BED7;   /* the brand mark's ◆ cell only — always Pale Sky (brand.md) */
   --accent-soft:    #E6E9FE;   /* accent tint (highlights) */
   --silver:         #E4DDF4;   /* card borders on light */
   --line:           #EEE9F8;   /* hairline dividers on light */

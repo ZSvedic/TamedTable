@@ -1,4 +1,4 @@
-# #TutorialMode
+# #Classify #TutorialMode
 # The "Classify" showcase tour — one support inbox is labelled, scored for
 # sentiment, ranked by seniority, and split by gender in four asks. Key-free
 # @tour deep-linked from the homepage; replays from showcase-classify.json.
