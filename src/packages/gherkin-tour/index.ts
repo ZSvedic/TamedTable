@@ -25,12 +25,14 @@ function classify(text: string): TourAction {
   if (load) return { kind: 'load-file', filename: load[1]! };
 
   // The drop phrasing is a load too — the lazy tour uses it so the same step
-  // drives the browser's drop path (which raises the large-file dialog).
-  const drop = text.match(/^user drops the file "(.+)" onto the empty page$/);
+  // drives the browser's drop path (which raises the large-file dialog). Tours
+  // read imperative (`drop …`); the functional @web tests keep the narrative
+  // `user drops …` — both classify the same.
+  const drop = text.match(/^(?:user )?drops? the file "(.+)" onto the empty page$/);
   if (drop) return { kind: 'load-file', filename: drop[1]! };
 
-  if (text === 'user loads the shuffled sample') return { kind: 'load-shuffled' };
-  if (text === 'user opens the run-on-all estimate dialog') return { kind: 'open-estimate' };
+  if (/^(?:user )?loads? the shuffled sample$/.test(text)) return { kind: 'load-shuffled' };
+  if (/^(?:user )?opens? the run-on-all estimate dialog$/.test(text)) return { kind: 'open-estimate' };
 
   const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup) return { kind: 'load-lookup', filename: lookup[1]! };

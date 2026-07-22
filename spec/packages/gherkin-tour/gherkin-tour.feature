@@ -144,9 +144,30 @@ Feature: Gherkin Tour parser
       And step 1 of scenario 1 has action filename "voice-demo.mp3"
 
     # #LazyExec — the Lazy AI execution tour's stops: a drop-phrased load,
-    # the large-file dialog's shuffled choice, and the estimate finale.
+    # the large-file dialog's shuffled choice, and the estimate finale. Tour
+    # steps read in imperative voice (drop / load / open), matching the other
+    # showcase tours.
     @headless
     Scenario: The lazy tour's stops classify as loads and lazy actions
+      Given a feature string:
+        """
+        Feature: Demo
+          @tour
+          Scenario: Lazy steps
+            When drop the file "big.csv" onto the empty page
+            And load the shuffled sample
+            And open the run-on-all estimate dialog
+        """
+      When parseTours is called
+      Then step 1 of scenario 1 has action kind "load-file"
+      And step 1 of scenario 1 has action filename "big.csv"
+      And step 2 of scenario 1 has action kind "load-shuffled"
+      And step 3 of scenario 1 has action kind "open-estimate"
+
+    # The functional @web tests (lazy-exec.feature, web.feature) describe the
+    # same UI actions in narrative "user …" voice; classify tolerates both.
+    @headless
+    Scenario: The narrative "user …" phrasing classifies the same
       Given a feature string:
         """
         Feature: Demo
@@ -158,7 +179,6 @@ Feature: Gherkin Tour parser
         """
       When parseTours is called
       Then step 1 of scenario 1 has action kind "load-file"
-      And step 1 of scenario 1 has action filename "big.csv"
       And step 2 of scenario 1 has action kind "load-shuffled"
       And step 3 of scenario 1 has action kind "open-estimate"
 
