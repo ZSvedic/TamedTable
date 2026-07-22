@@ -37,14 +37,15 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 │   ├── code-contract.md     API: types, signatures, libraries, env vars, exit codes, etc.
 │   ├── prompt-app-edit.md   The LLM prompts (imported by the runtime at init).
 │   ├── writing-style.md     Writing style for every markdown file in the repo.
+│   ├── test-conventions.md  How the Gherkin suite is organized and kept small.
 │   ├── packages/            Per-package specs — mirrors src/packages/; rules in its README.md.
-│   └── test-cases/          Gherkin features + `*-input`/`*-expected`/`*.flow` fixtures.
-├── src/                     the implementation — self-contained, deployable unit
-│   ├── package.json, …      build config; run every bun command from here
-│   ├── node_modules/        gitignored
-│   ├── packages/            app (core/headless/cli/web) + library packages — regenerable from spec/
-│   └── tests/               app step definitions — regenerable from Gherkin
-└── temp/                    scratch: test outputs, charts, logs — gitignored
+│   └── test-cases/          Gherkin features and `*-input`/`*-expected`/`*.flow` fixtures.
+├── src/                     The implementation. Self-contained, deployable unit.
+│   ├── package.json, …      Build config; run every bun command from here.
+│   ├── node_modules/        Git-ignored.
+│   ├── packages/            App (core/headless/cli/web) + library packages. Regenerable from spec/.
+│   └── tests/               App step definitions. Regenerable from Gherkin.
+└── temp/                    Scratch: test outputs, charts, logs, etc., gitignored.
 ```
 
 `behavior.md` and `code-contract.md` are section-aligned twins: `behavior.md` describes what happens in plain English (no types, no library names); `code-contract.md` carries the matching types, signatures, env vars, and exit codes. Each section in one links to the same section in the other.
