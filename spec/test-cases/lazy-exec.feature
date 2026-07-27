@@ -18,6 +18,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: The short last page evaluates exactly its rows
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       When user goes to page 3
@@ -30,6 +31,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Switching provider resizes pages but keeps row state
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       When user selects the provider "openrouter"
@@ -52,6 +54,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Undo lowers row marks and redo restores them without new AI calls
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       When user undoes the last change
@@ -65,6 +68,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Cancel mid-run keeps finished rows; the next run touches only the rest
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       When user starts running on all rows
@@ -78,6 +82,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: A mid-page failure marks exactly the failed rows and bulk retry clears them
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       Given the LLM API fails for rows "User-105, User-110, User-115"
@@ -109,6 +114,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Declining the dependency confirmation leaves no trace of the step
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       And query "keep only the business rows" without waiting
       Then the run-all confirmation is shown
@@ -133,6 +139,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: A cell edit on a pending page survives evaluation
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       And user edits cell at row 150 column "Name" to "Zoe Quinn"
       When user goes to page 2
@@ -144,6 +151,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Always run on all rows evaluates the whole table after the estimate
       Given load "paginate-input.csv"
+      And load the file in original order
       And the setting "Always run on all rows" is on
       When query "add a Segment column: consumer or business" without waiting
       Then the run-all confirmation is shown
@@ -156,6 +164,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Sorting an AI column can preview just the evaluated rows
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       When user sorts column "Segment" descending from the column menu without waiting
@@ -169,6 +178,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Opening a pending page streams its rows in
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       When user opens page 2 and sees the streaming banner while it evaluates
       Then every row on the current page has a non-null "Segment"
@@ -180,6 +190,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Paging a sorted AI column keeps each page sorted
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Language column: the official language spoken in each City"
       When user sorts column "Language" ascending from the column menu without waiting
       Then the run-all confirmation is shown
@@ -199,6 +210,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Opening a page evaluates only that page, even when the rest is cached
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Language column: the official language spoken in each City"
       Then the evaluated-rows readout shows "100 of 246 rows evaluated"
       And the pager marks the pages with pending rows
@@ -211,6 +223,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Run-all progress counts rows, not cells
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       And query "add a Tier column: basic or premium, based on the Segment value"
       When user starts running on all rows
@@ -225,6 +238,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Save with pending rows runs first, then writes on a fresh click
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Segment column: consumer or business"
       When user says "Save data"
       Then the run-all confirmation is shown
@@ -247,6 +261,7 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: Every cell an AI column fills carries the changed marker
       Given load "paginate-input.csv"
+      And load the file in original order
       When query "add a Language column: the official language spoken in each City"
       Then every evaluated cell on the current page carries the changed marker
       When user goes to page 2
@@ -261,5 +276,6 @@ Feature: Lazy AI execution edge cases
     @web
     Scenario: A completed request lands in the diagnostics log
       Given load "paginate-input.csv"
+      And load the file in original order
       When user sends the chat message "add a Segment column: consumer or business"
       Then a diagnostics event records the completed request naming "Segment"

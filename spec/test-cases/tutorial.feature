@@ -207,6 +207,24 @@ Feature: Tutorial panel
       Then no toast is shown
       And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
+  Rule: A replay miss ends the tour cleanly
+
+    # The cassette can only answer the requests the tour recorded. A request it
+    # never taped (the guided replay went off-script) must end the tour with a
+    # clean toast and the full cancel — never surface the raw
+    # fingerprint-mismatch error.
+    @web
+    Scenario: An off-script request ends the tour with a clean toast
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Filter by Country" is selected
+      And user plays the tutorial
+      And user advances to the next tutorial step
+      When user sends the chat message "do something the cassette never recorded"
+      Then a toast shows "Tour ended — the guided replay went off-script."
+      And the tutorial is not active
+      And no table is loaded
+
   Rule: A lookup-table step is a silent prerequisite, not a tour step
 
     # `load the lookup table …` writes a file the join query reads; the user never

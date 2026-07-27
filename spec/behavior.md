@@ -1191,8 +1191,8 @@ or the engine changes.
   panel open as full-width sheets rather than centered desktop cards.
 - A tour runs on mobile through the same engine as the desktop. A step
   that highlights the chat input opens the Type sheet so the spotlight
-  lands on the visible composer; the load step (shown as **"Open the
-  sample"**) points at the empty page's **Open sample…** button, and a
+  lands on the visible composer; the load step (narrated as **"Opening the
+  sample …"**) points at the empty page's **Open sample…** button, and a
   table step points at the grid. The closing **"Voilà"** step highlights
   the table — the same anchor the desktop tour uses.
 
@@ -1549,7 +1549,9 @@ lazily, fetched from the deployed site itself the moment a tour opens. A
 `prefill-chat` step auto-submits its request text, but instead of calling the
 live model it **replays the tour's recorded cassette**, so a visitor with no
 key set can still play a full tour end to end. A miss (no recording for the
-exact request) fails loudly with a toast rather than hanging.
+exact request) ends the tour cleanly — the toast `Tour ended — the guided
+replay went off-script.` and the full tour cancel — never a raw
+fingerprint-mismatch error, never a silent hang.
 
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
@@ -1594,7 +1596,11 @@ instruction, an **"N of M"** progress line, and a single forward button —
 **Next →**. **Tours are forward-only**: no Previous button, no ← key —
 stepping back would desync the app's replay state (a loaded file, a sent
 query) from the tour cursor. **→** / **Space** / **Enter** advance; **Esc**
-cancels; an accidental click on the dimmed overlay does not. A spotlight
+cancels; an accidental click on the dimmed overlay does not. **Tours are
+watch-only**: the spotlighted element itself is not clickable — the tour is a
+guided replay the visitor watches, Next and Esc are the only controls, and
+each popover narrates progressively ("Opening the sample …", "Typing and
+running the query…") so no extra "don't interact" hint is needed. A spotlight
 never exceeds the screen: a target larger than the viewport (the table) is
 highlighted by its visible top region, so the popover always has room below
 it. Each step is **highlighted first** and **executed only when the user
@@ -1629,20 +1635,24 @@ usual.
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)
 are dropped by the parser, so a tour reads load → query → compare. Each shown
-step maps to one of five actions:
+step maps to one of the tour actions:
 
-- **load-file** — the controller loads the named fixture into the in-memory
-  store and calls `loadInput`, replacing the current dataset. The open-file
-  button is highlighted and the popover names the sample being opened —
-  **Open sample "customers-input.csv"**. No dialog opens.
+- **load-file** — the controller fetches the named fixture and routes it
+  through the **same parse path a picked or dropped file takes**, so a
+  file bigger than one page raises the large-file dialog exactly as in the
+  app (the lazy showcase leans on this; every other tour's sample fits one
+  page and loads directly). The open-file button is highlighted and the
+  popover narrates the sample being opened —
+  **Opening the sample "customers-input.csv"…**.
 - **load-lookup** — the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
   No dataset is replaced. The open-file button is highlighted.
 - **prefill-chat** — the chat input is filled with the step's request text the
-  moment the step is **highlighted**, so the popover reads simply **"Type and
-  run the query"** instead of repeating it. Clicking **Next** submits the request
-  (`sendChat`) and clears the input. The chat input is highlighted (on the phone
-  the Type sheet opens so the composer the spotlight lands on is on screen).
+  moment the step is **highlighted**, so the popover reads simply **"Typing and
+  running the query…"** instead of repeating it. Clicking **Next** submits the
+  request (`sendChat`) and clears the input. The chat input is highlighted (on
+  the phone the Type sheet opens so the composer the spotlight lands on is on
+  screen).
 - **show-golden** — the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
@@ -1652,11 +1662,20 @@ step maps to one of five actions:
   engine in replay mode — so a voice tour transforms the table from the recorded
   cassette with **no API key**, exactly like a `prefill-chat` step does for typed
   requests. The **Speak** control is highlighted — the mic button on desktop, the
-  **Speak** dock button on the phone — and the popover reads **"Speak and run the
-  query"**. The clip plays for you; nothing is recorded. The mic button shows
-  whenever a tour is playing, key or no key — outside a tour it needs a
-  voice-capable model and a key, but a key-free voice step replays a recorded
-  Gemini turn and must have a mic to spotlight.
+  **Speak** dock button on the phone — and the popover reads **"Speaking and
+  running the voice query…"**. The clip plays for you; nothing is recorded. The
+  mic button shows whenever a tour is playing, key or no key — outside a tour it
+  needs a voice-capable model and a key, but a key-free voice step replays a
+  recorded Gemini turn and must have a mic to spotlight.
+- **load-shuffled / open-estimate / decline-estimate** — the lazy showcase's
+  three clicks (#LazyExec): resolve the large-file dialog with the shuffled
+  sample, open the run-on-all estimate dialog (shown, not executed — no key,
+  no cost), and close it again with **"Not yet"** (nothing runs, no model
+  call), so the tour ends with no dialog left open and the generic Voilà
+  terminal stop fires. The popovers narrate — **"Loading the shuffled
+  sample…"**, **"Opening the run-on-all estimate…"**, and the decline stop's
+  `Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it
+  would take some time.`
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its
@@ -1675,8 +1694,12 @@ over the whole request, so the tour must reproduce the request that was
 recorded — playback therefore pins the same model and configuration the
 recording used: the Gemini provider defaults, which every committed cassette
 is recorded with (voice tours included — voice input is Gemini-only anyway).
-A request with no recording fails loudly (a toast), never a silent hang. Normal (non-tutorial) chat is unaffected:
-it still uses the visitor's own key against the live model.
+A request with no recording means the guided replay went off-script, so it
+ends the tour cleanly: the toast `Tour ended — the guided replay went
+off-script.`, then the full tour cancel (back to the empty state) — never a
+raw fingerprint-mismatch error toast, never a silent hang. Normal
+(non-tutorial) chat is unaffected: it still uses the visitor's own key
+against the live model.
 
 ### Deep links into a tutorial
 

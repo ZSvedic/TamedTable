@@ -408,6 +408,13 @@ export class FilesManager {
 
   /** Public file-load helper (also used by tutorial load-file steps). */
   async loadFromText(name: string, text: string): Promise<void> {
-    await this.loadFromPicked({ name, bytes: new TextEncoder().encode(text) });
+    await this.loadFromBytes(name, new TextEncoder().encode(text));
+  }
+
+  /** Byte-level sibling of loadFromText — the seam the @web test profile's
+   *  `load "<file>"` step uses, so every scripted load takes the same
+   *  loadFromPicked path (and large-file gate) a picked or dropped file does. */
+  async loadFromBytes(name: string, bytes: Uint8Array): Promise<void> {
+    await this.loadFromPicked({ name, bytes });
   }
 }

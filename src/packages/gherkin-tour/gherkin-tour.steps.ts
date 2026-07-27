@@ -126,6 +126,9 @@ class FakeAdapter implements TourAdapter {
   async prefillChat(t: string)          { this.log('prefillChat', t); }
   async showGolden(g: string | undefined) { this.log('showGolden', g); }
   async playAudio(f: string)            { this.log('playAudio', f); }
+  async loadShuffled()                  { this.log('loadShuffled', undefined); }
+  async openEstimate()                  { this.log('openEstimate', undefined); }
+  async declineEstimate()               { this.log('declineEstimate', undefined); }
   elementIdFor(a: TourAction): string { return `el-${a.kind}`; }
   onFinish() { this.finished = true; }
   onStay() { this.stayed = true; }
@@ -159,6 +162,7 @@ function makeStep(kind: string, arg: string): TourStep {
     case 'show-golden':   action = { kind: 'show-golden' };                break;
     case 'load-shuffled': action = { kind: 'load-shuffled' };              break;
     case 'open-estimate': action = { kind: 'open-estimate' };              break;
+    case 'decline-estimate': action = { kind: 'decline-estimate' };        break;
     case 'display':       action = { kind: 'display' };                    break;
     default: throw new Error(`unknown action kind "${kind}"`);
   }

@@ -85,7 +85,10 @@ export class EngineManager {
           return await this.host.tutorial.replayFetch(input, init);
         } catch (e) {
           // The original bug: "no recording for this request" on a tour. Log it
-          // with the active tour/scenario and the missing fingerprint.
+          // with the active tour/scenario and the missing fingerprint. The note
+          // lets the request path end the tour cleanly when the failure
+          // settles — the raw mismatch message never reaches a toast.
+          this.host.tutorial.noteReplayMiss();
           await this.host.diagnostics.recordRequestFailure({ method, url, body, replayMiss: true, error: e });
           throw e;
         }

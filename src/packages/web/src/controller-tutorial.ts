@@ -36,6 +36,9 @@ export class TutorialManager {
   private executedThrough = -1;
   /** The in-flight prefill-chat request, exposed via `settle()` for tests. */
   private pending: Promise<void> | null = null;
+  /** Set by the engine's fetch when replay missed the cassette; consumed by
+   *  the request paths so the failure ends the tour cleanly (see below). */
+  private replayMissed = false;
 
   // Parsed feature files + loaded cassettes, cached so a re-play fetches once.
   private readonly featureCache = new Map<string, TourScenario[]>();
@@ -167,6 +170,7 @@ export class TutorialManager {
     }
     this.tutorialStepIndex = 0;
     this.executedThrough = -1;
+    this.replayMissed = false;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
     // Close the Tutorial panel — Driver.js takes over. The step is highlighted
@@ -312,9 +316,27 @@ export class TutorialManager {
     return 'gemini';
   }
 
+  /** Note that a replay lookup missed the cassette — the guided replay went
+   *  off-script. The engine's fetch calls this before rethrowing, because the
+   *  SDK may wrap the error beyond recognition by the time the request
+   *  settles; the flag survives the unwind instead. */
+  noteReplayMiss(): void {
+    this.replayMissed = true;
+  }
+
+  /** True once after a replay miss — the request paths (sendChat,
+   *  sendAudioRequest) consume it when the failed request settles, toast
+   *  `Tour ended — the guided replay went off-script.`, and cancel the tour
+   *  instead of surfacing the raw fingerprint-mismatch error. */
+  consumeReplayMiss(): boolean {
+    const missed = this.replayMissed;
+    this.replayMissed = false;
+    return missed;
+  }
+
   /** Replay one model call from the active tour's cassette. Fetched (and
-   *  parsed) once, then cached. A miss throws so the failure surfaces as a
-   *  toast rather than hanging. */
+   *  parsed) once, then cached. A miss throws so the failure surfaces (the
+   *  request paths turn it into a clean tour end, never a raw error toast). */
   async replayFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
     const name = this.replayCassetteName();
     if (!name || !this.tutorialSrc) throw new Error('tutorial replay: no active tour');
@@ -370,6 +392,9 @@ export class TutorialManager {
       // Highlighted while the step is still pending — the dialog it opens
       // does not exist yet, so the spotlight lands on the button instead.
       case 'open-estimate': return 'tutorial-runall-btn';
+      // By the time this step is highlighted the previous one has opened the
+      // estimate dialog — spotlight the dialog whose "Not yet" gets chosen.
+      case 'decline-estimate': return 'tutorial-runall-dialog';
       case 'show-golden':
       case 'golden-source':
       case 'display': return 'tutorial-table-view';
@@ -443,7 +468,7 @@ export class TutorialManager {
         // kept here for any caller that steps a load-lookup directly.
         await this.writeLookup(action.filename);
         break;
-      // #LazyExec — the Lazy AI execution tour's two clicks.
+      // #LazyExec — the Lazy AI execution tour's three clicks.
       case 'load-shuffled':
         await this.host.files.resolveLargeFile(true);
         break;
@@ -452,6 +477,11 @@ export class TutorialManager {
         // parked promise resolves when the visitor (or the tour's cleanup)
         // confirms or declines.
         void this.host.lazy.runOnAllRows('run-all');
+        break;
+      case 'decline-estimate':
+        // The finale's "Not yet": the dialog closes, nothing runs, no model
+        // call — the parked open-estimate promise resolves as a skip.
+        this.host.lazy.declineRunAll();
         break;
       case 'prefill-chat':
         // The query is already typed into the chat box (animated in when this

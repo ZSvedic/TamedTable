@@ -143,29 +143,33 @@ Feature: Gherkin Tour parser
       Then step 1 of scenario 1 has action kind "play-audio"
       And step 1 of scenario 1 has action filename "voice-demo.mp3"
 
-    # #LazyExec — the Lazy AI execution tour's stops: a drop-phrased load,
-    # the large-file dialog's shuffled choice, and the estimate finale. Tour
-    # steps read in imperative voice (drop / load / open), matching the other
-    # showcase tours.
+    # #LazyExec — the Lazy AI execution tour's stops: the large-file dialog's
+    # shuffled choice, the estimate dialog (shown, not executed), and the
+    # "Not yet" decline that closes it again. Tour steps read in imperative
+    # voice (load / open / decline), matching the other showcase tours.
     @headless
-    Scenario: The lazy tour's stops classify as loads and lazy actions
+    Scenario: The lazy tour's stops classify as lazy actions
       Given a feature string:
         """
         Feature: Demo
           @tour
           Scenario: Lazy steps
-            When drop the file "big.csv" onto the empty page
-            And load the shuffled sample
+            Given load "big.csv"
+            When load the shuffled sample
             And open the run-on-all estimate dialog
+            And decline the estimate with "Not yet"
         """
       When parseTours is called
       Then step 1 of scenario 1 has action kind "load-file"
       And step 1 of scenario 1 has action filename "big.csv"
       And step 2 of scenario 1 has action kind "load-shuffled"
       And step 3 of scenario 1 has action kind "open-estimate"
+      And step 4 of scenario 1 has action kind "decline-estimate"
 
     # The functional @web tests (lazy-exec.feature, web.feature) describe the
     # same UI actions in narrative "user …" voice; classify tolerates both.
+    # The narrative drag-drop step is web-test machinery, not a tour stop —
+    # it classifies as display and is dropped from the step list.
     @headless
     Scenario: The narrative "user …" phrasing classifies the same
       Given a feature string:
@@ -176,11 +180,13 @@ Feature: Gherkin Tour parser
             When user drops the file "big.csv" onto the empty page
             And user loads the shuffled sample
             And user opens the run-on-all estimate dialog
+            And user declines the estimate with "Not yet"
         """
       When parseTours is called
-      Then step 1 of scenario 1 has action kind "load-file"
-      And step 2 of scenario 1 has action kind "load-shuffled"
-      And step 3 of scenario 1 has action kind "open-estimate"
+      Then scenario 1 has 3 steps
+      And step 1 of scenario 1 has action kind "load-shuffled"
+      And step 2 of scenario 1 has action kind "open-estimate"
+      And step 3 of scenario 1 has action kind "decline-estimate"
 
   Rule: Verification steps are dropped; the golden source is lifted
 
@@ -311,6 +317,20 @@ Feature: Gherkin Tour parser
       When the driver plays the tour
       And the driver advances 4 times
       Then the adapter calls were "loadFile(a.csv), loadLookup(b.csv), prefillChat(hi), playAudio(c.mp3)"
+
+    # #LazyExec — the lazy stops dispatch to their optional adapter methods;
+    # decline-estimate closes the estimate the previous stop opened.
+    @headless
+    Scenario: the lazy actions dispatch to their own adapter methods
+      Given a tour with steps:
+        | kind             | arg |
+        | load-shuffled    |     |
+        | open-estimate    |     |
+        | decline-estimate |     |
+      When the driver plays the tour
+      And the driver advances 3 times
+      Then the adapter calls were "loadShuffled(), openEstimate(), declineEstimate()"
+      And the driver is done
 
     @headless
     Scenario: reaching the terminal stop dispatches the scenario's golden file

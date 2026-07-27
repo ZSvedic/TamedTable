@@ -189,7 +189,14 @@ a `RequestDebugInfo` (see Headless).
 
 `Runner` is the surface step definitions drive ([common.steps.ts](../src/tests/common.steps.ts));
 the CLI and headless packages both return Runners with the same method
-signatures, differing only in what each does under the hood.
+signatures, differing only in what each does under the hood. One deliberate
+asymmetry: the Gherkin `load "<file>"` step calls `loadInput` on the headless
+and CLI surfaces, but on the **@web** surface it routes the fixture's raw
+bytes through `WebController.loadFromBytes` — the same parse path a picked,
+dropped, or fetched file takes — so a file bigger than one page raises the
+large-file dialog in tests exactly as in the app (#LazyExec), and the
+scenario resolves it with an explicit `load the file in original order` /
+`load the shuffled sample` step.
 
 ## Format codecs
 
@@ -767,7 +774,11 @@ function detectFormat(pathname: string, contentType: string | null): FormatId | 
 `loadFromUrl` validates the URL shape (http/https only), `GET`s the
 body, detects the format (path extension first, `Content-Type` as
 fallback), and routes the bytes through the same `loadFromPicked`
-path local files use. Failures throw; the dialog catches and renders
+path local files use. `WebController.loadFromBytes(name, bytes)` /
+`loadFromText(name, text)` are the seam the tour engine and the @web
+test profile's `load` step use to enter that same path directly —
+every browser load, scripted or not, funnels through `loadFromPicked`
+and its large-file gate. Failures throw; the dialog catches and renders
 the message inline and stays open. `WebControllerOptions.fetch`, when
 present, replaces the global `fetch` used here — the same hook the
 engine uses for cassette replay, so URL-load scenarios run offline.
@@ -1332,6 +1343,9 @@ export type TourAction =
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }  // lifted onto scenario.golden
   | { kind: 'play-audio';    filename: string }  // voice clip → real voice turn
+  | { kind: 'load-shuffled'                    }  // #LazyExec — resolve the large-file dialog shuffled
+  | { kind: 'open-estimate'                    }  // #LazyExec — open the run-on-all estimate (shown, not run)
+  | { kind: 'decline-estimate'                 }  // #LazyExec — close it with "Not yet"; nothing runs
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -1345,8 +1359,9 @@ scenario (each with its `tags`) and its Background steps prepended; the consumer
 filters by tag. Scenario Outlines are skipped. `display` steps (unclassified
 verification/narration) are dropped from `steps`; a `golden-source` step is
 lifted onto `scenario.golden` and likewise dropped. So a returned `steps` list
-holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`, and
-`play-audio` (matched from `speak "<clip>"`).
+holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`,
+`play-audio` (matched from `speak "<clip>"`), and the three lazy stops
+`load-shuffled` / `open-estimate` / `decline-estimate`.
 
 `feature` is **not** set by `parseTours` — it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename
@@ -1403,7 +1418,12 @@ record/replay file layer on top; the web shell imports `replayFetch` directly.
 While `TutorialManager.isReplaying()` is true, `EngineManager.makeFetch` routes
 every model call through `TutorialManager.replayFetch`, which loads the tour's
 cassette (`loadCassette(feature)`, cached) and serves the recorded response or
-throws on a miss. `ensureHeadless` pins the recording configuration during
+throws on a miss. A miss during replay is noted on the `TutorialManager`
+(`noteReplayMiss()`); when the failed request settles, the request paths
+(`sendChat`, `sendAudioRequest`) consume the note (`consumeReplayMiss()`) and,
+instead of the ordinary error surface, push the toast `Tour ended — the guided
+replay went off-script.` and call `cancelTutorial()` — the raw
+fingerprint-mismatch message never reaches a toast. `ensureHeadless` pins the recording configuration during
 replay — `defaultModel(provider)` / `defaultCellModel(provider)` and a
 placeholder key — so the request fingerprints identically to the taped one; the
 engine is rebuilt when replay mode flips. The provider comes from
@@ -1446,7 +1466,7 @@ voice turn and replays key-free.
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
-| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), or `tutorial-table-view` (show-golden / display). |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled — the large-file dialog), `tutorial-runall-btn` (open-estimate — the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate — the estimate dialog the previous step opened), or `tutorial-table-view` (show-golden / display). |
 | `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing

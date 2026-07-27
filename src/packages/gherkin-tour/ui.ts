@@ -121,6 +121,10 @@ export class TourUi {
       animate: true,
       overlayOpacity: 0.25,
       allowClose: true,
+      // Tours are watch-only: the spotlighted element is not clickable —
+      // Next/Esc are the only controls, and the popover narrates what the
+      // tour itself is doing ("Opening the sample …").
+      disableActiveInteraction: true,
       // Esc dismisses (allowClose), but an accidental overlay click must not —
       // a no-op behavior keeps the tour from vanishing on a stray click.
       overlayClickBehavior: () => {},
@@ -333,23 +337,28 @@ export class TourUi {
   }
 }
 
-// Tour steps read as imperative instructions ("load …", "query …"). The Gherkin
-// keyword (Given/When/Then) is test structure, not something a learner needs —
-// so the tour drops it and just capitalizes the step text.
+// Tours are watch-only, so each popover narrates progressively — "watch this
+// happen", never an instruction to act. The Gherkin keyword (Given/When/Then)
+// is test structure, not something a learner needs, so it is dropped.
 //
-// A `query "…"` step is special: its text is typed into the chat box when the
-// step is highlighted, so the popover doesn't repeat it — it just tells the
-// learner to type-and-run what they can already see in the input. A `speak "…"`
-// step is the voice analogue: the clip plays for the learner, who watches the
-// Speak control it highlights.
+// A `query "…"` step's text is typed into the chat box when the step is
+// highlighted, so the popover doesn't repeat it. A `speak "…"` step is the
+// voice analogue: the clip plays for the learner, who watches the Speak
+// control it highlights.
 function asInstruction(text: string): string {
-  if (/^query "(.+)"$/.test(text)) return 'Type and run the query';
-  if (/^speak "(.+)"$/.test(text)) return 'Speak and run the query';
+  if (/^query "(.+)"$/.test(text)) return 'Typing and running the query…';
+  if (/^speak "(.+)"$/.test(text)) return 'Speaking and running the voice query…';
   // The load step opens a bundled sample (the UI's "Open sample…" action), so
-  // the instruction names that action rather than echoing the Gherkin verb —
-  // "Load" reads as confusing next to an "Open sample…" button — and names the
-  // file so the learner sees which sample opens.
+  // the narration names that action — and the file — rather than echoing the
+  // Gherkin verb.
   const load = text.match(/^load "(.+)"$/);
-  if (load) return `Open sample "${load[1]}"`;
-  return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
+  if (load) return `Opening the sample "${load[1]}"…`;
+  if (/^loads? the shuffled sample$/.test(text)) return 'Loading the shuffled sample…';
+  if (/^opens? the run-on-all estimate dialog$/.test(text)) return 'Opening the run-on-all estimate…';
+  // The remaining-row count is the lazy showcase's fixture math
+  // (showcase-lazy-input.csv: 25,000 rows − the 100-row evaluated page).
+  if (/^declines? the estimate with "Not yet"$/.test(text)) {
+    return 'Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it would take some time.';
+  }
+  return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}…`;
 }
