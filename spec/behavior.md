@@ -1725,9 +1725,12 @@ Tutorial panel chooser, whichever way the tour was started — so the visitor ca
 pick another tutorial without hunting for the panel. The marketing homepage opens every "Show me →"
 link in a **new tab**, so a deep-link visitor who is finished simply closes that
 tab and is back on the homepage they came from; the app does not navigate for
-them. (This replaces an earlier `history.back()` / query-strip scheme, which
-could not work once the homepage began opening each tour in a new tab — a fresh
-tab has no history to go back to.)
+them. It does tidy the address bar: once the deep-linked tour ends — the
+terminal stop, or an Esc cancel — `history.replaceState` rewrites the URL to
+the plain app address, so the `feature`/`scenario` params name the tour only
+while it plays. Rewriting is not navigating: an earlier `history.back()`
+scheme had to go because a fresh tab has no history to go back to;
+`replaceState` works in any tab.
 
 Production links use the deployed base, e.g.
 `https://www.tamedtable.com/app/?feature=showcase-cleanup.feature&scenario=Clean+up+a+messy+customer+list`.

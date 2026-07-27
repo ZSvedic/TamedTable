@@ -69,7 +69,20 @@ window.addEventListener('beforeunload', (e) => {
 // params boot normally — the controller no-ops.
 const params = new URLSearchParams(window.location.search);
 if (params.has('tours')) controller.openTutorial();
-else void controller.openTutorialFromLink(params.get('feature'), params.get('scenario'));
+else {
+  void controller.openTutorialFromLink(params.get('feature'), params.get('scenario')).then((matched) => {
+    if (!matched) return;
+    // Once the deep-linked tour ends — the terminal stop, or an Esc cancel —
+    // rewrite the address back to the plain app URL. replaceState never
+    // navigates, so it works in the fresh tab the homepage opened
+    // (behavior.md § Deep links into a tutorial).
+    const unsubscribe = controller.subscribe(() => {
+      if (controller.isTutorialActive()) return;
+      unsubscribe();
+      window.history.replaceState(null, '', window.location.pathname);
+    });
+  });
+}
 
 // Catch Android's one-shot install event for the Settings panel's
 // "Add to home screen" button.
