@@ -132,18 +132,13 @@ Here is every `bun` command the web UI uses, and when you need each:
 
 Why two directories? `bun install` installs libraries for the whole project at once, so it runs from the project root (`src/`); `bun run dev` and `bun run build` belong to the web package, so they run from that package's folder (`src/packages/web/`).
 
-Once the page loads, click **Settings** and paste an API key from any supported provider (Anthropic, Google Gemini, OpenAI, or OpenRouter) — the web UI reads the key from a per-tab settings panel, not from `.env`. The Settings panel also picks which model drives requests, and the chosen model selects the provider. Then click **Open sample…** to pick one of the bundled sample files, or use its dropdown for **Open local…** (a file from your computer) or **Open URL…** (a CSV, JSONL, Parquet, or Arrow file by address). Type a request in the chat sidebar and watch cells stream in. Click a cell to select it, double-click to edit it, drag a column header to reorder; **Undo**, **Save data**, and **Save flow** mirror the CLI's `:undo` / `:save` / `:save-flow`, and each save button's dropdown saves in a different format — including **Save as Python** (`:save-py`). The table shows one page at a time — sized to one AI-cell concurrency wave (100 rows with the defaults) — with a pager along the bottom; while a request runs, cells stream in wave by wave and progress reports inline in the chat.
+Once the page loads, click **Settings** and paste an API key from any supported provider. The web UI reads the key from a per-tab settings panel, not from `.env`. The Settings panel also picks which model drives requests, and the chosen model selects the provider. The table shows one page at a time. A page is sized to one AI-cell concurrency wave (100 rows by default), with a pager along the bottom. While a request runs, cells stream in wave by wave and progress reports inline in the chat.
 
 There is no server: the web UI calls your chosen provider directly from the browser through the same SDK the CLI uses. File input/output uses the File System Access API where the browser supports it, with a download/upload fallback elsewhere.
 
 ## Run the tests
 
-Everything runs from `src/` — `cd src` first. (`src/` is the self-contained
-package: it holds `package.json` and `node_modules`, so `bun` runs there.)
-
-First time on a machine, run `bun run setup` once. It installs the libraries
-*and* the headless Chromium that the `@web` profile and `test:smoke` drive — a
-browser binary `bun install` alone does not fetch.
+Everything runs from `src/` — `cd src` first. First time on a machine, run `bun run setup` once. It installs the libraries *and* the headless Chromium that the `@web` profile and `test:smoke` drive.
 
 | Command | Runs |
 |---|---|
