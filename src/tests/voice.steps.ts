@@ -181,6 +181,10 @@ Then('an assistant bubble is shown', function (this: TamedTableWorld) {
   assert.ok(found, 'no assistant bubble present');
 });
 
-Then('no chat message is shown', function (this: TamedTableWorld) {
-  assert.equal(controller(this).messages.length, 0, 'expected no chat messages');
+// A cancelled or unsent recording posts no user bubble. The chat is not empty
+// here — the unified load path posts its "Loaded …" assistant confirmation —
+// so the assertion pins the user side, where a voice send would appear first.
+Then('no user message is shown', function (this: TamedTableWorld) {
+  const users = controller(this).messages.filter((m) => m.role === 'user');
+  assert.equal(users.length, 0, `expected no user messages, got: ${users.map((m) => m.text).join('; ')}`);
 });

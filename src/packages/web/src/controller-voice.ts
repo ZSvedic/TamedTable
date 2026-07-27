@@ -141,6 +141,13 @@ export class VoiceManager {
       const debug = this.host.lastDebug;
       this.host.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug, true);
     } catch (e) {
+      // A cassette replay miss during a tour ends it cleanly — same safety
+      // net as sendChat, never the raw fingerprint-mismatch error.
+      if (this.host.tutorial.consumeReplayMiss()) {
+        this.host.pushToast('info', 'Tour ended — the guided replay went off-script.');
+        this.host.tutorial.cancelTutorial();
+        return;
+      }
       // Same failure surface as a typed request: error toast plus an
       // assistant message carrying the per-attempt debug info.
       const debug = (e as { debug?: RequestDebugInfo }).debug;

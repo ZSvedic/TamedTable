@@ -332,6 +332,9 @@ Feature: Web front-end
     Background:
       Given the TamedTable web app
       And load "paginate-input.csv"
+      # The 246-row file exceeds one page, so the unified load path raises the
+      # large-file dialog (#LazyExec) — resolve it to commit the table.
+      And load the file in original order
 
     # The page size is one AI-cell concurrency wave: batch size × concurrent
     # batches = 20 × 5 = 100 rows with the defaults, so a streaming page

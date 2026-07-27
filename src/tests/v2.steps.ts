@@ -187,6 +187,17 @@ Then('the row has LastName equal to null', function (this: TamedTableWorld) {
 
 Given('load the lookup table {string} with columns {string}',
   async function (this: TamedTableWorld, file: string, _cols: string) {
+    // The @web surface loads its input through the browser parse path (no
+    // filesystem, no source dir), so the join cannot resolve the lookup file
+    // by path — stage it by name through the same registerLookup seam the
+    // tour uses. Path-based surfaces resolve it next to the loaded input.
+    if (this.surface === 'web') {
+      const { loadCsv } = await import('@tamedtable/core');
+      const { rows } = await loadCsv(join(SPEC_TC_DIR, file));
+      const { webController } = await import('./web-file-port.ts');
+      webController(this).engine.registerLookup(file, rows);
+      return;
+    }
     await readFile(join(SPEC_TC_DIR, file), 'utf8');
   });
 

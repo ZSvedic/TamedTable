@@ -110,6 +110,7 @@ const adapter = {
       case 'golden-source':
       case 'load-shuffled':
       case 'open-estimate':
+      case 'decline-estimate':
       case 'display': return 'table-view';
     }
   },

@@ -5,11 +5,13 @@ export type TourAction =
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }
   | { kind: 'play-audio';    filename: string }
-  // #LazyExec — the Lazy AI execution tour's two clicks: resolve the
-  // large-file dialog with the shuffled sample, and open the run-on-all
-  // estimate dialog (shown, not executed).
+  // #LazyExec — the Lazy AI execution tour's three clicks: resolve the
+  // large-file dialog with the shuffled sample, open the run-on-all
+  // estimate dialog (shown, not executed), and close it again with the
+  // "Not yet" choice — nothing runs, no model call.
   | { kind: 'load-shuffled'                    }
   | { kind: 'open-estimate'                    }
+  | { kind: 'decline-estimate'                 }
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -24,15 +26,12 @@ function classify(text: string): TourAction {
   const load = text.match(/^load "(.+)"$/);
   if (load) return { kind: 'load-file', filename: load[1]! };
 
-  // The drop phrasing is a load too — the lazy tour uses it so the same step
-  // drives the browser's drop path (which raises the large-file dialog). Tours
-  // read imperative (`drop …`); the functional @web tests keep the narrative
-  // `user drops …` — both classify the same.
-  const drop = text.match(/^(?:user )?drops? the file "(.+)" onto the empty page$/);
-  if (drop) return { kind: 'load-file', filename: drop[1]! };
-
+  // #LazyExec — the lazy tour's stops. Tours read imperative (`load …`,
+  // `open …`, `decline …`); the functional @web tests keep the narrative
+  // `user loads …` — both classify the same.
   if (/^(?:user )?loads? the shuffled sample$/.test(text)) return { kind: 'load-shuffled' };
   if (/^(?:user )?opens? the run-on-all estimate dialog$/.test(text)) return { kind: 'open-estimate' };
+  if (/^(?:user )?declines? the estimate with "Not yet"$/.test(text)) return { kind: 'decline-estimate' };
 
   const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup) return { kind: 'load-lookup', filename: lookup[1]! };
@@ -220,10 +219,11 @@ export interface TourAdapter {
   /** `goldenFile` is the scenario's lifted `golden`, or undefined when none. */
   showGolden(goldenFile: string | undefined): Promise<void>;
   playAudio(filename: string): Promise<void>;
-  // #LazyExec — optional: hosts without the lazy-execution UI treat both as
+  // #LazyExec — optional: hosts without the lazy-execution UI treat these as
   // narration-only stops.
   loadShuffled?(): Promise<void>;
   openEstimate?(): Promise<void>;
+  declineEstimate?(): Promise<void>;
   /** DOM id of the element a step should spotlight, or null for none. */
   elementIdFor(action: TourAction): string | null;
   /** Called once when the tour finishes — the host decides what comes next
@@ -359,6 +359,7 @@ export class TourDriver implements TourCursor {
       case 'play-audio':   await this.adapter.playAudio(action.filename);   break;
       case 'load-shuffled': await this.adapter.loadShuffled?.();            break;
       case 'open-estimate': await this.adapter.openEstimate?.();            break;
+      case 'decline-estimate': await this.adapter.declineEstimate?.();      break;
       case 'golden-source':
       case 'display': break;
     }

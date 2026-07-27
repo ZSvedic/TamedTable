@@ -68,9 +68,7 @@ Then('the configured API key is {string}', function (this: TamedTableWorld, key:
 
 // ── Drag & drop onto the empty page ────────────────────────────────────────
 
-// Imperative `drop …` (showcase tours) and narrative `user drops …` (functional
-// @web tests) describe the same drag-and-drop; one step def matches both.
-When('(user )drop(s) the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {
+When('user drops the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {
   const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
   await controller(this).openDropped(filename, bytes);
 });
@@ -788,7 +786,9 @@ When('(user )load(s) the shuffled sample', async function (this: TamedTableWorld
   await controller(this).loadShuffled();
 });
 
-When('user loads the file in original order', async function (this: TamedTableWorld) {
+// Imperative `load …` (a `load "<file>"` resolution) and narrative `user
+// loads …` describe the same dialog click; one step def matches both.
+When('(user )load(s) the file in original order', async function (this: TamedTableWorld) {
   await controller(this).loadOriginalOrder();
 });
 
@@ -846,6 +846,14 @@ When('(user )open(s) the run-on-all estimate dialog', function (this: TamedTable
   const pending = controller(this).runOnAllRows();
   pending.catch(() => {});
   ctxOf(this).pending = pending;
+});
+
+When('(user )decline(s) the estimate with {string}', async function (this: TamedTableWorld, choice: string) {
+  // The lazy tour's finale: close the estimate dialog with the "Not yet"
+  // choice — nothing runs, no model call.
+  assert.equal(choice, 'Not yet', `unknown estimate decline "${choice}"`);
+  controller(this).declineRunAll();
+  await ctxOf(this).pending;
 });
 
 // ── Column-menu gates: the evaluated-rows preview (#LazyExec) ────────────────

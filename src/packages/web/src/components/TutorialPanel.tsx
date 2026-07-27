@@ -389,18 +389,25 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   );
 }
 
-// Tour steps read as imperative instructions ("load …", "query …", "speak …").
-// The Gherkin keyword (Given/When/Then) is test-suite structure, not something a
-// learner needs — so the tour drops it and just capitalizes the step text for
-// display. This mirrors the popover copy the shared `TourUi` renders (gherkin-
-// tour/ui.ts). A `query "…"` step's text is prefilled into the chat box and a
-// `speak "…"` step plays its clip, so those instructions name the action.
+// Tours are watch-only, so each step narrates progressively ("Opening the
+// sample …") — the Gherkin keyword (Given/When/Then) is test-suite structure,
+// not something a learner needs, so it is dropped. This mirrors the popover
+// copy the shared `TourUi` renders (gherkin-tour/ui.ts). A `query "…"` step's
+// text is prefilled into the chat box and a `speak "…"` step plays its clip,
+// so those narrations name the action.
 function asInstruction(text: string): string {
-  if (/^query "(.+)"$/.test(text)) return 'Type and run the query';
-  if (/^speak "(.+)"$/.test(text)) return 'Speak and run the query';
+  if (/^query "(.+)"$/.test(text)) return 'Typing and running the query…';
+  if (/^speak "(.+)"$/.test(text)) return 'Speaking and running the voice query…';
   // The load step opens a bundled sample (matches the UI's "Open sample…"),
   // named so the learner sees which file opens.
   const load = text.match(/^load "(.+)"$/);
-  if (load) return `Open sample "${load[1]}"`;
-  return text.length === 0 ? text : text.charAt(0).toUpperCase() + text.slice(1);
+  if (load) return `Opening the sample "${load[1]}"…`;
+  if (/^loads? the shuffled sample$/.test(text)) return 'Loading the shuffled sample…';
+  if (/^opens? the run-on-all estimate dialog$/.test(text)) return 'Opening the run-on-all estimate…';
+  // The remaining-row count is the lazy showcase's fixture math
+  // (showcase-lazy-input.csv: 25,000 rows − the 100-row evaluated page).
+  if (/^declines? the estimate with "Not yet"$/.test(text)) {
+    return 'Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it would take some time.';
+  }
+  return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}…`;
 }

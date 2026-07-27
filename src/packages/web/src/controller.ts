@@ -284,6 +284,14 @@ export class WebController implements ControllerHost {
       // query would have no trace of it.
       this.diagnostics.recordActivity(reply);
     } catch (e) {
+      // A cassette replay miss means the guided replay went off-script — end
+      // the tour cleanly (toast + full cancel), never surface the raw
+      // fingerprint-mismatch error.
+      if (this.tutorial.consumeReplayMiss()) {
+        this.pushToast('info', 'Tour ended — the guided replay went off-script.');
+        this.cancelTutorial();
+        return;
+      }
       const debug = (e as { debug?: RequestDebugInfo }).debug;
       const { message, reportable } = describeError(e, this.config.provider);
       this.fail(message, debug, reportable);
@@ -492,6 +500,8 @@ export class WebController implements ControllerHost {
   saveDataAs(format: FormatId): Promise<void> { return this.files.saveDataAs(format); }
   /** Public file-load helper (also used by tutorial load-file steps). */
   loadFromText(name: string, text: string): Promise<void> { return this.files.loadFromText(name, text); }
+  /** Byte-level sibling — the @web test profile's `load "<file>"` seam. */
+  loadFromBytes(name: string, bytes: Uint8Array): Promise<void> { return this.files.loadFromBytes(name, bytes); }
 
   // ── Voice input (→ voice) ──────────────────────────────────────────────────
 

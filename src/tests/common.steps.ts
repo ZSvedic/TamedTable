@@ -8,6 +8,7 @@ import { describeStep } from '@tamedtable/headless';
 import { serializeFlow } from '@tamedtable/file-io';
 import { runCli } from '@tamedtable/cli';
 import { TamedTableWorld, SPEC_TC_DIR, TEMP_DIR, fixturePath } from './world.ts';
+import { webController } from './web-file-port.ts';
 
 // Fixture resolution lives in world.ts (fixturePath) — shared with the
 // flow-replay steps so `user-data/…` names resolve everywhere.
@@ -19,6 +20,16 @@ const output = (name: string) => join(TEMP_DIR, basename(name));
 
 Given('load {string}', async function (this: TamedTableWorld, filename: string) {
   this.inputPath = fixture(filename);
+  // #LazyExec — on the @web surface the load goes through the real browser
+  // parse path (the same loadFromPicked funnel a picked/dropped file takes),
+  // so a file bigger than one page raises the large-file dialog in tests
+  // exactly as in the app; the scenario resolves it with an explicit step.
+  // Headless/CLI keep the path-based loadInput.
+  if (this.surface === 'web') {
+    const bytes = new Uint8Array(await readFile(this.inputPath));
+    await webController(this).loadFromBytes(basename(filename), bytes);
+    return;
+  }
   await this.ensureRunner().loadInput(this.inputPath);
 });
 

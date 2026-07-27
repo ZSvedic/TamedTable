@@ -1,10 +1,11 @@
 # #TutorialMode #LazyExec
-# The "Lazy AI execution" showcase tour — the homepage's top section. It drops
+# The "Lazy AI execution" showcase tour — the homepage's top section. It loads
 # the large bundled sample and walks the page-first story: the one-click
 # large-file dialog, the shuffled sample whose Row # column keeps original
 # numbers, an AI step that fills just the visible page, the pending-page
-# marks, and the run-on-all estimate dialog (shown, not executed — no key,
-# no cost). Replays key-free from cassettes/showcase-lazy-ai.json.
+# marks, and the run-on-all estimate dialog (shown, then declined with
+# "Not yet" — nothing runs, no key, no cost, and the tour ends with no
+# dialog left open). Replays key-free from cassettes/showcase-lazy-ai.json.
 Feature: Lazy AI execution showcase tour
 
   Rule: A big file previews for cents and runs in full only on request
@@ -12,7 +13,7 @@ Feature: Lazy AI execution showcase tour
     @web @tour @cat-lazy
     Scenario: Clean 25,000 rows for cents
       Given the TamedTable web app
-      When drop the file "showcase-lazy-input.csv" onto the empty page
+      And load "showcase-lazy-input.csv"
       Then the large-file dialog offers "Load shuffled" and "Load in original order"
       When load the shuffled sample
       Then the Row # column keeps the original row numbers
@@ -22,3 +23,5 @@ Feature: Lazy AI execution showcase tour
       And the pager marks the pages with pending rows
       When open the run-on-all estimate dialog
       Then the estimate dialog shows the rows remaining, estimated tokens, cost, and time
+      When decline the estimate with "Not yet"
+      Then no estimate dialog is shown
