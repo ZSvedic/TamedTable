@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 import { Writable } from 'node:stream';
 import { readFile, unlink, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { createCliRunner, handleColonCommand, type CliRunner } from './index.ts';
 import { loadEnv, readJsonl, validateTablePlan } from '@tamedtable/core';
 
@@ -109,7 +109,9 @@ describe('handleColonCommand', () => {
       const saved = JSON.parse(await readFile(outFlow, 'utf8'));
       expect(saved.version).toBe(2);
       expect(typeof saved.source).toBe('string');
-      const resolved = join(tmpdir(), saved.source);
+      // `source` is either relative to the flow dir or absolute; on Windows it
+      // carries backslashes, so normalize before the suffix check.
+      const resolved = resolve(tmpdir(), saved.source).replaceAll('\\', '/');
       expect(resolved.endsWith('test-cases/dedupe-input.csv')).toBe(true);
       expect(saved.spec.transformations.length).toBe(h.runner.currentSpec().transformations.length);
     } finally {
