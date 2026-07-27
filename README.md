@@ -143,15 +143,12 @@ Everything runs from `src/` — `cd src` first. First time on a machine, run `bu
 | Command | Runs |
 |---|---|
 | `bun run test` | All tests — the bun unit tests plus all three Cucumber profiles. Offline, no API key. |
-| `bun run test:unit` | The bun unit tests only. |
-| `bun run test:headless` | The Cucumber `@headless` profile only. |
-| `bun run test:cli` | The Cucumber `@cli` profile only. |
-| `bun run test:web` | The Cucumber `@web` profile only. Drives the demos in headless Chromium, so it needs the browser from `bun run setup` (or `bunx playwright install chromium`). |
-| `bun run test:smoke` | The module-demo smoke test: builds each demo with the deploy workflow's flags and drives it in headless Chromium. Needs a Chromium binary (`bunx playwright install chromium`); not part of `bun run test`. |
+| `bun run test:unit` / `test:headless` / `test:cli` / `test:web` | One slice of the above: the bun unit tests, or one Cucumber profile. `test:web` drives the demos in headless Chromium (installed by `bun run setup`). |
+| `bun run test:smoke` | The module-demo smoke test: builds each demo with the deploy workflow's flags and drives it in headless Chromium. Not part of `bun run test`. |
 | `bun run test:record` | Re-records the cassettes (see below) against the live Gemini API. |
 | `bun run typecheck` | Type-check only — `tsc --noEmit` for the engine packages and the web package. |
 
-Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`.
+Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`. Run a single unit test with bun's path and name filters, e.g. `bun test packages/cli -t handleColonCommand`.
 
 A Playwright e2e layer (`src/packages/web/e2e/`) drives the web app in a real browser alongside the Cucumber `@web` profile: `bun run test:e2e` from `src/packages/web/` starts the Vite dev server and runs the `*.e2e.ts` specs headless; it is not part of `bun run test`.
 
