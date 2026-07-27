@@ -138,7 +138,7 @@ There is no server: the web UI calls your chosen provider directly from the brow
 
 ## Run the tests
 
-Everything runs from `src/` — `cd src` first. First time on a machine, run `bun run setup` once. It installs the libraries *and* the headless Chromium that the `@web` profile and `test:smoke` drive.
+Everything runs from `src/` — `cd src` first. First time on a machine, run `bun run setup` once. It installs the libraries *and* the headless Chromium that the `@web` profile and `test:smoke` drive. One tool comes from outside bun: the `@cli` profile runs the exported Python script through [uv](https://docs.astral.sh/uv/getting-started/installation/), so uv must be on PATH (CI installs it with `astral-sh/setup-uv`).
 
 | Command | Runs |
 |---|---|

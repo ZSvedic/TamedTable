@@ -139,6 +139,34 @@ test('Arrow-right advances; there is no ← key', async ({ page }) => {
   await expect(progress(page)).toHaveText('2 of 6');
 });
 
+// Deep links carry ?feature=&scenario= so the app can pick one tour; once the
+// tour ends the address bar returns to the plain app URL (behavior.md § Deep
+// links into a tutorial). The Cucumber @web suite cannot see the URL — it
+// drives the controller directly — so the round trip is pinned here.
+test('finishing a deep-link tour restores the plain app URL', async ({ page }) => {
+  await page.goto('/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country');
+  await expect(progress(page)).toHaveText(/1 of \d+/);
+  expect(page.url()).toContain('feature=filter.feature');
+
+  const total = Number((await progress(page).textContent())!.match(/of (\d+)/)![1]);
+  for (let n = 2; n <= total; n++) {
+    await nextBtn(page).click();
+    await expect(progress(page)).toHaveText(`${n} of ${total}`, { timeout: 20_000 });
+  }
+  await expect(page.locator('.driver-popover')).toContainText('Voilà');
+  await expect.poll(() => page.url()).not.toContain('feature=');
+});
+
+test('cancelling a deep-link tour with Esc restores the plain app URL', async ({ page }) => {
+  await page.goto('/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country');
+  await expect(progress(page)).toHaveText(/1 of \d+/);
+
+  await page.keyboard.press('Escape');
+
+  await expect(page.locator('.driver-popover')).toBeHidden();
+  await expect.poll(() => page.url()).not.toContain('feature=');
+});
+
 test('Escape key cancels the tour', async ({ page }) => {
   await startTour(page, 'Clean up a messy customer list');
   await expect(progress(page)).toHaveText('1 of 6');

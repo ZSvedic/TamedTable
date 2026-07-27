@@ -408,7 +408,10 @@ When('user runs the exported script {string} with input {string} and output {str
       this.lastInvocation = { exitCode: 0, stdout, stderr };
     } catch (e) {
       const err = e as { code?: number | string; stdout?: string; stderr?: string; message: string };
-      if (err.code === 'ENOENT') throw new Error('`uv` is not on PATH — the exported-script scenario needs it installed');
+      if (err.code === 'ENOENT') {
+        throw new Error('`uv` is not on PATH — the exported-script scenario needs it installed: '
+          + 'https://docs.astral.sh/uv/getting-started/installation/');
+      }
       this.lastInvocation = {
         exitCode: typeof err.code === 'number' ? err.code : 1,
         stdout: err.stdout ?? '',
