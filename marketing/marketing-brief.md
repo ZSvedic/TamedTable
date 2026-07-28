@@ -80,7 +80,7 @@ no signup**. The rows below follow each tour's step order.
 | Language | *tap the mic* | Say any command out loud, hands-free |
 | Language | *"tag the language of every comment"* | Language detected per row |
 | Language | *"translate the comments to English"* | From any source language |
-| Language | *"summarize each comment in one line"* | Even the 500-word rant |
+| Language | *"add a one-line Summary for each comment"* | Even the 500-word rant |
 | Language | *"normaliza los números de teléfono"* | Ask in any language, voice or text |
 | Deterministic | *"remove the duplicate rows"* | Dedupe |
 | Deterministic | *"join the country codes from a second table"* | Join two tables |
