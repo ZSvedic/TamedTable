@@ -23,7 +23,7 @@ spec; the spec is not regenerable from anything.
 surfaces (CLI, headless, web) at once. How the Gherkin suite is organized and kept
 small is in [spec/test-conventions.md](spec/test-conventions.md).
 
-- [TDD](https://en.wikipedia.org/wiki/Test-driven_development): The suite goes red before the implementation moves and green before commit (steps 3–4 below). The AI generates the step definitions from the Gherkin. The loop stays fast because every model response is recorded once and replayed offline from cassettes/.
+- [TDD](https://en.wikipedia.org/wiki/Test-driven_development): The suite goes red before the implementation moves and green before commit (steps 3–4 below). The AI generates the step definitions from the Gherkin. The loop stays fast because every model response is recorded once and replayed offline from `cassettes/`.
 
 A behavior change moves outside-in, spec first:
 
@@ -31,8 +31,8 @@ A behavior change moves outside-in, spec first:
    [spec/code-contract.md](spec/code-contract.md).
 2. Add or update the Gherkin scenario in [spec/test-cases/](spec/test-cases/).
 3. Write the step definitions in `src/tests/` and run the suite — the new
-   behavior is **red**.
-4. Implement in `src/packages/` until the suite is **green**.
+   behavior is *red*.
+4. Implement in `src/packages/` until the suite is *green*.
 
 ## Project layout
 
