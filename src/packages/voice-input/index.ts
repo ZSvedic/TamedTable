@@ -55,7 +55,7 @@ export { DEFAULT_TUNING } from './vad.ts';
  *  voice cassette. */
 export const VOICE_INSTRUCTION = [
   "The user's request is spoken in the attached audio clip. Listen to it",
-  'and carry out that request directly — there is no written request text.',
+  'and carry out that request directly; there is no written request text.',
   'Also set the `transcript` argument of apply_spec_patch to a verbatim',
   'transcript of the audio.',
 ].join('\n');
