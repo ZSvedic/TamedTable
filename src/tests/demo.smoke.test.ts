@@ -13,13 +13,14 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Browser, Page } from 'playwright';
-import { findChromium } from './demo-harness.ts';
+import { assertBrowserTestsSupported, findChromium } from './demo-harness.ts';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
 const DEMOS = ['chat-panel', 'file-io', 'gherkin-tour', 'model-config', 'table-view', 'toolbar', 'ui-kit', 'voice-input'] as const;
 
 const smoke = process.env.SMOKE === '1';
+if (smoke) assertBrowserTestsSupported();
 const chromePath = smoke ? findChromium((await import('playwright')).chromium) : undefined;
 if (smoke && !chromePath) {
   const msg =
