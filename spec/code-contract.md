@@ -384,6 +384,26 @@ re-record (`bun run test:record`) when a prompt change is meant to
 alter model behavior. An entry recorded before the readable-request
 format (no `request` field) cannot be re-keyed; the script reports it.
 
+A full re-record is one command: `bun run test:record` records the
+headless, CLI, *and* web profiles in sequence — every profile that
+makes model calls, so a prompt change can never leave one profile's
+tapes keyed to the old prompt while the others moved on.
+
+Record mode returns cached entries, so rerunning a flaky recording
+without deleting it first just replays the frozen bad response.
+`bun run rerecord <feature>` (`src/packages/cassette/rerecord.ts`) is
+the recovery: it deletes `cassettes/<feature>.json`, then records that
+one feature across all three profiles (`TAMEDTABLE_FEATURES` narrows
+each run). Needs `GEMINI_API_KEY`, like any recording.
+
+When a fresh recording disagrees with a committed golden, a human
+verifies the correct value against independent truth — outside the
+model's answer — before deciding which side to fix. A golden and a
+cassette can be wrong *together*: replay only proves they agree with
+each other. Precedent: `cleanup-expected.csv` carried a wrong `+490…`
+phone number for months because the golden and the cassette froze the
+same wrong model answer.
+
 Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
 returned to the SDK unsaved, so its built-in retry reaches the live API
 and the eventual success — not the transient error — is what lands in
