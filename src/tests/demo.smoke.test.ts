@@ -13,7 +13,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Browser, Page } from 'playwright';
-import { findChromium } from './demo-harness.ts';
+import { findChromium, launchChromium } from './demo-harness.ts';
 
 const SRC_DIR = join(import.meta.dir, '..');
 const BASE_PATH = '/TamedTable/demos';
@@ -66,8 +66,7 @@ beforeAll(async () => {
     },
   });
 
-  const { chromium } = await import('playwright');
-  browser = await chromium.launch({ executablePath: chromePath, args: ['--no-sandbox'] });
+  browser = await launchChromium(chromePath!);
   // 15s instead of bun's 5s default hook timeout: a cold Chromium launch on a
   // busy CI runner has blown the 5s budget (the builds above take ~1s total).
 }, 15_000);

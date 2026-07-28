@@ -48,5 +48,8 @@
     "@types/node": "^25.6.0",
     "playwright": "^1.60.0",
     "typescript": "^6.0.3"
+  },
+  "patchedDependencies": {
+    "playwright-core@1.60.0": "patches/playwright-core@1.60.0.patch"
   }
 }

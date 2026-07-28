@@ -9,7 +9,7 @@
 // harness (world.ts), so packages stay independent of app test state.
 import { After, AfterAll, Given } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
@@ -47,6 +47,54 @@ export function findChromium(chromium?: { executablePath(): string }): string | 
   return undefined;
 }
 
+/** Launch Chromium and connect over a TCP CDP socket instead of the stdio
+ *  pipe `chromium.launch()` uses. Bun on Windows cannot wire the extra pipe
+ *  fds (oven-sh/bun#27977) — Chrome starts, the handshake hangs, the launch
+ *  times out — while a TCP connection works on every runtime and platform.
+ *  Closing the returned browser also kills the process and drops its
+ *  throwaway profile dir. */
+export async function launchChromium(executablePath: string, args: string[] = []): Promise<Browser> {
+  const { chromium } = await import('playwright');
+  const profile = await mkdtemp(join(tmpdir(), 'tt-chromium-profile-'));
+  const child = spawn(
+    executablePath,
+    [
+      '--headless',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--mute-audio',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--remote-debugging-port=0',
+      `--user-data-dir=${profile}`,
+      ...args,
+      'about:blank',
+    ],
+    { stdio: ['ignore', 'ignore', 'pipe'] },
+  );
+  const wsUrl = await new Promise<string>((resolve, reject) => {
+    // Port 0 lets the OS pick; Chrome prints the resolved endpoint on stderr.
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('Chromium did not print its DevTools endpoint within 30 s'));
+    }, 30_000);
+    let err = '';
+    child.stderr!.on('data', (chunk: Buffer) => {
+      err += chunk.toString();
+      const m = err.match(/DevTools listening on (ws:\/\/\S+)/);
+      if (m) { clearTimeout(timer); resolve(m[1]!); }
+    });
+    child.on('exit', (code) => { clearTimeout(timer); reject(new Error(`Chromium exited before it was ready (code ${code}): ${err}`)); });
+    child.on('error', (e) => { clearTimeout(timer); reject(e); });
+  });
+  const browser = await chromium.connectOverCDP(wsUrl);
+  browser.on('disconnected', () => {
+    child.kill();
+    void rm(profile, { recursive: true, force: true });
+  });
+  return browser;
+}
+
 export interface DemoPageOptions {
   /** Demo name: registers `Given('the <name> demo page')`, serves http://<name>.demo. */
   name: string;
@@ -80,10 +128,7 @@ export function bindDemoPage(opts: DemoPageOptions): (world: object) => Page {
           'Install one with `bunx playwright install chromium`.',
       );
     }
-    const browser = await chromium.launch({
-      executablePath,
-      args: ['--no-sandbox', ...(opts.launchArgs ?? [])],
-    });
+    const browser = await launchChromium(executablePath, opts.launchArgs);
     return { browser, dist };
   }
 

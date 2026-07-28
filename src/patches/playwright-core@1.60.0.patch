@@ -1,0 +1,17 @@
+diff --git a/lib/utilsBundle.js b/lib/utilsBundle.js
+index 10a2e8ce17b914b0fd3bf5fbfef450ab7e49bd72..80ebf2a17ef1558b0558191e9b719dd47b811423 100644
+--- a/lib/utilsBundle.js
++++ b/lib/utilsBundle.js
+@@ -57075,7 +57075,11 @@ __export(utilsBundle_exports, {
+   retry: () => retry,
+   socksProxyAgent: () => socksProxyAgent,
+   sourceMapSupport: () => sourceMapSupport,
+-  ws: () => ws,
++  // PATCHED (TamedTable): under bun, the bundled `ws` cannot complete the
++  // HTTP->WebSocket upgrade (bun lacks client protocol upgrades), which
++  // hangs connectOverCDP. Bun virtualizes require("ws") with a native shim
++  // that works; use it there. Node keeps the bundled copy.
++  ws: () => (process.versions.bun ? require("ws") : ws),
+   wsReceiver: () => wsReceiver,
+   wsSender: () => wsSender,
+   wsServer: () => wsServer,
