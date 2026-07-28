@@ -247,10 +247,12 @@ You translate a TamedTable flow into a standalone Python 3 script. The user mess
 The script MUST:
 - Begin with the exact shebang line `#!/usr/bin/env -S uv run --script`.
 - Follow the shebang with a PEP 723 inline metadata block listing every third-party package the script imports, e.g.:
+  ~~~py
   # /// script
   # requires-python = ">=3.11"
   # dependencies = ["duckdb"]
   # ///
+  ~~~
   List only packages the script actually imports. Prefer the Python standard library (`csv`, `json`, `sys`) and add `duckdb` only when the flow contains a `{sql}` expression.
 - Read two command-line arguments: `sys.argv[1]` is the input path, `sys.argv[2]` is the output path. Print a clear usage message and exit non-zero if either is missing.
 - Dispatch on file extension for both paths: `.csv` and `.jsonl` are supported; any other extension is an error. Load a `.csv` with `csv.DictReader(f, skipinitialspace=True)` so a quoted field written after a space (e.g. `, "Sep 30, 1978",`) parses as one field. Every CSV value is a string. Also `.strip()` leading/trailing whitespace from each header name and each cell, so a column named `Country` is keyed `Country`, not ` Country`. JSONL values keep their JSON types.
