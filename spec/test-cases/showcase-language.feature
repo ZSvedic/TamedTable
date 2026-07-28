@@ -26,7 +26,7 @@ Feature: Process language showcase tour
       And the row where "Id" is "6" has "Language" equal to "Croatian"
       When query "translate the comments to English"
       Then no toast is shown
-      When query "summarize each comment in one line"
+      When query "add a one-line Summary for each comment"
       Then no toast is shown
       And every row has a non-null "Summary"
       When query "normaliza los números de teléfono"

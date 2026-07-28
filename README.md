@@ -170,7 +170,8 @@ Everything runs from `src/` — `cd src` first. First time on a machine, run `bu
 | `bun run test` | All tests — the bun unit tests plus all three Cucumber profiles. Offline, no API key. |
 | `bun run test:unit` / `test:headless` / `test:cli` / `test:web` | One slice of the above: the bun unit tests, or one Cucumber profile. `test:web` drives the demos in headless Chromium (installed by `bun run setup`). |
 | `bun run test:smoke` | The module-demo smoke test: builds each demo with the deploy workflow's flags and drives it in headless Chromium. Not part of `bun run test`. |
-| `bun run test:record` | Re-records the cassettes (see below) against the live Gemini API. |
+| `bun run test:record` | Re-records all cassettes (see below) against the live Gemini API — headless, CLI, and web profiles. |
+| `bun run rerecord <feature>` | Deletes `cassettes/<feature>.json`, then records that one feature across all profiles — the recovery from a flaky recording. |
 | `bun run typecheck` | Type-check only — `tsc --noEmit` for the engine packages and the web package. |
 
 Run one feature with `TAMEDTABLE_FEATURES`, e.g. `TAMEDTABLE_FEATURES=validate bun run test`. Run a single unit test with bun's path and name filters, e.g. `bun test packages/cli -t handleColonCommand`.
@@ -194,8 +195,9 @@ a scenario — refresh the cassettes and commit the updated files:
 bun run test:record      # needs GEMINI_API_KEY (see Setup above)
 ```
 
-Every cassette records with the Gemini provider defaults: `gemini-3.6-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for per-row cells. `test:record` covers the headless and CLI profiles; the `@web`-only tour scenarios record through the web profile:
-`TAMEDTABLE_CASSETTE=record bun run test:web`.
+Every cassette records with the Gemini provider defaults: `gemini-3.6-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for per-row cells. `test:record` covers every model-calling profile — headless, CLI, and web.
+
+If one feature's recording comes out flaky (an invalid patch, an unfiltered result), don't just rerun it: record mode returns cached entries, so a bad response is frozen once written. Run `bun run rerecord <feature>` — it deletes that feature's cassette first, then records it fresh across all profiles. And when a fresh recording disagrees with a committed golden, verify the correct value against independent truth before fixing either side — see [spec/code-contract.md](spec/code-contract.md) § Recording model calls for tests.
 
 For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
 

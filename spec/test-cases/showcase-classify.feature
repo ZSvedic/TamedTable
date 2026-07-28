@@ -26,5 +26,5 @@ Feature: Classify showcase tour
       And every row has a non-null "SeniorityRank"
       When query "split customers into men, women, and unknown"
       Then no toast is shown
-      And the row where "Id" is "2" has "Gender" equal to "man"
+      And the row where "Id" is "2" has "Gender" equal to "men"
       And the row where "Id" is "6" has "Gender" equal to "unknown"
