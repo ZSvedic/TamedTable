@@ -90,7 +90,12 @@ export async function launchChromium(executablePath: string, args: string[] = []
   const browser = await chromium.connectOverCDP(wsUrl);
   browser.on('disconnected', () => {
     child.kill();
-    void rm(profile, { recursive: true, force: true });
+    // Windows keeps the profile locked (EBUSY) until Chrome fully exits, so
+    // wait for the process before removing, and retry while locks drain.
+    void (async () => {
+      if (child.exitCode === null) await new Promise((resolve) => child.once('exit', resolve));
+      await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => {});
+    })();
   });
   return browser;
 }
