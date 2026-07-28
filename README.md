@@ -209,7 +209,7 @@ The benchmark uses the same model env vars as the rest of the app
 `TAMEDTABLE_CELL_MODEL` (the per-row cell model). Run **online** to benchmark a
 provider other than the committed Gemini cassette, with that provider's key
 in `.env` (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `OPENAI_API_KEY`, or
-`OPENROUTER_API_KEY` — the runtime picks the provider from the model id):
+`OPENROUTER_API_KEY`):
 
 ```
 # Gemini: stronger model for the patch turn, cheapest for the cells
@@ -220,8 +220,7 @@ TAMEDTABLE_MODEL=gpt-5.5 TAMEDTABLE_CELL_MODEL=gpt-5.4-mini bun run bench:live
 ```
 
 `bun run bench` (offline) only covers the committed Gemini cassette; any other
-combination needs an online run. The token tally reads Anthropic, Google, OpenAI, and
-OpenRouter usage shapes, so per-model cost is attributed correctly for any provider.
+combination needs an online run. 
 
 ### Cost accounting and results
 
@@ -259,28 +258,6 @@ bun run bench:report         # print the results table
 
 `sample`, `chart`, and `report` run offline; `label` and `sweep` make live calls
 and need the matching provider key.
-
-## Iterate on the spec with WoZ and SCRIBE
-
-WoZ (Wizard-of-Oz) and SCRIBE let you iterate TamedTable's behavior interactively without running the implementation. WoZ simulates what TamedTable would do from `spec/behavior.md` only; when WoZ reveals a gap or surprise, SCRIBE updates the spec.
-
-In a fresh Claude Code session at the repo root:
-
-```
-claude
-> @process/prompts/prompt-woz.md
-```
-
-That loads WoZ. Every message you type is independently classified by its first character — no persistent persona switching:
-
-| Prefix | Persona | Use for |
-|---|---|---|
-| `> <note>` | SCRIBE | Spec edits: `> change the wording of :undo to …`, `> pin the page size at 20`. One-shot — the next message without a `>` prefix returns to WoZ automatically. |
-| anything else | WoZ | Simulate the app's response from `spec/behavior.md`. |
-
-Visual: WoZ output appears in fenced code blocks (terminal-shaped — that's the simulated TamedTable output). SCRIBE responses appear as markdown blockquotes (every line prefixed with `> `, mirroring your input prefix).
-
-SCRIBE edits `spec/behavior.md` (almost always), `spec/code-contract.md` (only when the API surface changes), or any LLM prompt files the spec references (prompt tuning). It never touches `src/`, `process/journal/`, or `spec/test-cases/*.feature`.
 
 ## Known limitations
 
