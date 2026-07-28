@@ -138,7 +138,7 @@ There is no server: the web UI calls your chosen provider directly from the brow
 
 ## Run the tests
 
-Everything runs from `src/` — `cd src` first. First time on a machine, run `bun run setup` once. It installs the libraries *and* the headless Chromium that the `@web` profile and `test:smoke` drive. One tool comes from outside bun: the `@cli` profile runs the exported Python script through [uv](https://docs.astral.sh/uv/getting-started/installation/), so uv must be on PATH (CI installs it with `astral-sh/setup-uv`). On Windows, the browser-driven tests (`test:web`'s demo scenarios and `test:smoke`) cannot run under bun ([bun#27977](https://github.com/oven-sh/bun/issues/27977)) and fail fast saying so — rely on CI or WSL there; the Playwright e2e layer runs under Node and is unaffected.
+Everything runs from `src/` — `cd src` first. First time on a machine, run `bun run setup` once. It installs the libraries *and* the headless Chromium that the `@web` profile and `test:smoke` drive. One tool comes from outside bun: the `@cli` profile runs the exported Python script through [uv](https://docs.astral.sh/uv/getting-started/installation/), so uv must be on PATH (CI installs it with `astral-sh/setup-uv`). On Windows, the browser-driven tests (`test:web`'s demo scenarios and `test:smoke`) cannot run under bun ([bun#27977](https://github.com/oven-sh/bun/issues/27977)); the Playwright e2e layer runs under Node and is unaffected.
 
 | Command | Runs |
 |---|---|
@@ -169,11 +169,7 @@ a scenario — refresh the cassettes and commit the updated files:
 bun run test:record      # needs GEMINI_API_KEY (see Setup above)
 ```
 
-Every cassette records with the Gemini provider defaults —
-`gemini-3.6-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for
-per-row cells — the same models the key-free replay (tests and homepage
-tours) resolves. `test:record` covers the headless and CLI profiles; the
-`@web`-only tour scenarios record through the web profile:
+Every cassette records with the Gemini provider defaults: `gemini-3.6-flash` for the spec-patch turn, `gemini-3.1-flash-lite` for per-row cells. `test:record` covers the headless and CLI profiles; the `@web`-only tour scenarios record through the web profile:
 `TAMEDTABLE_CASSETTE=record bun run test:web`.
 
 For a live run that ignores the cassettes, set `TAMEDTABLE_CASSETTE=off`.
