@@ -17,6 +17,17 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import type { Browser, Page, Route } from 'playwright';
 
+/** Bun on Windows cannot wire the pipes `chromium.launch()` needs
+ *  (oven-sh/bun#27977): Chrome starts, the handshake hangs for minutes per
+ *  harness. Fail fast with the workaround instead of timing out. */
+export function assertBrowserTestsSupported(): void {
+  if (process.versions.bun && process.platform === 'win32') {
+    throw new Error(
+      'browser tests cannot run under bun on Windows (oven-sh/bun#27977) — rely on CI, or run them under WSL.',
+    );
+  }
+}
+
 // A Playwright-managed Chromium under $PLAYWRIGHT_BROWSERS_PATH (container
 // images) or ~/.cache/ms-playwright, newest build first, whatever the build
 // number.
@@ -69,6 +80,7 @@ export function bindDemoPage(opts: DemoPageOptions): (world: object) => Page {
   let session: Promise<{ browser: Browser; dist: string }> | undefined;
 
   async function startSession(): Promise<{ browser: Browser; dist: string }> {
+    assertBrowserTestsSupported();
     const dist = await mkdtemp(join(tmpdir(), `${opts.name}-demo-`));
     await promisify(execFile)('bun', ['build', 'demo.html', '--outdir', dist], { cwd: opts.pkgDir });
     const { chromium } = await import('playwright');
