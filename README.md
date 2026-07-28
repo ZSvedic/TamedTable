@@ -7,6 +7,33 @@ TamedTable is an AI ETL tool driven by natural language. Load a CSV, type *"norm
 
 https://github.com/user-attachments/assets/1bb6857c-32d9-4ff1-9eda-2857b06cd08f
 
+## Spec/Behavior/Test-Driven Development
+
+This project is an example of SDD/BDD/TDD AI development:
+
+- [SDD](https://en.wikipedia.org/wiki/Specification-driven_development): The spec is the source of truth; the code follows it. Files in `spec/` are
+human-blessed: [behavior.md](spec/behavior.md) says what the
+system does in plain English; its twin [code-contract.md](spec/code-contract.md)
+carries the matching types and signatures. The implementation in `src/` is
+downstream. Its `packages/` and `tests/` subdirs are regenerable from the
+spec; the spec is not regenerable from anything.
+
+- [BDD](https://en.wikipedia.org/wiki/Behaviour-driven_development): The Gherkin scenarios in
+[spec/test-cases/](spec/test-cases/) prove one behavior against all three app
+surfaces (CLI, headless, web) at once. How the Gherkin suite is organized and kept
+small is in [spec/test-conventions.md](spec/test-conventions.md).
+
+- [TDD](https://en.wikipedia.org/wiki/Test-driven_development): The suite goes red before the implementation moves and green before commit (steps 3–4 below). The AI generates the step definitions from the Gherkin. The loop stays fast because every model response is recorded once and replayed offline from cassettes/.
+
+A behavior change moves outside-in, spec first:
+
+1. Update [spec/behavior.md](spec/behavior.md) and
+   [spec/code-contract.md](spec/code-contract.md).
+2. Add or update the Gherkin scenario in [spec/test-cases/](spec/test-cases/).
+3. Write the step definitions in `src/tests/` and run the suite — the new
+   behavior is **red**.
+4. Implement in `src/packages/` until the suite is **green**.
+
 ## Project layout
 
 This repository is organized by *lifecycle*:
@@ -47,8 +74,6 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 │   └── tests/               App step definitions. Regenerable from Gherkin.
 └── temp/                    Scratch: test outputs, charts, logs. Gitignored.
 ```
-
-`behavior.md` and `code-contract.md` are section-aligned twins: `behavior.md` describes what happens in plain English (no types, no library names); `code-contract.md` carries the matching types, signatures, env vars, and exit codes. Each section in one links to the same section in the other.
 
 ## Setup
 
