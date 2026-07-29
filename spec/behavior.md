@@ -1191,7 +1191,10 @@ or the engine changes.
   - **Speak** records (a live waveform, nothing recognized yet); the send
     button stops recording, transcribes, runs the request, and lowers the
     sheet on its own. Cancel discards.
-  - **History** shows the undo timeline — newest at the top, the current
+  - **History** shows the undo timeline — newest at the top, each step
+    carrying the same status marker the chat panel's replies use (a solid
+    ok dot for an applied step, a hollow circle for an undone one — one
+    visual language for step state, not a second icon logic), the current
     point highlighted, already-undone steps dimmed below it, a relative
     time per step. Tapping a step jumps straight to it; **Undo** / **Redo**
     step one at a time. It reads the same journal the desktop Undo/Redo

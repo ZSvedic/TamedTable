@@ -7,6 +7,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
+import { StatusDot } from '@tamedtable/chat-panel/components';
 import type { TimelineStep } from '@tamedtable/headless';
 import type { VoiceStatus } from '../../controller.ts';
 
@@ -424,16 +425,10 @@ export function HistorySheet({
                 fontWeight: state === 'cur' ? 600 : 400,
               }}
             >
-              <span
-                style={{
-                  width: 11,
-                  height: 11,
-                  borderRadius: '50%',
-                  flex: '0 0 auto',
-                  border: `1.5px ${state === 'undone' ? 'dashed' : 'solid'} ${state === 'cur' ? t.accent : t.ink4}`,
-                  background: state === 'cur' ? t.accent : 'transparent',
-                }}
-              />
+              {/* The same marker logic the chat panel's replies use: solid ok
+                  dot = applied, hollow circle = undone. The current point is
+                  the highlighted row, not a third icon state. */}
+              <StatusDot state={state === 'undone' ? 'undone' : 'ok'} size={8} />
               <span style={{ flex: 1 }}>{steps[i]!.label}</span>
               <span style={{ fontFamily: typography.mono, fontSize: typography.size.micro, color: t.ink4 }}>
                 {relTime(steps[i]!.time, now)}

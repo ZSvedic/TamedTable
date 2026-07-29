@@ -83,7 +83,10 @@ the host owns every piece of state, the grid renders and reports:
   request commits, and again on undo/redo). Each new `seq` scrolls that
   column's header into view with a minimal nearest-edge scroll — a column
   already visible doesn't move — so appended columns surface without
-  yanking the reader away from the columns beside them.
+  yanking the reader away from the columns beside them. The scroll itself
+  is the React-free `revealHeader(th, stickyRight?)` on the main entry,
+  shared with the app's phone grid (`stickyRight` clears a frozen left
+  column the header would otherwise hide under).
 - **Column menu** — every data header ends in a **⋮** button (revealed on
   hover, always tappable on touch) opening a per-column menu, grouped by
   hairline separators: **Sort ascending** / **Sort descending** (picking the

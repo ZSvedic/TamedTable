@@ -11,7 +11,7 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import type { Row } from '@tamedtable/core';
-import { urlHref } from '@tamedtable/table-view';
+import { revealHeader, urlHref } from '@tamedtable/table-view';
 import type { CellRef, RunProgress } from '../../controller.ts';
 import { APPBAR_OFFSET } from './layout.ts';
 
@@ -81,22 +81,20 @@ export function MobileTable({
   reveal,
 }: MobileTableProps): ReactNode {
   // The reveal scroll: pan the page (the phone's scroller) so the named
-  // column's header is on screen. scrollIntoView alone can leave the target
-  // under the frozen Row # column at the left edge (an undo landing on a
-  // step whose changed column sits left of the view) — nudge past it.
+  // column's header is on screen — cleared past the frozen Row # column,
+  // which would otherwise hide a column revealed at the left edge (an undo
+  // landing on a step whose changed column sits left of the view).
   const rootRef = useRef<HTMLDivElement | null>(null);
   const revealColumn = reveal?.column;
   const revealSeq = reveal?.seq;
   useEffect(() => {
     if (revealColumn === undefined || revealSeq === undefined) return;
     const root = rootRef.current;
-    const th = root?.querySelector(`th[data-mob-header="${CSS.escape(revealColumn)}"]`);
-    if (!th) return;
-    th.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const idx = root?.querySelector('thead th');
-    const idxRight = idx?.getBoundingClientRect().right ?? 0;
-    const left = th.getBoundingClientRect().left;
-    if (left < idxRight) window.scrollBy({ left: left - idxRight });
+    revealHeader(
+      root?.querySelector(`th[data-mob-header="${CSS.escape(revealColumn)}"]`),
+      idx?.getBoundingClientRect().right ?? 0,
+    );
   }, [revealColumn, revealSeq]);
   // Lengths inside the zoomed subtree render multiplied by the zoom; offsets
   // that must line up with the unzoomed chrome (the fixed app bar) or the

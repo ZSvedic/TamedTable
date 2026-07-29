@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 
 import { space, typography, TYPING_MS_PER_CHAR, type Theme } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { ChatPanelMessage, ChatRequestDetail, ChatRunProgress } from './index.ts';
+import { StatusDot } from './StatusDot.tsx';
 
 // Input growth bounds: three lines minimum, ten maximum (~24px line-height);
 // past the maximum the textarea scrolls internally.
@@ -122,31 +123,12 @@ function AssistantMessage({
           <span style={{ flex: '0 0 auto', marginTop: 2, color: t.err }}>
             <Icon name="err" />
           </span>
-        ) : message.undone ? (
-          // Hollow circle: the reply's step is undone — the table no longer
-          // shows what this message reports.
-          <span
-            data-cp-undone=""
-            style={{
-              flex: '0 0 auto',
-              marginTop: 5,
-              width: 6,
-              height: 6,
-              borderRadius: 4,
-              border: `1.5px solid ${t.ink3}`,
-              boxSizing: 'content-box',
-            }}
-          />
         ) : (
-          <span
-            style={{
-              flex: '0 0 auto',
-              marginTop: 6,
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              background: t.ok,
-            }}
+          // Solid ok dot for an applied step; hollow circle when the reply's
+          // step is undone — the table no longer shows what it reports.
+          <StatusDot
+            state={message.undone ? 'undone' : 'ok'}
+            style={{ marginTop: message.undone ? 5 : 6 }}
           />
         )}
         <div style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{body}</div>

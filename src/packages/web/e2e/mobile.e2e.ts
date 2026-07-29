@@ -262,6 +262,15 @@ test.describe('phone width', () => {
     await page.getByTitle('Close keyboard').click();
     await page.locator('[data-mob-dock="undo"]').click();
     await expect(page.locator('[data-mob-changed]').first()).toBeVisible();
+
+    // The History sheet marks steps with the chat panel's own StatusDot
+    // logic: solid ok dot = applied, hollow circle = undone. After one undo
+    // of the tour's four steps, the newest step is the only hollow one.
+    await page.locator('[data-mob-dock="history"]').click();
+    const sheet = page.locator('[data-mob-sheet="history"]');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('[data-status-dot="undone"]')).toHaveCount(1);
+    await expect(sheet.locator('[data-status-dot="ok"]')).toHaveCount(3);
   });
 });
 

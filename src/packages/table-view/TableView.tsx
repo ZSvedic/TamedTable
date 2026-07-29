@@ -14,7 +14,7 @@ import {
 } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
-import { defaultColumnWidth, urlHref, type TableRow } from './index.ts';
+import { defaultColumnWidth, revealHeader, urlHref, type TableRow } from './index.ts';
 import { Pagination } from './Pagination.tsx';
 
 export interface CellSelection {
@@ -173,10 +173,7 @@ export function TableView({
   const revealSeq = reveal?.seq;
   useEffect(() => {
     if (revealColumn === undefined || revealSeq === undefined) return;
-    const th = tableRef.current?.querySelector(
-      `th[data-tv-header="${CSS.escape(revealColumn)}"]`,
-    );
-    th?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    revealHeader(tableRef.current?.querySelector(`th[data-tv-header="${CSS.escape(revealColumn)}"]`));
   }, [revealColumn, revealSeq]);
 
   const dropOn = (target: string): void => {

@@ -52,10 +52,13 @@ panel just renders whatever it is passed.
 
 - Header: "Requests", the transformation count (`requestCount`, with
   "· running" while streaming), and a `?` popover listing `helpLines`.
-- Message list: user messages as accent bubbles; assistant messages with an
-  ok dot — a hollow circle instead when the message is `undone` — or an
-  error icon and error tint when the text starts with
-  `Error:` (the prefix is stripped for display). With no messages, the
+- Message list: user messages as accent bubbles; assistant messages with a
+  `StatusDot` — a solid ok dot, or a hollow circle when the message is
+  `undone` — or an error icon and error tint when the text starts with
+  `Error:` (the prefix is stripped for display). `StatusDot` is exported
+  from the components entry so a host shows the same applied/undone visual
+  language wherever step state appears (the app's mobile History sheet uses
+  it), instead of inventing a second icon logic. With no messages, the
   host's `emptyState` renders instead. While streaming, a pulsing
   "Running…" line follows the list.
 - Live run progress: while streaming, a non-null `progress` prop renders
@@ -88,7 +91,7 @@ panel just renders whatever it is passed.
   (the app uses it while staying in a finished tour).
 
 Stable attributes: `data-cp-message="user|assistant"`, `data-cp-error`,
-`data-cp-undone`,
+`data-status-dot="ok|undone"` (the StatusDot marker),
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
 `data-cp-stop`, `data-cp-running`, `data-cp-progress`,
 `data-cp-progress-toggle`, `data-cp-progress-log`, plus the app's existing
