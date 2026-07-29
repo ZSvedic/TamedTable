@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createWebController, type TutorialSources } from '@tamedtable/web';
 import { parseTours } from '@tamedtable/gherkin-tour';
 import { TamedTableWorld, runnerOptsFor, SPEC_TC_DIR, CASSETTE_DIR } from './world.ts';
-import { WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
+import { apiKeyOfCall, WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
 
 // The same @tour/@web feature files the deployed bundle indexes. Tests read
 // the manifest, feature source, fixtures, and cassettes straight from disk —
@@ -64,6 +64,9 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
         const ct = url.toLowerCase().endsWith('.jsonl') ? 'application/jsonl' : 'text/csv';
         return Promise.resolve(new Response(body, { status: 200, headers: { 'content-type': ct } }));
       }
+      // Everything past the fixture check is a model call — note the key it
+      // carries, so a step can prove a settings edit reached the engine.
+      ctx.lastCallApiKey = apiKeyOfCall(input, init);
       if (ctx.mockLlmFetch) return ctx.mockLlmFetch(input, init);
       if (innerFetch) return Promise.resolve(innerFetch(input, init));
       return fetch(input as Parameters<typeof fetch>[0], init);

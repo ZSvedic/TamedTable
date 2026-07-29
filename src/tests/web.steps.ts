@@ -66,6 +66,21 @@ Then('the configured API key is {string}', function (this: TamedTableWorld, key:
   assert.equal(controller(this).getConfig().anthropicKey, key);
 });
 
+/** A key-only edit — the settings panel's key field, with the provider already
+ *  selected. Unlike "the provider X has API key Y" this changes no model, so
+ *  it exercises the key change on its own. */
+When(
+  'user saves the {string} API key {string}',
+  async function (this: TamedTableWorld, provider: string, key: string) {
+    const field = `${provider}Key` as 'geminiKey' | 'openaiKey' | 'anthropicKey' | 'openrouterKey';
+    await controller(this).setConfig({ [field]: key });
+  },
+);
+
+Then('the last model call carried the API key {string}', function (this: TamedTableWorld, key: string) {
+  assert.equal(ctxOf(this).lastCallApiKey, key);
+});
+
 // ── Drag & drop onto the empty page ────────────────────────────────────────
 
 When('user drops the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {

@@ -42,6 +42,25 @@ export interface WebScenarioCtx {
   lastUrlError?: Error;
   /** When set, intercepts all non-fixture fetch calls to simulate LLM API errors. */
   mockLlmFetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  /** The API key the newest model call carried, however the provider sends it.
+   *  Recorded by the composite fetch — proves a key edit reached the engine. */
+  lastCallApiKey?: string;
+}
+
+/** Dig the API key out of an outgoing model call: Google sends
+ *  `x-goog-api-key` (or a `?key=` query), Anthropic `x-api-key`, and
+ *  OpenAI/OpenRouter an `Authorization: Bearer` header. */
+export function apiKeyOfCall(input: string | URL | Request, init?: RequestInit): string | undefined {
+  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+  const bearer = headers.get('authorization');
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  return (
+    headers.get('x-goog-api-key') ??
+    headers.get('x-api-key') ??
+    (bearer?.startsWith('Bearer ') ? bearer.slice('Bearer '.length) : undefined) ??
+    new URL(url, 'http://localhost').searchParams.get('key') ??
+    undefined
+  );
 }
 
 /** Per-World scenario context, shared between the @web hook and step defs. */

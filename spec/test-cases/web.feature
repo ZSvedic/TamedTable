@@ -28,6 +28,22 @@ Feature: Web front-end
       Then a toast shows "Text requests require a Google API key"
       And the spec has 0 transformations
 
+    # The engine builds its model clients once, with the key it was handed
+    # (behavior.md § Web UI). A key typed after the first request has to reach
+    # the next one — before this rebuild it sat unused until a page reload, so
+    # every call kept failing while the card read "✓ Saved".
+    @web @offline
+    Scenario: A key saved after the first request reaches the next one
+      Given the TamedTable web app
+      And the provider "gemini" has API key "stale-key"
+      And load "customers-input.csv"
+      And the LLM API returns a 401 unauthorized error
+      When user sends the chat message "norm dob col"
+      Then the last model call carried the API key "stale-key"
+      When user saves the "gemini" API key "fresh-key"
+      And user sends the chat message "norm dob col"
+      Then the last model call carried the API key "fresh-key"
+
     @web
     Scenario: Saving an API key in the settings panel configures the engine
       Given the TamedTable web app

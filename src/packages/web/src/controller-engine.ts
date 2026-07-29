@@ -165,11 +165,11 @@ export class EngineManager {
     this.headless = undefined;
   }
 
-  /** Rebuild the engine for a model change with a file loaded. The derived
+  /** Rebuild the engine for a model or key change with a file loaded. The derived
    *  rows and the per-cell result cache carry over verbatim (#LazyExec):
    *  evaluated rows keep their values, pending rows stay pending, and not a
    *  single model call is made — indicators re-derive from the same data. */
-  async rebuildForModelChange(spec: TablePlan): Promise<void> {
+  async rebuildForConfigChange(spec: TablePlan): Promise<void> {
     const old = this.headless;
     const rows = old?.currentRows();
     const cache = old?.cellCacheEntries();

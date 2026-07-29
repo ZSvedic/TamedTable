@@ -1028,7 +1028,12 @@ only the most recently saved provider's card and clears when the panel opens,
 so it never claims a save from an earlier visit. Switching provider changes
 the models, which rebuilds the engine and replays the current transformations
 against the source, so the table on screen is preserved and the new models drive
-the next request. Full detail in
+the next request. **Editing the selected provider's key rebuilds it too.** The
+engine builds its model clients once, with the key it was handed, so a key
+typed after the first request would otherwise sit unused until the page was
+reloaded — every call still failing `Invalid API key` while the card read
+`✓ Saved`. The rebuild keeps the table exactly as the model-switch rebuild
+does, and the next request, typed or spoken, carries the new key. Full detail in
 [spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
 
 When a request fails because the API key is wrong or missing, the web shell
