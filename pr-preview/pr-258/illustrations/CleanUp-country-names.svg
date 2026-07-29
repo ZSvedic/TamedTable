@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Consistent country names — "make the country names consistent" -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <!-- prompt chip -->
+  <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
+  <circle cx="40" cy="36" r="7" fill="#96BED7"/>
+  <path d="M37.5 32.5 L43.5 36 L37.5 39.5 Z" fill="#281C60"/>
+  <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">make the country names consistent</text>
+  <!-- table -->
+  <g>
+    <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
+    <text x="32" y="91" font-size="12" font-weight="600" fill="#FFFFFF">messy</text>
+    <text x="180" y="91" font-size="12" font-weight="600" fill="#FFFFFF">clean</text>
+    <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="12" fill="#281C60">
+      <rect x="18" y="104" width="324" height="34" fill="#FFFFFF"/>
+      <rect x="18" y="138" width="324" height="34" fill="#F6F2EB"/>
+      <rect x="18" y="172" width="324" height="34" fill="#FFFFFF"/>
+      <rect x="170" y="109" width="160" height="92" rx="5" fill="#E7F1F8" stroke="#96BED7"/>
+      <text x="32" y="125">UK</text>
+      <text x="32" y="159">England</text>
+      <text x="32" y="193">United Kingdom</text>
+      <text x="180" y="159">United Kingdom</text>
+    </g>
+    <rect x="18" y="72" width="324" height="134" rx="6" fill="none" stroke="#DCDCDC"/>
+  </g>
+</svg>
