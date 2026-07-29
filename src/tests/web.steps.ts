@@ -973,6 +973,24 @@ Then('the newly evaluated cells carry the changed marker', function (this: Tamed
   assert.ok(marked >= rows, `expected ≥${rows} changed-cell marks on the page, got ${marked}`);
 });
 
+Then('no cells are marked changed', function (this: TamedTableWorld) {
+  const marked = Object.keys(controller(this).pageChangedCells());
+  assert.equal(marked.length, 0, `unexpected changed-cell marks: ${marked.join(', ')}`);
+});
+
+// ── The reveal scroll (behavior.md § Grid upgrades) ──────────────────────────
+
+Then('the table reveals the {string} column', function (this: TamedTableWorld, column: string) {
+  const target = controller(this).revealTarget();
+  assert.ok(target, 'no reveal target is set');
+  assert.equal(target.column, column);
+});
+
+Then('no column is revealed', function (this: TamedTableWorld) {
+  const target = controller(this).revealTarget();
+  assert.equal(target, null, `unexpected reveal target: ${target?.column}`);
+});
+
 // ── The tab guard (#LazyExec — behavior.md § Web UI) ─────────────────────────
 
 Then('leaving the page needs no confirmation', function (this: TamedTableWorld) {

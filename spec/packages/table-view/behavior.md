@@ -78,6 +78,12 @@ the host owns every piece of state, the grid renders and reports:
 - **Changed cells** — the host passes per-cell changed flags with previous
   values; a changed cell tints, and hovering it shows a small
   `was: <previous>` tooltip.
+- **Reveal** — an optional `reveal: { column, seq }` prop names the column
+  the host wants on screen (the app passes the first changed column after a
+  request commits, and again on undo/redo). Each new `seq` scrolls that
+  column's header into view with a minimal nearest-edge scroll — a column
+  already visible doesn't move — so appended columns surface without
+  yanking the reader away from the columns beside them.
 - **Column menu** — every data header ends in a **⋮** button (revealed on
   hover, always tappable on touch) opening a per-column menu, grouped by
   hairline separators: **Sort ascending** / **Sort descending** (picking the

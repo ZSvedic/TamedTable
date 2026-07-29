@@ -150,6 +150,12 @@ package customizes, and why it differs from a plain Driver.js tour:
   guided replay the visitor watches, and Next/Esc are the only controls. The
   narration reads as "watch this happen", so no extra "don't interact" hint is
   added anywhere.
+- **Scrollable anyway.** Watch-only blocks clicks, not scrolling: while the
+  overlay is up, `TourUi` forwards wheel and touch scrolls to the innermost
+  scrollable element under the pointer — spotlighted or dimmed (Driver.js's
+  `pointer-events: none` would otherwise swallow both) — so the visitor can
+  pan a wide table mid-tour. Scrolls over the popover are left to the
+  popover; forwarding never advances or cancels the tour.
 - **Progress, not a title.** The popover shows the step instruction plus Driver's
   progress line "X of Y" — no "Step N of N" heading.
 - **Terminal stop.** After the last real step the popover anchors to the

@@ -1077,6 +1077,15 @@ appended no step (say, one that only removed a transformation) replies
 expressions, model, token, and elapsed-time stats are not shown in the
 bubble; they appear only in the expandable detail panel.
 
+The reply **tracks the undo state of the step it reports**. While the
+request's history entry is undone, the bubble's heading reads
+`Undone steps:` and its marker swaps from the solid ok dot to a hollow
+circle — so the thread never claims a step is applied when the table no
+longer shows it. Redo (or a history jump forward) restores the
+`Executed steps:` heading and the solid dot. A reply whose entry was
+dropped from history entirely — undone, then forked away by a new edit —
+stays marked undone for good.
+
 Clicking **request detail** below an assistant message expands an
 inline panel with three sections. A small copy icon to the right of the
 toggle copies the panel's full text to the clipboard (it turns green
@@ -1430,7 +1439,27 @@ quietly fill the rest), or an existing value is overwritten. Marking the
 data's actual change, not just the cells a live call streamed, is what keeps
 a shuffled or sorted view from tinting one block and leaving an identically
 filled block below it bare. Hovering a changed cell shows the previous
-value. Every column header ends in a **⋮ column menu**, grouped by hairline
+value.
+
+When a request commits with changed cells, the grid **scrolls the start of
+the changed block into view**: it scrolls horizontally just far enough to
+bring the leftmost changed column on screen (a minimal scroll — nothing
+moves when the column is already visible). A request that appends columns
+would otherwise change the table invisibly, off the right edge; the minimal
+scroll shows the first new column while keeping the columns it was derived
+from beside it for comparison. The reveal is view-only — no spec change, no
+history entry.
+
+The changed-cell marks **survive undo and redo**. Each history entry
+records the marks its step carried when it committed; undo, redo, and a
+history jump restore the marks of the step they land on — and re-run the
+reveal scroll to that step's first changed column — so stepping through
+history always shows *which cells that step changed*, not a bare table.
+Landing before the first step shows no marks. (Lazy passes that later add
+marks to a step's columns — a page-open, a run-all — extend the live view;
+the entry keeps the marks recorded at commit time.)
+
+Every column header ends in a **⋮ column menu**, grouped by hairline
 separators — Sort ascending / Sort descending · Filter… / Remove filter (the
 latter only when a filter is set) · Autofit width · Delete column — with
 the state shown in the header itself: a ▲/▼ sort indicator and a funnel
@@ -1600,7 +1629,13 @@ cancels; an accidental click on the dimmed overlay does not. **Tours are
 watch-only**: the spotlighted element itself is not clickable — the tour is a
 guided replay the visitor watches, Next and Esc are the only controls, and
 each popover narrates progressively ("Opening the sample …", "Typing and
-running the query…") so no extra "don't interact" hint is needed. A spotlight
+running the query…") so no extra "don't interact" hint is needed.
+Watch-only blocks clicks, **not scrolling**: wheel, trackpad, and touch
+scrolls pass through the overlay to the scrollable region under the
+pointer — spotlighted or dimmed — so the visitor can pan a wide table
+mid-tour (say, to compare a source column with the columns a query just
+split out of it). Scrolling never advances, cancels, or desyncs the tour.
+A spotlight
 never exceeds the screen: a target larger than the viewport (the table) is
 highlighted by its visible top region, so the popover always has room below
 it. Each step is **highlighted first** and **executed only when the user
@@ -1625,12 +1660,15 @@ stays in key-free replay mode, so the user can examine the data and walk the
 steps back and forth with **undo/redo** — those re-runs replay from the tour's
 cassette and need no API key. New requests cannot be served from the cassette,
 so the chat input and the mic are disabled while staying; the input shows the
-greyed hint `You are inside Tour replay, use undo/redo to examine steps.` and
+greyed hint `You are inside Tour replay, use undo/redo to examine steps. To
+exit, select Open or Tours to leave.` and
 a request sent anyway (programmatically) is silently ignored — no toast, table
-untouched. Opening the Tutorial panel is the way out: selecting another tour
-leaves the stayed tour first (back to the empty state, exactly like Back to
-Tours) and then plays fresh; closing the panel leaves the finished tour as
-usual.
+untouched. The two ways out are the ones the hint names. **Tours**: selecting
+another tour leaves the stayed tour first (back to the empty state, exactly
+like Back to Tours) and then plays fresh; closing the panel leaves the
+finished tour as usual. **Open**: loading any file — a sample, a local file, a
+URL, a drop — leaves the stayed tour the same way before the new table loads,
+so the fresh table gets a live engine, not the tour's replay cassette.
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)

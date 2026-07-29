@@ -92,6 +92,13 @@ export interface ChatMessage {
    *  (no file, missing/invalid key, rate limit, network, cancelled) stay
    *  unset. See spec/behavior.md § Web UI. */
   reportable?: boolean;
+  /** The undo-journal entry this reply reports (a committed request, flow
+   *  replay, or voice turn) — lets the display track its undo state. */
+  historyId?: number;
+  /** True on the copies `displayMessages()` returns while the reply's entry
+   *  is undone — the panel renders a hollow marker and the heading reads
+   *  `Undone steps:`. Never set on the stored messages. */
+  undone?: boolean;
 }
 
 /** @deprecated Use ResolvedConfig from @tamedtable/model-config instead. */

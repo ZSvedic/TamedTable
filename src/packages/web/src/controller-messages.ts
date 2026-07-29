@@ -29,7 +29,7 @@ export function missingTextKeyMessage(provider?: string): string {
  *  tour — the cassette cannot answer a request it never recorded, so the input
  *  and mic are disabled instead of failing. See behavior.md § Staying in the tour. */
 export const STAY_REPLAY_HINT =
-  'You are inside Tour replay, use undo/redo to examine steps.';
+  'You are inside Tour replay, use undo/redo to examine steps. To exit, select Open or Tours to leave.';
 
 /** Map an engine error (or its message string) to a sentence a non-technical
  *  user can act on, plus its report classification. Pass the raw caught error

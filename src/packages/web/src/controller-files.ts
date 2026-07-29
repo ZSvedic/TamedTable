@@ -108,19 +108,20 @@ export class FilesManager {
       started = picked.name;
       this.host.pushMessage('user', `Run ${picked.name}`);
       await this.host.engine.applySpec(spec);
-      this.host.patch.record({
+      const historyId = this.host.patch.record({
         label: `Ran ${picked.name}`,
         prevSpec,
         nextSpec: structuredClone(this.host.engine.currentSpec()),
       });
       this.recentsStore.record({ kind: 'flow', label: picked.name });
       // A numbered line per step (the same labels the live progress showed),
-      // then the summary — the reply mirrors a chat request's per-step reply.
+      // then the summary — the reply mirrors a chat request's per-step reply,
+      // linked to its journal entry so it tracks undo state.
       this.host.pushMessage('assistant', [
         'Executed steps:',
         ...spec.transformations.map((t, i) => `${i + 1}. ${describeStep(t as Transformation)}`),
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-      ].join('\n'));
+      ].join('\n'), undefined, undefined, historyId);
     } catch (e) {
       // Stop is a deliberate cancel, not a failure — the replay left the
       // table untouched, so a quiet toast plus a chat line closing the
@@ -169,6 +170,13 @@ export class FilesManager {
   private pendingLargeFile: { name: string; rows: Row[]; spec: TablePlan } | null = null;
 
   private async loadFromPicked(picked: PickedFile): Promise<void> {
+    // Opening a file is one of the two exits from a stayed tour (behavior.md
+    // § Staying in the tour): leave replay mode first, so the new table gets
+    // a live engine instead of the tour's cassette. Every open path — picker,
+    // drop, URL, sample, scripted load — funnels through here. A *playing*
+    // tour's own load-file steps also pass through, but those run while the
+    // tour is active, never while stayed, so this guard cannot fire on them.
+    if (this.host.tutorial.isTutorialStayed()) this.host.tutorial.cancelTutorial();
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly — no filesystem, no path round-trip.
     const { rows, spec } = await parseTable(picked.name, picked.bytes);

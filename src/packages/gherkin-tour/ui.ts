@@ -66,6 +66,16 @@ export class TourUi {
   private retries = 0;
   // Fixed stand-in box for an oversized target (see spotlightTarget).
   private proxy: HTMLElement | null = null;
+  // Scroll forwarding (watch-only blocks clicks, not scrolling): while the
+  // overlay is up, Driver.js puts pointer-events:none on the whole page, so
+  // wheel/touch scrolls would die. These handlers find the scrollable region
+  // under the pointer geometrically and scroll it by hand.
+  private wheelHandler: ((e: WheelEvent) => void) | null = null;
+  private touchStartHandler: ((e: TouchEvent) => void) | null = null;
+  private touchMoveHandler: ((e: TouchEvent) => void) | null = null;
+  private lastTouch: { x: number; y: number } | null = null;
+  // Wheel events arrive in bursts — cache the found scroller briefly.
+  private scrollHit: { el: HTMLElement; at: number } | null = null;
 
   constructor(tour: TourCursor, opts: TourUiOptions) {
     this.tour = tour;
@@ -76,6 +86,7 @@ export class TourUi {
    *  keyboard nav and render the first spotlight. */
   start(): void {
     this.attachKeyboard();
+    this.attachScrollForwarding();
     this.render();
   }
 
@@ -158,11 +169,12 @@ export class TourUi {
     this.opts.onChange?.();
   }
 
-  /** Tear the overlay down and detach the keyboard handler. */
+  /** Tear the overlay down and detach the keyboard and scroll handlers. */
   destroy(): void {
     this.clearRetry();
     this.destroyOverlay();
     this.detachKeyboard();
+    this.detachScrollForwarding();
   }
 
   // Re-attempt render() until the step's target mounts, capped so a target that
@@ -251,18 +263,112 @@ export class TourUi {
     this.tour.finish();
     this.render();
     this.detachKeyboard();
+    this.detachScrollForwarding();
   }
 
   private stay(): void {
     this.tour.stay?.();
     this.render();
     this.detachKeyboard();
+    this.detachScrollForwarding();
   }
 
   private cancel(): void {
     this.tour.cancel();
     this.render();
     this.detachKeyboard();
+    this.detachScrollForwarding();
+  }
+
+  // ── Scroll forwarding ──────────────────────────────────────────────────────
+  // Watch-only blocks clicks, not scrolling (behavior.md § TourUi). While the
+  // overlay is up, Driver.js disables pointer events across the page, which
+  // also swallows wheel/touch scrolling — so hit-testing (elementsFromPoint)
+  // can't see the page either. Instead, find the innermost scrollable element
+  // whose box contains the pointer geometrically and scroll it directly.
+  // Scrolls over the popover stay with the popover; when nothing scrollable
+  // sits under the pointer the event keeps its default (the phone's document
+  // scroller still works untouched).
+
+  private attachScrollForwarding(): void {
+    if (this.wheelHandler) return;
+    this.wheelHandler = (e: WheelEvent): void => {
+      if (!this.d || this.overPopover(e.target)) return;
+      const el = this.scrollableAt(e.clientX, e.clientY);
+      if (!el) return;
+      // Normalize line/page wheel deltas (deltaMode 1/2) to pixels.
+      const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      el.scrollLeft += e.deltaX * scale;
+      el.scrollTop += e.deltaY * scale;
+      e.preventDefault();
+    };
+    this.touchStartHandler = (e: TouchEvent): void => {
+      const t = e.touches.length === 1 ? e.touches[0] : undefined;
+      this.lastTouch = this.d && t ? { x: t.clientX, y: t.clientY } : null;
+    };
+    this.touchMoveHandler = (e: TouchEvent): void => {
+      const t = e.touches.length === 1 ? e.touches[0] : undefined;
+      if (!this.d || !t || !this.lastTouch || this.overPopover(e.target)) return;
+      const dx = this.lastTouch.x - t.clientX;
+      const dy = this.lastTouch.y - t.clientY;
+      this.lastTouch = { x: t.clientX, y: t.clientY };
+      const el = this.scrollableAt(t.clientX, t.clientY);
+      if (!el) return;
+      el.scrollLeft += dx;
+      el.scrollTop += dy;
+      e.preventDefault();
+    };
+    window.addEventListener('wheel', this.wheelHandler, { passive: false, capture: true });
+    window.addEventListener('touchstart', this.touchStartHandler, { passive: true, capture: true });
+    window.addEventListener('touchmove', this.touchMoveHandler, { passive: false, capture: true });
+  }
+
+  private detachScrollForwarding(): void {
+    if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler, { capture: true });
+    if (this.touchStartHandler) window.removeEventListener('touchstart', this.touchStartHandler, { capture: true });
+    if (this.touchMoveHandler) window.removeEventListener('touchmove', this.touchMoveHandler, { capture: true });
+    this.wheelHandler = null;
+    this.touchStartHandler = null;
+    this.touchMoveHandler = null;
+    this.lastTouch = null;
+    this.scrollHit = null;
+  }
+
+  private overPopover(target: EventTarget | null): boolean {
+    return target instanceof Element && target.closest('.driver-popover') !== null;
+  }
+
+  // The innermost scrollable element under the point — overflowing content
+  // plus an auto/scroll overflow style — with driver chrome and the spotlight
+  // proxy skipped. Wheel events arrive in bursts, so the last hit is reused
+  // while the pointer stays inside it.
+  private scrollableAt(x: number, y: number): HTMLElement | null {
+    const now = Date.now();
+    const hit = this.scrollHit;
+    if (hit && now - hit.at < 300 && hit.el.isConnected) {
+      const r = hit.el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        hit.at = now;
+        return hit.el;
+      }
+    }
+    let best: HTMLElement | null = null;
+    let bestArea = Infinity;
+    for (const el of document.body.querySelectorAll<HTMLElement>('*')) {
+      if (el.scrollHeight <= el.clientHeight + 1 && el.scrollWidth <= el.clientWidth + 1) continue;
+      if (el.closest('.driver-popover') || el.hasAttribute('data-gt-spotlight-proxy')) continue;
+      const r = el.getBoundingClientRect();
+      if (x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+      const s = getComputedStyle(el);
+      if (!/(auto|scroll)/.test(s.overflowY + s.overflowX)) continue;
+      const area = r.width * r.height;
+      if (area < bestArea) {
+        best = el;
+        bestArea = area;
+      }
+    }
+    this.scrollHit = best ? { el: best, at: now } : null;
+    return best;
   }
 
   // A target can be larger than the screen — the app's table fills it. A

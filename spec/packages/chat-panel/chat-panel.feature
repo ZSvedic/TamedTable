@@ -20,6 +20,12 @@ Feature: Chat panel package
       Then an assistant error shows "Something broke"
 
     @web
+    Scenario: An undone reply renders with a hollow marker
+      Given the chat-panel demo page
+      When the user adds an undone reply
+      Then an undone assistant reply shows "Undone steps:"
+
+    @web
     Scenario: Request detail expands and shows the turns
       Given the chat-panel demo page
       When the user adds a reply with request detail

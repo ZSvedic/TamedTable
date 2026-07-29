@@ -161,6 +161,11 @@ export class WebController implements ControllerHost {
   runAllDialog: RunAllDialogState | null = null;
   /** The post-run save confirmation — a save picker needs a fresh click. */
   saveReadyDialog = false;
+  /** Column the grid should scroll into view — the reveal scroll to the start
+   *  of the changed block (spec/behavior.md § Grid upgrades). A new `seq`
+   *  re-triggers the scroll even for the same column; null clears it. */
+  reveal: { column: string; seq: number } | null = null;
+  private revealSeq = 0;
 
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
@@ -204,6 +209,17 @@ export class WebController implements ControllerHost {
 
   // ── Notification hub: chat messages + toasts ──────────────────────────────
 
+  /** Point the grid at a column (each call mints a fresh seq so the scroll
+   *  re-fires), or clear the target with null. */
+  setReveal(column: string | null): void {
+    this.reveal = column === null ? null : { column, seq: ++this.revealSeq };
+  }
+
+  /** The grid's reveal target, or null. */
+  revealTarget(): { column: string; seq: number } | null {
+    return this.reveal;
+  }
+
   pushToast(kind: Toast['kind'], message: string, action?: string): void {
     this.toasts = [...this.toasts, { id: ++this.toastSeq, kind, message, action }];
     // Every toast is a diagnostics event — the user-visible signal that
@@ -217,10 +233,21 @@ export class WebController implements ControllerHost {
     this.notify();
   }
 
-  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean): number {
-    this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug, reportable }];
+  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number {
+    this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug, reportable, historyId }];
     this.notify();
     return this.messageSeq;
+  }
+
+  /** The chat thread with undo state applied: a reply whose history entry is
+   *  undone swaps its `Executed steps:` heading for `Undone steps:` and
+   *  carries `undone: true` (the hollow marker). The stored messages are
+   *  never mutated — this maps fresh copies on read. */
+  displayMessages(): ChatMessage[] {
+    return this.messages.map((m) => {
+      if (m.historyId === undefined || this.patch.isApplied(m.historyId)) return m;
+      return { ...m, text: m.text.replace(/^Executed steps:/, 'Undone steps:'), undone: true };
+    });
   }
 
   /** Rewrite the text of an existing chat message (voice transcript swap). */
@@ -287,7 +314,9 @@ export class WebController implements ControllerHost {
       // A wrong answer is a bug even when nothing turned red — every reply to
       // a completed request carries the Report bug action.
       const reply = debug ? summarizeDebug(debug) : 'Done.';
-      this.pushMessage('assistant', reply, debug, true);
+      // Link the reply to the journal entry it reports, so its heading and
+      // marker track the entry's undo state (see displayMessages).
+      this.pushMessage('assistant', reply, debug, true, this.engine.lastCommitId ?? undefined);
       // #Diagnostics — a completed request fires no toast, so log it explicitly
       // (with the request in recentMessages) — else a report copied after a
       // query would have no trace of it.

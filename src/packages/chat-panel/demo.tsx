@@ -125,6 +125,9 @@ function Demo(): ReactNode {
           <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Normalized 12 phone numbers.', debug: SAMPLE_DETAIL, reportable: true })}>
             Add reply with detail
           </Button>
+          <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Undone steps:\n1. filter (js)', undone: true })}>
+            Add undone reply
+          </Button>
           <Button variant="chrome" onClick={() => setStreaming((v) => !v)}>
             Toggle streaming
           </Button>
