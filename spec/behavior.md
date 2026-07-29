@@ -1660,13 +1660,15 @@ stays in key-free replay mode, so the user can examine the data and walk the
 steps back and forth with **undo/redo** — those re-runs replay from the tour's
 cassette and need no API key. New requests cannot be served from the cassette,
 so the chat input and the mic are disabled while staying; the input shows the
-greyed hint `You are inside Tour replay, use undo/redo to examine steps —
-open Tours to leave.` and
+greyed hint `You are inside Tour replay, use undo/redo to examine steps. To
+exit, select Open or Tours to leave.` and
 a request sent anyway (programmatically) is silently ignored — no toast, table
-untouched. Opening the Tutorial panel is the way out: selecting another tour
-leaves the stayed tour first (back to the empty state, exactly like Back to
-Tours) and then plays fresh; closing the panel leaves the finished tour as
-usual.
+untouched. The two ways out are the ones the hint names. **Tours**: selecting
+another tour leaves the stayed tour first (back to the empty state, exactly
+like Back to Tours) and then plays fresh; closing the panel leaves the
+finished tour as usual. **Open**: loading any file — a sample, a local file, a
+URL, a drop — leaves the stayed tour the same way before the new table loads,
+so the fresh table gets a live engine, not the tour's replay cassette.
 
 Only the steps that drive the tour are shown; verification steps (`Then column
 "X" exists in the spec`, synthetic preconditions, and other unclassified lines)

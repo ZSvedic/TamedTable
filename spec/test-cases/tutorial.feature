@@ -326,6 +326,20 @@ Feature: Tutorial panel
       And no toast is shown
 
     @web
+    Scenario: Opening a file while staying leaves the tour
+      Given the TamedTable web app
+      And the API key has not been set
+      And the tutorial "Flag rows with empty Phone" is selected
+      And user plays the whole tutorial
+      And user stays in the tour
+      # Open is the hint's other exit: loading any file leaves the stayed tour
+      # first, so the fresh table gets a live engine, not the replay cassette.
+      When load "filter-input.csv"
+      Then the tutorial is not staying
+      And the table has 10 rows
+      And the spec has 0 transformations
+
+    @web
     Scenario: A new chat request is silently ignored while staying
       Given the TamedTable web app
       And the API key has not been set

@@ -113,6 +113,10 @@ Then('the tutorial is at step {int}', function (this: TamedTableWorld, n: number
   assert.equal(controller(this).currentTutorialStepNumber(), n);
 });
 
+Then('the tutorial is not staying', function (this: TamedTableWorld) {
+  assert.equal(controller(this).isTutorialStayed(), false);
+});
+
 Then('the tutorial is not active', function (this: TamedTableWorld) {
   assert.equal(controller(this).isTutorialActive(), false);
 });

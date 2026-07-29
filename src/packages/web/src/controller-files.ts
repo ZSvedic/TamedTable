@@ -170,6 +170,13 @@ export class FilesManager {
   private pendingLargeFile: { name: string; rows: Row[]; spec: TablePlan } | null = null;
 
   private async loadFromPicked(picked: PickedFile): Promise<void> {
+    // Opening a file is one of the two exits from a stayed tour (behavior.md
+    // § Staying in the tour): leave replay mode first, so the new table gets
+    // a live engine instead of the tour's cassette. Every open path — picker,
+    // drop, URL, sample, scripted load — funnels through here. A *playing*
+    // tour's own load-file steps also pass through, but those run while the
+    // tour is active, never while stayed, so this guard cannot fire on them.
+    if (this.host.tutorial.isTutorialStayed()) this.host.tutorial.cancelTutorial();
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly — no filesystem, no path round-trip.
     const { rows, spec } = await parseTable(picked.name, picked.bytes);
