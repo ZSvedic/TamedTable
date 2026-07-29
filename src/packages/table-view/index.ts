@@ -67,3 +67,18 @@ export function urlHref(value: unknown): string | null {
     return null;
   }
 }
+
+/** The reveal scroll (behavior.md § Grid upgrades): bring a column header on
+ *  screen with the smallest scroll that shows it — 'nearest' is a no-op when
+ *  it is already visible. Shared by the desktop grid (inner scroller) and the
+ *  app's phone grid (document scroller). `stickyRight` is the right edge, in
+ *  viewport px, of a frozen left column the header must clear — scrollIntoView
+ *  alone can leave the target hidden under it. */
+export function revealHeader(th: Element | null | undefined, stickyRight = 0): void {
+  if (!th) return;
+  th.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  if (stickyRight <= 0) return;
+  if (th.getBoundingClientRect().left < stickyRight) {
+    window.scrollBy({ left: th.getBoundingClientRect().left - stickyRight });
+  }
+}

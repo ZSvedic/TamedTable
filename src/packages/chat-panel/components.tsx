@@ -5,3 +5,4 @@
 export { ChatPanel, type ChatPanelProps } from './ChatPanel.tsx';
 export { MicButton } from './MicButton.tsx';
 export { WaveButton } from './WaveButton.tsx';
+export { StatusDot } from './StatusDot.tsx';

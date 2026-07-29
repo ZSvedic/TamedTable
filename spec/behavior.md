@@ -1191,13 +1191,30 @@ or the engine changes.
   - **Speak** records (a live waveform, nothing recognized yet); the send
     button stops recording, transcribes, runs the request, and lowers the
     sheet on its own. Cancel discards.
-  - **History** shows the undo timeline — newest at the top, the current
+  - **History** shows the undo timeline — newest at the top, each step
+    carrying the same status marker the chat panel's replies use (a solid
+    ok dot for an applied step, a hollow circle for an undone one — one
+    visual language for step state, not a second icon logic), the current
     point highlighted, already-undone steps dimmed below it, a relative
     time per step. Tapping a step jumps straight to it; **Undo** / **Redo**
     step one at a time. It reads the same journal the desktop Undo/Redo
     buttons walk, shown whole.
 - The settings panel, the URL dialog, the sample picker, and the Tours
   panel open as full-width sheets rather than centered desktop cards.
+- The **grid upgrades render the same on the phone**: cells the current
+  step changed tint exactly as on desktop (the tint is the signal; the
+  hover `was:` tooltip is a pointer affordance the phone does without),
+  the marks survive undo/redo the same way, and the **reveal scroll**
+  pans the page to the first changed column — corrected for the frozen
+  row-number column, so a revealed column never hides under it at the
+  left edge.
+- **Staying in a finished tour** on the phone shows the same replay
+  hint the desktop input shows: the Type sheet's composer greys out
+  with the hint as its placeholder and its send button disabled, and
+  the **Speak** dock button disables (a voice turn can't be served from
+  the cassette). Undo, Redo, and the History sheet stay live for
+  examining steps; the Menu drawer's Open entries and **Tours…** are
+  the exits, exactly as the hint says.
 - A tour runs on mobile through the same engine as the desktop. A step
   that highlights the chat input opens the Type sheet so the spotlight
   lands on the visible composer; the load step (narrated as **"Opening the

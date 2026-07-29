@@ -41,8 +41,8 @@ When('the user adds an undone reply', async function (this: object) {
 });
 
 Then('an undone assistant reply shows {string}', async function (this: object, expected: string) {
-  // The hollow marker and the text live in the same assistant message row.
-  await expectText(page(this), '[data-cp-message="assistant"]:has([data-cp-undone])', expected);
+  // The hollow StatusDot and the text live in the same assistant message row.
+  await expectText(page(this), '[data-cp-message="assistant"]:has([data-status-dot="undone"])', expected);
 });
 
 When('the user adds a reply with request detail', async function (this: object) {

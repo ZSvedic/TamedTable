@@ -189,6 +189,89 @@ test.describe('phone width', () => {
     await page.locator('[data-open-tours]').click();
     await expect(page.getByTestId('tutorial-panel')).toBeVisible();
   });
+
+  // Grid upgrades on the phone (behavior.md § Narrow viewport): the changed
+  // cells a chat step filled tint like on desktop, and the reveal scroll pans
+  // the page to the first new column — which the enrich split appends beyond
+  // the phone viewport.
+  test('a chat step tints the cells it changed and reveals the first new column', async ({
+    page,
+  }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-dock="menu"]').click();
+    await page.locator('[data-mob-menu-item="Tours…"]').click();
+    await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Enrich a purchase ledger' }).click();
+
+    const progress = page.locator('.driver-popover-progress-text');
+    await expect(progress).toHaveText('1 of 6');
+    await page.locator('.driver-popover-next-btn').click(); // load the ledger
+    await expect(progress).toHaveText('2 of 6');
+    await expect(page.locator('[data-mob-changed]')).toHaveCount(0);
+
+    await page.locator('.driver-popover-next-btn').click(); // split the address
+    await expect(progress).toHaveText('3 of 6', { timeout: 30_000 });
+    await expect(page.locator('[data-mob-changed]').first()).toBeVisible();
+    // The reveal scroll panned the page right to the first split-out column.
+    await expect
+      .poll(() => page.evaluate(() => window.scrollX), {
+        message: 'the page must scroll right to reveal the first new column',
+      })
+      .toBeGreaterThan(0);
+    const street = await page.evaluate(() => {
+      const th = document.querySelector('[data-mob-header="Street"]');
+      if (!th) return null;
+      const r = th.getBoundingClientRect();
+      return { left: Math.round(r.left), right: Math.round(r.right), vw: window.innerWidth };
+    });
+    expect(street, 'the split must add a Street column').not.toBeNull();
+    expect(street!.right, 'Street must be on screen after the reveal').toBeLessThanOrEqual(street!.vw + 1);
+    expect(street!.left, 'Street must be on screen after the reveal').toBeGreaterThanOrEqual(-1);
+  });
+
+  // Staying in a finished tour (behavior.md § Narrow viewport): the composer
+  // greys out with the replay hint, Speak disables, and undo still restores
+  // the previous step's changed-cell marks.
+  test('staying in a finished tour greys the composer with the replay hint', async ({ page }) => {
+    await page.goto('/TamedTable/app/');
+    await page.locator('[data-mob-dock="menu"]').click();
+    await page.locator('[data-mob-menu-item="Tours…"]').click();
+    await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Clean up a messy customer list' }).click();
+
+    const progress = page.locator('.driver-popover-progress-text');
+    await expect(progress).toHaveText('1 of 6');
+    for (const step of ['2 of 6', '3 of 6', '4 of 6', '5 of 6', '6 of 6']) {
+      await page.locator('.driver-popover-next-btn').click();
+      await expect(progress).toHaveText(step, { timeout: 30_000 });
+    }
+    await page.locator('.driver-popover-prev-btn').click(); // "Stay here"
+    await expect(page.locator('.driver-popover')).toHaveCount(0);
+
+    // Speak can't be served from the cassette — disabled; Undo stays live.
+    await expect(page.locator('[data-mob-dock="speak"]')).toBeDisabled();
+    await expect(page.locator('[data-mob-dock="undo"]')).toBeEnabled();
+
+    // The Type composer greys out and shows the replay hint.
+    await page.locator('[data-mob-dock="type"]').click();
+    const input = page.locator('#tutorial-chat-input');
+    await expect(input).toBeDisabled();
+    await expect(input).toHaveAttribute('placeholder', /Tour replay/);
+    await expect(page.locator('[data-mob-send]')).toBeDisabled();
+
+    // Undo restores the previous step's changed-cell marks (the desktop
+    // behavior, on the phone grid).
+    await page.getByTitle('Close keyboard').click();
+    await page.locator('[data-mob-dock="undo"]').click();
+    await expect(page.locator('[data-mob-changed]').first()).toBeVisible();
+
+    // The History sheet marks steps with the chat panel's own StatusDot
+    // logic: solid ok dot = applied, hollow circle = undone. After one undo
+    // of the tour's four steps, the newest step is the only hollow one.
+    await page.locator('[data-mob-dock="history"]').click();
+    const sheet = page.locator('[data-mob-sheet="history"]');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('[data-status-dot="undone"]')).toHaveCount(1);
+    await expect(sheet.locator('[data-status-dot="ok"]')).toHaveCount(3);
+  });
 });
 
 test.describe('desktop width', () => {
