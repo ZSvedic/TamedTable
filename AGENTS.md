@@ -37,6 +37,8 @@ Reusable session starters in `process/prompts/`:
 | Prompt | Use for |
 |---|---|
 | [prompt-cleanup.md](process/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
+| [prompt-hunt-audit.md](process/prompts/prompt-hunt-audit.md) | BOUNTY HUNTER — read all spec and code, find bugs, land them as red tests. Never fixes. |
+| [prompt-hunt-browser.md](process/prompts/prompt-hunt-browser.md) | BROWSER HUNTER — drive the built app in Playwright as a user, find bugs, land them as red tests. Never fixes. |
 | [prompt-illustrate.md](process/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
 | [prompt-implement.md](process/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
 | [prompt-meeting.md](process/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |

@@ -66,6 +66,21 @@ Then('the configured API key is {string}', function (this: TamedTableWorld, key:
   assert.equal(controller(this).getConfig().anthropicKey, key);
 });
 
+/** A key-only edit — the settings panel's key field, with the provider already
+ *  selected. Unlike "the provider X has API key Y" this changes no model, so
+ *  it exercises the key change on its own. */
+When(
+  'user saves the {string} API key {string}',
+  async function (this: TamedTableWorld, provider: string, key: string) {
+    const field = `${provider}Key` as 'geminiKey' | 'openaiKey' | 'anthropicKey' | 'openrouterKey';
+    await controller(this).setConfig({ [field]: key });
+  },
+);
+
+Then('the last model call carried the API key {string}', function (this: TamedTableWorld, key: string) {
+  assert.equal(ctxOf(this).lastCallApiKey, key);
+});
+
 // ── Drag & drop onto the empty page ────────────────────────────────────────
 
 When('user drops the file {string} onto the empty page', async function (this: TamedTableWorld, filename: string) {
@@ -120,8 +135,22 @@ When('user selects {string}', async function (this: TamedTableWorld, filename: s
   const ctx = ctxOf(this);
   const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
   await ctx.filePort!.resolveOpen({ name: filename, bytes });
-  await ctx.pending;
+  await settleUnlessPaused(this);
 });
+
+/** Await the dialog action started by `user says`, unless the run parks on a
+ *  modal only a later step can answer — a flow whose join needs its lookup
+ *  file (#LookupJoin) waits there, so awaiting the run itself would deadlock. */
+async function settleUnlessPaused(world: TamedTableWorld): Promise<void> {
+  const ctx = ctxOf(world);
+  if (!ctx.pending) return;
+  let settled = false;
+  const done = (): void => { settled = true; };
+  void ctx.pending.then(done, done);
+  while (!settled && !controller(world).lookupDialog) {
+    await new Promise((r) => setTimeout(r, 1));
+  }
+}
 
 When('user saves as {string}', async function (this: TamedTableWorld, filename: string) {
   const ctx = ctxOf(this);
@@ -171,6 +200,33 @@ Then('the flow error dialog shows {string}', function (this: TamedTableWorld, ne
 
 When('user dismisses the flow error dialog', function (this: TamedTableWorld) {
   controller(this).dismissErrorDialog();
+});
+
+// ── Lookup tables a browser join needs (#LookupJoin) ───────────────────────
+
+Then('the lookup dialog asks for {string}', async function (this: TamedTableWorld, name: string) {
+  // The run is paused on the dialog, so the openFlow promise is still pending —
+  // read the state, don't await it.
+  assert.equal(controller(this).lookupDialog?.name, name);
+});
+
+Then('no lookup dialog is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).lookupDialog, null);
+});
+
+When('user chooses the lookup file {string}', async function (this: TamedTableWorld, filename: string) {
+  const ctx = ctxOf(this);
+  const choosing = controller(this).chooseLookupFile();
+  const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
+  await ctx.filePort!.resolveOpen({ name: filename, bytes });
+  await choosing;
+  // The paused run resumes on the choice — let it finish before asserting.
+  await ctx.pending;
+});
+
+When('user dismisses the lookup dialog', async function (this: TamedTableWorld) {
+  controller(this).dismissLookupDialog();
+  await ctxOf(this).pending;
 });
 
 Then('no flow error dialog is shown', function (this: TamedTableWorld) {
@@ -227,6 +283,15 @@ Then('the chat shows a user message {string}', function (this: TamedTableWorld, 
   assert.ok(
     messages.some((m) => m.role === 'user' && m.text === text),
     `no user message "${text}". Messages: ${messages.map((m) => `${m.role}: ${m.text}`).join(' | ') || '(none)'}`,
+  );
+});
+
+Then('the chat has {int} message(s)', function (this: TamedTableWorld, n: number) {
+  const messages = controller(this).messages;
+  assert.equal(
+    messages.length,
+    n,
+    `expected ${n} chat message(s), got ${messages.length}: ${messages.map((m) => `${m.role}: ${m.text}`).join(' | ') || '(none)'}`,
   );
 });
 

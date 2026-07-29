@@ -128,6 +128,21 @@ function Demo(): ReactNode {
           <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Undone steps:\n1. filter (js)', undone: true })}>
             Add undone reply
           </Button>
+          {/* Pads the list past the panel's height so the scroll rules have
+              something to scroll. */}
+          <Button
+            variant="chrome"
+            onClick={() =>
+              append(
+                ...Array.from({ length: 30 }, (_, i) => ({
+                  role: 'assistant' as const,
+                  text: `Filler reply ${i + 1}`,
+                })),
+              )
+            }
+          >
+            Fill thread
+          </Button>
           <Button variant="chrome" onClick={() => setStreaming((v) => !v)}>
             Toggle streaming
           </Button>

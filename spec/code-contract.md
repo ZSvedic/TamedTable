@@ -119,7 +119,11 @@ interface Runner {
   loadParsed(rows: Row[], spec: TablePlan): Promise<void>;
   // Stage a lookup table by name so a `join` whose `with` matches resolves
   // against these rows instead of reading the file by path — lets joins run
-  // in the browser. An unregistered name falls back to the by-path read.
+  // in the browser. An unregistered name falls back to the by-path read, which
+  // in the browser has no filesystem to fall back to: the web controller
+  // therefore checks every new join against its staged names *before* the
+  // replay starts and asks the user for the file (#LookupJoin), so the
+  // fallback is never reached there.
   registerLookup(name: string, rows: Row[]): void;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   // Replace the spec and replay it against the source. `opts` serves a long
@@ -1117,6 +1121,17 @@ can fill pending cells in unchanged steps.
 `validateTablePlan` (over `TablePlanSchema`) is the only TablePlan validator.
 `runCli execute` does not branch on `flow.version`: a `version` of `1`
 or `2` both validate through `validateTablePlan`.
+
+Its failure text — `Spec validation failed: <path>: <message>; …` — must read
+the same on every surface, because the runner quotes it back to the model in
+the recovery prompt and that prompt is part of a request's cassette
+fingerprint. A browser that words the error differently from the recorder
+misses the tape and drops the tour. Zod's messages carry that detail only
+while its English locale is registered, and Zod ships `"sideEffects": false`,
+so the bundler drops the registration Zod does for itself. `table-plan`
+therefore calls `z.config(z.locales.en())` at module load; a unit test guards
+the call, since no test that imports the package can see the bundler remove
+it.
 
 ### Sorting by a SQL or AI key
 

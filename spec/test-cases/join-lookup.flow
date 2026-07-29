@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "source": "customers-input.csv",
+  "spec": {
+    "table": "customers-input.csv",
+    "columns": [
+      { "id": "ID" },
+      { "id": "FirstName" },
+      { "id": "LastName" },
+      { "id": "DOB" },
+      { "id": "Country" },
+      { "id": "Phone" }
+    ],
+    "transformations": [
+      {
+        "kind": "join",
+        "with": "join-country-codes.csv",
+        "on": { "js": "leftRow.Country === rightRow.Country" },
+        "how": "left"
+      }
+    ]
+  }
+}

@@ -66,6 +66,13 @@ export class EngineManager {
   // model change can rebuild the engine without a filesystem round-trip.
   private loadedSource: { rows: Row[]; spec: TablePlan } | null = null;
 
+  // #LookupJoin — lookup tables staged this session, by the name a join's
+  // `with` asks for. Held here rather than only in the runner so a rebuild
+  // (model or key change) re-registers them; a join must not start asking for
+  // a file the user already picked. They outlive a table load — a lookup is a
+  // file of its own.
+  private readonly stagedLookups = new Map<string, Row[]>();
+
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
@@ -149,6 +156,9 @@ export class EngineManager {
       // #LazyExec — the estimate math accumulates per-call token usage.
       onUsage: (u) => this.host.lazy.recordUsage(u),
     });
+    // #LookupJoin — a fresh runner starts with no lookup tables; hand back the
+    // ones already staged so a rebuild never re-asks for a picked file.
+    for (const [name, rows] of this.stagedLookups) this.headless.registerLookup(name, rows);
     this.builtForReplay = replaying;
     return this.headless;
   }
@@ -165,11 +175,11 @@ export class EngineManager {
     this.headless = undefined;
   }
 
-  /** Rebuild the engine for a model change with a file loaded. The derived
+  /** Rebuild the engine for a model or key change with a file loaded. The derived
    *  rows and the per-cell result cache carry over verbatim (#LazyExec):
    *  evaluated rows keep their values, pending rows stay pending, and not a
    *  single model call is made — indicators re-derive from the same data. */
-  async rebuildForModelChange(spec: TablePlan): Promise<void> {
+  async rebuildForConfigChange(spec: TablePlan): Promise<void> {
     const old = this.headless;
     const rows = old?.currentRows();
     const cache = old?.cellCacheEntries();
@@ -203,9 +213,16 @@ export class EngineManager {
   }
 
   /** Stage a lookup table by name so a browser join resolves against its rows
-   *  instead of reading a file by path. */
+   *  instead of reading a file by path. Kept for the session, so a rebuilt
+   *  engine gets it back. */
   registerLookup(name: string, rows: Row[]): void {
+    this.stagedLookups.set(name, rows);
     this.ensureHeadless().registerLookup(name, rows);
+  }
+
+  /** The names a join can resolve without asking the user for a file. */
+  stagedLookupNames(): ReadonlySet<string> {
+    return new Set(this.stagedLookups.keys());
   }
 
   /** The loaded source's column ids — what a replayed flow reads (its
@@ -430,7 +447,14 @@ export class EngineManager {
         // already evaluated refills from the cell cache. The dependency rule
         // gates the commit when a new step reads an AI-made column.
         cellFilter: this.host.lazy.requestCellFilter(),
-        confirmSpec: (next, prev) => this.host.lazy.confirmPatch(next, prev),
+        // Two gates on the patch the model just produced, both able to drop it
+        // cleanly: #LookupJoin asks for a join's second file (the browser has
+        // no path to read it from), then #LazyExec's dependency rule. The
+        // lookup runs first — declining it means the step cannot run at all,
+        // so there is nothing to estimate.
+        confirmSpec: async (next, prev) =>
+          (await this.host.files.ensureLookups(next)) &&
+          (await this.host.lazy.confirmPatch(next, prev)),
       });
       // #LazyExec — mark the cells this request filled on its preview page
       // (before the journal snapshots them), and point the grid at the start

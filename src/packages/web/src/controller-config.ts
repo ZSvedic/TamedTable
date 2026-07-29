@@ -60,11 +60,17 @@ export class ConfigManager {
   }
 
   /** Merge partial config, persist to storage, and rebuild the engine if the
-   *  model changed and a file is loaded. */
+   *  models or the selected provider's key changed and a file is loaded. */
   async setConfig(partial: Partial<ResolvedConfig>): Promise<void> {
     const next = resolveConfig({}, { ...this.host.config, ...partial });
-    const modelChanged =
-      next.model !== this.host.config.model || next.cellModel !== this.host.config.cellModel;
+    // The engine hands its key to the model clients when it is built, so a key
+    // edit has to rebuild exactly like a model switch — otherwise the key the
+    // user just typed sits unused until the page reloads and every request
+    // keeps failing with "Invalid API key" under a "✓ Saved" badge.
+    const engineChanged =
+      next.model !== this.host.config.model ||
+      next.cellModel !== this.host.config.cellModel ||
+      keyFor(next) !== keyFor(this.host.config);
     this.host.config = next;
     // The page follows the provider: its concurrency wave shrinks with a
     // pinned cell batch size (openrouter: 25) and is 100 otherwise.
@@ -85,18 +91,19 @@ export class ConfigManager {
       this.host.savedSeq++;
     }
 
-    if (modelChanged && this.host.engine.hasRunner() && this.host.loaded) {
+    if (engineChanged && this.host.engine.hasRunner() && this.host.loaded) {
       const spec = structuredClone(this.host.engine.currentSpec());
       try {
-        await this.host.engine.rebuildForModelChange(spec);
+        await this.host.engine.rebuildForConfigChange(spec);
       } catch (e) {
         this.host.pushToast(
           'error',
           `Could not switch model: ${userFacingMessage(e, this.host.config.provider)}`,
         );
       }
-    } else if (modelChanged) {
-      // No engine built yet — the next ensureHeadless() picks up the model.
+    } else if (engineChanged) {
+      // No engine built yet, or none with a file in it — the next
+      // ensureHeadless() picks up the new models and key.
       this.host.engine.reset();
     }
 

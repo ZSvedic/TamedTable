@@ -7,6 +7,16 @@
 
 import { z } from 'zod';
 
+// Zod declares `"sideEffects": false` and registers its English locale with a
+// bare `config(en())` call in its own entry point — which Rollup is free to
+// drop, and does, from the production web bundle. Without the locale every
+// issue message degrades to a bare "Invalid input", so the browser describes a
+// bad spec differently from the CLI. That text is quoted verbatim into the
+// recovery prompt ("Your previous patch failed: …"), which is part of a
+// request's cassette fingerprint — so the drift also breaks tutorial replay in
+// the deployed app. Configuring the locale by reference keeps it in the bundle.
+z.config(z.locales.en());
+
 export type Row = Record<string, unknown>;
 
 // ── TablePlan schema (one schema for every plan — fresh load, patch, replay) ──

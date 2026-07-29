@@ -14,6 +14,11 @@ import { StatusDot } from './StatusDot.tsx';
 const INPUT_MIN_H = 68;
 const INPUT_MAX_H = 240;
 
+// How far off the bottom the list may sit and still count as "at the bottom" —
+// enough slack for a fractional scroll position, small enough that a deliberate
+// scroll up stops the auto-follow.
+const PIN_THRESHOLD = 40;
+
 const CP_CSS =
   '@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
   ' .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }';
@@ -449,6 +454,21 @@ export function ChatPanel({
     return () => { if (guard.timer) { clearInterval(guard.timer); guard.timer = null; } };
   }, [prefill]);
 
+  // The list follows the newest message: every arriving message (and the start
+  // of a run) scrolls it to the bottom, so the user sees what they just posted
+  // and the reply forming under it. Scrolling up to re-read stops the
+  // following — `pinned` goes false past the threshold — until the list is
+  // scrolled back down or the next send re-pins it. Anything that pushes
+  // messages gets this, the host's own sends and a tour's alike.
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const pinned = useRef(true);
+  const atBottom = (el: HTMLDivElement): boolean =>
+    el.scrollHeight - el.scrollTop - el.clientHeight <= PIN_THRESHOLD;
+  useEffect(() => {
+    const el = listRef.current;
+    if (el && pinned.current) el.scrollTop = el.scrollHeight;
+  }, [messages, streaming, progress?.step, progress?.rowsDone]);
+
   // Entering the disabled state drops whatever was typed — the hint placeholder
   // must show, and a stale draft would send the moment the row re-enables.
   const disabled = disabledHint !== null;
@@ -460,6 +480,9 @@ export function ChatPanel({
     const text = draft.trim();
     if (!text || streaming || disabled) return;
     setDraft('');
+    // Sending always returns to the bottom, however far back the user had
+    // scrolled — the bubble about to appear is the one they want to see.
+    pinned.current = true;
     onSend(text);
   };
 
@@ -593,6 +616,9 @@ export function ChatPanel({
 
       {/* messages */}
       <div
+        ref={listRef}
+        data-cp-messages=""
+        onScroll={(e) => { pinned.current = atBottom(e.currentTarget); }}
         style={{
           flex: 1,
           overflowY: 'auto',

@@ -70,6 +70,9 @@ export interface ControllerHost {
   saveReadyDialog: boolean;
   /** Column the grid should scroll into view (a new seq re-triggers), or null. */
   reveal: { column: string; seq: number } | null;
+  // #LookupJoin
+  /** The lookup file a waiting join needs, or null. */
+  lookupDialog: { name: string } | null;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
@@ -78,6 +81,8 @@ export interface ControllerHost {
   pushToast(kind: 'info' | 'error', message: string, action?: string): void;
   pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number;
   updateMessage(id: number, text: string): void;
+  /** Drop the whole thread — a new table starts a new conversation. */
+  clearMessages(): void;
   fail(message: string, debug?: RequestDebugInfo, reportable?: boolean): void;
   /** Send a chat request (used by tutorial prefill-chat steps). */
   sendChat(text: string): Promise<void>;

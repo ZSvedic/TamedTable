@@ -654,6 +654,11 @@ join's right table is *not* re-read on `:undo`/`:redo`; the
 transformation removal reverses the column-shape change and that's
 enough.
 
+The browser has no working directory to resolve `with` against, so it
+resolves the name against the **lookup tables staged for the session**
+instead, and asks for the file when the name is not among them — see
+[Web UI](#web-ui-webui).
+
 ### `split` transformation (#ColSplit)
 
 `split` takes one input column, splits each cell, and writes the parts
@@ -818,6 +823,17 @@ grouped under small headers:
 The URL dialog is URL-only: it accepts a typed address and no longer
 lists samples.
 
+Opening a table is a **fresh start**. The load already clears the undo
+history, the changed-cell marks, the page, and the selection; it clears
+the **chat thread** with them, so `Loaded <name> — N rows, M columns.`
+is the new thread's first message. Keeping the old conversation would
+strand it — its replies point at history entries the load just threw
+away, so they would render as undone steps against a table they never
+touched. Every route in resets the same way: the Open menu, a Recent
+entry, a URL, a sample, a file dropped on the empty page, and a tour's
+own load step. Replaying a `.flow` is not a new table and never clears
+the thread.
+
 **Open .flow & run on current data…** replays a saved recipe onto the
 table already open in the UI — one picker, for the `.flow` file only
 (the data is the current table's source, so no second file is asked
@@ -839,6 +855,30 @@ returns to the table as it was, and the assistant reply reports the
 result: an `Executed steps:` numbered list (the step labels below)
 followed by `Ran <flow> — N rows, M columns.`. Sample files to try
 this with live in `spec/user-data/`.
+
+A **join needs its second file**, and in the browser that file has to be
+handed over — there is no working directory for `with` to resolve
+against. <!-- #LookupJoin --> So the app asks for it, whether the join
+came from a typed request ("Join with country-codes.csv on Country") or
+from a replayed `.flow`: a modal names the file the join wants and
+offers **Choose file…**, which opens the normal file picker. The picked
+file is staged under the *name the join asked for*, so a file renamed on
+disk still satisfies the step. Then the run continues and the join
+finds its rows.
+
+Two details follow from the browser, not from taste. The modal exists
+because a picker may only open from a click: a typed request's own click
+is long spent by the time the model answers, so the modal collects a
+fresh one — the same reason the post-run save asks for one more click.
+And **Cancel** drops the whole step rather than half-running it: a
+cancelled chat request leaves the spec untouched (no history entry, no
+error), and a cancelled flow leaves the table exactly as it was.
+
+Staged lookups last for the session. A second join against the same
+name reuses the staged rows without asking again, and switching models
+keeps them; a reload does not, because a browser cannot silently reopen
+a local file. Loading a new table keeps them too — a lookup is a file of
+its own, not part of the table.
 
 While a run streams — a replayed flow or a chat request — the chat
 thread itself shows **live run progress** <!-- #OpenFlow --> in place
@@ -1017,7 +1057,12 @@ only the most recently saved provider's card and clears when the panel opens,
 so it never claims a save from an earlier visit. Switching provider changes
 the models, which rebuilds the engine and replays the current transformations
 against the source, so the table on screen is preserved and the new models drive
-the next request. Full detail in
+the next request. **Editing the selected provider's key rebuilds it too.** The
+engine builds its model clients once, with the key it was handed, so a key
+typed after the first request would otherwise sit unused until the page was
+reloaded — every call still failing `Invalid API key` while the card read
+`✓ Saved`. The rebuild keeps the table exactly as the model-switch rebuild
+does, and the next request, typed or spoken, carries the new key. Full detail in
 [spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
 
 When a request fails because the API key is wrong or missing, the web shell
@@ -1065,6 +1110,15 @@ popover; moving the cursor away closes it; clicking toggles it. The web
 chat does not parse colon commands — undo/redo and the saves are toolbar
 actions (the dock's Undo and the app bar's Save menu on mobile), and a
 typed `:undo` goes to the model as plain text.
+
+The thread **follows the newest message**. Sending scrolls the sidebar
+down to the bubble just posted and the reply forming under it, and
+anything that lands while the thread already sits at the bottom keeps
+it there. Scrolling up to re-read an earlier reply stops the
+following — the thread stays where it was put, so a long run cannot
+yank it away mid-sentence — until the next send pins it back to the
+bottom. A tour that types a query into the input box sends through the
+same path and scrolls the same way.
 
 After a successful request, the assistant chat bubble replies with an
 `Executed steps:` heading and a numbered line per appended step — the
@@ -1701,7 +1755,10 @@ step maps to one of the tour actions:
   **Opening the sample "customers-input.csv"…**.
 - **load-lookup** — the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
-  No dataset is replaced. The open-file button is highlighted.
+  No dataset is replaced. The open-file button is highlighted. It stages the
+  file the same way the lookup dialog does when a user runs a join themselves
+  — the tour just answers the question ahead of time instead of stopping to
+  ask.
 - **prefill-chat** — the chat input is filled with the step's request text the
   moment the step is **highlighted**, so the popover reads simply **"Typing and
   running the query…"** instead of repeating it. Clicking **Next** submits the

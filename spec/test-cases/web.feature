@@ -28,6 +28,22 @@ Feature: Web front-end
       Then a toast shows "Text requests require a Google API key"
       And the spec has 0 transformations
 
+    # The engine builds its model clients once, with the key it was handed
+    # (behavior.md § Web UI). A key typed after the first request has to reach
+    # the next one — before this rebuild it sat unused until a page reload, so
+    # every call kept failing while the card read "✓ Saved".
+    @web @offline
+    Scenario: A key saved after the first request reaches the next one
+      Given the TamedTable web app
+      And the provider "gemini" has API key "stale-key"
+      And load "customers-input.csv"
+      And the LLM API returns a 401 unauthorized error
+      When user sends the chat message "norm dob col"
+      Then the last model call carried the API key "stale-key"
+      When user saves the "gemini" API key "fresh-key"
+      And user sends the chat message "norm dob col"
+      Then the last model call carried the API key "fresh-key"
+
     @web
     Scenario: Saving an API key in the settings panel configures the engine
       Given the TamedTable web app
@@ -45,6 +61,21 @@ Feature: Web front-end
       Then display Open File dialog
       When user selects "customers-input.csv"
       Then table displays the header and at least the first 5 rows
+
+    # Opening a table is a fresh start (behavior.md § Web UI): the load clears
+    # the undo history, so the thread that referenced it goes too — only the
+    # new file's "Loaded …" line is left.
+    @web
+    Scenario: Opening a table starts a fresh chat thread
+      Given the TamedTable web app
+      And load "filter-input.csv"
+      When user says "Open flow"
+      And user selects "filter.flow"
+      Then the chat has 3 messages
+      When user says "Load CSV file"
+      And user selects "customers-input.csv"
+      Then the chat has 1 message
+      And the last assistant reply shows "Loaded customers-input.csv"
 
     @web
     Scenario: Opening an empty file yields an empty table without an error
@@ -133,6 +164,46 @@ Feature: Web front-end
       When user redoes the last change
       Then the last assistant reply shows "Executed steps:"
       And the last assistant reply is not marked undone
+
+    # A join names a second file, and the browser has no working directory to
+    # resolve it against (behavior.md § Web UI) — so the run stops and asks.
+    # Deterministic: a flow replay makes no model call.
+    @web @offline
+    Scenario: A join whose lookup table is not staged asks for the file
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      Then the lookup dialog asks for "join-country-codes.csv"
+      When user chooses the lookup file "join-country-codes.csv"
+      Then columns exist in the spec: "ISO", "Region"
+      And the chat shows a user message "Run join-lookup.flow"
+
+    @web @offline
+    Scenario: Cancelling the lookup dialog leaves the table untouched
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      And user dismisses the lookup dialog
+      Then the spec has 0 transformations
+      And the table has 20 rows
+      And no toast is shown
+
+    # A staged lookup lasts the session, so a second join against the same name
+    # runs straight through.
+    @web @offline
+    Scenario: A second join against a staged lookup does not ask again
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      And user chooses the lookup file "join-country-codes.csv"
+      And user undoes the last change
+      And user says "Open flow"
+      And user selects "join-lookup.flow"
+      Then no lookup dialog is shown
+      And columns exist in the spec: "ISO", "Region"
 
     @web
     Scenario: A flow reading a column the current table lacks is refused
