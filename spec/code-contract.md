@@ -1118,6 +1118,17 @@ can fill pending cells in unchanged steps.
 `runCli execute` does not branch on `flow.version`: a `version` of `1`
 or `2` both validate through `validateTablePlan`.
 
+Its failure text — `Spec validation failed: <path>: <message>; …` — must read
+the same on every surface, because the runner quotes it back to the model in
+the recovery prompt and that prompt is part of a request's cassette
+fingerprint. A browser that words the error differently from the recorder
+misses the tape and drops the tour. Zod's messages carry that detail only
+while its English locale is registered, and Zod ships `"sideEffects": false`,
+so the bundler drops the registration Zod does for itself. `table-plan`
+therefore calls `z.config(z.locales.en())` at module load; a unit test guards
+the call, since no test that imports the package can see the bundler remove
+it.
+
 ### Sorting by a SQL or AI key
 
 `applySort` resolves each `sort.by[].key` by `Expr` shape, mirroring

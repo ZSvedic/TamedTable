@@ -250,6 +250,14 @@ export class WebController implements ControllerHost {
     });
   }
 
+  /** Drop the whole thread. Opening a table clears the undo journal, so the
+   *  replies pointing at its entries would render as undone steps against a
+   *  table they never touched — the conversation goes with the journal. */
+  clearMessages(): void {
+    this.messages = [];
+    this.notify();
+  }
+
   /** Rewrite the text of an existing chat message (voice transcript swap). */
   updateMessage(id: number, text: string): void {
     this.messages = this.messages.map((m) => (m.id === id ? { ...m, text } : m));

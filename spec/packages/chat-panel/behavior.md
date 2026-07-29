@@ -61,6 +61,13 @@ panel just renders whatever it is passed.
   it), instead of inventing a second icon logic. With no messages, the
   host's `emptyState` renders instead. While streaming, a pulsing
   "Running…" line follows the list.
+- Follows the newest message: the list scrolls to the bottom whenever a
+  message arrives or a run starts, and sending always scrolls, so the
+  user sees the bubble they just posted and the reply forming under it.
+  Scrolling up (more than ~40px off the bottom) stops the following
+  until the list is scrolled back down or the next send. The panel
+  owns this — a host that pushes messages, and a tour that types into
+  the draft and sends, both get it for free.
 - Live run progress: while streaming, a non-null `progress` prop renders
   a block under the Running… line — a status line
   (`Step i of N — <label>`, `· rows done / total` while `rowsTotal > 0`
@@ -90,7 +97,8 @@ panel just renders whatever it is passed.
   hides the `micButton` slot — the host's "input is off, here is why" state
   (the app uses it while staying in a finished tour).
 
-Stable attributes: `data-cp-message="user|assistant"`, `data-cp-error`,
+Stable attributes: `data-cp-messages` (the scrolling message list),
+`data-cp-message="user|assistant"`, `data-cp-error`,
 `data-status-dot="ok|undone"` (the StatusDot marker),
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
 `data-cp-stop`, `data-cp-running`, `data-cp-progress`,
@@ -122,7 +130,9 @@ The demo (`demo.html` + `demo.tsx`, deployed under `/demos/chat-panel/`)
 mounts ChatPanel over plain React state: sending appends the user message
 and an echoed assistant reply, buttons inject an error reply (guidance — no
 Report bug), an app-error reply (`reportable`, no detail), and a reportable
-reply with request detail, a streaming toggle drives the Running…/stop state
+reply with request detail, a fill-thread button pads the list past the
+panel's height (so the scroll rules have something to scroll), a
+streaming toggle drives the Running…/stop state
 together with a sample run progress (step line, bar, live request-detail
 log), a prefill button exercises the draft sync, and the demo MicButton
 cycles recording → sending → idle. Every callback appends to the `#out` event log,

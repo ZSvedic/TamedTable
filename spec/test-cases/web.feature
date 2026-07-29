@@ -46,6 +46,21 @@ Feature: Web front-end
       When user selects "customers-input.csv"
       Then table displays the header and at least the first 5 rows
 
+    # Opening a table is a fresh start (behavior.md § Web UI): the load clears
+    # the undo history, so the thread that referenced it goes too — only the
+    # new file's "Loaded …" line is left.
+    @web
+    Scenario: Opening a table starts a fresh chat thread
+      Given the TamedTable web app
+      And load "filter-input.csv"
+      When user says "Open flow"
+      And user selects "filter.flow"
+      Then the chat has 3 messages
+      When user says "Load CSV file"
+      And user selects "customers-input.csv"
+      Then the chat has 1 message
+      And the last assistant reply shows "Loaded customers-input.csv"
+
     @web
     Scenario: Opening an empty file yields an empty table without an error
       Given the TamedTable web app

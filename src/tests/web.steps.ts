@@ -230,6 +230,15 @@ Then('the chat shows a user message {string}', function (this: TamedTableWorld, 
   );
 });
 
+Then('the chat has {int} message(s)', function (this: TamedTableWorld, n: number) {
+  const messages = controller(this).messages;
+  assert.equal(
+    messages.length,
+    n,
+    `expected ${n} chat message(s), got ${messages.length}: ${messages.map((m) => `${m.role}: ${m.text}`).join(' | ') || '(none)'}`,
+  );
+});
+
 // ── Toasts ─────────────────────────────────────────────────────────────────
 
 Then('a toast shows {string}', function (this: TamedTableWorld, needle: string) {

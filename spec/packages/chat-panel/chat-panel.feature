@@ -13,6 +13,24 @@ Feature: Chat panel package
       And an assistant reply shows "Did: normalize phones"
       And the chat input is empty
 
+    # The thread follows the newest message (behavior.md § Web UI): a send
+    # scrolls to the bubble just posted, however far up the user had read.
+    @web
+    Scenario: Sending scrolls the thread to the newest message
+      Given the chat-panel demo page
+      When the user fills the thread
+      And the user scrolls the thread to the top
+      And the user sends the chat message "normalize phones"
+      Then the chat thread is scrolled to its newest message
+
+    @web
+    Scenario: Reading back is not yanked to the bottom by a new message
+      Given the chat-panel demo page
+      When the user fills the thread
+      And the user scrolls the thread to the top
+      And the user adds an error reply
+      Then the chat thread stays where the user scrolled it
+
     @web
     Scenario: An Error-prefixed reply renders in error style
       Given the chat-panel demo page

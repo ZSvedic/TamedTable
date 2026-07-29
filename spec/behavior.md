@@ -818,6 +818,17 @@ grouped under small headers:
 The URL dialog is URL-only: it accepts a typed address and no longer
 lists samples.
 
+Opening a table is a **fresh start**. The load already clears the undo
+history, the changed-cell marks, the page, and the selection; it clears
+the **chat thread** with them, so `Loaded <name> — N rows, M columns.`
+is the new thread's first message. Keeping the old conversation would
+strand it — its replies point at history entries the load just threw
+away, so they would render as undone steps against a table they never
+touched. Every route in resets the same way: the Open menu, a Recent
+entry, a URL, a sample, a file dropped on the empty page, and a tour's
+own load step. Replaying a `.flow` is not a new table and never clears
+the thread.
+
 **Open .flow & run on current data…** replays a saved recipe onto the
 table already open in the UI — one picker, for the `.flow` file only
 (the data is the current table's source, so no second file is asked
@@ -1065,6 +1076,15 @@ popover; moving the cursor away closes it; clicking toggles it. The web
 chat does not parse colon commands — undo/redo and the saves are toolbar
 actions (the dock's Undo and the app bar's Save menu on mobile), and a
 typed `:undo` goes to the model as plain text.
+
+The thread **follows the newest message**. Sending scrolls the sidebar
+down to the bubble just posted and the reply forming under it, and
+anything that lands while the thread already sits at the bottom keeps
+it there. Scrolling up to re-read an earlier reply stops the
+following — the thread stays where it was put, so a long run cannot
+yank it away mid-sentence — until the next send pins it back to the
+bottom. A tour that types a query into the input box sends through the
+same path and scrolls the same way.
 
 After a successful request, the assistant chat bubble replies with an
 `Executed steps:` heading and a numbered line per appended step — the

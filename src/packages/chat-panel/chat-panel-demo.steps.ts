@@ -28,6 +28,40 @@ Then('the chat input is empty', async function (this: object) {
   assert.equal(await page(this).inputValue('#demo-chat-input'), '');
 });
 
+When('the user fills the thread', async function (this: object) {
+  const p = page(this);
+  await p.click('button:has-text("Fill thread")');
+  // The list must actually overflow, or "scrolled to the bottom" is vacuous.
+  await p.waitForFunction(
+    `(() => { const el = document.querySelector('[data-cp-messages]');
+       return el && el.scrollHeight > el.clientHeight + 100; })()`,
+  );
+});
+
+When('the user scrolls the thread to the top', async function (this: object) {
+  const p = page(this);
+  await p.$eval('[data-cp-messages]', (el: Element) => {
+    (el as HTMLElement).scrollTop = 0;
+    el.dispatchEvent(new Event('scroll'));
+  });
+  await p.waitForFunction(`document.querySelector('[data-cp-messages]').scrollTop === 0`);
+});
+
+Then('the chat thread is scrolled to its newest message', async function (this: object) {
+  await page(this).waitForFunction(
+    `(() => { const el = document.querySelector('[data-cp-messages]');
+       return el && el.scrollHeight - el.scrollTop - el.clientHeight <= 2; })()`,
+  );
+});
+
+Then('the chat thread stays where the user scrolled it', async function (this: object) {
+  const p = page(this);
+  // The new message has to have landed before "it did not scroll" means
+  // anything — wait for the reply, then assert the offset is unchanged.
+  await p.waitForSelector('[data-cp-error]');
+  assert.equal(await p.$eval('[data-cp-messages]', (el: Element) => el.scrollTop), 0);
+});
+
 When('the user adds an error reply', async function (this: object) {
   await page(this).click('button:has-text("Add error reply")');
 });

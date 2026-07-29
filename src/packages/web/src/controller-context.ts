@@ -78,6 +78,8 @@ export interface ControllerHost {
   pushToast(kind: 'info' | 'error', message: string, action?: string): void;
   pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number;
   updateMessage(id: number, text: string): void;
+  /** Drop the whole thread — a new table starts a new conversation. */
+  clearMessages(): void;
   fail(message: string, debug?: RequestDebugInfo, reportable?: boolean): void;
   /** Send a chat request (used by tutorial prefill-chat steps). */
   sendChat(text: string): Promise<void>;

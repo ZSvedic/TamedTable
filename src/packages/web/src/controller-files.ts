@@ -214,6 +214,12 @@ export class FilesManager {
 
   private async commitParsed(name: string, rows: Row[], spec: TablePlan): Promise<void> {
     await this.host.engine.loadParsed(rows, spec);
+    // A new table is a new conversation: loadParsed just cleared the undo
+    // journal, and the thread's replies point at those entries — left in place
+    // they would read as undone steps against a table they never touched. The
+    // "Loaded …" line below starts the fresh thread. Running a .flow keeps the
+    // thread: it transforms the table already open, it does not replace it.
+    this.host.clearMessages();
     const loaded = `Loaded ${name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`;
     this.host.pushMessage('assistant', loaded);
     // #Diagnostics — a load fires no toast; log it so a report names the file
