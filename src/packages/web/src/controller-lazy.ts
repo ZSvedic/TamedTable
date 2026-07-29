@@ -249,12 +249,20 @@ export class LazyManager {
 
   // ── The chat request's lazy window + the dependency rule ─────────────────
 
+  /** Simple mode ("Always run on all rows") — unless a tour is replaying:
+   *  the cassette taped a page-window run, so table-wide evaluation would be
+   *  thousands of unrecorded requests (spec/behavior.md § Key-free playback). */
+  private alwaysRunAll(): boolean {
+    return this.host.config.alwaysRunAll && !this.host.tutorial.isReplaying();
+  }
+
   /** The cellFilter for a chat request: the rows in view (everything already
    *  evaluated refills from the cell cache for free). After a confirmed
    *  dependency run-all, one replay runs unfiltered. */
   requestCellFilter(): (tIndex: number, rowIndex: number) => boolean {
     const target = this.visibleTarget();
-    return (_t, i) => this.allowAllOnce || this.host.config.alwaysRunAll || target.has(i);
+    const runAll = this.alwaysRunAll();
+    return (_t, i) => this.allowAllOnce || runAll || target.has(i);
   }
 
   /** Derived-row indices of the current page (the preview window). */
@@ -273,7 +281,7 @@ export class LazyManager {
    *  confirmation. Confirm → this replay runs on all rows; decline → the
    *  runner throws DECLINED and the patch is dropped. */
   async confirmPatch(next: TablePlan, prev: TablePlan): Promise<boolean> {
-    if (this.host.config.alwaysRunAll) {
+    if (this.alwaysRunAll()) {
       const added = { columns: [], transformations: next.transformations.slice(prev.transformations.length) };
       const total = this.host.engine.rawRows().length;
       if (specHasLlmCell(added) && total > this.host.pageSize) {

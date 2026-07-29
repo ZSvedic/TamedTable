@@ -1694,6 +1694,14 @@ over the whole request, so the tour must reproduce the request that was
 recorded — playback therefore pins the same model and configuration the
 recording used: the Gemini provider defaults, which every committed cassette
 is recorded with (voice tours included — voice input is Gemini-only anyway).
+The pin covers everything that shapes a request, not just the model: the
+table page follows the pinned provider (an AI step evaluates the rows in
+view, so a provider-shrunk page would issue different per-cell batches than
+the tape holds), and the **Always run on all rows** setting is ignored (it
+would push the step across the whole table — thousands of unrecorded
+requests). Whatever provider or settings the visitor has selected, a tour
+replays exactly as recorded and their own config returns untouched when the
+tour ends.
 A request with no recording means the guided replay went off-script, so it
 ends the tour cleanly: the toast `Tour ended — the guided replay went
 off-script.`, then the full tour cancel (back to the empty state) — never a
