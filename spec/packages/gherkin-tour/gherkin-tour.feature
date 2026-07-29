@@ -380,3 +380,31 @@ Feature: Gherkin Tour parser
       And the adapter onFinish was not called
       And the driver is not active
       And the driver is not done
+
+  Rule: The overlay blocks clicks but lets scrolls through
+
+    # Watch-only means clicks, not scrolling: while the overlay is up, wheel
+    # and touch scrolls forward to the scrollable region under the pointer —
+    # spotlighted (pointer-events disabled by Driver.js) or dimmed — so a
+    # learner can pan a wide table mid-tour. See behavior.md § TourUi.
+
+    @web
+    Scenario: Wheel over the dimmed table scrolls it while the chat step is lit
+      Given the gherkin-tour demo page
+      When the demo tour starts
+      And the demo tour advances
+      Then the demo table shows rows
+      And the demo table is not scrolled
+      When the user wheels down over the demo table
+      Then the demo table has scrolled down
+      And the demo tour overlay is still up
+
+    @web
+    Scenario: Wheel over the spotlighted table scrolls it at the golden stop
+      Given the gherkin-tour demo page
+      When the demo tour starts
+      And the demo tour advances 3 times
+      Then the demo table shows rows
+      When the user wheels down over the demo table
+      Then the demo table has scrolled down
+      And the demo tour overlay is still up

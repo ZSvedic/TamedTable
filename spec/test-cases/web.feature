@@ -115,6 +115,25 @@ Feature: Web front-end
       And the last assistant reply shows "Ran filter.flow — 4 rows, 4 columns."
       And a single undo returns the table to 10 rows
 
+    # The reply tracks its step's undo state (behavior.md § Web UI): while the
+    # entry is undone the heading reads "Undone steps:" with a hollow marker,
+    # and redo restores "Executed steps:". The flow replay commits one history
+    # entry with no model calls, so this replays cassette-free.
+    @web
+    Scenario: Undo flips the flow's reply to Undone steps and redo restores it
+      Given the TamedTable web app
+      And load "filter-input.csv"
+      When user says "Open flow"
+      And user selects "filter.flow"
+      Then the last assistant reply shows "Executed steps:"
+      And the last assistant reply is not marked undone
+      When user undoes the last change
+      Then the last assistant reply shows "Undone steps:"
+      And the last assistant reply is marked undone
+      When user redoes the last change
+      Then the last assistant reply shows "Executed steps:"
+      And the last assistant reply is not marked undone
+
     @web
     Scenario: A flow reading a column the current table lacks is refused
       Given the TamedTable web app

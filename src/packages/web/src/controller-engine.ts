@@ -57,6 +57,11 @@ export class EngineManager {
 
   private activeAbort: AbortController | null = null;
 
+  /** Journal-entry id of the last committed request, or null when the latest
+   *  request committed nothing (declined, failed) — read by the chat/voice
+   *  reply paths to link their bubble to its undo state. */
+  lastCommitId: number | null = null;
+
   // The freshly-loaded source (rows + base plan), captured on every load so a
   // model change can rebuild the engine without a filesystem round-trip.
   private loadedSource: { rows: Row[]; spec: TablePlan } | null = null;
@@ -239,8 +244,10 @@ export class EngineManager {
         // a chat request; the rest stays pending behind the indicators.
         cellFilter: this.host.lazy.requestCellFilter(),
       });
-      // #LazyExec — mark the cells the flow filled on its preview page.
+      // #LazyExec — mark the cells the flow filled on its preview page, and
+      // point the grid at the start of the changed block.
       this.recordFilled(beforeRows, true);
+      this.refreshReveal();
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
@@ -284,12 +291,34 @@ export class EngineManager {
   async applySpecCached(spec: TablePlan): Promise<void> {
     await this.ensureHeadless().setSpec(spec, { fresh: true, cellFilter: () => false });
     this.changedCells.clear();
+    this.host.setReveal(null);
     this.displayCache = null;
   }
 
   /** Note a single-cell change (the inline-edit gesture) for the tint. */
   noteChangedCell(derivedRow: number, column: string, before: unknown): void {
     this.changedCells.set(`${derivedRow}:${column}`, before ?? null);
+  }
+
+  /** Replace the changed-cell marks wholesale — undo/redo/jump restoring the
+   *  marks a history entry recorded — and refresh the reveal target so the
+   *  grid scrolls back to that step's changed block. */
+  restoreChangedCells(cells: ReadonlyMap<string, unknown>): void {
+    this.changedCells.clear();
+    for (const [key, before] of cells) this.changedCells.set(key, before);
+    this.refreshReveal();
+  }
+
+  /** Point the grid at the start of the changed block: the first changed
+   *  column in display order (spec/behavior.md § Grid upgrades), or clear the
+   *  target when the last step changed nothing. */
+  refreshReveal(): void {
+    const cols = new Set<string>();
+    for (const key of this.changedCells.keys()) cols.add(key.slice(key.indexOf(':') + 1));
+    const first = this.host.loaded && cols.size > 0
+      ? this.ensureHeadless().currentSpec().columns.find((c) => cols.has(c.id))?.id ?? null
+      : null;
+    this.host.setReveal(first);
   }
 
   // #LazyExec — the changed-cell tint means "filled by the current request".
@@ -343,6 +372,9 @@ export class EngineManager {
     this.host.sourcePath = sourcePath;
     this.host.loaded = true;
     this.host.patch.clearJournal();
+    this.changedCells.clear();
+    this.host.setReveal(null);
+    this.lastCommitId = null;
     this.overlay.clear();
     this.host.pageNum = 1;
     this.host.selection = null;
@@ -359,6 +391,7 @@ export class EngineManager {
     if (!this.host.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const runner = this.ensureHeadless();
     const prevSpec = structuredClone(runner.currentSpec());
+    this.lastCommitId = null;
 
     const ownAbort = opts?.signal ? null : new AbortController();
     const signal = opts?.signal ?? ownAbort!.signal;
@@ -399,13 +432,16 @@ export class EngineManager {
         cellFilter: this.host.lazy.requestCellFilter(),
         confirmSpec: (next, prev) => this.host.lazy.confirmPatch(next, prev),
       });
-      this.host.patch.record({
+      // #LazyExec — mark the cells this request filled on its preview page
+      // (before the journal snapshots them), and point the grid at the start
+      // of the changed block (the reveal scroll).
+      this.recordFilled(beforeRows, true);
+      this.refreshReveal();
+      this.lastCommitId = this.host.patch.record({
         label: opts?.label ?? text,
         prevSpec,
         nextSpec: structuredClone(runner.currentSpec()),
       });
-      // #LazyExec — mark the cells this request filled on its preview page.
-      this.recordFilled(beforeRows, true);
     } catch (e) {
       // A declined dependency confirmation drops the patch silently — no
       // spec change, no history entry, no error surface.

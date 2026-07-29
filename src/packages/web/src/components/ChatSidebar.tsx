@@ -56,7 +56,7 @@ export function ChatSidebar({
       fill={fill}
       width={width}
       inputId="tutorial-chat-input"
-      messages={controller.messages}
+      messages={controller.displayMessages()}
       streaming={controller.streaming}
       progress={controller.runProgress}
       requestCount={controller.history().length}

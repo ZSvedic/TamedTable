@@ -30,12 +30,16 @@ The web app's wrapper binds `WebController`:
 ## Message types (main entry, React-free)
 
 `ChatPanelMessage` is `{ id, role: "user" | "assistant", text, debug?,
-reportable? }`. `debug`, when present, is a `ChatRequestDetail` — a
+reportable?, undone? }`. `debug`, when present, is a `ChatRequestDetail` — a
 structural subset of the engine's `RequestDebugInfo` (request text, model
 calls, token counts, elapsed time, per-turn ops, cell samples), so the app's
 debug objects fit without a headless dependency. `reportable: true` marks a
 message the user can flag as a bug — the classification (app error vs
 guidance error) is the host's job; the panel only renders the action.
+`undone: true` marks an assistant reply whose step the host has undone —
+the panel renders it with a hollow circle instead of the solid ok dot (the
+heading swap to `Undone steps:` is the host's job; the panel renders text
+as given).
 
 `ChatRunProgress` is the live progress the host feeds while a run
 streams: `{ step, totalSteps, label, rowsDone, rowsTotal, log }` —
@@ -49,7 +53,8 @@ panel just renders whatever it is passed.
 - Header: "Requests", the transformation count (`requestCount`, with
   "· running" while streaming), and a `?` popover listing `helpLines`.
 - Message list: user messages as accent bubbles; assistant messages with an
-  ok dot, or an error icon and error tint when the text starts with
+  ok dot — a hollow circle instead when the message is `undone` — or an
+  error icon and error tint when the text starts with
   `Error:` (the prefix is stripped for display). With no messages, the
   host's `emptyState` renders instead. While streaming, a pulsing
   "Running…" line follows the list.
@@ -83,6 +88,7 @@ panel just renders whatever it is passed.
   (the app uses it while staying in a finished tour).
 
 Stable attributes: `data-cp-message="user|assistant"`, `data-cp-error`,
+`data-cp-undone`,
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
 `data-cp-stop`, `data-cp-running`, `data-cp-progress`,
 `data-cp-progress-toggle`, `data-cp-progress-log`, plus the app's existing

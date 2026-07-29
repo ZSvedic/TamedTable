@@ -906,6 +906,30 @@ Undo/Redo buttons do. `TourUi.render()` retries briefly when a step's
 target isn't mounted yet, so a lazily-opened sheet (the mobile composer)
 still gets its spotlight.
 
+Undo-state plumbing (behavior.md § Web UI — the `Undone steps:` reply,
+changed-cell marks across undo/redo, and the reveal scroll):
+
+```ts
+// SpecJournal — every recorded entry gets a stable monotonic id
+record(entry: JournalEntry): number;   // returns the entry's id
+current(): JournalEntry | undefined;   // top of the undo stack (the applied step)
+isApplied(id: number): boolean;        // id sits on the undo stack
+// WebController
+revealTarget(): { column: string; seq: number } | null; // column the grid
+                     // should scroll into view; a new seq re-triggers the scroll
+displayMessages(): ChatMessage[];      // messages with undo state applied:
+                     // an undone entry's reply swaps its "Executed steps:"
+                     // heading for "Undone steps:" and carries undone: true
+```
+
+`ChatMessage` gains `historyId?: number` (the journal entry a committed
+reply reports, stamped by `sendChat` / the flow replay / a voice turn) and
+`undone?: boolean` (set only on the copies `displayMessages` returns).
+`PatchManager` snapshots the engine's changed-cell marks per entry id at
+record time; undo, redo, and `jumpTo` restore the landing entry's marks
+into the engine and refresh `revealTarget()` with that entry's first
+changed column (spec column order), or clear both before the first step.
+
 ### Diagnostics log (#Diagnostics)
 
 A bounded ring buffer of recent app events, persisted in the browser

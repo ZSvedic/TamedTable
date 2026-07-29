@@ -217,6 +217,7 @@ export function TableView({ controller }: { controller: WebController }): ReactN
       }
       rowStatus={controller.pageRowStatus()}
       changedCells={controller.pageChangedCells()}
+      reveal={controller.revealTarget()}
       sort={controller.viewSort()}
       filters={controller.viewFilters()}
       onSortChange={(column, dir) => void controller.setViewSort(column, dir)}

@@ -15,6 +15,9 @@ export interface JournalEntry {
   nextSpec: TablePlan;
   /** When the change landed (epoch ms). Stamped at record time if omitted. */
   time?: number;
+  /** Stable monotonic id, stamped by `record` — lets a caller track an entry
+   *  across undo/redo (a chat reply's undo state, per-entry side data). */
+  id?: number;
 }
 
 /** One row of the history timeline — what the mobile History sheet shows. */
@@ -26,12 +29,29 @@ export interface TimelineStep {
 export class SpecJournal {
   private undoStack: JournalEntry[] = [];
   private redoStack: JournalEntry[] = [];
+  private idSeq = 0;
 
-  /** Record a committed change. Clears the redo stack — a new edit forks the
-   *  timeline, so previously-undone steps are no longer reachable. */
-  record(entry: JournalEntry): void {
-    this.undoStack.push({ ...entry, time: entry.time ?? Date.now() });
+  /** Record a committed change and return its stable id. Clears the redo
+   *  stack — a new edit forks the timeline, so previously-undone steps are no
+   *  longer reachable. */
+  record(entry: JournalEntry): number {
+    const id = ++this.idSeq;
+    this.undoStack.push({ ...entry, time: entry.time ?? Date.now(), id });
     this.redoStack = [];
+    return id;
+  }
+
+  /** The applied step — the top of the undo stack — or undefined before the
+   *  first step (or after every step is undone). */
+  current(): JournalEntry | undefined {
+    return this.undoStack[this.undoStack.length - 1];
+  }
+
+  /** Whether the entry with this id is currently applied (on the undo stack).
+   *  False while it is undone — and false forever once a new edit forked it
+   *  off the timeline. */
+  isApplied(id: number): boolean {
+    return this.undoStack.some((e) => e.id === id);
   }
 
   canUndo(): boolean {

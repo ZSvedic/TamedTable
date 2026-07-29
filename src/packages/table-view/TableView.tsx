@@ -52,6 +52,11 @@ export interface TableViewProps {
   /** Cells the host's last step changed, keyed "<absRow>:<col>" → previous
    *  value. A changed cell tints and shows `was: <previous>` on hover. */
   changedCells?: Record<string, unknown>;
+  /** Column the host wants on screen (the first changed column after a
+   *  request commits, and again on undo/redo). Each new `seq` scrolls that
+   *  column's header into view with a minimal nearest-edge scroll — a column
+   *  already visible doesn't move. */
+  reveal?: { column: string; seq: number } | null;
   /** The active column-menu sort, shown as ▲/▼ in the header (host state). */
   sort?: { column: string; dir: 'asc' | 'desc' } | null;
   /** Per-column contains-match filters, shown as a funnel mark (host state). */
@@ -104,6 +109,7 @@ export function TableView({
   rowNumberHint,
   rowStatus,
   changedCells,
+  reveal,
   sort,
   filters,
   onSortChange,
@@ -158,6 +164,20 @@ export function TableView({
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [selection, editing, rows, pageStart, onCopyCell]);
+
+  // The reveal scroll: each new seq brings the named column's header into
+  // view with the smallest scroll that shows it ('nearest' is a no-op when
+  // the column is already visible). Works for the desktop inner scroller and
+  // the phone's document scroller alike.
+  const revealColumn = reveal?.column;
+  const revealSeq = reveal?.seq;
+  useEffect(() => {
+    if (revealColumn === undefined || revealSeq === undefined) return;
+    const th = tableRef.current?.querySelector(
+      `th[data-tv-header="${CSS.escape(revealColumn)}"]`,
+    );
+    th?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [revealColumn, revealSeq]);
 
   const dropOn = (target: string): void => {
     if (!dragCol || dragCol === target) {

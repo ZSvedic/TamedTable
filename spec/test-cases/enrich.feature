@@ -22,6 +22,17 @@ Feature: Enrich and extract scenarios
       And the row where "Name" is "Bob" has "Zip" equal to "94043"
       And the row where "Name" is "Ana" has "City" equal to "London"
       And the row where "Name" is "Ana" has "Zip" equal to "NW1 6XE"
+      # The reveal scroll: the request appended columns off the right edge, so
+      # the grid is told to bring the first changed column into view — and
+      # undo/redo restore that step's changed-cell marks and reveal with it.
+      And the table reveals the "Street" column
+      And the newly evaluated cells carry the changed marker
+      When user undoes the last change
+      Then no cells are marked changed
+      And no column is revealed
+      When user redoes the last change
+      Then the newly evaluated cells carry the changed marker
+      And the table reveals the "Street" column
 
     @web
     Scenario: Fill the country from the city column

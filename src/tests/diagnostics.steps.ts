@@ -71,9 +71,12 @@ Then(
 );
 
 /** The newest assistant chat message, or undefined. */
-function lastAssistant(world: TamedTableWorld): { id: number; text: string; reportable?: boolean } | undefined {
+function lastAssistant(world: TamedTableWorld): { id: number; text: string; reportable?: boolean; undone?: boolean } | undefined {
+  // displayMessages, not messages: replies render with undo state applied
+  // (the Executed/Undone heading swap — behavior.md § Web UI).
   return controller(world)
-    .messages.filter((m) => m.role === 'assistant')
+    .displayMessages()
+    .filter((m) => m.role === 'assistant')
     .at(-1);
 }
 
@@ -93,6 +96,18 @@ Then('the last assistant reply shows {string}', function (this: TamedTableWorld,
   const m = lastAssistant(this);
   assert.ok(m, 'no assistant reply was pushed');
   assert.ok(m.text.includes(needle), `reply "${m.text}" does not contain "${needle}"`);
+});
+
+Then('the last assistant reply is marked undone', function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.equal(m.undone, true, `reply is not marked undone: "${m.text}"`);
+});
+
+Then('the last assistant reply is not marked undone', function (this: TamedTableWorld) {
+  const m = lastAssistant(this);
+  assert.ok(m, 'no assistant reply was pushed');
+  assert.ok(!m.undone, `reply is unexpectedly marked undone: "${m.text}"`);
 });
 
 When('user reports the last chat reply as a bug', async function (this: TamedTableWorld) {

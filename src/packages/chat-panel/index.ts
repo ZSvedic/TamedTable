@@ -18,13 +18,16 @@ export interface ChatRequestDetail {
 /** One chat message. Assistant text starting with `Error:` renders in error
  *  style with the prefix stripped. `reportable: true` marks a message the user
  *  can flag as a bug — the host classifies (app error vs guidance error); the
- *  panel only renders the Report bug action. */
+ *  panel only renders the Report bug action. `undone: true` marks a reply
+ *  whose step the host has undone — it renders with a hollow circle instead
+ *  of the solid ok dot (any heading swap is the host's job). */
 export interface ChatPanelMessage {
   id: number;
   role: 'user' | 'assistant';
   text: string;
   debug?: ChatRequestDetail;
   reportable?: boolean;
+  undone?: boolean;
 }
 
 /** Live progress of the streaming run — the host owns and mutates the state

@@ -68,11 +68,15 @@ export interface ControllerHost {
   runAllDialog: RunAllDialogState | null;
   /** The post-run save confirmation — a save picker needs a fresh click. */
   saveReadyDialog: boolean;
+  /** Column the grid should scroll into view (a new seq re-triggers), or null. */
+  reveal: { column: string; seq: number } | null;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
+  /** Point the grid at a column (the reveal scroll), or clear the target. */
+  setReveal(column: string | null): void;
   pushToast(kind: 'info' | 'error', message: string, action?: string): void;
-  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean): number;
+  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number;
   updateMessage(id: number, text: string): void;
   fail(message: string, debug?: RequestDebugInfo, reportable?: boolean): void;
   /** Send a chat request (used by tutorial prefill-chat steps). */

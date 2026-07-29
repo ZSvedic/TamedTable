@@ -139,7 +139,13 @@ export class VoiceManager {
       });
       if (heard) this.host.patch.relabelLast(heard);
       const debug = this.host.lastDebug;
-      this.host.pushMessage('assistant', debug ? summarizeDebug(debug) : 'Done.', debug, true);
+      this.host.pushMessage(
+        'assistant',
+        debug ? summarizeDebug(debug) : 'Done.',
+        debug,
+        true,
+        this.host.engine.lastCommitId ?? undefined,
+      );
     } catch (e) {
       // A cassette replay miss during a tour ends it cleanly — same safety
       // net as sendChat, never the raw fingerprint-mismatch error.

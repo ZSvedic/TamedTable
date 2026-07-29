@@ -122,6 +122,21 @@ function AssistantMessage({
           <span style={{ flex: '0 0 auto', marginTop: 2, color: t.err }}>
             <Icon name="err" />
           </span>
+        ) : message.undone ? (
+          // Hollow circle: the reply's step is undone — the table no longer
+          // shows what this message reports.
+          <span
+            data-cp-undone=""
+            style={{
+              flex: '0 0 auto',
+              marginTop: 5,
+              width: 6,
+              height: 6,
+              borderRadius: 4,
+              border: `1.5px solid ${t.ink3}`,
+              boxSizing: 'content-box',
+            }}
+          />
         ) : (
           <span
             style={{

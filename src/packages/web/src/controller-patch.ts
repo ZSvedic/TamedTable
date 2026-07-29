@@ -9,6 +9,10 @@ import type { ControllerHost } from './controller-context.ts';
 
 export class PatchManager {
   private readonly journal = new SpecJournal();
+  // Per-entry changed-cell marks, snapshotted at record time — undo/redo/jump
+  // restore the landing entry's marks so stepping through history shows which
+  // cells that step changed (spec/behavior.md § Grid upgrades).
+  private readonly marks = new Map<number, Map<string, unknown>>();
 
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
@@ -17,12 +21,32 @@ export class PatchManager {
 
   // ── Journal passthrough (the engine records committed turns here) ─────────
 
-  record(entry: JournalEntry): void {
-    this.journal.record(entry);
+  /** Record a committed change (with the changed-cell marks it carries right
+   *  now) and return the entry's stable id. */
+  record(entry: JournalEntry): number {
+    const id = this.journal.record(entry);
+    this.marks.set(id, new Map(this.host.engine.changedCells));
+    return id;
   }
 
   clearJournal(): void {
     this.journal.clear();
+    this.marks.clear();
+  }
+
+  /** Whether the entry is currently applied — false while undone, and false
+   *  forever once a new edit forked it off the timeline. Drives the chat
+   *  reply's Executed/Undone display. */
+  isApplied(id: number): boolean {
+    return this.journal.isApplied(id);
+  }
+
+  // Restore the marks of the step the cursor landed on (empty before the
+  // first step) — and re-run the reveal scroll to its first changed column.
+  private restoreCurrentMarks(): void {
+    const id = this.journal.current()?.id;
+    const cells = id === undefined ? undefined : this.marks.get(id);
+    this.host.engine.restoreChangedCells(cells ?? new Map());
   }
 
   /** Relabel the most recent entry (voice transcript swap). */
@@ -55,6 +79,7 @@ export class PatchManager {
     const spec = this.journal.jumpTo(index);
     if (!spec) return;
     await this.host.engine.applySpecCached(spec);
+    this.restoreCurrentMarks();
     this.host.selection = null;
     this.host.notify();
   }
@@ -70,6 +95,7 @@ export class PatchManager {
       return;
     }
     await this.host.engine.applySpecCached(entry.prevSpec);
+    this.restoreCurrentMarks();
     this.host.selection = null;
     this.host.notify();
   }
@@ -81,6 +107,7 @@ export class PatchManager {
       return;
     }
     await this.host.engine.applySpecCached(entry.nextSpec);
+    this.restoreCurrentMarks();
     this.host.selection = null;
     this.host.notify();
   }
@@ -91,7 +118,7 @@ export class PatchManager {
    *  undoable spec patch that replays against the source. */
   async editCell(rowIndex: number, column: string, value: string): Promise<void> {
     const before = this.host.engine.rawRows()[rowIndex]?.[column];
-    await this.applySpecChange(`edit ${column} row ${rowIndex + 1}`, (spec) => ({
+    const id = await this.applySpecChange(`edit ${column} row ${rowIndex + 1}`, (spec) => ({
       ...spec,
       transformations: [
         ...spec.transformations,
@@ -104,8 +131,10 @@ export class PatchManager {
         },
       ],
     }));
-    // The edited cell tints like any other change (#LazyExec grid upgrades).
+    // The edited cell tints like any other change (#LazyExec grid upgrades) —
+    // and the entry's mark snapshot catches up so undo/redo restores it.
     this.host.engine.noteChangedCell(rowIndex, column, before);
+    this.marks.set(id, new Map(this.host.engine.changedCells));
   }
 
   /** The column menu's Delete column — a spec step, the same patch a chat
@@ -133,16 +162,17 @@ export class PatchManager {
     });
   }
 
-  private async applySpecChange(label: string, build: (spec: TablePlan) => TablePlan): Promise<void> {
+  private async applySpecChange(label: string, build: (spec: TablePlan) => TablePlan): Promise<number> {
     const runner = this.host.engine.ensureHeadless();
     if (!this.host.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const prevSpec = structuredClone(runner.currentSpec());
     await this.host.engine.applySpecCached(build(prevSpec));
-    this.journal.record({
+    const id = this.record({
       label,
       prevSpec,
       nextSpec: structuredClone(runner.currentSpec()),
     });
     this.host.notify();
+    return id;
   }
 }

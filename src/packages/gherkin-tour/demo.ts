@@ -22,12 +22,20 @@ const featureText = `Feature: Tour the gherkin-tour demo
     And compare with the expected output
 `;
 
-// Inline fixtures — the demo's stand-in for files + a recorded result.
+// Inline fixtures — the demo's stand-in for files + a recorded result. Long
+// enough to overflow the demo table's fixed-height box, so the tour's
+// scroll-through has something to scroll.
 const PEOPLE = [
   { name: 'Ada', age: 36 },
   { name: 'Cody', age: 14 },
   { name: 'Mira', age: 27 },
   { name: 'Sam', age: 9 },
+  { name: 'Iris', age: 41 },
+  { name: 'Leo', age: 8 },
+  { name: 'Noor', age: 22 },
+  { name: 'Pia', age: 61 },
+  { name: 'Ravi', age: 17 },
+  { name: 'Tess', age: 33 },
 ];
 const ADULTS = PEOPLE.filter((r) => r.age >= 18);
 
