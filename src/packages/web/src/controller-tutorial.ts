@@ -201,6 +201,9 @@ export class TutorialManager {
     // may still be streaming, and the prefill-chat execute guard refuses to
     // send during a stream. Wait it out so a fast Next never skips a query.
     await this.pending;
+    // The awaited request may have ended the tour (a replay miss cancels it) —
+    // a Next that was already in flight then has nothing left to advance.
+    if (this.tutorialStepIndex === null || !this.activeTour) return;
     const total = this.activeTour.steps.length;
     if (this.tutorialStepIndex >= total) return; // already done
 

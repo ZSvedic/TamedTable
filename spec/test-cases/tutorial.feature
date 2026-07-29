@@ -207,6 +207,35 @@ Feature: Tutorial panel
       Then no toast is shown
       And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
+  Rule: Replay pins the recording configuration, whatever the visitor selected
+
+    # Regression: selecting OpenRouter shrinks the table page to its pinned
+    # cell batch (25 rows), so a tour's AI step evaluated a different preview
+    # window than the cassette recorded (100 rows) — the replay missed and the
+    # 25,000-row tour ended "off-script" on its query step. Replay pins the
+    # page size along with the model.
+    @web @regression
+    Scenario: A tour replays key-free with a non-Gemini provider selected
+      Given the TamedTable web app
+      And the API key has not been set
+      And user clicks the provider card "openrouter"
+      And the tutorial "Clean 25,000 rows for cents" is selected
+      When user plays the whole tutorial
+      Then the evaluated-rows readout shows "100 of 25000 rows evaluated"
+      And no toast is shown
+
+    # "Always run on all rows" would push the tour's AI step across the whole
+    # table — thousands of requests the cassette never recorded.
+    @web @regression
+    Scenario: A tour replays key-free with "Always run on all rows" on
+      Given the TamedTable web app
+      And the API key has not been set
+      And the setting "Always run on all rows" is on
+      And the tutorial "Clean 25,000 rows for cents" is selected
+      When user plays the whole tutorial
+      Then the evaluated-rows readout shows "100 of 25000 rows evaluated"
+      And no toast is shown
+
   Rule: A replay miss ends the tour cleanly
 
     # The cassette can only answer the requests the tour recorded. A request it

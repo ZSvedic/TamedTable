@@ -1449,7 +1449,14 @@ placeholder key — so the request fingerprints identically to the taped one; th
 engine is rebuilt when replay mode flips. The provider comes from
 `TutorialManager.replayProvider()`, which always returns `'gemini'` — every
 committed cassette, voice tours included, records with the Gemini provider
-defaults. `sendChat` skips its provider-key guard while
+defaults. The pin reaches past the engine: while a tour replays,
+`WebController.pageSize` reads as `pageSizeFor(replayProvider(), opts)` —
+not the visitor's provider-derived page — so the lazy preview window an AI
+step evaluates matches the recording (OpenRouter's pinned cell batch would
+otherwise shrink the page and fingerprint different per-cell batches), and
+`LazyManager` ignores `config.alwaysRunAll` (`requestCellFilter`,
+`confirmPatch`) so simple mode cannot push a replayed step across the whole
+table. `sendChat` skips its provider-key guard while
 replaying. Because the patch turn embeds only `basename(spec.table)` and pins
 the default model, a tour replays the cassette a `@headless`/`@cli`/`@web` run of
 the same scenario already recorded — no separate tutorial recording is needed (a

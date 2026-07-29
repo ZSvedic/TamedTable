@@ -130,8 +130,17 @@ export class WebController implements ControllerHost {
    *  never carries a page size), sized to one AI-cell concurrency wave so a
    *  streaming page fills in as each wave of concurrent batches lands.
    *  Re-derived on config changes: the wave shrinks with the provider's
-   *  pinned cell batch size. */
-  pageSize: number;
+   *  pinned cell batch size. While a tour replays, reads as the recording
+   *  provider's page instead — an AI step evaluates the rows in view, so a
+   *  provider-shrunk page would issue per-cell batches the cassette never
+   *  taped (spec/behavior.md § Key-free playback). */
+  get pageSize(): number {
+    return this.tutorial.isReplaying()
+      ? pageSizeFor(this.tutorial.replayProvider(), this.opts)
+      : this.basePageSize;
+  }
+  set pageSize(n: number) { this.basePageSize = n; }
+  private basePageSize = 0;
   /** The selected cell, or null — tints the cell and feeds the voice prompt. */
   selection: CellRef | null = null;
   /** Microphone state — drives the MicButton's red ring and spinner. */
