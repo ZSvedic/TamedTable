@@ -17,6 +17,7 @@ import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
 import type { WebController } from '../../controller.ts';
+import { STAY_REPLAY_HINT } from '../../controller-messages.ts';
 import { useController } from '../../hooks/useController.ts';
 import { useKeyboardInset, bottomInset } from '../../hooks/useKeyboardInset.ts';
 import { useTableZoom } from '../../hooks/useTableZoom.ts';
@@ -395,6 +396,10 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   const tableZoom = useTableZoom(spec.table ?? '');
 
   const voiceStatus = controller.voiceStatus;
+  // Staying in a finished tour: the cassette can't answer new requests, so
+  // the composer greys with the replay hint and Speak disables — undo/redo
+  // and the History sheet stay live (behavior.md § Staying in the tour).
+  const stayed = controller.isTutorialStayed();
   const tourActive = controller.isTutorialActive();
   const stepEl = tourActive ? controller.currentStepElementId() : null;
   const prefill = controller.tutorialPrefill;
@@ -488,7 +493,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
       // The voice tour's `speak` step spotlights this button (same id the
       // desktop mic button carries), so the highlight resolves in both layouts.
       id: 'tutorial-speak',
-      disabled: !loaded || busy || !controller.voiceAvailable(),
+      disabled: !loaded || busy || stayed || !controller.voiceAvailable(),
       onClick: startVoice,
     },
   ];
@@ -538,6 +543,8 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
             sort={controller.viewSort()}
             filters={controller.viewFilters()}
             onHeaderTap={(col) => setMenuCol(col)}
+            changedCells={controller.pageChangedCells()}
+            reveal={controller.revealTarget()}
           />
           {menuCol !== null && (
             <ColumnMenuSheet t={t} controller={controller} col={menuCol} onClose={() => setMenuCol(null)} />
@@ -576,6 +583,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
             onClose={() => setInputMode('none')}
             lifted={kbInset > 0}
             inputId="tutorial-chat-input"
+            disabledHint={stayed ? STAY_REPLAY_HINT : null}
           />
         ) : inputMode === 'voice' ? (
           <VoiceSheet t={t} status={voiceStatus} onSend={() => void controller.stopVoice()} onCancel={() => controller.cancelVoice()} />

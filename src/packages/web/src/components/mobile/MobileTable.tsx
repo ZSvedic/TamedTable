@@ -7,7 +7,7 @@
 // against the page. Tapping a cell selects it (the status the voice prompt
 // reads). Editing and column-drag are desktop gestures — the mobile grid is
 // select-and-scroll.
-import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import type { Row } from '@tamedtable/core';
@@ -50,6 +50,14 @@ export interface MobileTableProps {
   filters?: Record<string, string>;
   /** A header tap opens the column menu (bottom sheet) when present. */
   onHeaderTap?: (column: string) => void;
+  /** Cells the host's last step changed, keyed "<absRow>:<col>" — a changed
+   *  cell tints, exactly as on desktop (the tint is the signal; the phone
+   *  does without the hover tooltip). */
+  changedCells?: Record<string, unknown>;
+  /** Column the host wants on screen — the reveal scroll. Each new `seq`
+   *  pans the page (the phone's scroller) to that column's header, corrected
+   *  for the frozen row-number column at the left edge. */
+  reveal?: { column: string; seq: number } | null;
 }
 
 export function MobileTable({
@@ -69,7 +77,27 @@ export function MobileTable({
   sort,
   filters,
   onHeaderTap,
+  changedCells,
+  reveal,
 }: MobileTableProps): ReactNode {
+  // The reveal scroll: pan the page (the phone's scroller) so the named
+  // column's header is on screen. scrollIntoView alone can leave the target
+  // under the frozen Row # column at the left edge (an undo landing on a
+  // step whose changed column sits left of the view) — nudge past it.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const revealColumn = reveal?.column;
+  const revealSeq = reveal?.seq;
+  useEffect(() => {
+    if (revealColumn === undefined || revealSeq === undefined) return;
+    const root = rootRef.current;
+    const th = root?.querySelector(`th[data-mob-header="${CSS.escape(revealColumn)}"]`);
+    if (!th) return;
+    th.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const idx = root?.querySelector('thead th');
+    const idxRight = idx?.getBoundingClientRect().right ?? 0;
+    const left = th.getBoundingClientRect().left;
+    if (left < idxRight) window.scrollBy({ left: left - idxRight });
+  }, [revealColumn, revealSeq]);
   // Lengths inside the zoomed subtree render multiplied by the zoom; offsets
   // that must line up with the unzoomed chrome (the fixed app bar) or the
   // unzoomed viewport divide it back out.
@@ -112,6 +140,7 @@ export function MobileTable({
     // the viewport edge where the page background would show through.
     <div
       id={id}
+      ref={rootRef}
       data-mob-table=""
       style={{
         flex: 1,
@@ -260,16 +289,18 @@ export function MobileTable({
                 </td>
                 {columns.map((col) => {
                   const isSel = selection?.row === absRow && selection.column === col;
+                  const isChanged = changedCells !== undefined && `${absRow}:${col}` in changedCells;
                   const value = (row as Record<string, unknown>)[col];
                   return (
                     <td
                       key={col}
                       data-mob-cell={`${absRow}:${col}`}
+                      data-mob-changed={isChanged ? '' : undefined}
                       onClick={() => onSelect(absRow, col)}
                       style={{
                         ...bodyCell,
                         cursor: 'pointer',
-                        background: isSel ? t.accentSoft : undefined,
+                        background: isSel || isChanged ? t.accentSoft : undefined,
                         boxShadow: isSel ? `inset 0 0 0 2px ${t.accent}` : undefined,
                       }}
                     >

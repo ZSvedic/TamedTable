@@ -41,6 +41,7 @@ export function KeyboardSheet({
   onClose,
   lifted,
   inputId,
+  disabledHint = null,
 }: {
   t: Theme;
   draft: string;
@@ -51,11 +52,16 @@ export function KeyboardSheet({
    *  the home indicator, so the safe-area padding would be dead space. */
   lifted: boolean;
   inputId?: string;
+  /** Non-null disables the composer: the field and send grey out and this
+   *  text shows as the placeholder — the same "input is off, here is why"
+   *  state the desktop chat panel renders (staying in a finished tour). */
+  disabledHint?: string | null;
 }): ReactNode {
+  const disabled = disabledHint !== null;
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
-    ref.current?.focus();
-  }, []);
+    if (!disabled) ref.current?.focus();
+  }, [disabled]);
   // Auto-grow: size the field to its content on every draft change (collapse
   // to a line first so deletions shrink it), capped at the five-line ceiling.
   useEffect(() => {
@@ -64,7 +70,7 @@ export function KeyboardSheet({
     el.style.height = `${COMPOSER_LINE_H + 2 * COMPOSER_PAD_V}px`;
     el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_H)}px`;
   }, [draft]);
-  const hasDraft = draft.trim() !== '';
+  const hasDraft = !disabled && draft.trim() !== '';
   return (
     <div
       className="tt-sheet"
@@ -115,10 +121,11 @@ export function KeyboardSheet({
               ref={ref}
               // autoFocus + the mount focus below give iOS the best chance to
               // raise the native keyboard when the Type sheet opens.
-              autoFocus
-              value={draft}
+              autoFocus={!disabled}
+              value={disabled ? '' : draft}
               rows={1}
-              placeholder="Describe a transformation…"
+              placeholder={disabledHint ?? 'Describe a transformation…'}
+              disabled={disabled}
               onChange={(e) => onDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -135,7 +142,7 @@ export function KeyboardSheet({
                 fontFamily: typography.ui,
                 fontSize: typography.size.base,
                 lineHeight: `${COMPOSER_LINE_H}px`,
-                color: t.ink,
+                color: disabled ? t.ink3 : t.ink,
                 height: COMPOSER_LINE_H + 2 * COMPOSER_PAD_V,
                 maxHeight: COMPOSER_MAX_H,
                 overflowY: 'auto',
