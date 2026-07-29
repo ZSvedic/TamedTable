@@ -5,4 +5,4 @@ minimumReleaseAge = 604800
 # open defect and fails by design, so the default `bun test` skips them.
 # `bun run test:red:unit` overrides the ignore to run only those files.
 [test]
-pathIgnorePatterns = ["**/*.red.test.ts"]
+pathIgnorePatterns = ["**/*.red.test.ts", "**/*.red.test.tsx"]
