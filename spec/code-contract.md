@@ -119,7 +119,11 @@ interface Runner {
   loadParsed(rows: Row[], spec: TablePlan): Promise<void>;
   // Stage a lookup table by name so a `join` whose `with` matches resolves
   // against these rows instead of reading the file by path — lets joins run
-  // in the browser. An unregistered name falls back to the by-path read.
+  // in the browser. An unregistered name falls back to the by-path read, which
+  // in the browser has no filesystem to fall back to: the web controller
+  // therefore checks every new join against its staged names *before* the
+  // replay starts and asks the user for the file (#LookupJoin), so the
+  // fallback is never reached there.
   registerLookup(name: string, rows: Row[]): void;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
   // Replace the spec and replay it against the source. `opts` serves a long

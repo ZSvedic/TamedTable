@@ -161,6 +161,9 @@ export class WebController implements ControllerHost {
   runAllDialog: RunAllDialogState | null = null;
   /** The post-run save confirmation — a save picker needs a fresh click. */
   saveReadyDialog = false;
+  // #LookupJoin
+  /** The lookup file a waiting join needs, or null. The run is paused on it. */
+  lookupDialog: { name: string } | null = null;
   /** Column the grid should scroll into view — the reveal scroll to the start
    *  of the changed block (spec/behavior.md § Grid upgrades). A new `seq`
    *  re-triggers the scroll even for the same column; null clears it. */
@@ -452,6 +455,10 @@ export class WebController implements ControllerHost {
   /** The post-run save confirmation (a save picker needs a fresh click). */
   confirmSaveReady(): Promise<void> { return this.files.confirmSaveReady(); }
   dismissSaveReady(): void { this.files.dismissSaveReady(); }
+  // #LookupJoin — the paused join's file. "Choose file…" opens the picker from
+  // this click; cancelling drops the step that needed it.
+  chooseLookupFile(): Promise<void> { return this.files.chooseLookupFile(); }
+  dismissLookupDialog(): void { this.files.dismissLookupDialog(); }
   /** Cancel the in-flight run-all — finished rows are kept. */
   cancelRunAll(): void { this.lazy.cancelRun(); }
   /** Await any queued lazy evaluation (tests). */

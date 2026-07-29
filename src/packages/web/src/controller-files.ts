@@ -24,6 +24,22 @@ import { RecentsStore, type RecentEntry } from './recents.ts';
 /** The data formats the Open picker accepts. */
 const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
+// #LookupJoin
+/** The lookup files `spec` joins against and the session has not staged, in
+ *  step order, each named once. Every join is checked, not only a new one:
+ *  each request replays the whole spec from the source, so any unstaged join
+ *  would stop the run — and a join that ran before was staged to get that far,
+ *  so it never asks twice. */
+export function missingLookups(spec: TablePlan, staged: ReadonlySet<string>): string[] {
+  const names: string[] = [];
+  for (const t of spec.transformations as Transformation[]) {
+    if (t.kind !== 'join') continue;
+    if (staged.has(t.with) || names.includes(t.with)) continue;
+    names.push(t.with);
+  }
+  return names;
+}
+
 export class FilesManager {
   private readonly host: ControllerHost;
   private readonly recentsStore = new RecentsStore();
@@ -104,6 +120,8 @@ export class FilesManager {
         );
         return;
       }
+      // #LookupJoin — cancelling leaves before the run posts anything.
+      if (!(await this.ensureLookups(spec))) return;
       const prevSpec = structuredClone(this.host.engine.currentSpec());
       started = picked.name;
       this.host.pushMessage('user', `Run ${picked.name}`);
@@ -139,6 +157,53 @@ export class FilesManager {
       this.host.dialog = null;
       this.host.notify();
     }
+  }
+
+  // #LookupJoin — the lookup gate, shared by the two paths that can introduce
+  // a join: a chat request's patch (through the runner's confirmSpec hook) and
+  // a replayed flow. Each missing file raises the dialog in turn and blocks
+  // until the user picks it or cancels; cancelling answers false, and the
+  // caller drops the step whole rather than half-running it.
+  private lookupResolve: ((staged: boolean) => void) | null = null;
+
+  async ensureLookups(spec: TablePlan): Promise<boolean> {
+    for (const name of missingLookups(spec, this.host.engine.stagedLookupNames())) {
+      this.host.lookupDialog = { name };
+      this.host.notify();
+      const staged = await new Promise<boolean>((resolve) => { this.lookupResolve = resolve; });
+      if (!staged) return false;
+    }
+    return true;
+  }
+
+  /** The dialog's "Choose file…" click — a fresh user gesture, which is the
+   *  only thing a file picker opens from. The picked rows stage under the name
+   *  the join asked for, so a file renamed on disk still satisfies the step. */
+  async chooseLookupFile(): Promise<void> {
+    const pending = this.host.lookupDialog;
+    if (!pending) return;
+    try {
+      const picked = await this.host.file.pickOpen(OPEN_EXTENSIONS);
+      if (!picked) return; // picker dismissed — the dialog stays up
+      const { rows } = await parseTable(picked.name, picked.bytes);
+      this.host.engine.registerLookup(pending.name, rows);
+      this.settleLookup(true);
+    } catch (e) {
+      this.host.pushToast('error', `Could not open lookup table: ${(e as Error).message}`);
+    }
+  }
+
+  /** Cancel: the join has no rows to work from, so the step is dropped. */
+  dismissLookupDialog(): void {
+    this.settleLookup(false);
+  }
+
+  private settleLookup(staged: boolean): void {
+    const resolve = this.lookupResolve;
+    this.lookupResolve = null;
+    this.host.lookupDialog = null;
+    this.host.notify();
+    resolve?.(staged);
   }
 
   /** Parse and validate a picked `.flow` file through file-io's parseFlow

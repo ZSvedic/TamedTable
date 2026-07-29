@@ -165,6 +165,46 @@ Feature: Web front-end
       Then the last assistant reply shows "Executed steps:"
       And the last assistant reply is not marked undone
 
+    # A join names a second file, and the browser has no working directory to
+    # resolve it against (behavior.md § Web UI) — so the run stops and asks.
+    # Deterministic: a flow replay makes no model call.
+    @web @offline
+    Scenario: A join whose lookup table is not staged asks for the file
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      Then the lookup dialog asks for "join-country-codes.csv"
+      When user chooses the lookup file "join-country-codes.csv"
+      Then columns exist in the spec: "ISO", "Region"
+      And the chat shows a user message "Run join-lookup.flow"
+
+    @web @offline
+    Scenario: Cancelling the lookup dialog leaves the table untouched
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      And user dismisses the lookup dialog
+      Then the spec has 0 transformations
+      And the table has 20 rows
+      And no toast is shown
+
+    # A staged lookup lasts the session, so a second join against the same name
+    # runs straight through.
+    @web @offline
+    Scenario: A second join against a staged lookup does not ask again
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      And user chooses the lookup file "join-country-codes.csv"
+      And user undoes the last change
+      And user says "Open flow"
+      And user selects "join-lookup.flow"
+      Then no lookup dialog is shown
+      And columns exist in the spec: "ISO", "Region"
+
     @web
     Scenario: A flow reading a column the current table lacks is refused
       Given the TamedTable web app

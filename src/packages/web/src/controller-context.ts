@@ -70,6 +70,9 @@ export interface ControllerHost {
   saveReadyDialog: boolean;
   /** Column the grid should scroll into view (a new seq re-triggers), or null. */
   reveal: { column: string; seq: number } | null;
+  // #LookupJoin
+  /** The lookup file a waiting join needs, or null. */
+  lookupDialog: { name: string } | null;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
