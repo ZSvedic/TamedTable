@@ -30,7 +30,21 @@ function allFeaturePaths() {
     .filter((f) => f.endsWith('.feature'))
     .map((f) => `../spec/test-cases/${f}`);
   const pkg = [...PACKAGE_FEATURES].map((name) => featurePath(name));
-  return [...tc, ...pkg];
+  return [...tc, ...pkg, ...redFeaturePaths()];
+}
+
+// `spec/test-cases/red/` is the bug inventory: every scenario there is tagged
+// @red and fails by design (each red test documents one open defect). The
+// surface profiles exclude @red so `bun run test` stays green; the `red`
+// profile below runs only them (`bun run test:red`).
+function redFeaturePaths() {
+  let entries = [];
+  try {
+    entries = readdirSync(join(import.meta.dirname, '../spec/test-cases/red'));
+  } catch {
+    return [];
+  }
+  return entries.filter((f) => f.endsWith('.feature')).map((f) => `../spec/test-cases/red/${f}`);
 }
 
 const FEATURES = process.env.TAMEDTABLE_FEATURES
@@ -53,8 +67,8 @@ export default common;
 // tape gets made (otherwise the tag would lock them out of their own recording).
 const tagsFor = (surface) =>
   process.env.TAMEDTABLE_CASSETTE === 'record'
-    ? `@${surface}`
-    : `@${surface} and not @needs-recording`;
+    ? `@${surface} and not @red`
+    : `@${surface} and not @needs-recording and not @red`;
 
 export const headless = {
   ...common,
@@ -72,6 +86,14 @@ export const web = {
   ...common,
   tags: tagsFor('web'),
   worldParameters: { surface: 'web' },
+};
+
+// The red profile runs the bug inventory (`bun run test:red`): every @red
+// scenario, no surface filter — each scenario carries its surface tag for the
+// reader, but its step defs (src/tests/red/) are self-contained.
+export const red = {
+  ...common,
+  tags: '@red',
 };
 
 // #BenchPerf — standalone performance benchmark profile (`bun run bench`).
