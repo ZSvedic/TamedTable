@@ -16,13 +16,15 @@
     #chat-input { flex: 1; min-width: 14rem; padding: 0.4rem 0.6rem; border: 1px solid #bbb; border-radius: 6px; font: inherit; }
     .cols { display: flex; gap: 1rem; align-items: stretch; }
     pre, #feature { flex: 1; margin: 0; padding: .6rem; background: #f4f4f4; border-radius: 6px; overflow: auto; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
-    #table-view { border: 1px solid #ddd; border-radius: 6px; padding: .6rem; min-height: 6rem; }
+    /* Short and scrollable on purpose: the tour's scroll-through (wheel and
+       touch pass the overlay) is demonstrated — and tested — on this box. */
+    #table-view { border: 1px solid #ddd; border-radius: 6px; padding: .6rem; min-height: 6rem; max-height: 8rem; overflow: auto; }
     table { border-collapse: collapse; width: 100%; font-family: monospace; font-size: 12px; }
     th, td { padding: 3px 8px; border-bottom: 1px solid #eee; text-align: left; white-space: nowrap; }
     th { color: #555; border-bottom: 1px solid #ccc; }
     #status { color: #2563eb; font-size: 12px; min-height: 1.2em; }
   </style>
-<link rel="stylesheet" crossorigin href="/demos/gherkin-tour/demo-xj22sh4a.css"><script type="module" crossorigin src="/demos/gherkin-tour/demo-4ays2qd1.js"></script></head>
+<link rel="stylesheet" crossorigin href="/demos/gherkin-tour/demo-xj22sh4a.css"><script type="module" crossorigin src="/demos/gherkin-tour/demo-8xt00q0s.js"></script></head>
 <body>
   <h1>gherkin-tour — a page that tours itself</h1>
   <p>
