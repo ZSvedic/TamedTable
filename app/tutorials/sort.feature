@@ -44,6 +44,20 @@ Feature: Sort rows by a key
       Then exit code is 0
       And "sort-column-output.jsonl" matches the expected output
 
+  # Regression: the comparator answered "equal" for every number-vs-word pair,
+  # which made it non-transitive — Array.sort then emitted an arbitrary order,
+  # numbers wrongly ordered among themselves included.
+  Rule: A column mixing numbers, words and blanks sorts in one predictable order
+
+    @cli @offline @regression
+    Scenario: Sort a mixed number/word/blank column ascending
+      Given "sort-mixed.flow" exists
+      And the expected output is "sort-mixed-expected.jsonl"
+      When user runs "tamedtable execute sort-mixed.flow --input sort-mixed-input.jsonl --output sort-mixed-output.jsonl"
+      Then exit code is 0
+      # numbers by magnitude, then the words as text, then the blank
+      And "sort-mixed-output.jsonl" matches the expected output
+
   Rule: An empty sort.by rejects at validation
 
     @cli @offline
