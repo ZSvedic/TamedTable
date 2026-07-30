@@ -85,6 +85,17 @@ Feature: Row and dataset validation
       And rows where "Email" is "asdf@asdf.com" have "Email_ok" equal to false
       And rows where "Email" is "ana@acme.io" have "Email_ok" equal to true
       And rows where "Email" is "cara@startup.dev" have "Email_ok" equal to true
+      # The flag pair the request added tints and scrolls into view like any
+      # filled cells, and undo/redo restore that step's marks and reveal
+      # (spec/behavior.md § Grid upgrades).
+      And the table reveals the "Email_ok" column
+      And every cell in column "Email_ok" carries the changed marker
+      When user undoes the last change
+      Then no cells are marked changed
+      And no column is revealed
+      When user redoes the last change
+      Then the table reveals the "Email_ok" column
+      And every cell in column "Email_ok" carries the changed marker
 
     # The predicate must round-trip the day: JS Date rolls 2024-02-30 over to
     # March 1, so an isNaN guard alone can never catch day-overflow dates.
@@ -101,6 +112,10 @@ Feature: Row and dataset validation
       And rows where "DOB" is "2024-02-30" have "DOB_ok" equal to false
       And rows where "DOB" is "1990-05-12" have "DOB_ok" equal to true
       And rows where "DOB" is "1985-11-03" have "DOB_ok" equal to true
+      # A pure {js} validate — no AI column anywhere — still tints its new
+      # pair and reveals it: filled is not an AI-only notion.
+      And the table reveals the "DOB_ok" column
+      And every cell in column "DOB_ok" carries the changed marker
 
     # The mutate that computes the yes/no column MUST precede the validate that
     # reads it — the runtime rejects the reverse order (see spec/behavior.md

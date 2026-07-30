@@ -1526,6 +1526,14 @@ a shuffled or sorted view from tinting one block and leaving an identically
 filled block below it bare. Hovering a changed cell shows the previous
 value.
 
+Filled is not an AI-only notion. The columns a request's own new steps
+write — a `{js}`/`{sql}` mutate's targets, a split's parts, a validate's
+flag pair, the columns a join or reshape brings in — mark the same way,
+so a request that adds a plain computed column tints and reveals exactly
+like an AI one. Steps that write no columns (filter, sort, select) mark
+nothing: reordering or dropping rows is not a fill, and a
+structural-only request sets no reveal target.
+
 When a request commits with changed cells, the grid **scrolls the start of
 the changed block into view**: it scrolls horizontally just far enough to
 bring the leftmost changed column on screen (a minimal scroll — nothing

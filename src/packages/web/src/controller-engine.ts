@@ -20,7 +20,7 @@ import type { FetchLike } from '@tamedtable/file-io';
 import { requestBody, requestUrl } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
 import type { RunProgress } from './controller-types.ts';
-import { aiMadeColumns } from './controller-lazy.ts';
+import { aiMadeColumns, newlyWrittenColumns } from './controller-lazy.ts';
 
 /** Newest log lines the run-progress feed keeps — a bound, not a transcript. */
 const FLOW_LOG_MAX = 500;
@@ -248,6 +248,7 @@ export class EngineManager {
     this.host.streaming = true;
     this.overlay.clear();
     this.changedCells.clear();
+    const prevSpec = structuredClone(runner.currentSpec());
     const beforeRows = this.snapshotRows();
     const feed = this.runProgressFeed(spec.transformations.length);
     this.host.notify();
@@ -261,9 +262,11 @@ export class EngineManager {
         // a chat request; the rest stays pending behind the indicators.
         cellFilter: this.host.lazy.requestCellFilter(),
       });
-      // #LazyExec — mark the cells the flow filled on its preview page, and
-      // point the grid at the start of the changed block.
-      this.recordFilled(beforeRows, true);
+      // #LazyExec — mark the cells the flow filled on its preview page —
+      // structurally written columns included — and point the grid at the
+      // start of the changed block.
+      this.recordFilled(beforeRows, true,
+        newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
       this.refreshReveal();
     } finally {
       this.activeAbort = null;
@@ -350,11 +353,16 @@ export class EngineManager {
   // `reset` starts a new request's marks; page-open, run-all, and retry passes
   // pass `false` so an AI column tints uniformly as the reader pages through
   // it. Earlier marks keep their recorded previous value (the hover tooltip).
-  recordFilled(before: Row[], reset: boolean): void {
+  // `extraCols` widens the diff beyond the AI-made columns — the commit paths
+  // pass the columns the request's own steps wrote (a {js}/{sql} mutate, a
+  // split, a validate's flag pair), so a structural fill tints and reveals
+  // like an AI one (spec/behavior.md § Grid upgrades).
+  recordFilled(before: Row[], reset: boolean, extraCols?: ReadonlySet<string>): void {
     if (reset) this.changedCells.clear();
     const runner = this.ensureHeadless();
     const after = runner.currentRows();
     const cols = aiMadeColumns(runner.currentSpec());
+    if (extraCols) for (const c of extraCols) cols.add(c);
     if (cols.size === 0) return;
     const shown = (v: unknown): unknown =>
       isPendingCell(v) || isFailedCell(v) ? undefined : v;
@@ -457,9 +465,11 @@ export class EngineManager {
           (await this.host.lazy.confirmPatch(next, prev)),
       });
       // #LazyExec — mark the cells this request filled on its preview page
-      // (before the journal snapshots them), and point the grid at the start
-      // of the changed block (the reveal scroll).
-      this.recordFilled(beforeRows, true);
+      // (before the journal snapshots them) — structurally written columns
+      // included — and point the grid at the start of the changed block (the
+      // reveal scroll).
+      this.recordFilled(beforeRows, true,
+        newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
       this.refreshReveal();
       this.lastCommitId = this.host.patch.record({
         label: opts?.label ?? text,

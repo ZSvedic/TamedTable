@@ -22,6 +22,7 @@ Feature: Validate showcase tour
       And rows where "Email" is "ana@acme.io" have "Email_ok" equal to true
       When query "flag any impossible birth date, like Feb 30th or year 1873"
       Then no toast is shown
+      And the table reveals the "DOB_ok" column
       And rows where "DOB" is "1873-01-01" have "DOB_ok" equal to false
       And rows where "DOB" is "2024-02-30" have "DOB_ok" equal to false
       And rows where "DOB" is "1990-05-12" have "DOB_ok" equal to true
@@ -31,6 +32,7 @@ Feature: Validate showcase tour
       And rows where "City" is "Kyoto" have "City_Country_ok" equal to true
       When query "flag prices that seem wrong"
       Then no toast is shown
+      And the table reveals the "Price_ok" column
       And rows where "Item" is "Desk lamp" have "Price_ok" equal to false
       And rows where "Item" is "Standing desk" have "Price_ok" equal to true
       And columns exist in the spec: "Email_ok", "DOB_ok", "City_Country_ok", "Price_ok"

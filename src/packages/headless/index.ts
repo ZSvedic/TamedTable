@@ -20,7 +20,7 @@ import {
 } from '@tamedtable/core';
 
 export { SpecJournal, type JournalEntry, type TimelineStep } from './journal.ts';
-export { renderPrompt, validateTemplate, parseLlmParts, isCancelled } from './engine.ts';
+export { renderPrompt, validateTemplate, parseLlmParts, isCancelled, validateColumns } from './engine.ts';
 import {
   CANCELLED,
   abortIf,
