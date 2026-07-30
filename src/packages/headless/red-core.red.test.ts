@@ -1,10 +1,12 @@
-// RED-CORE-1..7 — red unit tests (bug inventory) for the core runner: sort
-// comparator, join collision-rename, join re-read on undo, {sql} value
-// normalization, pivot/unpivot/group output-column collisions, the validate
-// threshold message, and the OpenRouter cell-model fallback. Everything runs
-// offline through createHeadlessRunner + loadInput + setSpec (deterministic
-// specs, no model calls, no API key). Each test asserts the SPEC-CORRECT
-// behavior and fails on current code; the assertion message names the defect.
+// RED-CORE-1/2/3/5/6/7 — red unit tests (bug inventory) for the core runner:
+// sort comparator, join collision-rename, join re-read on undo,
+// pivot/unpivot/group output-column collisions, the validate threshold message,
+// and the OpenRouter cell-model fallback. Everything runs offline through
+// createHeadlessRunner + loadInput + setSpec (deterministic specs, no model
+// calls, no API key). Each test asserts the SPEC-CORRECT behavior and fails on
+// current code; the assertion message names the defect. (The former RED-CORE-4,
+// {sql} wrapper normalization, was fixed and moved to the green suite:
+// packages/headless/sql-values.test.ts.)
 //
 // Excluded from plain `bun test` by bunfig [test] pathIgnorePatterns; run via
 // `bun run test:red:unit`.
@@ -180,44 +182,6 @@ test('RED-CORE-3: undo of an unrelated later step re-reads the join\'s right tab
     r.currentRows(),
     rowsAfterTurn1,
     'RED-CORE-3 (spec/behavior.md:653-655): after undoing the filter, the rows must be exactly the rows the join produced before the filter was added',
-  );
-});
-
-// ── RED-CORE-4 ───────────────────────────────────────────────────────────────
-// Cause: headless/sql.ts:20-25 — normalizeSqlValue unwraps only top-level
-// bigints; DuckDBTimestampValue (bigint micros inside), DuckDBDateValue,
-// DuckDBListValue pass through into committed rows. Related to RED-FIO-2
-// (same wrapper leak on the Parquet LOAD path in file-io values.ts); this is
-// the {sql} MUTATE path.
-
-test('RED-CORE-4: {sql} try_strptime commits DuckDB wrapper objects, then every save format crashes on BigInt', async () => {
-  const p = writeData('sql.jsonl', '{"d":"15/01/2024"}\n{"d":"20/02/2024"}\n');
-  const r = createHeadlessRunner({});
-  await r.loadInput(p);
-  // The exact shape the engine's own RECOVERY_GUIDANCE (index.ts:462-467)
-  // steers the model toward: try_strptime(col, [fmt, ...]).
-  await r.setSpec({
-    table: p,
-    columns: [{ id: 'd' }],
-    transformations: [{ kind: 'mutate', columns: 'ts', value: { sql: "try_strptime(d, ['%d/%m/%Y'])" } }],
-  });
-  const cell = r.currentRows()[0]!.ts;
-  const plain =
-    cell === null || ['string', 'number', 'boolean'].includes(typeof cell);
-  assert.ok(
-    plain,
-    `RED-CORE-4 (spec/code-contract.md {sql}: a scalar subquery whose values flow to the table like any cell; related to RED-FIO-2 — same wrapper leak on the Parquet load path): a {sql} timestamp cell must commit as a plain scalar; got ${Object.prototype.toString.call(cell)} (${(cell as object)?.constructor?.name}) with a BigInt inside — normalizeSqlValue (sql.ts:20-25) unwraps only top-level bigints`,
-  );
-  let err: Error | undefined;
-  try {
-    await r.exportAs(join(dir, 'sql-out.jsonl'));
-  } catch (e) {
-    err = e as Error;
-  }
-  assert.equal(
-    err,
-    undefined,
-    `RED-CORE-4 (spec/code-contract.md {sql}; related to RED-FIO-2): after the commit SUCCEEDED, :save must work — instead every save format dies on the leaked wrapper: ${err?.message.split('\n')[0]}`,
   );
 });
 

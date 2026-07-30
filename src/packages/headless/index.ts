@@ -955,7 +955,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   async exportAs(filePath: string): Promise<void> {
     this.requireLoaded();
-    await writeRows(filePath, this.derivedRows, this.spec.columns.map((c) => c.id));
+    // Rows are keyed by column id; the CSV header uses `label` when set,
+    // otherwise id (spec/behavior.md § CSV output). Other formats keep the ids.
+    await writeRows(
+      filePath,
+      this.derivedRows,
+      this.spec.columns.map((c) => c.id),
+      this.spec.columns.map((c) => c.label ?? c.id),
+    );
   }
 
   // #PyExport

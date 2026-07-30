@@ -4,7 +4,7 @@
 // SqlSession per runner; the runner loop (index.ts) owns the instance.
 
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
-import type { Row, Transformation } from '@tamedtable/core';
+import { normalizeDbCell, type Row, type Transformation } from '@tamedtable/core';
 import { CANCELLED, abortIf, isCancelled } from './engine.ts';
 
 // #CancelOp
@@ -14,14 +14,13 @@ import { CANCELLED, abortIf, isCancelled } from './engine.ts';
 // `lingeringSql` blocks the next request until it settles.
 const SQL_CANCEL_GIVE_UP_MS = 1500;
 
-// DuckDB returns BIGINT columns as JS bigints. Downstream consumers (JSON.stringify
-// in writeJsonl, the cell-update onChunk listener, test assertions) can't handle
-// bigints, so coerce to Number when it fits safely and to a string otherwise.
+// DuckDB returns BIGINT columns as JS bigints and DATE/TIMESTAMP/DECIMAL columns
+// (e.g. from try_cast/try_strptime) as wrapper objects. Downstream consumers
+// (JSON.stringify in writeJsonl, the cell-update onChunk listener, test
+// assertions) can't handle either, so `normalizeDbCell` coerces both to plain
+// scalars — shared with the Parquet/Arrow load path (file-io values.ts).
 function normalizeSqlValue(v: unknown): unknown {
-  if (typeof v !== 'bigint') return v;
-  return v >= BigInt(Number.MIN_SAFE_INTEGER) && v <= BigInt(Number.MAX_SAFE_INTEGER)
-    ? Number(v)
-    : v.toString();
+  return normalizeDbCell(v);
 }
 
 export class SqlSession {
@@ -89,7 +88,13 @@ export class SqlSession {
     const sqlValue = (v: unknown) => {
       if (v === null || v === undefined) return 'NULL';
       const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-      return `'${s.replace(/'/g, "''")}'`;
+      const quoted = (part: string) => `'${part.replace(/'/g, "''")}'`;
+      // A NUL byte terminates a C-string literal inside DuckDB's parser, so a
+      // single NUL in any cell would otherwise break EVERY {sql} step on that
+      // table with a parser error blamed on the user's fragment. Splice NULs
+      // back with chr(0) so the byte survives and never appears raw in the SQL.
+      if (!s.includes('\0')) return quoted(s);
+      return s.split('\0').map(quoted).join(' || chr(0) || ');
     };
     // INSERT in batches to keep SQL statement size reasonable.
     const BATCH = 100;

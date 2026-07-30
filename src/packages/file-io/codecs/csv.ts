@@ -4,7 +4,7 @@
 // \n line endings, no BOM). Per-format quirks: spec/packages/file-io/formats/csv.md.
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
-import type { FormatCodec, ParsedTable, Row } from '@tamedtable/table-plan';
+import { cellAt, setCell, type FormatCodec, type ParsedTable, type Row } from '@tamedtable/table-plan';
 
 function csvCellString(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -19,16 +19,32 @@ export const csvCodec: FormatCodec = {
 
   parse(bytes: Uint8Array): ParsedTable {
     const text = new TextDecoder().decode(bytes);
-    const rows = parse(text, { columns: true, skip_empty_lines: true, trim: true, bom: true }) as Row[];
-    const header = parse(text, { to_line: 1, trim: true, bom: true })[0] as string[] | undefined;
-    return { rows, columns: header ?? [] };
+    // Parse as arrays, not keyed records: the header is the first *record*, so a
+    // quoted newline inside a header field stays one record (RFC 4180), and the
+    // same `skip_empty_lines` covers both header and rows — a leading blank line
+    // no longer yields a phantom `[""]` header. csv-parse still rejects ragged
+    // rows (Invalid Record Length) in array mode. Rows are built with `setCell`
+    // so a column literally named `__proto__` lands as an own property.
+    const records = parse(text, { skip_empty_lines: true, trim: true, bom: true }) as string[][];
+    if (records.length === 0) return { rows: [], columns: [] };
+    const header = records[0]!;
+    const rows: Row[] = records.slice(1).map((rec) => {
+      const row: Row = {};
+      header.forEach((col, i) => setCell(row, col, rec[i] ?? null));
+      return row;
+    });
+    return { rows, columns: header };
   },
 
-  serialize(rows: Row[], columns: string[]): Uint8Array {
-    const records = rows.map((row) =>
-      columns.map((col) => csvCellString(col in row ? row[col] : null)),
+  serialize(rows: Row[], columns: string[], headers?: string[]): Uint8Array {
+    const records = rows.map((row) => columns.map((col) => csvCellString(cellAt(row, col))));
+    // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines); a lone
+    // CR is outside RFC 4180 TEXTDATA, so `quoted_match` forces quotes on any
+    // CR-bearing field — otherwise it emits bare and the record-delimiter
+    // auto-detection swallows a trailing CR on re-parse (silent data loss).
+    // The header row uses `headers` (labels) when given, else the ids.
+    return new TextEncoder().encode(
+      stringify(records, { header: true, columns: headers ?? columns, quoted_match: /\r/ }),
     );
-    // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines).
-    return new TextEncoder().encode(stringify(records, { header: true, columns }));
   },
 };

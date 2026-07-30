@@ -1,8 +1,10 @@
 # Red bug inventory
 
-This directory (plus `src/tests/red/` and the `*.red.test.*` files inside packages) is the bug inventory from the 2026-07-29 hunt: every test here fails **by design**, each documenting one open defect, with a failure message that leads with the finding ID and the spec line it contradicts. It owns no fixes — when a bug is fixed its red test turns green and moves into the regular suite. Run the Gherkin half with `cd src && bun run test:red` (26 scenarios) and the unit half with `bun run test:red:unit` (61 tests); the green suite excludes both (cucumber profiles skip `@red`, bunfig `pathIgnorePatterns` skips `.red.test`).
+This directory (plus `src/tests/red/` and the `*.red.test.*` files inside packages) is the bug inventory from the 2026-07-29 hunt: every test here fails **by design**, each documenting one open defect, with a failure message that leads with the finding ID and the spec line it contradicts. It owns no fixes — when a bug is fixed its red test turns green and moves into the regular suite. Run the Gherkin half with `cd src && bun run test:red` (23 scenarios) and the unit half with `bun run test:red:unit` (49 tests); the green suite excludes both (cucumber profiles skip `@red`, bunfig `pathIgnorePatterns` skips `.red.test`).
 
 Headline: **75 findings across 11 areas — 1 critical, 33 major, 41 minor.** Severity calibration: a feature dead in the deployed app = critical; work or data silently lost or silently wrong = major; a wrong label or message = minor.
+
+**Fixed — group 1/5, file formats & data integrity (15 findings, moved to green).** RED-DATA-1, RED-DATA-2, RED-DATA-3, RED-DATA-4, RED-DATA-6 → `src/tests/data-integrity.test.ts`; RED-FIO-2, RED-FIO-3, RED-FIO-4, RED-FIO-5, RED-FIO-6, RED-FIO-8 → `src/packages/file-io/codecs/codecs.test.ts`; RED-CORE-4 → `src/packages/headless/sql-values.test.ts`; RED-FIO-1 → `spec/test-cases/web.feature`; RED-FIO-7 and RED-CLI-2 → `spec/test-cases/convert.feature`. The rows below stay for the historical record; these ids no longer have a red test.
 
 ## Browser-hunt harness (sibling inventory)
 
@@ -201,7 +203,7 @@ Plain `behavior.md` / `code-contract.md` = files in `spec/`; package specs and c
 - code-contract.md:1234-1245 — `ModelChooserProps` declares `onSelectModel` (no such prop exists; behavior.md:220 forbids model selection) and the contract's `ResolvedConfig` omits `alwaysRunAll`.
 - packages/model-config/behavior.md:36-47 shows `anthropicKey: null` after a provider switch (code and rule 7 keep keys), and :17 spreads `{...opts.config, ...readStoredConfig()}` — the code does the reverse, pinned by a green unit test. Fix the spec side.
 - README.md:105 says the REPL debug block prints "after a failed request"; behavior.md:258-262 and the code print it after every request.
-- behavior.md:415-418 and :451 still say `:save` takes ".jsonl or .csv", contradicting #FormatOut (behavior.md:594-598); RED-CLI-2 pins the `:load` half, the `:save` text needs the spec fix.
+- ~~behavior.md:415-418 and :451 still say `:save` takes ".jsonl or .csv", contradicting #FormatOut (behavior.md:594-598); RED-CLI-2 pins the `:load` half, the `:save` text needs the spec fix.~~ **Fixed** with RED-CLI-2: the `:save`/`:load` bullets and the `:help` screen now name all four formats.
 - code-contract.md:1524 (and :1543, :1546) document a `prevStep()` removed by the forward-only tour refactor.
 - behavior.md:491 and :530 say `execute --output` must be `.jsonl`; the code follows #FormatOut (verified: `.csv` and `.parquet` outputs work).
 - code-contract.md:475 says readline gets `terminal: stdin.isTTY === true`; the code requires stdin *and* stdout TTYs, pinned by a green unit test. Spec call needed on which side is right.

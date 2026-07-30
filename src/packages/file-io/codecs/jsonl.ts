@@ -2,7 +2,7 @@
 // The pure-JS JSONL codec: one JSON object per line, native JSON.parse /
 // JSON.stringify. Columns are the union of keys in first-seen order. Per-format
 // quirks: spec/packages/file-io/formats/jsonl.md.
-import type { FormatCodec, ParsedTable, Row } from '@tamedtable/table-plan';
+import { cellAt, setCell, type FormatCodec, type ParsedTable, type Row } from '@tamedtable/table-plan';
 
 export const jsonlCodec: FormatCodec = {
   id: 'jsonl',
@@ -15,11 +15,19 @@ export const jsonlCodec: FormatCodec = {
     text.split('\n').forEach((raw, i) => {
       const line = raw.trim();
       if (line === '') return;
+      let value: unknown;
       try {
-        rows.push(JSON.parse(line) as Row);
+        value = JSON.parse(line);
       } catch (e) {
         throw new Error(`${name}:${i + 1} malformed JSON: ${(e as Error).message}`);
       }
+      // JSONL is one JSON *object* per line: a null, array, number, string, or
+      // boolean line is not a table row and would otherwise load as a garbage
+      // row (or crash on Object.keys(null)).
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error(`${name}:${i + 1} not a JSON object: ${line}`);
+      }
+      rows.push(value as Row);
     });
     const columns: string[] = [];
     const seen = new Set<string>();
@@ -39,8 +47,11 @@ export const jsonlCodec: FormatCodec = {
       .map((row) => {
         if (!columns) return JSON.stringify(row);
         const ordered: Row = {};
-        for (const col of columns) ordered[col] = col in row ? row[col] : null;
-        for (const k of Object.keys(row)) if (!(k in ordered)) ordered[k] = row[k];
+        // Read/write through the prototype-safe helpers so a `__proto__` column
+        // survives the round-trip; JS `undefined` renders as `null` (a listed
+        // column always carries a key), matching the CSV save's empty cell.
+        for (const col of columns) setCell(ordered, col, cellAt(row, col) ?? null);
+        for (const k of Object.keys(row)) if (!Object.hasOwn(ordered, k)) setCell(ordered, k, row[k] ?? null);
         return JSON.stringify(ordered);
       })
       .join('\n');

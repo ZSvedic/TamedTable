@@ -12,6 +12,10 @@ line:
 
 - Blank lines (after trimming) are skipped.
 - A line that is not valid JSON throws `<name>:<lineNumber> malformed JSON: <detail>`.
+- A line whose JSON is not an object — `null`, an array (`[1,2]`), a number, a
+  string, a boolean — is not a table row and throws
+  `<name>:<lineNumber> not a JSON object: <line>`, rather than loading as a
+  garbage row.
 - Each row keeps its **native JSON types** — JSONL does not stringify like CSV.
 - `columns` is the **union of keys across all rows**, in first-seen order (the
   order each key first appears, scanning rows top to bottom). A file with no
@@ -23,6 +27,8 @@ line:
 result to bytes (UTF-8), with a trailing newline when there is any output:
 
 - **With `columns`** (the `writeRows`/Save-data path): keys are emitted in that
-  order, a missing key written as `null`, and any extra keys not in the list
-  appended after.
+  order, a missing key (or a JS `undefined` value) written as `null` — matching
+  the CSV save's empty cell, so the two formats describe one schema — and any
+  extra keys not in the list appended after. A column named `__proto__` is
+  emitted as an own key, not dropped by the prototype setter.
 - **Without `columns`**: each row is written verbatim in its own key order.

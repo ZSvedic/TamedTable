@@ -354,6 +354,11 @@ Then('the first column is {string}', function (this: TamedTableWorld, column: st
   assert.equal(controller(this).displaySpec().columns[0]?.id, column);
 });
 
+Then('the table columns are {string}', function (this: TamedTableWorld, list: string) {
+  const ids = controller(this).displaySpec().columns.map((c) => c.id);
+  assert.deepEqual(ids, list.split(',').map((s) => s.trim()));
+});
+
 Then('the spec has {int} transformation(s)', function (this: TamedTableWorld, n: number) {
   assert.equal(controller(this).displaySpec().transformations.length, n);
 });

@@ -5,8 +5,10 @@
 
 import { isAbsolute, join } from 'node:path';
 import {
+  cellAt,
   loadCsv,
   loadJsonl,
+  setCell,
   type Expr,
   type Row,
   type TablePlan,
@@ -79,7 +81,9 @@ export function applyFilter(rows: Row[], t: Extract<Transformation, { kind: 'fil
 export function applySelect(rows: Row[], t: Extract<Transformation, { kind: 'select' }>): Row[] {
   return rows.map((row) => {
     const out: Row = {};
-    for (const col of t.columns) out[col] = col in row ? row[col] : null;
+    // `cellAt` reads only own properties, so selecting a column no row has
+    // (e.g. "constructor", "toString") yields null, not an inherited member.
+    for (const col of t.columns) setCell(out, col, cellAt(row, col));
     return out;
   });
 }
@@ -91,9 +95,11 @@ export function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'm
   return rows.map((row, i) => {
     const result = fn(row, i, rows);
     const out: Row = { ...row };
-    if (cols.length === 1) out[cols[0]!] = result;
+    // `setCell` so a mutate targeting a column literally named "__proto__"
+    // writes an own property instead of hitting the prototype setter.
+    if (cols.length === 1) setCell(out, cols[0]!, result);
     else if (result && typeof result === 'object')
-      for (const c of cols) out[c] = (result as Row)[c];
+      for (const c of cols) setCell(out, c, (result as Row)[c]);
     return out;
   });
 }
@@ -284,10 +290,13 @@ export function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivo
   return indexOrder.map((key) => {
     const { tuple, cells } = buckets.get(key)!;
     const out: Row = {};
-    t.index.forEach((c, i) => { out[c] = tuple[i] ?? null; });
+    // `setCell` for both index and pivoted-value columns: an on-value that is
+    // literally "__proto__" (with an object cell) must land as an own property,
+    // not become the output row's prototype.
+    t.index.forEach((c, i) => { setCell(out, c, tuple[i] ?? null); });
     for (const onVal of onValues) {
       const vals = cells.get(onVal) ?? [];
-      out[onVal] = vals.length === 0 ? null : aggregateValues(vals, agg);
+      setCell(out, onVal, vals.length === 0 ? null : aggregateValues(vals, agg));
     }
     return out;
   });

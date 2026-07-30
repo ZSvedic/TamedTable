@@ -27,14 +27,19 @@ The codec itself is therefore runtime-agnostic — it just calls the engine.
 ## Parse
 
 `parse(bytes, name)` reads the Parquet file and returns its rows + column order.
-DuckDB infers the schema. `BIGINT`/`Int64` columns arrive as JS `bigint`; the
-codec normalizes each cell the same way the engine's `{sql}` path does — a
-safe-range bigint becomes a Number, anything larger a string. Very large inputs
-(multi-GB) log a warning rather than failing silently.
+DuckDB infers the schema. `BIGINT`/`Int64` columns arrive as JS `bigint`, and
+`DATE`/`TIMESTAMP`/`DECIMAL` (and other typed) columns as DuckDB value-wrapper
+objects; the codec normalizes each cell the same way the engine's `{sql}` path
+does — a safe-range bigint becomes a Number, anything larger a string, and a
+wrapper object its canonical string form — so every loaded cell is a plain
+scalar that saves cleanly. Very large inputs (multi-GB) log a warning rather
+than failing silently.
 
 ## Serialize
 
 `serialize(rows, columns)` writes every column as `VARCHAR`, mirroring the
 engine's string-in/string-out cell model for CSV/JSONL, so a load→save→load
 round-trip is stable. A missing key writes `NULL`; a nested value round-trips
-through `JSON.stringify`.
+through `JSON.stringify`. A zero-column table is refused with a clean, actionable
+message (DuckDB cannot create a table with no columns) rather than leaking a raw
+parser error.

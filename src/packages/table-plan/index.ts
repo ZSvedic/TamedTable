@@ -19,6 +19,56 @@ z.config(z.locales.en());
 
 export type Row = Record<string, unknown>;
 
+// ── Prototype-safe row access ─────────────────────────────────────────────────
+// Rows are plain objects keyed by arbitrary, data-derived column names, so both
+// reads and writes must not walk or mutate the prototype chain: `col in row`
+// answers for inherited members like `toString`/`constructor`, and a plain
+// `row["__proto__"] = v` hits the prototype setter instead of creating an own
+// property. Every codec and pure transformation that touches a cell by a
+// data-derived key goes through these two helpers.
+
+/** Read a cell by column without inheriting a prototype member: a row lacking
+ *  the key (e.g. no own `toString`) yields `fallback`, never `Object.prototype`'s
+ *  version. */
+export function cellAt(row: Row, col: string, fallback: unknown = null): unknown {
+  return Object.hasOwn(row, col) ? (row as Record<string, unknown>)[col] : fallback;
+}
+
+/** Assign a data-derived column onto a row without tripping the `__proto__`
+ *  prototype setter — a column literally named `__proto__` would otherwise be
+ *  silently dropped (or, for an object value, installed as the row's prototype)
+ *  instead of becoming an own property. */
+export function setCell(row: Row, col: string, value: unknown): void {
+  if (col === '__proto__') {
+    Object.defineProperty(row, col, { value, writable: true, enumerable: true, configurable: true });
+  } else {
+    (row as Record<string, unknown>)[col] = value;
+  }
+}
+
+/** Coerce a raw DuckDB / Arrow cell to a plain, serializable scalar. Downstream
+ *  consumers (JSON.stringify in the JSONL/flow writers, the table view, test
+ *  assertions) can't handle a `bigint` or a DuckDB wrapper object
+ *  (`DuckDBDateValue`, `DuckDBTimestampValue`, `DuckDBDecimalValue`,
+ *  `DuckDBListValue`, …): a safe-range bigint becomes a Number, anything larger
+ *  a string, and a wrapper object its canonical string form. Plain JSON objects
+ *  and arrays (Arrow `toJSON`, nested cells) keep their structure. */
+export function normalizeDbCell(v: unknown): unknown {
+  if (typeof v === 'bigint') {
+    return v >= BigInt(Number.MIN_SAFE_INTEGER) && v <= BigInt(Number.MAX_SAFE_INTEGER)
+      ? Number(v)
+      : v.toString();
+  }
+  if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+    const proto = Object.getPrototypeOf(v);
+    // A DuckDB value wrapper is a class instance — its prototype is neither the
+    // plain-object prototype nor null. Stringify it (its toString is the
+    // canonical DATE/TIMESTAMP/DECIMAL/… text); leave plain data objects alone.
+    if (proto !== Object.prototype && proto !== null) return String(v);
+  }
+  return v;
+}
+
 // ── TablePlan schema (one schema for every plan — fresh load, patch, replay) ──
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);
@@ -176,8 +226,13 @@ export interface FormatCodec {
    *  bytes internally; binary formats (Phase 1) read them directly. `name` is
    *  the source file name, used only for error context. */
   parse(bytes: Uint8Array, name: string): ParsedTable | Promise<ParsedTable>;
-  /** Serialize rows to the format's raw bytes, emitting `columns` in order. */
-  serialize(rows: Row[], columns: string[]): Uint8Array | Promise<Uint8Array>;
+  /** Serialize rows to the format's raw bytes, emitting `columns` in order.
+   *  Cells are always looked up by `columns` (the spec's column ids). `headers`,
+   *  when given, overrides the *display* names written for those columns —
+   *  the CSV codec uses it for the header row (column `label` when set, id
+   *  otherwise); formats whose keys must round-trip (JSONL keys, Parquet/Arrow
+   *  schema names) ignore it and keep the ids. Defaults to `columns`. */
+  serialize(rows: Row[], columns: string[], headers?: string[]): Uint8Array | Promise<Uint8Array>;
   /** Optional one-time load of a heavy parser/engine before first `parse`. */
   load?: () => Promise<void>;
 }
