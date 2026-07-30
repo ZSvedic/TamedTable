@@ -92,7 +92,8 @@ export const web = {
 // filter): each reproduces a real defect through the controller and is expected
 // to FAIL. CI does not gate on it; `bun run test:red` runs it on demand. The
 // scenarios also carry their surface tag, so the matching Before hook builds a
-// runner under this profile's surface (headless — engine/controller findings).
+// runner under this profile's surface (headless — engine/controller findings);
+// the hunt-audit red steps (src/tests/red/) are self-contained and ignore it.
 export const red = {
   ...common,
   tags: '@red',

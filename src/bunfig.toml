@@ -1,2 +1,8 @@
 [install]
 minimumReleaseAge = 604800
+
+# `*.red.test.ts` files are the unit-test bug inventory — each one documents an
+# open defect and fails by design, so the default `bun test` skips them.
+# `bun run test:red:unit` overrides the ignore to run only those files.
+[test]
+pathIgnorePatterns = ["**/*.red.test.ts", "**/*.red.test.tsx"]
