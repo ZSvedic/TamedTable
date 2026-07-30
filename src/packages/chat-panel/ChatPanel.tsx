@@ -5,7 +5,7 @@
 // button arrive as props, so the panel knows nothing about engines or files.
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, TYPING_MS_PER_CHAR, type Theme } from '@tamedtable/ui-kit';
-import { useTheme, Icon } from '@tamedtable/ui-kit/components';
+import { useTheme, Icon, isImeComposingEvent } from '@tamedtable/ui-kit/components';
 import type { ChatPanelMessage, ChatRequestDetail, ChatRunProgress } from './index.ts';
 import { StatusDot } from './StatusDot.tsx';
 
@@ -479,6 +479,12 @@ export function ChatPanel({
   const send = (): void => {
     const text = draft.trim();
     if (!text || streaming || disabled) return;
+    // Sending mid-prefill-animation stops the typing: the cleared draft must
+    // stay empty, or the still-running interval refills it and primes a
+    // duplicate request. `typed` stays set, so a re-fired effect with the
+    // same prefill doesn't restart the animation.
+    const guard = typing.current;
+    if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
     setDraft('');
     // Sending always returns to the bottom, however far back the user had
     // scrolled — the bubble about to appear is the one they want to see.
@@ -532,7 +538,7 @@ export function ChatPanel({
       >
         Requests
         <span style={{ flex: 1 }} />
-        {requestCount > 0 && (
+        {(requestCount > 0 || streaming) && (
           <span
             style={{
               fontFamily: typography.mono,
@@ -543,7 +549,9 @@ export function ChatPanel({
               color: t.ink3,
             }}
           >
-            {requestCount} transformation{requestCount === 1 ? '' : 's'}
+            {/* "· running" shows for every stream — the FIRST request has
+                requestCount 0 and still needs the marker. */}
+            {requestCount > 0 && <>{requestCount} transformation{requestCount === 1 ? '' : 's'}</>}
             {streaming && <> · running</>}
           </span>
         )}
@@ -696,7 +704,7 @@ export function ChatPanel({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === 'Enter' && !e.shiftKey && !isImeComposingEvent(e)) {
                 e.preventDefault();
                 send();
               }

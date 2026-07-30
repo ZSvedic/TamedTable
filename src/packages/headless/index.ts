@@ -189,17 +189,58 @@ export function isDeclined(e: unknown): boolean {
   return (e as Error)?.message === DECLINED;
 }
 
+// #LazyExec
+// Row-origin tags — the index-mapping layer between a host's derived-row
+// indices and the engine's step-input indices. A replay tags its working
+// row copies with their source position under a symbol key: object spread
+// (the way every row-copying step clones rows) carries it along, while
+// Object.keys / JSON / DuckDB never see it. A step's input row therefore
+// knows which source row it came from even after sorts, filters, and joins
+// reshaped the table, and a cellFilter can target derived rows by comparing
+// origins instead of trusting positions. The tags never leave the replay:
+// they are stripped off the final rows into the runner's parallel
+// `derivedOrigins` array (exposed as `rowOrigins()`), so committed rows
+// stay plain data. Steps that build rows from scratch (select, group,
+// pivot) drop the tag — callers fall back to positional identity there.
+const ROW_ORIGIN = Symbol('ttRowOrigin');
+
+/** The source-row origin a replay's in-flight row carries, or undefined for
+ *  rows created by a reshaping step. Meaningful only inside a replay's
+ *  callbacks (cellFilter); committed rows are stripped — read the runner's
+ *  `rowOrigins()` for those. */
+export function rowOrigin(row: Row | undefined): number | undefined {
+  return row ? ((row as Record<symbol, unknown>)[ROW_ORIGIN] as number | undefined) : undefined;
+}
+
+function tagOrigin(row: Row, origin: number | undefined): Row {
+  if (origin !== undefined) (row as Record<symbol, unknown>)[ROW_ORIGIN] = origin;
+  return row;
+}
+
+/** Remove the tags from a replay's final rows, returning the origins as a
+ *  parallel array. */
+function stripOrigins(rows: Row[]): Array<number | undefined> {
+  return rows.map((r) => {
+    const origin = (r as Record<symbol, unknown>)[ROW_ORIGIN] as number | undefined;
+    if (origin !== undefined) delete (r as Record<symbol, unknown>)[ROW_ORIGIN];
+    return origin;
+  });
+}
+
 /** Lazy-evaluation hooks a replay accepts (web shell only — the CLI and the
  *  batch path never pass them, keeping their output byte-identical). */
 export interface LazyEvalOpts {
   /** Per-cell gate for {llm} mutate/split steps: return false to leave the
    *  cell pending (no model call, no cache entry). `rowIndex` is the row's
-   *  index in the step's input rows. */
-  cellFilter?: (transformationIndex: number, rowIndex: number) => boolean;
+   *  index in the step's input rows; `row` is that input row itself, whose
+   *  `rowOrigin` lets a host target derived rows across reordering steps. */
+  cellFilter?: (transformationIndex: number, rowIndex: number, row: Row) => boolean;
   /** Per-cell failure capture: when set, a cell call that still fails after
    *  retries writes a failed-cell sentinel and reports here instead of
-   *  failing the whole step. Absent → the step throws (fail-fast). */
-  onCellError?: (u: { transformationIndex: number; rowIndex: number; column: string; error: string }) => void;
+   *  failing the whole step. Absent → the step throws (fail-fast).
+   *  `rowIndex` is step-input; `origin` is the row's source origin when the
+   *  row carries one (see rowOrigin), so hosts can locate the derived row. */
+  onCellError?: (u: { transformationIndex: number; rowIndex: number; column: string; error: string; origin?: number }) => void;
 }
 
 export interface HeadlessRunnerOptions {
@@ -216,8 +257,10 @@ export interface HeadlessRunnerOptions {
   onPlanEdits?: (items: PlanEdit[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
   /** Fires once per model call with its token usage — the web shell's
-   *  estimate math accumulates these (#LazyExec). */
-  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number }) => void;
+   *  estimate math accumulates these (#LazyExec). `role` says which slot made
+   *  the call ('primary' = patch turn, 'cell' = cell work), so the host can
+   *  attribute usage even when one model id serves both roles. */
+  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number; role: 'primary' | 'cell' }) => void;
   signal?: AbortSignal;
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
@@ -259,9 +302,14 @@ export interface HeadlessRunner {
   exportPython(): Promise<string>;
   // #LazyExec — web-shell seams. adoptState swaps in a spec + derived rows
   // with no replay and no model call (provider switch keeps evaluated rows);
-  // the cache accessors carry the per-cell result cache across an engine
-  // rebuild so redo/resume stay free.
-  adoptState(spec: TablePlan, rows: Row[]): Promise<void>;
+  // `origins` carries the adopted rows' source origins (see rowOrigins) so
+  // the index-mapping survives the rebuild. The cache accessors carry the
+  // per-cell result cache across an engine rebuild so redo/resume stay free.
+  adoptState(spec: TablePlan, rows: Row[], origins?: ReadonlyArray<number | undefined>): Promise<void>;
+  /** Source-row origin of each derived row (parallel to currentRows), or
+   *  undefined where a reshaping step built the row from scratch — the
+   *  derived-to-step-input index mapping (#LazyExec). */
+  rowOrigins(): ReadonlyArray<number | undefined>;
   cellCacheEntries(): Array<[string, unknown]>;
   seedCellCache(entries: Array<[string, unknown]>): void;
 }
@@ -836,6 +884,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private sourcePath = '';
   private spec: TablePlan = { columns: [], transformations: [] };
   private derivedRows: Row[] = [];
+  // #LazyExec — source origin of each derived row (parallel to derivedRows)
+  // and the origins of the last completed replay, committed together with
+  // its rows. See the ROW_ORIGIN notes above.
+  private derivedOrigins: Array<number | undefined> = [];
+  private lastReplayOrigins: Array<number | undefined> = [];
   // Lookup tables staged by name (browser joins): a `join` whose `with` matches
   // a key here uses these rows instead of reading the file by path.
   private lookupTables = new Map<string, Row[]>();
@@ -874,14 +927,18 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     if (!this.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
   }
 
-  private recordCall(model: string, usage: { inputTokens?: number; outputTokens?: number } | undefined): void {
+  private recordCall(
+    model: string,
+    usage: { inputTokens?: number; outputTokens?: number } | undefined,
+    role: 'primary' | 'cell' = 'cell',
+  ): void {
     const entry = {
       model,
       inputTokens: usage?.inputTokens ?? 0,
       outputTokens: usage?.outputTokens ?? 0,
     };
     this.callLog.push(entry);
-    this.opts.onUsage?.(entry);
+    this.opts.onUsage?.({ ...entry, role });
   }
 
   // #DebugOut
@@ -1019,6 +1076,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.sourcePath = sourcePath;
     this.spec = spec;
     this.derivedRows = rows.slice();
+    this.derivedOrigins = rows.map((_, i) => i);
     this.cellResultCache.clear();
     this.joinRightTables.clear();
     // Reset the DuckDB relation so SQL transformations see the new source.
@@ -1084,6 +1142,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
+    this.derivedOrigins = this.lastReplayOrigins;
     this.loaded = true;
     this.pruneJoinRightTables();
   }
@@ -1101,13 +1160,20 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   // #LazyExec — web-shell seams (see the interface docs).
-  async adoptState(spec: TablePlan, rows: Row[]): Promise<void> {
+  async adoptState(spec: TablePlan, rows: Row[], origins?: ReadonlyArray<number | undefined>): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
+    // Without handed-over origins, fall back to positional identity — the
+    // pre-mapping behavior, correct whenever no step reordered the rows.
+    this.derivedOrigins = origins ? [...origins] : rows.map((_, i) => i);
     await this.sql.resetTable();
     this.loaded = true;
+  }
+
+  rowOrigins(): ReadonlyArray<number | undefined> {
+    return this.derivedOrigins;
   }
 
   cellCacheEntries(): Array<[string, unknown]> {
@@ -1243,6 +1309,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           }
           this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
+          this.derivedOrigins = this.lastReplayOrigins;
           this.pruneJoinRightTables();
           turn.outcome = 'committed';
           const added = diffPlans(specBefore, this.spec)
@@ -1318,7 +1385,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
-    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage);
+    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage, 'primary');
     if (!captured) {
       const direct = result.toolCalls?.find((c) => c.toolName === 'apply_spec_patch');
       const input = direct?.input as { operations?: unknown[]; transcript?: string } | undefined;
@@ -1348,13 +1415,16 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       this.derivedRows.length > 0 &&
       prev.every((p, i) => JSON.stringify(p) === JSON.stringify(next[i]));
 
+    // #LazyExec — tag the working copies with their source origins (derived
+    // rows re-carry the origins committed with them), stripped back off the
+    // final rows below. See the ROW_ORIGIN notes.
     let rows: Row[];
     let start: number;
     if (reuseDerivedAsPrefix) {
-      rows = this.derivedRows.map((r) => ({ ...r }));
+      rows = this.derivedRows.map((r, i) => tagOrigin({ ...r }, this.derivedOrigins[i]));
       start = prev.length;
     } else {
-      rows = sourceRows.map((r) => ({ ...r }));
+      rows = sourceRows.map((r, i) => tagOrigin({ ...r }, i));
       start = 0;
     }
     for (let i = start; i < next.length; i++) {
@@ -1365,6 +1435,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       abortIf(signal);
       rows = await this.applyT(rows, next[i] as Transformation, i, signal, onChunk, lazy);
     }
+    this.lastReplayOrigins = stripOrigins(rows);
     return rows;
   }
 
@@ -1389,7 +1460,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         return this.applyMutateLlm(rows, t as typeof t & { value: { llm: string; model?: string } }, tIndex, signal, onChunk, lazy);
       case 'validate': return applyValidateJs(rows, t);
       case 'group':    return this.applyGroup(rows, t, tIndex, signal, onChunk);
-      case 'split':    return this.applySplitT(rows, t, signal, tIndex, lazy);
+      case 'split':    return this.applySplitT(rows, t, signal, tIndex, lazy, onChunk);
       case 'pivot':    return applyPivot(rows, t);
       case 'unpivot':  return applyUnpivot(rows, t);
       case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd(), this.lookupTables, this.joinRightTables);
@@ -1513,50 +1584,74 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     t: Extract<Transformation, { kind: 'split' }>,
     signal: AbortSignal | undefined,
     tIndex?: number,
-    lazy?: LazyEvalOpts
+    lazy?: LazyEvalOpts,
+    onChunk?: (u: ChunkUpdate) => void
   ): Promise<Row[]> {
     if (typeof t.on === 'object' && !(t.on instanceof RegExp) && 'llm' in t.on) {
-      return this.applySplitLlm(rows, t as typeof t & { on: { llm: string; model?: string } }, signal, tIndex ?? 0, lazy);
+      return this.applySplitLlm(rows, t as typeof t & { on: { llm: string; model?: string } }, signal, tIndex ?? 0, lazy, onChunk);
     }
     return applySplit(rows, t);
   }
 
   /** LLM-backed split: render the {llm} `on` template per row, ask the
    *  cell model to break the cell into parts, then pad/concat to `into`'s
-   *  arity exactly as a literal or regex split would. A lazy cellFilter
-   *  (#LazyExec) leaves excluded rows' target cells pending. */
+   *  arity exactly as a literal or regex split would. Runs through the same
+   *  batch/cache driver an {llm} mutate uses (#LazyExec): a cellFilter's
+   *  excluded rows refill from the per-cell result cache when their rendered
+   *  prompt is cached (free), else hold pending sentinels — so paging,
+   *  undo/redo, and resume never re-bill a split cell — and with
+   *  `onCellError` set a failing cell lands a failed sentinel per row
+   *  instead of failing the step. */
   private async applySplitLlm(
     rows: Row[],
     t: Extract<Transformation, { kind: 'split' }> & { on: { llm: string; model?: string } },
     signal: AbortSignal | undefined,
     tIndex: number,
-    lazy?: LazyEvalOpts
+    lazy?: LazyEvalOpts,
+    onChunk?: (u: ChunkUpdate) => void
   ): Promise<Row[]> {
     validateTemplate(t.on.llm, rows);
-    const included = (i: number): boolean => !lazy?.cellFilter || lazy.cellFilter(tIndex, i);
-    const replies = await Promise.all(
-      rows.map((row, i) => {
-        if (!included(i)) return Promise.resolve(undefined);
-        const cell = row[t.from];
-        if (cell === null || cell === undefined || cell === '') return Promise.resolve(null);
-        return this.callLlmCell(renderPrompt(t.on.llm, row), t.on.model, signal);
-      })
-    );
-    return rows.map((row, i) => {
-      const out: Row = { ...row };
-      if (!included(i)) {
-        for (const col of t.into) out[col] = pendingCell();
-        if (t.drop) delete out[t.from];
-        return out;
+    const included = (i: number): boolean => !lazy?.cellFilter || lazy.cellFilter(tIndex, i, rows[i]!);
+    const out: Row[] = rows.map((r) => ({ ...r }));
+    // `stream` mirrors the mutate path: only cells an included batch landed
+    // emit chunks — an excluded row's silent cache refill paints nothing.
+    const fill = (i: number, reply: unknown, stream = false): void => {
+      const target = out[i]!;
+      if (isFailedCell(reply)) {
+        for (const col of t.into) target[col] = reply;
+        return;
       }
-      const reply = replies[i];
       const parts = reply === null || reply === undefined
         ? t.into.map(() => null)
         : padParts(parseLlmParts(String(reply)), t.into);
-      t.into.forEach((col, idx) => { out[col] = parts[idx] ?? null; });
-      if (t.drop) delete out[t.from];
-      return out;
-    });
+      t.into.forEach((col, idx) => {
+        const before = target[col];
+        target[col] = parts[idx] ?? null;
+        if (stream) onChunk?.({ transformationIndex: tIndex, rowIndex: i, column: col, before, after: parts[idx] ?? null });
+      });
+    };
+    const callIdx: number[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const cell = rows[i]![t.from];
+      const empty = cell === null || cell === undefined || cell === '';
+      if (empty) { fill(i, null); continue; }
+      if (included(i)) { callIdx.push(i); continue; }
+      const key = this.cacheKey(t.on.model, renderPrompt(t.on.llm, rows[i]!, t.into));
+      if (this.cellResultCache.has(key)) fill(i, this.cellResultCache.get(key));
+      else for (const col of t.into) out[i]![col] = pendingCell();
+    }
+    const replies = await this.runCellBatches(
+      callIdx,
+      (batch) =>
+        this.evalLlmBatch(t.on.llm, batch.map((i) => rows[i]!), t.on.model, signal, t.into,
+          lazy?.onCellError
+            ? (j, error) => { for (const col of t.into) lazy.onCellError!({ transformationIndex: tIndex, rowIndex: batch[j]!, column: col, error, origin: rowOrigin(rows[batch[j]!]) }); }
+            : undefined),
+      signal,
+    );
+    callIdx.forEach((i, k) => fill(i, replies[k], true));
+    if (t.drop) for (const row of out) delete row[t.from];
+    return out;
   }
 
   private async applyMutateLlm(
@@ -1582,7 +1677,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     // so a page-sized filter costs exactly one page of calls.
     const includedIdx: number[] = [];
     for (let i = 0; i < rows.length; i++) {
-      if (!lazy?.cellFilter || lazy.cellFilter(tIndex, i)) { includedIdx.push(i); continue; }
+      if (!lazy?.cellFilter || lazy.cellFilter(tIndex, i, rows[i]!)) { includedIdx.push(i); continue; }
       const key = this.cacheKey(perCellModel, renderPrompt(template, rows[i]!, exclude));
       const cached = this.cellResultCache.has(key) ? this.cellResultCache.get(key) : pendingCell();
       for (const c of cols) out[i]![c] = cached;
@@ -1599,7 +1694,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         group.map((b) =>
           this.evalLlmBatch(template, b.rows, perCellModel, signal, exclude,
             lazy?.onCellError
-              ? (j, error) => { for (const c of cols) lazy.onCellError!({ transformationIndex: tIndex, rowIndex: b.idx[j]!, column: c, error }); }
+              ? (j, error) => { for (const c of cols) lazy.onCellError!({ transformationIndex: tIndex, rowIndex: b.idx[j]!, column: c, error, origin: rowOrigin(rows[b.idx[j]!]) }); }
               : undefined))
       );
       abortIf(signal);

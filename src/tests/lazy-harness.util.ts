@@ -1,7 +1,7 @@
-// Shared offline harness for the RED-LAZY bug inventory (Gherkin steps in
-// red-lazy.steps.ts, unit repros in red-lazy.red.test.ts). Builds a
-// WebController the way src/tests/web.hooks.ts does — fake FilePort, injected
-// fetch — but with a scriptable fake Gemini backend instead of a cassette:
+// Shared offline harness for the lazy-execution regression suites (Gherkin
+// steps in lazy-regressions.steps.ts, unit tests in lazy-estimates.test.ts).
+// Builds a WebController the way src/tests/web.hooks.ts does — fake FilePort,
+// injected fetch — but with a scriptable fake Gemini backend instead of a cassette:
 // patch turns answer from a queue of apply_spec_patch operations, cell calls
 // answer per prompt with real usageMetadata. Fully offline, no key, no timers.
 //
@@ -12,7 +12,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createWebController, type FilePort } from '@tamedtable/web';
 
-export const SPEC_TC = join(import.meta.dirname, '..', '..', '..', 'spec', 'test-cases');
+export const SPEC_TC = join(import.meta.dirname, '..', '..', 'spec', 'test-cases');
 
 export type RedLazyApp = ReturnType<typeof createWebController>;
 
@@ -34,8 +34,8 @@ export function makeBackend(cellAnswer: (p: string) => string): FakeBackend {
 }
 
 /** Lift the requests-per-minute cap so unbatched cell fan-outs never sleep on
- *  real timers. Called from red steps/tests only — never at module scope, so
- *  importing this file under a green profile changes nothing. */
+ *  real timers. Called from regression steps/tests only — never at module
+ *  scope, so importing this file under another profile changes nothing. */
 export function liftRpm(): void {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
@@ -79,7 +79,7 @@ export function makeFetch(backend: FakeBackend) {
     if (isPatchTurn) {
       backend.primaryCalls++;
       const ops = backend.patchQueue.shift();
-      if (!ops) throw new Error('red-lazy fake backend: patch queue empty');
+      if (!ops) throw new Error('lazy-regressions fake backend: patch queue empty');
       return new Response(
         geminiBody(
           [{ functionCall: { name: 'apply_spec_patch', args: { operations: ops }, id: `c${backend.primaryCalls}` } }],

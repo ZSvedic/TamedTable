@@ -1,4 +1,4 @@
-// RED-UI-1 (TableView sites) — red unit tests (bug inventory): Enter pressed
+// RED-UI-1 (TableView sites) — regression tests (red inventory): Enter pressed
 // to confirm an IME composition (KeyboardEvent.isComposing === true, the
 // keystroke a Japanese/Chinese/Korean user types to accept a conversion)
 // commits the half-composed cell edit and applies the half-composed column
@@ -7,11 +7,10 @@
 // (`e.isComposing || e.keyCode === 229`) is missing from both handlers:
 // the inline cell editor (TableView.tsx:578-585) and the column-menu filter
 // input (TableView.tsx:793-796) check only `e.key === 'Enter'` and never
-// read `e.nativeEvent.isComposing`. Excluded from `bun test` by bunfig
-// pathIgnorePatterns; run via `cd src && bun run test:red:unit`.
+// read `e.nativeEvent.isComposing`.
 import { afterAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
-import { win, h, act, mount, setValue, enterEvent, unmountAll, setupReact } from '../../tests/red/ui-dom-harness.tsx';
+import { win, h, act, mount, setValue, enterEvent, unmountAll, setupReact } from '../../tests/ui-dom-harness.tsx';
 
 // react-dom must evaluate AFTER the harness plants the DOM globals (a static
 // import can beat the harness to it), so everything React loads dynamically.

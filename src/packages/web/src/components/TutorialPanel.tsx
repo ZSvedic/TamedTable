@@ -50,7 +50,9 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       // The terminal stop's "Voilà …" celebration, shown after the last real
       // step has run, numbered "N of N". "Back to Tours" opens the chooser;
       // "Stay here" keeps the result on screen (undo/redo replay key-free).
-      doneDescription: `Voilà, the "${selectedTourName}" tour is done.`,
+      // The exact sentence three canonical docs pin (spec/behavior.md § tours,
+      // code-contract § tutorial mode, gherkin-tour behavior.md).
+      doneDescription: `Voilà, "${selectedTourName}" is done.`,
       doneBtnText: 'Back to Tours',
       stayBtnText: 'Stay here',
       theme: {

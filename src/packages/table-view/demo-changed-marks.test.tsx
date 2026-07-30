@@ -1,4 +1,4 @@
-// RED-UI-5 — red unit test (bug inventory): the table-view demo keys
+// RED-UI-5 — regression test (red inventory): the table-view demo keys
 // changed-cell marks by VIEW slot, so after an edit plus a sort the mark
 // lands on whatever row now occupies that slot. demo.tsx:113 stores
 // `${row}:${column}` (view-absolute) into `changed` but never remaps it when
@@ -13,11 +13,9 @@
 // (spec/packages/README.md § demos; table-view/behavior.md:146). The real
 // app remaps marks per derived row (web/src/controller-engine.ts), so this
 // is demo-host-only. Drives the real demo.tsx in happy-dom — no browser.
-// Excluded from `bun test` by bunfig pathIgnorePatterns; run via
-// `cd src && bun run test:red:unit`.
-import { test } from 'bun:test';
+// import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
-import { win, act, setValue, enterEvent, setupReact } from '../../tests/red/ui-dom-harness.tsx';
+import { win, act, setValue, enterEvent, setupReact } from '../../tests/ui-dom-harness.tsx';
 
 // react-dom must evaluate AFTER the harness plants the DOM globals (a static
 // import can beat the harness to it), so everything React loads dynamically.

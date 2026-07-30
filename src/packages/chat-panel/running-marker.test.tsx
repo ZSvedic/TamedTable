@@ -1,4 +1,4 @@
-// RED-UI-3 — red unit test (bug inventory): the chat header never shows the
+// RED-UI-3 — regression test (red inventory): the chat header never shows the
 // "· running" marker while the FIRST request streams. The whole counter span
 // — including `{streaming && <> · running</>}` — is nested inside
 // `requestCount > 0 && (…)` (ChatPanel.tsx:535-549), so with requestCount 0
@@ -6,9 +6,7 @@
 // cannot render. Spec: "Header: 'Requests', the transformation count
 // (`requestCount`, with '· running' while streaming)" —
 // spec/packages/chat-panel/behavior.md:53-54 — nothing scopes the marker to
-// a non-zero count. Pure renderToString, no DOM needed. Excluded from
-// `bun test` by bunfig pathIgnorePatterns; run via
-// `cd src && bun run test:red:unit`.
+// a non-zero count. Pure renderToString, no DOM needed.
 import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { createElement as h } from 'react';

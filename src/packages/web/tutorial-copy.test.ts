@@ -1,4 +1,4 @@
-// RED-TUT-5 — red unit test (bug inventory): the terminal-stop popover copy
+// RED-TUT-5 — regression test (red inventory): the terminal-stop popover copy
 // drifted from the spec. Three canonical docs pin the sentence
 //   Voilà, "<name>" is done.
 // (spec/behavior.md:1721, spec/code-contract.md:1546,
@@ -6,7 +6,7 @@
 //   Voilà, the "<name>" tour is done.
 // (TutorialPanel.tsx doneDescription). Nothing green pins the copy — the e2e
 // only asserts toContainText('Voilà').
-//
+
 // The string is only observable through a live Driver.js popover (the
 // doneDescription is handed to TourUi inside a mount effect), so this test
 // extracts the constant from the component source — the exact string the

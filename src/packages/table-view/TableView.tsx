@@ -13,7 +13,7 @@ import {
   type ReactNode,
 } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
-import { useTheme, Icon } from '@tamedtable/ui-kit/components';
+import { useTheme, Icon, isImeComposingEvent } from '@tamedtable/ui-kit/components';
 import { defaultColumnWidth, revealHeader, urlHref, type TableRow } from './index.ts';
 import { Pagination } from './Pagination.tsx';
 
@@ -150,7 +150,8 @@ export function TableView({
   // browser's own copy), and editing keeps the textarea's native copy.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (!(e.metaKey || e.ctrlKey) || e.key !== 'c') return;
+      // Case-insensitive: CapsLock (and Shift) report 'C' for the same chord.
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'c') return;
       if (!selection || editing) return;
       const live = typeof window !== 'undefined' ? window.getSelection()?.toString() : '';
       if (live) return;
@@ -576,7 +577,7 @@ export function TableView({
                               onChange={(e) => setDraft(e.target.value)}
                               onBlur={commitEdit}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === 'Enter' && !isImeComposingEvent(e)) {
                                   e.preventDefault();
                                   commitEdit();
                                 } else if (e.key === 'Escape') {
@@ -791,7 +792,7 @@ function ColumnMenu({
               placeholder={`${col} contains…`}
               onChange={(e) => setFilterDraft(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onFilter(filterDraft);
+                if (e.key === 'Enter' && !isImeComposingEvent(e)) onFilter(filterDraft);
                 else if (e.key === 'Escape') onClose();
               }}
               style={{

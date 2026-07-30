@@ -1,11 +1,14 @@
-// Shared DOM harness for the UI-package red unit tests (*.red.test.tsx) —
-// real React 19 client renders inside happy-dom, no browser. Used only by
-// the red bug inventory (`bun run test:red:unit`); plain `bun test` never
-// loads it (no .test in the name), and cucumber's import glob
-// (`tests/**/!(*.test).ts`) matches .ts only, so no green profile sees it.
+// Shared DOM harness for the UI-package regression unit tests — real React
+// 19 client renders inside happy-dom, no browser. Only *.test.tsx files load
+// it (cucumber's import glob, `tests/**/!(*.test).ts`, matches .ts only, so
+// no cucumber profile sees it). Importing it plants the DOM globals for the
+// whole `bun test` process — tests that need a DOM-free environment must run
+// before any UI test file, which bun's alphabetical file order provides
+// today (tests/ sorts after packages/, and nothing in tests/ branches on
+// `typeof document`).
 //
 // Bun's isolated installs put react inside each package's node_modules, not
-// at the src root — so each red test file imports its own package-resolved
+// at the src root — so each UI test file imports its own package-resolved
 // `react` / `react-dom/client` and hands them to `setupReact()` before
 // calling `mount()`. That also guarantees the test renders with the exact
 // React instance the component under test resolves.

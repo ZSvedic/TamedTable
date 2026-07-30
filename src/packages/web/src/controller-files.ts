@@ -446,7 +446,23 @@ export class FilesManager {
   private async saveGated(format: FormatId, opts: { keepSourceName: boolean }): Promise<void> {
     const hadWork =
       this.host.lazy.pendingCount() + this.host.lazy.failedCount() > 0;
-    if (!(await this.host.lazy.runOnAllRows('save'))) return;
+    const outcome = await this.host.lazy.runOnAllRows('save');
+    // Declining the estimate is an explicit "not now" — the save cancels
+    // silently. A confirmed (and paid) run that ends short — failed rows, a
+    // cancel — must never vanish: say what happened and what unblocks the
+    // save (spec/behavior.md § Run on all rows and Save).
+    if (outcome === 'declined') return;
+    if (outcome === 'incomplete') {
+      const failed = this.host.lazy.failedCount();
+      const pending = this.host.lazy.pendingCount();
+      this.host.pushToast(
+        'error',
+        failed > 0
+          ? `Save cancelled — ${failed} row${failed === 1 ? '' : 's'} failed to evaluate. Retry the failed rows, then save again.`
+          : `Save cancelled — ${pending} row${pending === 1 ? '' : 's'} still pending. Run on all rows, then save again.`,
+      );
+      return;
+    }
     if (hadWork) {
       this.pendingSave = { format, ...opts };
       this.host.saveReadyDialog = true;

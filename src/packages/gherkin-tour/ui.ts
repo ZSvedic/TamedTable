@@ -34,7 +34,7 @@ export interface TourUiOptions {
    *  a prefilled chat input) and re-render if a spotlight target appeared. */
   onChange?: () => void;
   /** Terminal-stop text — shown after the last real step has run, e.g.
-   *  `Voilà, the "<tour>" tour is done.`. Defaults to "Done.". */
+   *  `Voilà, "<tour>" is done.`. Defaults to "Done.". */
   doneDescription?: string;
   /** Terminal-stop primary button label — defaults to "Done". */
   doneBtnText?: string;

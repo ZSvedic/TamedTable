@@ -1,4 +1,4 @@
-// RED-UI-6 — red unit test (bug inventory): urlHref rejects valid
+// RED-UI-6 — regression test (red inventory): urlHref rejects valid
 // uppercase-scheme URLs. Per RFC 3986 the scheme and host are
 // case-insensitive, so `HTTPS://EXAMPLE.ORG/P/1` is a valid http(s) URL —
 // `new URL` parses it and normalizes to `https://example.org/P/1`, and the
@@ -8,8 +8,7 @@
 // cell whose entire value is a valid `http(s)://` URL renders as a link" —
 // spec/packages/table-view/behavior.md:118 — and linking the uppercase
 // spelling of the same URL is not "nothing looser" territory (it is not
-// bare-domain guessing). Excluded from `bun test` by bunfig
-// pathIgnorePatterns; run via `cd src && bun run test:red:unit`.
+// bare-domain guessing).
 import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { urlHref } from './index.ts';

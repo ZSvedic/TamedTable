@@ -60,6 +60,16 @@ function Demo(): ReactNode {
     order = order.slice().sort((a, b) => sign * compare(rows[a]?.[sort.column], rows[b]?.[sort.column]));
   }
   const viewRows = order.map((i) => rows[i]!);
+  // Changed-cell marks are stored by SOURCE row (the edit's identity) and
+  // remapped to view-absolute keys per render — a sort or filter moves the
+  // mark with its row instead of leaving it on the old view slot.
+  const viewSlot = new Map(order.map((src, view) => [src, view]));
+  const changedView: Record<string, unknown> = {};
+  for (const [key, was] of Object.entries(changed)) {
+    const sep = key.indexOf(':');
+    const view = viewSlot.get(Number(key.slice(0, sep)));
+    if (view !== undefined) changedView[`${view}${key.slice(sep)}`] = was;
+  }
   const pageCount = pageCountFor(viewRows.length, PAGE_SIZE);
   const current = clampPage(page, pageCount);
   const pageOrder = pageSlice(order, current, PAGE_SIZE);
@@ -108,9 +118,10 @@ function Demo(): ReactNode {
           report(`select ${row}:${column}`);
         }}
         onEditCell={(row, column, value) => {
-          // `row` is view-absolute; order maps it back to the source row.
+          // `row` is view-absolute; order maps it back to the source row,
+          // which is also the key the mark is stored under (see changedView).
           const src = order[row]!;
-          setChanged((c) => ({ ...c, [`${row}:${column}`]: rows[src]?.[column] ?? null }));
+          setChanged((c) => ({ ...c, [`${src}:${column}`]: rows[src]?.[column] ?? null }));
           setRows((all) => all.map((r, i) => (i === src ? { ...r, [column]: value } : r)));
           report(`edit ${row}:${column}=${value}`);
         }}
@@ -122,7 +133,7 @@ function Demo(): ReactNode {
         rowNumbers={pageOrder.map((i) => i + 1)}
         rowNumberHint="Original row numbers"
         rowStatus={pageOrder.map(statusFor)}
-        changedCells={changed}
+        changedCells={changedView}
         sort={sort}
         filters={filters}
         onSortChange={(column, dir) => {

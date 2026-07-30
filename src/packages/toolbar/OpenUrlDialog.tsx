@@ -4,7 +4,7 @@
 // URL plus the in-flight/error state.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
-import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
+import { useTheme, Button, Icon, isImeComposingEvent } from '@tamedtable/ui-kit/components';
 
 export interface OpenUrlDialogProps {
   open: boolean;
@@ -58,7 +58,7 @@ export function OpenUrlDialog({ open, onSubmit, onClose }: OpenUrlDialogProps): 
     if (e.key === 'Escape') {
       e.stopPropagation();
       close();
-    } else if (e.key === 'Enter' && !e.shiftKey) {
+    } else if (e.key === 'Enter' && !e.shiftKey && !isImeComposingEvent(e)) {
       e.preventDefault();
       void submit(url);
     }

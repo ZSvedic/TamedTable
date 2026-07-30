@@ -1,11 +1,10 @@
-// Unit red tests — lazy AI execution estimate defects (RED-LAZY-3, -4, -8).
-// Each test documents one open defect and FAILS on current code; run via
-// `bun run test:red:unit` (the default `bun test` skips *.red.test.ts).
-// Offline: scripted Gemini fetch from lazy-harness.red-util.ts, no timers.
+// Lazy AI execution estimate regressions (RED-LAZY-3, -4, -8) from the red
+// inventory (spec/test-cases/red/README.md). Offline: scripted Gemini fetch
+// from lazy-harness.util.ts, no timers.
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { ALL_MODELS } from '@tamedtable/model-config';
-import { LazyManager } from '../../packages/web/src/controller-lazy.ts';
+import { LazyManager } from '../packages/web/src/controller-lazy.ts';
 import {
   addAiColumnOps,
   liftRpm,
@@ -13,7 +12,7 @@ import {
   makeApp,
   makeBackend,
   untilRunAllDialog,
-} from './lazy-harness.red-util.ts';
+} from './lazy-harness.util.ts';
 
 liftRpm();
 

@@ -13,6 +13,7 @@
 import {
   isFailedCell,
   isPendingCell,
+  rowOrigin,
   specHasLlmCell,
   validateColumns,
   type ChunkUpdate,
@@ -215,12 +216,27 @@ export class LazyManager {
     this.callRows += rows;
   }
 
-  recordUsage(u: { model: string; inputTokens: number; outputTokens: number }): void {
-    // Patch-turn calls use the primary model; everything else is cell work.
-    if (u.model === this.host.config.model) return;
+  recordUsage(u: { model: string; inputTokens: number; outputTokens: number; role?: 'primary' | 'cell' }): void {
+    // Only cell work feeds the estimate. The engine says which slot made the
+    // call — a model-id comparison would drop every cell call whenever the
+    // same model serves both roles. Role-less records (direct callers) keep
+    // the id heuristic as a fallback.
+    if (u.role ? u.role !== 'cell' : u.model === this.host.config.model) return;
     this.cellTokensIn += u.inputTokens;
     this.cellTokensOut += u.outputTokens;
     this.cellCalls++;
+  }
+
+  /** Drop the estimate accumulators. Called when a patch changes the spec's
+   *  {llm} cell steps: recorded usage extrapolates the OLD columns' cost, and
+   *  rows already banked in the cell cache re-run free — keeping the tally
+   *  would price the new column's remaining rows at the whole session's
+   *  spend (~3.5x observed). `cellCalls` stays monotonic — tests diff it. */
+  private resetEstimateAccumulators(): void {
+    this.cellTokensIn = 0;
+    this.cellTokensOut = 0;
+    this.callMs = 0;
+    this.callRows = 0;
   }
 
   /** The estimate for evaluating everything still pending or failed, or null
@@ -235,7 +251,11 @@ export class LazyManager {
     const evaluated = Math.max(1, total - rowsRemaining);
     const perRowIn = this.cellTokensIn / evaluated;
     const perRowOut = this.cellTokensOut / evaluated;
-    const price = ALL_MODELS.find((m) => this.host.config.cellModel.startsWith(m.id));
+    // Exact catalogue id first; otherwise the LONGEST prefix, so a dated
+    // variant ("gpt-5.4-mini-2026-01") prices as gpt-5.4-mini, never gpt-5.4.
+    const cellModel = this.host.config.cellModel;
+    const price = ALL_MODELS.find((m) => m.id === cellModel)
+      ?? ALL_MODELS.filter((m) => cellModel.startsWith(m.id)).sort((a, b) => b.id.length - a.id.length)[0];
     const estUsd =
       ((perRowIn * rowsRemaining) / 1e6) * (price?.inUsdPerMtok ?? 0) +
       ((perRowOut * rowsRemaining) / 1e6) * (price?.outUsdPerMtok ?? 0);
@@ -260,10 +280,10 @@ export class LazyManager {
   /** The cellFilter for a chat request: the rows in view (everything already
    *  evaluated refills from the cell cache for free). After a confirmed
    *  dependency run-all, one replay runs unfiltered. */
-  requestCellFilter(): (tIndex: number, rowIndex: number) => boolean {
-    const target = this.visibleTarget();
+  requestCellFilter(): (tIndex: number, rowIndex: number, row?: Row) => boolean {
+    const origins = this.targetOrigins(this.visibleTarget());
     const runAll = this.alwaysRunAll();
-    return (_t, i) => this.allowAllOnce || runAll || target.has(i);
+    return (_t, i, row) => this.allowAllOnce || runAll || origins.has(originKey(row, i));
   }
 
   /** Derived-row indices of the current page (the preview window). */
@@ -275,23 +295,58 @@ export class LazyManager {
     return new Set(order.slice(start, start + this.host.pageSize));
   }
 
+  // #LazyExec — the index-mapping layer between derived rows and a step's
+  // input rows. A cellFilter is consulted with STEP-INPUT indices, but the
+  // manager targets DERIVED rows; after any reordering or filtering step
+  // between the AI step and the view (a sort, say) the two index spaces
+  // disagree, and a positional filter evaluates — and bills — the wrong
+  // rows. The engine records each derived row's source-row origin
+  // (`rowOrigins`), so a target set of derived indices translates to a set
+  // of origins, and the filter matches a step's input row by ITS origin
+  // (the tag the replay carries on its working copies). Rows without an
+  // origin (built from scratch by select/group/pivot) fall back to
+  // positional identity on both sides.
+  private targetOrigins(target: ReadonlySet<number>): Set<number> {
+    const derivedOrigins = this.host.engine.rowOrigins();
+    const origins = new Set<number>();
+    for (const d of target) origins.add(derivedOrigins[d] ?? d);
+    return origins;
+  }
+
   /** The gates at patch commit. Simple mode ("Always run on all rows"): a
    *  new AI step that would run more than one page shows the estimate dialog
-   *  first. Otherwise the dependency rule: a new step that reads an AI-made
-   *  column across all rows while rows are pending raises the run-all
-   *  confirmation. Confirm → this replay runs on all rows; decline → the
-   *  runner throws DECLINED and the patch is dropped. */
+   *  first. Lazy mode gates table-wide {llm} work (a sort key, a group
+   *  aggregate — nothing page-sized about those) the same way. Otherwise the
+   *  dependency rule: a new step that reads an AI-made column across all
+   *  rows while rows are pending raises the run-all confirmation. Confirm →
+   *  this replay runs on all rows; decline → the runner throws DECLINED and
+   *  the patch is dropped. Steps are diffed by content (multiset), never by
+   *  list position, so replace/remove patches gate exactly like appends. */
   async confirmPatch(next: TablePlan, prev: TablePlan): Promise<boolean> {
+    // A patch that changes the {llm} cell steps starts a new estimate story:
+    // reset before the replay records the new preview's usage.
+    if (llmCellStepsChanged(prev, next)) this.resetEstimateAccumulators();
+    const added = addedTransformations(prev, next);
+    const total = this.host.engine.rawRows().length;
     if (this.alwaysRunAll()) {
-      const added = { columns: [], transformations: next.transformations.slice(prev.transformations.length) };
-      const total = this.host.engine.rawRows().length;
-      if (specHasLlmCell(added) && total > this.host.pageSize) {
+      if (specHasLlmCell({ columns: [], transformations: added }) && total > this.host.pageSize) {
         return (await this.askRunAll('run-all', total)) === 'run';
       }
       return true;
     }
+    // Table-wide {llm} work has no page to preview on — every row evaluates
+    // at once, so it gets the estimate gate even in lazy mode (Simple mode
+    // gates the identical request). Tours are exempt like alwaysRunAll: the
+    // cassette taped an ungated run. Confirming also widens this replay, so
+    // prerequisite pending cells ({*} aggregates, whole-row sort keys) fill
+    // first instead of leaking sentinels into prompts.
+    if (stepsHaveTableWideLlm(added) && total > this.host.pageSize && !this.host.tutorial.isReplaying()) {
+      if ((await this.askRunAll('run-all', total)) !== 'run') return false;
+      this.allowAllOnce = true;
+      return true;
+    }
     if (this.pendingCount() + this.failedCount() === 0) return true;
-    if (!newStepsReadAiColumns(prev, next)) return true;
+    if (!added.some((t) => readsAiColumns(t, aiMadeColumns(prev)))) return true;
     const ok = (await this.askRunAll('dependency')) === 'run';
     if (ok) this.allowAllOnce = true;
     return ok;
@@ -326,14 +381,18 @@ export class LazyManager {
     await this.evaluatePass(target);
   }
 
-  /** Chunks emitted per fully-evaluated row: one per {llm}-mutate target
-   *  column across the spec. Divides raw chunk counts into row counts, so a
-   *  two-AI-column spec never reports "2,282 / 1,382 rows done". */
+  /** Chunks emitted per fully-evaluated row: one per {llm}-written target
+   *  column ({llm} mutates and {llm} splits) across the spec. Divides raw
+   *  chunk counts into row counts, so a two-AI-column spec never reports
+   *  "2,282 / 1,382 rows done". */
   private chunkFactor(): number {
     let factor = 0;
     for (const t of this.host.engine.displaySpec().transformations as Transformation[]) {
       if (t.kind === 'mutate' && typeof t.value === 'object' && t.value !== null && 'llm' in t.value) {
         factor += Array.isArray(t.columns) ? t.columns.length : 1;
+      }
+      if (t.kind === 'split' && typeof t.on === 'object' && t.on !== null && !(t.on instanceof RegExp) && 'llm' in t.on) {
+        factor += t.into.length;
       }
     }
     return Math.max(1, factor);
@@ -353,7 +412,7 @@ export class LazyManager {
     // #LazyExec — snapshot the rows this pass starts from, so recordFilled can
     // diff exactly what it filled once it settles (below).
     const before = this.host.engine.snapshotRows();
-    const failures: Array<{ rowIndex: number; column: string; error: string }> = [];
+    const failures: Array<{ rowIndex: number; column: string; error: string; origin?: number }> = [];
     const started = Date.now();
     const callsBefore = this.cellCalls;
     const factor = this.chunkFactor();
@@ -373,16 +432,31 @@ export class LazyManager {
         this.host.notify();
       }
     };
+    // Translate the derived-row target into origins BEFORE the replay — the
+    // pass replays fresh, so step-input rows are new objects whose origins,
+    // not positions, identify them (see targetOrigins).
+    const origins = this.targetOrigins(target);
     try {
       await runner.setSpec(spec, {
         fresh: true,
         signal: opts.signal,
-        cellFilter: (_t, i) => target.has(i),
+        cellFilter: (_t, i, row) => origins.has(originKey(row, i)),
         onCellError: (u) => failures.push(u),
         onChunk,
       });
     } finally {
-      for (const f of failures) this.failedInfo.set(f.rowIndex, { column: f.column, error: f.error });
+      // Failures report STEP-INPUT indices; failedInfo keys DERIVED rows —
+      // translate through the origin tags (same mapping as the cell filter).
+      const originToDerived = new Map<number, number>();
+      const rowsNow = this.host.engine.rawRows();
+      for (let i = 0; i < rowsNow.length; i++) {
+        const o = rowOrigin(rowsNow[i]);
+        if (o !== undefined && !originToDerived.has(o)) originToDerived.set(o, i);
+      }
+      for (const f of failures) {
+        const derived = f.origin !== undefined ? originToDerived.get(f.origin) ?? f.rowIndex : f.rowIndex;
+        this.failedInfo.set(derived, { column: f.column, error: f.error });
+      }
       this.remarkFailures();
       // #LazyExec — opening a page evaluates exactly that page's rows. The
       // engine's fresh replay also refills every OTHER pending row whose prompt
@@ -449,19 +523,23 @@ export class LazyManager {
   // ── Run on all rows, Save, Retry ─────────────────────────────────────────
 
   /** Run everything still pending or failed, behind the estimate dialog when
-   *  more than one page is remaining. Returns true when all rows evaluated.
-   *  `reason` picks the dialog copy ('run-all' from the button, 'save' from
-   *  Save, 'sort'/'filter' from the column menu's dependency gate). */
-  async runOnAllRows(reason: RunAllReason = 'run-all'): Promise<boolean> {
+   *  more than one page is remaining. Resolves 'complete' when every row
+   *  evaluated, 'declined' when the estimate dialog was dismissed (nothing
+   *  ran), and 'incomplete' when a confirmed run ended with failed rows or
+   *  was cancelled — callers that started the run for a purpose (Save) must
+   *  tell the user rather than vanish. `reason` picks the dialog copy
+   *  ('run-all' from the button, 'save' from Save, 'sort'/'filter' from the
+   *  column menu's dependency gate). */
+  async runOnAllRows(reason: RunAllReason = 'run-all'): Promise<'complete' | 'declined' | 'incomplete'> {
     await this.settle();
     const { pending, failed } = this.scan();
     const remaining = pending.size + failed.size;
-    if (remaining === 0) return true;
+    if (remaining === 0) return 'complete';
     if (remaining > this.host.pageSize) {
       const choice = await this.askRunAll(reason);
-      if (choice !== 'run') return false;
+      if (choice !== 'run') return 'declined';
     }
-    return this.runAll();
+    return (await this.runAll()) ? 'complete' : 'incomplete';
   }
 
   /** The column-menu gate for sort/filter on an AI-made column: 'proceed'
@@ -552,14 +630,17 @@ export class LazyManager {
     const estimate = this.runEstimate()
       ?? { rowsRemaining: rowsOverride ?? 0, estTokens: 0, estUsd: 0, estSeconds: 0 };
     this.host.runAllDialog = { estimate, reason };
-    this.host.notify();
     return new Promise<RunAllChoice>((resolve) => {
+      // Install the resolver BEFORE notifying: a subscriber may answer the
+      // dialog synchronously from the notify, and an answer that lands
+      // between the two would be dropped, parking the dialog forever.
       this.dialogResolve = (choice: RunAllChoice) => {
         this.host.runAllDialog = null;
         this.dialogResolve = null;
         this.host.notify();
         resolve(choice);
       };
+      this.host.notify();
     });
   }
 
@@ -605,6 +686,72 @@ export function aiMadeColumns(spec: TablePlan): Set<string> {
   return cols;
 }
 
+// Canonical step identity: key order normalized, provenance metadata
+// (`query`/`name` — stamped by the runner at commit) stripped, so an old
+// step restamped this turn never reads as new.
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v) ?? 'null';
+}
+
+function stepKey(t: unknown): string {
+  const { query: _q, name: _n, ...rest } = t as Record<string, unknown>;
+  return canonical(rest);
+}
+
+/** The transformations `next` carries that `prev` does not — a CONTENT
+ *  multiset diff, never a positional slice. The additive rule usually makes
+ *  prev a prefix of next, but the patch prompt licenses replace/remove ops
+ *  too; a length-based diff would let a replace patch smuggle a new step in
+ *  ungated (RED-LAZY-5's bug). Shared by every "what did this patch add"
+ *  consumer: the gates and the structural-fill tint. */
+export function addedTransformations(prev: TablePlan, next: TablePlan): Transformation[] {
+  const prevSteps = new Map<string, number>();
+  for (const t of prev.transformations) {
+    const k = stepKey(t);
+    prevSteps.set(k, (prevSteps.get(k) ?? 0) + 1);
+  }
+  const added: Transformation[] = [];
+  for (const t of next.transformations as Transformation[]) {
+    const k = stepKey(t);
+    const n = prevSteps.get(k) ?? 0;
+    if (n > 0) prevSteps.set(k, n - 1);
+    else added.push(t);
+  }
+  return added;
+}
+
+/** Whether the multiset of per-row {llm} cell steps ({llm} mutates and
+ *  splits) differs between two specs — the estimate-accumulator reset's
+ *  trigger (see resetEstimateAccumulators). */
+function llmCellStepsChanged(prev: TablePlan, next: TablePlan): boolean {
+  const key = (spec: TablePlan): string =>
+    (spec.transformations as Transformation[])
+      .filter(
+        (t) =>
+          (t.kind === 'mutate' && typeof t.value === 'object' && t.value !== null && 'llm' in t.value) ||
+          (t.kind === 'split' && typeof t.on === 'object' && t.on !== null && !(t.on instanceof RegExp) && 'llm' in t.on),
+      )
+      .map(stepKey)
+      .sort()
+      .join('|');
+  return key(prev) !== key(next);
+}
+
+/** Table-wide {llm} work: a sort key or group aggregate evaluates every row
+ *  in one pass — there is no page for it, so it takes the estimate gate. */
+function stepsHaveTableWideLlm(steps: Transformation[]): boolean {
+  return steps.some(
+    (t) =>
+      (t.kind === 'sort' && t.by.some((b) => typeof b.key === 'object' && b.key !== null && 'llm' in b.key)) ||
+      (t.kind === 'group' && Object.values(t.agg).some((e) => 'llm' in e)),
+  );
+}
+
 /** Columns the steps in `next` beyond `prev` write — a mutate's targets, a
  *  split's parts, a validate's flag pair, group agg keys — plus any row key
  *  that newly appeared (join and pivot bring in columns only the data names).
@@ -618,36 +765,7 @@ export function newlyWrittenColumns(
   after: Row[],
 ): Set<string> {
   const cols = new Set<string>();
-  // Canonical step identity: key order normalized, provenance metadata
-  // (`query`/`name` — stamped by the runner at commit) stripped, so an old
-  // step restamped this turn never reads as new.
-  const canonical = (v: unknown): string => {
-    if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
-    if (v && typeof v === 'object') {
-      const o = v as Record<string, unknown>;
-      return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
-    }
-    return JSON.stringify(v) ?? 'null';
-  };
-  const stepKey = (t: unknown): string => {
-    const { query: _q, name: _n, ...rest } = t as Record<string, unknown>;
-    return canonical(rest);
-  };
-  // Multiset of the previous steps, so only steps this request added count —
-  // the additive rule makes prev a prefix of next, but a replace/undo edit
-  // may reshape the list.
-  const prevSteps = new Map<string, number>();
-  for (const t of prev.transformations) {
-    const k = stepKey(t);
-    prevSteps.set(k, (prevSteps.get(k) ?? 0) + 1);
-  }
-  for (const t of next.transformations as Transformation[]) {
-    const k = stepKey(t);
-    const n = prevSteps.get(k) ?? 0;
-    if (n > 0) {
-      prevSteps.set(k, n - 1);
-      continue;
-    }
+  for (const t of addedTransformations(prev, next)) {
     switch (t.kind) {
       case 'mutate':
         for (const c of Array.isArray(t.columns) ? t.columns : [t.columns]) cols.add(c);
@@ -705,8 +823,12 @@ function readsAiColumns(t: Transformation, aiCols: Set<string>): boolean {
         ? bodyRefs(exprBody(t.value as Expr))
         : false;
     case 'group':
+      // An {llm} aggregate reads whole rows: `{*}` serializes each group's
+      // slice — AI columns (and their pending sentinels) included — and a
+      // template can name an AI column directly. Only a template that
+      // touches neither is row-key-free.
       return t.by.some((b) => (typeof b === 'string' ? aiCols.has(b) : bodyRefs(exprBody(b))))
-        || Object.values(t.agg).some((e) => ('llm' in e ? false : bodyRefs(exprBody(e))));
+        || Object.values(t.agg).some((e) => ('llm' in e ? e.llm.includes('{*}') || bodyRefs(e.llm) : bodyRefs(exprBody(e))));
     case 'pivot':    return t.index.some((c) => aiCols.has(c)) || aiCols.has(t.on) || aiCols.has(t.values);
     case 'unpivot':  return t.id.some((c) => aiCols.has(c)) || t.measures.some((c) => aiCols.has(c));
     case 'join':     return bodyRefs(exprBody(t.on as Expr));
@@ -716,9 +838,16 @@ function readsAiColumns(t: Transformation, aiCols: Set<string>): boolean {
 }
 
 /** Whether the steps `next` adds beyond `prev` read AI-made columns across
- *  all rows (the dependency rule's trigger). */
+ *  all rows (the dependency rule's trigger). Added steps are the content
+ *  multiset diff — a replace patch gates like an append. */
 export function newStepsReadAiColumns(prev: TablePlan, next: TablePlan): boolean {
   const aiCols = aiMadeColumns(prev);
-  const added = next.transformations.slice(prev.transformations.length) as Transformation[];
-  return added.some((t) => readsAiColumns(t, aiCols));
+  return addedTransformations(prev, next).some((t) => readsAiColumns(t, aiCols));
+}
+
+/** A cellFilter row's identity for target matching: its source-row origin
+ *  when tagged, else its positional index (see targetOrigins). */
+function originKey(row: Row | undefined, rowIndex: number): number {
+  const origin = row ? rowOrigin(row) : undefined;
+  return origin ?? rowIndex;
 }
