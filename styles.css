@@ -262,11 +262,16 @@ section { padding: 52px 0; }
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 8px;
 }
+/* Solid ink fills, faded when unselected — color-mix instead of opacity so
+   the keyboard focus ring keeps full strength, derived from --ink so a
+   re-skin carries the dots along. */
 .feat-dot {
   width: 10px; height: 10px; border-radius: 50%; cursor: pointer; padding: 0;
-  background: transparent; border: 2px solid var(--silver); transition: background .12s, border-color .12s;
+  border: none; background: color-mix(in srgb, var(--ink) 30%, transparent);
+  transition: background .12s;
 }
-.feat-dot.active { background: var(--ink); border-color: var(--ink); }
+.feat-dot:hover { background: color-mix(in srgb, var(--ink) 50%, transparent); }
+.feat-dot.active { background: var(--ink); }
 .feat-demo {
   align-self: center;
   font-family: var(--font-body); font-size: 13px; font-weight: 600;
