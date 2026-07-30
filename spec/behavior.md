@@ -1150,7 +1150,10 @@ produced it as a diagnostics event, so the prefilled GitHub issue leads
 with the exchange being reported. Every reply to a completed request
 carries the action (a wrong answer is a bug even when nothing turned
 red), and an app-error message carries it even without a request detail;
-guidance errors never do. The **request** section shows the
+guidance errors never do. A flow replay's reply counts as a completed
+request and carries the action too — it makes no model call, so it has
+no request detail to expand, but a replayed recipe can still land a
+wrong table and that is worth reporting. The **request** section shows the
 user's original text and one summary line: model name(s), call count,
 total token count, and elapsed seconds. The **response** section lists
 each turn with its outcome label (`committed`, `rejected`, or an

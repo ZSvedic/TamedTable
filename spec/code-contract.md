@@ -976,7 +976,8 @@ WebController.clearDiagnostics(): void;
 
 `ChatMessage` carries `reportable?: boolean` — the chat panel shows its
 **Report bug** action only when it is `true`. The controller sets it on
-every reply to a completed request and on app-error replies;
+every reply to a completed request — chat replies and flow replays alike
+— and on app-error replies;
 `describeError(error, provider)` in `controller-messages.ts` returns
 `{ message, reportable }` (guidance patterns — cancelled, in-progress,
 401/404/429, network — are not reportable; the unknown fall-through and
