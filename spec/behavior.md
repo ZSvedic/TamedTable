@@ -90,9 +90,12 @@ On commit the displayed columns realign to the rows the replay produced:
 a column whose key no longer appears in any row drops out, and keys the
 transformations introduced append in first-seen order. The exception is
 keys starting with `_` — those are internal unless the patch lists them
-in `columns` explicitly. So `_valid` and `_validation` display (the
-validate few-shots add them), while a yes/no helper column a mutate
-computes only for a later validate stays on the rows but off the table.
+in `columns` explicitly. So a yes/no helper column a mutate computes
+only for a later validate stays on the rows but off the table, and the
+legacy `_valid`/`_validation` pair displays only when a replayed flow
+declares it. A validate's named `into` pair (`Email_ok`, `Email_ok_note`)
+has no underscore — it is data, not plumbing — and the few-shots insert
+it into `columns` right after the column the check is about.
 
 If any step throws, the patch rolls back and the error goes to the LLM as the
 next turn's input, up to a 3-turn recovery budget. The call either succeeds
@@ -565,7 +568,8 @@ the transformation grammar, the three expression shapes, and a few-shot
 per common task. The few-shots also carry the hard-won ordering and shape
 rules: a computing mutate before the validate that reads it — with the
 computed yes/no column kept out of the displayed columns, so a semantic
-check surfaces only `_valid` and `_validation` — one mutate per
+check surfaces only its named `<into>` flag pair — a fresh `into` per
+check so audits stack instead of overwriting, one mutate per
 target column, `{llm}` (never a regex or range check) for semantic
 judgments, per-part `{llm}` extraction for delimiter-free text, a
 round-trip check for date plausibility, and digits-only phone output.
@@ -685,11 +689,16 @@ asked to break each cell into the parts.
 
 `validate` checks each row against a per-row predicate and optionally
 the dataset against a rate threshold. Shape: `{ kind: "validate",
-pred: <Expr>, message?: <Expr>, threshold?: <number 0..1> }`. The
-predicate is evaluated per row; truthy means "row passes." The
-transformation adds two columns to every row: `_valid` (boolean) and
-`_validation` (the rendered `message` for failing rows, otherwise
-`null`). The column list is otherwise unchanged.
+pred: <Expr>, message?: <Expr>, threshold?: <number 0..1>,
+into?: <string> }`. The predicate is evaluated per row; truthy means
+"row passes." The transformation adds two columns to every row, named
+by `into`: `<into>` (boolean) and `<into>_note` (the rendered
+`message` for failing rows, otherwise `null`). `into` is a short name
+for the check itself (`Email_ok`, `City_Country_ok`) — not one fixed
+reserved pair — so several checks annotate the same table side by
+side. Without `into`, the legacy names `_valid` and `_validation`
+apply, so a version-1 flow replays unchanged. The column list is
+otherwise unchanged.
 
 When `threshold` is set, the transformation also computes the failure
 rate over the whole row stream. If `failures / total > threshold`, the
@@ -699,13 +708,18 @@ the error `validation failed: <rate>% > <threshold>%`. Without
 dropped — the user follows up with a `filter` if they want to drop the
 bad rows.
 
-The `_valid` and `_validation` columns persist across subsequent
-transformations the way any other column does; a second `validate`
-appended to the same spec overwrites them.
+A check's columns persist across subsequent transformations the way
+any other column does. Each `validate` owns its `into` pair: a second
+check with a different `into` adds its own pair next to the first,
+and only a `validate` that reuses the same `into` (or the legacy
+default pair) overwrites it. A follow-up request that doesn't name a
+check ("drop the bad rows") targets the most recent `validate`'s flag
+column; "rows failing any check" combines every flag column — both
+are patch-prompt rules, not engine behavior.
 
 A `validate` may only read columns that exist when it runs: source
 columns, columns created by transformations ordered before it, and the
-reserved `_valid` / `_validation` pair. A patch that orders a `validate`
+legacy `_valid` / `_validation` pair. A patch that orders a `validate`
 before the step that computes its input — or that reads a column nothing
 creates — is rejected before anything runs and fed back through the
 recovery loop, naming the missing column. Steps whose output columns
@@ -1155,7 +1169,10 @@ produced it as a diagnostics event, so the prefilled GitHub issue leads
 with the exchange being reported. Every reply to a completed request
 carries the action (a wrong answer is a bug even when nothing turned
 red), and an app-error message carries it even without a request detail;
-guidance errors never do. The **request** section shows the
+guidance errors never do. A flow replay's reply counts as a completed
+request and carries the action too — it makes no model call, so it has
+no request detail to expand, but a replayed recipe can still land a
+wrong table and that is worth reporting. The **request** section shows the
 user's original text and one summary line: model name(s), call count,
 total token count, and elapsed seconds. The **response** section lists
 each turn with its outcome label (`committed`, `rejected`, or an
@@ -1516,6 +1533,14 @@ data's actual change, not just the cells a live call streamed, is what keeps
 a shuffled or sorted view from tinting one block and leaving an identically
 filled block below it bare. Hovering a changed cell shows the previous
 value.
+
+Filled is not an AI-only notion. The columns a request's own new steps
+write — a `{js}`/`{sql}` mutate's targets, a split's parts, a validate's
+flag pair, the columns a join or reshape brings in — mark the same way,
+so a request that adds a plain computed column tints and reveals exactly
+like an AI one. Steps that write no columns (filter, sort, select) mark
+nothing: reordering or dropping rows is not a fill, and a
+structural-only request sets no reveal target.
 
 When a request commits with changed cells, the grid **scrolls the start of
 the changed block into view**: it scrolls horizontally just far enough to

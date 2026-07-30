@@ -14,6 +14,7 @@ import {
   isFailedCell,
   isPendingCell,
   specHasLlmCell,
+  validateColumns,
   type ChunkUpdate,
 } from '@tamedtable/headless';
 import type { Row, TablePlan, Transformation, Expr } from '@tamedtable/core';
@@ -601,6 +602,79 @@ export function aiMadeColumns(spec: TablePlan): Set<string> {
       for (const c of t.into) cols.add(c);
     }
   }
+  return cols;
+}
+
+/** Columns the steps in `next` beyond `prev` write — a mutate's targets, a
+ *  split's parts, a validate's flag pair, group agg keys — plus any row key
+ *  that newly appeared (join and pivot bring in columns only the data names).
+ *  These structural fills tint and reveal exactly like AI ones; steps that
+ *  write no columns (filter, sort, select) contribute nothing
+ *  (spec/behavior.md § Grid upgrades). */
+export function newlyWrittenColumns(
+  prev: TablePlan,
+  next: TablePlan,
+  before: Row[],
+  after: Row[],
+): Set<string> {
+  const cols = new Set<string>();
+  // Canonical step identity: key order normalized, provenance metadata
+  // (`query`/`name` — stamped by the runner at commit) stripped, so an old
+  // step restamped this turn never reads as new.
+  const canonical = (v: unknown): string => {
+    if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+    if (v && typeof v === 'object') {
+      const o = v as Record<string, unknown>;
+      return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
+    }
+    return JSON.stringify(v) ?? 'null';
+  };
+  const stepKey = (t: unknown): string => {
+    const { query: _q, name: _n, ...rest } = t as Record<string, unknown>;
+    return canonical(rest);
+  };
+  // Multiset of the previous steps, so only steps this request added count —
+  // the additive rule makes prev a prefix of next, but a replace/undo edit
+  // may reshape the list.
+  const prevSteps = new Map<string, number>();
+  for (const t of prev.transformations) {
+    const k = stepKey(t);
+    prevSteps.set(k, (prevSteps.get(k) ?? 0) + 1);
+  }
+  for (const t of next.transformations as Transformation[]) {
+    const k = stepKey(t);
+    const n = prevSteps.get(k) ?? 0;
+    if (n > 0) {
+      prevSteps.set(k, n - 1);
+      continue;
+    }
+    switch (t.kind) {
+      case 'mutate':
+        for (const c of Array.isArray(t.columns) ? t.columns : [t.columns]) cols.add(c);
+        break;
+      case 'split':
+        for (const c of t.into) cols.add(c);
+        break;
+      case 'validate': {
+        const { flag, note } = validateColumns(t);
+        cols.add(flag);
+        cols.add(note);
+        break;
+      }
+      case 'group':
+        for (const c of Object.keys(t.agg)) cols.add(c);
+        break;
+      case 'unpivot':
+        cols.add(t.names_to ?? 'name');
+        cols.add(t.values_to ?? 'value');
+        break;
+      default:
+        break;
+    }
+  }
+  const beforeKeys = new Set<string>();
+  for (const r of before) for (const k of Object.keys(r)) beforeKeys.add(k);
+  for (const r of after) for (const k of Object.keys(r)) if (!beforeKeys.has(k)) cols.add(k);
   return cols;
 }
 

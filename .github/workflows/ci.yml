@@ -47,3 +47,17 @@ jobs:
         working-directory: src
       - run: bun run test:smoke
         working-directory: src
+      # The e2e layer uses the web package's own @playwright/test pin, whose
+      # bundled browser revision can differ from the root `playwright` installed
+      # above — install from the web package so the revision matches its runner.
+      - run: bunx playwright install chromium
+        working-directory: src/packages/web
+      # Browser-driven e2e against the PRODUCTION build. CI=true makes
+      # playwright.config.ts `bun run build && bun run preview` instead of the
+      # dev server, so the run tree-shakes and minifies exactly like the
+      # deployed app — the class of bug that shipped in #259. Real clicks and a
+      # real bundle catch what the DOM-less @web Cucumber profile cannot. The
+      # green `chromium` project gates PRs; the bug-inventory `red` project does
+      # not run here (`bun run test:e2e:red` runs it on demand).
+      - run: bun run test:e2e
+        working-directory: src/packages/web

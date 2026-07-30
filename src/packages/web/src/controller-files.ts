@@ -145,12 +145,14 @@ export class FilesManager {
       this.recentsStore.record({ kind: 'flow', label: picked.name });
       // A numbered line per step (the same labels the live progress showed),
       // then the summary — the reply mirrors a chat request's per-step reply,
-      // linked to its journal entry so it tracks undo state.
+      // linked to its journal entry so it tracks undo state. A replay is a
+      // completed request, so the reply carries Report bug like a chat reply
+      // does; it makes no model call, so there is no debug detail to expand.
       this.host.pushMessage('assistant', [
         'Executed steps:',
         ...spec.transformations.map((t, i) => `${i + 1}. ${describeStep(t as Transformation)}`),
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-      ].join('\n'), undefined, undefined, historyId);
+      ].join('\n'), undefined, true, historyId);
     } catch (e) {
       // Stop is a deliberate cancel, not a failure — the replay left the
       // table untouched, so a quiet toast plus a chat line closing the
@@ -351,6 +353,10 @@ export class FilesManager {
     const { name, bytes } = await fetchTable(url, this.host.opts.fetch);
     await this.loadFromPicked({ name, bytes });
     this.recentsStore.record({ kind, label: name, url });
+    // The record lands after loadFromPicked fired its last notify, so the menu
+    // needs one more render to list it — the sample picker calls this
+    // fire-and-forget and closes before the record, so it has none of its own.
+    this.host.notify();
   }
 
   /** Save the current flow (replayable spec) via the Save dialog. */

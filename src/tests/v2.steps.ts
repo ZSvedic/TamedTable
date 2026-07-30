@@ -187,15 +187,34 @@ Then('the row has LastName equal to null', function (this: TamedTableWorld) {
 
 Given('load the lookup table {string} with columns {string}',
   async function (this: TamedTableWorld, file: string, _cols: string) {
-    // The @web surface loads its input through the browser parse path (no
-    // filesystem, no source dir), so the join cannot resolve the lookup file
-    // by path — stage it by name through the same registerLookup seam the
-    // tour uses. Path-based surfaces resolve it next to the loaded input.
+    // The @web surface has no working directory, so a browser join cannot
+    // resolve the lookup file by path — it pauses on the #LookupJoin dialog and
+    // asks the user to pick it (PR #259 gave that seam a real UI). Drive that
+    // through the public `chooseLookupFile()` method — the same handshake the
+    // "user chooses the lookup file" step uses — rather than reaching into the
+    // controller engine: arm a background responder that answers the dialog
+    // when the join later raises it. Path-based surfaces resolve it next to the
+    // loaded input.
     if (this.surface === 'web') {
-      const { loadCsv } = await import('@tamedtable/core');
-      const { rows } = await loadCsv(join(SPEC_TC_DIR, file));
-      const { webController } = await import('./web-file-port.ts');
-      webController(this).engine.registerLookup(file, rows);
+      const { webController, webCtx } = await import('./web-file-port.ts');
+      const c = webController(this);
+      const ctx = webCtx(this);
+      const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, file)));
+      (ctx.lookupResponders ??= []).push((async () => {
+        try {
+          const start = Date.now();
+          while (c.lookupDialog?.name !== file) {
+            if (Date.now() - start > 15_000) return; // scenario never asked
+            await new Promise((r) => setTimeout(r, 2));
+          }
+          const choosing = c.chooseLookupFile();
+          await ctx.filePort!.resolveOpen({ name: file, bytes });
+          await choosing;
+        } catch {
+          // A failure here starves the join of its lookup, so the scenario's
+          // `compare with the expected output` fails loudly — the right signal.
+        }
+      })());
       return;
     }
     await readFile(join(SPEC_TC_DIR, file), 'utf8');
@@ -333,38 +352,26 @@ Then('every row has a boolean {string}', function (this: TamedTableWorld, col: s
   rows.forEach((r, i) => assert.equal(typeof r[col], 'boolean', `row ${i} ${col} is not boolean: ${JSON.stringify(r[col])}`));
 });
 
-Then('rows with empty Phone have _valid equal to false', function (this: TamedTableWorld) {
+Then('rows with empty {word} have {string} equal to false', function (this: TamedTableWorld, source: string, flag: string) {
   for (const r of this.ensureRunner().currentRows()) {
-    if (!r.Phone || String(r.Phone).trim() === '') assert.equal(r._valid, false);
+    if (!r[source] || String(r[source]).trim() === '') assert.equal(r[flag], false);
   }
 });
 
-Then('rows with non-empty Phone have _valid equal to true', function (this: TamedTableWorld) {
+Then('rows with non-empty {word} have {string} equal to true', function (this: TamedTableWorld, source: string, flag: string) {
   for (const r of this.ensureRunner().currentRows()) {
-    if (r.Phone && String(r.Phone).trim() !== '') assert.equal(r._valid, true);
+    if (r[source] && String(r[source]).trim() !== '') assert.equal(r[flag], true);
   }
 });
 
-Then('rows with _valid equal to true have _validation equal to null', function (this: TamedTableWorld) {
+Then('rows where {string} is true have {string} equal to null', function (this: TamedTableWorld, flag: string, note: string) {
   for (const r of this.ensureRunner().currentRows()) {
-    if (r._valid === true) assert.equal(r._validation, null);
+    if (r[flag] === true) assert.equal(r[note], null);
   }
 });
 
-Then('every remaining row has _valid equal to true', function (this: TamedTableWorld) {
-  for (const r of this.ensureRunner().currentRows()) assert.equal(r._valid, true);
-});
-
-Then('rows with empty DOB have _valid equal to false', function (this: TamedTableWorld) {
-  for (const r of this.ensureRunner().currentRows()) {
-    if (!r.DOB || String(r.DOB).trim() === '') assert.equal(r._valid, false);
-  }
-});
-
-Then('rows with non-empty DOB but empty Phone have _valid equal to true', function (this: TamedTableWorld) {
-  for (const r of this.ensureRunner().currentRows()) {
-    if (r.DOB && (!r.Phone || String(r.Phone).trim() === '')) assert.equal(r._valid, true);
-  }
+Then('every remaining row has {string} equal to true', function (this: TamedTableWorld, flag: string) {
+  for (const r of this.ensureRunner().currentRows()) assert.equal(r[flag], true);
 });
 
 Then('the request commits', function (this: TamedTableWorld) {
