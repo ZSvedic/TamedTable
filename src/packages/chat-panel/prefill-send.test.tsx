@@ -1,4 +1,4 @@
-// RED-UI-2 — red unit test (bug inventory): the tutorial prefill typing
+// RED-UI-2 — regression test (red inventory): the tutorial prefill typing
 // animation keeps typing into the draft after the user sends. Sending
 // mid-animation fires the truncated draft, `send()` clears the box — and the
 // still-running interval (ChatPanel.tsx:449-453; never cleared by `send()`,
@@ -7,12 +7,10 @@
 // draft" (spec/packages/chat-panel/behavior.md:94); nothing anticipates the
 // box refilling itself after a send — and downstream a truncated tutorial
 // request has no recording, which ends the tour with "Tour ended — the
-// guided replay went off-script." (spec/behavior.md:1650-1653). Excluded
-// from `bun test` by bunfig pathIgnorePatterns; run via
-// `cd src && bun run test:red:unit`.
+// guided replay went off-script." (spec/behavior.md:1650-1653).
 import { afterAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
-import { win, h, act, mount, sleep, unmountAll, setupReact } from '../../tests/red/ui-dom-harness.tsx';
+import { win, h, act, mount, sleep, unmountAll, setupReact } from '../../tests/ui-dom-harness.tsx';
 
 // react-dom must evaluate AFTER the harness plants the DOM globals (a static
 // import can beat the harness to it), so everything React loads dynamically.

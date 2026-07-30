@@ -1,4 +1,4 @@
-// RED-UI-1 (OpenUrlDialog site) — red unit test (bug inventory): Enter
+// RED-UI-1 (OpenUrlDialog site) — regression test (red inventory): Enter
 // pressed to confirm an IME composition (KeyboardEvent.isComposing === true,
 // the keystroke a Japanese/Chinese/Korean user types to accept a conversion)
 // submits the Open-from-URL dialog with the half-composed URL. The dialog's
@@ -6,11 +6,9 @@
 // never reads `e.nativeEvent.isComposing` — the standard composer guard
 // (`e.isComposing || e.keyCode === 229`) is missing, so typing an
 // international domain (e.g. https://例え.jp/…) fires the load mid-word.
-// Excluded from `bun test` by bunfig pathIgnorePatterns; run via
-// `cd src && bun run test:red:unit`.
-import { afterAll, test } from 'bun:test';
+// import { afterAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
-import { win, h, act, mount, setValue, enterEvent, unmountAll, setupReact, sleep } from '../../tests/red/ui-dom-harness.tsx';
+import { win, h, act, mount, setValue, enterEvent, unmountAll, setupReact, sleep } from '../../tests/ui-dom-harness.tsx';
 
 // react-dom must evaluate AFTER the harness plants the DOM globals (a static
 // import can beat the harness to it), so everything React loads dynamically.

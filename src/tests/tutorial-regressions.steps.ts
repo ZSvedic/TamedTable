@@ -1,8 +1,9 @@
-// Red step defs for spec/test-cases/red/red-tut.feature — the tutorial-mode
-// bug inventory. Self-contained: each scenario builds its own WebController
-// with TutorialSources read straight from disk (the same shape
-// src/tests/web.hooks.ts buildTutorialSources uses). Model turns replay from
-// the committed cassettes — no network, no API key, never records.
+// Step defs for spec/test-cases/tutorial-regressions.feature — the
+// tutorial-mode regressions from the red inventory. Self-contained: each
+// scenario builds its own WebController with TutorialSources read straight
+// from disk (the same shape src/tests/web.hooks.ts buildTutorialSources
+// uses). Model turns replay from the committed cassettes — no network, no
+// API key, never records.
 import { Given, When, Then } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,8 +17,8 @@ import {
 import { parseTours } from '@tamedtable/gherkin-tour';
 import type { TablePlan } from '@tamedtable/core';
 
-// Path anchors, resolved from this file's location (src/tests/red/).
-const REPO_ROOT = join(import.meta.dirname, '../../..');
+// Path anchors, resolved from this file's location (src/tests/).
+const REPO_ROOT = join(import.meta.dirname, '../..');
 const SPEC_TC = join(REPO_ROOT, 'spec/test-cases');
 const CASSETTES = join(REPO_ROOT, 'cassettes');
 
@@ -74,7 +75,7 @@ const S = new WeakMap<object, RedTutState>();
 
 function state(world: object): RedTutState {
   const s = S.get(world);
-  if (!s) throw new Error('red-tut state missing — did the Given step run?');
+  if (!s) throw new Error('tut-regressions state missing — did the Given step run?');
   return s;
 }
 
@@ -83,14 +84,14 @@ function state(world: object): RedTutState {
 async function playToEnd(c: WebController): Promise<void> {
   for (let i = 0; i < 20 && !c.isTutorialDone(); i++) await c.nextStep();
   if (!c.isTutorialDone()) {
-    throw new Error('red-tut precondition: tour never reached its terminal stop — cassette replay harness failure, not the bug under test');
+    throw new Error('tut-regressions precondition: tour never reached its terminal stop — cassette replay harness failure, not the bug under test');
   }
   await c.tutorialSettle();
 }
 
 // ── RED-TUT-1: tour-staged lookup survives tour exit ─────────────────────────
 
-Given('a red tut session that played the join tour to the end and exited', async function () {
+Given('a regression tut session that played the join tour to the end and exited', async function () {
   const c = redTutController(redTutSources());
   c.selectTutorialScenario('Left join enriches each customer with ISO and Region');
   await c.playTutorial();
@@ -142,7 +143,7 @@ Feature: Red crafted
     Then compare with the expected output
 `;
 
-Given('a red tut session playing a crafted tour whose final query misses the tape', async function () {
+Given('a regression tut session playing a crafted tour whose final query misses the tape', async function () {
   // Real filter fixtures + the real committed filter cassette, but the final
   // query's wording drifted by a word — the exact "stale cassette on a deploy"
   // failure mode. The replay lookup is guaranteed to miss.
@@ -169,7 +170,7 @@ Then('the tour is not remembered as played to the end', function () {
   const { c } = state(this);
   const offScript = c.toasts.some((t) => t.message.includes('off-script'));
   if (!offScript) {
-    throw new Error('red-tut precondition: the drifted final query did not miss the cassette — harness failure, not the bug under test');
+    throw new Error('tut-regressions precondition: the drifted final query did not miss the cassette — harness failure, not the bug under test');
   }
   assert.equal(
     c.isTourCompleted(RED_TUT_2_TOUR),
@@ -180,7 +181,7 @@ Then('the tour is not remembered as played to the end', function () {
 
 // ── RED-TUT-3: Esc mid-step does not stop the step ───────────────────────────
 
-Given('a red tut session playing the filter tour with a slow fixture fetch', async function () {
+Given('a regression tut session playing the filter tour with a slow fixture fetch', async function () {
   const c = redTutController(redTutSources({
     loadFixture: async (name) => {
       await delay(60); // a realistic same-origin fetch — never instantaneous
@@ -197,14 +198,14 @@ When("the visitor presses Esc while the load step's fetch is in flight", async f
   const inFlight = c.nextStep(); // executes the load-file step: fixture fetch starts
   await delay(15);
   if (c.isLoaded()) {
-    throw new Error('red-tut precondition: the fixture fetch finished before Esc — timing harness failure, not the bug under test');
+    throw new Error('tut-regressions precondition: the fixture fetch finished before Esc — timing harness failure, not the bug under test');
   }
   c.cancelTutorial(); // TourUi Esc → cursor.cancel() → cancelTutorial(), no guard
   await inFlight; // let the cancelled step drain
   await c.tutorialSettle();
 });
 
-Then('the red tut app is back in the empty state', function () {
+Then('the regression tut app is back in the empty state', function () {
   const { c } = state(this);
   assert.equal(
     c.isLoaded(),
@@ -213,7 +214,7 @@ Then('the red tut app is back in the empty state', function () {
   );
 });
 
-Then('the red tut step cursor reports no active step', function () {
+Then('the regression tut step cursor reports no active step', function () {
   const { c } = state(this);
   assert.equal(
     c.currentTutorialStepNumber(),
@@ -224,7 +225,7 @@ Then('the red tut step cursor reports no active step', function () {
 
 // ── RED-TUT-6: zero-step manifest entry silently no-ops ─────────────────────
 
-Given('a red tut session with the shipped tour manifest', function () {
+Given('a regression tut session with the shipped tour manifest', function () {
   S.set(this, { c: redTutController(redTutSources()) });
 });
 
@@ -241,7 +242,7 @@ When('a deep link opens the zero-step dev scenario', async function () {
 Then('the deep link reports that no tour played', function () {
   const s = state(this);
   if (s.c.isTutorialActive() || s.c.isTutorialDone()) {
-    throw new Error('red-tut precondition: the zero-step scenario unexpectedly played — harness failure, not the bug under test');
+    throw new Error('tut-regressions precondition: the zero-step scenario unexpectedly played — harness failure, not the bug under test');
   }
   assert.equal(
     s.deepLinkMatched,

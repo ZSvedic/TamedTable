@@ -1,8 +1,8 @@
-// Red step defs for spec/test-cases/red/red-lazy.feature — the lazy AI
-// execution bug inventory (#LazyExec). Self-contained: each scenario builds
-// its own WebController through lazy-harness.red-util.ts (fake FilePort,
-// scripted offline Gemini fetch); no worldParameters, no Before-hook
-// coupling, no network, no API key, no real timers.
+// Step defs for spec/test-cases/lazy-regressions.feature — the lazy AI
+// execution regressions from the red inventory (#LazyExec). Self-contained:
+// each scenario builds its own WebController through lazy-harness.util.ts
+// (fake FilePort, scripted offline Gemini fetch); no worldParameters, no
+// Before-hook coupling, no network, no API key, no real timers.
 import { Given, When, Then } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
 import {
@@ -14,7 +14,7 @@ import {
   untilRunAllDialog,
   type FakeBackend,
   type RedLazyApp,
-} from './lazy-harness.red-util.ts';
+} from './lazy-harness.util.ts';
 
 interface RedLazyState {
   be: FakeBackend;
@@ -39,7 +39,7 @@ const S = new WeakMap<object, RedLazyState>();
 
 function state(world: object): RedLazyState {
   const s = S.get(world);
-  if (!s) throw new Error('red-lazy state missing — did the Given step run?');
+  if (!s) throw new Error('lazy-regressions state missing — did the Given step run?');
   return s;
 }
 
@@ -56,7 +56,7 @@ function autoAnswerGate(s: { gateSeen?: boolean }, app: RedLazyApp, choice: 'run
 
 // ── RED-LAZY-1: deterministic step after the AI step mistargets page opens ──
 
-Given('a red lazy session with an AI column previewed on page 1', async function () {
+Given('a regression lazy session with an AI column previewed on page 1', async function () {
   liftRpm();
   const be = makeBackend((p) => {
     const m = p.match(/User-(\d+)/);
@@ -100,7 +100,7 @@ Then('page 2 is evaluated and no off-page rows were billed', function () {
 
 // ── RED-LAZY-2: {llm} split sits outside all lazy machinery ─────────────────
 
-Given('a red lazy session with an AI split previewed on page 1', async function () {
+Given('a regression lazy session with an AI split previewed on page 1', async function () {
   liftRpm();
   const be = makeBackend((p) => {
     const m = p.match(/User-(\d+)/);
@@ -153,7 +153,7 @@ Then("the split's evaluated cells refill from the cell cache with no new AI call
 
 // ── RED-LAZY-5: non-append patches bypass the dependency rule ───────────────
 
-Given('a red lazy session with an AI column previewed and a sort step appended', async function () {
+Given('a regression lazy session with an AI column previewed and a sort step appended', async function () {
   liftRpm();
   const be = makeBackend((p) => {
     const m = p.match(/User-(\d+)/);
@@ -198,7 +198,7 @@ Then('the dependency confirmation gates the replace patch and pending rows survi
 
 // ── RED-LAZY-6: {llm} sort keys / group aggregates escape the lazy machinery ─
 
-Given('two red lazy sessions on the paginated fixture', async function () {
+Given('two regression lazy sessions on the paginated fixture', async function () {
   liftRpm();
   // Session A: fresh table, will receive an {llm} sort key.
   const be = makeBackend(() => '1');
@@ -255,7 +255,7 @@ Then('the AI sort is estimate-gated and no outgoing prompt carries the pending s
 
 // ── RED-LAZY-7: Save silently abandoned when the gated run has failures ─────
 
-Given('a red lazy session with an AI column previewed and two rows rigged to fail', async function () {
+Given('a regression lazy session with an AI column previewed and two rows rigged to fail', async function () {
   liftRpm();
   const be = makeBackend((p) => {
     const m = p.match(/User-(\d+)/);

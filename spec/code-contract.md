@@ -1118,14 +1118,25 @@ interface RunEstimate {
   estUsd: number;       // estTokens priced at the cell model's catalogue rates
                         // (inUsdPerMtok / outUsdPerMtok in models.json — the
                         // catalogue a unit test keeps in sync with
-                        // benchmarks/models.jsonl)
+                        // benchmarks/models.jsonl; the id matches exactly, or
+                        // by LONGEST prefix for dated variants — never a
+                        // shorter sibling like gpt-5.4 for gpt-5.4-mini)
   estSeconds: number;   // rowsRemaining / observed rows-per-second so far
 }
+// The accumulators behind the means reset whenever a patch changes the
+// spec's {llm} cell steps: recorded usage extrapolates the OLD columns'
+// cost, and rows already banked in the cell cache re-run free — carrying
+// the tally over would price a second AI column at the whole session's
+// spend. Only the cell role's usage accumulates (see onUsage below).
 
 // WebController additions.
 runEstimate(): RunEstimate | null;      // null when nothing is pending
-runOnAllRows(): Promise<void>;          // estimate-gated (> 1 page pending);
-                                        // progress + log + cancel; finished rows kept
+runOnAllRows():                         // estimate-gated (> 1 page pending);
+  Promise<'complete'                    // progress + log + cancel; finished rows
+    | 'declined' | 'incomplete'>;       // kept. 'declined' = dialog dismissed,
+                                        // nothing ran; 'incomplete' = a confirmed
+                                        // run ended with failed rows or a cancel —
+                                        // purposeful callers (Save) surface it
 retryFailedRows(): Promise<void>;       // the readout's "Retry N failed rows"
 evaluatedReadout(): { done: number; total: number; failed: number } | null;
 pendingPages(): number[];               // 1-based pages carrying pending rows
@@ -1158,27 +1169,44 @@ callbacks) live in the table-view package spec
 The headless runner stays eager; the web shell schedules it through four
 optional seams, all invisible to the CLI and the batch path:
 
-- **`cellFilter(transformationIndex, rowIndex)`** on `request`/`setSpec` —
-  an excluded `{llm}` cell refills from the per-cell result cache when its
+- **`cellFilter(transformationIndex, rowIndex, row)`** on `request`/`setSpec`
+  — an excluded `{llm}` cell refills from the per-cell result cache when its
   rendered prompt is cached (free), else it holds a **pending sentinel**.
   Row state derives from the sentinels in the data itself, which is what
   lets it survive deterministic reshaping, undo/redo, and engine rebuilds
-  with no index bookkeeping.
+  with no index bookkeeping. `rowIndex` is the row's index in the **step's
+  input rows** — not the derived view — and `row` is that input row itself.
+- **Row origins** — the index-mapping layer between derived rows and a
+  step's input rows. Every replay tags its working row copies with their
+  source-row position (an enumerable symbol key that spread copies carry and
+  JSON/`Object.keys` never see); the tags come off the final rows into a
+  parallel array exposed as **`rowOrigins()`**. A host targeting derived
+  rows translates its target to origins through `rowOrigins()` and matches a
+  `cellFilter`'s `row` by `rowOrigin(row)` — positions alone mis-target as
+  soon as a sort or filter sits between the AI step and the view. Rows a
+  reshaping step builds from scratch (select, group, pivot) carry no origin;
+  both sides fall back to positional identity there.
 - **`onCellError`** — with it set, a cell call that still fails after
   retries writes a **failed sentinel** (never cached) and reports, instead
   of failing the step; a failing batch call falls back to per-cell calls so
   one poisoned row fails alone. Without it the step throws, so the request
-  preview keeps today's fail-fast error surface.
+  preview keeps today's fail-fast error surface. The report carries the
+  step-input `rowIndex` plus the row's `origin` when it has one, so the host
+  can locate the failed derived row.
 - **`confirmSpec(next, prev)`** on `request` — the dependency rule's gate,
   called after the patch validates and before it replays; `false` throws
   `DECLINED`, which the web shell swallows (no history entry, no error).
-- **`adoptState(spec, rows)` + `cellCacheEntries`/`seedCellCache`** — a
-  provider switch rebuilds the engine but adopts the derived rows and the
-  cell cache verbatim: evaluated rows keep their values, no call is made.
+- **`adoptState(spec, rows, origins?)` + `cellCacheEntries`/`seedCellCache`**
+  — a provider switch rebuilds the engine but adopts the derived rows, their
+  row origins, and the cell cache verbatim: evaluated rows keep their
+  values, no call is made.
 
-`onUsage` (per-call token usage) feeds the estimate accumulators. `setSpec`'s
-`fresh` flag forces a full replay from the source, so a widened `cellFilter`
-can fill pending cells in unchanged steps.
+`onUsage` (per-call token usage) feeds the estimate accumulators; each
+report carries the call's `role` — `'primary'` (patch turn) or `'cell'` —
+so the host attributes usage even when one model id serves both roles (a
+model-id comparison would drop every cell call then). `setSpec`'s `fresh`
+flag forces a full replay from the source, so a widened `cellFilter` can
+fill pending cells in unchanged steps.
 
 ## One schema, richer sort keys, and Python export
 
@@ -1602,11 +1630,11 @@ voice turn and replays key-free.
 | `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the eight marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tour` scenarios (the Dev dropdown). |
 | `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup — the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
-| `async playTutorial()` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). |
+| `async playTutorial(): Promise<boolean>` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). Resolves `true` when the tour armed; `false` when there was nothing to play — no selection, no sources, or an entry whose steps all classify as display and drop. |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
 | `async nextStep()` | Executes the **current** step (only if it hasn't run before — see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`lastStepDescription`), so in the UI Next is disabled there and the done state is not reached; `nextStep` still supports it for the step-def loop. |
 | `prevStep()` | Decrements step index; re-highlights the step but executes nothing. A subsequent `nextStep` over an already-run step skips its side effect. |
-| `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. |
+| `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. A step still executing when the cancel lands stops at its next await — it never loads the tour's sample onto the fresh engine — and the tour's staged lookup tables are dropped, so the user's own join naming the same file asks for their file (#LookupJoin). |
 | `finishTutorial()` | Cancels the active tour and opens the Tutorial panel chooser, regardless of how the tour was launched, so the user can pick another tutorial. Deep-link visitors arrive in a new tab (the homepage opens "Show me →" in a new tab) and close it to return to the homepage; the app does not navigate for them. |
 | `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` return silently while stayed (the UI disables the chat input and mic — see behavior.md § Staying in the tour). |
 | `isTutorialStayed(): boolean` | True after `stayTutorial()` — a tour is loaded (replay mode on) but no step is highlighted and the terminal stop is dismissed. Cleared by `cancelTutorial()`/`selectTutorialScenario()`/`playTutorial()`. |

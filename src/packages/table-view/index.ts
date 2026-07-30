@@ -59,7 +59,8 @@ export function defaultColumnWidth(title: string): number {
 export function urlHref(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const s = value.trim();
-  if (!/^https?:\/\/\S+$/.test(s)) return null;
+  // /i — URL schemes are case-insensitive (RFC 3986); `new URL` normalizes.
+  if (!/^https?:\/\/\S+$/i.test(s)) return null;
   try {
     const u = new URL(s);
     return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : null;

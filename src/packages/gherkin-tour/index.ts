@@ -73,8 +73,11 @@ export function parseTours(source: string): TourScenario[] {
   let scenarioSteps: TourStep[] = [];
   let hasScenario = false;
 
-  // Tags that have been read but not yet attached to a Scenario.
+  // Tags that have been read but not yet attached to a Scenario. Tag lines
+  // stack (Gherkin: consecutive tag lines all apply); tags read before the
+  // Feature: line are feature-level and inherited by EVERY scenario.
   let pendingTags: string[] = [];
+  let featureTags: string[] = [];
 
   function flush() {
     if (hasScenario) {
@@ -114,12 +117,13 @@ export function parseTours(source: string): TourScenario[] {
   for (const raw of source.split('\n')) {
     const line = raw.trim();
 
-    // Docstring mode: absorb everything until closing """.
+    // Docstring mode: absorb everything until the closing bare """.
     if (state === 'docstring') {
       if (line === '"""') state = docstringReturn;
       continue;
     }
-    if (line === '"""') {
+    // An opening fence may carry a media type ("""json) — still a docstring.
+    if (line.startsWith('"""')) {
       docstringReturn = state;
       state = 'docstring';
       continue;
@@ -128,8 +132,13 @@ export function parseTours(source: string): TourScenario[] {
     // Skip comments and blank lines.
     if (line === '' || line.startsWith('#')) continue;
 
-    // Feature: — no-op.
-    if (line.startsWith('Feature:')) continue;
+    // Feature: — tags read so far are feature-level, inherited by every
+    // scenario (that is how cucumber-js runs them).
+    if (line.startsWith('Feature:')) {
+      featureTags = pendingTags;
+      pendingTags = [];
+      continue;
+    }
 
     // Rule: — new rule scope; finalize any open scenario first.
     if (line.startsWith('Rule:')) {
@@ -141,9 +150,10 @@ export function parseTours(source: string): TourScenario[] {
       continue;
     }
 
-    // @tags — accumulate; attached to the next Scenario.
+    // @tags — accumulate (stacked tag lines all apply); attached to the next
+    // Scenario.
     if (line.startsWith('@')) {
-      pendingTags = line.split(/\s+/).filter((t) => t.startsWith('@'));
+      pendingTags.push(...line.split(/\s+/).filter((t) => t.startsWith('@')));
       continue;
     }
 
@@ -173,7 +183,7 @@ export function parseTours(source: string): TourScenario[] {
     if (line.startsWith('Scenario:')) {
       flush();
       scenarioName = line.slice('Scenario:'.length).trim();
-      scenarioTags = pendingTags;
+      scenarioTags = [...featureTags, ...pendingTags];
       scenarioSteps = [];
       hasScenario = true;
       pendingTags = [];

@@ -1,4 +1,4 @@
-// RED-UI-1 (ChatPanel site) — red unit test (bug inventory): Enter pressed to
+// RED-UI-1 (ChatPanel site) — regression test (red inventory): Enter pressed to
 // confirm an IME composition (KeyboardEvent.isComposing === true, the
 // keystroke a Japanese/Chinese/Korean user types to accept a conversion)
 // SENDS the half-composed draft. "Enter sends" —
@@ -8,11 +8,10 @@
 // `e.isComposing || e.keyCode === 229` guard. The textarea onKeyDown
 // (ChatPanel.tsx:698-703) checks only `e.key === 'Enter'` and never reads
 // `e.nativeEvent.isComposing`, so the mid-composition draft fires a real
-// model request. Excluded from `bun test` by bunfig pathIgnorePatterns; run
-// via `cd src && bun run test:red:unit`.
+// model request.
 import { afterAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
-import { win, h, act, mount, setValue, enterEvent, unmountAll, setupReact } from '../../tests/red/ui-dom-harness.tsx';
+import { win, h, act, mount, setValue, enterEvent, unmountAll, setupReact } from '../../tests/ui-dom-harness.tsx';
 
 // react-dom must evaluate AFTER the harness plants the DOM globals (a static
 // import can beat the harness to it), so everything React loads dynamically.

@@ -1,4 +1,4 @@
-// RED-UI-4 — red unit test (bug inventory): Cmd/Ctrl+C cell copy is dead when
+// RED-UI-4 — regression test (red inventory): Cmd/Ctrl+C cell copy is dead when
 // CapsLock is on. With CapsLock engaged the browser reports the C key as
 // `key: 'C'` (KeyboardEvent.key reflects CapsLock — standard UI Events
 // behavior), and the copy handler's case-sensitive comparison
@@ -6,11 +6,9 @@
 // selected (and not editing), Cmd/Ctrl+C copies its text to the clipboard
 // and reports `onCopyCell(row, column, text)`" —
 // spec/packages/table-view/behavior.md:114-116 — no CapsLock carve-out.
-// Excluded from `bun test` by bunfig pathIgnorePatterns; run via
-// `cd src && bun run test:red:unit`.
-import { afterAll, beforeAll, test } from 'bun:test';
+// import { afterAll, beforeAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
-import { win, h, act, mount, unmountAll, setupReact } from '../../tests/red/ui-dom-harness.tsx';
+import { win, h, act, mount, unmountAll, setupReact } from '../../tests/ui-dom-harness.tsx';
 
 // react-dom must evaluate AFTER the harness plants the DOM globals (a static
 // import can beat the harness to it), so everything React loads dynamically.

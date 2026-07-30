@@ -1,4 +1,4 @@
-// RED-TUT-4 — red unit test (bug inventory): parseTours mishandles three
+// RED-TUT-4 — regression test (red inventory): parseTours mishandles three
 // valid Gherkin constructs that the cucumber suite parses correctly, so the
 // vite manifest and CI can silently diverge over the very same .feature file:
 //   (a) feature-level tags — Gherkin: inherited by EVERY scenario; parseTours
@@ -10,11 +10,11 @@
 //       parseTours matches only a bare `"""` (index.ts:118-126), so the fence
 //       never opens, the docstring CONTENT parses as steps, and the closing
 //       `"""` opens a docstring that swallows the next real step.
-//
+
 // Spec: spec/code-contract.md:1416-1417 — parseTours "returns every scenario
 // (each with its tags)"; spec/packages/gherkin-tour/behavior.md:91-92 — `"""`
 // docstrings "are all skipped".
-//
+
 // No committed manifest feature hits these today (landmine): one tag moved to
 // the Feature: line or one media-type docstring annotation corrupts the
 // shipped Tours manifest while `bun run test` stays green.

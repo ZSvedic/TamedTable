@@ -1553,7 +1553,11 @@ the table's row count. When the run was started from **Save**, a
 **save-ready confirmation** follows the run: browsers only open a save
 picker inside a user gesture, and the run consumed the original click, so
 one more click ("Save file…") writes the file. With nothing pending, Save
-skips straight to writing the file.
+skips straight to writing the file. A Save whose confirmed run ends short —
+failed rows, a cancel — never vanishes silently: a toast says the save was
+cancelled, how many rows stand in the way, and what unblocks it (retry the
+failed rows, or run on all rows). Declining the estimate cancels the save
+quietly — that "not now" was the user's own click.
 
 ### The dependency rule
 
@@ -1562,7 +1566,16 @@ by it, reference it in a `{js}`/`{sql}` expression, group or pivot on it —
 needs every row evaluated first, so it raises the same run-all confirmation
 before it applies. Declining leaves the step out entirely: not in the spec,
 not in the table, not in history. Chat requests that only add or transform
-other columns never trigger it.
+other columns never trigger it. The rule looks at what a patch *adds by
+content*, never at list positions — a patch that replaces or removes steps
+gates exactly like an append, so pending rows survive any patch shape.
+
+Table-wide `{llm}` work gets the same gate: an `{llm}` sort key or group
+aggregate has no page to preview on — every row evaluates at once — so on a
+table bigger than one page it shows the estimate dialog first, exactly as
+Simple mode would. Confirming also evaluates the pending prerequisite cells
+in the same run (a `{*}` aggregate or whole-row sort key reads full rows),
+so no prompt ever carries a half-evaluated row.
 
 The column menu's sort and filter offer a third, middle choice — **Sort
 evaluated rows** / **Filter evaluated rows**: apply the view over what is

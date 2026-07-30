@@ -444,7 +444,7 @@ export class WebController implements ControllerHost {
   runEstimate(): RunEstimate | null { return this.lazy.runEstimate(); }
   /** Run every pending/failed row, behind the estimate dialog when more than
    *  one page remains. */
-  runOnAllRows(): Promise<boolean> { return this.lazy.runOnAllRows('run-all'); }
+  runOnAllRows(): Promise<'complete' | 'declined' | 'incomplete'> { return this.lazy.runOnAllRows('run-all'); }
   /** The readout's "Retry N failed rows". */
   retryFailedRows(): Promise<void> { return this.lazy.retryFailedRows(); }
   /** Confirm / decline the run-all estimate dialog; `applyEvaluatedOnly` is
@@ -597,7 +597,8 @@ export class WebController implements ControllerHost {
   openTutorialFromLink(feature: string | null, scenario: string | null): Promise<boolean> {
     return this.tutorial.openTutorialFromLink(feature, scenario);
   }
-  playTutorial(): Promise<void> { return this.tutorial.playTutorial(); }
+  /** Start the selected tour; true when it armed (see TutorialManager). */
+  playTutorial(): Promise<boolean> { return this.tutorial.playTutorial(); }
   /** Await any in-flight tutorial prefill-chat request (used by tests). */
   tutorialSettle(): Promise<void> { return this.tutorial.settle(); }
   nextStep(): Promise<void> { return this.tutorial.nextStep(); }

@@ -44,6 +44,12 @@ export class TutorialManager {
   private readonly featureCache = new Map<string, TourScenario[]>();
   private readonly cassetteCache = new Map<string, Cassette>();
 
+  /** Lookup tables THIS tour staged (#LookupJoin) — cleared out of the
+   *  engine when the tour ends, so the user's own join naming the same file
+   *  asks for their file instead of silently reusing tour data. User-staged
+   *  lookups (picked through the dialog) are untouched. */
+  private readonly tourLookups = new Set<string>();
+
   /** Names of tours the visitor has finished (reached the terminal stop). The
    *  panel marks these with a checkmark. Persisted to localStorage best-effort
    *  so progress survives reloads; falls back to in-memory when storage is
@@ -137,14 +143,20 @@ export class TutorialManager {
     this.selected = entry;
     // Same full cleanup as selectTutorialScenario — see the comment there.
     this.cancelTutorial();
-    await this.playTutorial();
-    return true;
+    // True only when the tour actually played from step 1 — a zero-step
+    // entry arms nothing, and reporting it played would make main.tsx
+    // install the URL watcher and strip the deep-link params for nothing.
+    return this.playTutorial();
   }
 
-  async playTutorial(): Promise<void> {
-    if (!this.selected || !this.tutorialSrc) return;
+  /** Load and start the selected tour. Resolves true when the tour armed
+   *  (step 1 highlighted); false when there is nothing to play — no
+   *  selection, no sources, or an entry whose steps all classify as display
+   *  and drop. */
+  async playTutorial(): Promise<boolean> {
+    if (!this.selected || !this.tutorialSrc) return false;
     const loaded = await this.loadTour(this.selected);
-    if (!loaded || loaded.steps.length === 0) return;
+    if (!loaded || loaded.steps.length === 0) return false;
     // A `load the lookup table …` step is a silent prerequisite — the join query
     // reads the file from the work dir, the user never opens it — so it is not a
     // tour step. Write those files up front and drop them from the visible steps,
@@ -154,7 +166,7 @@ export class TutorialManager {
     const tour = lookups.length
       ? { ...loaded, steps: loaded.steps.filter((s) => s.action.kind !== 'load-lookup') }
       : loaded;
-    if (tour.steps.length === 0) return;
+    if (tour.steps.length === 0) return false;
     this.activeTour = tour;
     // Entering replay mode: rebuild the engine pinned to the recording config so
     // the request the tour issues fingerprints identically to what was taped.
@@ -178,6 +190,7 @@ export class TutorialManager {
     this.host.tutorialOpen = false;
     this.prefillCurrentStep();
     this.host.notify();
+    return true;
   }
 
   /** True while nextStep is executing a step — a re-entrant Next (clicked
@@ -212,6 +225,9 @@ export class TutorialManager {
     // doesn't fire a second, unrecorded request.
     if (this.tutorialStepIndex > this.executedThrough) {
       await this.executeTutorialStep(this.tutorialStepIndex);
+      // Esc may have cancelled the tour while the step executed — the nulled
+      // cursor must stay null (a `null++` here once resurrected it as step 1).
+      if (this.tutorialStepIndex === null || !this.activeTour) return;
       this.executedThrough = this.tutorialStepIndex;
     }
 
@@ -229,7 +245,13 @@ export class TutorialManager {
       // opens the Tutorial chooser.
       this.tutorialStepIndex = total;
       this.host.tutorialPrefill = '';
-      this.markCompleted(this.activeTour.name);
+      const tour = this.activeTour;
+      this.host.notify();
+      // The checkmark means "played to the end": the final query may still be
+      // replaying, and a replay miss cancels the tour when it settles — so
+      // wait it out and mark only a tour that is still standing.
+      await this.pending;
+      if (this.activeTour === tour) this.markCompleted(tour.name);
       await this.surfaceGolden();
       this.host.notify();
     }
@@ -242,6 +264,10 @@ export class TutorialManager {
     this.activeTour = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
+    // The tour's staged lookups leave with it — mid-tour rebuilds kept them,
+    // the user's own session must not (spec/behavior.md § tour exit).
+    for (const name of this.tourLookups) this.host.engine.unregisterLookup(name);
+    this.tourLookups.clear();
     // #LazyExec — a tour can end with the estimate or large-file dialog
     // open (the lazy tour's finale shows the estimate); close both.
     this.host.lazy.declineRunAll();
@@ -443,6 +469,7 @@ export class TutorialManager {
     if (text === undefined) return;
     const { rows } = await parseTable(filename, new TextEncoder().encode(text));
     this.host.engine.registerLookup(filename, rows);
+    this.tourLookups.add(filename);
   }
 
   /** Fetch an audio clip's raw bytes, surfacing a fetch failure as a toast. */
@@ -459,10 +486,16 @@ export class TutorialManager {
     const tour = this.activeTour;
     const step = tour?.steps[index];
     if (!tour || !step) return;
+    // Esc can cancel the tour while a step's async work (a fixture fetch,
+    // the simulated model pause, a clip's playback) is in flight — the
+    // cancelled step must not keep executing onto the reset engine
+    // (spec/behavior.md § leaving a tour). Checked after every await below.
+    const cancelled = (): boolean => this.activeTour !== tour;
     const { action } = step;
     switch (action.kind) {
       case 'load-file': {
         const text = await this.loadFixture(action.filename);
+        if (cancelled()) return;
         if (text !== undefined) await this.host.files.loadFromText(action.filename, text);
         break;
       }
@@ -493,6 +526,7 @@ export class TutorialManager {
         // the cassette — `settle()` lets tests await it.
         if (!this.host.streaming) {
           await simulateModelLatency();
+          if (cancelled()) return;
           this.pending = this.host.sendChat(action.text);
         }
         // Empty the box after submission (the empty string triggers the ChatPanel
@@ -505,7 +539,7 @@ export class TutorialManager {
         // plumbing so the request fingerprints identically to the recorded
         // voice turn and replays from the tour's cassette, key-free.
         const bytes = await this.loadAudio(action.filename);
-        if (!bytes) break;
+        if (!bytes || cancelled()) break;
         // Play the clip aloud from the bytes we just fetched. A blob URL is used
         // rather than the bare filename: `new Audio("voice-….m4a")` resolves
         // against /app/, 404s, and fires `onerror` at once — so nothing is heard
@@ -525,6 +559,7 @@ export class TutorialManager {
             URL.revokeObjectURL(url);
           }
         }
+        if (cancelled()) break;
         const audio: RequestAudio = { data: bytes, mediaType: audioMediaType(action.filename) };
         this.pending = this.host.voice.sendAudioRequest(audio);
         await this.pending;

@@ -182,6 +182,7 @@ export class EngineManager {
   async rebuildForConfigChange(spec: TablePlan): Promise<void> {
     const old = this.headless;
     const rows = old?.currentRows();
+    const origins = old?.rowOrigins();
     const cache = old?.cellCacheEntries();
     this.headless = undefined;
     const runner = this.ensureHeadless();
@@ -192,7 +193,7 @@ export class EngineManager {
     }
     // Seed after the load — commitSource clears the cell cache.
     if (cache) runner.seedCellCache(cache);
-    if (rows) await runner.adoptState(spec, rows);
+    if (rows) await runner.adoptState(spec, rows, origins);
     else await runner.setSpec(spec);
   }
 
@@ -223,6 +224,14 @@ export class EngineManager {
   /** The names a join can resolve without asking the user for a file. */
   stagedLookupNames(): ReadonlySet<string> {
     return new Set(this.stagedLookups.keys());
+  }
+
+  /** Drop a staged lookup by name — tour cleanup (#TutorialMode): a tour's
+   *  bundled lookup must not outlive the tour, or the user's own join naming
+   *  the same file would silently join against tour data. The runner itself
+   *  is dropped by the tour-end engine reset; this clears the rebuild seed. */
+  unregisterLookup(name: string): void {
+    this.stagedLookups.delete(name);
   }
 
   /** The loaded source's column ids — what a replayed flow reads (its
@@ -589,6 +598,13 @@ export class EngineManager {
   rawRows(): Row[] {
     if (!this.host.loaded) return [];
     return this.ensureHeadless().currentRows();
+  }
+
+  /** Source-row origin per derived row (#LazyExec) — the lazy manager's
+   *  derived-to-step-input index mapping. */
+  rowOrigins(): ReadonlyArray<number | undefined> {
+    if (!this.host.loaded) return [];
+    return this.ensureHeadless().rowOrigins();
   }
 
   // Memoized sentinel-blanked copy of the derived rows (#LazyExec): pending
