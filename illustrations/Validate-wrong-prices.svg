@@ -9,8 +9,8 @@
     <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
     <text x="32" y="91" font-size="11.5" font-weight="600" fill="#FFFFFF">Item</text>
     <text x="105" y="91" font-size="11.5" font-weight="600" fill="#FFFFFF">Price</text>
-    <text x="152" y="91" font-size="11.5" font-weight="600" fill="#96BED7">_valid</text>
-    <text x="200" y="91" font-size="11.5" font-weight="600" fill="#96BED7">_validation</text>
+    <text x="152" y="91" font-size="10.5" font-weight="600" fill="#96BED7" textLength="44" lengthAdjust="spacingAndGlyphs">Price_ok</text>
+    <text x="200" y="91" font-size="10.5" font-weight="600" fill="#96BED7">Price_ok_note</text>
     <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5">
       <rect x="18" y="102" width="324" height="24" fill="#FFFFFF"/>
       <text x="32" y="118" fill="#281C60">Notebook</text>
