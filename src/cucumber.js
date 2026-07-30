@@ -26,11 +26,22 @@ const featurePath = (name) =>
 // replay offline — they make a model call but have no recorded cassette — carry
 // `@needs-recording` and are excluded per-profile below until their tape lands.
 function allFeaturePaths() {
-  const tc = readdirSync(join(import.meta.dirname, '../spec/test-cases'))
+  const tcDir = join(import.meta.dirname, '../spec/test-cases');
+  const tc = readdirSync(tcDir)
     .filter((f) => f.endsWith('.feature'))
     .map((f) => `../spec/test-cases/${f}`);
+  // #RedInventory — bug-reproduction scenarios live in a sibling `red/` dir,
+  // each tagged @red (so the surface profiles skip them, see tagsFor below).
+  // The `red` profile runs only these. The dir is absent on a branch with no
+  // findings, so tolerate that.
+  let red = [];
+  try {
+    red = readdirSync(join(tcDir, 'red'))
+      .filter((f) => f.endsWith('.feature'))
+      .map((f) => `../spec/test-cases/red/${f}`);
+  } catch { /* no red inventory yet */ }
   const pkg = [...PACKAGE_FEATURES].map((name) => featurePath(name));
-  return [...tc, ...pkg];
+  return [...tc, ...red, ...pkg];
 }
 
 const FEATURES = process.env.TAMEDTABLE_FEATURES
@@ -51,10 +62,13 @@ export default common;
 // cassette yet — it can't replay, so the default run excludes it. Record mode
 // is the exception: it MUST include those scenarios, since recording is how the
 // tape gets made (otherwise the tag would lock them out of their own recording).
+// #RedInventory — `and not @red` keeps the bug-reproduction scenarios out of
+// every surface profile (they are expected to fail); only the `red` profile
+// below runs them.
 const tagsFor = (surface) =>
   process.env.TAMEDTABLE_CASSETTE === 'record'
-    ? `@${surface}`
-    : `@${surface} and not @needs-recording`;
+    ? `@${surface} and not @red`
+    : `@${surface} and not @needs-recording and not @red`;
 
 export const headless = {
   ...common,
@@ -72,6 +86,17 @@ export const web = {
   ...common,
   tags: tagsFor('web'),
   worldParameters: { surface: 'web' },
+};
+
+// #RedInventory — the bug inventory. Runs only @red scenarios (no surface
+// filter): each reproduces a real defect through the controller and is expected
+// to FAIL. CI does not gate on it; `bun run test:red` runs it on demand. The
+// scenarios also carry their surface tag, so the matching Before hook builds a
+// runner under this profile's surface (headless — engine/controller findings).
+export const red = {
+  ...common,
+  tags: '@red',
+  worldParameters: { surface: 'headless' },
 };
 
 // #BenchPerf — standalone performance benchmark profile (`bun run bench`).

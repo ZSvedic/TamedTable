@@ -13,6 +13,7 @@
     "test:headless": "bun --bun cucumber-js --profile headless",
     "test:cli": "bun --bun cucumber-js --profile cli",
     "test:web": "bun --bun cucumber-js --profile web",
+    "test:red": "bun --bun cucumber-js --profile red",
     "test:smoke": "SMOKE=1 bun test tests/demo.smoke.test.ts",
     "test:record": "TAMEDTABLE_CASSETTE=record bun run test:headless ; TAMEDTABLE_CASSETTE=record bun run test:cli ; TAMEDTABLE_CASSETTE=record bun run test:web",
     "rerecord": "bun run packages/cassette/rerecord.ts",
