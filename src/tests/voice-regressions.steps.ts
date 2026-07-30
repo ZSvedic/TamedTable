@@ -1,6 +1,7 @@
-// Red step defs for spec/test-cases/red/red-voice.feature — the voice-input
-// bug inventory (RED-VOICE-1, -2, -6, -7; -3/-4/-5 are unit red tests in
-// red-voice.red.test.ts). Self-contained: each scenario builds its own
+// Step defs for the voice-input regression scenarios in
+// spec/test-cases/voice.feature — the 2026-07-29 hunt findings RED-VOICE-1,
+// -2, -6 and -7, fixed and moved green (-3/-4/-5 are unit tests in
+// voice-lifecycle.test.ts). Self-contained: each scenario builds its own
 // WebController with stub voice ports, a captured voiceSchedule (so the 30 s
 // auto-stop fires on demand), and an offline fetch — either the committed
 // cassettes/voice.json replay or a canned Gemini function-call response. No
@@ -19,9 +20,9 @@ import {
   type ContinuousVoicePort,
 } from '@tamedtable/web';
 import { audioMediaType } from '@tamedtable/voice-input';
-import { cassetteFetch } from '../cassette.ts';
+import { cassetteFetch } from './cassette.ts';
 
-const REPO = join(import.meta.dirname, '../../..');
+const REPO = join(import.meta.dirname, '../..');
 const TC = join(REPO, 'spec/test-cases');
 
 /** Minimal FilePort: the voice scenarios never open or save via the picker. */
@@ -95,13 +96,13 @@ const S = new WeakMap<object, RedVoiceState>();
 
 function state(world: object): RedVoiceState {
   const s = S.get(world);
-  if (!s) throw new Error('red-voice state missing — did the Given step run?');
+  if (!s) throw new Error('voice-regressions state missing — did the Given step run?');
   return s;
 }
 
 // ── RED-VOICE-1: release during pending getUserMedia ─────────────────────────
 
-Given('a red voice session whose microphone permission prompt is pending', async function () {
+Given('a regression voice session whose microphone permission prompt is pending', async function () {
   let grant!: () => void;
   let live = false;
   const port: VoicePort = {
@@ -153,7 +154,7 @@ Then('granting the permission leaves the mic idle and the auto-stop sends nothin
 
 // ── RED-VOICE-2: provider/key change mid-recording ───────────────────────────
 
-Given('a red voice session with a latched mic recording', async function () {
+Given('a regression voice session with a latched mic recording', async function () {
   let released = false;
   const port: VoicePort = {
     startRecording: () => Promise.resolve(),
@@ -173,7 +174,7 @@ Given('a red voice session with a latched mic recording', async function () {
   S.set(this, { rig, micReleased: () => released });
 });
 
-Given('a second red voice session listening hands-free', async function () {
+Given('a second regression voice session listening hands-free', async function () {
   const s = state(this);
   let stopped = false;
   let emit: ((b: Blob) => void | Promise<void>) | undefined;
@@ -265,7 +266,7 @@ const GEMINI_VOICE_TURN = JSON.stringify({
   usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
 });
 
-Given('a red voice session in always-run-all mode with a prior cell edit in history', async function () {
+Given('a regression voice session in always-run-all mode with a prior cell edit in history', async function () {
   const port: VoicePort = {
     startRecording: () => Promise.resolve(),
     stopRecording: () => Promise.resolve(clip('voice-normalize-dob.m4a')),
@@ -322,7 +323,7 @@ Then('the prior undo entry keeps its label and no success bubble is posted', fun
 
 // ── RED-VOICE-7: Stop button dead for mic voice turns ────────────────────────
 
-Given('a red voice session with a mic voice turn held mid-flight', async function () {
+Given('a regression voice session with a mic voice turn held mid-flight', async function () {
   const port: VoicePort = {
     startRecording: () => Promise.resolve(),
     stopRecording: () => Promise.resolve(clip('voice-normalize-dob.m4a')),

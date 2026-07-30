@@ -17,7 +17,7 @@ import {
 } from '@tamedtable/file-io';
 import type { Row, TablePlan, Transformation } from '@tamedtable/core';
 import { checkFlowInputColumns, describeStep, isCancelled, specHasLlmCell } from '@tamedtable/headless';
-import { missingProviderKeyMessage } from './controller-messages.ts';
+import { missingProviderKeyMessage, numberedStepLines } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { RecentsStore, type RecentEntry } from './recents.ts';
 
@@ -150,7 +150,7 @@ export class FilesManager {
       // does; it makes no model call, so there is no debug detail to expand.
       this.host.pushMessage('assistant', [
         'Executed steps:',
-        ...spec.transformations.map((t, i) => `${i + 1}. ${describeStep(t as Transformation)}`),
+        ...numberedStepLines(spec.transformations.map((t) => describeStep(t as Transformation))),
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
       ].join('\n'), undefined, true, historyId);
     } catch (e) {
@@ -163,8 +163,10 @@ export class FilesManager {
       } else {
         this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
         // A run that had already started leaves its `Run <flow>` bubble in
-        // the thread — close it with the same error the dialog shows.
-        if (started) this.host.pushMessage('assistant', `Error: Could not run flow: ${(e as Error).message}`);
+        // the thread — close it with the same error the dialog shows. An
+        // unclassified mid-run failure is an app error, so the reply carries
+        // Report bug like any other app-error reply.
+        if (started) this.host.pushMessage('assistant', `Error: Could not run flow: ${(e as Error).message}`, undefined, true);
       }
     } finally {
       this.host.dialog = null;

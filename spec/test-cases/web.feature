@@ -687,3 +687,46 @@ Feature: Web front-end
       Then leaving the page needs no confirmation
       When user edits cell at row 1 column "Country" to "United States"
       Then leaving the page asks for confirmation
+
+  # Regressions from the 2026-07-29 hunt-audit (red inventory, group 4/5).
+  # Self-contained step defs in src/tests/web-regressions.steps.ts: each
+  # scenario builds its own WebController with an in-memory FilePort and an
+  # injected fetch. The RED-WEB ids are the findings in
+  # spec/test-cases/red/README.md.
+  Rule: Controller edges keep the thread, the log, and the view truthful
+
+    @web @regression
+    Scenario: RED-WEB-1: a flow replay reply caps at 7 numbered lines plus overflow
+      Given a regression web session with a two-row table loaded
+      When the user replays a saved flow of 12 deterministic steps
+      Then the flow reply shows at most 7 numbered lines plus an overflow line
+
+    @web @regression
+    Scenario: RED-WEB-2: a mid-run flow failure reply carries the Report bug action
+      Given a regression web session with a two-row table loaded
+      When the user replays a saved flow that throws mid-run
+      Then the flow failure reply carries the Report bug action
+
+    @web @regression
+    Scenario: RED-WEB-3: diagnostics events survive storage that is readable but not writable
+      Given a regression web session whose browser storage rejects writes
+      When two error toasts are pushed into the session
+      Then the diagnostics log still lists both error events
+
+    @web @regression
+    Scenario: RED-WEB-4: a provider switch mid-run is refused, so chat and table agree
+      Given a regression web session with a chat request held mid-flight
+      When the user switches provider before the held reply lands
+      Then the table shows the step the chat reply claims was executed
+
+    @web @regression
+    Scenario: RED-WEB-5: Safari and Firefox network failures classify as network guidance
+      Given regression web sessions whose fetch fails with the Safari and Firefox network messages
+      When the user sends a chat request in each session
+      Then each reply shows the network guidance sentence and no Report bug action
+
+    @web @regression
+    Scenario: RED-WEB-6: an active column sort folds a committed cell edit back into order
+      Given a regression web session sorted descending on a numeric column
+      When the user edits a sorted cell so its rank changes
+      Then the column still reads in descending order

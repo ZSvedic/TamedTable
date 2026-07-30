@@ -215,3 +215,35 @@ Feature: Voice input
       Then a toast shows "Voice input failed"
       And an assistant bubble shows "Voice input failed"
       And the spec has 0 transformations
+
+  # Regressions from the 2026-07-29 hunt-audit (red inventory, group 4/5).
+  # Self-contained step defs in src/tests/voice-regressions.steps.ts: each
+  # scenario builds its own WebController with stub voice ports, a captured
+  # 30 s auto-stop, and an offline fetch. The RED-VOICE ids are the findings
+  # in spec/test-cases/red/README.md.
+  Rule: Lifecycle edges never strand the microphone or misreport a turn
+
+    @web @regression
+    Scenario: RED-VOICE-1: releasing the mic during the permission prompt ends the session
+      Given a regression voice session whose microphone permission prompt is pending
+      When the user releases the mic before the permission is granted
+      Then granting the permission leaves the mic idle and the auto-stop sends nothing
+
+    @web @regression
+    Scenario: RED-VOICE-2: closing the voice gate mid-session tears the live sessions down
+      Given a regression voice session with a latched mic recording
+      And a second regression voice session listening hands-free
+      When the provider is switched mid-recording and the key is removed mid-listening
+      Then both microphones are released and the keyless detected turn is not sent
+
+    @web @regression
+    Scenario: RED-VOICE-6: a declined patch leaves history labels and the thread untouched
+      Given a regression voice session in always-run-all mode with a prior cell edit in history
+      When a spoken request trips the run-all estimate and the user declines it
+      Then the prior undo entry keeps its label and no success bubble is posted
+
+    @web @regression
+    Scenario: RED-VOICE-7: the chat Stop button cancels an in-flight mic voice turn
+      Given a regression voice session with a mic voice turn held mid-flight
+      When the user clicks the chat Stop button and the model reply then lands
+      Then the cancelled voice turn applies no transformation

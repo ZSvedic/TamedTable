@@ -135,6 +135,11 @@ export class PatchManager {
     // and the entry's mark snapshot catches up so undo/redo restores it.
     this.host.engine.noteChangedCell(rowIndex, column, before);
     this.marks.set(id, new Map(this.host.engine.changedCells));
+    // An active column sort stays live: once the commit settles, the edited
+    // row folds back into order instead of leaving the ▲/▼ indicator lying
+    // (spec/behavior.md § Grid upgrades — the sort holds only while rows
+    // stream in, then folds them into order).
+    this.host.view.refreshSortOrder();
     // applySpecChange already notified — before the mark existed. Notify again
     // so the tint and its "was: …" tooltip land with the committed value,
     // not on whatever unrelated render happens next.

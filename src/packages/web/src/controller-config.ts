@@ -71,7 +71,21 @@ export class ConfigManager {
       next.model !== this.host.config.model ||
       next.cellModel !== this.host.config.cellModel ||
       keyFor(next) !== keyFor(this.host.config);
+    // A rebuild while a request or flow is committing would orphan the old
+    // engine: the chat reply claims the executed step, the rebuilt engine's
+    // table never had it. Refuse the switch until the run settles (or is
+    // stopped) instead of letting thread and table permanently disagree.
+    if (engineChanged && this.host.streaming) {
+      this.host.pushToast(
+        'error',
+        'A request is running — stop it or let it finish before switching the provider, model, or key.',
+      );
+      return;
+    }
     this.host.config = next;
+    // Closing the voice gate (a provider without voice, or its key removed)
+    // tears down any live mic or hands-free session along with the controls.
+    this.host.voice.enforceGate();
     // The page follows the provider: its concurrency wave shrinks with a
     // pinned cell batch size (openrouter: 25) and is 100 otherwise.
     // currentPage() clamps on read, so no page bookkeeping is needed here.

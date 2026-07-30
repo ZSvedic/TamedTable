@@ -1,21 +1,18 @@
-// RED-MC-3 — red unit test (bug inventory): merely loading the model-config
-// demo page persists config with zero user action and resets the stored
-// alwaysRunAll:true to false. The demo's persist effect (demo.tsx:46-48) runs
-// on mount, and the stored object it hands resolveConfig omits alwaysRunAll
-// (demo.tsx:35-43), so resolveConfig fills the default false and
-// writeStoredConfig replaces the whole blob.
+// RED-MC-3 regression (2026-07-29 hunt, fixed and moved green): merely
+// loading the model-config demo page must leave the stored config blob
+// byte-for-byte untouched — a page load is not a change, and the persisted
+// alwaysRunAll:true must survive it. The demo's persist effect now skips its
+// mount run and merges changed fields over the stored blob.
 //
-// Spec: spec/packages/model-config/behavior.md:278-281 (§ Demo page) — the
-// demo "writes every change back"; a page load is not a change.
-// spec/code-contract.md:1076-1077 — alwaysRunAll is "persisted alongside the
-// provider settings".
+// Spec: spec/packages/model-config/behavior.md § Demo page;
+// spec/code-contract.md — alwaysRunAll is "persisted alongside the provider
+// settings".
 //
 // This drives the real built demo in headless Chromium (same build + serve
 // shape as tests/demo.smoke.test.ts) because the demo mounts React at module
-// scope — there is no browser-free way to exercise its mount effect. Unlike
-// the smoke suite it is NOT gated on SMOKE=1: it is part of the red
-// inventory and runs under `bun run test:red:unit` (excluded from plain
-// `bun test` by bunfig [test] pathIgnorePatterns).
+// scope — there is no browser-free way to exercise its mount effect. Like
+// the smoke suite it is gated on SMOKE=1 (`bun run test:smoke`), so plain
+// `bun test` stays offline and browser-free.
 //
 // NOTE: this deliberately asserts only the no-unsolicited-write/clobber half
 // of the finding. The fresh-visit 'anthropic' default is pinned by the green
@@ -26,15 +23,18 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Browser } from 'playwright';
-import { assertBrowserTestsSupported, findChromium } from '../demo-harness.ts';
+import { assertBrowserTestsSupported, findChromium } from './demo-harness.ts';
 
-const SRC_DIR = join(import.meta.dir, '..', '..');
+const SRC_DIR = join(import.meta.dir, '..');
+
+const smoke = process.env.SMOKE === '1';
 
 let outDir: string;
 let server: ReturnType<typeof Bun.serve>;
 let browser: Browser;
 
 beforeAll(async () => {
+  if (!smoke) return;
   assertBrowserTestsSupported();
   const { chromium } = await import('playwright');
   const chromePath = findChromium(chromium);
@@ -77,7 +77,7 @@ afterAll(async () => {
   if (outDir) await rm(outDir, { recursive: true, force: true });
 });
 
-test('RED-MC-3: merely loading the demo page rewrites the stored config and resets alwaysRunAll to false', async () => {
+test.skipIf(!smoke)('RED-MC-3: merely loading the demo page leaves the stored config blob untouched', async () => {
   // The blob exactly as the main app persists it, with Simple mode on.
   const seed = {
     provider: 'gemini',

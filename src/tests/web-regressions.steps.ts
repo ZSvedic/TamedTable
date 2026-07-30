@@ -1,5 +1,6 @@
-// Red step defs for spec/test-cases/red/red-web.feature — the web-controller
-// bug inventory. Self-contained: each scenario builds its own WebController
+// Step defs for the web-controller regression scenarios in
+// spec/test-cases/web.feature — the 2026-07-29 hunt findings RED-WEB-1..6,
+// fixed and moved green. Self-contained: each scenario builds its own WebController
 // with a minimal in-memory FilePort and an injected fetch; no worldParameters,
 // no Before-hook coupling, no network, no API key.
 import { Given, When, Then, After } from '@cucumber/cucumber';
@@ -38,7 +39,7 @@ const S = new WeakMap<object, RedWebState>();
 
 function state(world: object): RedWebState {
   const s = S.get(world);
-  if (!s) throw new Error('red-web state missing — did the Given step run?');
+  if (!s) throw new Error('web-regressions state missing — did the Given step run?');
   return s;
 }
 
@@ -61,7 +62,7 @@ function flowFile(name: string, transformations: object[]): PickedFile {
 
 // ── RED-WEB-1 / RED-WEB-2: flow replay replies ───────────────────────────────
 
-Given('a red web session with a two-row table loaded', async function () {
+Given('a regression web session with a two-row table loaded', async function () {
   const port = new RedFilePort();
   const c = newController(port);
   await c.loadFromText('t.csv', 'x,y\n5,6\n7,8\n');
@@ -151,12 +152,13 @@ function restoreStorage(): void {
 }
 
 // Safety net: never leak the storage shim into the next scenario, even when a
-// step throws. Runs only for @red scenarios, so green profiles are untouched.
-After({ tags: '@red' }, function () {
+// step throws. Scoped to @regression scenarios; restoreStorage is a no-op
+// unless the RED-WEB-3 scenario installed the shim.
+After({ tags: '@regression' }, function () {
   restoreStorage();
 });
 
-Given('a red web session whose browser storage rejects writes', function () {
+Given('a regression web session whose browser storage rejects writes', function () {
   shimReadOnlyStorage();
   const port = new RedFilePort();
   S.set(this, { port, c: newController(port) });
@@ -212,7 +214,7 @@ const GEMINI_FILTER_TURN = JSON.stringify({
   usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
 });
 
-Given('a red web session with a chat request held mid-flight', async function () {
+Given('a regression web session with a chat request held mid-flight', async function () {
   const port = new RedFilePort();
   let release!: () => void;
   const gate = new Promise<void>((r) => {
@@ -255,7 +257,7 @@ Then('the table shows the step the chat reply claims was executed', function () 
 
 // ── RED-WEB-5: Safari / Firefox network-failure classification ──────────────
 
-Given('red web sessions whose fetch fails with the Safari and Firefox network messages', function () {
+Given('regression web sessions whose fetch fails with the Safari and Firefox network messages', function () {
   const sessions = [
     { label: 'Safari ("Load failed")', message: 'Load failed' },
     { label: 'Firefox ("NetworkError when attempting to fetch resource.")', message: 'NetworkError when attempting to fetch resource.' },
@@ -293,7 +295,7 @@ Then('each reply shows the network guidance sentence and no Report bug action', 
 
 // ── RED-WEB-6: stale pinned sort after a committed cell edit ─────────────────
 
-Given('a red web session sorted descending on a numeric column', async function () {
+Given('a regression web session sorted descending on a numeric column', async function () {
   const port = new RedFilePort();
   const c = newController(port);
   await c.loadFromText('s.csv', 'a\n20\n5\n40\n');

@@ -49,9 +49,11 @@ export interface ChatRunProgress {
 
 /** Mic button state — drives the red ring (recording while held), the
  *  cancel/send controls (`latched`, after a quick tap), and the spinner
- *  (sending). */
-export type VoiceButtonStatus = 'idle' | 'recording' | 'latched' | 'sending';
+ *  (sending). `starting` (the permission prompt is up, nothing live yet)
+ *  renders like idle. */
+export type VoiceButtonStatus = 'idle' | 'starting' | 'recording' | 'latched' | 'sending';
 
 /** Continuous (hands-free) voice button state — drives the pulsing bars
- *  (listening) and spinner (a detected turn is being sent). */
-export type ContinuousButtonStatus = 'idle' | 'listening' | 'sending';
+ *  (listening) and spinner (a detected turn is being sent). `starting` (the
+ *  VAD is loading) renders like idle. */
+export type ContinuousButtonStatus = 'idle' | 'starting' | 'listening' | 'sending';

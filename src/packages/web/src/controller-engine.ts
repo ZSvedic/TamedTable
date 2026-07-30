@@ -418,8 +418,16 @@ export class EngineManager {
     const prevSpec = structuredClone(runner.currentSpec());
     this.lastCommitId = null;
 
-    const ownAbort = opts?.signal ? null : new AbortController();
-    const signal = opts?.signal ?? ownAbort!.signal;
+    // The engine always owns the abort controller, so cancelActive() (the
+    // chat Stop button) reaches every kind of run. A caller-passed signal —
+    // the voice path's Escape — is chained in rather than passed through:
+    // either source of abort cancels the request.
+    const ownAbort = new AbortController();
+    if (opts?.signal) {
+      if (opts.signal.aborted) ownAbort.abort();
+      else opts.signal.addEventListener('abort', () => ownAbort.abort(), { once: true });
+    }
+    const signal = ownAbort.signal;
     this.activeAbort = ownAbort;
     this.host.streaming = true;
     this.overlay.clear();

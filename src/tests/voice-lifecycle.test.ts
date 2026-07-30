@@ -1,11 +1,9 @@
-// RED-VOICE-3..5 — red unit tests (bug inventory): voice-input defects driven
-// through WebController with stub voice/continuous ports, offline — the model
-// call replays the committed cassettes/voice.json; no network, no API key, no
-// real timers (promise gates only). RED-VOICE-1, -2, -6 and -7 are Gherkin
-// scenarios in spec/test-cases/red/red-voice.feature.
-//
-// Excluded from plain `bun test` by bunfig [test] pathIgnorePatterns; run via
-// `bun run test:red:unit`.
+// Voice-input lifecycle regressions — the 2026-07-29 hunt findings
+// RED-VOICE-3, -4 and -5 (spec/test-cases/red/README.md), fixed and moved
+// green. Driven through WebController with stub voice/continuous ports,
+// offline — the model call replays the committed cassettes/voice.json; no
+// network, no API key, no real timers (promise gates only). RED-VOICE-1, -2,
+// -6 and -7 are Gherkin regression scenarios in spec/test-cases/voice.feature.
 import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -20,9 +18,9 @@ import {
   type ContinuousVoicePort,
 } from '@tamedtable/web';
 import { audioMediaType } from '@tamedtable/voice-input';
-import { cassetteFetch } from '../cassette.ts';
+import { cassetteFetch } from './cassette.ts';
 
-const REPO = join(import.meta.dirname, '../../..');
+const REPO = join(import.meta.dirname, '../..');
 const TC = join(REPO, 'spec/test-cases');
 
 class RedVoiceFilePort implements FilePort {
@@ -64,11 +62,11 @@ const micPort = (): VoicePort => ({
   cancelRecording: () => {},
 });
 
-// RED-VOICE-3 (minor). Cause: controller-voice.ts:230 — the continuous drop
-// guard is `continuousBusy || continuousStatus === 'idle'`; `continuousBusy`
-// is set only by continuous's own segments, so an in-flight typed or mic turn
-// (engine busy) is invisible to it and the clip errors instead of dropping.
-test('RED-VOICE-3: a continuous clip landing while a mic turn applies errors instead of being dropped', async () => {
+// RED-VOICE-3 (was minor). The continuous drop guard once checked only
+// `continuousBusy` (set by continuous's own segments), so a clip landing
+// during an in-flight typed or mic turn errored instead of dropping; the
+// guard now also drops on `host.streaming`.
+test('RED-VOICE-3: a continuous clip landing while a mic turn applies is dropped silently', async () => {
   let emit: ((b: Blob) => void | Promise<void>) | undefined;
   const cont: ContinuousVoicePort = {
     start: (h) => {
@@ -124,10 +122,9 @@ test('RED-VOICE-3: a continuous clip landing while a mic turn applies errors ins
   );
 });
 
-// RED-VOICE-4 (minor). Cause: controller-voice.ts:97-103 — a stopRecording
-// failure pushes a toast only and returns, skipping host.fail(), so no
-// assistant chat message is posted for a microphone failure.
-test('RED-VOICE-4: a microphone failure at release produces a toast but no assistant chat message', async () => {
+// RED-VOICE-4 (was minor). A stopRecording failure once pushed a toast only,
+// skipping host.fail() — the chat kept no trace of a microphone failure.
+test('RED-VOICE-4: a microphone failure at release produces a toast and an assistant chat message', async () => {
   const port: VoicePort = {
     startRecording: () => Promise.resolve(),
     stopRecording: () => Promise.reject(new Error('recording device lost')),
@@ -150,12 +147,11 @@ test('RED-VOICE-4: a microphone failure at release produces a toast but no assis
   );
 });
 
-// RED-VOICE-5 (major). Cause: controller-voice.ts:198-212 — startContinuous
-// guards on continuousStatus but sets 'listening' only after the awaited
-// port.start(), so every click during the seconds-long VAD load re-enters
-// start; browser-vad.ts keeps a single `vad` slot, so stop() destroys only
-// the last session and the first keeps the microphone forever.
-test('RED-VOICE-5: double-clicking the waveform during the VAD load opens two listening sessions; stop releases only one', async () => {
+// RED-VOICE-5 (was major). startContinuous once set 'listening' only after
+// the awaited port.start(), so every click during the seconds-long VAD load
+// re-entered start and opened a second session; the 'starting' state now
+// makes those clicks no-ops, so exactly one session ever exists.
+test('RED-VOICE-5: double-clicking the waveform during the VAD load opens one listening session; stop releases it', async () => {
   let startCalls = 0;
   let stopCalls = 0;
   const liveSessions: number[] = [];

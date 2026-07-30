@@ -15,7 +15,7 @@
     "test:web": "bun --bun cucumber-js --profile web",
     "test:red": "bun --bun cucumber-js --profile red",
     "test:red:unit": "bun test --path-ignore-patterns 'never-match' .red.test",
-    "test:smoke": "SMOKE=1 bun test tests/demo.smoke.test.ts",
+    "test:smoke": "SMOKE=1 bun test tests/demo.smoke.test.ts tests/demo-config.smoke.test.ts",
     "test:record": "TAMEDTABLE_CASSETTE=record bun run test:headless ; TAMEDTABLE_CASSETTE=record bun run test:cli ; TAMEDTABLE_CASSETTE=record bun run test:web",
     "rerecord": "bun run packages/cassette/rerecord.ts",
     "cassettes:rekey": "bun run packages/cassette/rekey.ts",

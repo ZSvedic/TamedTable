@@ -108,11 +108,13 @@ env always wins. The rules:
 5. Else use `stored.provider`, falling back to "gemini" — the provider whose
    defaults every committed cassette is recorded with, so key-free replay
    (tests, tours) resolves the models the recordings used.
-6. `TAMEDTABLE_MODEL` in env overrides the primary model from stored.
+6. `TAMEDTABLE_MODEL` in env overrides the primary model from stored. An
+   empty value counts as unset — like the `*_API_KEY` vars — and falls
+   through to stored, then the provider default.
 7. Keys not present in env keep their stored values (or null).
-8. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`.
-9. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`.
-10. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't, replace it with `defaultCellModel(provider)`.
+8. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`. A model id that belongs to **no** provider — one `providerFor` only reaches through its anthropic catch-all, without the `claude-` prefix — does not belong to anthropic either: it is replaced the same way, never sent to the API to 404.
+9. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`. An empty value counts as unset, as in rule 6.
+10. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't (including a no-provider id, as in rule 8), replace it with `defaultCellModel(provider)`.
 
 When multiple provider keys are set in env, gemini wins, then openai, then
 anthropic, then openrouter.
@@ -276,10 +278,13 @@ mounts the real `ModelChooser` over plain React state and shows the
 `resolveConfig` result live. Two behaviors beyond the chooser itself:
 
 - **Shared persistence.** On load the demo seeds its state from
-  `readStoredConfig()` and writes every change back with
-  `writeStoredConfig(resolved)` — the same localStorage blob the main app
-  uses, so the key and provider choice carry over between the app and the demo
-  in both directions. The models follow the provider defaults, so switching
+  `readStoredConfig()` and writes every change back — the same localStorage
+  blob the main app uses, so the key and provider choice carry over between
+  the app and the demo in both directions. A page load is not a change: with
+  no interaction the stored blob is left byte-for-byte untouched. When a
+  change is written, the demo's fields are merged over the stored blob, so
+  fields the demo doesn't thread (`alwaysRunAll`) keep their persisted
+  values instead of resetting to defaults. The models follow the provider defaults, so switching
   provider repoints `model`/`cellModel` to that provider's two defaults.
 - **Test call.** Below the resolved config sits a dev test harness: a query
   input (`#tc-input`), a Send button (`#tc-send`), and a response field

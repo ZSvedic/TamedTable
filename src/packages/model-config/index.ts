@@ -144,6 +144,21 @@ export function keyFor(config: ResolvedConfig): string | null {
  *   8. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
  *      model must also belong to the provider, else use defaultCellModel
  */
+/** Whether a stored value names a provider this build knows. */
+function isProvider(p: unknown): p is Provider {
+  return p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
+}
+
+/** Whether a model id belongs to a provider — the same-provider guard's test.
+ *  `providerFor` must route the id there, and for anthropic (providerFor's
+ *  catch-all) the id must actually carry the `claude-` prefix: an id that
+ *  belongs to no provider is treated as not belonging, so it is coerced to
+ *  the provider default instead of being sent to the API to 404. */
+function modelBelongsTo(provider: Provider, modelId: string): boolean {
+  if (provider === 'anthropic') return modelId.startsWith('claude-');
+  return providerFor(modelId) === provider;
+}
+
 export function resolveConfig(
   env: Record<string, string | undefined>,
   stored: Partial<ResolvedConfig>,
@@ -172,22 +187,27 @@ export function resolveConfig(
     provider = 'openrouter';
     openrouterKey = envOpenrouter;
   } else {
-    provider = stored.provider ?? 'gemini';
+    // The stored blob is written by whatever build last ran on the origin
+    // (production and pr-preview share one blob), so an unknown provider
+    // value must resolve to the gemini fallback — never throw at boot.
+    provider = isProvider(stored.provider) ? stored.provider : 'gemini';
   }
 
-  // Primary model: env wins, then stored, then provider default
-  let model = env['TAMEDTABLE_MODEL'] ?? stored.model ?? defaultModel(provider);
+  // Primary model: env wins, then stored, then provider default. Truthiness,
+  // like the key vars above — an empty env value (`TAMEDTABLE_MODEL=` in a
+  // .env) means unset, never a real model id.
+  let model = env['TAMEDTABLE_MODEL'] || stored.model || defaultModel(provider);
 
   // Guard: model must belong to resolved provider
-  if (providerFor(model) !== provider) {
+  if (!modelBelongsTo(provider, model)) {
     model = defaultModel(provider);
   }
 
   // Secondary (cell) model: env wins, then stored, then provider cell default.
   // Same-provider invariant — a stored cell model from another provider is
   // coerced to this provider's cell default.
-  let cellModel = env['TAMEDTABLE_CELL_MODEL'] ?? stored.cellModel ?? defaultCellModel(provider);
-  if (providerFor(cellModel) !== provider) {
+  let cellModel = env['TAMEDTABLE_CELL_MODEL'] || stored.cellModel || defaultCellModel(provider);
+  if (!modelBelongsTo(provider, cellModel)) {
     cellModel = defaultCellModel(provider);
   }
 
