@@ -57,9 +57,11 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({
     kind: z.literal('join'),
+    // null: the user named no file — the web UI asks for one and writes the
+    // picked file's name back before the join runs (#LookupJoin).
     with: z.string().refine((s) => JsonLikeFileExtRe.test(s), {
       message: 'join.with: unknown file type (must be .csv or .jsonl)',
-    }),
+    }).nullable(),
     on: ExprSchema,
     how: z.enum(['inner', 'left']).optional(),
     ...QueryMeta,
@@ -77,6 +79,7 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
     pred: ExprSchema,
     message: ExprSchema.optional(),
     threshold: z.number().min(0).max(1).optional(),
+    into: z.string().min(1, 'validate.into must be non-empty').optional(),
     ...QueryMeta,
   }).strict(),
   z.object({
@@ -111,9 +114,9 @@ export type Transformation =
   | ({ kind: 'select'; columns: string[] } & WithQuery)
   | ({ kind: 'sort'; by: Array<{ key: Expr | string; dir: 'asc' | 'desc' }>; limit?: number } & WithQuery)
   | ({ kind: 'group'; by: Array<Expr | string>; agg: Record<string, Expr> } & WithQuery)
-  | ({ kind: 'join'; with: string; on: Expr; how?: 'inner' | 'left' } & WithQuery)
+  | ({ kind: 'join'; with: string | null; on: Expr; how?: 'inner' | 'left' } & WithQuery)
   | ({ kind: 'split'; from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean } & WithQuery)
-  | ({ kind: 'validate'; pred: Expr; message?: Expr; threshold?: number } & WithQuery)
+  | ({ kind: 'validate'; pred: Expr; message?: Expr; threshold?: number; into?: string } & WithQuery)
   | ({ kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' } & WithQuery)
   | ({ kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string } & WithQuery);
 

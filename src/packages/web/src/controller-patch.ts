@@ -135,6 +135,10 @@ export class PatchManager {
     // and the entry's mark snapshot catches up so undo/redo restores it.
     this.host.engine.noteChangedCell(rowIndex, column, before);
     this.marks.set(id, new Map(this.host.engine.changedCells));
+    // applySpecChange already notified — before the mark existed. Notify again
+    // so the tint and its "was: …" tooltip land with the committed value,
+    // not on whatever unrelated render happens next.
+    this.host.notify();
   }
 
   /** The column menu's Delete column — a spec step, the same patch a chat

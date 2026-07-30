@@ -214,6 +214,14 @@ Then('no lookup dialog is shown', function (this: TamedTableWorld) {
   assert.equal(controller(this).lookupDialog, null);
 });
 
+// A join emitted with `with: null` — the user named no file — raises the
+// dialog with no filename to show.
+Then('the lookup dialog asks for no particular file', function (this: TamedTableWorld) {
+  const dialog = controller(this).lookupDialog;
+  assert.ok(dialog, 'no lookup dialog is up');
+  assert.equal(dialog.name, null);
+});
+
 When('user chooses the lookup file {string}', async function (this: TamedTableWorld, filename: string) {
   const ctx = ctxOf(this);
   const choosing = controller(this).chooseLookupFile();
@@ -1041,6 +1049,20 @@ Then('the newly evaluated cells carry the changed marker', function (this: Tamed
 Then('no cells are marked changed', function (this: TamedTableWorld) {
   const marked = Object.keys(controller(this).pageChangedCells());
   assert.equal(marked.length, 0, `unexpected changed-cell marks: ${marked.join(', ')}`);
+});
+
+// Column-scoped marker check — a structurally written column (a validate's
+// flag pair, a {js}/{sql} mutate target) tints every filled cell, AI or not.
+Then('every cell in column {string} carries the changed marker', function (this: TamedTableWorld, column: string) {
+  const c = controller(this);
+  const changed = c.pageChangedCells();
+  const rows = c.pageRows().length;
+  const start = (c.currentPage() - 1) * c.pageSize;
+  let unmarked = 0;
+  for (let p = 0; p < rows; p++) {
+    if (!(`${start + p}:${column}` in changed)) unmarked++;
+  }
+  assert.equal(unmarked, 0, `${unmarked} cell(s) in "${column}" on the page lack the changed marker`);
 });
 
 // ── The reveal scroll (behavior.md § Grid upgrades) ──────────────────────────

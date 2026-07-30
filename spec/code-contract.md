@@ -29,9 +29,9 @@ type Transformation =
   | { kind: "select";   columns: string[] }                                     // #ColSelect
   | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }>; limit?: number } // #SortRows
   | { kind: "group";    by: Array<Expr | string>; agg: Record<string, Expr> }    // #Aggregate
-  | { kind: "join";     with: string; on: Expr; how?: "inner" | "left" }         // #LookupJoin
+  | { kind: "join";     with: string | null; on: Expr; how?: "inner" | "left" }  // #LookupJoin — null: no file named yet
   | { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }  // #ColSplit
-  | { kind: "validate"; pred: Expr; message?: Expr; threshold?: number }         // #Validate
+  | { kind: "validate"; pred: Expr; message?: Expr; threshold?: number; into?: string } // #Validate
   | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // #PivotData
   | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // #PivotData
 
@@ -59,7 +59,9 @@ The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
 three shapes; `split.into`, `pivot.index`, `sort.by`, and
 `unpivot.measures` are non-empty (an empty `group.by` is allowed — it
 aggregates the whole table into one row);
-`validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
+`validate.threshold` is in `[0, 1]`; `join.with` is `null` (the user
+named no file — the web UI asks for one and writes the picked file's
+name into the step before the join runs) or ends in `.csv` or
 `.jsonl`; the top-level object is strict — any key outside `table`,
 `columns`, and `transformations` fails as an unrecognized key (the spec
 describes data, never the view, so a patch writing a view knob such as
@@ -631,7 +633,7 @@ not at evaluation).
 
 ```ts
 interface SplitTransform    { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean; }
-interface ValidateTransform { kind: "validate"; pred: Expr; message?: Expr; threshold?: number; }
+interface ValidateTransform { kind: "validate"; pred: Expr; message?: Expr; threshold?: number; into?: string; }
 interface PivotTransform    { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first"; }
 interface UnpivotTransform  { kind: "unpivot"; id: string[]; measures: string[]; names_to?: string; values_to?: string; }
 ```
@@ -639,26 +641,31 @@ interface UnpivotTransform  { kind: "unpivot"; id: string[]; measures: string[];
 The Zod schema permits these four `kind` values. Schema-level
 checks: `split.into` non-empty; `pivot.index` non-empty; `pivot.on`
 not in `pivot.index`; `unpivot.measures` non-empty;
-`validate.threshold` in `[0, 1]` when present.
+`validate.threshold` in `[0, 1]` when present; `validate.into`
+non-empty when present.
 Runtime-evaluation errors (predicate throws, regex doesn't compile,
 LLM array-returning expression returns the wrong arity) flow through
 the recovery loop as plain strings.
 
-`validate` adds two reserved column names: `_valid` (boolean) and
-`_validation` (string | null). A spec that already has a user column
-named `_valid` or `_validation` and then appends a `validate`
-transformation overwrites them — the patch prompt warns the LLM
-about this so it picks fresh names when possible.
+`validate` writes two columns named by `into`: `<into>` (boolean) and
+`<into>_note` (string | null). Without `into` the legacy names
+`_valid` and `_validation` apply — the back-compat path old flows
+replay through; the patch prompt always sets `into`. A `validate`
+overwrites only columns of its own name — same-`into` checks replace
+each other, different-`into` checks coexist — so the patch prompt
+tells the LLM to pick a fresh `into` per check (and one that doesn't
+collide with a data column).
 
 A patched spec is checked before it runs: for every `validate`, each
 column its `pred`/`message` reads (`row.X` / `row["X"]` in `{js}`,
 `{X}` placeholders in `{llm}`; `{sql}` is not parsed) must be a source
-column, be created by an earlier transformation, or be `_valid` /
-`_validation`. The check walks the transformation list tracking the
-available columns (`mutate` adds its targets, `split` its `into`,
-`group` its by + agg keys, `select` narrows, `unpivot` replaces; `join`
-and `pivot` make later columns unknowable and suspend the check). A
-violation rejects the patch through the recovery loop with:
+column, be created by an earlier transformation, or be the legacy
+`_valid` / `_validation` pair. The check walks the transformation list
+tracking the available columns (`mutate` adds its targets, `split` its
+`into`, `validate` its flag + note pair, `group` its by + agg keys,
+`select` narrows, `unpivot` replaces; `join` and `pivot` make later
+columns unknowable and suspend the check). A violation rejects the
+patch through the recovery loop with:
 
 ```
 validate reads column "<X>" which no earlier step provides. A validate can
@@ -976,7 +983,8 @@ WebController.clearDiagnostics(): void;
 
 `ChatMessage` carries `reportable?: boolean` — the chat panel shows its
 **Report bug** action only when it is `true`. The controller sets it on
-every reply to a completed request and on app-error replies;
+every reply to a completed request — chat replies and flow replays alike
+— and on app-error replies;
 `describeError(error, provider)` in `controller-messages.ts` returns
 `{ message, reportable }` (guidance patterns — cancelled, in-progress,
 401/404/429, network — are not reportable; the unknown fall-through and

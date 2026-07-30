@@ -37,9 +37,10 @@ export function compileJs(body: string): (row: Row, i: number, rows: Row[]) => u
  *  column in spec.columns that still appears in the rows (preserving the
  *  LLM-chosen order and any label/format), and append new keys the
  *  transformations introduced in first-seen order. Keys starting with `_`
- *  are internal unless the spec declares them — `_valid`/`_validation`
- *  display because the validate few-shots add them to `columns`, while a
- *  yes/no helper column a mutate computes only for a later validate stays
+ *  are internal unless the spec declares them — a validate's named `into`
+ *  pair (no underscore) displays like any data column, while a yes/no helper
+ *  column a mutate computes only for a later validate, or the legacy
+ *  `_valid`/`_validation` pair of an old flow that doesn't declare it, stays
  *  on the rows but off the table (spec/behavior.md § Core / runner). */
 export function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
   if (rows.length === 0) return spec;
@@ -100,17 +101,24 @@ export function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'm
 // ── Aggregate, reshape, lookup & validation transformations ─────────────────
 
 // #Validate
+/** The flag + note column pair a validate writes: `<into>`/`<into>_note`, or
+ *  the legacy `_valid`/`_validation` when `into` is absent (old flows). */
+export function validateColumns(t: Extract<Transformation, { kind: 'validate' }>): { flag: string; note: string } {
+  return t.into ? { flag: t.into, note: `${t.into}_note` } : { flag: '_valid', note: '_validation' };
+}
+
 export function applyValidateJs(rows: Row[], t: Extract<Transformation, { kind: 'validate' }>): Row[] {
   if (!('js' in t.pred)) throw new Error('validate: LLM predicates not supported');
+  const { flag, note } = validateColumns(t);
   const predFn = compileJs(t.pred.js);
   const msgFn = t.message && 'js' in t.message ? compileJs(t.message.js) : undefined;
   const out: Row[] = rows.map((row, i) => {
     const valid = Boolean(predFn(row, i, rows));
     const message = valid ? null : msgFn ? msgFn(row, i, rows) : null;
-    return { ...row, _valid: valid, _validation: message };
+    return { ...row, [flag]: valid, [note]: message };
   });
   if (t.threshold !== undefined && rows.length > 0) {
-    const failures = out.filter((r) => r._valid === false).length;
+    const failures = out.filter((r) => r[flag] === false).length;
     const rate = failures / rows.length;
     if (rate > t.threshold) {
       throw new Error(
@@ -309,6 +317,9 @@ export async function applyJoin(
   lookups?: Map<string, Row[]>,
 ): Promise<Row[]> {
   if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
+  // A null `with` only reaches here outside the web UI (which resolves it via
+  // the lookup dialog before the run) — there is no file to read.
+  if (t.with === null) throw new Error('join: no lookup file named — say which file to join with');
   const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
   // A staged lookup (browser join) wins; otherwise read the right table by path.
   let right = lookups?.get(t.with);

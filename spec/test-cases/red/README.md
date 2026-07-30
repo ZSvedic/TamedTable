@@ -4,6 +4,14 @@ This directory (plus `src/tests/red/` and the `*.red.test.*` files inside packag
 
 Headline: **75 findings across 11 areas — 1 critical, 33 major, 41 minor.** Severity calibration: a feature dead in the deployed app = critical; work or data silently lost or silently wrong = major; a wrong label or message = minor.
 
+## Browser-hunt harness (sibling inventory)
+
+The browser hunt (PR #261) keeps its Playwright-driven findings in
+`src/packages/web/e2e/red/<area>.e2e.ts`, run by `bun run test:e2e:red` from
+`src/packages/web/`. Its three findings (TT-R01..03, missed re-renders) are
+fixed and moved into the green e2e suite (`journeys.e2e.ts`); that half of the
+inventory is empty. The table below is the hunt-audit inventory.
+
 ## The table
 
 Plain `behavior.md` / `code-contract.md` = files in `spec/`; package specs and code paths are relative to `spec/packages/` and `src/packages/`. Unit tests live in `src/tests/red/` unless prefixed with a package name.

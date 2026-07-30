@@ -25,19 +25,30 @@ import { RecentsStore, type RecentEntry } from './recents.ts';
 const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
 // #LookupJoin
+/** A join `spec` cannot run without asking: its step index, and the file it
+ *  names — or null for a join the model emitted without a filename (the user
+ *  named none; the picked file's name is written into the step). */
+export type MissingLookup = { index: number; name: string | null };
+
 /** The lookup files `spec` joins against and the session has not staged, in
- *  step order, each named once. Every join is checked, not only a new one:
- *  each request replays the whole spec from the source, so any unstaged join
- *  would stop the run — and a join that ran before was staged to get that far,
- *  so it never asks twice. */
-export function missingLookups(spec: TablePlan, staged: ReadonlySet<string>): string[] {
-  const names: string[] = [];
-  for (const t of spec.transformations as Transformation[]) {
-    if (t.kind !== 'join') continue;
-    if (staged.has(t.with) || names.includes(t.with)) continue;
-    names.push(t.with);
-  }
-  return names;
+ *  step order, each name asked once (every null join is its own ask). Every
+ *  join is checked, not only a new one: each request replays the whole spec
+ *  from the source, so any unstaged join would stop the run — and a join that
+ *  ran before was staged to get that far, so it never asks twice. */
+export function missingLookups(spec: TablePlan, staged: ReadonlySet<string>): MissingLookup[] {
+  const missing: MissingLookup[] = [];
+  const asked = new Set<string>();
+  (spec.transformations as Transformation[]).forEach((t, index) => {
+    if (t.kind !== 'join') return;
+    if (t.with === null) {
+      missing.push({ index, name: null });
+      return;
+    }
+    if (staged.has(t.with) || asked.has(t.with)) return;
+    asked.add(t.with);
+    missing.push({ index, name: t.with });
+  });
+  return missing;
 }
 
 export class FilesManager {
@@ -134,12 +145,14 @@ export class FilesManager {
       this.recentsStore.record({ kind: 'flow', label: picked.name });
       // A numbered line per step (the same labels the live progress showed),
       // then the summary — the reply mirrors a chat request's per-step reply,
-      // linked to its journal entry so it tracks undo state.
+      // linked to its journal entry so it tracks undo state. A replay is a
+      // completed request, so the reply carries Report bug like a chat reply
+      // does; it makes no model call, so there is no debug detail to expand.
       this.host.pushMessage('assistant', [
         'Executed steps:',
         ...spec.transformations.map((t, i) => `${i + 1}. ${describeStep(t as Transformation)}`),
         `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
-      ].join('\n'), undefined, undefined, historyId);
+      ].join('\n'), undefined, true, historyId);
     } catch (e) {
       // Stop is a deliberate cancel, not a failure — the replay left the
       // table untouched, so a quiet toast plus a chat line closing the
@@ -165,10 +178,12 @@ export class FilesManager {
   // until the user picks it or cancels; cancelling answers false, and the
   // caller drops the step whole rather than half-running it.
   private lookupResolve: ((staged: boolean) => void) | null = null;
+  private pendingLookup: (MissingLookup & { spec: TablePlan }) | null = null;
 
   async ensureLookups(spec: TablePlan): Promise<boolean> {
-    for (const name of missingLookups(spec, this.host.engine.stagedLookupNames())) {
-      this.host.lookupDialog = { name };
+    for (const missing of missingLookups(spec, this.host.engine.stagedLookupNames())) {
+      this.pendingLookup = { ...missing, spec };
+      this.host.lookupDialog = { name: missing.name };
       this.host.notify();
       const staged = await new Promise<boolean>((resolve) => { this.lookupResolve = resolve; });
       if (!staged) return false;
@@ -178,15 +193,28 @@ export class FilesManager {
 
   /** The dialog's "Choose file…" click — a fresh user gesture, which is the
    *  only thing a file picker opens from. The picked rows stage under the name
-   *  the join asked for, so a file renamed on disk still satisfies the step. */
+   *  the join asked for, so a file renamed on disk still satisfies the step.
+   *  A join that named no file (`with: null`) takes the picked file's own
+   *  name instead — written into the step, so the executed-steps reply and a
+   *  saved flow show the real file. */
   async chooseLookupFile(): Promise<void> {
-    const pending = this.host.lookupDialog;
+    const pending = this.pendingLookup;
     if (!pending) return;
     try {
-      const picked = await this.host.file.pickOpen(OPEN_EXTENSIONS);
+      // A null join takes the picked file's name into `with`, and the schema
+      // only admits .csv/.jsonl there — so offer only those. A named join
+      // keeps its own (already valid) name whatever format stands in for it.
+      const picked = await this.host.file.pickOpen(pending.name === null ? ['.csv', '.jsonl'] : OPEN_EXTENSIONS);
       if (!picked) return; // picker dismissed — the dialog stays up
       const { rows } = await parseTable(picked.name, picked.bytes);
-      this.host.engine.registerLookup(pending.name, rows);
+      if (pending.name === null) {
+        // The runner replays and commits this same spec object, so the name
+        // lands in the executed-steps labels, the stamp, and a saved flow.
+        (pending.spec.transformations[pending.index] as Extract<Transformation, { kind: 'join' }>).with = picked.name;
+        this.host.engine.registerLookup(picked.name, rows);
+      } else {
+        this.host.engine.registerLookup(pending.name, rows);
+      }
       this.settleLookup(true);
     } catch (e) {
       this.host.pushToast('error', `Could not open lookup table: ${(e as Error).message}`);
@@ -201,6 +229,7 @@ export class FilesManager {
   private settleLookup(staged: boolean): void {
     const resolve = this.lookupResolve;
     this.lookupResolve = null;
+    this.pendingLookup = null;
     this.host.lookupDialog = null;
     this.host.notify();
     resolve?.(staged);
@@ -324,6 +353,10 @@ export class FilesManager {
     const { name, bytes } = await fetchTable(url, this.host.opts.fetch);
     await this.loadFromPicked({ name, bytes });
     this.recentsStore.record({ kind, label: name, url });
+    // The record lands after loadFromPicked fired its last notify, so the menu
+    // needs one more render to list it — the sample picker calls this
+    // fire-and-forget and closes before the record, so it has none of its own.
+    this.host.notify();
   }
 
   /** Save the current flow (replayable spec) via the Save dialog. */

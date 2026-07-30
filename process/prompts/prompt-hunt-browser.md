@@ -107,7 +107,8 @@ to see that your PR broke nothing. The bug inventory lives apart:
 
 - Browser findings: `src/packages/web/e2e/red/<area>.e2e.ts`, run by a separate
   Playwright project (`red`) that CI does **not** gate on. Add
-  `"test:e2e:red": "playwright test --project=red"` to the web package.
+  `"test:e2e:red": "playwright test --project=red --pass-with-no-tests"` to the
+  web package (the flag keeps the runner happy when the inventory is empty).
 - Findings expressible through the controller: `spec/test-cases/red/`, one
   `red-<area>.feature` per area, every scenario tagged `@red` **and** its
   surface tag. Wire it exactly like this so both of tonight's PRs produce a

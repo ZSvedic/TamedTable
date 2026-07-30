@@ -20,7 +20,7 @@ import {
 } from '@tamedtable/core';
 
 export { SpecJournal, type JournalEntry, type TimelineStep } from './journal.ts';
-export { renderPrompt, validateTemplate, parseLlmParts, isCancelled } from './engine.ts';
+export { renderPrompt, validateTemplate, parseLlmParts, isCancelled, validateColumns } from './engine.ts';
 import {
   CANCELLED,
   abortIf,
@@ -31,6 +31,7 @@ import {
   applySelect,
   applyMutateJs,
   applyValidateJs,
+  validateColumns,
   applyGroupJs,
   buildGroups,
   padParts,
@@ -108,7 +109,7 @@ export function describeStep(t: Transformation): string {
       return `group by ${nameList(by)} → ${nameList(Object.keys(t.agg))}${ai}`;
     }
     case 'join':
-      return `join ${t.with}`;
+      return t.with === null ? 'join (file pending)' : `join ${t.with}`;
     case 'split':
       return `split ${t.from} → ${nameList(t.into)}`;
     case 'validate':
@@ -557,10 +558,11 @@ function exprColumnRefs(expr: Expr | undefined): string[] {
 
 // #Validate #Patch
 /** A `validate` may only read columns that exist when it runs: source
- *  columns, columns created by transformations ordered before it, and the
- *  reserved `_valid`/`_validation` pair. Walks the transformation list
- *  tracking the available columns; `join` and `pivot` add columns that can't
- *  be enumerated statically, so they suspend the check for later steps.
+ *  columns, columns created by transformations ordered before it (including
+ *  an earlier validate's flag + note pair), and the legacy
+ *  `_valid`/`_validation` pair. Walks the transformation list tracking the
+ *  available columns; `join` and `pivot` add columns that can't be
+ *  enumerated statically, so they suspend the check for later steps.
  *  Returns the rejection message for the recovery loop, or undefined. */
 export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[]): string | undefined {
   let available = new Set(sourceColumns);
@@ -576,8 +578,9 @@ export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[
             }
           }
         }
-        available.add('_valid');
-        available.add('_validation');
+        const pair = validateColumns(t);
+        available.add(pair.flag);
+        available.add(pair.note);
         break;
       }
       case 'mutate':
@@ -646,7 +649,7 @@ export function checkDeclaredColumnsWritten(
   for (const t of steps) {
     if (t.kind === 'mutate') for (const c of Array.isArray(t.columns) ? t.columns : [t.columns]) written.add(c);
     else if (t.kind === 'split') for (const c of t.into) written.add(c);
-    else if (t.kind === 'validate') { written.add('_valid'); written.add('_validation'); }
+    else if (t.kind === 'validate') { const { flag, note } = validateColumns(t); written.add(flag); written.add(note); }
   }
   const ghost = added.find((id) => !written.has(id));
   if (!ghost) return undefined;
@@ -746,10 +749,12 @@ export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]):
       case 'join':
         unknowable = true; // right-table columns aren't known without reading it
         break;
-      case 'validate':
-        available.add('_valid');
-        available.add('_validation');
+      case 'validate': {
+        const { flag, note } = validateColumns(t);
+        available.add(flag);
+        available.add(note);
         break;
+      }
       case 'filter':
       case 'sort':
         break;

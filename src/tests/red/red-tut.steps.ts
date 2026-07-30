@@ -121,11 +121,10 @@ When("the user loads their own table and asks for a join naming the tour's looku
 
 Then("the join asks for the user's own lookup file", function () {
   const s = state(this);
-  const staged = [...s.c.engine.stagedLookupNames()];
   assert.equal(
     s.lookupDialogRaised,
     true,
-    `RED-TUT-1 (spec/behavior.md:1740-1742 + #LookupJoin): after the join tour ends, the user's own join naming "join-country-codes.csv" must raise the lookup dialog — instead the tour's staged fixture (staged lookups after exit: ${JSON.stringify(staged)}) silently satisfies the join and the tour's bundled rows would be joined with no signal (controller-engine.ts stagedLookups survives reset; cancelTutorial never clears it)`,
+    `RED-TUT-1 (spec/behavior.md:1740-1742 + #LookupJoin): after the join tour ends, the user's own join naming "join-country-codes.csv" must raise the lookup dialog — instead the tour's invisibly staged fixture silently satisfies the join and the tour's bundled rows would be joined with no signal (controller-engine.ts stagedLookups survives reset; cancelTutorial never clears it)`,
   );
 });
 

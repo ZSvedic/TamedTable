@@ -12,7 +12,7 @@ const plan = (...transformations: TablePlan['transformations']): TablePlan => ({
   transformations,
 });
 
-const join = (name: string): TablePlan['transformations'][number] => ({
+const join = (name: string | null): TablePlan['transformations'][number] => ({
   kind: 'join',
   with: name,
   on: { js: 'leftRow.Country === rightRow.Country' },
@@ -22,7 +22,7 @@ const filter = (): TablePlan['transformations'][number] => ({ kind: 'filter', pr
 
 describe('missingLookups', () => {
   it('names the file a join has nothing staged for', () => {
-    expect(missingLookups(plan(join('codes.csv')), new Set())).toEqual(['codes.csv']);
+    expect(missingLookups(plan(join('codes.csv')), new Set())).toEqual([{ index: 0, name: 'codes.csv' }]);
   });
 
   it('stays quiet when the lookup is already staged', () => {
@@ -30,15 +30,29 @@ describe('missingLookups', () => {
   });
 
   it('asks only for what is missing when an earlier join is staged', () => {
-    expect(missingLookups(plan(join('old.csv'), join('new.csv')), new Set(['old.csv']))).toEqual(['new.csv']);
+    expect(missingLookups(plan(join('old.csv'), join('new.csv')), new Set(['old.csv']))).toEqual([{ index: 1, name: 'new.csv' }]);
   });
 
   it('asks once for a name two joins share', () => {
-    expect(missingLookups(plan(join('codes.csv'), join('codes.csv')), new Set())).toEqual(['codes.csv']);
+    expect(missingLookups(plan(join('codes.csv'), join('codes.csv')), new Set())).toEqual([{ index: 0, name: 'codes.csv' }]);
   });
 
   it('names several files in step order', () => {
-    expect(missingLookups(plan(join('a.csv'), filter(), join('b.csv')), new Set())).toEqual(['a.csv', 'b.csv']);
+    expect(missingLookups(plan(join('a.csv'), filter(), join('b.csv')), new Set())).toEqual([
+      { index: 0, name: 'a.csv' },
+      { index: 2, name: 'b.csv' },
+    ]);
+  });
+
+  it('asks for a join that names no file, keeping its step index', () => {
+    expect(missingLookups(plan(filter(), join(null)), new Set())).toEqual([{ index: 1, name: null }]);
+  });
+
+  it('asks separately for each join that names no file', () => {
+    expect(missingLookups(plan(join(null), join(null)), new Set())).toEqual([
+      { index: 0, name: null },
+      { index: 1, name: null },
+    ]);
   });
 
   it('has nothing to ask for in a spec without joins', () => {
