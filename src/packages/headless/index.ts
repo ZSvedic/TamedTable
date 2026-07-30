@@ -25,6 +25,7 @@ export { renderPrompt, validateTemplate, parseLlmParts, isCancelled, validateCol
 import {
   CANCELLED,
   abortIf,
+  asCancelled,
   isCancelled,
   compileJs,
   syncColumnsToRows,
@@ -291,7 +292,15 @@ export function resolveCellModelId(mainId: string, explicitCellModel?: string): 
   return PROVIDER_CELL_FALLBACKS[mainProvider];
 }
 const DEFAULT_MAX_RETRIES = 6;
-const DEFAULT_RPM = Number(process.env.TAMEDTABLE_RPM ?? 40);
+/** A requests-per-minute cap has to be a positive number. `0`, a negative, or
+ *  unparsable text is a misconfiguration, and the limiter can never satisfy it:
+ *  every request would spin in the wait loop forever. Fall back to the default
+ *  instead (spec/code-contract.md § ConfigEnv). */
+function rpmFromEnv(raw: string | undefined, fallback: number): number {
+  const n = Number(raw);
+  return raw !== undefined && raw.trim() !== '' && Number.isFinite(n) && n > 0 ? n : fallback;
+}
+const DEFAULT_RPM = rpmFromEnv(process.env.TAMEDTABLE_RPM, 40);
 // Exported so hosts can derive wave-aligned view settings (the web page size
 // is one concurrency wave: batch size × batches in flight).
 export const DEFAULT_CHUNK_SIZE = Number(process.env.TAMEDTABLE_CHUNK_SIZE ?? 5);
@@ -1063,7 +1072,16 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
-    const rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk, opts.onStep, opts, opts.fresh);
+    // #CancelOp — a long replay ({llm} cells, a big flow) is cancellable, and
+    // the abort must reach the host as `Runner: cancelled`, not as whatever
+    // the provider SDK threw. Nothing below has run yet, so the previous spec
+    // and rows stay untouched.
+    let rows: Row[];
+    try {
+      rows = await this.replay(validated, this.sourceRows, opts.signal, opts.onChunk, opts.onStep, opts, opts.fresh);
+    } catch (e) {
+      throw asCancelled(e, opts.signal);
+    }
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;
@@ -1116,6 +1134,16 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const specBefore = this.spec;
     this.callLog = [];
     this.cellSampleLog = [];
+    // onDebug fires exactly once per request, on every way it can settle
+    // (spec/code-contract.md § Headless) — a failure inside the model call
+    // itself included, since it still spent tokens. The flag keeps the
+    // catch-all report below from doubling a report already made.
+    let debugReported = false;
+    const reportDebug = (info: RequestDebugInfo): void => {
+      if (debugReported) return;
+      debugReported = true;
+      this.opts.onDebug?.(info);
+    };
     try {
       const budget = this.opts.recoveryBudget ?? 3;
       let lastError: string | undefined;
@@ -1126,7 +1154,15 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       let prompt = buildPrompt(text, this.spec);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
-        const llmTurn = await this.callLlm(prompt, signal, callOpts.audio);
+        // #CancelOp — the model call is most of a request's wall-clock, so it
+        // is where a Stop usually lands. Translate here too, or the SDK's raw
+        // AbortError escapes and the host reads a cancel as a crash.
+        let llmTurn: { ops: unknown[]; transcript?: string };
+        try {
+          llmTurn = await this.callLlm(prompt, signal, callOpts.audio);
+        } catch (e) {
+          throw asCancelled(e, signal);
+        }
         const ops = llmTurn.ops;
         if (llmTurn.transcript && !transcriptSent) {
           transcriptSent = true;
@@ -1213,7 +1249,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
             .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation');
           const expressions = added.flatMap((p) => transformationExpressions(p.transformation));
           const steps = added.map((p) => describeStep(p.transformation));
-          this.opts.onDebug?.(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt, steps));
+          reportDebug(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt, steps));
           return;
         } catch (e) {
           if (signal?.aborted || isCancelled(e)) throw new Error(CANCELLED);
@@ -1226,8 +1262,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const info = this.buildDebugInfo(text, turns, [], Date.now() - startedAt);
       const err = new Error(`Runner: recovery budget exhausted${lastError ? `; last error: ${lastError}` : ''}`);
       (err as Error & { debug?: RequestDebugInfo }).debug = info;
-      this.opts.onDebug?.(info);
+      reportDebug(info);
       throw err;
+    } catch (e) {
+      // Anything that escaped the loop — an HTTP error or a text-only reply in
+      // the model call, a cancel, a declined patch — still settles the request,
+      // so its token spend must not be invisible to the CLI and the web.
+      reportDebug(this.buildDebugInfo(text, turns, [], Date.now() - startedAt));
+      throw e;
     } finally {
       this.busy = false;
     }
@@ -1369,9 +1411,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
     if ('sql' in key) return this.sql.evalSqlScalar(rows, key.sql, signal);
     // {llm}: one rendered prompt per row, evaluated through the cell model —
-    // the same batching/caching path a mutate LLM column uses.
+    // the same batching/caching path a mutate LLM column uses, so a table
+    // larger than one batch becomes several requests, not one giant one.
     validateTemplate(key.llm, rows);
-    return this.evalLlmBatch(key.llm, rows, key.model, signal, undefined);
+    return this.runCellBatches(rows, (batch) => this.evalLlmBatch(key.llm, batch, key.model, signal, undefined), signal);
   }
 
   /** Sort by one or more keys. Each key is evaluated to a per-row value array
@@ -1420,8 +1463,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     });
 
     // LLM aggregates: pre-render one prompt per (group, llm-agg) cell — {*}
-    // expands to the group's compact JSON — and run them through the cell
-    // model in one pass so batch packing and result caching still apply.
+    // expands to the group's compact JSON — then run them through the shared
+    // batch/chunk driver, so many groups cost many bounded requests instead of
+    // one request carrying every group's rows.
     const llmAggCols = Object.entries(t.agg).filter(([, e]) => 'llm' in e) as Array<[string, { llm: string; model?: string }]>;
     let llmResults: unknown[] = [];
     if (llmAggCols.length > 0) {
@@ -1432,7 +1476,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         const slice = groups.get(key)!.slice;
         for (const [, expr] of llmAggCols) prompts.push(renderAgg(expr.llm, slice));
       }
-      llmResults = await this.callLlmCells(prompts, llmAggCols[0]?.[1].model, signal);
+      const aggModel = llmAggCols[0]?.[1].model;
+      llmResults = await this.runCellBatches(prompts, (batch) => this.callLlmCells(batch, aggModel, signal), signal);
     }
 
     // Emit one output row per group. JS aggregates run a compiled function
@@ -1527,8 +1572,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const perCellModel = t.value.model;
     validateTemplate(template, rows);
     const exclude = cols;
-    const batchSize = Math.max(1, this.opts.batchSize ?? DEFAULT_BATCH_SIZE);
-    const chunkSize = Math.max(1, this.opts.chunkSize ?? DEFAULT_CHUNK_SIZE);
+    const batchSize = this.batchSize();
+    const chunkSize = this.chunkSize();
     const out: Row[] = rows.map((r) => ({ ...r }));
     // #LazyExec — rows the cellFilter excludes never spend a model call:
     // a cell whose rendered prompt is already cached refills silently (this
@@ -1586,6 +1631,35 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   private cacheKey(perCellModel: string | undefined, prompt: string): string {
     return `${this.resolvedCellModelId(perCellModel)} ${prompt}`;
+  }
+
+  private batchSize(): number { return Math.max(1, this.opts.batchSize ?? DEFAULT_BATCH_SIZE); }
+  private chunkSize(): number { return Math.max(1, this.opts.chunkSize ?? DEFAULT_CHUNK_SIZE); }
+
+  /** The batch/chunk driver every `{llm}` cell site shares (spec/behavior.md
+   *  § LLM cells): `items` split into batch-sized groups, `chunkSize` batches
+   *  in flight, results concatenated back in input order. A `mutate` value
+   *  drives the same two sizes itself because it also maps each batch's
+   *  results onto row indices and streams them; a `sort` key and a `group`
+   *  aggregate, which just need one value per item, come through here — so no
+   *  slot can send a whole large table as one context-blowing request. */
+  private async runCellBatches<T>(
+    items: T[],
+    evalBatch: (batch: T[]) => Promise<unknown[]>,
+    signal: AbortSignal | undefined,
+  ): Promise<unknown[]> {
+    const size = this.batchSize();
+    const chunk = this.chunkSize();
+    const batches: T[][] = [];
+    for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+    const out: unknown[] = [];
+    for (let g = 0; g < batches.length; g += chunk) {
+      abortIf(signal);
+      const results = await Promise.all(batches.slice(g, g + chunk).map((b) => evalBatch(b)));
+      abortIf(signal);
+      for (const r of results) out.push(...r);
+    }
+    return out;
   }
 
   private async evalLlmBatch(

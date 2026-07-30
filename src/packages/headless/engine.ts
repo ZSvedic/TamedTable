@@ -26,6 +26,28 @@ export function isCancelled(e: unknown): boolean {
   return (e as Error)?.message === CANCELLED;
 }
 
+/** True for anything an aborted model call can arrive as: our own CANCELLED
+ *  error, the fetch layer's `AbortError`, or a provider-SDK error carrying one
+ *  as its `cause`. */
+function isAbortLike(e: unknown): boolean {
+  let cur: unknown = e;
+  for (let depth = 0; cur && depth < 5; depth++) {
+    if (isCancelled(cur)) return true;
+    const name = (cur as { name?: string }).name;
+    if (name === 'AbortError' || name === 'TimeoutError') return true;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/** Translate an aborted await into the one message every host string-matches
+ *  (spec/code-contract.md § Headless): the SDK's own `AbortError` must never
+ *  escape the runner, or a user who pressed Stop is offered a bug report.
+ *  Anything unrelated to the abort is returned untouched. */
+export function asCancelled(e: unknown, signal?: AbortSignal): unknown {
+  return signal?.aborted || isAbortLike(e) ? new Error(CANCELLED) : e;
+}
+
 export function compileJs(body: string): (row: Row, i: number, rows: Row[]) => unknown {
   const src = body.trim();
   try {

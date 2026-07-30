@@ -76,23 +76,27 @@ export function renderTable(
       if ((row[i] ?? '').length > (widths[i] ?? 0)) widths[i] = (row[i] ?? '').length;
     }
   }
+  // A row marker renders in place of the first cell (spec/code-contract.md
+  // § CLI), so it is sized with the grid: injecting it after the widths are
+  // fixed would push every ` | ` on its line out of the header's columns.
+  const rowMarker = (n: number) => `...${n} more rows.`;
+  if (widths.length > 0) {
+    for (const n of [rowsBefore, rowsAfter]) {
+      if (n > 0) widths[0] = Math.max(widths[0] ?? 0, rowMarker(n).length);
+    }
+  }
 
   const fmt = (vals: string[]) => ' ' + vals.map((v, i) => v.padEnd(widths[i] ?? 0)).join(' | ');
 
   const lines: string[] = [];
   lines.push(fmt(headerCells));
-  if (rowsBefore > 0) {
-    const marker = `...${rowsBefore} more rows.`;
+  const markerRow = (n: number) => {
     const cells: string[] = headerCells.map(() => '');
-    cells[0] = marker;
-    lines.push(fmt(cells));
-  }
+    cells[0] = rowMarker(n);
+    return fmt(cells);
+  };
+  if (rowsBefore > 0) lines.push(markerRow(rowsBefore));
   for (const row of bodyCells) lines.push(fmt(row));
-  if (rowsAfter > 0) {
-    const marker = `...${rowsAfter} more rows.`;
-    const cells: string[] = headerCells.map(() => '');
-    cells[0] = marker;
-    lines.push(fmt(cells));
-  }
+  if (rowsAfter > 0) lines.push(markerRow(rowsAfter));
   return lines.join('\n');
 }

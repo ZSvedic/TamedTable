@@ -60,6 +60,9 @@ export class TamedTableWorld extends CucumberWorld {
   runnerOpts?: RunnerOpts;
   lastInvocation?: CapturedInvocation;
   lastRequestOutcome?: RequestOutcome;
+  /** Model calls the last captured CLI invocation attempted (#ReplCmds — a
+   *  locally-handled command must make none). */
+  modelCalls?: number;
 
   constructor(options: IWorldOptions) {
     super(options);

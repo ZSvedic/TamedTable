@@ -20,7 +20,18 @@ function getCapture(world: TamedTableWorld): CapturedInvocation {
 
 async function runAndCapture(world: TamedTableWorld, argv: string[], extra?: { stdin?: Readable }): Promise<void> {
   const out = captureStdout();
-  const result = await runCli(argv, { stdout: out.stream, ...(extra?.stdin ? { stdin: extra.stdin } : {}), ...world.runnerOpts });
+  // Count model calls so a scenario can assert an input was handled locally
+  // (an unknown ":" command must never reach the spec editor). The wrapper sits
+  // outside whatever fetch the scenario already has — the cassette recorder in
+  // replay mode, the real one otherwise.
+  const opts = { ...world.runnerOpts };
+  world.modelCalls = 0;
+  const inner = opts.fetch;
+  opts.fetch = ((input: unknown, init?: unknown) => {
+    world.modelCalls = (world.modelCalls ?? 0) + 1;
+    return inner ? inner(input as never, init as never) : globalThis.fetch(input as never, init as never);
+  }) as typeof opts.fetch;
+  const result = await runCli(argv, { stdout: out.stream, ...(extra?.stdin ? { stdin: extra.stdin } : {}), ...opts });
   world.lastInvocation = { exitCode: result.exitCode, stdout: out.text(), stderr: result.stderr };
 }
 
@@ -69,16 +80,23 @@ Then('stderr contains {string}',              function (this: TamedTableWorld, t
 Then('REPL stdout contains {string}',         function (this: TamedTableWorld, t: string) { assertStreamContains(this, 'stdout', t, 'REPL'); });
 Then('REPL stdout does not contain {string}', function (this: TamedTableWorld, t: string) { assertStreamLacks(this, 'stdout', t, 'REPL'); });
 
-// Slice the LAST contiguous block of table lines from stdout. A table line is any line
-// containing " | " (cell separator from renderTable). The header line may be prefixed by
-// "> " when the readline prompt sat in front of it.
+// Slice the LAST table reprint from stdout. A table line is any line containing
+// " | " (the renderTable cell separator). The REPL writes its "> " prompt with
+// no newline, so a reprint's header line often carries a "> " prefix from the
+// previous prompt — which glues consecutive reprints into one contiguous block
+// of table lines. Scanning backwards, a prompt-prefixed table line is the
+// current reprint's own header: include it and stop there, or an assertion
+// about "the last reprint" would silently read the one before it too.
 function lastTableReprint(stdout: string): string {
   const lines = stdout.split('\n');
   const isTableLine = (l: string) => / \| /.test(l);
   let end = lines.length;
   while (end > 0 && !isTableLine(lines[end - 1] ?? '')) end--;
   let start = end;
-  while (start > 0 && isTableLine(lines[start - 1] ?? '')) start--;
+  while (start > 0 && isTableLine(lines[start - 1] ?? '')) {
+    start--;
+    if ((lines[start] ?? '').startsWith('> ')) break; // this block's header
+  }
   return lines.slice(start, end).join('\n');
 }
 
@@ -95,6 +113,27 @@ Then('the last REPL table reprint does not contain {string}', function (this: Ta
   assert.ok(!last.includes(text),
     `last REPL table reprint unexpectedly contains ${JSON.stringify(text)}. Last reprint was:\n${last}`);
 });
+
+Then('the REPL made no model call', function (this: TamedTableWorld) {
+  const inv = getCapture(this);
+  assert.equal(this.modelCalls ?? 0, 0,
+    `expected the REPL to handle the input locally with no LLM round-trip, but ${this.modelCalls} model call(s) were attempted. Stdout:\n${inv.stdout}`);
+});
+
+// The :schema block printed after an :undo. Schema lines start at column 0 (the
+// first may carry the "> " prompt glyph); table lines start with a space, so
+// they cannot match.
+Then('the schema printed after the undo lists {string} before {string}',
+  function (this: TamedTableWorld, first: string, second: string) {
+    const inv = getCapture(this);
+    const after = inv.stdout.slice(inv.stdout.lastIndexOf('undid:'));
+    const lines = after.split('\n').map((l) => l.replace(/^> /, ''));
+    const at = (col: string) => lines.findIndex((l) => new RegExp(`^${col}\\b`).test(l));
+    const firstIdx = at(first);
+    const secondIdx = at(second);
+    assert.ok(firstIdx !== -1 && secondIdx !== -1 && firstIdx < secondIdx,
+      `expected the :schema after the undo to list ${JSON.stringify(first)} before ${JSON.stringify(second)} (found at lines ${firstIdx} and ${secondIdx}). Stdout:\n${inv.stdout}`);
+  });
 
 Then('the :history output lists no turns', function (this: TamedTableWorld) {
   const inv = getCapture(this);
