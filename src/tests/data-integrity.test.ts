@@ -139,3 +139,43 @@ test('a mutate writing undefined saves as null in JSONL, matching the CSV empty 
     `the JSONL save must carry the "out" key as null — matching the CSV save — but the row was ${line}`,
   );
 });
+
+// Used to be RED-DATA-5: the multi-column branch indexed the JS result by
+// column NAME, so an array-returning body wrote undefined to every target
+// although spec/behavior.md § split sells exactly that shape.
+test('a multi-column mutate with an array-returning {js} body fills the targets positionally', async () => {
+  const p = writeData('names.csv', 'name\nJane Doe\n');
+  const r = createHeadlessRunner({});
+  await r.loadInput(p);
+  await r.setSpec({
+    table: p,
+    columns: [{ id: 'name' }, { id: 'first' }, { id: 'last' }],
+    transformations: [
+      { kind: 'mutate', columns: ['first', 'last'], value: { js: "row.name.split(' ')" } },
+    ],
+  });
+  const row = r.currentRows()[0]!;
+  assert.deepEqual(
+    [row.first, row.last],
+    ['Jane', 'Doe'],
+    'spec/behavior.md § split: "a mutate with columns: string[] and a JS array-returning body already does" — the array result must fill the target columns positionally',
+  );
+});
+
+test('an array-returning multi-column mutate pads and concatenates like a split', async () => {
+  const p = writeData('names-arity.csv', 'name\nJane\nJane van Doe\n');
+  const r = createHeadlessRunner({});
+  await r.loadInput(p);
+  await r.setSpec({
+    table: p,
+    columns: [{ id: 'name' }, { id: 'first' }, { id: 'last' }],
+    transformations: [
+      { kind: 'mutate', columns: ['first', 'last'], value: { js: "row.name.split(' ')" } },
+    ],
+  });
+  assert.deepEqual(
+    r.currentRows().map((row) => [row.first, row.last]),
+    [['Jane', null], ['Jane', 'van Doe']],
+    'too few parts pad the tail with null, too many concatenate onto the last column — the same arity rules a split follows',
+  );
+});

@@ -35,10 +35,12 @@ describe('resolveCellModelId', () => {
   });
 
   it('routes OpenRouter (bench-only) main models to the OpenRouter cell fallback', () => {
-    expect(resolveCellModelId('qwen/qwen3-coder:free')).toBe('meta-llama/llama-3.3-70b-instruct:free');
-    expect(resolveCellModelId('qwen/qwen3-coder:free', 'meta-llama/llama-3.3-70b-instruct:free'))
-      .toBe('meta-llama/llama-3.3-70b-instruct:free');
+    // The fallback is the catalogued OpenRouter text default — the one
+    // model-config's models.json and code-contract.md both name.
+    expect(resolveCellModelId('qwen/qwen3-coder:free')).toBe('cohere/north-mini-code:free');
+    expect(resolveCellModelId('qwen/qwen3-coder:free', 'cohere/north-mini-code:free'))
+      .toBe('cohere/north-mini-code:free');
     expect(resolveCellModelId('qwen/qwen3-coder:free', 'claude-haiku-4-5'))
-      .toBe('meta-llama/llama-3.3-70b-instruct:free');
+      .toBe('cohere/north-mini-code:free');
   });
 });

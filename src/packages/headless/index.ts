@@ -11,6 +11,7 @@ import {
   loadCsv,
   loadFile,
   loadJsonl,
+  setCell,
   validateTablePlan,
   writeRows,
   type Expr,
@@ -20,7 +21,7 @@ import {
 } from '@tamedtable/core';
 
 export { SpecJournal, type JournalEntry, type TimelineStep } from './journal.ts';
-export { renderPrompt, validateTemplate, parseLlmParts, isCancelled, validateColumns } from './engine.ts';
+export { renderPrompt, validateTemplate, parseLlmParts, isCancelled, validateColumns, compareSortKeys } from './engine.ts';
 import {
   CANCELLED,
   abortIf,
@@ -33,6 +34,11 @@ import {
   applyValidateJs,
   validateColumns,
   applyGroupJs,
+  aggKey,
+  compileAgg,
+  compareSortKeys,
+  groupOutputNames,
+  unpivotOutputNames,
   buildGroups,
   padParts,
   parseLlmParts,
@@ -272,7 +278,7 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
   cerebras: 'gpt-oss-120b',
-  openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
+  openrouter: 'cohere/north-mini-code:free',
 };
 
 /** @internal — exported for unit tests. Pick the model for per-cell LLM
@@ -507,7 +513,11 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
     }
     const patched = jsonpatch.applyPatch(structuredClone(currentSpec), ops as Operation[], true, false).newDocument as unknown;
     const validated = validateTablePlan(patched);
-    if (JSON.stringify(validated) === JSON.stringify(currentSpec)) {
+    // Compare STRIPPED to STRIPPED: the model edits a provenance-stripped view,
+    // so an echo of exactly what it was shown — the classic do-nothing reply —
+    // differs from the stamped spec in the `query`/`name` fields alone. Against
+    // the stamped spec that echo looks like a change and commits as a success.
+    if (specIdentity(validated) === specIdentity(currentSpec)) {
       return { kind: 'err', message: 'Your patch applied cleanly but left the spec identical to before. Emit operations that actually modify the spec to fulfill the user request.' };
     }
     return { kind: 'ok', spec: validated };
@@ -519,19 +529,33 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
 // #Patch
 /** @internal — exported for unit tests. Stamp provenance on the
  *  transformations the committed turn added or changed — any transformation
- *  whose JSON has no identical counterpart in the pre-request spec: `query`
- *  (the request text, verbatim) on the FIRST such transformation only, so a
- *  multi-step request writes its text once, and `name` (the describeStep
- *  label) on every one. A step untouched by the turn keeps its earlier
- *  stamps (its JSON, stamps included, matches `before`); a step the patch
- *  rewrote is restamped with the latest request. */
+ *  with no counterpart in the pre-request spec once provenance and key order
+ *  are normalized away: `query` (the request text, verbatim) on the FIRST such
+ *  transformation only, so a multi-step request writes its text once, and
+ *  `name` (the describeStep label) on every one. A step untouched by the turn
+ *  gets its earlier stamps back — even when the patch re-emitted it stripped,
+ *  as a whole-array replace does; a step the patch rewrote is restamped with
+ *  the latest request. */
 export function stampQueries(spec: TablePlan, before: TablePlan, query: string): TablePlan {
-  const prior = new Set(before.transformations.map((t) => JSON.stringify(t)));
+  // The pre-request steps as a MULTISET keyed by their provenance-stripped
+  // identity. Stripped, because a whole-array replace re-emits the existing
+  // steps as the model saw them — without stamps — and those steps are
+  // untouched, not new: they get their earlier stamps back rather than the new
+  // request's text. A multiset, not a set, because a turn that appends a
+  // duplicate of an existing step DID add a step and must be stamped.
+  const prior = new Map<string, Transformation[]>();
+  for (const t of before.transformations as Transformation[]) {
+    const key = stepIdentity(t);
+    const bucket = prior.get(key);
+    if (bucket) bucket.push(t);
+    else prior.set(key, [t]);
+  }
   let queryStamped = false;
   return {
     ...spec,
     transformations: (spec.transformations as Transformation[]).map((t) => {
-      if (prior.has(JSON.stringify(t))) return t;
+      const untouched = prior.get(stepIdentity(t))?.shift();
+      if (untouched) return untouched;
       const stamped: Transformation = queryStamped
         ? { ...t, name: describeStep(t) }
         : { ...t, query, name: describeStep(t) };
@@ -539,6 +563,32 @@ export function stampQueries(spec: TablePlan, before: TablePlan, query: string):
       return stamped;
     }),
   };
+}
+
+/** A transformation's identity ignoring provenance and key order: the JSON of
+ *  the step with `query`/`name` dropped and every object's keys sorted, so two
+ *  steps that describe the same transformation compare equal however the model
+ *  happened to order the fields it echoed back. */
+function stepIdentity(t: Transformation): string {
+  const { query: _q, name: _n, ...rest } = t as Transformation & { query?: string; name?: string };
+  return canonicalJson(rest);
+}
+
+/** The whole spec's identity, provenance-free — `stepIdentity` for every
+ *  transformation plus the rest of the spec. */
+function specIdentity(spec: TablePlan): string {
+  return canonicalJson({
+    ...spec,
+    transformations: (spec.transformations as Transformation[]).map((t) => stepIdentity(t)),
+  });
+}
+
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_k, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.keys(v as Record<string, unknown>).sort().map((k) => [k, (v as Record<string, unknown>)[k]]))
+      : v,
+  );
 }
 
 /** Columns a `{js}` or `{llm}` expression reads: `row.X` / `row["X"]` /
@@ -594,16 +644,19 @@ export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[
         unknowable = false;
         break;
       case 'group': {
-        available = new Set<string>();
-        t.by.forEach((b, i) => available.add(typeof b === 'string' ? b : `key_${i + 1}`));
-        for (const k of Object.keys(t.agg)) available.add(k);
+        // The engine collision-renames an aggregate that shares a by-column's
+        // name, so mirror the real output names here.
+        const names = groupOutputNames(t.by, t.agg);
+        available = new Set([...names.byNames, ...names.aggNames.map(([, n]) => n)]);
         unknowable = false;
         break;
       }
-      case 'unpivot':
-        available = new Set([...t.id, t.names_to ?? 'name', t.values_to ?? 'value']);
+      case 'unpivot': {
+        const { namesTo, valuesTo } = unpivotOutputNames(t);
+        available = new Set([...t.id, namesTo, valuesTo]);
         unknowable = false;
         break;
+      }
       case 'pivot':
         available = new Set(t.index);
         unknowable = true; // one column per distinct on-value — data-dependent
@@ -732,16 +785,19 @@ export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]):
         unknowable = false;
         break;
       case 'group': {
-        available = new Set<string>();
-        t.by.forEach((b, bi) => available.add(typeof b === 'string' ? b : `key_${bi + 1}`));
-        for (const k of Object.keys(t.agg)) available.add(k);
+        // The engine collision-renames an aggregate that shares a by-column's
+        // name, so mirror the real output names here.
+        const names = groupOutputNames(t.by, t.agg);
+        available = new Set([...names.byNames, ...names.aggNames.map(([, n]) => n)]);
         unknowable = false;
         break;
       }
-      case 'unpivot':
-        available = new Set([...t.id, t.names_to ?? 'name', t.values_to ?? 'value']);
+      case 'unpivot': {
+        const { namesTo, valuesTo } = unpivotOutputNames(t);
+        available = new Set([...t.id, namesTo, valuesTo]);
         unknowable = false;
         break;
+      }
       case 'pivot':
         available = new Set(t.index);
         unknowable = true; // one column per distinct on-value — data-dependent
@@ -774,6 +830,15 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // Lookup tables staged by name (browser joins): a `join` whose `with` matches
   // a key here uses these rows instead of reading the file by path.
   private lookupTables = new Map<string, Row[]>();
+  // #LookupJoin — right tables already read from disk, keyed by the join's
+  // `with` path. A join reads its right table once and holds it, so an
+  // :undo/:redo that replays the step never re-reads the file (and no longer
+  // throws when it has moved since). Pruned to the committed spec's joins after
+  // every commit, and cleared with the source.
+  private joinRightTables = new Map<string, Row[]>();
+  // The loaded source's column list — the JSONL union of keys, not row 0's
+  // keys — as the patch-turn guards must see it (spec/code-contract.md § core).
+  private sourceColumns: string[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private modelCache: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -941,10 +1006,12 @@ class HeadlessRunnerImpl implements HeadlessRunner {
    *  loadParsed (rows). Resets derived state and the DuckDB relation. */
   private async commitSource(rows: Row[], spec: TablePlan, sourcePath: string): Promise<void> {
     this.sourceRows = rows;
+    this.sourceColumns = spec.columns.map((c) => c.id);
     this.sourcePath = sourcePath;
     this.spec = spec;
     this.derivedRows = rows.slice();
     this.cellResultCache.clear();
+    this.joinRightTables.clear();
     // Reset the DuckDB relation so SQL transformations see the new source.
     await this.sql.resetTable();
     this.loaded = true;
@@ -1000,6 +1067,19 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
     this.loaded = true;
+    this.pruneJoinRightTables();
+  }
+
+  /** Keep only the right tables the committed spec's joins still name, so a
+   *  step the user removed doesn't pin its lookup rows in memory forever. */
+  private pruneJoinRightTables(): void {
+    const live = new Set(
+      (this.spec.transformations as Transformation[])
+        .filter((t): t is Extract<Transformation, { kind: 'join' }> => t.kind === 'join')
+        .map((t) => t.with)
+        .filter((w): w is string => typeof w === 'string'),
+    );
+    for (const key of [...this.joinRightTables.keys()]) if (!live.has(key)) this.joinRightTables.delete(key);
   }
 
   // #LazyExec — web-shell seams (see the interface docs).
@@ -1067,9 +1147,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
         // A validate reading a column no earlier step provides would flag
         // every row; reject before anything runs (spec/behavior.md § Headless).
-        const orderError = this.sourceRows.length
-          ? checkValidateColumnOrder(tried.spec, Object.keys(this.sourceRows[0]!))
-          : undefined;
+        // The source columns are the LOADED SPEC's column list, not row 0's
+        // keys: a JSONL source's columns are the union of every row's keys, so
+        // reading row 0 alone rejects a validate on a perfectly real column that
+        // a sparse first row happens to omit (spec/code-contract.md § core).
+        const orderError = checkValidateColumnOrder(tried.spec, this.sourceColumns);
         if (orderError) {
           turn.outcome = 'rejected';
           turn.sentBack = orderError;
@@ -1082,11 +1164,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         // transformation writes it — would commit as a silent no-op. Weak
         // models produce exactly this shape; send it back for the computing
         // step (spec/behavior.md § Headless).
-        const ghostError = checkDeclaredColumnsWritten(
-          tried.spec,
-          this.spec,
-          this.sourceRows.length ? Object.keys(this.sourceRows[0]!) : [],
-        );
+        const ghostError = checkDeclaredColumnsWritten(tried.spec, this.spec, this.sourceColumns);
         if (ghostError) {
           turn.outcome = 'rejected';
           turn.sentBack = ghostError;
@@ -1129,6 +1207,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           }
           this.spec = stampQueries(syncColumnsToRows(tried.spec, newRows), specBefore, queryText);
           this.derivedRows = newRows;
+          this.pruneJoinRightTables();
           turn.outcome = 'committed';
           const added = diffPlans(specBefore, this.spec)
             .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation');
@@ -1271,7 +1350,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       case 'split':    return this.applySplitT(rows, t, signal, tIndex, lazy);
       case 'pivot':    return applyPivot(rows, t);
       case 'unpivot':  return applyUnpivot(rows, t);
-      case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd(), this.lookupTables);
+      case 'join':     return applyJoin(rows, t, this.sourcePath ? dirname(this.sourcePath) : process.cwd(), this.lookupTables, this.joinRightTables);
     }
   }
 
@@ -1308,25 +1387,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     for (const b of t.by) keyColumns.push(await this.evalSortKey(rows, b.key, signal));
     const dirs = t.by.map((b) => (b.dir === 'desc' ? -1 : 1));
     const indices = rows.map((_, i) => i);
-    // Numeric-aware compare: a pair of numbers or numeric strings orders by
-    // magnitude ("2" before "10"), any other pair by the relational operators.
-    const asNumber = (v: unknown): number | null => {
-      if (typeof v === 'number') return v;
-      if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);
-      return null;
-    };
     indices.sort((ai, bi) => {
       for (let k = 0; k < keyColumns.length; k++) {
-        let av = keyColumns[k]![ai] as number | string;
-        let bv = keyColumns[k]![bi] as number | string;
-        const an = asNumber(av);
-        const bn = asNumber(bv);
-        if (an !== null && bn !== null) {
-          av = an;
-          bv = bn;
-        }
-        if (av < bv) return -dirs[k]!;
-        if (av > bv) return dirs[k]!;
+        const c = compareSortKeys(keyColumns[k]![ai], keyColumns[k]![bi]);
+        if (c !== 0) return c * dirs[k]!;
       }
       return 0;
     });
@@ -1347,7 +1411,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     if (!hasLlmAgg && !hasSqlAgg) return applyGroupJs(rows, t);
 
     const { order, groups } = buildGroups(rows, t.by);
-    const byNames = t.by.map((b, i) => typeof b === 'string' ? b : `key_${i + 1}`);
+    // Output names, with an aggregate that shares a by-column's name renamed —
+    // the group key must survive (spec/behavior.md § group).
+    const { byNames, aggNames } = groupOutputNames(t.by, t.agg);
+    const allGroups = order.map((k) => {
+      const g = groups.get(k)!;
+      return { key: aggKey(g.keyTuple), rows: g.slice };
+    });
 
     // LLM aggregates: pre-render one prompt per (group, llm-agg) cell — {*}
     // expands to the group's compact JSON — and run them through the cell
@@ -1373,16 +1443,16 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       abortIf(signal);
       const { keyTuple, slice } = groups.get(order[gi]!)!;
       const row: Row = {};
-      byNames.forEach((name, i) => { row[name] = keyTuple[i] ?? null; });
+      byNames.forEach((name, i) => { setCell(row, name, keyTuple[i] ?? null); });
       let llmIdx = 0;
-      for (const [outCol, expr] of Object.entries(t.agg)) {
+      for (const [outCol, name] of aggNames) {
+        const expr = t.agg[outCol]!;
         if ('js' in expr) {
-          const fn = new Function('rows', `return (${expr.js.trim()});`) as (s: Row[]) => unknown;
-          row[outCol] = fn(slice);
+          setCell(row, name, compileAgg(expr.js)(slice, aggKey(keyTuple), allGroups));
         } else if ('sql' in expr) {
-          row[outCol] = await this.sql.evalSqlAgg(slice, expr.sql, signal);
+          setCell(row, name, await this.sql.evalSqlAgg(slice, expr.sql, signal));
         } else {
-          row[outCol] = llmResults[gi * llmAggCols.length + llmIdx];
+          setCell(row, name, llmResults[gi * llmAggCols.length + llmIdx]);
           llmIdx++;
         }
       }
@@ -1600,7 +1670,10 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     });
     this.recordCall(this.resolvedCellModelId(perCellModel), result.usage);
     const text = (result.text ?? '').trim();
-    return text === '' || text.toLowerCase() === 'null' ? null : text;
+    // Only the literal lowercased word `null` is the null sentinel
+    // (spec/behavior.md § LLM cells) — "NULL" and "Null" are legitimate answers
+    // a case-insensitive compare would destroy.
+    return text === '' || text === 'null' ? null : text;
   }
 }
 
@@ -1695,7 +1768,8 @@ export function tryParseBatchResponse(text: string, expectedLen: number): unknow
       if (v === null) return null;
       if (typeof v === 'string') {
         const t = v.trim();
-        return t === '' || t.toLowerCase() === 'null' ? null : t;
+        // Only the literal lowercased word — see callLlmCell.
+        return t === '' || t === 'null' ? null : t;
       }
       return String(v);
     });

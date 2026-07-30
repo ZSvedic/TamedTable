@@ -174,7 +174,8 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
 - Caches results keyed by `(model, rendered prompt)` so duplicate inputs
   cost nothing after the first.
 - Trims each cell reply; an empty reply or the literal lowercased word
-  `null` becomes a JSON null.
+  `null` becomes a JSON null. Case matters: `NULL` and `Null` are answers a
+  cell may legitimately give (a SQL keyword, an acronym) and stay strings.
 
 While an LLM transformation runs, each completed chunk fires a progress
 callback with the rows it just produced. The committed spec and rows don't
@@ -637,6 +638,12 @@ some row aborts the transformation through the same recovery loop a
 filter or mutate uses. Sort order of output rows is the first-seen
 order of each group's by-tuple in the input.
 
+The by-keys are written first and an aggregate whose output name collides
+with one of them is renamed `<name>_2` — the same collision rule a `join`
+follows. "Count the rows per category, call it category" keeps the category
+keys and writes the counts to `category_2`; the group key that identifies
+the row is never overwritten.
+
 ### `join` transformation (#LookupJoin)
 
 `join` enriches the left (current) table with rows from a second
@@ -654,11 +661,18 @@ no match.
 
 When right and left columns collide, the right column is renamed
 `<name>_2` (then `_3`, etc.) so no column silently overwrites
-another. The right file is read with the same dispatch as `:load`
+another. The rename target must be free on *both* sides: joining a right
+table that already has a real `code_2` next to its `code` renames the
+colliding `code` to `code_3`, never onto the neighbour. Both column lists
+are the union over every row, not the first row's keys — a sparse column
+that only appears on row 500 is still a column, and the right table must
+not overwrite it. The right file is read with the same dispatch as `:load`
 (unknown extension throws the *"unknown file type"* error). A
-join's right table is *not* re-read on `:undo`/`:redo`; the
-transformation removal reverses the column-shape change and that's
-enough.
+join's right table is *not* re-read on `:undo`/`:redo`; it is read once and
+held for the session, so undoing some *later* step — which replays the
+join — works even after the lookup file has been renamed or deleted on
+disk. The transformation removal reverses the column-shape change and
+that's enough.
 
 The browser has no working directory to resolve `with` against, so it
 resolves the name against the **lookup tables staged for the session**
@@ -682,7 +696,10 @@ transformation, in which case `from` is removed after the split. Empty
 input cells produce `null` in every output column.
 
 This is ergonomically what a `mutate` with `columns: string[]` and a
-JS array-returning body already does; `split` exists so the LLM can patch
+JS array-returning body already does — that body's array fills the target
+columns **positionally**, under the same too-few-pads / too-many-concatenate
+rules, while a body returning an *object* is read by column name; `split`
+exists so the LLM can patch
 the structure without writing JS, and so regex/delimiter splits don't need
 an expression at all. An `{llm}` `on` is also allowed — the cell model is
 asked to break each cell into the parts.
@@ -705,7 +722,11 @@ otherwise unchanged.
 When `threshold` is set, the transformation also computes the failure
 rate over the whole row stream. If `failures / total > threshold`, the
 transformation aborts the whole request through the recovery loop with
-the error `validation failed: <rate>% > <threshold>%`. Without
+the error `validation failed: <rate>% > <threshold>%`. Both percentages
+carry as many decimals as it takes for the printed inequality to be *true* —
+a 20.4% rate over a 20% threshold reads "20.4% > 20%", never the
+whole-percent nonsense "20% > 20%", since that same sentence is what the
+recovery model reads. Without
 `threshold`, validation is purely additive: rows are annotated, never
 dropped — the user follows up with a `filter` if they want to drop the
 bad rows.
@@ -763,6 +784,15 @@ values_to]`.
 
 Both transformations fail fast on a zero-row group (empty input) by
 producing zero output rows.
+
+Both derive output column names — a pivot's from the *data* in `on`, an
+unpivot's from `names_to`/`values_to`, which usually come from the defaults
+— so either can land on a name the step's own key columns already use. The
+key columns win and the derived name is renamed `<name>_2`, the same
+collision rule a `join` follows: a `metric` cell whose value is literally
+`region` becomes the column `region_2` next to the `region` index, and
+unpivoting a table that has a column called `name` writes the measure names
+to `name_2`. The keys that identify a row are never overwritten.
 
 ### `{sql}` expression shape (#SqlExpr)
 
@@ -1914,7 +1944,17 @@ deletion.
 Ordering is numeric-aware. When both key values are numbers or numeric
 strings they compare as numbers — a CSV-loaded revenue column (all values
 strings) sorts by magnitude, so 2 comes before 10, never "10" before "2".
-Any other pair compares as text.
+
+A column that mixes kinds still gets one predictable order, because every
+key value falls into one of three classes and the classes themselves rank:
+**numbers** first, then **text**, then **empty** cells (blank, null). So
+ascending "sort by amount" on a column holding `10`, `2`, `"pear"`,
+`"apple"` and one blank reads 2, 10, apple, pear, blank — numbers by
+magnitude ahead of words in alphabetical order, with the empty cell last.
+Descending reverses the whole order, empty cells first. The ranking is what
+makes the order *predictable*: a comparator that only ordered pairs it could
+compare would call every number-vs-word pair equal, and a sort built on
+that can shuffle even the numbers among themselves.
 
 ### A formatter bug never fails a request
 
