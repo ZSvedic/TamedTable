@@ -1,7 +1,8 @@
 // #LookupJoin
-// The "this join needs its second file" modal. A join names a file, and the
-// browser has no working directory to read it from — so the run pauses here
-// and asks. The picker opens from this dialog's own click: a typed request's
+// The "this join needs its second file" modal — one fixed wording, whether
+// the join names a file (the browser has no working directory to read it
+// from) or names none (`with: null`; the picked file's name is written into
+// the step). The run pauses here and asks. The picker opens from this dialog's own click: a typed request's
 // click is long spent by the time the model answers, and a browser only opens
 // a picker from a fresh one (the same reason the post-run save asks again).
 // Cancel drops the step whole. See spec/behavior.md § Web UI.
@@ -51,10 +52,8 @@ export function LookupDialog({ controller }: { controller: WebController }): Rea
         <div style={{ fontFamily: typography.ui, fontSize: typography.size.md, fontWeight: 600, color: t.ink }}>
           This join needs another file
         </div>
-        <div style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2, lineHeight: 1.5, overflowWrap: 'anywhere' }}>
-          Open <strong>{dialog.name}</strong> so the join has rows to match
-          against. The file you pick stands in for that name, so one you have
-          renamed still works.
+        <div style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2, lineHeight: 1.5 }}>
+          Pick the file with the rows the join should match against.
         </div>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8 }}>
           <Button variant="chrome" data-tt-lookup-cancel="" onClick={() => controller.dismissLookupDialog()}>

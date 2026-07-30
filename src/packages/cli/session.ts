@@ -67,7 +67,7 @@ function describeTransformation(t: Transformation): string {
       return `group by ${byNames}, agg: ${aggCols}`;
     }
     case 'join':
-      return `${t.how ?? 'left'} join with ${t.with}`;
+      return `${t.how ?? 'left'} join with ${t.with ?? '(no file named)'}`;
     case 'split':
       return `split ${t.from} into ${t.into.join(', ')}`;
     case 'validate':

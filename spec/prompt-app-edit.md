@@ -51,7 +51,7 @@ You are TamedTable. The user describes a table transformation in natural languag
 - `{kind:"select", columns: string[]}`: keep only these columns.
 - `{kind:"sort", by:[{key: string | Expr, dir:"asc"|"desc"}]}`.
 - `{kind:"group", by:[col | Expr], agg:{<outCol>: Expr}}`: one output row per distinct by-tuple; by-cols + agg cols replace the prior columns. JS aggs receive the group's row slice as `rows`. LLM aggs see the group's rows as `{*}`. Common aggs: `rows.length` (count), `rows.reduce((a,r)=>a+Number(r.X),0)` (sum), etc.
-- `{kind:"join", with: "<path>.csv|.jsonl", on: Expr, how?: "inner"|"left"}`: left join by default; `on` is a predicate `(leftRow, rightRow) => …`. Right-column name collisions auto-rename to `<name>_2`.
+- `{kind:"join", with: "<path>.csv|.jsonl" | null, on: Expr, how?: "inner"|"left"}`: left join by default; `on` is a predicate `(leftRow, rightRow) => …`. Right-column name collisions auto-rename to `<name>_2`. Set `with` to the filename the user gave. If the user named NO file, set `with` to null — NEVER invent a filename; the app asks the user for the file.
 - `{kind:"split", from: <col>, into: [<col>...], on: <separator> | RegExp | Expr, drop?: boolean}`: split one column into N. Use a literal string for fixed separators, a RegExp for patterns, an Expr returning string[] for custom logic.
 - `{kind:"validate", pred: Expr, message?: Expr, threshold?: 0..1, into: string}`: adds `<into>` (boolean) and `<into>_note` (message or null) per row. With `threshold`, aborts the request when the failure rate exceeds it. Always set `into` (see the naming rule above).
 - `{kind:"pivot", index:[<col>...], on: <col>, values: <col>, agg?: "sum"|"count"|"avg"|"min"|"max"|"first"}`: long→wide.
@@ -109,6 +109,13 @@ One patch, ops in order:
 #### "Inner join with join-country-codes.csv on Country"
 
 - add `{kind:"join", with:"join-country-codes.csv", on:{js:"leftRow.Country === rightRow.Country"}, how:"inner"}`
+
+#### "Join with a .csv on Country to add ISO and Region"
+
+The user named no file, so `with` is null — never an invented name like `country-codes.csv`. One patch, ops in order:
+
+1. add `/columns/-` `{id:"ISO"}` and `/columns/-` `{id:"Region"}`
+2. add `/transformations/-` `{kind:"join", with:null, on:{js:"leftRow.Country === rightRow.Country"}, how:"left"}`
 
 #### "Split FullName into FirstName and LastName on a single space"
 

@@ -29,7 +29,7 @@ type Transformation =
   | { kind: "select";   columns: string[] }                                     // #ColSelect
   | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }>; limit?: number } // #SortRows
   | { kind: "group";    by: Array<Expr | string>; agg: Record<string, Expr> }    // #Aggregate
-  | { kind: "join";     with: string; on: Expr; how?: "inner" | "left" }         // #LookupJoin
+  | { kind: "join";     with: string | null; on: Expr; how?: "inner" | "left" }  // #LookupJoin — null: no file named yet
   | { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }  // #ColSplit
   | { kind: "validate"; pred: Expr; message?: Expr; threshold?: number; into?: string } // #Validate
   | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // #PivotData
@@ -59,7 +59,9 @@ The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
 three shapes; `split.into`, `pivot.index`, `sort.by`, and
 `unpivot.measures` are non-empty (an empty `group.by` is allowed — it
 aggregates the whole table into one row);
-`validate.threshold` is in `[0, 1]`; `join.with` ends in `.csv` or
+`validate.threshold` is in `[0, 1]`; `join.with` is `null` (the user
+named no file — the web UI asks for one and writes the picked file's
+name into the step before the join runs) or ends in `.csv` or
 `.jsonl`; the top-level object is strict — any key outside `table`,
 `columns`, and `transformations` fails as an unrecognized key (the spec
 describes data, never the view, so a patch writing a view knob such as

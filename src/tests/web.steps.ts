@@ -214,6 +214,14 @@ Then('no lookup dialog is shown', function (this: TamedTableWorld) {
   assert.equal(controller(this).lookupDialog, null);
 });
 
+// A join emitted with `with: null` — the user named no file — raises the
+// dialog with no filename to show.
+Then('the lookup dialog asks for no particular file', function (this: TamedTableWorld) {
+  const dialog = controller(this).lookupDialog;
+  assert.ok(dialog, 'no lookup dialog is up');
+  assert.equal(dialog.name, null);
+});
+
 When('user chooses the lookup file {string}', async function (this: TamedTableWorld, filename: string) {
   const ctx = ctxOf(this);
   const choosing = controller(this).chooseLookupFile();

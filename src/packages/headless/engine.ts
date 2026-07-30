@@ -317,6 +317,9 @@ export async function applyJoin(
   lookups?: Map<string, Row[]>,
 ): Promise<Row[]> {
   if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
+  // A null `with` only reaches here outside the web UI (which resolves it via
+  // the lookup dialog before the run) — there is no file to read.
+  if (t.with === null) throw new Error('join: no lookup file named — say which file to join with');
   const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
   // A staged lookup (browser join) wins; otherwise read the right table by path.
   let right = lookups?.get(t.with);
