@@ -87,7 +87,10 @@ export function describeError(error: unknown, provider?: string): { message: str
   if (statusCode === 429 || /\b429\b|rate.?limit|resource.{0,5}exhausted|too many requests|quota/i.test(fullText))
     return { message: `Rate limited by the ${label} API. Wait a minute and try again.`, reportable: false };
 
-  if (/failed to fetch|network error|cors blocked|connection refused/i.test(fullText))
+  // Each engine words a fetch failure differently: Chromium "Failed to
+  // fetch", Safari/WebKit "Load failed", Firefox "NetworkError when
+  // attempting to fetch resource." — all the same offline/unreachable state.
+  if (/failed to fetch|load failed|networkerror|network error|cors blocked|connection refused/i.test(fullText))
     return { message: `Network error. Could not reach the ${label} API.`, reportable: false };
 
   return { message: message || `An unexpected error occurred reaching the ${label} API.`, reportable: true };
@@ -99,13 +102,19 @@ export function userFacingMessage(error: unknown, provider?: string): string {
   return describeError(error, provider).message;
 }
 
+/** Up to 7 numbered step lines with overflow rendered as "… and N more" —
+ *  the shared shape of a chat reply and a flow-replay reply. */
+export function numberedStepLines(steps: string[]): string[] {
+  const MAX_LINES = 7;
+  const lines = steps.slice(0, MAX_LINES).map((s, i) => `${i + 1}. ${s}`);
+  if (steps.length > MAX_LINES) lines.push(`… and ${steps.length - MAX_LINES} more`);
+  return lines;
+}
+
 /** The chat reply for a committed request: an "Executed steps:" heading and
  *  a numbered line per appended step — the human step labels, not the
  *  generated code (that lives in the request detail panel). */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  const MAX_LINES = 7;
   if (info.steps.length === 0) return 'Done.';
-  const lines = info.steps.slice(0, MAX_LINES).map((s, i) => `${i + 1}. ${s}`);
-  if (info.steps.length > MAX_LINES) lines.push(`… and ${info.steps.length - MAX_LINES} more`);
-  return ['Executed steps:', ...lines].join('\n');
+  return ['Executed steps:', ...numberedStepLines(info.steps)].join('\n');
 }

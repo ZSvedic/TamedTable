@@ -111,15 +111,20 @@ export interface CellRef {
 }
 
 /** Microphone state — drives the MicButton's ring, controls, and spinner.
- *  `recording` while the button is held (push-to-talk); `latched` after a quick
- *  tap turned recording on hands-free, showing the cancel (✕) / send (✓)
- *  controls until the user chooses. */
-export type VoiceStatus = 'idle' | 'recording' | 'latched' | 'sending';
+ *  `starting` while the awaited recording start (the browser permission
+ *  prompt) is pending — a release or Escape in that window ends the session
+ *  before the mic ever goes live; `recording` while the button is held
+ *  (push-to-talk); `latched` after a quick tap turned recording on
+ *  hands-free, showing the cancel (✕) / send (✓) controls until the user
+ *  chooses. */
+export type VoiceStatus = 'idle' | 'starting' | 'recording' | 'latched' | 'sending';
 
 /** Continuous (hands-free) voice state — drives the WaveButton's pulse and
- *  spinner. `listening` while the VAD is open, `sending` while a detected turn
- *  is being applied. */
-export type ContinuousStatus = 'idle' | 'listening' | 'sending';
+ *  spinner. `starting` while the awaited VAD load is pending (clicks in that
+ *  window are ignored, so a double-click never opens two sessions),
+ *  `listening` while the VAD is open, `sending` while a detected turn is
+ *  being applied. */
+export type ContinuousStatus = 'idle' | 'starting' | 'listening' | 'sending';
 
 export type DialogKind = 'open' | 'save-flow' | 'save-data' | null;
 

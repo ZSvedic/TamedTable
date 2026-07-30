@@ -1137,6 +1137,14 @@ reloaded — every call still failing `Invalid API key` while the card read
 does, and the next request, typed or spoken, carries the new key. Full detail in
 [spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
 
+While a request or flow replay is still running, any change that would
+rebuild the engine — switching provider, or editing the selected provider's
+key — is refused with an error toast (`A request is running — stop it or let
+it finish before switching the provider, model, or key.`). Rebuilding
+mid-run would orphan the committing engine: the chat reply would claim the
+executed step while the rebuilt engine's table never had it. Stop the run
+(or let it finish), then switch.
+
 When a request fails because the API key is wrong or missing, the web shell
 surfaces a toast with a sentence the user can act on: "Invalid API key. Open
 Settings to update your Google key." (or OpenAI / Anthropic). For Google the
@@ -1681,6 +1689,16 @@ A recording that reaches thirty seconds stops and sends on its own. Pressing
 Escape while recording (held or latched) cancels it — nothing is sent and the
 table is untouched. Sending shows a spinner until the round trip returns.
 
+The first press can raise the browser's microphone permission prompt, and
+the press starts recording only once the prompt is granted. A release,
+tap, or Escape while the prompt is still up ends the session there: a
+later grant lands on nothing, the microphone is released immediately, and
+no recording, timer, or request ever starts. A quick tap in that window
+carries over — the granted session comes up latched. And whenever the
+button's own conditions stop holding mid-session — the provider switched
+to one without voice, or its key removed — the live session is torn down
+with the controls: the microphone is released and nothing is sent.
+
 Releasing the button posts a user bubble reading "🎙 Voice request" as a
 placeholder. As soon as the model responds, the placeholder is replaced with
 "🎙 " followed by the transcript — so the user sees what the model heard —
@@ -1703,7 +1721,10 @@ A second button — a waveform icon, next to the mic — turns voice fully
 hands-free. Where the mic records one request (held or tap-latched), the
 waveform button
 is a toggle: click it once and the app listens continuously, click again to
-stop. While listening, the button's bars pulse. It appears under the same
+stop. While listening, the button's bars pulse. Starting takes a moment (the
+voice-activity detector loads first); clicks during that load are ignored —
+an impatient double-click still opens exactly one listening session, and
+the next click once it is up stops it. It appears under the same
 conditions as the mic (a voice-capable model plus a key) and is hidden when
 hands-free voice isn't wired — including on a browser missing `getUserMedia`
 or the Web Audio API, where no hands-free port is wired at all.
@@ -1718,7 +1739,12 @@ transformation and shows its "🎙 …" bubble with no button press between turn
 the user just keeps talking. While a turn is being applied the button shows a
 spinner, then returns to listening. A turn that arrives while the previous one is
 still applying is dropped, so two transformations never overlap. Every applied
-turn is reversible with Undo. Stopping releases the microphone.
+turn is reversible with Undo. Stopping releases the microphone — whether the
+user clicked stop or the button's conditions stopped holding mid-session (a
+provider switch, a removed key): closing the gate stops listening the same
+way. A clip the detector cuts while any turn is still applying — its own
+previous turn, a typed request, a mic turn — is dropped silently, never
+surfaced as an error.
 
 → [code-contract.md — Voice input](code-contract.md#voice-input)
 

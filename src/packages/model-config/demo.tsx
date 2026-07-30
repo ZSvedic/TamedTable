@@ -42,9 +42,27 @@ function Demo() {
     openrouterKey: keys.openrouter || null,
   });
 
-  // Persist every change to the blob the main app reads (and vice versa).
+  // Persist every CHANGE to the blob the main app reads (and vice versa) — a
+  // page load is not a change, so the mount run is skipped: writing on mount
+  // would rewrite the blob unprompted and reset fields the demo doesn't
+  // thread (alwaysRunAll) to resolveConfig's defaults. On a real change the
+  // demo's fields are merged over the stored blob, so those fields survive.
+  const mounted = useRef(false);
   useEffect(() => {
-    writeStoredConfig(resolved);
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    writeStoredConfig({
+      ...readStoredConfig(),
+      provider: resolved.provider,
+      model: resolved.model,
+      cellModel: resolved.cellModel,
+      geminiKey: resolved.geminiKey,
+      openaiKey: resolved.openaiKey,
+      anthropicKey: resolved.anthropicKey,
+      openrouterKey: resolved.openrouterKey,
+    });
   }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
 
   // ── Test call state ───────────────────────────────────────────────────────

@@ -1415,24 +1415,36 @@ Tests inject a stub `ContinuousVoicePort` that emits a committed clip, so a
 continuous turn issues a request byte-identical to the mic's and replays the
 same cassette.
 
-`WebController` adds `continuousStatus: 'idle' | 'listening' | 'sending'`,
-`continuousAvailable()` (same gate as the mic plus a wired port), and
-`toggleContinuous()`. Toggling on calls `port.start`, routing each `onSegment`
-clip through the same `sendAudioRequest` the mic uses — one patch turn per
-spoken turn, table context and cost identical. A clip that lands while a turn is
-still applying is dropped, so patch turns never overlap; toggling off calls
+`WebController` adds `continuousStatus: 'idle' | 'starting' | 'listening' |
+'sending'`, `continuousAvailable()` (same gate as the mic plus a wired port),
+and `toggleContinuous()`. Toggling on calls `port.start`; the status sits in
+`starting` across that await (the seconds-long VAD load), and toggle calls in
+that window are ignored, so exactly one session ever opens. A stop that lands
+during `starting` (the gate closing) makes the load's completion release the
+session instead of going live. Each `onSegment`
+clip routes through the same `sendAudioRequest` the mic uses — one patch turn per
+spoken turn, table context and cost identical. A clip that lands while **any**
+turn is still applying — its own previous turn, a typed request, a mic turn —
+is dropped, so patch turns never overlap; toggling off calls
 `port.stop`. `WebControllerOptions.continuousVoice` supplies the port; the
 browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })
 ?? undefined` in `main.tsx` — the factory returns `null` (hands-free unwired,
 waveform hidden) when the browser lacks `getUserMedia` or the Web Audio API.
 
-`WebController` adds `voiceStatus: 'idle' | 'recording' | 'latched' | 'sending'`
+`WebController` adds `voiceStatus: 'idle' | 'starting' | 'recording' |
+'latched' | 'sending'`
 and four methods: `startVoice()` begins recording (auto-stopping after 30 s;
 the schedule is injectable via `WebControllerOptions.voiceSchedule` —
-defaulting to `setTimeout` — so tests fire the timeout without waiting),
+defaulting to `setTimeout` — so tests fire the timeout without waiting). The
+status sits in `starting` while the awaited recording start (the browser
+permission prompt) is pending: `stopVoice()` or `cancelVoice()` in that window
+ends the session, and the start's completion then releases the just-granted
+microphone instead of going live — no recording, timer, or request starts.
 `latchVoice()` switches a live press-and-hold recording to hands-free `latched`
 (a quick tap; recording continues under the explicit cancel/send controls, and
-it is a no-op unless currently `recording`), `stopVoice()` ends recording from
+it is a no-op unless currently `recording` — except during `starting`, where
+the latch is remembered and the granted session comes up `latched`),
+`stopVoice()` ends recording from
 either `recording` or `latched` and delegates to `sendAudioRequest(audio, signal)`, which
 builds a `VoiceContext` from `currentSpec()` and `selection` and runs the
 ordinary `request` with the recorded bytes as the `audio` option — one patch

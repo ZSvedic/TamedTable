@@ -341,17 +341,26 @@ export class DiagnosticsManager {
     return redactValue(rest) as Record<string, unknown>;
   }
 
-  /** Refresh the in-memory mirror from the persisted log. localStorage is the
-   *  source of truth and is shared by every tab on the origin (the live app
-   *  and any pr-preview build), so reads and appends start from what is
-   *  actually stored — never a mirror frozen at this tab's load time. */
+  /** Merge the persisted log into the in-memory buffer. Storage is shared by
+   *  every tab on the origin (the live app and any pr-preview build), so
+   *  reads and appends fold in what other tabs stored — but the in-memory
+   *  buffer stays authoritative and persistence stays best-effort: where the
+   *  browser allows reads but rejects writes (legacy private modes, a full
+   *  quota), this tab's never-persisted events must survive every sync, not
+   *  be replaced by the stale stored copy. */
   private sync(): void {
     try {
       if (typeof localStorage === 'undefined') return;
       const raw = localStorage.getItem(STORAGE_KEY);
-      this.events = raw ? (JSON.parse(raw) as DiagEvent[]) : [];
+      if (!raw) return;
+      const stored = JSON.parse(raw) as DiagEvent[];
+      const have = new Set(this.events.map((e) => JSON.stringify(e)));
+      const merged = [...this.events];
+      for (const e of stored) if (!have.has(JSON.stringify(e))) merged.push(e);
+      merged.sort((a, b) => a.ts.localeCompare(b.ts));
+      this.events = evictEvents(merged, MAX_EVENTS, MAX_BYTES);
     } catch {
-      /* corrupt or unavailable storage — keep the in-memory mirror */
+      /* corrupt or unavailable storage — keep the in-memory buffer */
     }
   }
 

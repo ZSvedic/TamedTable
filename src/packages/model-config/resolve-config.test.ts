@@ -1,8 +1,7 @@
-// #ModelConfig — red unit tests (bug inventory). Every test here documents
-// one OPEN defect and FAILS on current code by design: each assertion states
-// the SPEC-CORRECT behavior, and its message names the defect. Excluded from
-// `bun test` by bunfig [test] pathIgnorePatterns; run via
-// `cd src && bun run test:red:unit`.
+// #ModelConfig — config-resolution regressions from the 2026-07-29 hunt
+// (RED-MC-1, -2 and -4, fixed and moved green; RED-MC-3 lives in
+// src/tests/demo-config.smoke.test.ts). Each assertion states the
+// spec-correct behavior; the messages keep the original finding ids.
 import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import {
@@ -12,7 +11,7 @@ import {
   type ResolvedConfig,
 } from './index.ts';
 
-test("RED-MC-1: TAMEDTABLE_MODEL='' (empty env var) is kept as the resolved model instead of meaning unset", () => {
+test("RED-MC-1: TAMEDTABLE_MODEL='' (empty env var) means unset and falls through to the default", () => {
   // A `.env` line left as `TAMEDTABLE_MODEL=` reaches resolveConfig as ''.
   // The four *_API_KEY vars in the same function treat '' as missing
   // (truthiness, index.ts:162-173); the two model vars use `??`
@@ -33,7 +32,7 @@ test("RED-MC-1: TAMEDTABLE_MODEL='' (empty env var) is kept as the resolved mode
   );
 });
 
-test('RED-MC-2: resolveConfig crashes on a stored config with an unknown provider instead of falling back to gemini', async () => {
+test('RED-MC-2: a stored config with an unknown provider falls back to gemini instead of throwing', async () => {
   // The blob is written by whatever build last ran on the origin (production
   // and pr-preview share one origin and one 'tamedtable.config' blob). A
   // provider value the current build doesn't know must resolve, not throw —
@@ -95,7 +94,7 @@ test('RED-MC-2: resolveConfig crashes on a stored config with an unknown provide
   }
 });
 
-test('RED-MC-4: resolveConfig keeps a model id that belongs to no provider when the provider is anthropic', () => {
+test('RED-MC-4: a model id belonging to no provider is coerced to the provider default', () => {
   // providerFor's catch-all returns 'anthropic' for any unknown id
   // (index.ts:96-107 — the doc comment says so, an intentional fallback), so
   // the same-provider guard at index.ts:182 waves catalogue-less garbage
