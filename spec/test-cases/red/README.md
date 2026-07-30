@@ -18,6 +18,7 @@ Newest finding last.
 |---|---|---|---|---|---|
 | TT-R01 | major | A sample opened from Open ▸ "Open sample…" is missing from Open ▸ Recent until the page is reloaded (or another file is opened). URL/local/drop paths add it immediately. | `e2e/red/open.e2e.ts` | `controller-files.ts:326` `loadFromUrl` records the recent after the last `notify()`, and the sample picker fires no `notify()` after the async record | yes (logic, not build-only) |
 | TT-R02 | minor | A manual cell edit shows the new value but no changed-cell tint and no "was: …" tooltip until an unrelated re-render (e.g. clicking another cell) fires. | `e2e/red/grid.e2e.ts` | `controller-patch.ts:136-137` `editCell` records the changed-cell mark after `applySpecChange`'s `notify()`, with no trailing `notify()` | yes (logic, not build-only) |
+| TT-R03 | minor | A completed flow-replay reply ("Executed steps: … Ran <flow>") carries no Report bug action, though the identical-shaped chat reply does. | `e2e/red/chat.e2e.ts` | `controller-files.ts:138` pushes the flow reply with `reportable` unset; the chat success reply (`controller.ts:330`) passes `reportable=true` | yes (logic, not build-only) |
 
 ## TT-R01 — sample-picker load missing from Recent until reload (major)
 
@@ -58,3 +59,23 @@ The table-view spec says "a changed cell tints, and hovering it shows a small
 [was: …] tooltip", and `controller-patch.ts` states the intent outright — "The
 edited cell tints like any other change" — so the reveal firing only on the next
 unrelated render is a defect, even though the data is never wrong.
+
+## TT-R03 — flow-replay reply has no Report bug action (minor)
+
+Running a saved recipe through Open ▸ "Open .flow & run on current data…" posts
+the same shape of reply a typed request does — a `Run <flow>` user bubble and an
+`Executed steps: … Ran <flow> — N rows, M columns.` assistant reply that tracks
+undo state exactly like a chat reply (its dot flips to a hollow "Undone steps:"
+on undo, verified). But that reply carries **no Report bug action**, while the
+chat reply does: `controller.ts:330` pushes the chat success reply with
+`reportable=true`, whereas `controller-files.ts:138` pushes the flow reply with
+`reportable` left unset (falsy). So if a replayed recipe produces a wrong result,
+the reply offers no way to report it.
+
+The spec's request-detail section states "Every reply to a completed request
+carries the [Report bug] action (a wrong answer is a bug even when nothing turned
+red)", and a flow reply "takes the same shape" as a chat reply. **Interpretation
+caveat:** this reads "completed request" to include a flow replay; a triager may
+decide flow replays are deliberately out of scope for Report bug (they make no
+model call, so they never carry a request detail either). Filed minor for that
+reason — the behavioral asymmetry is real and reproducible regardless.
