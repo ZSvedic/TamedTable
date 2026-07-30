@@ -73,15 +73,24 @@ validates every spec; there is no separate legacy rejection path.
 
 `query` and `name` are provenance metadata, accepted on every
 transformation kind. The runner stamps them at commit time on the
-transformations the committed turn added or changed — "changed" meaning
-the JSON has no identical counterpart in the pre-request spec. The
+transformations the committed turn added or changed — "changed" meaning the
+step has no counterpart in the pre-request spec once provenance is stripped
+from both sides and object keys are sorted. Stripped, because the model edits
+a stripped view: a whole-array `replace` re-emits the existing steps without
+their stamps, and those steps are untouched, not new — they get their own
+earlier stamps back, never the new request's text. The comparison is against a
+**multiset**, not a set, so a turn that appends a duplicate of a step already
+in the spec still counts as having added one and gets stamped. The
 request's text (voice: the transcript) lands verbatim as `query` on the
 **first** such transformation only — so a multi-step request writes its
 text once, opening the group — while **every** such transformation gets
-`name`, its `describeStep` label (`mutate _event_group (AI)`). The engine
-never reads either, and the spec shown to the model — the patch turn and
-the Python-export turn — has both stripped, so the model neither sees nor
-edits them and prompts stay byte-identical for cassette replay. Since
+`name`, its `describeStep` label (`mutate _event_group (AI)`). The same
+stripped comparison decides the no-op rejection (`applyAndValidate`): an echo
+of exactly the view the model was shown differs from the committed spec only
+in provenance, and must be sent back rather than committed as a success. The
+engine never reads either stamp, and the spec shown to the model — the patch
+turn and the Python-export turn — has both stripped, so the model neither sees
+nor edits them and prompts stay byte-identical for cassette replay. Since
 they ride inside `transformations`, `serializeFlow` carries them into
 saved `.flow` files unchanged and `execute` accepts them back.
 
@@ -620,11 +629,31 @@ JS (`(rows, key, allGroups) => …`), and as a relation for SQL — named
 by name resolves; LLM aggregates receive the group's compact JSON as
 `{*}`.
 
+All three JS bindings are real: `rows` is the group's slice, `key` its
+by-value (the value itself for a single `by` key, the tuple array for
+several, `null` for an empty `by`), and `allGroups` every group as
+`{ key, rows }` in output order — so an aggregate can compute a share of the
+whole table, not only of its own slice. `groupOutputNames` resolves the
+output names: the by-names first, then one per `agg` entry, collision-renamed
+through `freeColumnName` so an aggregate named like a by-column becomes
+`<name>_2`. The column-availability walks (`checkValidateColumnOrder`,
+`checkFlowInputColumns`) call the same helper — and `unpivotOutputNames` for
+an unpivot — so what a guard believes a step emits is what it emits.
+
 `applyJoin` emits one output row per matching `(leftRow, rightRow)`
 pair — SQL multiplicity, not a first-match lookup — so a left row with
 N right matches produces N rows. `Runner.loadInput` continues to
 dispatch on extension; the join's right-side path is loaded by the
-same code path. The Zod schema
+same code path. Both column lists are the union of every row's own keys, and
+the rename target is probed against left *and* right names plus the targets
+already claimed this join, so no assignment can land on an occupied name.
+Resolution order for the right table is staged lookup (the browser's
+`registerLookup`), then the runner's `Map<withPath, Row[]>` of tables it has
+already read, then the file; a read populates that map, and the runner prunes
+it to the joins the committed spec still names. That is what makes "not
+re-read on `:undo`/`:redo`" true in the code: a replay of a committed join
+never touches the filesystem again, whatever happened to the file. The Zod
+schema
 permits these two `kind` values and enforces a `.csv`/`.jsonl`
 extension for `join.with` (other extensions error at validation time,
 not at evaluation).
@@ -675,6 +704,14 @@ before it — order the step that computes "<X>" before the validate.
 
 Exported for tests as `checkValidateColumnOrder(spec, sourceColumns):
 string | undefined` from `@tamedtable/headless`.
+
+`sourceColumns` — for this guard and for `checkDeclaredColumnsWritten` — is
+the **loaded spec's** column list, kept on the runner at `loadInput` /
+`loadParsed` time. Never the first source row's keys: a JSONL source's columns
+are the union of keys across all rows, so row 0 alone under-reports on any
+sparse file and would get a correct patch rejected until the recovery budget
+ran out. Holding the list also means the guards still run on a zero-row
+source.
 
 `pivot` and `unpivot` evaluate in JS; a `{sql}` companion path
 (via DuckDB's native PIVOT/UNPIVOT) is reserved for a later release.
@@ -1153,11 +1190,15 @@ evaluation makes `applySort` async; the runner already `await`s every
 transformation. When `sort.limit` is set, the ordered rows are sliced to
 the first N.
 
-The comparator is numeric-aware: when both key values coerce to a finite
-number (`typeof v === 'number'`, or a non-empty string with a finite
-`Number(v)`), they compare numerically; otherwise both compare with the
-`<`/`>` operators as before. The check is per-pair, so a mixed column
-still orders its numeric-looking values by magnitude.
+`compareSortKeys` (exported from `headless`) is the comparator, and it is a
+**total order** — required, since `Array.prototype.sort` on a non-transitive
+comparator emits an arbitrary permutation. Each value is classified once:
+class 0 numbers (`typeof v === 'number'` and finite, or a non-empty string
+with a finite `Number(v)`), class 1 text (anything else non-empty), class 2
+empty (`null`, `undefined`, `''`). Different classes compare by class index,
+so numbers < text < empty; within class 0 by magnitude, within class 1 by
+`<`/`>` on `String(v)`, and class 2 values are all equal. `dir: 'desc'`
+negates the result, so empty cells lead a descending sort.
 
 ### A formatter bug never fails a request
 

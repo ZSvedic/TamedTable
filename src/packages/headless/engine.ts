@@ -68,6 +68,87 @@ export function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
   return { ...spec, columns: next };
 }
 
+// #SortRows
+/** The sort comparator, as a **total order** (spec/behavior.md § Sorting by a
+ *  SQL or AI key). Values fall into three classes — numbers (a number or a
+ *  numeric string), text (anything else non-empty), and empty (null/undefined/
+ *  empty string) — and the classes rank in that order, so a mixed column puts
+ *  every number, ordered by magnitude, ahead of every word, with empty cells
+ *  last. Within a class, numbers compare by magnitude and text as text.
+ *
+ *  A total order is the point: comparing only "when both sides coerce" answered
+ *  "equal" for every number-vs-word pair, which makes the comparator
+ *  non-transitive and lets `Array.sort` emit an arbitrary order — numbers
+ *  wrongly ordered among *themselves* included. */
+export function compareSortKeys(a: unknown, b: unknown): number {
+  const rank = (v: unknown): 0 | 1 | 2 =>
+    v === null || v === undefined || v === '' ? 2 : asSortNumber(v) !== null ? 0 : 1;
+  const ra = rank(a);
+  const rb = rank(b);
+  if (ra !== rb) return ra < rb ? -1 : 1;
+  if (ra === 2) return 0;
+  if (ra === 0) {
+    const an = asSortNumber(a)!;
+    const bn = asSortNumber(b)!;
+    return an < bn ? -1 : an > bn ? 1 : 0;
+  }
+  const as = String(a);
+  const bs = String(b);
+  return as < bs ? -1 : as > bs ? 1 : 0;
+}
+
+/** A number or a numeric string as a finite number; otherwise null. */
+function asSortNumber(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) return Number(v);
+  return null;
+}
+
+/** Pick a name not already taken: `<name>`, else `<name>_2`, `_3`, … — the
+ *  same collision rule the join's right columns follow, applied wherever a
+ *  transformation derives an output column name from data or from a default
+ *  (spec/behavior.md § group / pivot / unpivot). The key columns that identify
+ *  a row (`group.by`, `pivot.index`, `unpivot.id`) are claimed first, so a
+ *  derived name never overwrites them. */
+export function freeColumnName(name: string, taken: ReadonlySet<string>): string {
+  if (!taken.has(name)) return name;
+  let n = 2;
+  while (taken.has(`${name}_${n}`)) n++;
+  return `${name}_${n}`;
+}
+
+/** Output column names of a `group`: the by-key names first, then one name per
+ *  `agg` entry, collision-renamed so an aggregate named like a by-column can't
+ *  destroy the group key. Shared by the JS-only path (`applyGroupJs`), the
+ *  async path in index.ts, and the column-availability walks. */
+export function groupOutputNames(
+  by: Array<string | Expr>,
+  agg: Record<string, unknown>,
+): { byNames: string[]; aggNames: Array<[outCol: string, name: string]> } {
+  const byNames = by.map((b, i) => (typeof b === 'string' ? b : `key_${i + 1}`));
+  const taken = new Set(byNames);
+  const aggNames: Array<[string, string]> = [];
+  for (const outCol of Object.keys(agg)) {
+    const name = freeColumnName(outCol, taken);
+    taken.add(name);
+    aggNames.push([outCol, name]);
+  }
+  return { byNames, aggNames };
+}
+
+/** Output column names of an `unpivot`: the id columns keep their names, and
+ *  `names_to`/`values_to` (explicit or defaulted to `name`/`value`) are
+ *  collision-renamed so the defaults can't overwrite an id column. */
+export function unpivotOutputNames(
+  t: Extract<Transformation, { kind: 'unpivot' }>,
+): { namesTo: string; valuesTo: string } {
+  const taken = new Set(t.id);
+  const namesTo = freeColumnName(t.names_to ?? 'name', taken);
+  taken.add(namesTo);
+  const valuesTo = freeColumnName(t.values_to ?? 'value', taken);
+  return { namesTo, valuesTo };
+}
+
 // ── Pure transformations ────────────────────────────────────────────────────
 
 // #FilterRows #Dedupe
@@ -98,8 +179,14 @@ export function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'm
     // `setCell` so a mutate targeting a column literally named "__proto__"
     // writes an own property instead of hitting the prototype setter.
     if (cols.length === 1) setCell(out, cols[0]!, result);
-    else if (result && typeof result === 'object')
-      for (const c of cols) setCell(out, c, (result as Row)[c]);
+    // Multi-column: an array result fills the targets POSITIONALLY (the idiom
+    // spec/behavior.md § split calls out — the same padding/concat rules a
+    // split uses); an object result is read by column name.
+    else if (Array.isArray(result)) {
+      const parts = padParts(result, cols);
+      cols.forEach((c, idx) => setCell(out, c, parts[idx] ?? null));
+    } else if (result && typeof result === 'object')
+      for (const c of cols) setCell(out, c, cellAt(result as Row, c));
     return out;
   });
 }
@@ -111,6 +198,21 @@ export function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'm
  *  the legacy `_valid`/`_validation` when `into` is absent (old flows). */
 export function validateColumns(t: Extract<Transformation, { kind: 'validate' }>): { flag: string; note: string } {
   return t.into ? { flag: t.into, note: `${t.into}_note` } : { flag: '_valid', note: '_validation' };
+}
+
+/** Render the failure rate and the threshold as percentages that still show a
+ *  TRUE inequality: rounding both to whole percent turns a 20.4%-over-20% abort
+ *  into the false statement "20% > 20%", and that string is what the recovery
+ *  model reads. Uses the fewest decimals that keep the two sides apart,
+ *  trailing zeros trimmed. */
+function formatRateOverThreshold(rate: number, threshold: number): [string, string] {
+  const trim = (s: string) => (s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s);
+  for (const digits of [0, 1, 2, 3, 4]) {
+    const a = (rate * 100).toFixed(digits);
+    const b = (threshold * 100).toFixed(digits);
+    if (Number(a) > Number(b)) return [trim(a), trim(b)];
+  }
+  return [String(rate * 100), String(threshold * 100)];
 }
 
 export function applyValidateJs(rows: Row[], t: Extract<Transformation, { kind: 'validate' }>): Row[] {
@@ -127,9 +229,8 @@ export function applyValidateJs(rows: Row[], t: Extract<Transformation, { kind: 
     const failures = out.filter((r) => r[flag] === false).length;
     const rate = failures / rows.length;
     if (rate > t.threshold) {
-      throw new Error(
-        `validation failed: ${(rate * 100).toFixed(0)}% > ${(t.threshold * 100).toFixed(0)}%`
-      );
+      const [got, limit] = formatRateOverThreshold(rate, t.threshold);
+      throw new Error(`validation failed: ${got}% > ${limit}%`);
     }
   }
   return out;
@@ -157,19 +258,46 @@ export function buildGroups(rows: Row[], by: Array<string | Expr>): GroupBuckets
   return { order, groups };
 }
 
+/** The `key` an aggregate expression sees: the by-value itself for a
+ *  single-key group, the tuple for a multi-key group, `null` for an empty
+ *  `by` (spec/code-contract.md § group). */
+export function aggKey(keyTuple: unknown[]): unknown {
+  if (keyTuple.length === 0) return null;
+  return keyTuple.length === 1 ? keyTuple[0] : keyTuple;
+}
+
+/** One group as an aggregate expression sees it in `allGroups`. */
+export type AggGroup = { key: unknown; rows: Row[] };
+
+/** Compile a JS aggregate to the contracted `(rows, key, allGroups)` signature
+ *  (spec/code-contract.md § group): the group's slice, its by-value, and every
+ *  group as `{ key, rows }` in output order — so an aggregate can compute a
+ *  share of the whole table, not only of its own slice. */
+export function compileAgg(js: string): (rows: Row[], key: unknown, allGroups: AggGroup[]) => unknown {
+  return new Function('rows', 'key', 'allGroups', `return (${js.trim()});`) as (
+    rows: Row[],
+    key: unknown,
+    allGroups: AggGroup[],
+  ) => unknown;
+}
+
 // #Aggregate
 export function applyGroupJs(rows: Row[], t: Extract<Transformation, { kind: 'group' }>): Row[] {
   // Build groups in first-seen order so the output preserves input order.
   const { order, groups } = buildGroups(rows, t.by);
-  const byNames = t.by.map((b, i) => typeof b === 'string' ? b : `key_${i + 1}`);
+  const { byNames, aggNames } = groupOutputNames(t.by, t.agg);
+  const allGroups: AggGroup[] = order.map((k) => {
+    const g = groups.get(k)!;
+    return { key: aggKey(g.keyTuple), rows: g.slice };
+  });
   return order.map((key) => {
     const { keyTuple, slice } = groups.get(key)!;
     const out: Row = {};
-    byNames.forEach((name, i) => { out[name] = keyTuple[i] ?? null; });
-    for (const [outCol, expr] of Object.entries(t.agg)) {
+    byNames.forEach((name, i) => { setCell(out, name, keyTuple[i] ?? null); });
+    for (const [outCol, name] of aggNames) {
+      const expr = t.agg[outCol]!;
       if ('js' in expr) {
-        const fn = new Function('rows', `return (${expr.js.trim()});`) as (slice: Row[]) => unknown;
-        out[outCol] = fn(slice);
+        setCell(out, name, compileAgg(expr.js)(slice, aggKey(keyTuple), allGroups));
       } else if ('sql' in expr) {
         // Unreachable: a {sql} aggregate routes through applyGroup's async path,
         // not this JS-only path. Kept as a defensive guard.
@@ -287,6 +415,16 @@ export function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivo
     const onVal = String(row[t.on] ?? '');
     bucket.cells.get(onVal)?.push(row[t.values]);
   }
+  // The new column names come from the DATA, so one can equal an index column
+  // name — rename it (`region` → `region_2`) instead of overwriting the key
+  // that identifies the row (spec/behavior.md § pivot).
+  const taken = new Set(t.index);
+  const outName = new Map<string, string>();
+  for (const v of onValues) {
+    const name = freeColumnName(v, taken);
+    taken.add(name);
+    outName.set(v, name);
+  }
   return indexOrder.map((key) => {
     const { tuple, cells } = buckets.get(key)!;
     const out: Row = {};
@@ -296,22 +434,23 @@ export function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivo
     t.index.forEach((c, i) => { setCell(out, c, tuple[i] ?? null); });
     for (const onVal of onValues) {
       const vals = cells.get(onVal) ?? [];
-      setCell(out, onVal, vals.length === 0 ? null : aggregateValues(vals, agg));
+      setCell(out, outName.get(onVal)!, vals.length === 0 ? null : aggregateValues(vals, agg));
     }
     return out;
   });
 }
 
 export function applyUnpivot(rows: Row[], t: Extract<Transformation, { kind: 'unpivot' }>): Row[] {
-  const namesTo = t.names_to ?? 'name';
-  const valuesTo = t.values_to ?? 'value';
+  // The `name`/`value` defaults are a name collision waiting to happen on a
+  // table with a column called `name` — rename rather than overwrite the id.
+  const { namesTo, valuesTo } = unpivotOutputNames(t);
   const out: Row[] = [];
   for (const row of rows) {
     for (const measure of t.measures) {
       const r: Row = {};
-      for (const idCol of t.id) r[idCol] = row[idCol];
-      r[namesTo] = measure;
-      r[valuesTo] = row[measure] ?? null;
+      for (const idCol of t.id) setCell(r, idCol, cellAt(row, idCol));
+      setCell(r, namesTo, measure);
+      setCell(r, valuesTo, cellAt(row, measure) ?? null);
       out.push(r);
     }
   }
@@ -324,31 +463,50 @@ export async function applyJoin(
   t: Extract<Transformation, { kind: 'join' }>,
   baseDir: string,
   lookups?: Map<string, Row[]>,
+  cache?: Map<string, Row[]>,
 ): Promise<Row[]> {
   if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
   // A null `with` only reaches here outside the web UI (which resolves it via
   // the lookup dialog before the run) — there is no file to read.
   if (t.with === null) throw new Error('join: no lookup file named — say which file to join with');
   const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
-  // A staged lookup (browser join) wins; otherwise read the right table by path.
-  let right = lookups?.get(t.with);
+  // A staged lookup (browser join) wins, then the runner's right-table cache —
+  // a join is read from disk once and held, so an :undo/:redo that replays the
+  // step never touches the file again (spec/behavior.md § join). Only a miss
+  // reads the path.
+  let right = lookups?.get(t.with) ?? cache?.get(t.with);
   if (!right) {
     const rightPath = isAbsolute(t.with) ? t.with : join(baseDir, t.with);
     const ext = t.with.slice(t.with.lastIndexOf('.')).toLowerCase();
     if (ext === '.csv') right = (await loadCsv(rightPath)).rows;
     else if (ext === '.jsonl') right = (await loadJsonl(rightPath)).rows;
     else throw new Error(`unknown file type: ${t.with}`);
+    cache?.set(t.with, right);
   }
   // Compute right-column names with collision-renaming (Country → Country_2 …).
-  const leftCols = rows.length > 0 ? new Set(Object.keys(rows[0]!)) : new Set<string>();
+  // Both column lists are the UNION of every row's keys: a sparse column lives
+  // on some later row, and reading row 0 alone would miss it — then the right
+  // table would silently overwrite it. The rename target is probed against the
+  // right table's own columns too, so a real `code_2` on the right can't be
+  // clobbered by a renamed `code`.
+  const columnUnion = (list: Row[]): string[] => {
+    const seen = new Set<string>();
+    const cols: string[] = [];
+    for (const row of list) for (const k of Object.keys(row)) if (!seen.has(k)) { seen.add(k); cols.push(k); }
+    return cols;
+  };
+  const leftCols = new Set(columnUnion(rows));
+  const rightCols = columnUnion(right);
+  const rightColSet = new Set(rightCols);
   const rightColMap: Record<string, string> = {};
-  if (right.length > 0) {
-    for (const col of Object.keys(right[0]!)) {
-      if (!leftCols.has(col)) { rightColMap[col] = col; continue; }
-      let n = 2;
-      while (leftCols.has(`${col}_${n}`)) n++;
-      rightColMap[col] = `${col}_${n}`;
-    }
+  const claimed = new Set<string>();
+  for (const col of rightCols) {
+    if (!leftCols.has(col)) { rightColMap[col] = col; continue; }
+    const taken = (n: string) => leftCols.has(n) || rightColSet.has(n) || claimed.has(n);
+    let n = 2;
+    while (taken(`${col}_${n}`)) n++;
+    claimed.add(`${col}_${n}`);
+    rightColMap[col] = `${col}_${n}`;
   }
   const how = t.how ?? 'left';
   const out: Row[] = [];
@@ -357,12 +515,12 @@ export async function applyJoin(
     const matches = right.filter((rrow) => Boolean(fn(lrow, rrow)));
     for (const match of matches) {
       const merged: Row = { ...lrow };
-      for (const [srcCol, dstCol] of Object.entries(rightColMap)) merged[dstCol] = match[srcCol];
+      for (const [srcCol, dstCol] of Object.entries(rightColMap)) setCell(merged, dstCol, cellAt(match, srcCol));
       out.push(merged);
     }
     if (matches.length === 0 && how === 'left') {
       const merged: Row = { ...lrow };
-      for (const dstCol of Object.values(rightColMap)) merged[dstCol] = null;
+      for (const dstCol of Object.values(rightColMap)) setCell(merged, dstCol, null);
       out.push(merged);
     }
     // inner: drop unmatched

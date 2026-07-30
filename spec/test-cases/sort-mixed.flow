@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "source": "sort-mixed-input.jsonl",
+  "spec": {
+    "table": "sort-mixed-input.jsonl",
+    "columns": [
+      { "id": "item" },
+      { "id": "amount" }
+    ],
+    "transformations": [
+      {
+        "kind": "sort",
+        "by": [
+          { "key": "amount", "dir": "asc" }
+        ]
+      }
+    ]
+  }
+}

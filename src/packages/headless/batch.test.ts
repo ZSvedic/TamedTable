@@ -10,8 +10,15 @@ describe('tryParseBatchResponse', () => {
     expect(tryParseBatchResponse('["a", null, "c"]', 3)).toEqual(['a', null, 'c']);
   });
 
-  it('treats empty strings and "null"/"NULL" string literals as null', () => {
-    expect(tryParseBatchResponse('["", "null", "NULL"]', 3)).toEqual([null, null, null]);
+  it('treats an empty string and the lowercased literal "null" as null', () => {
+    expect(tryParseBatchResponse('["", "null", " null "]', 3)).toEqual([null, null, null]);
+  });
+
+  // spec/behavior.md § LLM cells: only the literal *lowercased* word null is
+  // the sentinel — "NULL" and "Null" are answers a cell may legitimately give
+  // (a database keyword, an acronym) and must survive as strings.
+  it('keeps "NULL" and "Null" as real strings', () => {
+    expect(tryParseBatchResponse('["NULL", "Null", "ok"]', 3)).toEqual(['NULL', 'Null', 'ok']);
   });
 
   it('strips a leading ```json fence and trailing ```', () => {
