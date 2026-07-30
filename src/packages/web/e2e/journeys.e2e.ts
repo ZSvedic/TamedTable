@@ -73,6 +73,16 @@ test.describe('Open', () => {
     await expect(page.locator('[data-tv-cell]').first()).toHaveAttribute('data-tv-cell', /^100:/);
   });
 
+  test('a sample opened from the picker appears in Recent immediately', async ({ page }) => {
+    await boot(page);
+    await loadSample(page, 'customers-input.csv');
+    // No reload: the just-opened sample is a successful load, so the menu must
+    // already list it (the picker fires no notify of its own after the record).
+    await page.locator('[data-uk-menubtn]').first().click();
+    await page.locator('[data-uk-menu-item="Recent"]').hover();
+    await expect(page.locator('[data-uk-menu-item]', { hasText: 'customers-input.csv' })).toBeVisible();
+  });
+
   test('Recent lists a loaded sample after a reload', async ({ page }) => {
     await boot(page);
     await loadSample(page, 'customers-input.csv');
@@ -81,6 +91,41 @@ test.describe('Open', () => {
     await page.locator('[data-uk-menubtn]').first().click();
     await page.locator('[data-uk-menu-item="Recent"]').hover();
     await expect(page.locator('[data-uk-menu-item]', { hasText: 'customers-input.csv' })).toBeVisible();
+  });
+});
+
+// ── Flow replay ──────────────────────────────────────────────────────────
+test.describe('Flow replay', () => {
+  test('a completed replay replies like a chat request, Report bug included', async ({ page }) => {
+    // Force the <input type=file> fallback so the .flow picker is a filechooser.
+    await page.addInitScript(() => {
+      // @ts-expect-error optional browser API
+      delete window.showOpenFilePicker;
+    });
+    await boot(page);
+    await loadSample(page, 'customers-input.csv');
+
+    // A deterministic recipe: a filter on the sample's own Country column.
+    const flow = JSON.stringify({
+      version: 2,
+      source: 'customers-input.csv',
+      spec: {
+        table: 'customers-input.csv',
+        columns: [{ id: 'ID' }, { id: 'Country' }],
+        transformations: [{ kind: 'filter', pred: { js: "row.Country === 'USA'" } }],
+      },
+    });
+    page.once('filechooser', async (fc) => {
+      await fc.setFiles({ name: 'filter-usa.flow', mimeType: 'application/json', buffer: Buffer.from(flow) });
+    });
+    await page.locator('[data-uk-menubtn]').first().click();
+    await page.locator('[data-uk-menu-item="Open .flow & run on current data…"]').click();
+
+    const reply = page.locator('[data-cp-message="assistant"]', { hasText: 'Executed steps:' });
+    await expect(reply).toBeVisible({ timeout: 15_000 });
+    // A replay is a completed request, so its reply offers Report bug. The
+    // action row sits beside the bubble, not inside it — scope to the block.
+    await expect(reply.locator('xpath=..').locator('[data-cp-report]')).toBeVisible();
   });
 });
 
@@ -132,6 +177,17 @@ test.describe('Grid', () => {
     await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('USA');
     await redo(page).click();
     await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('EDITED');
+  });
+
+  test('an inline edit tints the cell and shows its was: tooltip at once', async ({ page }) => {
+    await boot(page);
+    await loadSample(page, 'customers-input.csv');
+    const cell = page.locator('[data-tv-cell="0:Country"]');
+    await editCell(page, '0:Country', 'MARKME');
+    await expect(cell).toHaveText('MARKME');
+    // No other interaction may be needed to reveal the mark.
+    await expect(cell).toHaveAttribute('data-tv-changed', '');
+    await expect(cell).toHaveAttribute('title', /was: USA/);
   });
 
   test('column drag-reorder is undoable', async ({ page }) => {

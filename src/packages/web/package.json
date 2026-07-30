@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:e2e": "playwright test --project=chromium",
-    "test:e2e:red": "playwright test --project=red"
+    "test:e2e:red": "playwright test --project=red --pass-with-no-tests"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.32.0",
