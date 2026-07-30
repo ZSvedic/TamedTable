@@ -270,12 +270,21 @@ Then('transformation {int} is a {string}', function (this: TamedTableWorld, inde
   assert.equal(t!.kind, kind, `transformation ${index}`);
 });
 
-Then(/^rows where "([^"]+)" is "([^"]+)" have _valid equal to (true|false)$/, function (this: TamedTableWorld, column: string, value: string, expected: string) {
+Then(/^rows where "([^"]+)" is "([^"]+)" have "([^"]+)" equal to (true|false)$/, function (this: TamedTableWorld, column: string, value: string, flag: string, expected: string) {
   const matching = this.ensureRunner().currentRows().filter((r) => String(r[column]) === value);
   assert.ok(matching.length > 0, `no row has ${column} = ${JSON.stringify(value)}`);
   for (const r of matching) {
-    assert.equal(r._valid, expected === 'true', `row with ${column}=${value}: _valid`);
+    assert.equal(r[flag], expected === 'true', `row with ${column}=${value}: ${flag}`);
   }
+});
+
+// Placement: a validate's flag pair inserts immediately right of the column
+// the check is about (spec/behavior.md § validate).
+Then('column {string} is immediately right of {string} in the spec', function (this: TamedTableWorld, right: string, left: string) {
+  const ids = this.ensureRunner().currentSpec().columns.map((c) => c.id);
+  const li = ids.indexOf(left);
+  assert.ok(li >= 0, `column "${left}" not in spec.columns: ${ids.join(', ')}`);
+  assert.equal(ids[li + 1], right, `expected "${right}" right of "${left}". Got: ${ids.join(', ')}`);
 });
 
 Then('the row where {string} is {string} has {string} equal to {string}', function (this: TamedTableWorld, keyColumn: string, keyValue: string, column: string, expected: string) {

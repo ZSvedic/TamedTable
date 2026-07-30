@@ -6,8 +6,9 @@
 import { describe, it, expect } from 'bun:test';
 import { join } from 'node:path';
 import { createHeadlessRunner, checkValidateColumnOrder } from './index.ts';
+import { applyValidateJs, validateColumns } from './engine.ts';
 import type { RequestDebugInfo } from './index.ts';
-import type { TablePlan } from '@tamedtable/core';
+import type { Row, TablePlan, Transformation } from '@tamedtable/core';
 
 // Bypass the rate limiter — same trick the cassette replay profile uses.
 process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
@@ -55,7 +56,7 @@ describe('checkValidateColumnOrder', () => {
     expect(checkValidateColumnOrder(llm, SOURCE)).toContain('"Ghost"');
   });
 
-  it('allows the reserved _valid/_validation pair and skips {sql} preds', () => {
+  it('allows the legacy _valid/_validation pair and skips {sql} preds', () => {
     const reserved = plan([
       { kind: 'validate', pred: { js: 'row.City' } },
       { kind: 'validate', pred: { js: 'row._valid === true' } },
@@ -63,6 +64,19 @@ describe('checkValidateColumnOrder', () => {
     expect(checkValidateColumnOrder(reserved, SOURCE)).toBeUndefined();
     const sql = plan([{ kind: 'validate', pred: { sql: 'Missing > 0' } }]);
     expect(checkValidateColumnOrder(sql, SOURCE)).toBeUndefined();
+  });
+
+  it('makes a named validate\'s flag pair available to later steps', () => {
+    const chained = plan([
+      { kind: 'validate', into: 'City_ok', pred: { js: 'row.City' } },
+      { kind: 'validate', into: 'Both_ok', pred: { js: 'row.City_ok === true && row.Country' } },
+    ]);
+    expect(checkValidateColumnOrder(chained, SOURCE)).toBeUndefined();
+    const unordered = plan([
+      { kind: 'validate', into: 'Both_ok', pred: { js: 'row.City_ok === true' } },
+      { kind: 'validate', into: 'City_ok', pred: { js: 'row.City' } },
+    ]);
+    expect(checkValidateColumnOrder(unordered, SOURCE)).toContain('"City_ok"');
   });
 
   it('suspends the check after a join (its columns are unknowable statically)', () => {
@@ -84,6 +98,36 @@ describe('checkValidateColumnOrder', () => {
       { kind: 'validate', pred: { js: 'row.Country' } },
     ]);
     expect(checkValidateColumnOrder(select, SOURCE)).toContain('"Country"');
+  });
+});
+
+describe('applyValidateJs column naming', () => {
+  const ROWS: Row[] = [{ City: 'Paris' }, { City: '' }];
+  const check = (t: object) => applyValidateJs(ROWS, t as Extract<Transformation, { kind: 'validate' }>);
+
+  it('writes <into> and <into>_note when into is set', () => {
+    const out = check({ kind: 'validate', into: 'City_ok', pred: { js: 'row.City' }, message: { js: "'empty'" } });
+    expect(out[0]).toEqual({ City: 'Paris', City_ok: true, City_ok_note: null });
+    expect(out[1]).toEqual({ City: '', City_ok: false, City_ok_note: 'empty' });
+  });
+
+  it('defaults to the legacy _valid/_validation pair without into', () => {
+    const out = check({ kind: 'validate', pred: { js: 'row.City' } });
+    expect(out[0]).toEqual({ City: 'Paris', _valid: true, _validation: null });
+  });
+
+  it('stacks two differently named checks and overwrites a same-named one', () => {
+    const first = check({ kind: 'validate', into: 'A_ok', pred: { js: 'true' } });
+    const second = applyValidateJs(first, { kind: 'validate', into: 'B_ok', pred: { js: 'false' }, message: { js: "'bad'" } } as Extract<Transformation, { kind: 'validate' }>);
+    expect(second[0]).toEqual({ City: 'Paris', A_ok: true, A_ok_note: null, B_ok: false, B_ok_note: 'bad' });
+    const redo = applyValidateJs(second, { kind: 'validate', into: 'B_ok', pred: { js: 'true' } } as Extract<Transformation, { kind: 'validate' }>);
+    expect(redo[0]!.B_ok).toBe(true);
+    expect(redo[0]!.B_ok_note).toBe(null);
+  });
+
+  it('validateColumns names the pair', () => {
+    expect(validateColumns({ kind: 'validate', into: 'X', pred: { js: 'true' } } as Extract<Transformation, { kind: 'validate' }>)).toEqual({ flag: 'X', note: 'X_note' });
+    expect(validateColumns({ kind: 'validate', pred: { js: 'true' } } as Extract<Transformation, { kind: 'validate' }>)).toEqual({ flag: '_valid', note: '_validation' });
   });
 });
 

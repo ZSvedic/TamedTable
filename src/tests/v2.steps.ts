@@ -333,38 +333,26 @@ Then('every row has a boolean {string}', function (this: TamedTableWorld, col: s
   rows.forEach((r, i) => assert.equal(typeof r[col], 'boolean', `row ${i} ${col} is not boolean: ${JSON.stringify(r[col])}`));
 });
 
-Then('rows with empty Phone have _valid equal to false', function (this: TamedTableWorld) {
+Then('rows with empty {word} have {string} equal to false', function (this: TamedTableWorld, source: string, flag: string) {
   for (const r of this.ensureRunner().currentRows()) {
-    if (!r.Phone || String(r.Phone).trim() === '') assert.equal(r._valid, false);
+    if (!r[source] || String(r[source]).trim() === '') assert.equal(r[flag], false);
   }
 });
 
-Then('rows with non-empty Phone have _valid equal to true', function (this: TamedTableWorld) {
+Then('rows with non-empty {word} have {string} equal to true', function (this: TamedTableWorld, source: string, flag: string) {
   for (const r of this.ensureRunner().currentRows()) {
-    if (r.Phone && String(r.Phone).trim() !== '') assert.equal(r._valid, true);
+    if (r[source] && String(r[source]).trim() !== '') assert.equal(r[flag], true);
   }
 });
 
-Then('rows with _valid equal to true have _validation equal to null', function (this: TamedTableWorld) {
+Then('rows where {string} is true have {string} equal to null', function (this: TamedTableWorld, flag: string, note: string) {
   for (const r of this.ensureRunner().currentRows()) {
-    if (r._valid === true) assert.equal(r._validation, null);
+    if (r[flag] === true) assert.equal(r[note], null);
   }
 });
 
-Then('every remaining row has _valid equal to true', function (this: TamedTableWorld) {
-  for (const r of this.ensureRunner().currentRows()) assert.equal(r._valid, true);
-});
-
-Then('rows with empty DOB have _valid equal to false', function (this: TamedTableWorld) {
-  for (const r of this.ensureRunner().currentRows()) {
-    if (!r.DOB || String(r.DOB).trim() === '') assert.equal(r._valid, false);
-  }
-});
-
-Then('rows with non-empty DOB but empty Phone have _valid equal to true', function (this: TamedTableWorld) {
-  for (const r of this.ensureRunner().currentRows()) {
-    if (r.DOB && (!r.Phone || String(r.Phone).trim() === '')) assert.equal(r._valid, true);
-  }
+Then('every remaining row has {string} equal to true', function (this: TamedTableWorld, flag: string) {
+  for (const r of this.ensureRunner().currentRows()) assert.equal(r[flag], true);
 });
 
 Then('the request commits', function (this: TamedTableWorld) {
