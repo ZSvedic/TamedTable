@@ -179,6 +179,21 @@ Feature: Web front-end
       Then columns exist in the spec: "ISO", "Region"
       And the chat shows a user message "Run join-lookup.flow"
 
+    # A join emitted with no filename (`with: null` — the user named none, and
+    # the model never invents one) asks with the same dialog; the picked file's
+    # own name is written into the step, so the executed-steps reply and the
+    # spec show the real file (behavior.md § Web UI).
+    @web @offline
+    Scenario: A join with no filename takes the picked file's name
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user says "Open flow"
+      And user selects "join-null.flow"
+      Then the lookup dialog asks for no particular file
+      When user chooses the lookup file "renamed-codes.csv"
+      Then columns exist in the spec: "ISO", "Region"
+      And the last assistant reply shows "join renamed-codes.csv"
+
     @web @offline
     Scenario: Cancelling the lookup dialog leaves the table untouched
       Given the TamedTable web app

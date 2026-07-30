@@ -860,11 +860,16 @@ A **join needs its second file**, and in the browser that file has to be
 handed over — there is no working directory for `with` to resolve
 against. <!-- #LookupJoin --> So the app asks for it, whether the join
 came from a typed request ("Join with country-codes.csv on Country") or
-from a replayed `.flow`: a modal names the file the join wants and
-offers **Choose file…**, which opens the normal file picker. The picked
-file is staged under the *name the join asked for*, so a file renamed on
-disk still satisfies the step. Then the run continues and the join
-finds its rows.
+from a replayed `.flow`: a modal asks for the join's second file — one
+fixed wording, whatever the step names — and offers **Choose file…**,
+which opens the normal file picker. When the join names a file, the
+picked one is staged under the *name the join asked for*, so a file
+renamed on disk still satisfies the step. When the user named no file
+("Join with a .csv on Country"), the model emits the join with
+`with: null` — it never invents a filename — and the picked file's own
+name is written into the step, so the executed-steps reply and a saved
+flow show the real file. Then the run continues and the join finds its
+rows.
 
 Two details follow from the browser, not from taste. The modal exists
 because a picker may only open from a click: a typed request's own click

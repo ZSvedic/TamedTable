@@ -108,7 +108,7 @@ export function describeStep(t: Transformation): string {
       return `group by ${nameList(by)} → ${nameList(Object.keys(t.agg))}${ai}`;
     }
     case 'join':
-      return `join ${t.with}`;
+      return t.with === null ? 'join (file pending)' : `join ${t.with}`;
     case 'split':
       return `split ${t.from} → ${nameList(t.into)}`;
     case 'validate':

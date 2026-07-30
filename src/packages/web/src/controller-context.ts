@@ -71,8 +71,9 @@ export interface ControllerHost {
   /** Column the grid should scroll into view (a new seq re-triggers), or null. */
   reveal: { column: string; seq: number } | null;
   // #LookupJoin
-  /** The lookup file a waiting join needs, or null. */
-  lookupDialog: { name: string } | null;
+  /** The lookup file a waiting join needs, or null. A null `name` is a join
+   *  the model emitted without a filename (the user named none). */
+  lookupDialog: { name: string | null } | null;
 
   // ── Notification hub + chat/toast services ────────────────────────────────
   notify(): void;
