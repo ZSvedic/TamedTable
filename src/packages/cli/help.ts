@@ -24,9 +24,9 @@ spec; results stream in. The table reprints after any state or viewport
 change.
 
 State / data commands:
-  :load <path>       Load CSV/JSONL as new input. Resets transformations,
-                     viewport, cache.
-  :save <path>       Write current rows to JSONL.
+  :load <path>       Load CSV/JSONL/Parquet/Arrow as new input. Resets
+                     transformations, viewport, cache.
+  :save <path>       Write current rows (CSV/JSONL/Parquet/Arrow by ext).
   :save-flow <path>  Write current spec as a .flow file.
   :save-py <path>    Write current flow as a standalone Python script.
   :reorder <cols>    Reorder columns (comma/space separated); sets the table

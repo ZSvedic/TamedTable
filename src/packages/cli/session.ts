@@ -2,7 +2,7 @@
 // undo journal, debug block) and the colon-command dispatch.
 import { readFile, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
-import type { Row, TablePlan, Transformation } from '@tamedtable/core';
+import { formatForExtension, type Row, type TablePlan, type Transformation } from '@tamedtable/core';
 import {
   createHeadlessRunner,
   specHasLlmCell,
@@ -567,8 +567,10 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
 
   async ':load'(arg, runner, stdout) {
     if (!arg) { stdout.write(':load: missing path\n'); return; }
-    const ext = arg.slice(arg.lastIndexOf('.')).toLowerCase();
-    if (ext !== '.csv' && ext !== '.jsonl') { stdout.write(':load: unknown file type\n'); return; }
+    // Delegate to the codec registry (#FormatOut) instead of a hardcoded
+    // extension list, so every registered format — .csv, .jsonl, .parquet,
+    // .arrow — loads the same way `loadInput`/`exportAs` already dispatch.
+    if (!formatForExtension(arg)) { stdout.write(':load: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       // Try the literal path first, then a spec/test-cases/ fallback so feature files can name
       // a fixture by bare filename (matching the `tamedtable execute` resolveFile convention).
@@ -582,9 +584,10 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
   },
 
   async ':save'(arg, runner, stdout) {
-    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.jsonl|.csv>\n'); return; }
-    const ext = arg.slice(arg.lastIndexOf('.')).toLowerCase();
-    if (ext !== '.jsonl' && ext !== '.csv') { stdout.write(':save: unknown file type\n'); return; }
+    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.csv|.jsonl|.parquet|.arrow>\n'); return; }
+    // Dispatch through the codec registry (#FormatOut): .csv, .jsonl, .parquet,
+    // and .arrow all work — exportAs already writes any of them.
+    if (!formatForExtension(arg)) { stdout.write(':save: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       await runner.exportAs(arg);
       stdout.write(`saved ${runner.currentRows().length} rows to ${arg}\n`);

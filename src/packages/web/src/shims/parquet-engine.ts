@@ -7,7 +7,7 @@
 // data" path writes JSONL); the desktop CLI writes Parquet through node-api.
 import { parquetMetadata, parquetReadObjects, parquetSchema } from 'hyparquet';
 import { parquetWriteBuffer } from 'hyparquet-writer';
-import type { Row } from '@tamedtable/core';
+import { cellAt, type Row } from '@tamedtable/core';
 
 export interface RawTable {
   rows: Array<Record<string, unknown>>;
@@ -30,7 +30,7 @@ export function writeParquetBytes(rows: Row[], columns: string[]): Promise<Uint8
     v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);
   const columnData = columns.map((name) => ({
     name,
-    data: rows.map((r) => cell(name in r ? r[name] : null)),
+    data: rows.map((r) => cell(cellAt(r, name))),
     type: 'STRING' as const,
   }));
   return Promise.resolve(new Uint8Array(parquetWriteBuffer({ columnData })));

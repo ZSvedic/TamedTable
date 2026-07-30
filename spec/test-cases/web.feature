@@ -323,6 +323,16 @@ Feature: Web front-end
       Then table displays the header and at least the first 5 rows
 
     @web
+    # Format is detected from the path extension first and from the Content-Type
+    # header as a fallback (behavior.md § Loading from a URL): an extension-less
+    # download URL served as text/csv still loads.
+    Scenario: An extension-less URL served as text/csv loads via the Content-Type fallback
+      Given the TamedTable web app
+      And the URL "https://api.example.com/export" serves "two-columns.csv"
+      When user loads from URL "https://api.example.com/export"
+      Then the table columns are "a,b"
+
+    @web
     # The dialog's three rejection paths share one shape. The library-level
     # checks (blank / garbage / non-http / network / HTTP-status) live in
     # file-io.feature; these are the thin integration pass through the dialog.

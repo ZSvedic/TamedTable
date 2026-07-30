@@ -13,12 +13,18 @@ export { detectFormat, formatForExtension, loadCodec, type FormatId } from './co
 export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
 
 /** Parse a picked/fetched file's content into rows plus a fresh-load TablePlan,
- *  with no filesystem: the format is chosen from `name`'s extension, the codec
- *  parses the content, and the plan carries `name` as its table and the codec's
- *  columns. This is the browser's path-free counterpart to core's `loadCsv` —
- *  the web hands the result straight to `Runner.loadParsed`. */
-export async function parseTable(name: string, bytes: Uint8Array): Promise<{ rows: Row[]; spec: TablePlan }> {
-  const id = formatForExtension(name);
+ *  with no filesystem: the format is `format` when the caller pre-detected one
+ *  (a fetch that fell back to the Content-Type header for an extension-less
+ *  URL), otherwise chosen from `name`'s extension; the codec parses the content,
+ *  and the plan carries `name` as its table and the codec's columns. This is the
+ *  browser's path-free counterpart to core's `loadCsv` — the web hands the
+ *  result straight to `Runner.loadParsed`. */
+export async function parseTable(
+  name: string,
+  bytes: Uint8Array,
+  format?: FormatId,
+): Promise<{ rows: Row[]; spec: TablePlan }> {
+  const id = format ?? formatForExtension(name);
   if (!id) throw new Error(`unknown file type: ${name}`);
   const codec = await loadCodec(id);
   const { rows, columns } = await codec.parse(bytes, name);

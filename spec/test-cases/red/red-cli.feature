@@ -8,17 +8,6 @@ Feature: Red bug inventory — CLI / REPL (RED-CLI)
   src/tests/red/*.red.test.ts (run via `bun run test:red:unit`).
 
   @red @cli
-  Scenario: RED-CLI-2: :load and :save reject .parquet/.arrow though the codec registry supports both
-    When the red CLI REPL runs "customers-input.csv" offline with commands:
-      """
-      :load customers-input.parquet
-      :save ${TMP}/red-cli-2.parquet
-      :save ${TMP}/red-cli-2.arrow
-      :exit
-      """
-    Then RED-CLI-2: the parquet load and the parquet and arrow saves succeed
-
-  @red @cli
   Scenario: RED-CLI-3: a mistyped colon command is forwarded to the model instead of failing locally
     When the red CLI REPL runs "customers-input.csv" offline with commands:
       """

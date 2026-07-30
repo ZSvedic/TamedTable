@@ -8,7 +8,7 @@
 import { readFile, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { Row } from '@tamedtable/table-plan';
+import { cellAt, type Row } from '@tamedtable/table-plan';
 import type { DuckDBConnection } from '@duckdb/node-api';
 
 // `@duckdb/node-api` is a native addon (it `require`s a platform-specific
@@ -67,6 +67,11 @@ export async function readParquetBytes(bytes: Uint8Array): Promise<RawTable> {
 }
 
 export async function writeParquetBytes(rows: Row[], columns: string[]): Promise<Uint8Array> {
+  // DuckDB cannot CREATE a table with no columns — the raw parser error
+  // ("must have at least one column") would leak to the user. Refuse cleanly.
+  if (columns.length === 0) {
+    throw new Error('Cannot save a table with no columns as Parquet — add a column or choose another format.');
+  }
   const c = await conn();
   const path = tmpFile('parquet');
   // All columns ingest as VARCHAR, mirroring how the engine treats CSV/JSONL
@@ -79,7 +84,7 @@ export async function writeParquetBytes(rows: Row[], columns: string[]): Promise
     for (let i = 0; i < rows.length; i += BATCH) {
       const slice = rows.slice(i, i + BATCH);
       const valuesSql = slice
-        .map((row) => '(' + columns.map((col) => sqlValue(col in row ? row[col] : null)).join(', ') + ')')
+        .map((row) => '(' + columns.map((col) => sqlValue(cellAt(row, col))).join(', ') + ')')
         .join(', ');
       await c.run(`INSERT INTO _tt_save VALUES ${valuesSql}`);
     }

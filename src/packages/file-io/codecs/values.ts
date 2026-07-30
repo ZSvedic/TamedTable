@@ -1,16 +1,14 @@
 // #IoFormats
 // Shared helpers for the binary codecs (Parquet, Arrow). DuckDB and apache-arrow
-// both hand back BIGINT/Int64 columns as JS `bigint`, which downstream consumers
-// (JSON.stringify in the JSONL writer, the table view, test assertions) can't
-// handle — mirror the engine's normalizeSqlValue: a safe-range bigint becomes a
-// Number, anything larger a string.
-import type { Row } from '@tamedtable/table-plan';
+// hand back BIGINT/Int64 columns as JS `bigint`, and DuckDB additionally returns
+// DATE/TIMESTAMP/DECIMAL/LIST columns as wrapper objects — neither of which the
+// downstream consumers (JSON.stringify in the JSONL writer, the table view, test
+// assertions) can handle. `normalizeDbCell` (shared with the engine's {sql}
+// path) coerces both to plain scalars.
+import { normalizeDbCell, type Row } from '@tamedtable/table-plan';
 
 export function normalizeCell(v: unknown): unknown {
-  if (typeof v !== 'bigint') return v;
-  return v >= BigInt(Number.MIN_SAFE_INTEGER) && v <= BigInt(Number.MAX_SAFE_INTEGER)
-    ? Number(v)
-    : v.toString();
+  return normalizeDbCell(v);
 }
 
 /** Map an array of raw row objects (DuckDB `getRowObjects` / Arrow `toJSON`) to

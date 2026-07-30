@@ -415,10 +415,12 @@ They are handled locally without any LLM round-trip:
   `:load: unknown file type`; success prints
   `Loaded <path> (N rows, M cols)` (no column names) followed by the
   table.
-- `:save <path>` writes the current rows, dispatching on extension —
-  `.jsonl` or `.csv` (path resolved relative to the working directory).
-  Missing path prints `:save: missing path`; an unknown extension prints
-  `:save: unknown file type`; success prints a `saved` confirmation.
+- `:save <path>` writes the current rows, dispatching on extension
+  through the format-codec registry (#FormatOut) — `.csv`, `.jsonl`,
+  `.parquet`, or `.arrow` (path resolved relative to the working
+  directory). Missing path prints `:save: missing path`; an unknown
+  extension prints `:save: unknown file type`; success prints a `saved`
+  confirmation.
 - `:save-flow <path>` writes the current spec as a replayable JSON document
   (the source path inside the flow is recorded relative to the flow file's
   own directory). Missing path prints `:save-flow: missing path`; success
@@ -449,9 +451,9 @@ spec; results stream in. The table reprints after any state or viewport
 change.
 
 State / data commands:
-  :load <path>       Load CSV/JSONL as new input. Resets transformations,
-                     viewport, cache.
-  :save <path>       Write current rows to JSONL.
+  :load <path>       Load CSV/JSONL/Parquet/Arrow as new input. Resets
+                     transformations, viewport, cache.
+  :save <path>       Write current rows (CSV/JSONL/Parquet/Arrow by ext).
   :save-flow <path>  Write current spec as a .flow file.
   :save-py <path>    Write current flow as a standalone Python script.
   :reorder <cols>    Reorder columns (comma/space separated); sets the table

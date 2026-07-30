@@ -10,6 +10,10 @@ import { formatForExtension, loadCodec } from '@tamedtable/file-io';
 // `from '@tamedtable/core'` import keeps working unchanged.
 export * from '@tamedtable/table-plan';
 
+// #FormatOut — re-exported so REPL/CLI callers can gate on the codec registry
+// (`:load`/`:save` extension checks) without a direct file-io dependency.
+export { formatForExtension, loadCodec, type FormatId } from '@tamedtable/file-io';
+
 async function readBytes(label: string, path: string): Promise<Uint8Array> {
   try {
     return await readFile(path);
@@ -132,11 +136,16 @@ export async function writeJsonl(path: string, rows: Row[], columnOrder?: string
 /** Dispatch on file extension through the codec registry (.jsonl, .csv,
  *  .parquet, .arrow, …). Any unregistered extension throws an "unknown file
  *  type" error that callers surface inline. */
-export async function writeRows(filePath: string, rows: Row[], columnOrder: string[]): Promise<void> {
+export async function writeRows(
+  filePath: string,
+  rows: Row[],
+  columnOrder: string[],
+  headers?: string[],
+): Promise<void> {
   const id = formatForExtension(filePath);
   if (!id) throw new Error(`unknown file type: ${filePath}`);
   const codec = await loadCodec(id);
-  const body = await codec.serialize(rows, columnOrder);
+  const body = await codec.serialize(rows, columnOrder, headers);
   try {
     await writeFile(filePath, body);
   } catch (e) {

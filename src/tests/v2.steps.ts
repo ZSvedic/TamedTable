@@ -3,7 +3,8 @@ import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { writeFile, readFile, mkdir } from 'node:fs/promises';
+import { writeFile, readFile, mkdir, mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, basename } from 'node:path';
 import type { Row } from '@tamedtable/core';
 import { readJsonl } from '@tamedtable/core';
@@ -43,6 +44,37 @@ Given(/^a row with FirstName "(.+)" and an "(.+)" column equal to the object (\{
     const obj = JSON.parse(objLiteral);
     await loadSyntheticRow(this, { ID: 1, FirstName: fn, [colName]: obj });
   });
+
+// #FormatOut — a spec with a labelled first column, to prove the CSV header
+// row uses `label` when set (behavior.md § CSV output). Rows are keyed by id;
+// the header is the label. Self-contained (its own headless runner + temp file)
+// because the surface-agnostic Runner interface exposes no labelled load.
+const labelledExports = new WeakMap<TamedTableWorld, string>();
+
+Given('a headless session whose first column carries the label {string}',
+  async function (this: TamedTableWorld, label: string) {
+    const { createHeadlessRunner } = await import('@tamedtable/headless');
+    const runner = createHeadlessRunner({ apiKey: 'dummy' });
+    await runner.loadParsed(
+      [{ full_name: 'Ada', age: '36' }],
+      { table: 'people.csv', columns: [{ id: 'full_name', label }, { id: 'age' }], transformations: [] },
+    );
+    (this as { labelledRunner?: unknown }).labelledRunner = runner;
+  });
+
+When('the session exports the table to a temporary CSV file', async function (this: TamedTableWorld) {
+  const runner = (this as { labelledRunner?: { exportAs(p: string): Promise<void> } }).labelledRunner!;
+  const dir = await mkdtemp(join(tmpdir(), 'fio-label-'));
+  const csvPath = join(dir, 'out.csv');
+  await runner.exportAs(csvPath);
+  labelledExports.set(this, csvPath);
+});
+
+Then('the exported CSV header row is {string}', async function (this: TamedTableWorld, expected: string) {
+  const csvPath = labelledExports.get(this)!;
+  const header = (await readFile(csvPath, 'utf8')).split('\n')[0];
+  assert.equal(header, expected, `export must use label for the CSV header; got ${JSON.stringify(header)}`);
+});
 
 // ── group / split / pivot / unpivot scaffolding ────────────────────────────
 

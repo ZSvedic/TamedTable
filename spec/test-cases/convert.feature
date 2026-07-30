@@ -29,15 +29,45 @@ Feature: Tabular format output
       Then REPL exit code is 0
       And "../temp/customers-output.jsonl" exists
 
+    # #FormatOut — :save dispatches through the codec registry, so all four
+    # registered formats work (behavior.md:594-598), not just .csv/.jsonl.
+    @cli @offline
+    Scenario: :save writes Parquet and Arrow through the codec registry
+      When user enters the REPL with "customers-input.csv" and types:
+        """
+        :save ../temp/customers-output.parquet
+        :save ../temp/customers-output.arrow
+        exit
+        """
+      Then REPL exit code is 0
+      And REPL stdout does not contain ":save: unknown file type"
+      And "../temp/customers-output.parquet" exists
+      And "../temp/customers-output.arrow" exists
+
     @cli @offline
     Scenario: :save rejects an unknown output extension
       When user enters the REPL with "customers-input.csv" and types:
         """
-        :save ../temp/customers-output.parquet
+        :save ../temp/customers-output.xml
         exit
         """
       Then REPL exit code is 0
       And REPL stdout contains ":save: unknown file type"
+
+  Rule: :load accepts any registered format
+
+    # #FormatOut — :load dispatches through the same codec registry as :save,
+    # so .csv, .jsonl, .parquet, and .arrow all load (behavior.md:405-407).
+    @cli @offline
+    Scenario: :load accepts a Parquet source
+      When user enters the REPL with "customers-input.csv" and types:
+        """
+        :load customers-input.parquet
+        exit
+        """
+      Then REPL exit code is 0
+      And REPL stdout contains "Loaded customers-input.parquet"
+      And REPL stdout does not contain ":load: unknown file type"
 
   Rule: CSV writer follows RFC 4180
 
@@ -58,6 +88,16 @@ Feature: Tabular format output
       Given a row with FirstName "Ada" and an "Address" column equal to the object {"city":"London","zip":"E1"}
       When export as "../temp/nested.csv"
       Then "../temp/nested.csv" contains the line "1,Ada,\"{\"\"city\"\":\"\"London\"\",\"\"zip\"\":\"\"E1\"\"}\""
+
+  Rule: CSV header uses the column label when set
+
+    # behavior.md § CSV output: the header row is the spec's column order,
+    # using `label` when set, otherwise `id`.
+    @headless
+    Scenario: A column's label becomes its CSV header, id otherwise
+      Given a headless session whose first column carries the label "Full name"
+      When the session exports the table to a temporary CSV file
+      Then the exported CSV header row is "Full name,age"
 
   Rule: Batch execute writes CSV when --output is .csv
 

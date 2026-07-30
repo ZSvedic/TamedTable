@@ -263,7 +263,7 @@ export class FilesManager {
   // dialog awaits its one-click choice.
   private pendingLargeFile: { name: string; rows: Row[]; spec: TablePlan } | null = null;
 
-  private async loadFromPicked(picked: PickedFile): Promise<void> {
+  private async loadFromPicked(picked: PickedFile, format?: FormatId): Promise<void> {
     // Opening a file is one of the two exits from a stayed tour (behavior.md
     // § Staying in the tour): leave replay mode first, so the new table gets
     // a live engine instead of the tour's cassette. Every open path — picker,
@@ -272,8 +272,9 @@ export class FilesManager {
     // tour is active, never while stayed, so this guard cannot fire on them.
     if (this.host.tutorial.isTutorialStayed()) this.host.tutorial.cancelTutorial();
     // Parse the raw bytes through the file-io codec registry and load the rows
-    // directly — no filesystem, no path round-trip.
-    const { rows, spec } = await parseTable(picked.name, picked.bytes);
+    // directly — no filesystem, no path round-trip. `format`, when set, is a
+    // fetch's Content-Type fallback for an extension-less URL.
+    const { rows, spec } = await parseTable(picked.name, picked.bytes, format);
     // #LazyExec — a file bigger than one page raises the large-file dialog:
     // one click on "Load shuffled" (the primary default) or "Load in
     // original order". A one-page file loads exactly as today.
@@ -350,8 +351,8 @@ export class FilesManager {
    *  inline error; success closes the dialog at the caller. `kind` labels
    *  the Recent entry — the sample picker passes 'sample'. */
   async loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> {
-    const { name, bytes } = await fetchTable(url, this.host.opts.fetch);
-    await this.loadFromPicked({ name, bytes });
+    const { name, bytes, format } = await fetchTable(url, this.host.opts.fetch);
+    await this.loadFromPicked({ name, bytes }, format);
     this.recentsStore.record({ kind, label: name, url });
     // The record lands after loadFromPicked fired its last notify, so the menu
     // needs one more render to list it — the sample picker calls this
@@ -497,8 +498,12 @@ export class FilesManager {
           ? base
           : `${base.replace(/\.[^.]*$/, '') || 'data'}${ext}`;
       const rows = this.host.engine.currentRows();
-      const columns = this.host.engine.currentSpec().columns.map((c) => c.id);
-      const content = await codec.serialize(rows, columns);
+      // Rows are keyed by column id; the CSV header uses `label` when set,
+      // otherwise id (spec/behavior.md § CSV output). Other formats keep ids.
+      const specColumns = this.host.engine.currentSpec().columns;
+      const columns = specColumns.map((c) => c.id);
+      const headers = specColumns.map((c) => c.label ?? c.id);
+      const content = await codec.serialize(rows, columns, headers);
       this.reportSave(await this.host.file.pickSave(suggested, [ext], content));
     } catch (e) {
       this.host.pushToast('error', `Could not save data: ${(e as Error).message}`);

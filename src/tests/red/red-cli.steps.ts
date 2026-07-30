@@ -106,19 +106,6 @@ function lastTableReprint(stdout: string): string {
   return lines.slice(start, end).join('\n');
 }
 
-Then('RED-CLI-2: the parquet load and the parquet and arrow saves succeed', function (this: RedCliWorld) {
-  const run = getRun(this);
-  const problems: string[] = [];
-  if (run.stdout.includes(':load: unknown file type') || !run.stdout.includes('Loaded customers-input.parquet')) {
-    problems.push(':load customers-input.parquet was rejected with ":load: unknown file type"');
-  }
-  if (run.stdout.includes(':save: unknown file type')) {
-    problems.push(':save to .parquet/.arrow was rejected with ":save: unknown file type"');
-  }
-  assert.equal(problems.length, 0,
-    `RED-CLI-2 (spec/behavior.md:402-404, :594-598 #FormatOut): :load accepts "any registered format — .csv, .jsonl, .parquet, .arrow" and :save dispatches "through the format-codec registry, so .csv, .jsonl, .parquet, and .arrow all work" — but hardcoded extension gates (session.ts:570-571, :586-587) reject both. ${problems.join('; ')}. NOTE: for :save the spec self-contradicts — the :save bullet (behavior.md:415-418) and :help screen (behavior.md:451) still say .jsonl-or-.csv; this test pins the 4-format #FormatOut claim (unambiguous for :load). Stdout:\n${run.stdout}`);
-});
-
 Then('RED-CLI-3: no model call was attempted for the unknown colon command', function (this: RedCliWorld) {
   const run = getRun(this);
   assert.equal(run.modelCalls, 0,
