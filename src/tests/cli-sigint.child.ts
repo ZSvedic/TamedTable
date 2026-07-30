@@ -1,16 +1,16 @@
-// RED-CLI-1 helper — the REPL child process for the PTY test in
-// cli-sigint.red.test.ts. Runs the real runCli over the committed customers
-// fixture with a cassette-replay fetch delayed 3 s per call, so an NL request
-// stays in flight long enough for a Ctrl-C to land mid-request.
+// Helper — the REPL child process for the PTY test in cli-sigint.test.ts. Runs
+// the real runCli over the committed customers fixture with a cassette-replay
+// fetch delayed 3 s per call, so an NL request stays in flight long enough for
+// a Ctrl-C to land mid-request.
 //
 // Guarded with import.meta.main: cucumber's `tests/**/!(*.test).ts` glob
 // imports this file in every profile, and the import must stay side-effect
 // free. Only the PTY driver actually executes it (`bun <this file>`).
 import { join } from 'node:path';
-import { runCli } from '../../packages/cli/index.ts';
-import { cassetteFetch } from '../cassette.ts';
+import { runCli } from '../packages/cli/index.ts';
+import { cassetteFetch } from './cassette.ts';
 
-const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
+const REPO_ROOT = join(import.meta.dirname, '..', '..');
 
 export async function main(): Promise<void> {
   const inner = cassetteFetch({

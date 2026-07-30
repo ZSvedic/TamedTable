@@ -144,8 +144,10 @@ function writeDebugBlock(info: RequestDebugInfo, stdout: NodeJS.WritableStream):
   const useColor = Boolean((stdout as { isTTY?: boolean }).isTTY);
   const lines = formatDebugBlock(info);
   const MAX = 20;
+  // The cap drops from the middle, never the tail: the last line is the
+  // mandatory model/token/time summary (spec/behavior.md § REPL).
   const out = lines.length > MAX
-    ? [...lines.slice(0, MAX - 1), `… (+${lines.length - MAX + 1} more lines)`]
+    ? [...lines.slice(0, MAX - 2), `… (+${lines.length - MAX + 1} more lines)`, lines[lines.length - 1]!]
     : lines;
   for (const line of out) {
     const text = `    [debug] ${line}`;
@@ -277,6 +279,7 @@ class CliRunnerImpl implements CliRunner {
     // `undefined` means "leave this axis alone"; `null` means "clear the pin (auto)".
     if (rows !== undefined) this.pinRows = rows;
     if (cols !== undefined) this.pinCols = cols;
+    this.highlight = undefined; // a page-size change is a viewport event
     this.clampCursorToPage();
   }
 
@@ -302,7 +305,11 @@ class CliRunnerImpl implements CliRunner {
       this.effectiveCols()
     );
     this.stdout.write(out + '\n');
-    this.highlight = undefined;
+    // The :find highlight is NOT cleared here: it lives until the next
+    // viewport- or state-changing event (spec/behavior.md § REPL, `:find`), so
+    // a bare :show — which is neither — reprints it still highlighted. The
+    // events that do end it clear it themselves (resetViewport, a cursor move,
+    // a page-size change, :reorder).
   }
 
   private resetViewport(): void {
@@ -348,12 +355,27 @@ class CliRunnerImpl implements CliRunner {
   getJournal(): JournalEntry[] { return this.journal; }
   setHighlight(re: RegExp | undefined): void { this.highlight = re; }
 
+  /** `:reorder` is not journaled, so a journal snapshot carries whatever column
+   *  order was current when it was taken. Restoring it wholesale would silently
+   *  revert a `:reorder` the undo message never mentions — so keep the order the
+   *  session is showing now and take only the snapshot's own column set
+   *  (spec/behavior.md § REPL, `:undo`). Columns the snapshot has and the
+   *  current spec doesn't (the turn added them) keep their snapshot order at the
+   *  end. */
+  private keepingColumnOrder(snapshot: TablePlan): TablePlan {
+    const shown = this.headless.currentSpec().columns.map((c) => c.id);
+    const byId = new Map(snapshot.columns.map((c) => [c.id, c]));
+    const inShownOrder = shown.map((id) => byId.get(id)).filter((c): c is TablePlan['columns'][number] => c !== undefined);
+    const rest = snapshot.columns.filter((c) => !shown.includes(c.id));
+    return { ...snapshot, columns: [...inShownOrder, ...rest] };
+  }
+
   async undo(): Promise<{ ok: boolean; message?: string }> {
     // Journal-based undo: revert the last committed user turn.
     const idx = this.findLastCommittedIndex();
     if (idx >= 0) {
       const entry = this.journal[idx]!;
-      await this.headless.setSpec(entry.prevSpec);
+      await this.headless.setSpec(this.keepingColumnOrder(entry.prevSpec));
       entry.status = 'undone';
       this.redoStack.push(entry);
       this.resetViewport();
@@ -371,7 +393,7 @@ class CliRunnerImpl implements CliRunner {
   async redo(): Promise<{ ok: boolean; message?: string }> {
     if (this.redoStack.length === 0) return { ok: false };
     const entry = this.redoStack.pop()!;
-    await this.headless.setSpec(entry.newSpec);
+    await this.headless.setSpec(this.keepingColumnOrder(entry.newSpec));
     entry.status = 'committed';
     this.resetViewport();
     return { ok: true, message: `redid: ${trunc(entry.request, 80)}` };
@@ -386,7 +408,9 @@ class CliRunnerImpl implements CliRunner {
 
   // Viewport navigation. Returns true if the call should reprint.
   showCmd(arg: string): boolean {
-    if (arg === '') { this.highlight = undefined; return true; }
+    // Bare :show changes neither viewport nor state — it reprints exactly what
+    // is on screen, highlight included.
+    if (arg === '') return true;
     const tokens = arg.split(/\s+/);
     if (tokens.length !== 2) {
       this.stdout.write(`:show: bad arguments. Try ":show", ":show rows next", or ":show cols 3".\n`);
@@ -482,7 +506,10 @@ class CliRunnerImpl implements CliRunner {
     const newOrder = [...wanted, ...existing.filter((id) => !named.has(id))];
     const byId = new Map(spec.columns.map((c) => [c.id, c]));
     await this.headless.setSpec({ ...spec, columns: newOrder.map((id) => byId.get(id)!) });
-    this.resetViewport();
+    // The cursor stays where the user left it — :reorder is not one of the four
+    // reset events (spec/behavior.md § REPL viewport). The :find highlight does
+    // end here: reordering columns is a state change.
+    this.highlight = undefined;
     return { ok: true, messages: [`reordered columns: ${newOrder.join(', ')}`] };
   }
 }
@@ -674,6 +701,7 @@ async function resolveLoadPath(p: string): Promise<string | undefined> {
  * Handle REPL colon commands and bare-word aliases. Returns:
  *  - `'exit'` for `exit` / `:exit` (caller should break out of the loop).
  *  - `'handled'` for any recognized command (caller reprints prompt and continues).
+ *  - `'handled'` for a mistyped `:` command too — it reports the typo locally.
  *  - `'unhandled'` for any other input (caller passes it through to the LLM).
  * Exported so tests can drive it directly without standing up the readline loop.
  */
@@ -685,7 +713,16 @@ export async function handleColonCommand(
   if (text === 'exit' || text === ':exit') return 'exit';
   const { cmd, arg } = splitCmd(text);
   const handler = COLON_COMMANDS[cmd];
-  if (!handler) return 'unhandled';
+  if (!handler) {
+    // A `:`-prefixed line is a command, so a typo is a typo — never a natural-
+    // language request. Answering locally costs no model call and no wait
+    // (spec/behavior.md § REPL).
+    if (cmd.startsWith(':')) {
+      stdout.write(`${cmd}: unknown command. Type :help for the command list.\n`);
+      return 'handled';
+    }
+    return 'unhandled';
+  }
   await handler(arg, runner as CliRunnerImpl, stdout);
   return 'handled';
 }

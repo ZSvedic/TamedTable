@@ -313,8 +313,17 @@ parsed once more before the value is left as a plain literal. Anthropic
 prompt caching uses `providerOptions.anthropic.cacheControl =
 { type: 'ephemeral' }` on the system-prompt prefix.
 
+Every abort surfaces as `Runner: cancelled`, whichever await it lands
+in — the patch-turn model call and the `setSpec` replay included. The
+provider SDK's own `AbortError` never escapes the runner: hosts
+string-match the one message (the CLI to print `Cancelled.`, the web to
+keep a cancel out of the bug-report path), so a raw SDK error reaching
+them is a defect.
+
 `onDebug` fires once per `request` — on success and on failure — just
-before the call settles, carrying a `RequestDebugInfo`. The
+before the call settles, carrying a `RequestDebugInfo`. A failure inside
+the model call itself counts: an HTTP error or a reply that never called
+the tool still spent tokens, so it still reports. The
 recovery-budget-exhausted error also carries the same struct on its
 `debug` field. `expressions` is populated on a successful request (one
 entry per appended transformation, `label` naming the field — `pred`,
@@ -342,7 +351,7 @@ Env vars:
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
 | `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
-| `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). |
+| `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). Must be a positive number; `0`, a negative, or unparsable text falls back to the default — a cap the limiter can never satisfy would wedge every request in its wait loop. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
@@ -469,7 +478,11 @@ and replay too. In `replay` mode it sets a placeholder `apiKey` (the
 runner needs a non-empty key to build its provider, and the recorder
 intercepts every call before that key would be used), and `cucumber.js`
 lifts `TAMEDTABLE_RPM` — cassette hits touch no network, so the rate
-limiter would only add idle delay. The recorder is test-only code
+limiter would only add idle delay. `bun test` lifts it the same way,
+from the `[test] preload` script named in `bunfig.toml`: the limiter is
+process-wide and seeded at module load, so leaving it in place lets one
+long unit run stall the next test into its timeout, however offline that
+test is. The recorder is test-only code
 under `src/tests/`; `src/packages/headless` merely forwards
 `opts.fetch`.
 
@@ -491,6 +504,15 @@ hardcoded to `false`; passing an explicit `false` would break
 interactive UX (arrow keys echo as `^[[A`). The CLI does not maintain
 or persist a history file — readline's in-memory history is
 sufficient for a single session.
+
+Ctrl-C is wired **twice**: `rl.on('SIGINT')` and `process.on('SIGINT')`,
+both routed to the same handler (cancel the running request if there is
+one, else close the interface). Neither alone is enough — a terminal-mode
+readline puts stdin in raw mode, so `^C` arrives as a keypress and no
+process signal is ever raised, while a piped run has no readline `SIGINT`
+event and only the process signal fires. Registering the readline
+listener also suppresses readline's default `^C` behavior of closing the
+interface, which would end the input loop and kill the session.
 
 The ASCII renderer is hand-rolled `padEnd` (~30 LOC). Page size
 `(pageRows, pageCols)` is recomputed at startup, on every `SIGWINCH`,
@@ -520,7 +542,8 @@ as `(pinRows, pinCols)`. A pinned axis ignores `SIGWINCH` until cleared
 with `auto`. Effective per-axis size is `pin ?? auto ?? fallback`. When
 rows or columns fall outside the current viewport, the truncated edge
 renders `...{N} more rows.` or `...{N} more cols.` markers in place of
-cells.
+cells — so a marker's text is part of its column's width, and every
+` | ` separator on a marker line sits under the header's.
 
 The CLI runner holds the viewport cursor `(rowOffset, colOffset)`, the
 viewport pins `(pinRows, pinCols)`, and the undo/redo journal — none

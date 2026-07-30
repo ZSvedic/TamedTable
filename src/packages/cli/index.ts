@@ -201,6 +201,13 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
     else stdout.write('> ');
   };
   const onSigint = () => { activeRequest ? activeRequest.abort() : rl.close(); };
+  // Wired twice on purpose. A terminal-mode readline holds stdin in raw mode,
+  // so ^C never becomes a process SIGINT — readline sees the keypress and, with
+  // no 'SIGINT' listener of ours, closes the interface, which ends the `for
+  // await` loop and takes the whole session down. A piped run is the mirror
+  // image: no readline SIGINT event, only the process signal. Both paths reach
+  // the same handler (see spec/code-contract.md § CLI).
+  rl.on('SIGINT', onSigint);
   process.on('SIGINT', onSigint);
   stdout.write('Type :help for commands. Ctrl-C cancels a running request (or exits when idle).\n');
   try {

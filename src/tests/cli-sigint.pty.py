@@ -1,8 +1,8 @@
-# RED-CLI-1 helper — forks the REPL child (cli-sigint.child.ts) inside a real
+# Helper for cli-sigint.test.ts — forks the REPL child (cli-sigint.child.ts) in a real
 # PTY, types an NL request, sends Ctrl-C (0x03) while the request is in
 # flight, then queues ":history" + "exit" to see whether the session is still
 # alive. Prints the raw transcript followed by one machine-readable JSON line
-# prefixed RED-CLI-1-RESULT: that the bun test parses.
+# prefixed PTY-RESULT: that the bun test parses.
 #
 # Usage: python3 cli-sigint.pty.py <child.ts path> <src dir (cwd for bun)>
 import json
@@ -77,4 +77,4 @@ result = {
     "runcliReturned": "RUNCLI-RETURNED" in text,
     "startupSeen": "Type :help for commands" in text,
 }
-print("RED-CLI-1-RESULT:" + json.dumps(result))
+print("PTY-RESULT:" + json.dumps(result))

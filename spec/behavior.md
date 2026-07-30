@@ -171,6 +171,10 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
   order. If the reply isn't a JSON array of the expected length, the
   dispatcher falls back to per-row calls for that batch.
 - Runs several batches concurrently (default 5 in flight).
+- Uses that same packing and concurrency at **every** place an `{llm}`
+  expression produces one value per row or per group — a `mutate` value, a
+  `sort` key, a `group` aggregate. A table larger than one batch is never
+  sent as a single request, whichever slot the expression sits in.
 - Caches results keyed by `(model, rendered prompt)` so duplicate inputs
   cost nothing after the first.
 - Trims each cell reply; an empty reply or the literal lowercased word
@@ -261,7 +265,10 @@ error and does not reprint the table.
 
 After every natural-language request the REPL prints a compact debug
 block, on by default and disableable. It is indented, dimmed, every
-line prefixed `[debug]`, and capped at twenty lines. On a successful
+line prefixed `[debug]`, and capped at twenty lines. A block that
+overruns the cap loses lines from the *middle* — an `… (+N more lines)`
+marker stands in for them and the summary line below keeps its place as
+the block's last line. On a successful
 request it prints just before the reprinted table; on a failed request
 just after the error line. `:` commands and `tamedtable execute` make
 no model call and print no debug block.
@@ -363,10 +370,13 @@ They are handled locally without any LLM round-trip:
 - `:undo` pops the last applied patch — reversing every transformation
   and column change the most recent user turn introduced, as a single
   unit — and pushes it onto the redo stack. On an empty history, prints
-  `nothing to undo.`
+  `nothing to undo.` It reverses that turn and nothing else: a
+  `:reorder` issued afterwards is not part of the journal, so the column
+  order on screen survives the undo untouched.
 - `:redo` replays the last patch popped by `:undo` and removes it from
   the redo stack. On an empty redo stack, prints `nothing to redo.` Any
-  new NL request clears the redo stack.
+  new NL request clears the redo stack. Like `:undo`, it leaves the
+  current column order alone.
 - `:history` prints the patch journal one line per user turn, oldest
   first: `<index>. <user request>  [committed|undone]`. Does not change
   state and does not reprint the table.
@@ -400,7 +410,9 @@ They are handled locally without any LLM round-trip:
   containing the first match (and the column containing it if it's
   outside the current column page), and the reprint wraps each matched
   substring in that view with asterisks (`*USA*`). The highlight clears
-  on the next viewport- or state-changing event. No match prints
+  on the next viewport- or state-changing event — it lives until then,
+  not for one reprint, so a bare `:show` (which changes neither) reprints
+  it still highlighted. No match prints
   `no match` and does not reprint. Missing pattern prints
   `:find: missing pattern`. Not recorded in the undo journal.
 - `:load <path>` reads a table file as the new input source (file
@@ -441,8 +453,13 @@ They are handled locally without any LLM round-trip:
   of a saved CSV or JSONL file, so column order needs no spec field. A
   missing list prints `:reorder: missing column list`; an unknown column
   prints `:reorder: unknown column "<name>"`; success reprints the
-  table. Not recorded in the undo journal.
+  table where the viewport cursor already sits — `:reorder` is not one of
+  the cursor-reset events listed above. Not recorded in the undo journal.
 - `:exit` and bare `exit` both close the REPL with exit code 0.
+- Any other `:`-prefixed word is a typo, not a request: it prints
+  `<command>: unknown command. Type :help for the command list.` and
+  makes no model call. Only a line that does *not* start with `:` is sent
+  to the spec editor.
 
 The `:help` usage screen, verbatim:
 
@@ -489,7 +506,11 @@ OPENROUTER_API_KEY in env.
 ```
 
 Ctrl-C while a request runs cancels it and rolls back the half-applied
-transformation. Ctrl-C while idle closes the REPL.
+transformation: the REPL prints `error: Cancelled.` and comes back to a
+live prompt ready for the next line — the session survives the cancel.
+Ctrl-C while idle closes the REPL. This holds in a real terminal, where
+the keypress never reaches the process as a signal, exactly as it does
+for a piped run.
 
 ### Batch (`execute`) (#BatchExec)
 

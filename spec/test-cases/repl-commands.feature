@@ -38,6 +38,19 @@ Feature: REPL commands
       | exit  |
       | :exit |
 
+  # A ":"-prefixed typo is a mistyped command, never a natural-language
+  # request: it is answered locally, with no model round-trip and no wait.
+  @cli @offline
+  Scenario: a mistyped colon command fails locally with no model call
+    When user enters the REPL with "customers-input.csv" and types:
+      """
+      :frobnicate
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains ":frobnicate: unknown command. Type :help for the command list."
+    And the REPL made no model call
+
   @cli @offline
   Scenario: :undo on a freshly loaded CSV says nothing to undo
     When user enters the REPL with "dedupe-input.csv" and types:
@@ -82,6 +95,23 @@ Feature: REPL commands
       """
     Then REPL exit code is 0
     And REPL stdout contains "nothing to redo."
+
+  # :undo reverses the named turn and nothing else. :reorder is not journaled,
+  # so the column order on screen must survive an undo that never mentions it.
+  @cli
+  Scenario: :undo of an NL turn keeps a later :reorder's column order
+    When user enters the REPL with "customers-input.csv" and types:
+      """
+      Normalize country names
+      :reorder Phone
+      :undo
+      :schema
+      exit
+      """
+    Then REPL exit code is 0
+    And REPL stdout contains "reordered columns: Phone"
+    And REPL stdout contains "undid: Normalize country names"
+    And the schema printed after the undo lists "Phone" before "ID"
 
   @cli
   Scenario: :history lists turns with their commit status
@@ -194,6 +224,33 @@ Feature: REPL commands
     And REPL stdout contains "*+44*"
     And REPL stdout contains "no match"
     And REPL stdout contains ":find: missing pattern"
+
+  # The highlight lives until the next viewport- or state-changing event, not
+  # for one reprint — and a bare :show is neither kind of event.
+  @cli @offline
+  Scenario: the :find highlight survives a bare :show reprint
+    When user enters the REPL with "customers-input.csv" and types:
+      """
+      :find USA
+      :show
+      exit
+      """
+    Then REPL exit code is 0
+    And the last REPL table reprint contains "*USA*"
+
+  # The cursor resets after :load, a successful NL request, :undo, or :redo —
+  # an exhaustive list that does not include :reorder.
+  @cli @offline
+  Scenario: :reorder reprints at the current viewport cursor
+    When user enters the REPL with "customers-input.csv" and types:
+      """
+      :show rows next
+      :reorder Country
+      exit
+      """
+    Then REPL exit code is 0
+    And the last REPL table reprint contains "I011"
+    And the last REPL table reprint does not contain "I001"
 
   @cli
   Scenario: viewport resets to (0,0) after a committed NL request

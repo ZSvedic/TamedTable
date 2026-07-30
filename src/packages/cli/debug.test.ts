@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach } from 'bun:test';
+import { Writable } from 'node:stream';
 import { debugEnabled, renderModelName, formatDebugBlock } from './index.ts';
+import { renderError } from './session.ts';
 import type { RequestDebugInfo } from '@tamedtable/headless';
 
 const origDebug = process.env.TAMEDTABLE_DEBUG;
@@ -104,5 +106,40 @@ describe('formatDebugBlock', () => {
       '  → sent back: bad patch',
       'Sonnet 4.6 ×3 · 120 tokens (100 in / 20 out) · 0.5s',
     ]);
+  });
+});
+
+// spec/behavior.md § REPL: the block is "capped at twenty lines" AND "the
+// block's last line summarises the request" — both unconditional, so the cap
+// has to drop from the middle. Truncating the tail (the RED-CLI-8 bug
+// inventory, now fixed) deleted exactly the line the spec pins as always-last.
+describe('the 20-line cap keeps the summary last', () => {
+  const wide: RequestDebugInfo = {
+    userRequest: 'wide fan-out',
+    turns: [{ ops: [], outcome: 'committed' }],
+    expressions: Array.from({ length: 25 }, (_, i) => ({ label: `expr${i + 1}`, body: `row.C${i + 1} + 1` })),
+    steps: [],
+    cellSamples: [],
+    modelCalls: [{ model: 'gemini-3.6-flash', calls: 1 }],
+    inputTokens: 1000,
+    outputTokens: 50,
+    elapsedMs: 1234,
+  };
+
+  it('prints at most 20 lines, ending with the model/token/time summary', () => {
+    setDebug(undefined); // the block is on by default
+    const full = formatDebugBlock(wide);
+    const summary = full[full.length - 1]!;
+    expect(summary).toContain('tokens (');
+
+    let out = '';
+    const stdout = new Writable({ write(chunk, _enc, cb) { out += String(chunk); cb(); } });
+    renderError(Object.assign(new Error('boom'), { debug: wide }), stdout as unknown as NodeJS.WritableStream);
+
+    const printed = out.split('\n').filter((l) => l.includes('[debug]'));
+    expect(printed.length).toBeLessThanOrEqual(20);
+    expect(printed[printed.length - 1]).toContain(summary);
+    // The dropped lines are announced in the middle, not silently lost.
+    expect(out).toContain(`… (+${full.length - 20 + 1} more lines)`);
   });
 });
