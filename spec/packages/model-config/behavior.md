@@ -14,7 +14,7 @@ point (the CLI uses no storage).
 The web controller boots with:
 
 ```
-resolveConfig(readConfigFromEnv(), { ...opts.config, ...readStoredConfig() })
+resolveConfig(readConfigFromEnv(), { ...readStoredConfig(), ...opts.config })
 ```
 
 When the user has `ANTHROPIC_API_KEY=sk-ant-…` in their environment and no
@@ -37,7 +37,7 @@ When the user switches to Gemini in the settings panel:
 ```
 {
   provider: "gemini",
-  anthropicKey: null,
+  anthropicKey: "sk-ant-…",
   geminiKey: "AIza…",
   openaiKey: null,
   openrouterKey: null,
