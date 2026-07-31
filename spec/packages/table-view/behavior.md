@@ -70,6 +70,11 @@ A row-number column, sticky headers, and the visible rows. Gestures:
   (chat progress, toasts).
 - A 0-row table states "This table has 0 rows."; the range readout shows
   `<first>–<last> of <total> rows`.
+- The grid owns its vertical scroll: a page taller than the host's box
+  scrolls inside the component — under the sticky header, above the
+  pagination bar — never by growing the page. The root can shrink below its
+  content (`min-height: 0`), so a column-flex host cannot be stretched past
+  its bounds and the pagination bar always stays on screen.
 
 Grid upgrades for lazy AI execution
 ([behavior.md § Lazy AI execution](../../behavior.md#lazy-ai-execution-lazyexec));

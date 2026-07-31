@@ -483,14 +483,35 @@ export class WebController implements ControllerHost {
    *  "Sort evaluated rows" choice (missing values sink to the end);
    *  declining leaves the view unchanged. */
   async setViewSort(column: string, dir: 'asc' | 'desc' | null): Promise<void> {
-    if (dir !== null && (await this.lazy.gateViewApply(column, 'sort')) === 'skip') return;
+    let evaluate = true;
+    if (dir !== null) {
+      const gate = await this.lazy.gateViewApply(column, 'sort');
+      if (gate === 'skip') return;
+      // The evaluated-only choice explicitly declined the spend.
+      evaluate = gate !== 'partial';
+    }
     this.view.setSort(column, dir);
+    // The new order brings different rows into the current page — evaluate
+    // their lagging cells exactly like a page open (#LazyExec).
+    if (evaluate) {
+      this.lazy.scheduleVisible();
+      await this.lazy.settle();
+    }
   }
   /** Filter from the column menu — same gate as sort ("Filter evaluated
    *  rows" hides unevaluated rows from the narrowed view). */
   async setViewFilter(column: string, text: string): Promise<void> {
-    if (text.trim() !== '' && (await this.lazy.gateViewApply(column, 'filter')) === 'skip') return;
+    let evaluate = true;
+    if (text.trim() !== '') {
+      const gate = await this.lazy.gateViewApply(column, 'filter');
+      if (gate === 'skip') return;
+      evaluate = gate !== 'partial';
+    }
     this.view.setFilter(column, text);
+    if (evaluate) {
+      this.lazy.scheduleVisible();
+      await this.lazy.settle();
+    }
   }
   /** Delete a column — a spec step, exactly what the chat patch would do. */
   deleteColumn(column: string): Promise<void> { return this.patch.deleteColumn(column); }

@@ -1,11 +1,12 @@
 Feature: Lazy AI execution regressions (RED-LAZY)
 
-  Regressions from the 2026-07-29 hunt-audit (red inventory, group 5/5),
-  covering the web shell's lazy AI execution (#LazyExec). Self-contained
-  step defs in src/tests/lazy-regressions.steps.ts: each scenario builds its
-  own WebController with a fake FilePort and a scripted offline Gemini
-  fetch. The RED-LAZY ids are the findings in spec/test-cases/red/README.md;
-  the estimate-arithmetic findings (RED-LAZY-3, -4, -8) live in
+  Regressions covering the web shell's lazy AI execution (#LazyExec) —
+  the 2026-07-29 hunt-audit findings (red inventory, group 5/5) plus later
+  field reports. Self-contained step defs in
+  src/tests/lazy-regressions.steps.ts: each scenario builds its own
+  WebController with a fake FilePort and a scripted offline Gemini fetch.
+  The RED-LAZY ids are the findings in spec/test-cases/red/README.md; the
+  estimate-arithmetic findings (RED-LAZY-3, -4, -8) live in
   src/tests/lazy-estimates.test.ts.
 
   @web @regression
@@ -37,3 +38,19 @@ Feature: Lazy AI execution regressions (RED-LAZY)
     Given a regression lazy session with an AI column previewed and two rows rigged to fail
     When the user saves and confirms the estimate dialog
     Then the Save click ends with a save-ready confirmation or a visible message
+
+  # Field report 2026-07-31: sorting a plain column from the column menu
+  # reordered the view but left the AI column's newly visible rows pending —
+  # only paging away and back forced their evaluation
+  # (behavior.md § Grid upgrades: a view change evaluates like a page open).
+  @web @regression
+  Scenario: A column-menu sort on a plain column evaluates the rows it brings into view
+    Given a regression lazy session with an AI column previewed on page 1
+    When the user sorts a plain column descending from the column menu
+    Then the sorted first page is fully evaluated without paging away
+
+  @web @regression
+  Scenario: A column-menu filter on a plain column evaluates the rows it brings into view
+    Given a regression lazy session with an AI column previewed on page 1
+    When the user filters a plain column from the column menu
+    Then the narrowed first page is fully evaluated without paging away
