@@ -515,8 +515,9 @@ for a piped run.
 ### Batch (`execute`) (#BatchExec)
 
 `tamedtable execute <flow>` replays a saved flow against a CSV. `--input`
-overrides the source path recorded in the flow; `--output` is required and
-must be `.jsonl`. No LLM call happens on this path.
+overrides the source path recorded in the flow; `--output` is required, and
+its extension picks the output format the way `:save` does. No LLM call
+happens on this path.
 
 ### Discovery (#CliFlags)
 
@@ -548,13 +549,15 @@ tamedtable — work tables in your terminal with natural-language requests.
 
 Usage:
   tamedtable <input>                 Open <input> in the interactive REPL.
-                                     <input> is a .csv or .jsonl file.
+                                     <input> is a table file: .csv, .jsonl,
+                                     .parquet, or .arrow.
                                      Once inside, type :help for commands.
   tamedtable execute <flow>          Replay a saved .flow against an input.
                                      No LLM call; no API key needed.
-    --input  <file>                  Source .csv or .jsonl. Overrides the
+    --input  <file>                  Source table file. Overrides the
                                      source path recorded in <flow>.
-    --output <file>                  Destination .jsonl. Required.
+    --output <file>                  Destination file; the extension picks
+                                     the format. Required.
   tamedtable --help, -h, help        Show this usage screen.
   tamedtable --version, -v           Print the version and exit.
 

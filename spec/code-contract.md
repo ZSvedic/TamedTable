@@ -1308,6 +1308,7 @@ interface ResolvedConfig {
   openrouterKey: string | null;
   model: string;      // primary — writes the spec patch (and carries voice)
   cellModel: string;  // secondary — fills per-row cells; always same-provider as model
+  alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
 }
 
 interface StoragePort {
@@ -1329,18 +1330,20 @@ function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun o
 
 ```ts
 // ModelChooser.tsx entry point — react is a peer dependency
-type ModelRole = "primary" | "secondary";
-
 interface ModelChooserProps {
   models: readonly ModelDef[];
   provider: Provider;
-  primaryModel: string;
-  secondaryModel: string;
+  primaryModel: string;           // provider default, shown read-only
+  secondaryModel: string;         // provider default, shown read-only
   keys: Record<Provider, string>;
   expandedProvider: Provider | null;
+  savedProvider?: Provider | null; // card showing the "✓ Saved" badge
+  savedSeq?: number;               // bumped per save — restarts the badge's green phase
+  savedFadeMs?: number;            // badge green-to-grey time; defaults to 3000 ms
+  byokHelpUrl?: string;            // "how to get an API key" link target
+  changeModelsHelpUrl?: string;    // "how to change the default models" link target
   onProviderClick(p: Provider): void;
   onKeyChange(p: Provider, value: string): void;
-  onSelectModel(role: ModelRole, modelId: string): void;
 }
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
@@ -1632,8 +1635,7 @@ voice turn and replays key-free.
 | `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup — the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
 | `async playTutorial(): Promise<boolean>` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). Resolves `true` when the tour armed; `false` when there was nothing to play — no selection, no sources, or an entry whose steps all classify as display and drop. |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
-| `async nextStep()` | Executes the **current** step (only if it hasn't run before — see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`lastStepDescription`), so in the UI Next is disabled there and the done state is not reached; `nextStep` still supports it for the step-def loop. |
-| `prevStep()` | Decrements step index; re-highlights the step but executes nothing. A subsequent `nextStep` over an already-run step skips its side effect. |
+| `async nextStep()` | Executes the **current** step (only if it hasn't run before — see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`doneDescription`), so the UI never reaches the done state; `nextStep` still supports it for the step-def loop. |
 | `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. A step still executing when the cancel lands stops at its next await — it never loads the tour's sample onto the fresh engine — and the tour's staged lookup tables are dropped, so the user's own join naming the same file asks for their file (#LookupJoin). |
 | `finishTutorial()` | Cancels the active tour and opens the Tutorial panel chooser, regardless of how the tour was launched, so the user can pick another tutorial. Deep-link visitors arrive in a new tab (the homepage opens "Show me →" in a new tab) and close it to return to the homepage; the app does not navigate for them. |
 | `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` return silently while stayed (the UI disables the chat input and mic — see behavior.md § Staying in the tour). |
@@ -1652,10 +1654,10 @@ voice turn and replays key-free.
 (each `string | null`). The URL is read in `main.tsx`, not the controller.
 
 **Prefill on highlight.** When a `prefill-chat` step becomes the current step
-(on play and on every `nextStep`/`prevStep`), the controller sets
+(on play and on every `nextStep`), the controller sets
 `tutorialPrefill` to the step's query text so the chat input shows it; any other
 current step clears it (`''`). The `TutorialPanel` passes the tour name to
-`TourUi` as `lastStepDescription: Voilà, "<name>" is done.`, making the final
+`TourUi` as `doneDescription: Voilà, "<name>" is done.`, making the final
 step a terminal celebration (see
 [gherkin-tour behavior — TourDriver / TourCursor](packages/gherkin-tour/behavior.md#tourdriver--tourcursor)).
 

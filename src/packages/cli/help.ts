@@ -5,13 +5,15 @@ export const CLI_USAGE_TEXT = `tamedtable — work tables in your terminal with 
 
 Usage:
   tamedtable <input>                 Open <input> in the interactive REPL.
-                                     <input> is a .csv or .jsonl file.
+                                     <input> is a table file: .csv, .jsonl,
+                                     .parquet, or .arrow.
                                      Once inside, type :help for commands.
   tamedtable execute <flow>          Replay a saved .flow against an input.
                                      No LLM call; no API key needed.
-    --input  <file>                  Source .csv or .jsonl. Overrides the
+    --input  <file>                  Source table file. Overrides the
                                      source path recorded in <flow>.
-    --output <file>                  Destination .jsonl. Required.
+    --output <file>                  Destination file; the extension picks
+                                     the format. Required.
   tamedtable --help, -h, help        Show this usage screen.
   tamedtable --version, -v           Print the version and exit.
 
