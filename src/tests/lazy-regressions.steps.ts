@@ -98,6 +98,37 @@ Then('page 2 is evaluated and no off-page rows were billed', function () {
   );
 });
 
+// ── Field report 2026-07-31: a view sort/filter leaves its page unevaluated ─
+
+When('the user sorts a plain column descending from the column menu', async function () {
+  const s = state(this);
+  await s.app.setViewSort('Name', 'desc');
+  await s.app.lazySettle();
+});
+
+When('the user filters a plain column from the column menu', async function () {
+  const s = state(this);
+  await s.app.setViewFilter('Name', 'User-2');
+  await s.app.lazySettle();
+});
+
+function assertPageEvaluated(s: RedLazyState, view: string): void {
+  const pending = s.app.pageRowStatus().filter((st) => st === 'pending').length;
+  const missing = s.app.pageRows().filter((r) => !r.Segment).length;
+  assert.ok(
+    pending === 0 && missing === 0,
+    `behavior.md § Grid upgrades: a view change evaluates the rows it brings into view like a page open — but after the ${view} the current page still shows ${pending} pending rows and ${missing} empty Segment cells; setViewSort/setViewFilter never schedule the visible page's evaluation (controller.ts) while goToPage does`,
+  );
+}
+
+Then('the sorted first page is fully evaluated without paging away', function () {
+  assertPageEvaluated(state(this), 'column-menu sort');
+});
+
+Then('the narrowed first page is fully evaluated without paging away', function () {
+  assertPageEvaluated(state(this), 'column-menu filter');
+});
+
 // ── RED-LAZY-2: {llm} split sits outside all lazy machinery ─────────────────
 
 Given('a regression lazy session with an AI split previewed on page 1', async function () {

@@ -313,6 +313,10 @@ export function TableView({
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
+        // A column-flex host must be able to shrink the grid to its box —
+        // without this a full page of rows grows the page and pushes the
+        // pagination bar off screen (spec/packages/table-view/behavior.md).
+        minHeight: 0,
         background: t.surface,
       }}
     >

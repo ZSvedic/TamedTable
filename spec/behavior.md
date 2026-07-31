@@ -1665,6 +1665,14 @@ cursor and double-clicking it (or the menu's Autofit width) fits the column
 to its content on the current page. A chat request ("sort by revenue")
 stays a spec step, exactly as today.
 
+Applying a view sort or filter — or clearing one — changes which rows the
+current page shows, and the rows it brings into view evaluate exactly as if
+the reader had opened the page: sorting a plain column while an AI column is
+still pending fills the sorted page's lagging cells without paging away and
+back. The one exception is the gates' evaluated-rows choice above — that
+click explicitly declined the spend, so the view applies over what is
+computed and nothing evaluates.
+
 The view sort **holds a page still while its rows stream in** — they fill in
 place, not re-sort out from under the reader — and then **folds them into the
 order once the page settles**, so every page opened is sorted as far as it is

@@ -190,6 +190,28 @@ test.describe('Grid', () => {
     await expect(cell).toHaveAttribute('title', /was: USA/);
   });
 
+  // Regression 2026-07-31: the drop-target wrapper made the grid a
+  // column-flex item, and without min-height: 0 a full page of rows grew the
+  // document instead of scrolling inside the grid — the pagination bar sat
+  // below the table, off screen (spec/packages/table-view/behavior.md).
+  test('a full page of rows scrolls inside the grid — the pagination bar stays on screen', async ({ page }) => {
+    await boot(page);
+    await page.locator('[data-uk-menubtn]').first().click();
+    await page.locator('[data-uk-menu-item="Open sample…"]').click();
+    await page.locator('[data-tb-sample-dialog]').waitFor();
+    await page.locator('[data-tb-sample]', { hasText: 'performance-liked-videos.csv' }).first().click();
+    const lf = page.locator('[data-tt-largefile-dialog]');
+    await lf.waitFor();
+    await lf.getByRole('button', { name: /original order/i }).click();
+    await page.locator('[data-tv-cell]').first().waitFor({ timeout: 30_000 });
+    await expect(page.locator('[data-tv-range]')).toBeInViewport();
+    const doc = await page.evaluate(() => ({
+      scrollHeight: document.scrollingElement!.scrollHeight,
+      clientHeight: document.scrollingElement!.clientHeight,
+    }));
+    expect(doc.scrollHeight).toBe(doc.clientHeight);
+  });
+
   test('column drag-reorder is undoable', async ({ page }) => {
     await boot(page);
     await loadSample(page, 'customers-input.csv');
