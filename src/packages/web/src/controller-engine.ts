@@ -277,6 +277,7 @@ export class EngineManager {
       this.recordFilled(beforeRows, true,
         newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
       this.refreshReveal();
+      this.pruneViewToSpec();
     } finally {
       this.activeAbort = null;
       this.host.streaming = false;
@@ -322,6 +323,16 @@ export class EngineManager {
     this.changedCells.clear();
     this.host.setReveal(null);
     this.displayCache = null;
+    this.pruneViewToSpec();
+  }
+
+  /** Drop view sort/filters on columns the spec no longer has — called after
+   *  every spec change (undo/redo/jump/gesture patches ride applySpecCached;
+   *  chat requests and flow replays call it on commit). */
+  private pruneViewToSpec(): void {
+    this.host.view.pruneToColumns(
+      new Set(this.ensureHeadless().currentSpec().columns.map((c) => c.id)),
+    );
   }
 
   /** Note a single-cell change (the inline-edit gesture) for the tint. */
@@ -488,6 +499,7 @@ export class EngineManager {
       this.recordFilled(beforeRows, true,
         newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
       this.refreshReveal();
+      this.pruneViewToSpec();
       this.lastCommitId = this.host.patch.record({
         label: opts?.label ?? text,
         prevSpec,

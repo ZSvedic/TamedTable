@@ -66,10 +66,20 @@ function OptionRow({
   );
 }
 
-function EmptyState({ controller, t }: { controller: WebController; t: Theme }): ReactNode {
-  // Drop target: dragging a file over the empty page tints it; dropping loads
-  // the file like Open local…. dragenter/leave fire on children too, so a
-  // depth counter keeps the tint from flickering while the drag crosses them.
+// Drop-target plumbing shared by the empty page and the loaded table:
+// dragging a file over tints the area; dropping hands the bytes to
+// controller.openDropped (which asks before replacing a loaded table).
+// dragenter/leave fire on children too, so a depth counter keeps the tint
+// from flickering while the drag crosses them.
+function useFileDrop(controller: WebController): {
+  dragging: boolean;
+  dropProps: {
+    onDragEnter: (e: DragEvent) => void;
+    onDragLeave: () => void;
+    onDragOver: (e: DragEvent) => void;
+    onDrop: (e: DragEvent) => void;
+  };
+} {
   const [dragDepth, setDragDepth] = useState(0);
   const dropFile = async (e: DragEvent): Promise<void> => {
     e.preventDefault();
@@ -78,14 +88,23 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
     if (!file) return;
     await controller.openDropped(file.name, new Uint8Array(await file.arrayBuffer()));
   };
-  const dragging = dragDepth > 0;
+  return {
+    dragging: dragDepth > 0,
+    dropProps: {
+      onDragEnter: (e) => { e.preventDefault(); setDragDepth((d) => d + 1); },
+      onDragLeave: () => setDragDepth((d) => Math.max(0, d - 1)),
+      onDragOver: (e) => e.preventDefault(),
+      onDrop: (e) => void dropFile(e),
+    },
+  };
+}
+
+function EmptyState({ controller, t }: { controller: WebController; t: Theme }): ReactNode {
+  const { dragging, dropProps } = useFileDrop(controller);
   return (
     <div
       data-tv-empty=""
-      onDragEnter={(e) => { e.preventDefault(); setDragDepth((d) => d + 1); }}
-      onDragLeave={() => setDragDepth((d) => Math.max(0, d - 1))}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => void dropFile(e)}
+      {...dropProps}
       style={{
         flex: 1,
         display: 'flex',
@@ -187,6 +206,9 @@ export function EvaluatedReadout({ controller, t }: { controller: WebController;
 export function TableView({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
+  // The loaded table stays a drop target (spec/behavior.md § Web UI) — the
+  // drop raises the replace-table confirmation instead of loading directly.
+  const { dragging, dropProps } = useFileDrop(controller);
 
   if (!controller.isLoaded()) {
     return <EmptyState controller={controller} t={t} />;
@@ -194,48 +216,66 @@ export function TableView({ controller }: { controller: WebController }): ReactN
 
   const readout = controller.evaluatedReadout();
   return (
-    <TableGrid
-      id="tutorial-table-view"
-      columns={controller.displaySpec().columns.map((c) => c.id)}
-      rows={controller.pageRows()}
-      pageStart={(controller.currentPage() - 1) * controller.pageSize}
-      totalRows={controller.totalRows()}
-      page={controller.currentPage()}
-      pageCount={controller.pageCount()}
-      onPageChange={(p) => void controller.goToPage(p)}
-      selection={controller.selection}
-      onSelectCell={(row, column) => controller.selectCell(row, column)}
-      onEditCell={(row, column, value) => void controller.editCell(row, column, value)}
-      onReorderColumns={(order) => void controller.reorderColumns(order)}
-      streaming={controller.streaming}
-      // #LazyExec — row state, view state, and the grid upgrades.
-      rowNumbers={controller.pageRowNumbers()}
-      rowNumberHint={
-        controller.view.shuffleSeed !== null
-          ? 'Original row numbers — the view is shuffled; saving keeps this order.'
-          : undefined
-      }
-      rowStatus={controller.pageRowStatus()}
-      changedCells={controller.pageChangedCells()}
-      reveal={controller.revealTarget()}
-      sort={controller.viewSort()}
-      filters={controller.viewFilters()}
-      onSortChange={(column, dir) => void controller.setViewSort(column, dir)}
-      onFilterChange={(column, text) => void controller.setViewFilter(column, text)}
-      onDeleteColumn={(column) => void controller.deleteColumn(column)}
-      markedPages={controller.pendingPages()}
-      onCopyCell={() => controller.pushToast('info', 'Cell copied.')}
-      barLeft={<EvaluatedReadout controller={controller} t={t} />}
-      barRight={
-        readout && readout.done + readout.failed < readout.total ? (
-          // The id is the lazy tour's spotlight target for its estimate step.
-          <span id="tutorial-runall-btn" data-tt-runall="" style={{ display: 'inline-flex' }}>
-            <Button variant="primary" onClick={() => void controller.runOnAllRows()}>
-              Run on all rows
-            </Button>
-          </span>
-        ) : undefined
-      }
-    />
+    <div
+      data-tv-drop-target=""
+      {...dropProps}
+      style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}
+    >
+      <TableGrid
+        id="tutorial-table-view"
+        columns={controller.displaySpec().columns.map((c) => c.id)}
+        rows={controller.pageRows()}
+        pageStart={(controller.currentPage() - 1) * controller.pageSize}
+        totalRows={controller.totalRows()}
+        page={controller.currentPage()}
+        pageCount={controller.pageCount()}
+        onPageChange={(p) => void controller.goToPage(p)}
+        selection={controller.selection}
+        onSelectCell={(row, column) => controller.selectCell(row, column)}
+        onEditCell={(row, column, value) => void controller.editCell(row, column, value)}
+        onReorderColumns={(order) => void controller.reorderColumns(order)}
+        streaming={controller.streaming}
+        // #LazyExec — row state, view state, and the grid upgrades.
+        rowNumbers={controller.pageRowNumbers()}
+        rowNumberHint={
+          controller.view.shuffleSeed !== null
+            ? 'Original row numbers — the view is shuffled; saving keeps this order.'
+            : undefined
+        }
+        rowStatus={controller.pageRowStatus()}
+        changedCells={controller.pageChangedCells()}
+        reveal={controller.revealTarget()}
+        sort={controller.viewSort()}
+        filters={controller.viewFilters()}
+        onSortChange={(column, dir) => void controller.setViewSort(column, dir)}
+        onFilterChange={(column, text) => void controller.setViewFilter(column, text)}
+        onDeleteColumn={(column) => void controller.deleteColumn(column)}
+        markedPages={controller.pendingPages()}
+        onCopyCell={() => controller.pushToast('info', 'Cell copied.')}
+        barLeft={<EvaluatedReadout controller={controller} t={t} />}
+        barRight={
+          readout && readout.done + readout.failed < readout.total ? (
+            // The id is the lazy tour's spotlight target for its estimate step.
+            <span id="tutorial-runall-btn" data-tt-runall="" style={{ display: 'inline-flex' }}>
+              <Button variant="primary" onClick={() => void controller.runOnAllRows()}>
+                Run on all rows
+              </Button>
+            </span>
+          ) : undefined
+        }
+      />
+      {dragging && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: t.accentSoft,
+            outline: `2px dashed ${t.ink3}`,
+            outlineOffset: -8,
+          }}
+        />
+      )}
+    </div>
   );
 }

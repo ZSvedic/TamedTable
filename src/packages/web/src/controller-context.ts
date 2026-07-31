@@ -68,6 +68,10 @@ export interface ControllerHost {
   runAllDialog: RunAllDialogState | null;
   /** The post-run save confirmation — a save picker needs a fresh click. */
   saveReadyDialog: boolean;
+  // #FileIO
+  /** The replace-table confirmation a drop with a table loaded raises, or
+   *  null. Names the dropped file; the bytes wait in FilesManager. */
+  replaceDialog: { name: string } | null;
   /** Column the grid should scroll into view (a new seq re-triggers), or null. */
   reveal: { column: string; seq: number } | null;
   // #LookupJoin

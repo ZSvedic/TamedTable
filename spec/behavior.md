@@ -1002,9 +1002,15 @@ The empty page is also a drop target: dragging a file from the desktop
 onto it highlights the page (a tint plus a dashed border), and dropping
 loads the file exactly like **Open local…** — same four formats, same
 "Loaded …" message. A file whose extension isn't a supported format
-surfaces the standard "Could not open file …" error toast. Once a
-table is loaded the drop target goes away; a stray drop is ignored
-rather than replacing the table.
+surfaces the standard "Could not open file …" error toast. With a table
+loaded the table area stays a drop target — same drag highlight — but a
+drop never replaces the table silently: a **replace-table confirmation**
+names the dropped file and warns that loading it discards the current
+table and its steps. Confirming loads the dropped file exactly like the
+empty-page drop — a fresh start, thread and history cleared by the load;
+cancelling (the button, Escape, or the backdrop) leaves the table,
+thread, and history untouched. The file's bytes are read at drop time,
+so confirming needs no second picker.
 
 Saving mirrors that shape: one **Save** menu button (the disk icon,
 the word "Save", a chevron; plain dropdown, no default click),
@@ -1643,7 +1649,13 @@ data and its own header, so a short value never hides the column name. Sort and 
 than a bare header click because on an AI-made column they can trigger a
 table-wide run (the dependency rule) — the menu makes them a deliberate act,
 and it keeps the header clean and tappable on the phone. They stay **view
-state**, like paging and shuffle: no spec change, no history entry. Delete
+state**, like paging and shuffle: no spec change, no history entry. They are
+view state over the columns the spec has *now*: a spec change that removes a
+column — undo, redo, a history jump, Delete column, a chat request — also
+drops any view filter or sort on that column. A filter on a vanished column
+has no header left to show its funnel mark or offer Remove filter, and it
+would match nothing (every row now "misses" the column), silently emptying
+the table — so the filter goes with the column. Delete
 column is the exception — it is a spec step, the same patch asking in chat
 would produce. Column separators are visible; hovering one shows the resize
 cursor and double-clicking it (or the menu's Autofit width) fits the column

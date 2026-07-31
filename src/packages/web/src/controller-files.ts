@@ -248,9 +248,39 @@ export class FilesManager {
     }
   }
 
-  /** Load a file dropped onto the empty page — the drag-and-drop counterpart
-   *  of openCsv, minus the picker dialog. Same formats, same toasts. */
+  /** A dropped file waiting on the replace-table confirmation — the drop
+   *  already delivered the bytes, so confirming needs no second picker. */
+  private pendingDrop: { name: string; bytes: Uint8Array } | null = null;
+
+  /** Load a dropped file — the drag-and-drop counterpart of openCsv, minus
+   *  the picker dialog. Same formats, same toasts. With a table loaded a drop
+   *  never replaces it silently: the replace-table confirmation asks first
+   *  (spec/behavior.md § Web UI). */
   async openDropped(name: string, bytes: Uint8Array): Promise<void> {
+    if (this.host.loaded) {
+      this.pendingDrop = { name, bytes };
+      this.host.replaceDialog = { name };
+      this.host.notify();
+      return;
+    }
+    await this.loadDropped(name, bytes);
+  }
+
+  /** The replace-table dialog's "Replace & load" click. */
+  async confirmReplaceDrop(): Promise<void> {
+    const pending = this.pendingDrop;
+    this.dismissReplaceDrop();
+    if (pending) await this.loadDropped(pending.name, pending.bytes);
+  }
+
+  /** Cancel: table, thread, and history stay untouched. */
+  dismissReplaceDrop(): void {
+    this.pendingDrop = null;
+    this.host.replaceDialog = null;
+    this.host.notify();
+  }
+
+  private async loadDropped(name: string, bytes: Uint8Array): Promise<void> {
     try {
       await this.loadFromPicked({ name, bytes });
       this.recentsStore.record({ kind: 'local', label: name });

@@ -161,6 +161,9 @@ export class WebController implements ControllerHost {
   runAllDialog: RunAllDialogState | null = null;
   /** The post-run save confirmation — a save picker needs a fresh click. */
   saveReadyDialog = false;
+  // #FileIO
+  /** The replace-table confirmation a drop with a table loaded raises. */
+  replaceDialog: { name: string } | null = null;
   // #LookupJoin
   /** The lookup file a waiting join needs, or null. The run is paused on it. */
   lookupDialog: { name: string } | null = null;
@@ -540,8 +543,13 @@ export class WebController implements ControllerHost {
   recents(): RecentEntry[] { return this.files.recents(); }
   /** Re-open a Recent entry (reload a URL/sample, or re-raise a picker). */
   openRecent(entry: RecentEntry): Promise<void> { return this.files.openRecent(entry); }
-  /** Load a file dropped onto the empty page (drag-and-drop open). */
+  /** Load a dropped file — with a table loaded this raises the replace-table
+   *  confirmation instead of loading (spec/behavior.md § Web UI). */
   openDropped(name: string, bytes: Uint8Array): Promise<void> { return this.files.openDropped(name, bytes); }
+  /** The replace-table dialog's "Replace & load" click. */
+  confirmReplaceDrop(): Promise<void> { return this.files.confirmReplaceDrop(); }
+  /** Dismiss the replace-table dialog — the current table stays. */
+  dismissReplaceDrop(): void { this.files.dismissReplaceDrop(); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
   openSampleDialog(): void { this.files.openSampleDialog(); }
