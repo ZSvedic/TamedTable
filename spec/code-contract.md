@@ -496,10 +496,13 @@ function runCli(argv: string[]): Promise<{ exitCode: number; stderr: string }>;
 ```
 
 REPL uses `node:readline/promises`. The readline interface is created
-with `terminal: stdin.isTTY === true` — interactive runs get raw-mode
-line editing (↑/↓ history, ←/→, ⌃A/⌃E, ⌃R, etc.) for free; piped runs
-get a plain line reader with no escape-sequence interpretation, so
-Cucumber-driven input stays byte-deterministic. The flag is never
+with `terminal:` true only when stdin **and** stdout are TTYs — line
+editing redraws the input line on the screen, so it needs a real screen
+as well as a real keyboard. Fully interactive runs get raw-mode line
+editing (↑/↓ history, ←/→, ⌃A/⌃E, ⌃R, etc.) for free; runs with either
+side piped get a plain line reader with no escape-sequence
+interpretation, so Cucumber-driven input stays byte-deterministic and a
+piped stdout never collects control codes. The flag is never
 hardcoded to `false`; passing an explicit `false` would break
 interactive UX (arrow keys echo as `^[[A`). The CLI does not maintain
 or persist a history file — readline's in-memory history is
