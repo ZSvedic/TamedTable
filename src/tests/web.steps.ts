@@ -95,6 +95,50 @@ When(
   },
 );
 
+// With a table loaded the same entry point raises the replace-table
+// confirmation instead of loading (behavior.md § Web UI).
+When('user drops the file {string} onto the table', async function (this: TamedTableWorld, filename: string) {
+  const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
+  await controller(this).openDropped(filename, bytes);
+});
+
+Then('the replace-table dialog names {string}', function (this: TamedTableWorld, filename: string) {
+  assert.equal(controller(this).replaceDialog?.name, filename);
+});
+
+Then('no replace-table dialog is shown', function (this: TamedTableWorld) {
+  assert.equal(controller(this).replaceDialog, null);
+});
+
+When('user confirms replacing the table', async function (this: TamedTableWorld) {
+  await controller(this).confirmReplaceDrop();
+});
+
+When('user cancels replacing the table', function (this: TamedTableWorld) {
+  controller(this).dismissReplaceDrop();
+});
+
+// ── Column-menu view filters ───────────────────────────────────────────────
+
+When('user filters column {string} by {string}', async function (this: TamedTableWorld, column: string, text: string) {
+  await controller(this).setViewFilter(column, text);
+});
+
+Then('no column filter is active', function (this: TamedTableWorld) {
+  const filters = controller(this).viewFilters();
+  assert.deepEqual(filters, {}, `expected no active column filter, got ${JSON.stringify(filters)}`);
+});
+
+// The count the user sees — after the view pipeline (shuffle → filters →
+// sort), unlike "the table has N rows" which reads the derived rows.
+Then('the table view shows {int} rows', function (this: TamedTableWorld, n: number) {
+  assert.equal(controller(this).totalRows(), n);
+});
+
+When('user deletes the column {string}', async function (this: TamedTableWorld, column: string) {
+  await controller(this).deleteColumn(column);
+});
+
 // ── Chat ───────────────────────────────────────────────────────────────────
 
 When('user sends the chat message {string}', async function (this: TamedTableWorld, text: string) {

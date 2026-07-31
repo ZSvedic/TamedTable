@@ -278,6 +278,60 @@ Feature: Web front-end
       When user drops a file named "notes.txt" containing "hello" onto the empty page
       Then a toast shows "Could not open file"
 
+  Rule: A drop with a table loaded asks before replacing it
+
+    A drop never replaces the table silently (behavior.md § Web UI): the
+    replace-table confirmation names the dropped file; confirming loads it
+    like the empty-page drop, cancelling leaves everything untouched.
+
+    Background:
+      Given the TamedTable web app
+      And load "filter-input.csv"
+
+    @web
+    Scenario: Confirming the replace dialog loads the dropped file
+      When user drops the file "customers-input.csv" onto the table
+      Then the replace-table dialog names "customers-input.csv"
+      And the table has 10 rows
+      When user confirms replacing the table
+      Then the table has 20 rows
+      And the chat has 1 message
+
+    @web
+    Scenario: Cancelling the replace dialog keeps the current table
+      When user drops the file "customers-input.csv" onto the table
+      And user cancels replacing the table
+      Then no replace-table dialog is shown
+      And the table has 10 rows
+
+  Rule: A view filter dies with the column it filters
+
+    Sort and filter are view state over the columns the spec has now
+    (behavior.md § Web UI): a spec change that removes a column — undo, a
+    history jump, Delete column, a chat request — drops any view filter or
+    sort on that column, so it never silently empties the table.
+
+    Background:
+      Given the TamedTable web app
+      And load "customers-input.csv"
+
+    @web
+    Scenario: Undo drops the view filter on a column the undo removes
+      When user says "Open flow"
+      And user selects "join-lookup.flow"
+      And user chooses the lookup file "join-country-codes.csv"
+      And user filters column "ISO" by "CA"
+      And user undoes the last change
+      Then the table view shows 20 rows
+      And no column filter is active
+
+    @web
+    Scenario: Deleting a filtered column drops its filter
+      When user filters column "Country" by "Canada"
+      And user deletes the column "Country"
+      Then the table view shows 20 rows
+      And no column filter is active
+
   Rule: Samples have their own picker, separate from the URL dialog
 
     @web
