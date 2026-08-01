@@ -35,9 +35,12 @@ export interface WebScenarioCtx {
   /** An in-flight dialog action (openCsv / saveFlow / saveData) awaiting a step. */
   pending?: Promise<unknown>;
   /** URL → CSV/JSONL body, served by the per-scenario fetch stub when a
-   *  URL-load step targets it. Anthropic API calls still flow through the
-   *  cassette recorder above. */
-  readonly urlFixtures: Map<string, string>;
+   *  URL-load step targets it; null marks a URL that stopped serving (404).
+   *  Anthropic API calls still flow through the cassette recorder above. */
+  readonly urlFixtures: Map<string, string | null>;
+  /** Sample name → the running deployment's address, backing the injected
+   *  `resolveSampleUrl` — the recents re-resolve seam. */
+  readonly sampleUrls: Map<string, string>;
   /** Last error raised by a `loadFromUrl` step that expected failure. */
   lastUrlError?: Error;
   /** When set, intercepts all non-fixture fetch calls to simulate LLM API errors. */

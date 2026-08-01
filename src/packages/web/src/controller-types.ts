@@ -47,6 +47,11 @@ export interface WebControllerOptions {
   file: FilePort;
   /** Custom fetch — the Cucumber cassette recorder in tests; unset in the browser. */
   fetch?: FetchLike;
+  /** The running deployment's address for a bundled sample, or null when the
+   *  name is no longer bundled. Opening a sample Recent asks this first — a
+   *  stored address goes stale when a deployment moves — falling back to the
+   *  stored address. The browser wires it to the bundled-samples list. */
+  resolveSampleUrl?: (name: string) => string | null;
   /** Microphone recording port. The browser passes browserVoicePort(); tests
    *  inject a stub returning a fixed Blob. Voice input is disabled when unset. */
   voice?: VoicePort;

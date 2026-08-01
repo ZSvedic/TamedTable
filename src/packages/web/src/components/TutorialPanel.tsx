@@ -52,7 +52,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       // "Stay here" keeps the result on screen (undo/redo replay key-free).
       // The exact sentence three canonical docs pin (spec/behavior.md § tours,
       // code-contract § tutorial mode, gherkin-tour behavior.md).
-      doneDescription: `Voilà, "${selectedTourName}" is done.`,
+      doneDescription: `Voilà, the tour "${selectedTourName}" is done.`,
       doneBtnText: 'Back to Tours',
       stayBtnText: 'Stay here',
       theme: {
@@ -409,7 +409,7 @@ function asInstruction(text: string): string {
   // The remaining-row count is the lazy showcase's fixture math
   // (showcase-lazy-input.csv: 25,000 rows − the 100-row evaluated page).
   if (/^declines? the estimate with "Not yet"$/.test(text)) {
-    return 'Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it would take some time.';
+    return 'The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.';
   }
   return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}…`;
 }

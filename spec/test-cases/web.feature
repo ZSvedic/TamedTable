@@ -264,6 +264,33 @@ Feature: Web front-end
       When user loads 6 fixture files locally
       Then the recents list has 5 entries
 
+    @web
+    Scenario: A recent whose reload fails is removed from the list
+      Given the TamedTable web app
+      And the URL "https://example.com/data/customers.csv" serves "customers-input.csv"
+      When user loads from URL "https://example.com/data/customers.csv"
+      Then the recents list has "customers.csv" tagged "url" first
+      Given the URL "https://example.com/data/customers.csv" stops serving
+      When user opens the recent entry "customers.csv"
+      Then a toast shows "Could not open customers.csv"
+      And a toast shows "removed from Recent"
+      And the recents list has 0 entries
+
+    @web
+    Scenario: A sample recent re-resolves its address against the running deployment
+      Given the TamedTable web app
+      And the URL "https://old.example.com/samples/customers.csv" serves "customers-input.csv"
+      When user loads the sample "customers.csv" from URL "https://old.example.com/samples/customers.csv"
+      Then the recents list has "customers.csv" tagged "sample" first
+      Given the URL "https://old.example.com/samples/customers.csv" stops serving
+      And the sample "customers.csv" is bundled at URL "https://new.example.com/samples/customers.csv"
+      And the URL "https://new.example.com/samples/customers.csv" serves "customers-input.csv"
+      When user opens the recent entry "customers.csv"
+      Then no toast is shown
+      And table displays the header and at least the first 5 rows
+      And the recents list has "customers.csv" tagged "sample" first
+      And the recents list has 1 entries
+
   Rule: The empty page accepts a dropped file
 
     @web

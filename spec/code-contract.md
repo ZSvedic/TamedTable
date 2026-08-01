@@ -902,7 +902,14 @@ class WebController {
 
 Recents persist under the localStorage key `tamedtable-recents`
 (best-effort — in-memory when localStorage is unavailable), capped at
-5, deduplicated by kind + label + url. `openFlow` runs one
+5, deduplicated by kind + label + url. `openRecent` on a sample entry
+asks the optional `WebControllerOptions.resolveSampleUrl(name)` for the
+running deployment's address of that sample first (the browser wires it
+to the bundled-samples list; null falls back to `entry.url`), and a
+successful load through a re-resolved address drops the stale entry so
+the fresh record doesn't duplicate it. When the load of a sample or URL
+entry throws, `openRecent` removes the entry from the store and the
+error toast ends with `— removed from Recent.` `openFlow` runs one
 `FilePort.pickOpen` handshake for the `.flow` file, validates it,
 checks its input columns against the current table's source columns
 (`checkFlowInputColumns(spec, sourceColumns)`, exported by
@@ -1660,7 +1667,7 @@ voice turn and replays key-free.
 (on play and on every `nextStep`), the controller sets
 `tutorialPrefill` to the step's query text so the chat input shows it; any other
 current step clears it (`''`). The `TutorialPanel` passes the tour name to
-`TourUi` as `doneDescription: Voilà, "<name>" is done.`, making the final
+`TourUi` as `doneDescription: Voilà, the tour "<name>" is done.`, making the final
 step a terminal celebration (see
 [gherkin-tour behavior — TourDriver / TourCursor](packages/gherkin-tour/behavior.md#tourdriver--tourcursor)).
 

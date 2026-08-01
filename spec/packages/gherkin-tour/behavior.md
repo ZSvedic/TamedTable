@@ -160,7 +160,7 @@ package customizes, and why it differs from a plain Driver.js tour:
   progress line "X of Y" — no "Step N of N" heading.
 - **Terminal stop.** After the last real step the popover anchors to the
   host-named `doneElementId` (the step's own target may be gone) and shows
-  `doneDescription` — the app passes `Voilà, "<tour>" is done.` — numbered "N of
+  `doneDescription` — the app passes `Voilà, the tour "<tour>" is done.` — numbered "N of
   N". The primary button reads `doneBtnText` (default **Done**) and calls
   `finish`. When the cursor implements the optional `stay()`, a secondary
   button reading `stayBtnText` (default **Stay here**) appears in Driver's
@@ -184,7 +184,7 @@ package customizes, and why it differs from a plain Driver.js tour:
   | `speak "…"` | `Speaking and running the voice query…` |
   | `load the shuffled sample` | `Loading the shuffled sample…` |
   | `open the run-on-all estimate dialog` | `Opening the run-on-all estimate…` |
-  | `decline the estimate with "Not yet"` | `Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it would take some time.` |
+  | `decline the estimate with "Not yet"` | `The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.` |
   | anything else | echoed with the first letter capitalized, `…` appended |
 
   A `query "…"` step's text is typed into the host's chat input when the step

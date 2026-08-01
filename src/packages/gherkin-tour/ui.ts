@@ -34,7 +34,7 @@ export interface TourUiOptions {
    *  a prefilled chat input) and re-render if a spotlight target appeared. */
   onChange?: () => void;
   /** Terminal-stop text — shown after the last real step has run, e.g.
-   *  `Voilà, "<tour>" is done.`. Defaults to "Done.". */
+   *  `Voilà, the tour "<tour>" is done.`. Defaults to "Done.". */
   doneDescription?: string;
   /** Terminal-stop primary button label — defaults to "Done". */
   doneBtnText?: string;
@@ -464,7 +464,7 @@ function asInstruction(text: string): string {
   // The remaining-row count is the lazy showcase's fixture math
   // (showcase-lazy-input.csv: 25,000 rows − the 100-row evaluated page).
   if (/^declines? the estimate with "Not yet"$/.test(text)) {
-    return 'Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it would take some time.';
+    return 'The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.';
   }
   return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}…`;
 }

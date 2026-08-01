@@ -45,7 +45,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
   this.runnerKind = 'web';
   const opts = runnerOptsFor(scenario);
   this.runnerOpts = opts;
-  const ctx: WebScenarioCtx = { noFsa: false, urlFixtures: new Map() };
+  const ctx: WebScenarioCtx = { noFsa: false, urlFixtures: new Map(), sampleUrls: new Map() };
   webScenarios.set(this, ctx);
   this.runnerFactory = () => {
     // Built lazily so a "without File System Access support" Given can flip
@@ -60,6 +60,9 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
     const compositeFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
       const body = ctx.urlFixtures.get(url);
+      if (body === null) {
+        return Promise.resolve(new Response('Not Found', { status: 404, statusText: 'Not Found' }));
+      }
       if (body !== undefined) {
         const ct = url.toLowerCase().endsWith('.jsonl') ? 'application/jsonl' : 'text/csv';
         return Promise.resolve(new Response(body, { status: 200, headers: { 'content-type': ct } }));
@@ -82,6 +85,10 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
         return () => { ctx.voiceAutoStop = undefined; };
       },
       fetch: compositeFetch,
+      // The recents re-resolve seam: a "the sample … is bundled at URL …"
+      // Given fills the map; empty means no sample is bundled (null → the
+      // stored address is used as-is, like the browser with a stale name).
+      resolveSampleUrl: (name) => ctx.sampleUrls.get(name) ?? null,
       // Suppress real shell API keys — tests set keys explicitly via steps.
       env: {},
       config: opts.apiKey ? { geminiKey: opts.apiKey } : undefined,
