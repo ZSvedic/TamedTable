@@ -65,14 +65,28 @@ export class FilesManager {
 
   /** Re-open a Recent entry: samples and URLs reload their address; local
    *  files and flows re-open the matching picker (the browser cannot reopen
-   *  a local file silently — the entry's name is the reminder). */
+   *  a local file silently — the entry's name is the reminder). A sample's
+   *  stored address goes stale when a deployment moves, so it re-resolves by
+   *  name against the running deployment first; an entry whose reload fails
+   *  anyway is removed so it never lingers to fail twice (spec/behavior.md
+   *  § Web UI, Recent). */
   async openRecent(entry: RecentEntry): Promise<void> {
     if ((entry.kind === 'sample' || entry.kind === 'url') && entry.url) {
+      const url =
+        (entry.kind === 'sample' ? this.host.opts.resolveSampleUrl?.(entry.label) : null) ?? entry.url;
       try {
-        await this.loadFromUrl(entry.url, entry.kind);
+        await this.loadFromUrl(url, entry.kind);
+        // The load recorded a fresh entry — drop the stale-address one it
+        // would otherwise sit above (dedup is by kind + label + url).
+        if (url !== entry.url) this.recentsStore.remove(entry);
       } catch (e) {
-        this.host.pushToast('error', `Could not open ${entry.label}: ${(e as Error).message}`);
+        this.recentsStore.remove(entry);
+        this.host.pushToast(
+          'error',
+          `Could not open ${entry.label}: ${(e as Error).message} — removed from Recent.`,
+        );
       }
+      this.host.notify();
       return;
     }
     if (entry.kind === 'flow') return this.openFlow();

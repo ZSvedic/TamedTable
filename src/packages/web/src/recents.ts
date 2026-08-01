@@ -33,10 +33,19 @@ export class RecentsStore {
 
   /** Put `entry` at the top, dropping any older duplicate and the overflow. */
   record(entry: RecentEntry): void {
-    const same = (e: RecentEntry): boolean =>
-      e.kind === entry.kind && e.label === entry.label && e.url === entry.url;
-    this.entries = [entry, ...this.entries.filter((e) => !same(e))].slice(0, MAX_ENTRIES);
+    this.entries = [entry, ...this.entries.filter((e) => !RecentsStore.same(e, entry))].slice(0, MAX_ENTRIES);
     this.save();
+  }
+
+  /** Drop `entry` — a reload that failed, or a stale address superseded by a
+   *  re-resolved one (spec/behavior.md § Web UI, Recent). */
+  remove(entry: RecentEntry): void {
+    this.entries = this.entries.filter((e) => !RecentsStore.same(e, entry));
+    this.save();
+  }
+
+  private static same(a: RecentEntry, b: RecentEntry): boolean {
+    return a.kind === b.kind && a.label === b.label && a.url === b.url;
   }
 
   private static load(): RecentEntry[] {

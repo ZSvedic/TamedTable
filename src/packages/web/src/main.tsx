@@ -6,6 +6,7 @@ import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
 import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
 import { browserContinuousPort } from '@tamedtable/voice-input/browser-vad';
 import { App } from './App.tsx';
+import { bundledSamples } from './samples.ts';
 import { captureInstallPrompt } from './install-prompt.ts';
 import './index.css';
 
@@ -44,6 +45,9 @@ const controller = createWebController({
   // Hands-free mode starts at the Balanced tuning (snappier than the library
   // default 1.4 s) so a turn is sent ~0.7 s after you stop.
   continuousVoice: browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 }) ?? undefined,
+  // A sample Recent's stored address goes stale when a deployment moves —
+  // re-resolve by name against this build's bundled samples.
+  resolveSampleUrl: (name) => bundledSamples().find((s) => s.name === name)?.url ?? null,
   tutorialSources,
 });
 

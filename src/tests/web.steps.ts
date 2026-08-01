@@ -322,6 +322,36 @@ Then('the recents list has {int} entries', function (this: TamedTableWorld, n: n
   assert.equal(controller(this).recents().length, n);
 });
 
+When(
+  'user opens the recent entry {string}',
+  async function (this: TamedTableWorld, label: string) {
+    const entry = controller(this).recents().find((e) => e.label === label);
+    assert.ok(entry, `no recent entry labelled "${label}"`);
+    await controller(this).openRecent(entry);
+  },
+);
+
+When(
+  'user loads the sample {string} from URL {string}',
+  async function (this: TamedTableWorld, name: string, url: string) {
+    // The sample picker's click path: same URL load, tagged 'sample'.
+    await controller(this).loadFromUrl(url, 'sample');
+    assert.equal(controller(this).recents()[0]?.label, name);
+  },
+);
+
+Given('the URL {string} stops serving', function (this: TamedTableWorld, url: string) {
+  // null makes the composite fetch answer this URL with HTTP 404.
+  ctxOf(this).urlFixtures.set(url, null);
+});
+
+Given(
+  'the sample {string} is bundled at URL {string}',
+  function (this: TamedTableWorld, name: string, url: string) {
+    ctxOf(this).sampleUrls.set(name, url);
+  },
+);
+
 Then('the file is delivered as a download', function (this: TamedTableWorld) {
   const outcomes = ctxOf(this).filePort?.outcomes ?? [];
   const last = outcomes[outcomes.length - 1];

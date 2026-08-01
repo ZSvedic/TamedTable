@@ -883,7 +883,14 @@ grouped under small headers:
   local or flow entry re-opens the matching file picker (a browser
   cannot silently reopen a local file), with the name serving as the
   reminder of what to pick. The list persists across reloads
-  (localStorage, best-effort).
+  (localStorage, best-effort). A stored sample address can go stale —
+  each deployment serves its samples under its own base path — so
+  clicking a sample entry re-resolves the address by name against the
+  samples bundled in the running app, falling back to the stored
+  address only when the name is no longer bundled. An entry whose
+  reload fails anyway (say, HTTP 404 — the file is gone) is removed
+  from the list, and the error toast ends with "removed from Recent" —
+  a dead entry never lingers to fail twice.
 - **Data** — **Open sample…** (raises the sample picker; clicking a
   sample loads it straight away), **Open local…** (the native file
   picker), and **Open URL…** (the URL dialog).
@@ -1863,7 +1870,9 @@ playing, a query running) is ignored — a fast clicker can never skip a step
 or fire one twice.
 
 The **last stop is terminal**: it is numbered **"M of M"** and its popover
-shows a completion message — `Voilà, "<tour name>" is done.` — with two
+shows a completion message — `Voilà, the tour "<tour name>" is done.` —
+naming what finished as *a tour*, so nobody reads a name like "Clean 25,000
+rows for cents" as a claim about what just ran — with two
 buttons. The primary, **Back to Tours**, ends the tour and returns the user to
 wherever they started: a tour launched from the Tutorial panel reopens the
 chooser, while a deep-link tour goes back to the page the user came from (see
@@ -1931,8 +1940,10 @@ step maps to one of the tour actions:
   call), so the tour ends with no dialog left open and the generic Voilà
   terminal stop fires. The popovers narrate — **"Loading the shuffled
   sample…"**, **"Opening the run-on-all estimate…"**, and the decline stop's
-  `Choosing "Not yet". "Run all" would clean the remaining 24,900 rows but it
-  would take some time.`
+  `The "Run on all rows?" dialog estimates the time and cost of cleaning the
+  remaining 24,900 rows. Choosing "Not yet" because it would take some time.`
+  — the decline stop explains what the dialog is for before saying why the
+  tour declines it.
 
 The feature source, input/lookup fixtures, and golden files are fetched
 same-origin on demand — the feature when a tour opens (then parsed to get its
