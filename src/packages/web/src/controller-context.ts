@@ -54,6 +54,7 @@ export interface ControllerHost {
   savedProvider: Provider | null;
   savedSeq: number;
   keyTest: KeyTest | null;
+  keyDrafts: Record<Provider, string>;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;

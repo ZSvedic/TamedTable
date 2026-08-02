@@ -43,6 +43,10 @@ export interface ModelChooserProps {
   testState?: KeyTest | null;
   onProviderClick: (p: Provider) => void;
   onKeyChange: (p: Provider, value: string) => void;
+  /** The user finished with a key field — it lost focus, or they pressed
+   *  Enter. A host that saves on every keystroke can leave it unset and use
+   *  `onKeyChange` alone. */
+  onKeyCommit?: (p: Provider, value: string) => void;
   /** The card's Test button was clicked. Omit it and no card shows a Test
    *  button — a host with no way to reach a provider gets no button that
    *  cannot work. */
@@ -168,6 +172,7 @@ export function ModelChooser({
   testState,
   onProviderClick,
   onKeyChange,
+  onKeyCommit,
   onTestKey,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
@@ -415,6 +420,10 @@ export function ModelChooser({
         data-mc-key={meta.id}
         value={keys[meta.id]}
         onChange={(e) => onKeyChange(meta.id, e.target.value)}
+        onBlur={(e) => onKeyCommit?.(meta.id, e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onKeyCommit?.(meta.id, e.currentTarget.value);
+        }}
         placeholder={meta.keyPlaceholder}
         style={{
           flex: 1,

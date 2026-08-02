@@ -16,10 +16,56 @@ import { userFacingMessage } from './controller-messages.ts';
 import { pageSizeFor } from './controller.ts';
 import type { ControllerHost } from './controller-context.ts';
 
+/** The `ResolvedConfig` field each provider's key lives in. */
+const KEY_FIELD = {
+  gemini: 'geminiKey',
+  openai: 'openaiKey',
+  anthropic: 'anthropicKey',
+  openrouter: 'openrouterKey',
+} as const satisfies Record<Provider, keyof ResolvedConfig>;
+
+/** The provider whose key this partial saves, or null. A provider pick alone
+ *  is not a save the "✓ Saved" badge should claim — the card's own radio shows
+ *  the choice — and neither is clearing a key: a badge beside an empty field
+ *  says a key landed when none did. */
+function savedKeyProvider(partial: Partial<ResolvedConfig>): Provider | null {
+  const providers = Object.keys(KEY_FIELD) as Provider[];
+  return providers.find((p) => {
+    const value = partial[KEY_FIELD[p]];
+    return typeof value === 'string' && value.trim() !== '';
+  }) ?? null;
+}
+
 export class ConfigManager {
   private readonly host: ControllerHost;
   constructor(host: ControllerHost) {
     this.host = host;
+  }
+
+  /** Refill every key draft from the saved config — the panel opens showing
+   *  what is stored, not what a previous visit left half-typed. */
+  private resetKeyDrafts(): void {
+    for (const p of Object.keys(KEY_FIELD) as Provider[]) {
+      this.host.keyDrafts[p] = (this.host.config[KEY_FIELD[p]] as string | null) ?? '';
+    }
+  }
+
+  /** The user typed in a key field. Moves the draft only — half a key is not
+   *  a key, and saving each keystroke rebuilds the engine (replaying the whole
+   *  flow) for a value that is not finished. */
+  setKeyDraft(provider: Provider, value: string): void {
+    this.host.keyDrafts[provider] = value;
+    this.host.notify();
+  }
+
+  /** The user finished with a key field — it lost focus, they pressed Enter,
+   *  or they closed the panel. Saves the draft, unless it matches what is
+   *  already stored: leaving a field untouched is not a save. */
+  async commitKeyDraft(provider: Provider): Promise<void> {
+    const draft = (this.host.keyDrafts[provider] ?? '').trim();
+    const stored = ((this.host.config[KEY_FIELD[provider]] as string | null) ?? '').trim();
+    if (draft === stored) return;
+    await this.setConfig({ [KEY_FIELD[provider]]: draft === '' ? null : draft });
   }
 
   /** Returns the API key for the currently-selected provider, or null. */
@@ -68,12 +114,16 @@ export class ConfigManager {
     // Same for the key-test result: a green tick from an earlier visit would
     // vouch for a key that may since have been edited or run out of credit.
     this.host.keyTest = null;
+    this.resetKeyDrafts();
     this.host.notify();
   }
 
-  closeSettings(): void {
+  /** Closing commits whatever is still in the key fields, so a key typed but
+   *  never blurred is not lost to the Close button. */
+  async closeSettings(): Promise<void> {
     this.host.settingsOpen = false;
     this.host.notify();
+    for (const p of Object.keys(KEY_FIELD) as Provider[]) await this.commitKeyDraft(p);
   }
 
   /** Toggle an accordion provider card. Expanding a card also selects that
@@ -131,15 +181,9 @@ export class ConfigManager {
     // currentPage() clamps on read, so no page bookkeeping is needed here.
     this.host.pageSize = pageSizeFor(next.provider, this.host.opts);
     writeStoredConfig(next);
-    // Confirm the save on the card it touched: the provider set explicitly,
-    // or the one whose key field the partial carries.
-    const savedFor: Provider | null =
-      partial.provider ??
-      (partial.geminiKey !== undefined ? 'gemini'
-        : partial.openaiKey !== undefined ? 'openai'
-        : partial.anthropicKey !== undefined ? 'anthropic'
-        : partial.openrouterKey !== undefined ? 'openrouter'
-        : null);
+    // Confirm the save on the card whose key it carried. A provider pick is
+    // not confirmed — see savedKeyProvider.
+    const savedFor = savedKeyProvider(partial);
     if (this.host.settingsOpen && savedFor) {
       this.host.savedProvider = savedFor;
       this.host.savedSeq++;

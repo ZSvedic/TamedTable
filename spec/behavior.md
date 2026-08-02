@@ -1150,14 +1150,26 @@ disabled.
 Changes apply immediately — selecting a provider card calls
 `controller.clickProviderCard(p)`, which pins that provider and its two fixed
 defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
-"Close" button; there is no separate "Save" button. Because saving is silent,
-each change confirms inline on the card it touched: a `✓ Saved` badge appears
-in that provider's card header, right of the provider name and left of the
-voice badge. It starts green and fades to grey after the standard toast time
-for that text (the 3-second toast floor); each new save — every keystroke in a
-key field, every provider pick — restarts the green phase. The badge marks
-only the most recently saved provider's card and clears when the panel opens,
-so it never claims a save from an earlier visit. Switching provider changes
+"Close" button; there is no separate "Save" button.
+
+A **key is saved when its field loses focus** (or on Enter), not on every
+keystroke. Typing only moves a draft the card renders; nothing is persisted and
+the engine is not rebuilt until the field is left. Half a key is not a key, and
+rebuilding the engine per keystroke replays the whole flow for a value the user
+has not finished typing. Closing the panel commits any field still holding an
+unsaved draft, so a key is never lost to a missed blur. Leaving a field the user
+did not change saves nothing.
+
+Because saving is silent, a save confirms inline on the card it touched: a
+`✓ Saved` badge appears in that provider's card header, right of the provider
+name and left of the voice badge. It starts green and fades to grey after the
+standard toast time for that text (the 3-second toast floor); each new save
+restarts the green phase. **Only a key landing earns the badge.** Picking a
+provider card does not: the card's own radio already shows the choice, and
+`✓ Saved` beside an empty key field claims something that isn't true. Clearing
+a key earns no badge either. The badge marks only the most recently saved
+provider's card and clears when the panel opens, so it never claims a save from
+an earlier visit. Switching provider changes
 the models, which rebuilds the engine and replays the current transformations
 against the source, so the table on screen is preserved and the new models drive
 the next request. **Editing the selected provider's key rebuilds it too.** The

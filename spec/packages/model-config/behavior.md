@@ -282,6 +282,10 @@ the per-provider reveal toggle. It never touches storage or the network:
   provider matches renders it; every other card renders nothing.
 - `onProviderClick(p)` — a card header was clicked
 - `onKeyChange(p, value)` — the user typed in a key field
+- `onKeyCommit(p, value)` — the user finished with a key field: it lost focus,
+  or they pressed Enter in it. A host that saves on every keystroke can ignore
+  it and use `onKeyChange` alone (the demo does); the app saves here, so half a
+  typed key never reaches the engine.
 - `onTestKey(p)` — the card's Test button was clicked. Omit it and no card
   shows a Test button, so a host with no way to call a provider gets no
   button that cannot work.

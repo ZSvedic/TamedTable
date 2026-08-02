@@ -66,6 +66,10 @@ Then('the configured API key is {string}', function (this: TamedTableWorld, key:
   assert.equal(controller(this).getConfig().anthropicKey, key);
 });
 
+Then('no API key is configured', function (this: TamedTableWorld) {
+  assert.equal(controller(this).getConfig().anthropicKey, null);
+});
+
 /** A key-only edit — the settings panel's key field, with the provider already
  *  selected. Unlike "the provider X has API key Y" this changes no model, so
  *  it exercises the key change on its own. */
@@ -76,6 +80,18 @@ When(
     await controller(this).setConfig({ [field]: key });
   },
 );
+
+/** Typing in a key field: moves the card's draft, saves nothing yet. */
+When(
+  'user types the {string} API key {string}',
+  function (this: TamedTableWorld, provider: string, key: string) {
+    controller(this).setKeyDraft(provider as ModelProvider, key);
+  },
+);
+
+When('the {string} key field loses focus', async function (this: TamedTableWorld, provider: string) {
+  await controller(this).commitKeyDraft(provider as ModelProvider);
+});
 
 Then('the last model call carried the API key {string}', function (this: TamedTableWorld, key: string) {
   assert.equal(ctxOf(this).lastCallApiKey, key);

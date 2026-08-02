@@ -2,14 +2,14 @@
 // generic ModelChooser accordion provider cards (from @tamedtable/model-config). The panel binds the
 // chooser's props/callbacks to WebController and injects the app theme via
 // the --mc-* CSS custom properties on the wrapping element.
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { space, typography, toastDurationMs } from '@tamedtable/ui-kit';
 import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 import { installPrompt } from '../install-prompt.ts';
-import { ALL_MODELS, type Provider } from '@tamedtable/model-config';
+import { ALL_MODELS } from '@tamedtable/model-config';
 import { ModelChooser } from '@tamedtable/model-config/ModelChooser';
 
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
@@ -18,24 +18,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   const isMobile = useIsMobile();
   const cfg = controller.getConfig();
 
-  // Local key state — one entry per provider. Initialized from current config.
-  const [keys, setKeys] = useState<Record<Provider, string>>({
-    gemini:     cfg.geminiKey     ?? '',
-    openai:     cfg.openaiKey     ?? '',
-    anthropic:  cfg.anthropicKey  ?? '',
-    openrouter: cfg.openrouterKey ?? '',
-  });
-
   if (!controller.settingsOpen) return null;
-
-  const handleKeyChange = (p: Provider, value: string): void => {
-    setKeys((prev) => ({ ...prev, [p]: value }));
-    // Live-save the key
-    if (p === 'gemini')     void controller.setConfig({ geminiKey:     value.trim() || null });
-    if (p === 'openai')     void controller.setConfig({ openaiKey:     value.trim() || null });
-    if (p === 'anthropic')  void controller.setConfig({ anthropicKey:  value.trim() || null });
-    if (p === 'openrouter') void controller.setConfig({ openrouterKey: value.trim() || null });
-  };
 
   // The app theme, expressed as the chooser's --mc-* variables.
   const chooserTheme = {
@@ -130,7 +113,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             provider={cfg.provider}
             primaryModel={cfg.model}
             secondaryModel={cfg.cellModel}
-            keys={keys}
+            keys={controller.keyDrafts}
             expandedProvider={controller.expandedProvider}
             savedProvider={controller.savedProvider}
             savedSeq={controller.savedSeq}
@@ -139,7 +122,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             changeModelsHelpUrl="../FAQ.html#change-models"
             testState={controller.keyTest}
             onProviderClick={(p) => void controller.clickProviderCard(p)}
-            onKeyChange={handleKeyChange}
+            onKeyChange={(p, value) => controller.setKeyDraft(p, value)}
+            onKeyCommit={(p) => void controller.commitKeyDraft(p)}
             onTestKey={() => void controller.testKey()}
           />
 
