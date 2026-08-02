@@ -1,4 +1,4 @@
-TamedTable is an AI ETL tool driven by natural language. Load a CSV, type *"normalize phone numbers"* or say *"drop duplicate emails,"* and the LLM writes a JSON spec that changes the data. Think of TamedTable as a [LLM harness](https://martinfowler.com/articles/harness-engineering.html) for data [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load). 
+TamedTable is an AI ETL tool driven by natural language. Load a CSV, type *"normalize phone numbers"* or say *"drop duplicate emails,"* and the LLM writes a JSON spec that changes the data. Think of TamedTable as an [LLM harness](https://martinfowler.com/articles/harness-engineering.html) for data [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load). 
 
 ## Links
 - Website: [www.TamedTable.com](https://www.TamedTable.com), shows major features. 
