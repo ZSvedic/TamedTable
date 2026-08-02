@@ -103,10 +103,12 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- ============================ VALUE PROPS ============================ -->
-  <section class="sec-paper">
+  <!-- Deep links: section and bullet ids below are a public contract — links in
+       replies, tweets, and docs point at them. Rename only with a redirect plan. -->
+  <section class="sec-paper" id="data-jobs">
     <div class="wrap">
       <div class="sec-head">
-        <h2>Every common data job, in natural language</h2>
+        <h2><a class="sec-link" href="#data-jobs">Every common data job, in natural language</a></h2>
       </div>
       <div class="vp-grid">
         <div class="vp-card">
@@ -162,9 +164,9 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- ============================ HOW IT WORKS ============================ -->
-  <section>
+  <section id="how-it-works">
     <div class="wrap">
-      <div class="sec-head"><h2>How it works</h2></div>
+      <div class="sec-head"><h2><a class="sec-link" href="#how-it-works">How it works</a></h2></div>
       <div class="steps">
         <div class="step"><div class="num">1</div><h3><a href="/FAQ#byok">Add API keys</a></h3><p>Just the first time you start the app.</p></div>
         <div class="step"><div class="num">2</div><h3>Open a file</h3><p>CSV, JSONL, Parquet, or Arrow. Local or from a URL.</p></div>
@@ -177,16 +179,16 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 
   <!-- FEATURE 01: Lazy AI execution — preview a page, see the price,
        run on all rows only when sure. -->
-  <section class="sec-paper">
+  <section class="sec-paper" id="lazy-ai">
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Lazy AI execution</h2>
+          <h2><a class="sec-link" href="#lazy-ai">Lazy AI execution</a></h2>
           <p>Preview for cents, run for real when you're sure. AI steps fill the page you are looking at; the rest waits until you ask.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/LazyAI-shuffle.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">open a 25,000-row file</span><span class="fnote">Starts as a shuffled sample; saving keeps the original order</span></button>
-            <button class="feat-item" data-ill="illustrations/LazyAI-pending-pages.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">"add a Category column"</span><span class="fnote">Fills the rows on screen right away; the pager marks what's pending</span></button>
-            <button class="feat-item" data-ill="illustrations/LazyAI-estimate-dialog.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">Run on all rows</span><span class="fnote">Rows, cost, and time shown before you commit; finished rows are kept</span></button>
+            <button class="feat-item active" id="open-large-file" data-ill="illustrations/LazyAI-shuffle.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">open a 25,000-row file</span><span class="fnote">Starts as a shuffled sample; saving keeps the original order</span></button>
+            <button class="feat-item" id="pending-pages" data-ill="illustrations/LazyAI-pending-pages.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">"add a Category column"</span><span class="fnote">Fills the rows on screen right away; the pager marks what's pending</span></button>
+            <button class="feat-item" id="run-all-rows" data-ill="illustrations/LazyAI-estimate-dialog.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">Run on all rows</span><span class="fnote">Rows, cost, and time shown before you commit; finished rows are kept</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -201,17 +203,17 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 02: Clean up -->
-  <section>
+  <section id="clean-up">
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Clean up</h2>
+          <h2><a class="sec-link" href="#clean-up">Clean up</a></h2>
           <p>Fix messy fields the way a person would. The AI reads each row's context before deciding.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/CleanUp-phone-numbers.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
-            <button class="feat-item" data-ill="illustrations/CleanUp-country-names.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"make the country names consistent"</span><span class="fnote">Folds UK / England / United Kingdom into one</span></button>
-            <button class="feat-item" data-ill="illustrations/CleanUp-capitalization.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"fix the capitalization of names"</span><span class="fnote">Handles McDonald, van der Berg</span></button>
-            <button class="feat-item" data-ill="illustrations/CleanUp-birth-dates.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"clean up the birth dates"</span><span class="fnote">Knows 03/04 is March in the US, April in the EU</span></button>
+            <button class="feat-item active" id="phone-numbers" data-ill="illustrations/CleanUp-phone-numbers.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
+            <button class="feat-item" id="country-names" data-ill="illustrations/CleanUp-country-names.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"make the country names consistent"</span><span class="fnote">Folds UK / England / United Kingdom into one</span></button>
+            <button class="feat-item" id="capitalization" data-ill="illustrations/CleanUp-capitalization.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"fix the capitalization of names"</span><span class="fnote">Handles McDonald, van der Berg</span></button>
+            <button class="feat-item" id="birth-dates" data-ill="illustrations/CleanUp-birth-dates.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"clean up the birth dates"</span><span class="fnote">Knows 03/04 is March in the US, April in the EU</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -226,17 +228,17 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 03: Enrich & extract -->
-  <section class="sec-paper">
+  <section class="sec-paper" id="enrich-extract">
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Enrich &amp; extract</h2>
+          <h2><a class="sec-link" href="#enrich-extract">Enrich &amp; extract</a></h2>
           <p>Add what isn't there yet. The model fills the gaps and pulls structure out of free text.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/EnrichExtract-split-address.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"split the address into Street, City, and Zip"</span><span class="fnote">Structures whatever mess they typed</span></button>
-            <button class="feat-item" data-ill="illustrations/EnrichExtract-country-from-city.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"fill the country from the city column"</span><span class="fnote">Knows Osaka → Japan</span></button>
-            <button class="feat-item" data-ill="illustrations/EnrichExtract-industry.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"add the industry for each company"</span><span class="fnote">Inferred from company names</span></button>
-            <button class="feat-item" data-ill="illustrations/EnrichExtract-amount-date.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"extract the amount and date from the memo, refunds negative"</span><span class="fnote">Pulled from free text, refunds signed</span></button>
+            <button class="feat-item active" id="split-address" data-ill="illustrations/EnrichExtract-split-address.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"split the address into Street, City, and Zip"</span><span class="fnote">Structures whatever mess they typed</span></button>
+            <button class="feat-item" id="country-from-city" data-ill="illustrations/EnrichExtract-country-from-city.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"fill the country from the city column"</span><span class="fnote">Knows Osaka → Japan</span></button>
+            <button class="feat-item" id="industry" data-ill="illustrations/EnrichExtract-industry.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"add the industry for each company"</span><span class="fnote">Inferred from company names</span></button>
+            <button class="feat-item" id="amount-date" data-ill="illustrations/EnrichExtract-amount-date.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"extract the amount and date from the memo, refunds negative"</span><span class="fnote">Pulled from free text, refunds signed</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -251,17 +253,17 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 04: Classify -->
-  <section>
+  <section id="classify">
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Classify</h2>
+          <h2><a class="sec-link" href="#classify">Classify</a></h2>
           <p>Sort rows by what they mean. The AI reads what each row is about.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/Classify-ticket-label.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
-            <button class="feat-item" data-ill="illustrations/Classify-sentiment.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"classify the ticket sentiment into positive, negative and neutral"</span><span class="fnote">Reads the verdict, even in mixed tickets</span></button>
-            <button class="feat-item" data-ill="illustrations/Classify-seniority.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"sort the titles by seniority"</span><span class="fnote">Ranks senior → junior</span></button>
-            <button class="feat-item" data-ill="illustrations/Classify-gender.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"split customers into men, women, and unknown"</span><span class="fnote">Gender inferred from first names</span></button>
+            <button class="feat-item active" id="ticket-label" data-ill="illustrations/Classify-ticket-label.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
+            <button class="feat-item" id="sentiment" data-ill="illustrations/Classify-sentiment.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"classify the ticket sentiment into positive, negative and neutral"</span><span class="fnote">Reads the verdict, even in mixed tickets</span></button>
+            <button class="feat-item" id="seniority" data-ill="illustrations/Classify-seniority.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"sort the titles by seniority"</span><span class="fnote">Ranks senior → junior</span></button>
+            <button class="feat-item" id="gender" data-ill="illustrations/Classify-gender.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"split customers into men, women, and unknown"</span><span class="fnote">Gender inferred from first names</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -276,17 +278,17 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 05: Validate -->
-  <section class="sec-paper">
+  <section class="sec-paper" id="validate">
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Validate</h2>
+          <h2><a class="sec-link" href="#validate">Validate</a></h2>
           <p>Catch the wrong-looking rows before anyone else does.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/Validate-fake-emails.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag emails that look fake"</span><span class="fnote">bill.gates@microsoft.com probably didn't sign up</span></button>
-            <button class="feat-item" data-ill="illustrations/Validate-impossible-date.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag any impossible birth date, like Feb 30th or year 1873"</span><span class="fnote">Dates that parse can still be impossible</span></button>
-            <button class="feat-item" data-ill="illustrations/Validate-city-country.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"check the city matches the country"</span><span class="fnote">Paris, Japan gets a second look</span></button>
-            <button class="feat-item" data-ill="illustrations/Validate-wrong-prices.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag prices that seem wrong"</span><span class="fnote">Catches the missing zero before Reddit does</span></button>
+            <button class="feat-item active" id="fake-emails" data-ill="illustrations/Validate-fake-emails.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag emails that look fake"</span><span class="fnote">bill.gates@microsoft.com probably didn't sign up</span></button>
+            <button class="feat-item" id="impossible-dates" data-ill="illustrations/Validate-impossible-date.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag any impossible birth date, like Feb 30th or year 1873"</span><span class="fnote">Dates that parse can still be impossible</span></button>
+            <button class="feat-item" id="city-country" data-ill="illustrations/Validate-city-country.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"check the city matches the country"</span><span class="fnote">Paris, Japan gets a second look</span></button>
+            <button class="feat-item" id="wrong-prices" data-ill="illustrations/Validate-wrong-prices.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag prices that seem wrong"</span><span class="fnote">Catches the missing zero before Reddit does</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -301,18 +303,18 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 06: Process language -->
-  <section>
+  <section id="process-language">
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Process language</h2>
+          <h2><a class="sec-link" href="#process-language">Process language</a></h2>
           <p>Summarize, translate, and classify any language.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/Language-voice.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">tap the mic</span><span class="fnote">Say any command out loud, hands-free</span></button>
-            <button class="feat-item" data-ill="illustrations/Language-detect-language.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"tag the language of every comment"</span><span class="fnote">Language detected per row</span></button>
-            <button class="feat-item" data-ill="illustrations/Language-translate.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"translate the comments to English"</span><span class="fnote">From any source language</span></button>
-            <button class="feat-item" data-ill="illustrations/Language-summarize.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"add a one-line Summary for each comment"</span><span class="fnote">Even the 500-word rant</span></button>
-            <button class="feat-item" data-ill="illustrations/Language-multilingual.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"normaliza los números de teléfono"</span><span class="fnote">Ask in any language, voice or text</span></button>
+            <button class="feat-item active" id="voice" data-ill="illustrations/Language-voice.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">tap the mic</span><span class="fnote">Say any command out loud, hands-free</span></button>
+            <button class="feat-item" id="detect-language" data-ill="illustrations/Language-detect-language.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"tag the language of every comment"</span><span class="fnote">Language detected per row</span></button>
+            <button class="feat-item" id="translate" data-ill="illustrations/Language-translate.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"translate the comments to English"</span><span class="fnote">From any source language</span></button>
+            <button class="feat-item" id="summarize" data-ill="illustrations/Language-summarize.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"add a one-line Summary for each comment"</span><span class="fnote">Even the 500-word rant</span></button>
+            <button class="feat-item" id="multilingual" data-ill="illustrations/Language-multilingual.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">"normaliza los números de teléfono"</span><span class="fnote">Ask in any language, voice or text</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -327,18 +329,18 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 07: Be exact -->
-  <section class="sec-paper">
+  <section class="sec-paper" id="be-exact">
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Be exact</h2>
+          <h2><a class="sec-link" href="#be-exact">Be exact</a></h2>
           <p>The everyday spreadsheet jobs are still here; deterministic and repeatable.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Remove the duplicate rows"</span><span class="fnote">Dedupe</span></button>
-            <button class="feat-item" data-ill="illustrations/Deterministic-join.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Join with join-country-codes.csv on Country to add ISO and Region"</span><span class="fnote">Join two tables</span></button>
-            <button class="feat-item" data-ill="illustrations/Deterministic-filter.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Show only customers in Europe"</span><span class="fnote">Filter rows — on the column the join just added</span></button>
-            <button class="feat-item" data-ill="illustrations/Deterministic-pivot.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Pivot Quarter into columns, with Revenue as the value"</span><span class="fnote">Reshape tall to wide</span></button>
-            <button class="feat-item" data-ill="illustrations/Deterministic-sort-top.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Sort by Q4, descending"</span><span class="fnote">Sort or top-N</span></button>
+            <button class="feat-item active" id="dedupe" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Remove the duplicate rows"</span><span class="fnote">Dedupe</span></button>
+            <button class="feat-item" id="join" data-ill="illustrations/Deterministic-join.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Join with join-country-codes.csv on Country to add ISO and Region"</span><span class="fnote">Join two tables</span></button>
+            <button class="feat-item" id="filter" data-ill="illustrations/Deterministic-filter.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Show only customers in Europe"</span><span class="fnote">Filter rows — on the column the join just added</span></button>
+            <button class="feat-item" id="pivot" data-ill="illustrations/Deterministic-pivot.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Pivot Quarter into columns, with Revenue as the value"</span><span class="fnote">Reshape tall to wide</span></button>
+            <button class="feat-item" id="sort" data-ill="illustrations/Deterministic-sort-top.svg" data-url="https://www.tamedtable.com/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Sort by Q4, descending"</span><span class="fnote">Sort or top-N</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -353,18 +355,18 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- FEATURE 08: Load, save & reuse -->
-  <section>
+  <section id="load-save-reuse">
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Load, save &amp; reuse</h2>
+          <h2><a class="sec-link" href="#load-save-reuse">Load, save &amp; reuse</a></h2>
           <p>Your work is yours to keep. Load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
-            <button class="feat-item active" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow from web or CLI</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV, JSONL, Parquet, or Arrow</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-flow.svg"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-save-py.svg"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
-            <button class="feat-item" data-ill="illustrations/LoadSaveReuse-undo-redo.svg"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
+            <button class="feat-item active" id="load" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow from web or CLI</span></button>
+            <button class="feat-item" id="save" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV, JSONL, Parquet, or Arrow</span></button>
+            <button class="feat-item" id="save-flow" data-ill="illustrations/LoadSaveReuse-save-flow.svg"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
+            <button class="feat-item" id="save-py" data-ill="illustrations/LoadSaveReuse-save-py.svg"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
+            <button class="feat-item" id="undo-redo" data-ill="illustrations/LoadSaveReuse-undo-redo.svg"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>
           </div>
         </div>
         <div class="feat-visual">
@@ -378,10 +380,10 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- ============================ TRUST ============================ -->
-  <section>
+  <section id="trustworthy">
     <div class="wrap">
       <div class="sec-head">
-        <h2>Trustworthy by design</h2>
+        <h2><a class="sec-link" href="#trustworthy">Trustworthy by design</a></h2>
       </div>
       <div class="vp-grid">
         <div class="vp-card">
@@ -433,9 +435,9 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- CTA -->
-  <section class="cta">
+  <section class="cta" id="try-it">
     <div class="wrap">
-      <h2>Try it in two minutes</h2>
+      <h2><a class="sec-link" href="#try-it">Try it in two minutes</a></h2>
       <p><a href="/FAQ#busl">Source-available</a>. Runs on your <a href="/FAQ#byok">own API key</a>, or <a href="https://www.tamedtable.com/app/?tours=1" target="_blank" rel="noopener">take the guided tour</a> without one.</p>
       <div class="cta-row">
         <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app</a>
