@@ -38,6 +38,7 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  KeyTest,
   RunProgress,
   Toast,
   TutorialManifestEntry,
@@ -56,6 +57,7 @@ export type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  KeyTest,
   ResolvedConfig,
   RunProgress,
   Toast,
@@ -110,6 +112,10 @@ export class WebController implements ControllerHost {
   /** Bumped on every settings save; keys the badge so each save restarts its
    *  green phase. */
   savedSeq = 0;
+  /** #ProviderSelect — the Test button's verdict on the selected provider's
+   *  key, or null before any test. Cleared on panel open and whenever the
+   *  provider or its key moves. */
+  keyTest: KeyTest | null = null;
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or
@@ -600,6 +606,10 @@ export class WebController implements ControllerHost {
   openSettings(): void { this.settingsMgr.openSettings(); }
   closeSettings(): void { this.settingsMgr.closeSettings(); }
   clickProviderCard(provider: Provider): Promise<void> { return this.settingsMgr.clickProviderCard(provider); }
+  /** #ProviderSelect — run the Settings Test button's key check. */
+  testKey(): Promise<void> { return this.settingsMgr.testKey(); }
+  /** Whether there is a key to test (an empty field disables the button). */
+  canTestKey(): boolean { return this.settingsMgr.canTestKey(); }
   getConfig(): ResolvedConfig { return this.config; }
   setConfig(partial: Partial<ResolvedConfig>): Promise<void> { return this.settingsMgr.setConfig(partial); }
   /** @deprecated Use getConfig() instead. */

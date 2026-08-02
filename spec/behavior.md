@@ -1132,6 +1132,21 @@ of the two roles sits above the cards, a "New here? How to get an API key" link
 sits directly below it, and a "How to change primary and secondary models?" link
 (to `FAQ.html#change-models`) sits below the cards.
 
+Each open card also has a **Test** button beside its key field, so a user
+learns their key works before they have written a single transformation.
+Clicking it makes one tiny call to that provider's secondary model with
+**retries switched off**, and answers in about a second: `✓ <model> answered in
+<n.n>s` in green, or the same red sentence a failed request would have shown —
+invalid key, no credit, rate limit, network. Retries are off on purpose. The
+normal request path retries a 429 with backoff before giving up, which is right
+for a real transformation and wrong for a test: a user with an empty billing
+account would sit watching a spinner for a minute to learn something the first
+response already said. The test runs against the secondary model because it is
+the cheap one, and it goes through the app's own engine — same SDK, same
+routing, same headers — so a green tick means requests will work, not just that
+some endpoint answered. A card with an empty key field has its button
+disabled.
+
 Changes apply immediately — selecting a provider card calls
 `controller.clickProviderCard(p)`, which pins that provider and its two fixed
 defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
@@ -1173,7 +1188,12 @@ key. A model-not-found error reads "Model not found. The selected model may be
 unavailable." A rate-limit rejection (HTTP 429) reads "Rate limited by the
 Google API. Wait a minute and try again." (or OpenAI / Anthropic) — the request
 did not fail because of anything the user wrote, so the message says to retry
-rather than rephrase. A network or CORS failure reads "Network error. Could not reach the
+rather than rephrase. An account with no money left is checked **before** the
+rate-limit rule, because it arrives as a 429 too: OpenAI answers an empty
+balance with `insufficient_quota`, and telling that user to wait a minute sends
+them back to a wait that never ends. It reads "Your OpenAI account has no
+credit left. Add credit (or a billing method) and try again." (or Google /
+Anthropic / OpenRouter). A network or CORS failure reads "Network error. Could not reach the
 Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pass through as-is so no
 information is lost. The provider name in the message matches whichever provider
 card is selected.

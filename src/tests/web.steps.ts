@@ -678,6 +678,39 @@ Then(
   },
 );
 
+// ── Settings: the Test button (#ProviderSelect) ─────────────────────────────
+
+When('user tests the API key', async function (this: TamedTableWorld) {
+  await controller(this).testKey();
+});
+
+Then('the key test succeeds', function (this: TamedTableWorld) {
+  const test = controller(this).keyTest;
+  assert.ok(test, 'no key test has run');
+  assert.equal(test.state, 'ok', `key test failed: ${test.message}`);
+});
+
+Then('the key test result names the model {string}', function (this: TamedTableWorld, model: string) {
+  const test = controller(this).keyTest;
+  assert.ok(test, 'no key test has run');
+  assert.ok(test.message.includes(model), `expected "${model}" in "${test.message}"`);
+});
+
+Then('the key test fails with {string}', function (this: TamedTableWorld, expected: string) {
+  const test = controller(this).keyTest;
+  assert.ok(test, 'no key test has run');
+  assert.equal(test.state, 'error', `expected a failed key test, got ${test.state}`);
+  assert.ok(test.message.includes(expected), `expected "${expected}" in "${test.message}"`);
+});
+
+Then('the key test is unavailable', function (this: TamedTableWorld) {
+  assert.equal(controller(this).canTestKey(), false, 'expected the Test button to be unavailable');
+});
+
+Then('the LLM API was called {int} time(s)', function (this: TamedTableWorld, n: number) {
+  assert.equal(ctxOf(this).llmCallCount ?? 0, n);
+});
+
 When('user selects the provider {string}', async function (this: TamedTableWorld, provider: string) {
   // Simulate the user clicking the provider card in the settings panel —
   // both sets the provider and remembers which card was expanded.
@@ -732,6 +765,40 @@ Given('the LLM API returns an unrecognized error', function (this: TamedTableWor
         { status: 400, headers: { 'content-type': 'application/json' } },
       ),
     );
+});
+
+// An empty billing account, as OpenAI reports it: HTTP 429, but waiting never
+// clears it — the message has to say "no credit", not "wait a minute".
+Given('the LLM API returns a 429 insufficient-quota error', function (this: TamedTableWorld) {
+  ctxOf(this).mockLlmFetch = () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: 'You exceeded your current quota, please check your plan and billing details.',
+            type: 'insufficient_quota',
+            code: 'insufficient_quota',
+          },
+        }),
+        { status: 429, headers: { 'content-type': 'application/json', 'retry-after': '0' } },
+      ),
+    );
+});
+
+/** A minimal successful completion, shaped for whichever provider is called. */
+Given('the LLM API answers any completion', function (this: TamedTableWorld) {
+  ctxOf(this).mockLlmFetch = (input) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const body =
+      url.includes('generativelanguage')
+        ? { candidates: [{ content: { parts: [{ text: 'OK' }], role: 'model' }, finishReason: 'STOP' }] }
+        : url.includes('anthropic')
+          ? { id: 'msg_1', type: 'message', role: 'assistant', model: 'test', content: [{ type: 'text', text: 'OK' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }
+          : { id: 'c1', object: 'chat.completion', model: 'test', choices: [{ index: 0, message: { role: 'assistant', content: 'OK' }, finish_reason: 'stop' }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } };
+    return Promise.resolve(
+      new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
+  };
 });
 
 Given('the LLM API returns a 401 unauthorized error', function (this: TamedTableWorld) {

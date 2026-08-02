@@ -237,3 +237,48 @@ Then('cell {string} holds no link', async function (this: object, cell: string) 
   const link = await page(this).$(`[data-tv-cell="${cell}"] a`);
   assert.equal(link, null);
 });
+
+// ── Inline editor: wrapping, growing textarea ────────────────────────────────
+
+When('the user starts editing cell {string}', async function (this: object, cell: string) {
+  await page(this).dblclick(`[data-tv-cell="${cell}"]`);
+  await page(this).waitForSelector('[data-tv-edit]');
+});
+
+When('the user types {int} characters into the editor', async function (this: object, n: number) {
+  // A single word would never wrap; repeat a short one so the text can break.
+  const text = 'lorem '.repeat(Math.ceil(n / 6)).slice(0, n);
+  await page(this).fill('[data-tv-edit]', text);
+});
+
+When('the user presses Shift+Enter in the editor', async function (this: object) {
+  await page(this).press('[data-tv-edit]', 'Shift+Enter');
+});
+
+Then('the editor is taller than {int} lines', async function (this: object, lines: number) {
+  const box = (await page(this).locator('[data-tv-edit]').boundingBox())!;
+  const lineHeight = await page(this).$eval('[data-tv-edit]', (el) =>
+    parseFloat(getComputedStyle(el).lineHeight),
+  );
+  assert.ok(
+    box.height > lines * lineHeight,
+    `expected the editor taller than ${lines} lines (${lines * lineHeight}px), got ${box.height}px`,
+  );
+});
+
+Then('the editor has no sideways scroll', async function (this: object) {
+  const overflow = await page(this).$eval(
+    '[data-tv-edit]',
+    (el) => el.scrollWidth - el.clientWidth,
+  );
+  assert.ok(overflow <= 1, `expected no horizontal overflow, got ${overflow}px`);
+});
+
+Then('the editor is still open', async function (this: object) {
+  assert.ok(await page(this).$('[data-tv-edit]'), 'the editor closed');
+});
+
+Then('the editor holds {int} lines of text', async function (this: object, n: number) {
+  const value = await page(this).$eval('[data-tv-edit]', (el) => (el as HTMLTextAreaElement).value);
+  assert.equal(value.split('\n').length, n, `editor value was ${JSON.stringify(value)}`);
+});

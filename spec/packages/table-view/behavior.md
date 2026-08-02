@@ -49,7 +49,17 @@ A row-number column, sticky headers, and the visible rows. Gestures:
 - Click a cell → `onSelectCell(absoluteRow, column)`; the selected cell
   tints.
 - Double-click a cell → an inline editor opens; Enter or blur commits through
-  `onEditCell(absoluteRow, column, value)`, Escape cancels.
+  `onEditCell(absoluteRow, column, value)`, Escape cancels. The editor is a
+  wrapping textarea, not a one-line box: a cell holding a long log line or a
+  JSON blob is unreadable through a 28-pixel slot that scrolls sideways one
+  character at a time. It floats over the cells beside it — as wide as its own
+  cell, never narrower than 320px and never wider than 560px — and grows a
+  line at a time as the value needs, up to seven lines, then it scrolls. The caret starts at the
+  beginning, so a long value opens on its first character rather than its
+  last, and a cell near the right edge anchors the editor to its right so the
+  box grows inwards instead of off screen. Shift+Enter types a newline (a cell
+  may legitimately hold one); plain Enter still commits, matching the chat
+  composer.
 - Drag a header onto another → the dragged column lands at the target's
   position and `onReorderColumns` receives the full new order. The drag grip
   appears on header hover.
@@ -131,7 +141,9 @@ the host owns every piece of state, the grid renders and reports:
 
 All styling reads ui-kit theme tokens via `useTheme()`; the pulse and
 grip-reveal animations ship inside the component. Stable attributes for
-tests: `data-tv-header`, `data-tv-resize`, `data-tv-cell="<absRow>:<col>"`,
+tests: `data-tv-header`, `data-tv-resize`, `data-tv-scroll` (the grid's own
+scroll box — the editor measures its right edge against it),
+`data-tv-cell="<absRow>:<col>"`,
 `data-tv-edit`, `data-tv-range`, `data-tv-streaming`, `data-tv-menu="<col>"`
 (the ⋮ button), `data-tv-colmenu="<col>"` (the open menu, with
 `data-tv-menu-item` entries and `data-tv-filter-input`), `data-tv-sort`,

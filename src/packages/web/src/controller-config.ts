@@ -27,10 +27,47 @@ export class ConfigManager {
     return keyFor(this.host.config);
   }
 
+  /** Whether the Settings "Test" button has anything to test: a key for the
+   *  selected provider. An empty field disables the button. */
+  canTestKey(): boolean {
+    return Boolean(this.activeApiKey()?.trim());
+  }
+
+  /** #ProviderSelect — prove the selected provider's key works, now, instead
+   *  of leaving the user to find out from a failed transformation. One tiny
+   *  call through the app's own engine (same SDK, same routing, same headers)
+   *  with retries off, so a dead key answers in about a second. */
+  async testKey(): Promise<void> {
+    const provider = this.host.config.provider;
+    if (!this.canTestKey()) {
+      this.host.keyTest = {
+        provider,
+        state: 'error',
+        message: 'Enter an API key first.',
+      };
+      this.host.notify();
+      return;
+    }
+    this.host.keyTest = { provider, state: 'running', message: 'Testing…' };
+    this.host.notify();
+    const started = Date.now();
+    try {
+      const { model } = await this.host.engine.testConnection();
+      const seconds = ((Date.now() - started) / 1000).toFixed(1);
+      this.host.keyTest = { provider, state: 'ok', message: `${model} answered in ${seconds}s` };
+    } catch (e) {
+      this.host.keyTest = { provider, state: 'error', message: userFacingMessage(e, provider) };
+    }
+    this.host.notify();
+  }
+
   openSettings(): void {
     this.host.settingsOpen = true;
     // The Saved badge only ever states a save made this visit.
     this.host.savedProvider = null;
+    // Same for the key-test result: a green tick from an earlier visit would
+    // vouch for a key that may since have been edited or run out of credit.
+    this.host.keyTest = null;
     this.host.notify();
   }
 
@@ -83,6 +120,9 @@ export class ConfigManager {
       return;
     }
     this.host.config = next;
+    // The key test vouches for one key on one provider — the moment either
+    // moves, the old verdict is about something else.
+    if (engineChanged || next.provider !== this.host.keyTest?.provider) this.host.keyTest = null;
     // Closing the voice gate (a provider without voice, or its key removed)
     // tears down any live mic or hands-free session along with the controls.
     this.host.voice.enforceGate();

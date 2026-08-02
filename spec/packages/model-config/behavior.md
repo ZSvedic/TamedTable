@@ -243,6 +243,21 @@ supplies each path so the component stays free of any site-specific URL:
 
 Either link is omitted when its prop is unset.
 
+## Testing a key
+
+A key that is merely typed is not a key that works. Each expanded card carries
+a **Test** button next to its key field, and the card answers in a second
+instead of leaving the user to find out from a failed transformation minutes
+later. The component still touches no network: clicking calls
+`onTestKey(provider)` and the host reports back through `testState`.
+
+The button reads **Test** when idle and **Testing…**, disabled, while a call is
+out. It is also disabled when the key field is empty — there is nothing to
+test. The result renders under the key field, keyed to the card that ran it: a
+green `✓ <model> answered in <n.n>s` line on success, a red sentence naming
+what went wrong otherwise. Only one result shows at a time; testing a second
+card replaces the first card's result.
+
 The component is pure — props in, callbacks out — and holds no state except
 the per-provider reveal toggle. It never touches storage or the network:
 
@@ -262,8 +277,14 @@ the per-provider reveal toggle. It never touches storage or the network:
   (default 3000 ms); the web app passes its standard toast duration for the
   badge text
 - `byokHelpUrl`, `changeModelsHelpUrl` — the two optional help-link URLs above
+- `testState` — the key test the host last ran, or null:
+  `{ provider, state: 'running' | 'ok' | 'error', message }`. The card whose
+  provider matches renders it; every other card renders nothing.
 - `onProviderClick(p)` — a card header was clicked
 - `onKeyChange(p, value)` — the user typed in a key field
+- `onTestKey(p)` — the card's Test button was clicked. Omit it and no card
+  shows a Test button, so a host with no way to call a provider gets no
+  button that cannot work.
 
 The host owns all state and semantics. In the web app, `SettingsPanel` binds
 the props to `WebController` (clicking a card expands it and selects the
@@ -306,12 +327,15 @@ Styling comes only from `--mc-*` CSS custom properties, each with a default
 that gives a presentable light look standalone. The host injects its theme by
 setting the variables on any wrapping element: `--mc-ink`, `--mc-ink3`,
 `--mc-surface`, `--mc-surface2`, `--mc-surface3`, `--mc-line`, `--mc-line2`,
-`--mc-accent`, `--mc-accent-soft`, `--mc-ok`, `--mc-ok-soft`, `--mc-font-ui`,
+`--mc-accent`, `--mc-accent-soft`, `--mc-ok`, `--mc-ok-soft`, `--mc-err`,
+`--mc-font-ui`,
 `--mc-font-mono`, `--mc-radius`, `--mc-radius-sm`, `--mc-radius-lg`.
 
 For tests, each element carries a stable data attribute:
-`data-mc-card`, `data-mc-key`, `data-mc-reveal`, `data-mc-keyurl` (all keyed by
-provider id), each read-only default row `data-mc-model` (keyed by model id)
+`data-mc-card`, `data-mc-key`, `data-mc-reveal`, `data-mc-keyurl`,
+`data-mc-test` (the Test button), `data-mc-testresult` (its result line, with
+`data-mc-teststate` carrying `ok` or `error`) — all keyed by
+provider id — each read-only default row `data-mc-model` (keyed by model id)
 plus `data-mc-role` (`"primary"` or `"secondary"`), `data-mc-saved` on the
 `✓ Saved` badge (keyed by provider id), `data-mc-byok` on the
 top BYOK help link, and `data-mc-changemodels` on the bottom FAQ link.

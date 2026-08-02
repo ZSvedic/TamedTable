@@ -50,6 +50,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     '--mc-accent-soft': t.accentSoft,
     '--mc-ok': t.ok,
     '--mc-ok-soft': t.okSoft,
+    '--mc-err': t.err,
     '--mc-font-ui': typography.ui,
     '--mc-font-mono': typography.mono,
     '--mc-radius': `${space.radius}px`,
@@ -136,8 +137,10 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             savedFadeMs={toastDurationMs('✓ Saved')}
             byokHelpUrl="../BYOK-setup.html"
             changeModelsHelpUrl="../FAQ.html#change-models"
+            testState={controller.keyTest}
             onProviderClick={(p) => void controller.clickProviderCard(p)}
             onKeyChange={handleKeyChange}
+            onTestKey={() => void controller.testKey()}
           />
 
           {/* #LazyExec — Simple mode: every AI step runs table-wide at once,

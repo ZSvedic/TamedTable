@@ -6,6 +6,7 @@
 // looks the same standalone (demo page) and inside an app.
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -90,6 +91,83 @@ const TV_CSS =
   ' .tv-pulse { animation: tv-pulse-kf 1.2s ease-in-out infinite; }' +
   ' .tv-th .tv-grip { opacity: 0; transition: opacity 0.15s; }' +
   ' .tv-th:hover .tv-grip { opacity: 1; }';
+
+// ── Inline cell editor ──────────────────────────────────────────────────────
+// A cell holding a log line or a JSON blob is unreadable through a 28-pixel
+// slot that scrolls sideways one character at a time, so the editor wraps and
+// grows instead: it floats over the cells beside it, sized to its own column
+// but never cramped, and adds a line at a time until it hits the cap and
+// scrolls.
+const EDITOR_LINE_H = 18;
+const EDITOR_MAX_LINES = 7;
+const EDITOR_MIN_W = 320;
+const EDITOR_MAX_W = 560;
+
+function growEditor(ta: HTMLTextAreaElement): void {
+  const max = EDITOR_MAX_LINES * EDITOR_LINE_H + space.px10;
+  ta.style.height = 'auto';
+  ta.style.height = `${Math.max(space.rowH + 2, Math.min(ta.scrollHeight + 2, max))}px`;
+}
+
+function CellEditor({
+  value,
+  onChange,
+  onCommit,
+  onCancel,
+  style,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+  style: CSSProperties;
+}): ReactNode {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const ta = ref.current;
+    if (!ta) return;
+    const cell = ta.parentElement?.getBoundingClientRect();
+    const width = Math.min(EDITOR_MAX_W, Math.max(cell?.width ?? 0, EDITOR_MIN_W));
+    ta.style.width = `${width}px`;
+    // A cell near the right edge would push the box off screen — anchor it to
+    // the cell's right instead, so it grows inwards.
+    const limit = ta.closest('[data-tv-scroll]')?.getBoundingClientRect().right;
+    if (cell && limit !== undefined && cell.left + width > limit) {
+      ta.style.left = 'auto';
+      ta.style.right = '-1px';
+    }
+    growEditor(ta);
+    ta.focus();
+    // Caret at the start: an end-caret opens a long value scrolled to its
+    // tail, which is the very thing this editor exists to fix.
+    ta.setSelectionRange(0, 0);
+    ta.scrollTop = 0;
+  }, []);
+
+  return (
+    <textarea
+      ref={ref}
+      data-tv-edit=""
+      value={value}
+      onChange={(e) => {
+        onChange(e.target.value);
+        growEditor(e.currentTarget);
+      }}
+      onBlur={onCommit}
+      onKeyDown={(e) => {
+        // Enter commits and Shift+Enter types a newline — the same chord the
+        // chat composer uses, and a cell may legitimately hold a newline.
+        if (e.key === 'Enter' && !e.shiftKey && !isImeComposingEvent(e)) {
+          e.preventDefault();
+          onCommit();
+        } else if (e.key === 'Escape') {
+          onCancel();
+        }
+      }}
+      style={style}
+    />
+  );
+}
 
 export function TableView({
   id,
@@ -321,7 +399,9 @@ export function TableView({
       }}
     >
       <style>{TV_CSS}</style>
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      {/* data-tv-scroll: the visible box the inline editor measures itself
+          against, so a cell near the right edge flips its editor inwards. */}
+      <div data-tv-scroll="" style={{ flex: 1, overflow: 'auto' }}>
         {/* Sizes to the table so the banner spans its full width even when the
             table overflows the viewport horizontally. */}
         <div style={{ width: 'max-content', minWidth: '100%' }}>
@@ -562,43 +642,46 @@ export function TableView({
                           }}
                           style={{
                             ...bodyCell,
-                            padding: isEditing ? 0 : bodyCell.padding,
+                            // The editor floats over its neighbours, so the
+                            // cell has to position it and stop clipping it.
+                            ...(isEditing
+                              ? { position: 'relative', overflow: 'visible', zIndex: 4 }
+                              : null),
                             background:
                               isSelected && !isEditing ? t.accentSoft
                               : isChanged ? t.accentSoft
                               : undefined,
-                            boxShadow: isEditing
-                              ? `inset 0 0 0 2px ${t.accent}`
-                              : isSelected ? `inset 0 0 0 1.5px ${t.accent}`
-                              : undefined,
+                            boxShadow: isSelected && !isEditing ? `inset 0 0 0 1.5px ${t.accent}` : undefined,
                           }}
                         >
                           {isEditing ? (
-                            <input
-                              autoFocus
-                              data-tv-edit=""
+                            <CellEditor
                               value={draft}
-                              onChange={(e) => setDraft(e.target.value)}
-                              onBlur={commitEdit}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !isImeComposingEvent(e)) {
-                                  e.preventDefault();
-                                  commitEdit();
-                                } else if (e.key === 'Escape') {
-                                  setEditing(null);
-                                }
-                              }}
+                              onChange={setDraft}
+                              onCommit={commitEdit}
+                              onCancel={() => setEditing(null)}
                               style={{
-                                width: '100%',
+                                position: 'absolute',
+                                top: -1,
+                                left: -1,
+                                zIndex: 1,
                                 boxSizing: 'border-box',
+                                minWidth: 'calc(100% + 2px)',
+                                maxWidth: EDITOR_MAX_W,
+                                resize: 'none',
+                                overflow: 'auto',
+                                whiteSpace: 'pre-wrap',
+                                overflowWrap: 'break-word',
                                 fontFamily: typography.mono,
                                 fontSize: typography.size.sm,
+                                lineHeight: `${EDITOR_LINE_H}px`,
                                 background: t.surface,
                                 color: t.ink,
                                 border: 'none',
                                 outline: 'none',
-                                padding: `0 ${space.px10}px`,
-                                height: space.rowH,
+                                borderRadius: space.radiusSm,
+                                padding: `5px ${space.px10}px`,
+                                boxShadow: `inset 0 0 0 2px ${t.accent}, ${t.shadowLg}`,
                               }}
                             />
                           ) : (

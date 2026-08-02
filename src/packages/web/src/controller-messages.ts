@@ -83,6 +83,15 @@ export function describeError(error: unknown, provider?: string): { message: str
   if (statusCode === 404 || /\b404\b|not_found_error|model.*not found/i.test(fullText))
     return { message: 'Model not found. The selected model may be unavailable.', reportable: false };
 
+  // An empty billing account arrives as a 429 too, so it has to be checked
+  // before the rate-limit rule below — OpenAI answers no-credit with
+  // `insufficient_quota`, and "wait a minute" is a wait that never ends.
+  if (/insufficient_quota|insufficient credit|exceeded your current quota|billing_not_active|no credit balance|credit balance is too low/i.test(fullText))
+    return {
+      message: `Your ${label} account has no credit left. Add credit (or a billing method) and try again.`,
+      reportable: false,
+    };
+
   // Rate limiting is not the user's fault — say retry, not rephrase.
   if (statusCode === 429 || /\b429\b|rate.?limit|resource.{0,5}exhausted|too many requests|quota/i.test(fullText))
     return { message: `Rate limited by the ${label} API. Wait a minute and try again.`, reportable: false };

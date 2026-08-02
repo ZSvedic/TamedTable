@@ -300,6 +300,11 @@ export interface HeadlessRunner {
   /** One model call: translate the current flow into a standalone
    *  Python script. Returns the script source. */
   exportPython(): Promise<string>;
+  /** #ProviderSelect — one minimal call on the cell model with retries off,
+   *  proving the configured key and provider work. Resolves with the model id
+   *  it reached; rejects with the provider's own error. Needs no loaded
+   *  table. */
+  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }>;
   // #LazyExec — web-shell seams. adoptState swaps in a spec + derived rows
   // with no replay and no model call (provider switch keeps evaluated rows);
   // `origins` carries the adopted rows' source origins (see rowOrigins) so
@@ -1100,6 +1105,25 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   // #PyExport
+  // #ProviderSelect — the Settings "Test" button. One tiny call on the cheap
+  // (cell) model to prove the key, the model and the network path all work,
+  // with retries off: the request path's backoff is right for a real
+  // transformation and wrong here, where an empty billing account would keep
+  // the user watching a spinner for a minute to learn what the first response
+  // already said. No rate-limiter wait (a key test must not queue behind a
+  // run) and no usage recorded — a test is not part of any request.
+  async testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }> {
+    const model = this.resolvedCellModelId();
+    await generateText({
+      model: this.cellModel(),
+      prompt: 'Reply with OK.',
+      abortSignal: opts?.signal,
+      ...this.samplingParams(model),
+      maxRetries: 0,
+    });
+    return { model };
+  }
+
   async exportPython(): Promise<string> {
     this.requireLoaded();
     // Same trims as a patch turn: basename-only table, no query provenance.
