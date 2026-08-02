@@ -263,8 +263,13 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="privacy" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>There is no privacy policy because you send us no data. TamedTable is purely client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers, because we don't have a server. We don't use cookies and we don't run any analytics. There is simply nothing to regulate.</p>
+        <p>There is no privacy policy because you send us no data. TamedTable is purely client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers: we don't have a server. We don't use cookies.</p>
         <p>There is no separate EULA either: TamedTable is source-available (<a href="#busl">BUSL</a>), so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">license on GitHub</a>.</p>
+        <p>That said, note that:</p>
+        <ol class="ab-list">
+          <li>When adding your provider's API key, check that provider's privacy policy and EULA.</li>
+          <li>For analytics, we use privacy-first <a href="https://developers.cloudflare.com/web-analytics/about/" target="_blank" rel="noopener">Cloudflare Web Analytics</a>.</li>
+        </ol>
       </div>
     </section>
 
@@ -393,5 +398,6 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   })();
 </script>
 
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6c98efef9e034b45840e0518efb24a6d"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
