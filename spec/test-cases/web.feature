@@ -52,6 +52,58 @@ Feature: Web front-end
       And user saves the API key "sk-ant-example-key"
       Then the configured API key is "sk-ant-example-key"
 
+  # The Test button answers "does this key work?" in a second, instead of
+  # leaving the user to find out from a failed transformation minutes later.
+  Rule: The settings panel tests an API key on demand
+
+    @web
+    Scenario: Testing a working key reports the model that answered
+      Given the TamedTable web app
+      And user clicks the provider card "gemini"
+      And the gemini key is set to "good-key"
+      And the LLM API answers any completion
+      When user tests the API key
+      Then the key test succeeds
+      And the key test result names the model "gemini-3.1-flash-lite"
+
+    @web
+    Scenario: Testing an invalid key reports it as invalid
+      Given the TamedTable web app
+      And user clicks the provider card "gemini"
+      And the gemini key is set to "bad-key"
+      And the LLM API returns a 401 unauthorized error
+      When user tests the API key
+      Then the key test fails with "Invalid API key"
+
+    # The friend's report: an empty OpenAI balance answers 429 with
+    # insufficient_quota, and "wait a minute" is a wait that never ends.
+    @web
+    Scenario: Testing a key on an account with no credit says so, not "wait a minute"
+      Given the TamedTable web app
+      And user clicks the provider card "openai"
+      And the openai key is set to "broke-key"
+      And the LLM API returns a 429 insufficient-quota error
+      When user tests the API key
+      Then the key test fails with "Your OpenAI account has no credit left"
+
+    # Retries are off for a test call, so a dead key answers once — not after
+    # the SDK has slept through its backoff.
+    @web
+    Scenario: A failing key test makes exactly one model call
+      Given the TamedTable web app
+      And user clicks the provider card "openai"
+      And the openai key is set to "broke-key"
+      And the LLM API returns a 429 insufficient-quota error
+      When user tests the API key
+      Then the LLM API was called 1 time
+
+    @web
+    Scenario: Testing a card with no key is not offered
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "openrouter"
+      Then the key test is unavailable
+
   Rule: Files move through a dialog handshake
 
     @web
@@ -698,12 +750,21 @@ Feature: Web front-end
       And user saves the API key "sk-ant-example-key"
       Then the provider card "anthropic" shows the Saved badge
 
+    # A provider with no key is not "saved" — the card's own radio already
+    # shows the choice, and the badge beside an empty field claims otherwise.
     @web
-    Scenario: Picking a provider card shows the Saved badge on it
+    Scenario: Picking a provider card shows no Saved badge
       Given the TamedTable web app
       When user opens the settings panel
       And user clicks the provider card "gemini"
-      Then the provider card "gemini" shows the Saved badge
+      Then no provider card shows a Saved badge
+
+    @web
+    Scenario: Clearing a key shows no Saved badge
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user saves the "gemini" API key ""
+      Then no provider card shows a Saved badge
 
     @web
     Scenario: Each save restarts the badge's green phase
@@ -713,6 +774,47 @@ Feature: Web front-end
       And user saves the API key "sk-ant-example-key"
       Then the provider card "anthropic" shows the Saved badge
       And the Saved badge has restarted 2 times
+
+  # Half a key is not a key: typing moves a draft, leaving the field saves it.
+  Rule: A key field saves when it loses focus
+
+    @web
+    Scenario: Typing in a key field saves nothing yet
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "anthropic"
+      And user types the "anthropic" API key "sk-ant-half"
+      Then no API key is configured
+      And no provider card shows a Saved badge
+
+    @web
+    Scenario: Leaving the key field saves it and shows the Saved badge
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "anthropic"
+      And user types the "anthropic" API key "sk-ant-whole"
+      And the "anthropic" key field loses focus
+      Then the configured API key is "sk-ant-whole"
+      And the provider card "anthropic" shows the Saved badge
+
+    @web
+    Scenario: Leaving an untouched key field saves nothing
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user saves the "anthropic" API key "sk-ant-already"
+      And user opens the settings panel
+      And the "anthropic" key field loses focus
+      Then no provider card shows a Saved badge
+
+    # A key typed but never blurred must not be lost to the Close button.
+    @web
+    Scenario: Closing the panel commits a key still being typed
+      Given the TamedTable web app
+      When user opens the settings panel
+      And user clicks the provider card "anthropic"
+      And user types the "anthropic" API key "sk-ant-unblurred"
+      And user closes the settings panel
+      Then the configured API key is "sk-ant-unblurred"
 
     @web
     Scenario: Reopening the settings panel clears the Saved badge

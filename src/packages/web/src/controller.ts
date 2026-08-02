@@ -38,6 +38,7 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  KeyTest,
   RunProgress,
   Toast,
   TutorialManifestEntry,
@@ -56,6 +57,7 @@ export type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  KeyTest,
   ResolvedConfig,
   RunProgress,
   Toast,
@@ -110,6 +112,13 @@ export class WebController implements ControllerHost {
   /** Bumped on every settings save; keys the badge so each save restarts its
    *  green phase. */
   savedSeq = 0;
+  /** #ProviderSelect — the Test button's verdict on the selected provider's
+   *  key, or null before any test. Cleared on panel open and whenever the
+   *  provider or its key moves. */
+  keyTest: KeyTest | null = null;
+  /** What each provider's key field currently holds. Typing moves the draft;
+   *  the config only changes when the field is left (see ConfigManager). */
+  keyDrafts: Record<Provider, string> = { gemini: '', openai: '', anthropic: '', openrouter: '' };
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or
@@ -598,8 +607,16 @@ export class WebController implements ControllerHost {
   // ── Settings / config (→ config) ───────────────────────────────────────────
 
   openSettings(): void { this.settingsMgr.openSettings(); }
-  closeSettings(): void { this.settingsMgr.closeSettings(); }
+  closeSettings(): Promise<void> { return this.settingsMgr.closeSettings(); }
   clickProviderCard(provider: Provider): Promise<void> { return this.settingsMgr.clickProviderCard(provider); }
+  /** The user typed in a key field — moves the draft, saves nothing. */
+  setKeyDraft(provider: Provider, value: string): void { this.settingsMgr.setKeyDraft(provider, value); }
+  /** The user left a key field (or pressed Enter) — saves the draft. */
+  commitKeyDraft(provider: Provider): Promise<void> { return this.settingsMgr.commitKeyDraft(provider); }
+  /** #ProviderSelect — run the Settings Test button's key check. */
+  testKey(): Promise<void> { return this.settingsMgr.testKey(); }
+  /** Whether there is a key to test (an empty field disables the button). */
+  canTestKey(): boolean { return this.settingsMgr.canTestKey(); }
   getConfig(): ResolvedConfig { return this.config; }
   setConfig(partial: Partial<ResolvedConfig>): Promise<void> { return this.settingsMgr.setConfig(partial); }
   /** @deprecated Use getConfig() instead. */

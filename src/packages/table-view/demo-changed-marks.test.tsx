@@ -40,7 +40,7 @@ test('RED-UI-5: demo keys changed-cell marks by view slot — after edit + sort 
       .dispatchEvent(new win.MouseEvent('dblclick', { bubbles: true }) as unknown as globalThis.Event);
   });
   const input = q('[data-tv-edit]')!;
-  setValue(input, 'Grace', win.HTMLInputElement.prototype);
+  setValue(input, 'Grace', win.HTMLTextAreaElement.prototype);
   act(() => { input.dispatchEvent(enterEvent(false)); });
 
   // Harness sanity: in the unsorted view the mark sits on the edited cell

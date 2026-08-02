@@ -1267,6 +1267,23 @@ The `onPlanEdits` callback dispatch in `Runner.request` is wrapped in
 `try/catch`. `diffPlans` and the callback can throw without aborting
 the request — the edit line is dropped, the commit proceeds.
 
+### Test the configured key (#ProviderSelect)
+
+```ts
+interface HeadlessRunner {
+  // …
+  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }>;
+}
+```
+
+One `generateText` call against the runner's cell model with `maxRetries: 0`,
+resolving with the model id it reached and rejecting with the provider's own
+error. It skips the rate limiter (one tiny call must not queue behind a run)
+and records no usage — a key test is not part of any request, so it never
+moves the estimate math or the debug info. The web Settings **Test** button is
+its only caller; `maxRetries: 0` is what makes a dead key answer in a second
+instead of after the SDK's backoff.
+
 ### Export a flow as a Python script (#PyExport)
 
 ```ts

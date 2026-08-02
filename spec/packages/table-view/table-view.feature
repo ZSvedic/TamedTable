@@ -63,6 +63,24 @@ Feature: Table view package
       Then cell "0:name" shows "Grace"
       And the demo event log shows "edit 0:name=Grace"
 
+    # A log line or a JSON blob is unreadable through a 28-pixel slot that
+    # scrolls sideways one character at a time.
+    @web
+    Scenario: A long value gets an editor that grows and wraps
+      Given the table-view demo page
+      When the user starts editing cell "0:name"
+      And the user types 240 characters into the editor
+      Then the editor is taller than 3 lines
+      And the editor has no sideways scroll
+
+    @web
+    Scenario: Shift+Enter types a newline instead of committing
+      Given the table-view demo page
+      When the user starts editing cell "0:name"
+      And the user presses Shift+Enter in the editor
+      Then the editor is still open
+      And the editor holds 2 lines of text
+
     @web
     Scenario: Dragging a header reorders the columns
       Given the table-view demo page

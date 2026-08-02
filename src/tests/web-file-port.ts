@@ -48,6 +48,8 @@ export interface WebScenarioCtx {
   /** The API key the newest model call carried, however the provider sends it.
    *  Recorded by the composite fetch — proves a key edit reached the engine. */
   lastCallApiKey?: string;
+  /** Model calls this scenario has made — proves a key test does not retry. */
+  llmCallCount?: number;
   /** #LookupJoin — background tasks that answer the lookup dialog through the
    *  public `chooseLookupFile()` seam when a join later raises it, so a @web
    *  `load the lookup table …` Given never reaches into the controller engine. */

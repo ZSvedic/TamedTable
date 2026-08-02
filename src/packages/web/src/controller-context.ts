@@ -25,6 +25,7 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
+  KeyTest,
   RunProgress,
   VoiceStatus,
   WebControllerOptions,
@@ -52,6 +53,8 @@ export interface ControllerHost {
   expandedProvider: Provider | null;
   savedProvider: Provider | null;
   savedSeq: number;
+  keyTest: KeyTest | null;
+  keyDrafts: Record<Provider, string>;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;

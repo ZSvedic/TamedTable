@@ -1132,17 +1132,44 @@ of the two roles sits above the cards, a "New here? How to get an API key" link
 sits directly below it, and a "How to change primary and secondary models?" link
 (to `FAQ.html#change-models`) sits below the cards.
 
+Each open card also has a **Test** button beside its key field, so a user
+learns their key works before they have written a single transformation.
+Clicking it makes one tiny call to that provider's secondary model with
+**retries switched off**, and answers in about a second: `✓ <model> answered in
+<n.n>s` in green, or the same red sentence a failed request would have shown —
+invalid key, no credit, rate limit, network. Retries are off on purpose. The
+normal request path retries a 429 with backoff before giving up, which is right
+for a real transformation and wrong for a test: a user with an empty billing
+account would sit watching a spinner for a minute to learn something the first
+response already said. The test runs against the secondary model because it is
+the cheap one, and it goes through the app's own engine — same SDK, same
+routing, same headers — so a green tick means requests will work, not just that
+some endpoint answered. A card with an empty key field has its button
+disabled.
+
 Changes apply immediately — selecting a provider card calls
 `controller.clickProviderCard(p)`, which pins that provider and its two fixed
 defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
-"Close" button; there is no separate "Save" button. Because saving is silent,
-each change confirms inline on the card it touched: a `✓ Saved` badge appears
-in that provider's card header, right of the provider name and left of the
-voice badge. It starts green and fades to grey after the standard toast time
-for that text (the 3-second toast floor); each new save — every keystroke in a
-key field, every provider pick — restarts the green phase. The badge marks
-only the most recently saved provider's card and clears when the panel opens,
-so it never claims a save from an earlier visit. Switching provider changes
+"Close" button; there is no separate "Save" button.
+
+A **key is saved when its field loses focus** (or on Enter), not on every
+keystroke. Typing only moves a draft the card renders; nothing is persisted and
+the engine is not rebuilt until the field is left. Half a key is not a key, and
+rebuilding the engine per keystroke replays the whole flow for a value the user
+has not finished typing. Closing the panel commits any field still holding an
+unsaved draft, so a key is never lost to a missed blur. Leaving a field the user
+did not change saves nothing.
+
+Because saving is silent, a save confirms inline on the card it touched: a
+`✓ Saved` badge appears in that provider's card header, right of the provider
+name and left of the voice badge. It starts green and fades to grey after the
+standard toast time for that text (the 3-second toast floor); each new save
+restarts the green phase. **Only a key landing earns the badge.** Picking a
+provider card does not: the card's own radio already shows the choice, and
+`✓ Saved` beside an empty key field claims something that isn't true. Clearing
+a key earns no badge either. The badge marks only the most recently saved
+provider's card and clears when the panel opens, so it never claims a save from
+an earlier visit. Switching provider changes
 the models, which rebuilds the engine and replays the current transformations
 against the source, so the table on screen is preserved and the new models drive
 the next request. **Editing the selected provider's key rebuilds it too.** The
@@ -1173,7 +1200,12 @@ key. A model-not-found error reads "Model not found. The selected model may be
 unavailable." A rate-limit rejection (HTTP 429) reads "Rate limited by the
 Google API. Wait a minute and try again." (or OpenAI / Anthropic) — the request
 did not fail because of anything the user wrote, so the message says to retry
-rather than rephrase. A network or CORS failure reads "Network error. Could not reach the
+rather than rephrase. An account with no money left is checked **before** the
+rate-limit rule, because it arrives as a 429 too: OpenAI answers an empty
+balance with `insufficient_quota`, and telling that user to wait a minute sends
+them back to a wait that never ends. It reads "Your OpenAI account has no
+credit left. Add credit (or a billing method) and try again." (or Google /
+Anthropic / OpenRouter). A network or CORS failure reads "Network error. Could not reach the
 Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pass through as-is so no
 information is lost. The provider name in the message matches whichever provider
 card is selected.

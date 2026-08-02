@@ -57,7 +57,7 @@ test('RED-UI-1: Enter during IME composition commits the half-composed cell edit
   // failure is a broken harness, not RED-UI-1.
   const control: string[] = [];
   const controlInput = openEditor(mountGrid({ onEditCell: (r, c, v) => control.push(`${r}:${c}=${v}`) }));
-  setValue(controlInput, 'とう', win.HTMLInputElement.prototype);
+  setValue(controlInput, 'とう', win.HTMLTextAreaElement.prototype);
   act(() => { controlInput.dispatchEvent(enterEvent(false)); });
   if (control.length !== 1) {
     throw new Error(`harness broken (not RED-UI-1): plain Enter should have committed once, got ${JSON.stringify(control)}`);
@@ -68,7 +68,7 @@ test('RED-UI-1: Enter during IME composition commits the half-composed cell edit
   const edits: string[] = [];
   const el = mountGrid({ onEditCell: (r, c, v) => edits.push(`${r}:${c}=${v}`) });
   const input = openEditor(el);
-  setValue(input, 'とう', win.HTMLInputElement.prototype);
+  setValue(input, 'とう', win.HTMLTextAreaElement.prototype);
   act(() => { input.dispatchEvent(enterEvent(true)); });
   assert.deepEqual(
     edits,

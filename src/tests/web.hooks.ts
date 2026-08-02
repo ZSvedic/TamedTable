@@ -70,6 +70,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       // Everything past the fixture check is a model call — note the key it
       // carries, so a step can prove a settings edit reached the engine.
       ctx.lastCallApiKey = apiKeyOfCall(input, init);
+      ctx.llmCallCount = (ctx.llmCallCount ?? 0) + 1;
       if (ctx.mockLlmFetch) return ctx.mockLlmFetch(input, init);
       if (innerFetch) return Promise.resolve(innerFetch(input, init));
       return fetch(input as Parameters<typeof fetch>[0], init);

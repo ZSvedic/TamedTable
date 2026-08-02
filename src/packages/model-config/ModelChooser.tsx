@@ -38,8 +38,27 @@ export interface ModelChooserProps {
    * the bottom below the cards. Points at the FAQ entry that explains editing
    * models.json. The host supplies the path. */
   changeModelsHelpUrl?: string;
+  /** The key test the host last ran, or null. Only the matching card renders
+   *  it — every other card shows nothing. */
+  testState?: KeyTest | null;
   onProviderClick: (p: Provider) => void;
   onKeyChange: (p: Provider, value: string) => void;
+  /** The user finished with a key field — it lost focus, or they pressed
+   *  Enter. A host that saves on every keystroke can leave it unset and use
+   *  `onKeyChange` alone. */
+  onKeyCommit?: (p: Provider, value: string) => void;
+  /** The card's Test button was clicked. Omit it and no card shows a Test
+   *  button — a host with no way to reach a provider gets no button that
+   *  cannot work. */
+  onTestKey?: (p: Provider) => void;
+}
+
+/** A card's verdict on its API key: what the host reports back after
+ *  `onTestKey`. */
+export interface KeyTest {
+  provider: Provider;
+  state: 'running' | 'ok' | 'error';
+  message: string;
 }
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
@@ -57,6 +76,7 @@ const accent = v('accent', '#4a8fd4');
 const accentSoft = v('accent-soft', '#e9f2fb');
 const ok = v('ok', '#247a4d');
 const okSoft = v('ok-soft', '#e4f4ea');
+const err = v('err', '#b3261e');
 const fontUi = v('font-ui', 'system-ui, sans-serif');
 const fontMono = v('font-mono', 'ui-monospace, SFMono-Regular, Menlo, monospace');
 const radius = v('radius', '6px');
@@ -149,8 +169,11 @@ export function ModelChooser({
   savedFadeMs = 3000,
   byokHelpUrl,
   changeModelsHelpUrl,
+  testState,
   onProviderClick,
   onKeyChange,
+  onKeyCommit,
+  onTestKey,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
     gemini: false, openai: false, anthropic: false, openrouter: false,
@@ -321,55 +344,127 @@ export function ModelChooser({
     );
   };
 
+  // The Test button + its verdict. A key that is merely typed is not a key
+  // that works, and the alternative to asking now is finding out from a failed
+  // transformation minutes later. The component runs nothing: it reports the
+  // click and renders whatever the host hands back.
+  const testButton = (meta: ProviderMeta): ReactNode => {
+    if (!onTestKey) return null;
+    const running = testState?.provider === meta.id && testState.state === 'running';
+    const disabled = running || keys[meta.id].trim() === '';
+    return (
+      <button
+        type="button"
+        data-mc-test={meta.id}
+        disabled={disabled}
+        onClick={() => onTestKey(meta.id)}
+        title={disabled && !running ? 'Enter an API key first' : 'Check this key against the provider'}
+        style={{
+          flex: '0 0 auto',
+          padding: '7px 12px',
+          border: `1px solid ${line2}`,
+          borderRadius: radius,
+          background: surface2,
+          color: disabled ? ink3 : ink,
+          fontFamily: fontUi,
+          fontSize: 12.5,
+          fontWeight: 500,
+          cursor: disabled ? 'default' : 'pointer',
+        }}
+      >
+        {running ? 'Testing…' : 'Test'}
+      </button>
+    );
+  };
+
+  const testResult = (meta: ProviderMeta): ReactNode => {
+    if (!testState || testState.provider !== meta.id || testState.state === 'running') return null;
+    const good = testState.state === 'ok';
+    return (
+      <div
+        data-mc-testresult={meta.id}
+        data-mc-teststate={testState.state}
+        style={{
+          marginTop: 6,
+          padding: '5px 8px',
+          borderRadius: radiusSm,
+          background: good ? okSoft : 'transparent',
+          color: good ? ok : err,
+          fontFamily: fontUi,
+          fontSize: 11.5,
+          lineHeight: 1.45,
+        }}
+      >
+        {good ? `✓ ${testState.message}` : testState.message}
+      </div>
+    );
+  };
+
+  // The masked key input and its reveal toggle, in one bordered box.
+  const keyField = (meta: ProviderMeta): ReactNode => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        flex: 1,
+        minWidth: 0,
+        border: `1px solid ${line2}`,
+        borderRadius: radius,
+        padding: '6px 8px',
+        background: surface2,
+      }}
+    >
+      <input
+        type={revealed[meta.id] ? 'text' : 'password'}
+        data-mc-key={meta.id}
+        value={keys[meta.id]}
+        onChange={(e) => onKeyChange(meta.id, e.target.value)}
+        onBlur={(e) => onKeyCommit?.(meta.id, e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onKeyCommit?.(meta.id, e.currentTarget.value);
+        }}
+        placeholder={meta.keyPlaceholder}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          fontFamily: fontMono,
+          fontSize: 12.5,
+          color: ink,
+        }}
+      />
+      <button
+        type="button"
+        data-mc-reveal={meta.id}
+        onClick={() => toggleReveal(meta.id)}
+        title={revealed[meta.id] ? 'Hide key' : 'Show key'}
+        style={{
+          background: 'transparent',
+          border: 0,
+          padding: 2,
+          cursor: 'pointer',
+          color: ink3,
+          display: 'flex',
+        }}
+      >
+        {eyeIcon(!revealed[meta.id])}
+      </button>
+    </div>
+  );
+
   const cardBody = (meta: ProviderMeta): ReactNode => {
     return (
       <div style={{ padding: '8px 14px 12px', borderTop: `1px solid ${line}` }}>
-        {/* API key field */}
+        {/* API key field, with the Test button beside it */}
         <div style={{ marginBottom: 4 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              border: `1px solid ${line2}`,
-              borderRadius: radius,
-              padding: '6px 8px',
-              background: surface2,
-            }}
-          >
-            <input
-              type={revealed[meta.id] ? 'text' : 'password'}
-              data-mc-key={meta.id}
-              value={keys[meta.id]}
-              onChange={(e) => onKeyChange(meta.id, e.target.value)}
-              placeholder={meta.keyPlaceholder}
-              style={{
-                flex: 1,
-                border: 'none',
-                outline: 'none',
-                background: 'transparent',
-                fontFamily: fontMono,
-                fontSize: 12.5,
-                color: ink,
-              }}
-            />
-            <button
-              type="button"
-              data-mc-reveal={meta.id}
-              onClick={() => toggleReveal(meta.id)}
-              title={revealed[meta.id] ? 'Hide key' : 'Show key'}
-              style={{
-                background: 'transparent',
-                border: 0,
-                padding: 2,
-                cursor: 'pointer',
-                color: ink3,
-                display: 'flex',
-              }}
-            >
-              {eyeIcon(!revealed[meta.id])}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: 6 }}>
+            {keyField(meta)}
+            {testButton(meta)}
           </div>
+          {testResult(meta)}
           {/* Env-var hint + deep link to the provider's key page */}
           <div
             style={{
