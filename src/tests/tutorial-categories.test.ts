@@ -12,9 +12,11 @@ import { TUTORIAL_CATEGORIES } from '../packages/web/src/tutorial-categories.ts'
 // Repo root is two levels up from src/tests/.
 const homepage = readFileSync(join(import.meta.dir, '../../marketing/web/index.html'), 'utf8');
 
-// Each feature section's text column leads with `<div class="feat-text"> … <h2>Title</h2>`.
+// Each feature section's text column leads with `<div class="feat-text"> …
+// <h2><a class="sec-link" href="#slug">Title</a></h2>` (the heading links to
+// its own section so visitors can grab a deep link).
 function homepageSectionTitles(): string[] {
-  const re = /<div class="feat-text">\s*<h2>([^<]+)<\/h2>/g;
+  const re = /<div class="feat-text">\s*<h2><a class="sec-link" href="#[^"]+">([^<]+)<\/a><\/h2>/g;
   const out: string[] = [];
   for (let m = re.exec(homepage); m; m = re.exec(homepage)) {
     out.push(m[1]!.replace(/&amp;/g, '&').trim());
