@@ -17306,6 +17306,7 @@ function ModelChooser({
   testState,
   onProviderClick,
   onKeyChange,
+  onKeyCommit,
   onTestKey
 }) {
   const [revealed, setRevealed] = import_react.useState({
@@ -17506,6 +17507,11 @@ function ModelChooser({
         "data-mc-key": meta.id,
         value: keys[meta.id],
         onChange: (e) => onKeyChange(meta.id, e.target.value),
+        onBlur: (e) => onKeyCommit?.(meta.id, e.target.value),
+        onKeyDown: (e) => {
+          if (e.key === "Enter")
+            onKeyCommit?.(meta.id, e.currentTarget.value);
+        },
         placeholder: meta.keyPlaceholder,
         style: {
           flex: 1,
