@@ -108,7 +108,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   <section class="sec-paper" id="data-jobs">
     <div class="wrap">
       <div class="sec-head">
-        <h2>Every common data job, in natural language</h2>
+        <h2><a class="sec-link" href="#data-jobs">Every common data job, in natural language</a></h2>
       </div>
       <div class="vp-grid">
         <div class="vp-card">
@@ -166,7 +166,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   <!-- ============================ HOW IT WORKS ============================ -->
   <section id="how-it-works">
     <div class="wrap">
-      <div class="sec-head"><h2>How it works</h2></div>
+      <div class="sec-head"><h2><a class="sec-link" href="#how-it-works">How it works</a></h2></div>
       <div class="steps">
         <div class="step"><div class="num">1</div><h3><a href="/FAQ#byok">Add API keys</a></h3><p>Just the first time you start the app.</p></div>
         <div class="step"><div class="num">2</div><h3>Open a file</h3><p>CSV, JSONL, Parquet, or Arrow. Local or from a URL.</p></div>
@@ -183,7 +183,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Lazy AI execution</h2>
+          <h2><a class="sec-link" href="#lazy-ai">Lazy AI execution</a></h2>
           <p>Preview for cents, run for real when you're sure. AI steps fill the page you are looking at; the rest waits until you ask.</p>
           <div class="feat-list">
             <button class="feat-item active" id="open-large-file" data-ill="illustrations/LazyAI-shuffle.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">open a 25,000-row file</span><span class="fnote">Starts as a shuffled sample; saving keeps the original order</span></button>
@@ -207,7 +207,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Clean up</h2>
+          <h2><a class="sec-link" href="#clean-up">Clean up</a></h2>
           <p>Fix messy fields the way a person would. The AI reads each row's context before deciding.</p>
           <div class="feat-list">
             <button class="feat-item active" id="phone-numbers" data-ill="illustrations/CleanUp-phone-numbers.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-cleanup.feature" data-scenario="Clean up a messy customer list" data-label="Show me →"><span class="fcmd">"normalize the phone numbers"</span><span class="fnote">Dialing prefix inferred from regions</span></button>
@@ -232,7 +232,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Enrich &amp; extract</h2>
+          <h2><a class="sec-link" href="#enrich-extract">Enrich &amp; extract</a></h2>
           <p>Add what isn't there yet. The model fills the gaps and pulls structure out of free text.</p>
           <div class="feat-list">
             <button class="feat-item active" id="split-address" data-ill="illustrations/EnrichExtract-split-address.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-enrich.feature" data-scenario="Enrich a purchase ledger" data-label="Show me →"><span class="fcmd">"split the address into Street, City, and Zip"</span><span class="fnote">Structures whatever mess they typed</span></button>
@@ -257,7 +257,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Classify</h2>
+          <h2><a class="sec-link" href="#classify">Classify</a></h2>
           <p>Sort rows by what they mean. The AI reads what each row is about.</p>
           <div class="feat-list">
             <button class="feat-item active" id="ticket-label" data-ill="illustrations/Classify-ticket-label.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-classify.feature" data-scenario="Classify a support inbox" data-label="Show me →"><span class="fcmd">"label each ticket as billing, bug, or feature"</span><span class="fnote">Reads the ticket's meaning</span></button>
@@ -282,7 +282,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Validate</h2>
+          <h2><a class="sec-link" href="#validate">Validate</a></h2>
           <p>Catch the wrong-looking rows before anyone else does.</p>
           <div class="feat-list">
             <button class="feat-item active" id="fake-emails" data-ill="illustrations/Validate-fake-emails.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-validate.feature" data-scenario="Audit an order sheet" data-label="Show me →"><span class="fcmd">"flag emails that look fake"</span><span class="fnote">bill.gates@microsoft.com probably didn't sign up</span></button>
@@ -307,7 +307,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Process language</h2>
+          <h2><a class="sec-link" href="#process-language">Process language</a></h2>
           <p>Summarize, translate, and classify any language.</p>
           <div class="feat-list">
             <button class="feat-item active" id="voice" data-ill="illustrations/Language-voice.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-language.feature" data-scenario="Handle feedback in five languages" data-label="Show me →"><span class="fcmd">tap the mic</span><span class="fnote">Say any command out loud, hands-free</span></button>
@@ -333,7 +333,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature" data-feature>
         <div class="feat-text">
-          <h2>Be exact</h2>
+          <h2><a class="sec-link" href="#be-exact">Be exact</a></h2>
           <p>The everyday spreadsheet jobs are still here; deterministic and repeatable.</p>
           <div class="feat-list">
             <button class="feat-item active" id="dedupe" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/pr-preview/pr-274/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Remove the duplicate rows"</span><span class="fnote">Dedupe</span></button>
@@ -359,7 +359,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <div class="wrap">
       <div class="feature flip" data-feature>
         <div class="feat-text">
-          <h2>Load, save &amp; reuse</h2>
+          <h2><a class="sec-link" href="#load-save-reuse">Load, save &amp; reuse</a></h2>
           <p>Your work is yours to keep. Load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
             <button class="feat-item active" id="load" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow from web or CLI</span></button>
@@ -383,7 +383,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   <section id="trustworthy">
     <div class="wrap">
       <div class="sec-head">
-        <h2>Trustworthy by design</h2>
+        <h2><a class="sec-link" href="#trustworthy">Trustworthy by design</a></h2>
       </div>
       <div class="vp-grid">
         <div class="vp-card">
@@ -437,7 +437,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   <!-- CTA -->
   <section class="cta" id="try-it">
     <div class="wrap">
-      <h2>Try it in two minutes</h2>
+      <h2><a class="sec-link" href="#try-it">Try it in two minutes</a></h2>
       <p><a href="/FAQ#busl">Source-available</a>. Runs on your <a href="/FAQ#byok">own API key</a>, or <a href="https://www.tamedtable.com/pr-preview/pr-274/app/?tours=1" target="_blank" rel="noopener">take the guided tour</a> without one.</p>
       <div class="cta-row">
         <a class="btn btn-dprimary" href="https://www.tamedtable.com/pr-preview/pr-274/app/" target="_blank" rel="noopener">Open the web app</a>
