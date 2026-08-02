@@ -28,8 +28,10 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   Assets are symlinks (DRY): favicon-32.png → marketing/brand/, illustrations/ → marketing/illustrations/.
   The deploy workflow assembles this dir at the site root; the web app lives under /app/.
 
-  Fonts: self-hosted from fonts/ (a symlink to marketing/fonts/), so the "no
-  request leaves for a third party" privacy claim in the FAQ holds literally.
+  Fonts: self-hosted from fonts/ (a symlink to marketing/fonts/), so no font
+  request leaves for a third party. The only third-party request is the
+  cookie-less Cloudflare Web Analytics beacon before </body> — see the FAQ's
+  privacy answer.
 -->
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="styles.css">
@@ -471,5 +473,6 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 
 <script src="main.js"></script>
 
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6c98efef9e034b45840e0518efb24a6d"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
