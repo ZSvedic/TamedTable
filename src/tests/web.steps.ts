@@ -1188,7 +1188,7 @@ Then(
 
 Then('the save-ready dialog is shown', async function (this: TamedTableWorld) {
   const c = controller(this);
-  await waitFor(() => c.saveReadyDialog);
+  await waitFor(() => c.saveReadyDialog !== null);
 });
 
 Then('no save dialog was opened yet', function (this: TamedTableWorld) {

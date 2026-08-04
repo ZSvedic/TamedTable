@@ -40,12 +40,19 @@ Feature: Export a flow as a Python script
 
   Rule: The web app exports the same flow through the Save-flow dropdown
 
+    # Generating the script is a model call, so it outlives the click that
+    # started it and the browser refuses the save picker ("Must be handling a
+    # user gesture"). The finished script parks in the save-ready dialog and
+    # the picker opens from its fresh click instead (issue #278).
     @web
     Scenario: Save as Python writes a script for a deterministic flow
       Given the TamedTable web app
       And load "customers-input.csv"
       When user sends the chat message "Show only customers in the USA"
       And user says "Save as Python"
+      Then the save-ready dialog is shown
+      And no save dialog was opened yet
+      When user clicks Save file in the save-ready dialog
       Then the suggested save name ends with ".py"
       When user saves as "customers-flow.py"
       Then a toast shows "Saved customers-flow.py."
