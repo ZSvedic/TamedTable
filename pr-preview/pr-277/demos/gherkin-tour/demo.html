@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- #GherkinTour demo — a self-touring page: the tour drives this page's own
+     UI (no TamedTable engine, no cassette), proving the package runs against a
+     non-TamedTable host. Run: bun packages/gherkin-tour/demo.html -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>gherkin-tour demo</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 70rem; color: #1a1a1a; }
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 0.95rem; margin: 1.4rem 0 0.4rem; color: #444; }
+    .controls { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin: 1rem 0; }
+    button { font: inherit; padding: 0.4rem 0.8rem; border: 1px solid #bbb; border-radius: 6px; background: #fafafa; cursor: pointer; }
+    button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+    #chat-input { flex: 1; min-width: 14rem; padding: 0.4rem 0.6rem; border: 1px solid #bbb; border-radius: 6px; font: inherit; }
+    .cols { display: flex; gap: 1rem; align-items: stretch; }
+    pre, #feature { flex: 1; margin: 0; padding: .6rem; background: #f4f4f4; border-radius: 6px; overflow: auto; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+    /* Short and scrollable on purpose: the tour's scroll-through (wheel and
+       touch pass the overlay) is demonstrated — and tested — on this box. */
+    #table-view { border: 1px solid #ddd; border-radius: 6px; padding: .6rem; min-height: 6rem; max-height: 8rem; overflow: auto; }
+    table { border-collapse: collapse; width: 100%; font-family: monospace; font-size: 12px; }
+    th, td { padding: 3px 8px; border-bottom: 1px solid #eee; text-align: left; white-space: nowrap; }
+    th { color: #555; border-bottom: 1px solid #ccc; }
+    #status { color: #2563eb; font-size: 12px; min-height: 1.2em; }
+  </style>
+<link rel="stylesheet" crossorigin href="/pr-preview/pr-277/demos/gherkin-tour/demo-pydka907.css"><script type="module" crossorigin src="/pr-preview/pr-277/demos/gherkin-tour/demo-zttnpwya.js"></script></head>
+<body>
+  <h1>gherkin-tour — a page that tours itself</h1>
+  <p>
+    The same <code>parseTours → TourDriver → ./ui</code> pipeline the app uses,
+    here driving this demo's own buttons and table — no TamedTable engine. Press
+    <strong>Start tour</strong> to walk through it.
+  </p>
+
+  <div class="controls">
+    <button id="start-tour" class="primary" type="button">Start tour</button>
+    <button id="open-btn" type="button">Open</button>
+    <input id="chat-input" type="text" placeholder="Ask the demo…" />
+  </div>
+
+  <div id="status"></div>
+
+  <h2>Table / golden</h2>
+  <div id="table-view">No data loaded.</div>
+
+  <h2>The toured <code>.feature</code></h2>
+  <div class="cols">
+    <div id="feature"></div>
+    <pre id="out"></pre>
+  </div>
+
+  
+</body>
+</html>
