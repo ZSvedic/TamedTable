@@ -144,18 +144,18 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
 
 /* Hero demo animation — the looping "60-second" run.
    One 9s timeline shared by every piece: the caret blinks, the prompt types in,
-   then each row's messy "before" cross-fades to a clean, highlighted "after" with a
-   little pop, holds, and resets. Rows stagger so the change cascades top-to-bottom. */
+   then the Category column materializes — the header word first, then one
+   highlighted value per row, each with a little pop — holds, and resets. The
+   rows stagger so the new column fills top-to-bottom.
+   Only the header's text animates, never the `th` itself: fading the cell would
+   punch a hole in the dark header strip. The values are laid out at every frame
+   (opacity, not display), so the column reserves its width and nothing jumps. */
 .demo-prompt .caret { animation: heroCaret 1s steps(1) infinite; }
 .demo--anim .demo-typed { display: inline-block; animation: heroType 9s ease-out infinite; }
-.demo--anim .swap { position: relative; display: inline-block; }
-.demo--anim .swap .v-after { position: absolute; left: 0; top: 0; white-space: nowrap; }
-.demo--anim .swap .v-before { animation: heroBefore 9s ease-in-out infinite; }
-.demo--anim .swap .v-after  { animation: heroAfter 9s ease-in-out infinite; }
-.demo--anim tr:nth-child(2) .swap .v-before,
-.demo--anim tr:nth-child(2) .swap .v-after { animation-delay: .25s; }
-.demo--anim tr:nth-child(3) .swap .v-before,
-.demo--anim tr:nth-child(3) .swap .v-after { animation-delay: .5s; }
+.demo--anim .v-new { display: inline-block; animation: heroColIn 9s ease-in-out infinite; }
+.demo--anim tbody tr:nth-child(1) .v-new { animation-delay: .15s; }
+.demo--anim tbody tr:nth-child(2) .v-new { animation-delay: .4s; }
+.demo--anim tbody tr:nth-child(3) .v-new { animation-delay: .65s; }
 
 @keyframes heroCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes heroType {
@@ -163,26 +163,19 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
   16%, 96% { opacity: 1; transform: none; }
   100%     { opacity: 0; }
 }
-@keyframes heroBefore {
-  0%, 42%  { opacity: 1; }
-  50%, 94% { opacity: 0; }
-  100%     { opacity: 1; }
-}
-@keyframes heroAfter {
-  0%, 42%  { opacity: 0; transform: scale(.96); }
-  50%      { opacity: 1; transform: scale(1.05); }
-  56%, 94% { opacity: 1; transform: scale(1); }
-  100%     { opacity: 0; transform: scale(.96); }
+@keyframes heroColIn {
+  0%, 42%  { opacity: 0; transform: translateY(-3px) scale(.96); }
+  50%      { opacity: 1; transform: translateY(0) scale(1.05); }
+  56%, 94% { opacity: 1; transform: translateY(0) scale(1); }
+  100%     { opacity: 0; transform: translateY(-3px) scale(.96); }
 }
 
-/* Respect reduced-motion: hold the clean, final state, no looping. */
+/* Respect reduced-motion: hold the filled, final state, no looping. */
 @media (prefers-reduced-motion: reduce) {
   .demo-prompt .caret,
   .demo--anim .demo-typed,
-  .demo--anim .swap .v-before,
-  .demo--anim .swap .v-after { animation: none; }
-  .demo--anim .swap .v-before { opacity: 0; }
-  .demo--anim .swap .v-after  { opacity: 1; transform: none; }
+  .demo--anim .v-new { animation: none; }
+  .demo--anim .v-new { opacity: 1; transform: none; }
 }
 
 /* ---------- Section scaffolding ---------- */

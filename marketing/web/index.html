@@ -78,11 +78,14 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <p class="hero-note">No API key? <a href="https://www.tamedtable.com/app/?tours=1" target="_blank" rel="noopener">Take a guided tour</a>: it replays real sessions, free.</p>
       </div>
 
-      <!-- Demo: looping before/after run — the "60-second screencast", animated in CSS.
-           Each phone cell stacks a messy "before" and a clean "after"; the keyframes in
-           styles.css type the prompt, then swap before→after with a highlight pop, on a loop.
-           Honors prefers-reduced-motion: the final (clean) state shows static. -->
-      <div class="demo demo--anim" role="img" aria-label="TamedTable normalizing phone numbers across a table">
+      <!-- Demo: looping AI run — the "60-second screencast", animated in CSS.
+           A category is not in the file and no formula can derive it: reading
+           "Wireless Air Fryer" as kitchen takes world knowledge. The keyframes in
+           styles.css type the prompt, then materialize the Category column —
+           header word first, then a highlighted value per row — on a loop.
+           Prompt and rows are verbatim from the recorded showcase-lazy-ai tour.
+           Honors prefers-reduced-motion: the final (filled) state shows static. -->
+      <div class="demo demo--anim" role="img" aria-label="TamedTable adding a Category column to a product table, sorting each product into kitchen, electronics, or clothing">
         <div class="demo-bar">
           <span class="demo-dot" style="background:#E66A5A"></span>
           <span class="demo-dot" style="background:#E7B84B"></span>
@@ -90,13 +93,13 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <span class="demo-cap">TamedTable</span>
         </div>
         <div class="demo-body">
-          <div class="demo-prompt"><span class="caret">&gt;</span> <span class="demo-typed">normalize the phone numbers</span></div>
+          <div class="demo-prompt"><span class="caret">&gt;</span> <span class="demo-typed">add a Category column: kitchen, electronics, clothing, sports, or other</span></div>
           <table class="demo-tbl">
-            <thead><tr><th>Name</th><th>Phone</th><th>Country</th></tr></thead>
+            <thead><tr><th>Product</th><th>Price</th><th><span class="v-new">Category</span></th></tr></thead>
             <tbody>
-              <tr><td>John D. Doe</td><td><span class="swap"><span class="v-before">(200) 555-1234</span><span class="v-after cell-changed">+12005551234</span></span></td><td>USA</td></tr>
-              <tr><td>Anna Müller</td><td><span class="swap"><span class="v-before">+49 555 6789</span><span class="v-after cell-changed">+495556789</span></span></td><td>Germany</td></tr>
-              <tr><td>张三</td><td><span class="swap"><span class="v-before">+86 555 1234</span><span class="v-after cell-changed">+865551234</span></span></td><td>China</td></tr>
+              <tr><td>Wireless Air Fryer</td><td>86.30</td><td><span class="v-new cell-changed">kitchen</span></td></tr>
+              <tr><td>Deluxe Bluetooth Speaker</td><td>188.98</td><td><span class="v-new cell-changed">electronics</span></td></tr>
+              <tr><td>Mini Fleece Hoodie</td><td>258.10</td><td><span class="v-new cell-changed">clothing</span></td></tr>
             </tbody>
           </table>
         </div>
