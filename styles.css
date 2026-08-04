@@ -144,45 +144,60 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
 
 /* Hero demo animation — the looping "60-second" run.
    One 9s timeline shared by every piece: the caret blinks, the prompt types in,
-   then each row's messy "before" cross-fades to a clean, highlighted "after" with a
-   little pop, holds, and resets. Rows stagger so the change cascades top-to-bottom. */
+   then the Category column materializes — the header word first, then one
+   highlighted value per row, each with a little pop — holds, and resets. The
+   rows stagger so the new column fills top-to-bottom.
+   Only the header's text animates, never the `th` itself: fading the cell would
+   punch a hole in the dark header strip. The values are laid out at every frame
+   (opacity, not display), so the column reserves its width and nothing jumps. */
 .demo-prompt .caret { animation: heroCaret 1s steps(1) infinite; }
-.demo--anim .demo-typed { display: inline-block; animation: heroType 9s ease-out infinite; }
-.demo--anim .swap { position: relative; display: inline-block; }
-.demo--anim .swap .v-after { position: absolute; left: 0; top: 0; white-space: nowrap; }
-.demo--anim .swap .v-before { animation: heroBefore 9s ease-in-out infinite; }
-.demo--anim .swap .v-after  { animation: heroAfter 9s ease-in-out infinite; }
-.demo--anim tr:nth-child(2) .swap .v-before,
-.demo--anim tr:nth-child(2) .swap .v-after { animation-delay: .25s; }
-.demo--anim tr:nth-child(3) .swap .v-before,
-.demo--anim tr:nth-child(3) .swap .v-after { animation-delay: .5s; }
+/* Real typing, not a fade: the prompt is revealed left to right by a clip-path
+   that retracts in `steps(21)` — one step per character of `.demo-typed`'s text
+   ("add a Category column", 21 chars), so the text appears letter by letter.
+   The inset is a percentage of the span's own width, which is exactly those 21
+   characters, so the steps land on character boundaries without needing to know
+   the font size. Change the copy and the step count must change with it.
+   Clip-path, not `overflow: hidden`: overflow would redefine this inline-block's
+   baseline to its bottom margin edge, lifting the text off the prompt's baseline
+   and inflating the line box into a second row. Clipping leaves layout alone. */
+.demo--anim .demo-typed {
+  display: inline-block; white-space: nowrap;
+  animation: heroType 9s linear infinite;
+}
+.demo--anim .v-new { display: inline-block; animation: heroColIn 9s ease-in-out infinite; }
+.demo--anim tbody tr:nth-child(1) .v-new { animation-delay: .15s; }
+.demo--anim tbody tr:nth-child(2) .v-new { animation-delay: .4s; }
+.demo--anim tbody tr:nth-child(3) .v-new { animation-delay: .65s; }
 
 @keyframes heroCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+/* Types over ~1.1s (52ms a character), holds, then fades out. The hold and the
+   fade keep the text unclipped so nothing un-types; the clip snaps back at the
+   loop boundary, while the text is still transparent. The vertical insets are
+   negative so ascenders and descenders can never catch an edge. */
 @keyframes heroType {
-  0%, 6%   { opacity: 0; transform: translateY(-2px); }
-  16%, 96% { opacity: 1; transform: none; }
-  100%     { opacity: 0; }
+  0%, 6%   { clip-path: inset(-2px 100% -2px 0); opacity: 1; animation-timing-function: steps(21, end); }
+  18%, 96% { clip-path: inset(-2px 0 -2px 0);    opacity: 1; }
+  100%     { clip-path: inset(-2px 0 -2px 0);    opacity: 0; }
 }
-@keyframes heroBefore {
-  0%, 42%  { opacity: 1; }
-  50%, 94% { opacity: 0; }
-  100%     { opacity: 1; }
-}
-@keyframes heroAfter {
-  0%, 42%  { opacity: 0; transform: scale(.96); }
-  50%      { opacity: 1; transform: scale(1.05); }
-  56%, 94% { opacity: 1; transform: scale(1); }
-  100%     { opacity: 0; transform: scale(.96); }
+/* Starts at 30%, so the beat between the last character typed (18%) and the
+   column arriving is 12% of 9s — about 1.1s. The pop and settle keep their
+   original 8%/6% durations; the extra time goes to the hold, which is what the
+   visitor is meant to read. Row delays below push each row a little later
+   still, so the fill reads top-to-bottom rather than all at once. */
+@keyframes heroColIn {
+  0%, 30%  { opacity: 0; transform: translateY(-3px) scale(.96); }
+  38%      { opacity: 1; transform: translateY(0) scale(1.05); }
+  44%, 94% { opacity: 1; transform: translateY(0) scale(1); }
+  100%     { opacity: 0; transform: translateY(-3px) scale(.96); }
 }
 
-/* Respect reduced-motion: hold the clean, final state, no looping. */
+/* Respect reduced-motion: hold the fully typed prompt and the filled column. */
 @media (prefers-reduced-motion: reduce) {
   .demo-prompt .caret,
   .demo--anim .demo-typed,
-  .demo--anim .swap .v-before,
-  .demo--anim .swap .v-after { animation: none; }
-  .demo--anim .swap .v-before { opacity: 0; }
-  .demo--anim .swap .v-after  { opacity: 1; transform: none; }
+  .demo--anim .v-new { animation: none; }
+  .demo--anim .demo-typed { clip-path: none; opacity: 1; }
+  .demo--anim .v-new { opacity: 1; transform: none; }
 }
 
 /* ---------- Section scaffolding ---------- */
