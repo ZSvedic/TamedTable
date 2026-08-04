@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Lazy AI — a big file opens as a shuffled sample.
+       Text sizes leave slack: inside an <img> the SVG renders with fallback fonts,
+       which run wider than Inter. -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <!-- dimmed table behind the dialog -->
+  <g opacity="0.35">
+    <path d="M18 26 q0 -6 6 -6 h312 q6 0 6 6 v20 h-324 Z" fill="#281C60"/>
+    <text x="32" y="41" font-size="12" font-weight="600" fill="#FFFFFF">product</text>
+    <text x="220" y="41" font-size="12" font-weight="600" fill="#FFFFFF">price</text>
+    <g font-size="12" fill="#281C60">
+      <rect x="18" y="46" width="324" height="24" fill="#FFFFFF"/>
+      <text x="32" y="62">Travel Espresso Kit</text>
+      <text x="220" y="62" font-family="JetBrains Mono, ui-monospace, monospace">64.90</text>
+      <rect x="18" y="70" width="324" height="24" fill="#F6F2EB"/>
+      <text x="32" y="86">Wool Scarf XL</text>
+      <text x="220" y="86" font-family="JetBrains Mono, ui-monospace, monospace">29.50</text>
+      <rect x="18" y="94" width="324" height="24" fill="#FFFFFF"/>
+      <text x="32" y="110">Gaming Mouse Lite</text>
+      <text x="220" y="110" font-family="JetBrains Mono, ui-monospace, monospace">42.00</text>
+    </g>
+    <rect x="18" y="20" width="324" height="98" rx="6" fill="none" stroke="#DCDCDC"/>
+  </g>
+  <!-- the large-file dialog: one click either way, Load shuffled is the primary default -->
+  <g>
+    <rect x="30" y="88" width="300" height="120" rx="12" fill="#FFFFFF" stroke="#281C60"/>
+    <text x="48" y="114" font-size="13" font-weight="700" fill="#281C60">25,000 rows — sample it?</text>
+    <text x="48" y="133" font-size="10.5" fill="#6A6280">Work page by page; saving preserves</text>
+    <text x="48" y="147" font-size="10.5" fill="#6A6280">original row order.</text>
+    <!-- secondary: original order -->
+    <rect x="48" y="164" width="130" height="26" rx="13" fill="#FFFFFF" stroke="#B8B0C8"/>
+    <text x="113" y="181" font-size="10" font-weight="600" fill="#6A6280" text-anchor="middle" textLength="112" lengthAdjust="spacingAndGlyphs">Load in original order</text>
+    <!-- primary: load shuffled, with the crossing-arrows shuffle glyph -->
+    <rect x="188" y="164" width="124" height="26" rx="13" fill="#281C60"/>
+    <g stroke="#96BED7" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M198 173 h3 c4 0 6 8 10 8 h3 m0 0 l-2.5 -2.5 m2.5 2.5 l-2.5 2.5"/>
+      <path d="M198 181 h3 c4 0 6 -8 10 -8 h3 m0 0 l-2.5 -2.5 m2.5 2.5 l-2.5 2.5"/>
+    </g>
+    <text x="222" y="181" font-size="10" font-weight="600" fill="#FFFFFF">Load shuffled</text>
+  </g>
+</svg>
