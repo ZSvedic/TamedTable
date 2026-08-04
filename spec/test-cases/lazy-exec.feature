@@ -232,9 +232,10 @@ Feature: Lazy AI execution edge cases
       Then the run-all progress peaked at 146 of 146 rows
       And every row has a non-null "Tier"
 
-    # A save that had to run rows first parks behind one more click — the
-    # browser only opens a save picker inside a user gesture, and the run
-    # consumed the original one.
+    # #SaveGate — a save that had to run rows first parks behind one more
+    # click: the browser only opens a save picker inside a user gesture, and
+    # the run consumed the original one. The run had its own progress dialog,
+    # so this gate opens already ready.
     @web
     Scenario: Save with pending rows runs first, then writes on a fresh click
       Given load "paginate-input.csv"
@@ -243,9 +244,9 @@ Feature: Lazy AI execution edge cases
       When user says "Save data"
       Then the run-all confirmation is shown
       When user confirms the run
-      Then the save-ready dialog is shown
+      Then the save gate is ready, titled "All rows evaluated"
       And no save dialog was opened yet
-      When user clicks Save file in the save-ready dialog
+      When user clicks Save file in the save gate
       Then display Save File dialog
       When user saves as "paginate-input.csv"
 

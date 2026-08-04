@@ -324,9 +324,9 @@ Then('the Save click ends with a save-ready confirmation or a visible message', 
   }
   const newToasts = s.app.toasts.slice(s.toastsBefore!);
   const saveMessages = s.app.messages.filter((m) => /save/i.test(m.text));
-  const anyFeedback = s.app.saveReadyDialog || newToasts.length > 0 || saveMessages.length > 0;
+  const anyFeedback = s.app.saveGate || newToasts.length > 0 || saveMessages.length > 0;
   assert.ok(
     anyFeedback,
-    `RED-LAZY-7 (spec/behavior.md:1469-1471): "when the run was started from Save, a save-ready confirmation follows the run" — the user clicked Save, confirmed a paid run that finished ${readout.done}/${readout.total} with ${readout.failed} failed rows, and got nothing: saveReadyDialog=${String(s.app.saveReadyDialog)}, new toasts=${newToasts.length}, save-related chat messages=${saveMessages.length}; saveGated bails silently on any run with failures (controller-files.ts:413)`,
+    `RED-LAZY-7 (spec/behavior.md:1469-1471): "when the run was started from Save, a save-ready confirmation follows the run" — the user clicked Save, confirmed a paid run that finished ${readout.done}/${readout.total} with ${readout.failed} failed rows, and got nothing: saveGate=${JSON.stringify(s.app.saveGate)}, new toasts=${newToasts.length}, save-related chat messages=${saveMessages.length}; saveGated bails silently on any run with failures (controller-files.ts:413)`,
   );
 });

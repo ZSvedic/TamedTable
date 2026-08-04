@@ -24,11 +24,36 @@ import { RecentsStore, type RecentEntry } from './recents.ts';
 /** The data formats the Open picker accepts. */
 const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
-// #LazyExec
-/** Which wait the save-ready dialog is reporting — the rows a Save had to run
- *  first, or the Python script the export's model call just wrote. Both spent
- *  the click that started them, so both need one more. */
-export type SaveReadyKind = 'rows' | 'python';
+// #SaveGate — browsers open a file picker only from a live user gesture, so a
+// save whose work outlives the starting click cannot reach its own picker. Both
+// such saves — after a run on all rows, and the model-backed Python export —
+// park on this one gate, which shows the wait and collects the fresh click.
+// spec/behavior.md § The save gate.
+export interface SaveGateState {
+  /** Heading: what the gate is waiting on, or what is now ready. */
+  title: string;
+  /** One line under the heading, in the same two phases. */
+  body: string;
+  /** Work still running: the waiting bar shows and "Save file…" is disabled. */
+  busy: boolean;
+}
+
+/** The gate's wording. Kept together so the two phases of a wait read as one
+ *  sentence pair, and so a new wait is a new entry rather than new UI. */
+export const SAVE_GATE_COPY = {
+  rows: {
+    title: 'All rows evaluated',
+    body: 'The table is fully evaluated and ready to write.',
+  },
+  pythonWorking: {
+    title: 'Writing the Python script',
+    body: 'Translating the recipe into Python — one AI call, usually a few seconds.',
+  },
+  pythonReady: {
+    title: 'Python script ready',
+    body: 'The recipe is translated and ready to write.',
+  },
+} as const;
 
 // #LookupJoin
 /** A join `spec` cannot run without asking: its step index, and the file it
@@ -436,9 +461,10 @@ export class FilesManager {
    *  provider's primary model translates the flow), so it mirrors :save-py: it
    *  needs that provider's key and refuses a flow with an {llm} cell, which has
    *  no deterministic Python form. */
-  // #LazyExec — the model call outlives the click that started it, so the
-  // picker cannot open here (browsers throw "Must be handling a user gesture");
-  // the finished script parks in the save-ready dialog for a fresh click.
+  // #SaveGate — the model call outlives the click that started it, so the
+  // picker cannot open here (browsers throw "Must be handling a user gesture").
+  // The gate opens on the click instead: waiting while the model writes the
+  // script, then ready for the click that opens the picker.
   async savePython(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before saving a flow.');
@@ -458,15 +484,21 @@ export class FilesManager {
       );
       return;
     }
+    // The gate goes up before the call, so the click has something to show for
+    // itself; `token` is how a cancel mid-wait disowns the script that lands
+    // afterwards (the call itself cannot be recalled).
+    const token = this.openGate(SAVE_GATE_COPY.pythonWorking, true);
     this.host.dialog = 'save-flow';
     this.host.notify();
     try {
       const script = new TextEncoder().encode(await this.host.engine.exportPython());
+      if (token !== this.gateToken) return; // cancelled while the model worked
       const base = (this.host.sourcePath || '').split('/').pop() || '';
       const suggested = `${base.replace(/\.[^.]*$/, '') || 'flow'}.py`;
       this.pendingSave = { kind: 'python', suggested, script };
-      this.host.saveReadyDialog = 'python';
+      this.openGate(SAVE_GATE_COPY.pythonReady, false);
     } catch (e) {
+      if (token === this.gateToken) this.closeGate();
       this.host.pushToast('error', `Could not export to Python: ${(e as Error).message}`);
     } finally {
       this.host.dialog = null;
@@ -475,7 +507,7 @@ export class FilesManager {
   }
 
   /** Write an already-generated Python script through the Save dialog, from
-   *  the save-ready dialog's fresh click. */
+   *  the gate's fresh click. */
   private async writePython(suggested: string, script: Uint8Array): Promise<void> {
     this.host.dialog = 'save-flow';
     this.host.notify();
@@ -492,14 +524,31 @@ export class FilesManager {
   /** Save the current rows via the Save dialog, in the format the table was
    *  loaded as — CSV, JSONL, Parquet, or Arrow — so you get back what you
    *  opened. Falls back to JSONL when the source format is unknown. */
-  // #LazyExec — a save whose work outlived the click parks here: the run (or
-  // the Python export's model call) consumed the click's user gesture, and the
-  // browser refuses a save picker outside one, so the save-ready dialog asks
-  // for one more click.
+  // #SaveGate — what the gate will write when its click arrives: rows to
+  // serialize, or a script the model already wrote.
   private pendingSave:
     | { kind: 'data'; format: FormatId; keepSourceName: boolean }
     | { kind: 'python'; suggested: string; script: Uint8Array }
     | null = null;
+
+  /** Bumped by every gate open and close, so a slow job that lands after the
+   *  user walked away can tell that its gate is gone. */
+  private gateToken = 0;
+
+  /** Raise the gate (or move it to its next phase) and return the token that
+   *  identifies this run of it. */
+  private openGate(copy: { title: string; body: string }, busy: boolean): number {
+    this.host.saveGate = { ...copy, busy };
+    this.host.notify();
+    return (this.gateToken += 1);
+  }
+
+  private closeGate(): void {
+    this.gateToken += 1;
+    this.pendingSave = null;
+    this.host.saveGate = null;
+    this.host.notify();
+  }
 
   async saveData(): Promise<void> {
     if (!this.host.loaded) {
@@ -514,7 +563,8 @@ export class FilesManager {
    *  still pending raise the estimate/confirmation flow first (one page or
    *  less just runs); declining cancels the save. When a run happened, the
    *  file picker would fall outside the original click's user gesture — the
-   *  save-ready dialog collects a fresh click instead of erroring. With
+   *  #SaveGate collects a fresh click instead of erroring, opening straight
+   *  into its ready phase because the run had its own progress dialog. With
    *  nothing pending, Save skips straight to writing the file. */
   private async saveGated(format: FormatId, opts: { keepSourceName: boolean }): Promise<void> {
     const hadWork =
@@ -538,28 +588,28 @@ export class FilesManager {
     }
     if (hadWork) {
       this.pendingSave = { kind: 'data', format, ...opts };
-      this.host.saveReadyDialog = 'rows';
-      this.host.notify();
+      this.openGate(SAVE_GATE_COPY.rows, false);
       return;
     }
     await this.writeData(format, opts);
   }
 
-  /** The save-ready dialog's "Save file…" click — a fresh user gesture. */
-  async confirmSaveReady(): Promise<void> {
+  /** The gate's "Save file…" click — the fresh user gesture the picker opens
+   *  from, so the picker must be reached from inside this call. */
+  async confirmSaveGate(): Promise<void> {
+    // Nothing to write yet: the button is disabled while the gate is busy, and
+    // a confirm that slipped through must wait rather than cancel the work.
+    if (this.host.saveGate?.busy) return;
     const pending = this.pendingSave;
-    this.pendingSave = null;
-    this.host.saveReadyDialog = null;
-    this.host.notify();
+    this.closeGate();
     if (!pending) return;
     if (pending.kind === 'python') await this.writePython(pending.suggested, pending.script);
     else await this.writeData(pending.format, { keepSourceName: pending.keepSourceName });
   }
 
-  dismissSaveReady(): void {
-    this.pendingSave = null;
-    this.host.saveReadyDialog = null;
-    this.host.notify();
+  /** Cancel: whatever the wait produced is dropped, and nothing is written. */
+  dismissSaveGate(): void {
+    this.closeGate();
   }
 
   /** Save a copy of the current rows in a chosen format — the "Save as <format>"

@@ -1043,12 +1043,12 @@ provider, and a missing key fails fast with a provider-named toast such as
 `Exporting to Python requires a Google API key — open Settings and add one.`
 (or `an OpenAI` / `an Anthropic`). It also refuses a flow that carries an AI
 cell (which has no deterministic Python form), surfacing a toast that points
-the user to save it as a flow instead. Because that model call takes time, it
-spends the click that started it — browsers only open a save picker inside a
-user gesture — so the finished script waits behind the same **save-ready
-confirmation** the post-run save uses: one more click ("Save file…") opens
-the picker and writes the script. This is the browser's counterpart to the
-CLI's `:save-py`.
+the user to save it as a flow instead. Because that model call takes time, the
+export runs behind the [save gate](#the-save-gate): the dialog opens on the
+click, names what it is doing ("Writing the Python script"), shows a waiting
+bar while the one model call runs, and only then enables **Save file…** — the
+fresh click the picker needs. This is the browser's counterpart to the CLI's
+`:save-py`.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,
@@ -1601,15 +1601,39 @@ newest pinned, newest 500 lines kept) — so the user can sample transformed
 data while the run streams. Finished rows are always kept: cancel stops the
 queue, and the next run touches only pending and failed rows. The progress
 counts **rows**, never cells — a spec with two AI columns still tops out at
-the table's row count. When the run was started from **Save**, a
-**save-ready confirmation** follows the run: browsers only open a save
-picker inside a user gesture, and the run consumed the original click, so
-one more click ("Save file…") writes the file. With nothing pending, Save
+the table's row count. When the run was started from **Save**, the
+[save gate](#the-save-gate-savegate) follows the run and collects the click
+that opens the picker. With nothing pending, Save
 skips straight to writing the file. A Save whose confirmed run ends short —
 failed rows, a cancel — never vanishes silently: a toast says the save was
 cancelled, how many rows stand in the way, and what unblocks it (retry the
 failed rows, or run on all rows). Declining the estimate cancels the save
 quietly — that "not now" was the user's own click.
+
+### The save gate (#SaveGate)
+
+Browsers open a file picker only from a live user gesture: work that takes
+real time spends the click that started it, and the picker then refuses to
+open at all. Every save that cannot reach its picker inside the starting
+click therefore goes through one **save gate** — the same dialog, the same
+two buttons, whatever the wait was:
+
+- It names the wait in its title, and says what it is doing beneath.
+- While the work runs, a **waiting bar** animates and **Save file…** is
+  disabled; **Cancel** is live throughout.
+- When the bytes are in hand, the body swaps to the ready wording and
+  **Save file…** enables. That click — a fresh gesture — opens the picker
+  and writes the file.
+- Cancelling drops the result; nothing is written and no picker opens. A
+  cancelled Python export has still spent its model call, so re-exporting
+  runs a new one.
+
+Two waits use it today: **Save** after a run on all rows (which opens
+already ready — the run had its own estimate dialog and progress bar), and
+**Save recipe as Python…**, which opens waiting on its model call. The
+lookup-file dialog (§ `join`) is the same idea for an *open* picker: a
+typed request's click is long spent by the time the model answers with a
+join, so that dialog collects the fresh click instead.
 
 ### The dependency rule
 

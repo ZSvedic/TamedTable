@@ -13,7 +13,7 @@ import type { Provider, ResolvedConfig } from '@tamedtable/model-config';
 import type { FilePort } from '@tamedtable/file-io';
 import type { EngineManager } from './controller-engine.ts';
 import type { PatchManager } from './controller-patch.ts';
-import type { FilesManager, SaveReadyKind } from './controller-files.ts';
+import type { FilesManager, SaveGateState } from './controller-files.ts';
 import type { VoiceManager } from './controller-voice.ts';
 import type { ConfigManager } from './controller-config.ts';
 import type { TutorialManager } from './controller-tutorial.ts';
@@ -69,9 +69,9 @@ export interface ControllerHost {
   largeFileDialog: { name: string; rowCount: number } | null;
   /** The run-on-all estimate/confirmation dialog, or null. */
   runAllDialog: RunAllDialogState | null;
-  /** The save confirmation a picker needs a fresh click for, or null: 'rows'
-   *  after a run, 'python' after the export's model call. */
-  saveReadyDialog: SaveReadyKind | null;
+  // #SaveGate
+  /** The save waiting on a fresh click, or null when none is. */
+  saveGate: SaveGateState | null;
   // #FileIO
   /** The replace-table confirmation a drop with a table loaded raises, or
    *  null. Names the dropped file; the bytes wait in FilesManager. */

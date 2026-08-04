@@ -1184,21 +1184,30 @@ Then(
   },
 );
 
-// ── The post-run save confirmation (#LazyExec) ───────────────────────────────
+// ── The save gate (#SaveGate) ────────────────────────────────────────────────
 
-Then('the save-ready dialog is shown', async function (this: TamedTableWorld) {
+Then('the save gate is ready, titled {string}', async function (this: TamedTableWorld, title: string) {
   const c = controller(this);
-  await waitFor(() => c.saveReadyDialog !== null);
+  await waitFor(() => c.saveGate?.busy === false);
+  assert.equal(c.saveGate?.title, title, 'save gate title');
+});
+
+Then('the save gate is closed', function (this: TamedTableWorld) {
+  assert.equal(controller(this).saveGate, null, 'the save gate should be closed');
 });
 
 Then('no save dialog was opened yet', function (this: TamedTableWorld) {
   assert.ok(!ctxOf(this).filePort?.saveCalled, 'the save picker must wait for a fresh click');
 });
 
-When('user clicks Save file in the save-ready dialog', function (this: TamedTableWorld) {
-  const pending = controller(this).confirmSaveReady();
+When('user clicks Save file in the save gate', function (this: TamedTableWorld) {
+  const pending = controller(this).confirmSaveGate();
   pending.catch(() => {});
   ctxOf(this).pending = pending;
+});
+
+When('user cancels the save gate', function (this: TamedTableWorld) {
+  controller(this).dismissSaveGate();
 });
 
 Then('the newly evaluated cells carry the changed marker', function (this: TamedTableWorld) {

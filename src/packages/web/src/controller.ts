@@ -25,7 +25,7 @@ import { describeError, userFacingMessage, summarizeDebug, missingTextKeyMessage
 import type { ControllerHost } from './controller-context.ts';
 import { EngineManager } from './controller-engine.ts';
 import { PatchManager } from './controller-patch.ts';
-import { FilesManager, type SaveReadyKind } from './controller-files.ts';
+import { FilesManager, type SaveGateState } from './controller-files.ts';
 import type { RecentEntry } from './recents.ts';
 import { VoiceManager } from './controller-voice.ts';
 import { ConfigManager } from './controller-config.ts';
@@ -51,7 +51,7 @@ import type {
 // Public surface re-exports — keep existing imports through this module
 // working without forcing every component to update its import path.
 export { detectFormat, userFacingMessage, summarizeDebug };
-export type { DiagEvent, RunAllDialogState, RunAllReason, RunEstimate, SaveReadyKind, ViewSort };
+export type { DiagEvent, RunAllDialogState, RunAllReason, RunEstimate, SaveGateState, ViewSort };
 export type {
   CellRef,
   ChatMessage,
@@ -168,9 +168,9 @@ export class WebController implements ControllerHost {
   largeFileDialog: { name: string; rowCount: number } | null = null;
   /** The run-on-all estimate/confirmation dialog, or null. */
   runAllDialog: RunAllDialogState | null = null;
-  /** The save confirmation a picker needs a fresh click for, or null: 'rows'
-   *  after a run, 'python' after the export's model call. */
-  saveReadyDialog: SaveReadyKind | null = null;
+  // #SaveGate
+  /** The save waiting on a fresh click, or null when none is. */
+  saveGate: SaveGateState | null = null;
   // #FileIO
   /** The replace-table confirmation a drop with a table loaded raises. */
   replaceDialog: { name: string } | null = null;
@@ -465,9 +465,9 @@ export class WebController implements ControllerHost {
   confirmRunAll(): void { this.lazy.confirmRunAll(); }
   applyEvaluatedOnly(): void { this.lazy.applyEvaluatedOnly(); }
   declineRunAll(): void { this.lazy.declineRunAll(); }
-  /** The post-run save confirmation (a save picker needs a fresh click). */
-  confirmSaveReady(): Promise<void> { return this.files.confirmSaveReady(); }
-  dismissSaveReady(): void { this.files.dismissSaveReady(); }
+  // #SaveGate — the click a save picker needs when the work came first.
+  confirmSaveGate(): Promise<void> { return this.files.confirmSaveGate(); }
+  dismissSaveGate(): void { this.files.dismissSaveGate(); }
   // #LookupJoin — the paused join's file. "Choose file…" opens the picker from
   // this click; cancelling drops the step that needed it.
   chooseLookupFile(): Promise<void> { return this.files.chooseLookupFile(); }
