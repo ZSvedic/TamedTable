@@ -179,10 +179,15 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
   18%, 96% { clip-path: inset(-2px 0 -2px 0);    opacity: 1; }
   100%     { clip-path: inset(-2px 0 -2px 0);    opacity: 0; }
 }
+/* Starts at 30%, so the beat between the last character typed (18%) and the
+   column arriving is 12% of 9s — about 1.1s. The pop and settle keep their
+   original 8%/6% durations; the extra time goes to the hold, which is what the
+   visitor is meant to read. Row delays below push each row a little later
+   still, so the fill reads top-to-bottom rather than all at once. */
 @keyframes heroColIn {
-  0%, 42%  { opacity: 0; transform: translateY(-3px) scale(.96); }
-  50%      { opacity: 1; transform: translateY(0) scale(1.05); }
-  56%, 94% { opacity: 1; transform: translateY(0) scale(1); }
+  0%, 30%  { opacity: 0; transform: translateY(-3px) scale(.96); }
+  38%      { opacity: 1; transform: translateY(0) scale(1.05); }
+  44%, 94% { opacity: 1; transform: translateY(0) scale(1); }
   100%     { opacity: 0; transform: translateY(-3px) scale(.96); }
 }
 
