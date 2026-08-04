@@ -151,17 +151,31 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
    punch a hole in the dark header strip. The values are laid out at every frame
    (opacity, not display), so the column reserves its width and nothing jumps. */
 .demo-prompt .caret { animation: heroCaret 1s steps(1) infinite; }
-.demo--anim .demo-typed { display: inline-block; animation: heroType 9s ease-out infinite; }
+/* Real typing, not a fade: the prompt is clipped to a growing width. The demo
+   body is monospace, so one `ch` is exactly one character and `steps(21)` lands
+   the reveal on character boundaries — the text appears letter by letter.
+   Both numbers are the length of `.demo-typed`'s text ("add a Category column",
+   21 chars); changing the copy means changing both. `vertical-align: baseline`
+   is explicit because `overflow: hidden` otherwise re-aligns the inline-block by
+   its bottom margin edge, dropping it off the prompt's baseline. */
+.demo--anim .demo-typed {
+  display: inline-block; vertical-align: baseline;
+  overflow: hidden; white-space: nowrap;
+  animation: heroType 9s linear infinite;
+}
 .demo--anim .v-new { display: inline-block; animation: heroColIn 9s ease-in-out infinite; }
 .demo--anim tbody tr:nth-child(1) .v-new { animation-delay: .15s; }
 .demo--anim tbody tr:nth-child(2) .v-new { animation-delay: .4s; }
 .demo--anim tbody tr:nth-child(3) .v-new { animation-delay: .65s; }
 
 @keyframes heroCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+/* Types over ~1.1s (52ms a character), holds, then fades out. The hold and the
+   fade keep the full width so nothing un-types; width resets to 0 at the loop
+   boundary, while the text is still transparent. */
 @keyframes heroType {
-  0%, 6%   { opacity: 0; transform: translateY(-2px); }
-  16%, 96% { opacity: 1; transform: none; }
-  100%     { opacity: 0; }
+  0%, 6%   { width: 0;    opacity: 1; animation-timing-function: steps(21, end); }
+  18%, 96% { width: 21ch; opacity: 1; }
+  100%     { width: 21ch; opacity: 0; }
 }
 @keyframes heroColIn {
   0%, 42%  { opacity: 0; transform: translateY(-3px) scale(.96); }
@@ -170,11 +184,12 @@ table.demo-tbl tr:nth-child(even) td { background: var(--stage); }
   100%     { opacity: 0; transform: translateY(-3px) scale(.96); }
 }
 
-/* Respect reduced-motion: hold the filled, final state, no looping. */
+/* Respect reduced-motion: hold the fully typed prompt and the filled column. */
 @media (prefers-reduced-motion: reduce) {
   .demo-prompt .caret,
   .demo--anim .demo-typed,
   .demo--anim .v-new { animation: none; }
+  .demo--anim .demo-typed { width: auto; opacity: 1; }
   .demo--anim .v-new { opacity: 1; transform: none; }
 }
 

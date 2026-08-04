@@ -81,9 +81,12 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <!-- Demo: looping AI run — the "60-second screencast", animated in CSS.
            A category is not in the file and no formula can derive it: reading
            "Wireless Air Fryer" as kitchen takes world knowledge. The keyframes in
-           styles.css type the prompt, then materialize the Category column —
-           header word first, then a highlighted value per row — on a loop.
-           Prompt and rows are verbatim from the recorded showcase-lazy-ai tour.
+           styles.css type the prompt a character at a time, then materialize the
+           Category column — header word first, then a highlighted value per row —
+           on a loop. The prompt is a 21-character monospace string, so the typing
+           keyframe reveals it in 21 `ch`-wide steps; edit the text and the step
+           count and width in styles.css must change with it.
+           Prompt and rows are from the recorded showcase-lazy-ai tour.
            Honors prefers-reduced-motion: the final (filled) state shows static. -->
       <div class="demo demo--anim" role="img" aria-label="TamedTable adding a Category column to a product table, sorting each product into kitchen, electronics, or clothing">
         <div class="demo-bar">
@@ -93,7 +96,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <span class="demo-cap">TamedTable</span>
         </div>
         <div class="demo-body">
-          <div class="demo-prompt"><span class="caret">&gt;</span> <span class="demo-typed">add a Category column: kitchen, electronics, clothing, sports, or other</span></div>
+          <div class="demo-prompt"><span class="caret">&gt;</span> <span class="demo-typed">add a Category column</span></div>
           <table class="demo-tbl">
             <thead><tr><th>Product</th><th>Price</th><th><span class="v-new">Category</span></th></tr></thead>
             <tbody>
