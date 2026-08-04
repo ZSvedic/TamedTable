@@ -1,1 +1,0 @@
-import{n as t}from"./index-CoEaNxYs.js";function l(n){return t(n)}function a(n){return n.map(o=>{const e={};for(const r of Object.keys(o))e[r]=l(o[r]);return e})}const i=2*1024*1024*1024;function f(n,o){if(n.length>i){const e=(n.length/1024/1024/1024).toFixed(1);console.warn(`file-io: ${o} is ${e} GB — very large files may exhaust memory or run slowly.`)}}export{a as n,f as w};
