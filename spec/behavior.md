@@ -1561,6 +1561,18 @@ saving keeps this order."). Saving always writes the original order. The
 seed derives from the file, so reopening the same file reproduces the same
 shuffle.
 
+The shuffle samples the table **as loaded**, so the flow outranks it: while
+the spec carries a step that decides row order — `sort` — or that replaces
+the rows with computed ones — `group`, `pivot`, `unpivot` — the grid shows
+the order the engine produced, not the sample. Asking for "sort by title"
+and getting the shuffle back would answer a different question than the one
+asked. Undoing that step restores the shuffled sample; the seed is unchanged
+throughout, and the Row # hover hint follows the same rule (it appears only
+while the sample is what's on screen). A `filter`, `mutate`, `select`,
+`split`, `validate`, or `join` step decides no order, so the shuffle stands.
+The column menu's own sort is unaffected either way: it sorts whatever the
+grid is showing.
+
 ### Progress indicators
 
 - The pagination bar gains a readout on its left — **N of M rows

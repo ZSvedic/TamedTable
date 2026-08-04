@@ -109,6 +109,33 @@ Feature: Lazy AI execution edge cases
       And user saves as "showcase-lazy-input.csv"
       Then the saved file keeps the original row order
 
+    # Regression: the shuffle permuted whatever the engine handed it, so a flow
+    # that sorted came out shuffled — the user asked to sort by a column and got
+    # the sample back, in an order that looked like nothing at all. A sort in the
+    # spec outranks the sample. Deterministic: a .flow replay, no model call.
+    @web
+    Scenario: A sort in the flow outranks the shuffled sample
+      When user drops the file "paginate-input.csv" onto the empty page
+      When user loads the shuffled sample
+      Then the Row # column keeps the original row numbers
+      When user says "Open flow"
+      And user selects "sort-name.flow"
+      Then the page rows are in ascending "Name" order
+      And the Row # column no longer claims a shuffled view
+
+    # Undo puts the sort back in the box, and the sample returns — same seed,
+    # so the rows come back in the order they were sampled in.
+    @web
+    Scenario: Undoing the sort brings the shuffled sample back
+      When user drops the file "paginate-input.csv" onto the empty page
+      When user loads the shuffled sample
+      Then the Row # column keeps the original row numbers
+      When user says "Open flow"
+      And user selects "sort-name.flow"
+      Then the page rows are in ascending "Name" order
+      When user undoes the last change
+      Then the Row # column keeps the original row numbers
+
   Rule: The dependency rule gates reads of AI-made columns
 
     @web

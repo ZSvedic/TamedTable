@@ -333,13 +333,13 @@ export class EngineManager {
     this.pruneViewToSpec();
   }
 
-  /** Drop view sort/filters on columns the spec no longer has — called after
-   *  every spec change (undo/redo/jump/gesture patches ride applySpecCached;
-   *  chat requests and flow replays call it on commit). */
+  /** Bring the view back in step with the spec — drops view sort/filters on
+   *  columns the spec no longer has, and stands the shuffled sample down (or
+   *  back up) as the spec gains or loses an ordering step. Called after every
+   *  spec change (undo/redo/jump/gesture patches ride applySpecCached; chat
+   *  requests and flow replays call it on commit). */
   private pruneViewToSpec(): void {
-    this.host.view.pruneToColumns(
-      new Set(this.ensureHeadless().currentSpec().columns.map((c) => c.id)),
-    );
+    this.host.view.syncToSpec(this.ensureHeadless().currentSpec());
   }
 
   /** Note a single-cell change (the inline-edit gesture) for the tint. */

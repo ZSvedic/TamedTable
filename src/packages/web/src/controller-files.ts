@@ -47,7 +47,7 @@ export const SAVE_GATE_COPY = {
   },
   pythonWorking: {
     title: 'Writing the Python script',
-    body: 'Translating the recipe into Python — one AI call, usually a few seconds.',
+    body: 'Waiting for an LLM call to translate the recipe into Python. Usually below 10 seconds.',
   },
   pythonReady: {
     title: 'Python script ready',

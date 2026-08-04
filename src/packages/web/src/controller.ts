@@ -484,6 +484,9 @@ export class WebController implements ControllerHost {
 
   // ── Column-menu view state (#LazyExec — view, never the spec) ─────────────
 
+  /** Whether the shuffled sample is what the grid is showing — the Row #
+   *  hover hint. False once the flow decides the order (§ the shuffled view). */
+  shuffledView(): boolean { return this.view.shuffleActive(); }
   /** The active view sort, or null. */
   viewSort(): ViewSort | null { return this.view.sort; }
   /** Per-column contains-match filters. */

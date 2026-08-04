@@ -1038,6 +1038,24 @@ Then('the Row # column keeps the original row numbers', function (this: TamedTab
   nums.forEach((n, i) => assert.deepEqual(rows[i], derived[n - 1]));
 });
 
+Then('the Row # column no longer claims a shuffled view', function (this: TamedTableWorld) {
+  assert.ok(
+    !controller(this).shuffledView(),
+    'the grid still offers the shuffled-view hint while the flow decides the order',
+  );
+});
+
+Then('the page rows are in ascending {string} order', function (this: TamedTableWorld, column: string) {
+  const values = controller(this).pageRows().map((r) => String(r[column] ?? ''));
+  assert.ok(values.length > 1, 'expected a page with rows to check');
+  for (let i = 1; i < values.length; i++) {
+    assert.ok(
+      values[i - 1]! <= values[i]!,
+      `row ${i} breaks the ascending order: "${values[i - 1]}" then "${values[i]}"`,
+    );
+  }
+});
+
 When(
   'user sorts column {string} descending from the column menu',
   async function (this: TamedTableWorld, column: string) {

@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "source": "paginate-input.csv",
+  "spec": {
+    "table": "paginate-input.csv",
+    "columns": [
+      { "id": "ID" },
+      { "id": "Name" },
+      { "id": "City" }
+    ],
+    "transformations": [
+      {
+        "kind": "sort",
+        "by": [
+          { "key": "Name", "dir": "asc" }
+        ]
+      }
+    ]
+  }
+}
