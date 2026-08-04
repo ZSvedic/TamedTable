@@ -1043,8 +1043,12 @@ provider, and a missing key fails fast with a provider-named toast such as
 `Exporting to Python requires a Google API key — open Settings and add one.`
 (or `an OpenAI` / `an Anthropic`). It also refuses a flow that carries an AI
 cell (which has no deterministic Python form), surfacing a toast that points
-the user to save it as a flow instead. This is the browser's counterpart to
-the CLI's `:save-py`.
+the user to save it as a flow instead. Because that model call takes time, it
+spends the click that started it — browsers only open a save picker inside a
+user gesture — so the finished script waits behind the same **save-ready
+confirmation** the post-run save uses: one more click ("Save file…") opens
+the picker and writes the script. This is the browser's counterpart to the
+CLI's `:save-py`.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,

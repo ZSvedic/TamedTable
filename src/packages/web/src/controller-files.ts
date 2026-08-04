@@ -24,6 +24,12 @@ import { RecentsStore, type RecentEntry } from './recents.ts';
 /** The data formats the Open picker accepts. */
 const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
+// #LazyExec
+/** Which wait the save-ready dialog is reporting — the rows a Save had to run
+ *  first, or the Python script the export's model call just wrote. Both spent
+ *  the click that started them, so both need one more. */
+export type SaveReadyKind = 'rows' | 'python';
+
 // #LookupJoin
 /** A join `spec` cannot run without asking: its step index, and the file it
  *  names — or null for a join the model emitted without a filename (the user
@@ -430,6 +436,9 @@ export class FilesManager {
    *  provider's primary model translates the flow), so it mirrors :save-py: it
    *  needs that provider's key and refuses a flow with an {llm} cell, which has
    *  no deterministic Python form. */
+  // #LazyExec — the model call outlives the click that started it, so the
+  // picker cannot open here (browsers throw "Must be handling a user gesture");
+  // the finished script parks in the save-ready dialog for a fresh click.
   async savePython(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before saving a flow.');
@@ -455,6 +464,22 @@ export class FilesManager {
       const script = new TextEncoder().encode(await this.host.engine.exportPython());
       const base = (this.host.sourcePath || '').split('/').pop() || '';
       const suggested = `${base.replace(/\.[^.]*$/, '') || 'flow'}.py`;
+      this.pendingSave = { kind: 'python', suggested, script };
+      this.host.saveReadyDialog = 'python';
+    } catch (e) {
+      this.host.pushToast('error', `Could not export to Python: ${(e as Error).message}`);
+    } finally {
+      this.host.dialog = null;
+      this.host.notify();
+    }
+  }
+
+  /** Write an already-generated Python script through the Save dialog, from
+   *  the save-ready dialog's fresh click. */
+  private async writePython(suggested: string, script: Uint8Array): Promise<void> {
+    this.host.dialog = 'save-flow';
+    this.host.notify();
+    try {
       this.reportSave(await this.host.file.pickSave(suggested, ['.py'], script));
     } catch (e) {
       this.host.pushToast('error', `Could not export to Python: ${(e as Error).message}`);
@@ -467,10 +492,14 @@ export class FilesManager {
   /** Save the current rows via the Save dialog, in the format the table was
    *  loaded as — CSV, JSONL, Parquet, or Arrow — so you get back what you
    *  opened. Falls back to JSONL when the source format is unknown. */
-  // #LazyExec — a save that had to run rows first parks here: the run
-  // consumed the click's user gesture, and the browser refuses a save picker
-  // outside one, so the save-ready dialog asks for one more click.
-  private pendingSave: { format: FormatId; keepSourceName: boolean } | null = null;
+  // #LazyExec — a save whose work outlived the click parks here: the run (or
+  // the Python export's model call) consumed the click's user gesture, and the
+  // browser refuses a save picker outside one, so the save-ready dialog asks
+  // for one more click.
+  private pendingSave:
+    | { kind: 'data'; format: FormatId; keepSourceName: boolean }
+    | { kind: 'python'; suggested: string; script: Uint8Array }
+    | null = null;
 
   async saveData(): Promise<void> {
     if (!this.host.loaded) {
@@ -508,8 +537,8 @@ export class FilesManager {
       return;
     }
     if (hadWork) {
-      this.pendingSave = { format, ...opts };
-      this.host.saveReadyDialog = true;
+      this.pendingSave = { kind: 'data', format, ...opts };
+      this.host.saveReadyDialog = 'rows';
       this.host.notify();
       return;
     }
@@ -520,14 +549,16 @@ export class FilesManager {
   async confirmSaveReady(): Promise<void> {
     const pending = this.pendingSave;
     this.pendingSave = null;
-    this.host.saveReadyDialog = false;
+    this.host.saveReadyDialog = null;
     this.host.notify();
-    if (pending) await this.writeData(pending.format, { keepSourceName: pending.keepSourceName });
+    if (!pending) return;
+    if (pending.kind === 'python') await this.writePython(pending.suggested, pending.script);
+    else await this.writeData(pending.format, { keepSourceName: pending.keepSourceName });
   }
 
   dismissSaveReady(): void {
     this.pendingSave = null;
-    this.host.saveReadyDialog = false;
+    this.host.saveReadyDialog = null;
     this.host.notify();
   }
 

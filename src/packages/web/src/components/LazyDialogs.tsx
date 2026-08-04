@@ -136,23 +136,31 @@ export function LargeFileDialog({ controller }: { controller: WebController }): 
   );
 }
 
-// #LazyExec — the post-run save confirmation. Running rows consumed the
+// #LazyExec — the save confirmation. The work that had to happen first —
+// running rows, or the model call that writes the Python script — consumed the
 // original click's user gesture, and browsers refuse a save picker outside
 // one — so the picker opens from this dialog's fresh click instead of
 // throwing "Must be handling a user gesture".
+const SAVE_READY_COPY = {
+  rows: { title: 'All rows evaluated', body: 'The table is fully evaluated and ready to write.' },
+  python: { title: 'Python script ready', body: 'The flow is translated to Python and ready to write.' },
+} as const;
+
 export function SaveReadyDialog({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
   const isMobile = useIsMobile();
-  if (!controller.saveReadyDialog) return null;
+  const kind = controller.saveReadyDialog;
+  if (!kind) return null;
+  const copy = SAVE_READY_COPY[kind];
   return (
     <Overlay isMobile={isMobile}>
       <div data-tt-saveready-dialog="" role="dialog" onClick={(e) => e.stopPropagation()} style={cardStyle(t, isMobile)}>
         <div style={{ fontFamily: typography.ui, fontSize: typography.size.md, fontWeight: 600, color: t.ink }}>
-          All rows evaluated
+          {copy.title}
         </div>
         <div style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2, lineHeight: 1.5 }}>
-          The table is fully evaluated and ready to write.
+          {copy.body}
         </div>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8 }}>
           <Button variant="chrome" data-tt-saveready-cancel="" onClick={() => controller.dismissSaveReady()}>
