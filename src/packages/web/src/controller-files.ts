@@ -51,7 +51,7 @@ export const SAVE_GATE_COPY = {
   },
   pythonWorking: {
     title: 'Writing the Python script',
-    body: 'Waiting for an LLM call to translate the recipe into Python. Usually below 10 seconds.',
+    body: 'Waiting for an LLM call to translate the recipe into Python. Usually between 5 seconds (Google) and 100+ seconds (OpenRouter free models).',
   },
   pythonReady: {
     title: 'Python script ready',
