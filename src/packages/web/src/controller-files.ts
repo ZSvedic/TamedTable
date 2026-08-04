@@ -36,6 +36,10 @@ export interface SaveGateState {
   body: string;
   /** Work still running: the waiting bar shows and "Save file…" is disabled. */
   busy: boolean;
+  /** Text the wait has produced so far — the Python export streams its script
+   *  here, and the dialog shows it being written. Absent when the wait has
+   *  nothing to show. */
+  preview?: string;
 }
 
 /** The gate's wording. Kept together so the two phases of a wait read as one
@@ -491,12 +495,22 @@ export class FilesManager {
     this.host.dialog = 'save-flow';
     this.host.notify();
     try {
-      const script = new TextEncoder().encode(await this.host.engine.exportPython());
+      // The script streams in (#PyExport), so the gate shows it being written
+      // rather than a bare bar. A late chunk from a cancelled export must not
+      // repaint the gate someone else opened, hence the token check.
+      const source = await this.host.engine.exportPython({
+        onProgress: (soFar) => {
+          if (token !== this.gateToken || !this.host.saveGate) return;
+          this.host.saveGate = { ...this.host.saveGate, preview: soFar };
+          this.host.notify();
+        },
+      });
+      const script = new TextEncoder().encode(source);
       if (token !== this.gateToken) return; // cancelled while the model worked
       const base = (this.host.sourcePath || '').split('/').pop() || '';
       const suggested = `${base.replace(/\.[^.]*$/, '') || 'flow'}.py`;
       this.pendingSave = { kind: 'python', suggested, script };
-      this.openGate(SAVE_GATE_COPY.pythonReady, false);
+      this.openGate(SAVE_GATE_COPY.pythonReady, false, source);
     } catch (e) {
       if (token === this.gateToken) this.closeGate();
       this.host.pushToast('error', `Could not export to Python: ${(e as Error).message}`);
@@ -537,8 +551,8 @@ export class FilesManager {
 
   /** Raise the gate (or move it to its next phase) and return the token that
    *  identifies this run of it. */
-  private openGate(copy: { title: string; body: string }, busy: boolean): number {
-    this.host.saveGate = { ...copy, busy };
+  private openGate(copy: { title: string; body: string }, busy: boolean, preview?: string): number {
+    this.host.saveGate = { ...copy, busy, ...(preview === undefined ? {} : { preview }) };
     this.host.notify();
     return (this.gateToken += 1);
   }

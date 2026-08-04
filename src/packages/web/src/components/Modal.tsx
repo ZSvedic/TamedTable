@@ -9,7 +9,7 @@
 //   - Save recipe as Python (#PyExport) — the model call spent the click.
 //   - The lookup-file dialog (#LookupJoin) — the chat request spent the click.
 // See spec/behavior.md § The save gate.
-import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button } from '@tamedtable/ui-kit/components';
 
@@ -116,16 +116,50 @@ export function WaitingBar(): ReactNode {
   );
 }
 
+/** A live text panel: what the wait has produced so far, pinned to its own
+ *  tail so a streaming script scrolls itself. Monospace and small — it is
+ *  something to watch, not something to read closely. */
+function PreviewPane({ text }: { text: string }): ReactNode {
+  const t = useTheme();
+  const ref = useRef<HTMLPreElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [text]);
+  return (
+    <pre
+      ref={ref}
+      data-tt-gate-preview=""
+      style={{
+        margin: 0,
+        maxHeight: 180,
+        overflow: 'auto',
+        padding: space.px8,
+        background: t.surface2,
+        border: `1px solid ${t.line}`,
+        borderRadius: space.radiusSm,
+        font: `11px/1.5 ${typography.mono}`,
+        color: t.ink2,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+      }}
+    >
+      {text}
+    </pre>
+  );
+}
+
 /** The shared "work first, then your click" dialog. `busy` holds the confirm
  *  button until the work lands — the click that enables is the gesture the
  *  picker opens from, so it must never fire early. Cancel stays live: waiting
- *  is not a trap. */
+ *  is not a trap. `preview` is whatever the wait has written so far. */
 export function GateDialog({
   testId,
   isMobile,
   title,
   body,
   busy = false,
+  preview,
   cancelLabel,
   confirmLabel,
   onCancel,
@@ -136,6 +170,7 @@ export function GateDialog({
   title: string;
   body: string;
   busy?: boolean;
+  preview?: string;
   cancelLabel: string;
   confirmLabel: string;
   onCancel: () => void;
@@ -154,6 +189,7 @@ export function GateDialog({
         <DialogTitle>{title}</DialogTitle>
         <DialogBody>{body}</DialogBody>
         {busy && <WaitingBar />}
+        {preview ? <PreviewPane text={preview} /> : null}
         <DialogButtons isMobile={isMobile}>
           {/* ui-kit's Button renders only the props it declares, so the test
               hooks ride on `display: contents` spans — in the DOM for a

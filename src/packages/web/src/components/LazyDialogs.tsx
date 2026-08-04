@@ -116,6 +116,7 @@ export function SaveGateDialog({ controller }: { controller: WebController }): R
       title={gate.title}
       body={gate.body}
       busy={gate.busy}
+      preview={gate.preview}
       cancelLabel="Not now"
       confirmLabel="Save file…"
       onCancel={() => controller.dismissSaveGate()}

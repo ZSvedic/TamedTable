@@ -1044,9 +1044,10 @@ provider, and a missing key fails fast with a provider-named toast such as
 (or `an OpenAI` / `an Anthropic`). It also refuses a flow that carries an AI
 cell (which has no deterministic Python form), surfacing a toast that points
 the user to save it as a flow instead. Because that model call takes time, the
-export runs behind the [save gate](#the-save-gate): the dialog opens on the
-click, names what it is doing ("Writing the Python script"), shows a waiting
-bar while the one model call runs, and only then enables **Save file…** — the
+export runs behind the [save gate](#the-save-gate-savegate): the dialog opens
+on the click, names what it is doing ("Writing the Python script"), streams the
+script into the dialog as the model writes it, and only then enables
+**Save file…** — the
 fresh click the picker needs. This is the browser's counterpart to the CLI's
 `:save-py`.
 
@@ -1633,6 +1634,10 @@ two buttons, whatever the wait was:
 - It names the wait in its title, and says what it is doing beneath.
 - While the work runs, a **waiting bar** animates and **Save file…** is
   disabled; **Cancel** is live throughout.
+- A wait that produces text as it goes shows it: the Python export streams
+  the script into a scrolling panel under the bar, newest lines in view, so
+  the wait is something to watch rather than a blank dialog. A wait with
+  nothing to show yet shows nothing.
 - When the bytes are in hand, the body swaps to the ready wording and
   **Save file…** enables. That click — a fresh gesture — opens the picker
   and writes the file.

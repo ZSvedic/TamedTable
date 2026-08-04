@@ -12,7 +12,18 @@ import { describe, it, expect } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createWebController, type FilePort } from '@tamedtable/web';
-import { makeBackend, makeFetch, SPEC_TC, tick } from './lazy-harness.util.ts';
+import { SPEC_TC, tick } from './lazy-harness.util.ts';
+
+/** The export's answer, as the wire really delivers it: a Gemini SSE stream.
+ *  `streamText` reads the body as a stream, so a plain JSON response — what the
+ *  patch-turn harness serves — would not parse here. */
+function sseResponse(script: string): Response {
+  const frame = `data: ${JSON.stringify({
+    candidates: [{ content: { parts: [{ text: script }], role: 'model' }, index: 0 }],
+    usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5, totalTokenCount: 15 },
+  })}\n\n`;
+  return new Response(frame, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+}
 
 /** A controller with a table loaded, its save picker recorded, and its model
  *  calls held open until `release()`. */
@@ -31,7 +42,6 @@ async function heldExportApp(script = 'print("hi")\n'): Promise<{
       return { status: 'saved' as const, name };
     },
   };
-  const answer = makeFetch(makeBackend(() => script));
   let release!: () => void;
   const held = new Promise<void>((r) => {
     release = r;
@@ -39,10 +49,10 @@ async function heldExportApp(script = 'print("hi")\n'): Promise<{
   let calls = 0;
   const app = createWebController({
     file: filePort as unknown as FilePort,
-    fetch: async (input: string | URL | Request, init?: RequestInit) => {
+    fetch: async () => {
       calls++;
       await held;
-      return answer(input, init);
+      return sseResponse(script);
     },
     env: {},
     config: { geminiKey: 'fake-key' } as never,
@@ -53,6 +63,23 @@ async function heldExportApp(script = 'print("hi")\n'): Promise<{
 }
 
 describe('#SaveGate — Save recipe as Python', () => {
+  it('shows the script in the gate as it streams, before it is writable', async () => {
+    // The harness fetch answers in one frame, so the assertion is that the
+    // gate carries what the stream produced — the per-chunk growth itself is
+    // pinned in packages/headless/export-python.test.ts, where the frames can
+    // be released one at a time.
+    const { app, release } = await heldExportApp('print("hi")\n');
+    const pending = app.savePython();
+    await tick();
+    expect(app.saveGate?.busy).toBe(true);
+    expect(app.saveGate?.preview ?? '').toBe('');
+
+    release();
+    await pending;
+    expect(app.saveGate?.preview).toContain('print("hi")');
+    expect(app.saveGate?.busy).toBe(false);
+  });
+
   it('opens waiting, enables the button when the script lands, then writes', async () => {
     const { app, saves, release } = await heldExportApp();
     const pending = app.savePython();

@@ -11,6 +11,7 @@ import {
   isPendingCell,
   type ChunkUpdate,
   type HeadlessRunner,
+  type ExportPythonOpts,
   type RequestAudio,
   type StepUpdate,
 } from '@tamedtable/headless';
@@ -591,8 +592,8 @@ export class EngineManager {
   }
 
   /** Translate the current flow to a standalone Python script (model-backed). */
-  exportPython(): Promise<string> {
-    return this.ensureHeadless().exportPython();
+  exportPython(opts?: ExportPythonOpts): Promise<string> {
+    return this.ensureHeadless().exportPython(opts);
   }
 
   // ── Streaming overlay ────────────────────────────────────────────────────

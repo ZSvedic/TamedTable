@@ -1287,20 +1287,56 @@ instead of after the SDK's backoff.
 ### Export a flow as a Python script (#PyExport)
 
 ```ts
+interface ExportPythonOpts {
+  /** Called with the script so far as it streams, already fence-stripped. */
+  onProgress?: (scriptSoFar: string) => void;
+  signal?: AbortSignal;
+}
+
 interface HeadlessRunner {
   // …
-  exportPython(): Promise<string>;   // one model call, returns the script text
+  exportPython(opts?: ExportPythonOpts): Promise<string>;   // one model call
 }
 ```
 
 `exportPython` builds a prompt from the current committed spec and
-makes one `generateText` call with `PYTHON_EXPORT_PROMPT` as the system
-message, returning the generated script as a string. It is recorded by
-the cassette recorder like any other model call. The CLI `:save-py`
+makes one **`streamText`** call with `PYTHON_EXPORT_PROMPT` as the system
+message, returning the whole script once the stream ends. Every caller
+gets the same single request whether or not it passes `onProgress`, so
+one recording serves both. It is recorded by the cassette recorder like
+any other model call — a streamed response tapes as its SSE body and
+replays through the same `Response`, so no cassette-side special case
+exists. The CLI `:save-py`
 handler: validates the `.py` extension and the path; scans
 `currentSpec().transformations` for any `{llm}` `Expr` and refuses if
 one is present; otherwise calls `exportPython` and writes the result.
 `:save-py` is REPL-only — no `tamedtable` subcommand.
+
+Two settings are specific to this call, both about wall-clock time
+(§ Least deliberation below, and `EXPORT_MAX_RETRIES = 2` rather than the
+`DEFAULT_MAX_RETRIES` of 6 — a translation this cheap is not worth six
+backoffs, which is how a queued free model turns one slow call into
+minutes).
+
+### Least deliberation (#LowEffort)
+
+Reasoning models spend tokens thinking before they answer, and thinking
+tokens are generated one at a time like any other — on the Python export
+they measured **2–3× the script itself**. Translating an explicit spec is
+mechanical, so the export asks every provider for the least deliberation
+it sells, through one table keyed by provider (`LOW_EFFORT` in
+`headless/index.ts`) and one merge helper that folds it into whatever
+`providerOptions` the call already carries:
+
+| Provider | Option | Why this one |
+|---|---|---|
+| Google | `thinkingConfig.thinkingBudget: 512` | The only knob both Gemini generations accept — `thinkingLevel` 400s on 2.5 (`Thinking level is not supported for this model`) and `thinkingBudget: 0` 400s on 3.x. |
+| OpenAI | `reasoningEffort: 'low'` | |
+| OpenRouter, Cerebras | `reasoningEffort: 'low'` | OpenAI-compatible endpoint. Advisory: a free model may ignore it. |
+| Anthropic | `thinking: { type: 'disabled' }` | Already the API default; sent so the request states the intent. |
+
+A provider that ignores the setting is not an error — the request stays
+valid and the export just takes as long as it takes.
 
 ## Benchmarks (#BenchPerf #BenchSweep)
 
