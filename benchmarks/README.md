@@ -48,6 +48,20 @@ by `videoId`. The query (patch-turn) model just writes the "add column" edit; it
 doesn't affect accuracy, so the sweep fixes it to the provider default and
 varies the **cell model** and **batch size**.
 
+### Row integrity — a metric separate from accuracy
+
+Accuracy only scores rows the engine kept and labelled. It says nothing about
+whether the model returned *every* row exactly once. Small models in this class
+sometimes drop or mangle a row identifier — emitting `1` where the id was `11`,
+so one row silently vanishes and another is duplicated. Joins downstream then
+corrupt with no error raised. `bench sweep` measures this independently: for each
+config it compares the output rows against the input rows by `videoId` and
+records `inputRows`, `duplicatedIds` (ids appearing more than once in the
+output), `droppedIds` (input ids absent from the output), and `rowIntegrityOk`
+(true only when the counts match with no duplicated or dropped id). A config can
+score high accuracy and still fail row integrity — that failure is its own
+column in the report, never folded into the accuracy number.
+
 ## Running it
 
 All commands run from `src/`. `sample`, `chart`, and `report` are offline;
@@ -159,3 +173,11 @@ gain over the lineup above; 3.6 Flash matches 3.5 Flash at a 17% lower output
 price, 3.5 Flash-Lite loses to 3.1 Flash-Lite on both accuracy and price.
 Findings + recommendation:
 [`process/journal/2026-07-22-gemini-new-flash-benchmark.md`](../process/journal/2026-07-22-gemini-new-flash-benchmark.md).
+
+A 2026-08-04 run (`results/gemma-3n.jsonl`) benchmarked
+`google/gemma-3n-e4b-it` — an on-device size-class (~4B) proxy for Chrome's
+Gemini Nano, which has no API. Verdict: **don't ship.** Row integrity is
+perfect (no dropped or duplicated rows in any config), but accuracy sits at the
+majority-class baseline — 54% at batch 1, below always-guess-"not-music" — so
+Nano-class quality isn't enough for the classification task yet. Findings:
+[`process/journal/2026-08-04-gemma-3n-benchmark.md`](../process/journal/2026-08-04-gemma-3n-benchmark.md).

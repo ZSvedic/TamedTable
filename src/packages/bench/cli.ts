@@ -3,8 +3,10 @@
 // CLI for the model & batch-size benchmark. Subcommands:
 //   sample [count]                 draw a subset of the fixture → ground-truth/music-sample.csv
 //   label  [model]                 auto-label the subset with a strong model → music-labels.jsonl
-//   sweep  [--models=…] [--batches=…] [--out=name]
+//   sweep  [--models=…] [--batches=…] [--out=name] [--primary=id]
 //                                  run the (model × batch) grid, score vs labels → results/<name>.jsonl
+//                                  --primary pins the patch-turn model (default: the cell model's
+//                                  same-provider default); use it for a model that can't tool-call.
 //   chart  [name] [--batch=N]      render SVGs from results/<name>.jsonl → charts/
 //   report [name]                  print the results table
 //
@@ -102,14 +104,17 @@ function readLabels(): Label[] {
 }
 
 // ── sweep ────────────────────────────────────────────────────────────────────
-async function cmdSweep(models: string[], batches: number[], out: string): Promise<void> {
+async function cmdSweep(models: string[], batches: number[], out: string, primary?: string): Promise<void> {
   if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample — run "bench sample" then "bench label" first.`);
   const labels = readLabels();
-  // Fail fast if a key is missing for any provider in the model set.
-  for (const provider of new Set(models.map(providerFor))) {
-    if (!keyFor(provider)) throw new Error(`${provider} key not set — needed for ${models.filter((m) => providerFor(m) === provider).join(', ')}.`);
+  // The patch-turn model. --primary pins it (e.g. to run one small model in both
+  // roles, the OpenRouter convention); otherwise each config uses its
+  // same-provider default. All providers in play — cell and patch — need a key.
+  const providersInPlay = new Set([...models, ...(primary ? [primary] : [])].map(providerFor));
+  for (const provider of providersInPlay) {
+    if (!keyFor(provider)) throw new Error(`${provider} key not set — needed for ${[...models, ...(primary ? [primary] : [])].filter((m) => providerFor(m) === provider).join(', ')}.`);
   }
-  const configs = grid(models, batches);
+  const configs = grid(models, batches).map((c) => (primary ? { ...c, primaryModel: primary } : c));
   console.log(`Running ${configs.length} configs (${models.length} models × ${batches.length} batch sizes)…`);
   // Do NOT pin a single apiKey — a sweep can span providers. Leaving apiKey
   // undefined lets each runner resolve its own provider's key from env
@@ -152,10 +157,11 @@ function readResults(name: string): SweepResult[] {
 }
 
 function printReport(results: SweepResult[]): void {
-  const headers = ['Cell model', 'Batch', 'Acc', 'Cost', 'Time', 'Calls', 'Scored'];
+  const headers = ['Cell model', 'Batch', 'Acc', 'Cost', 'Time', 'Calls', 'Scored', 'RowChk'];
   const rows = results.map((r) => [
     r.cellModel, String(r.batchSize), `${(r.accuracy * 100).toFixed(0)}%`,
     `$${r.costUsd.toFixed(4)}`, `${(r.timeMs / 1000).toFixed(1)}s`, String(r.calls), `${r.scored}${r.missing ? ` (-${r.missing})` : ''}`,
+    rowCheck(r),
   ]);
   const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((row) => row[i]!.length)));
   const line = (cells: string[]) => cells.map((c, i) => c.padEnd(widths[i]!)).join('  ');
@@ -165,6 +171,17 @@ function printReport(results: SweepResult[]): void {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+// Row-integrity cell: "OK" when every input row came back once, else a compact
+// note of what broke. Legacy result files (no integrity fields) show "—".
+function rowCheck(r: SweepResult): string {
+  if (r.rowIntegrityOk === undefined) return '—';
+  if (r.rowIntegrityOk) return 'OK';
+  const parts: string[] = [];
+  if (r.inputRows !== r.rows) parts.push(`${r.inputRows}→${r.rows}`);
+  if (r.duplicatedIds) parts.push(`dup${r.duplicatedIds}`);
+  if (r.droppedIds) parts.push(`drop${r.droppedIds}`);
+  return `✗ ${parts.join(' ')}`;
+}
 const rel = (p: string) => p.replace(ROOT + '/', '');
 function mode(xs: number[]): number {
   const counts = new Map<number, number>();
@@ -180,7 +197,7 @@ async function main(): Promise<void> {
   switch (cmd) {
     case 'sample': return cmdSample(Number(positional[0] ?? 150));
     case 'label':  return cmdLabel(positional[0] ?? DEFAULT_LABELER);
-    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep');
+    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep', flags.primary);
     case 'chart':  return cmdChart(positional[0] ?? 'sweep', flags.batch ? Number(flags.batch) : undefined, flags.subtitle);
     case 'report': return cmdReport(positional[0] ?? 'sweep');
     default:

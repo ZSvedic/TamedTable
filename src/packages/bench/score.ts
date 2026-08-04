@@ -30,6 +30,42 @@ export interface ScoreResult {
   mismatches: Mismatch[];
 }
 
+/** Row-integrity report — did the engine return every input row exactly once?
+ *  Independent of accuracy: a config can classify every kept row correctly yet
+ *  still drop or duplicate a row identifier (see benchmarks/README.md). */
+export interface RowIntegrity {
+  /** Rows the engine loaded from the fixture. */
+  inputRows: number;
+  /** Rows the engine returned. */
+  outputRows: number;
+  /** Ids that appear more than once in the output. */
+  duplicated: string[];
+  /** Input ids missing from the output. */
+  dropped: string[];
+  /** True only when counts match with no duplicated or dropped id. */
+  ok: boolean;
+}
+
+/**
+ * Compare the engine's output rows against the input rows by id.
+ * @param inputIds   the id-column value of every row that was loaded
+ * @param rows       the engine's output rows (currentRows())
+ * @param idColumn   the stable id column present in the rows (e.g. "videoId")
+ */
+export function checkRowIntegrity(inputIds: string[], rows: Row[], idColumn: string): RowIntegrity {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const id = r[idColumn];
+    if (id != null) counts.set(String(id), (counts.get(String(id)) ?? 0) + 1);
+  }
+  const duplicated = [...counts.entries()].filter(([, n]) => n > 1).map(([id]) => id);
+  const dropped = [...new Set(inputIds.map(String))].filter((id) => !counts.has(id));
+  const inputRows = inputIds.length;
+  const outputRows = rows.length;
+  const ok = inputRows === outputRows && duplicated.length === 0 && dropped.length === 0;
+  return { inputRows, outputRows, duplicated, dropped, ok };
+}
+
 /** Coerce a cell value or label to a canonical form so "true"/true/1/"yes" all
  *  compare equal. Booleans and boolean-ish strings collapse to true/false;
  *  everything else is lower-cased trimmed text. */

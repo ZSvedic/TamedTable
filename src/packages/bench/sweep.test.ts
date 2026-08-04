@@ -55,6 +55,12 @@ test('runConfig scores accuracy against labels and prices the tally', async () =
   expect(r.accuracy).toBeCloseTo(2 / 3, 6);
   expect(r.calls).toBe(1);
   expect(r.costUsd).toBeGreaterThan(0);
+  // Row integrity: the fake returns all three input rows, once each.
+  expect(r.inputRows).toBe(3);
+  expect(r.rows).toBe(3);
+  expect(r.duplicatedIds).toBe(0);
+  expect(r.droppedIds).toBe(0);
+  expect(r.rowIntegrityOk).toBe(true);
 });
 
 test('runConfig maps a Cerebras cell model to the cerebras provider and its patch default', async () => {
@@ -89,8 +95,7 @@ test('runConfig maps an OpenRouter cell model to the openrouter provider and its
     },
   );
   expect(r.provider).toBe('openrouter');
-  expect(r.primaryModel).toBe('qwen/qwen3-coder:free');
-  expect(r.costUsd).toBe(0); // free plan — both models priced 0/0
+  expect(r.primaryModel).toBe('qwen/qwen3-coder'); // paid successor to the retired :free slug
 });
 
 test('runSweep runs every config; grid expands the cross product', async () => {

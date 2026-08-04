@@ -11,7 +11,7 @@ import { createHeadlessRunner, type HeadlessRunner, type HeadlessRunnerOptions }
 import { providerFor } from '@tamedtable/model-config';
 import type { Row } from '@tamedtable/core';
 import { newTally, summarise, tallyingFetch } from './usage.ts';
-import { scoreAccuracy, type Label } from './score.ts';
+import { scoreAccuracy, checkRowIntegrity, type Label } from './score.ts';
 
 /** One point in the sweep: a candidate cell model at a given batch size. */
 export interface SweepConfig {
@@ -57,6 +57,14 @@ export interface SweepResult {
   scored: number;
   /** Labelled ids the engine dropped from the output. */
   missing: number;
+  /** Rows loaded from the fixture (row-integrity baseline). */
+  inputRows: number;
+  /** Ids appearing more than once in the output. */
+  duplicatedIds: number;
+  /** Input ids absent from the output. */
+  droppedIds: number;
+  /** True only when output row count matches input with no duplicated/dropped id. */
+  rowIntegrityOk: boolean;
 }
 
 export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<SweepResult> {
@@ -75,12 +83,16 @@ export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<Sw
   });
 
   await runner.loadInput(ctx.inputCsv);
+  // Snapshot the input ids before the request so row integrity is measured
+  // against what actually loaded, not the label set.
+  const inputIds = runner.currentRows().map((r) => String(r[ctx.idColumn]));
   const t0 = Date.now();
   await runner.request(ctx.request);
   const timeMs = Date.now() - t0;
 
   const out: Row[] = runner.currentRows();
   const score = scoreAccuracy(out, ctx.idColumn, ctx.targetColumn, ctx.labels);
+  const integrity = checkRowIntegrity(inputIds, out, ctx.idColumn);
   const s = summarise(tally);
 
   return {
@@ -97,6 +109,10 @@ export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<Sw
     accuracy: score.accuracy,
     scored: score.n,
     missing: score.missing.length,
+    inputRows: integrity.inputRows,
+    duplicatedIds: integrity.duplicated.length,
+    droppedIds: integrity.dropped.length,
+    rowIntegrityOk: integrity.ok,
   };
 }
 
@@ -117,7 +133,7 @@ function defaultPrimaryFor(cellModel: string): string {
     case 'gemini':     return 'gemini-3.6-flash';
     case 'openai':     return 'gpt-5.5';
     case 'cerebras':   return 'zai-glm-4.7';
-    case 'openrouter': return 'qwen/qwen3-coder:free';
+    case 'openrouter': return 'qwen/qwen3-coder';
     default:           return 'claude-sonnet-4-6';
   }
 }

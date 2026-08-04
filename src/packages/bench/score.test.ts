@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { canonical, scoreAccuracy, type Label } from './score.ts';
+import { canonical, scoreAccuracy, checkRowIntegrity, type Label } from './score.ts';
 import type { Row } from '@tamedtable/core';
 
 test('canonical collapses boolean-ish values', () => {
@@ -37,4 +37,35 @@ test('scoreAccuracy is 0, not NaN, when nothing matched', () => {
   const s = scoreAccuracy([], 'videoId', 'Music', [{ id: 'x', expected: true }]);
   expect(s.n).toBe(0);
   expect(s.accuracy).toBe(0);
+});
+
+test('checkRowIntegrity passes when every input id appears exactly once', () => {
+  const r = checkRowIntegrity(['a', 'b', 'c'], [
+    { videoId: 'a' }, { videoId: 'b' }, { videoId: 'c' },
+  ], 'videoId');
+  expect(r.inputRows).toBe(3);
+  expect(r.outputRows).toBe(3);
+  expect(r.duplicated).toEqual([]);
+  expect(r.dropped).toEqual([]);
+  expect(r.ok).toBe(true);
+});
+
+test('checkRowIntegrity catches the "drop a digit" corruption (one id duplicated, one dropped)', () => {
+  // Model emitted "1" where the id was "11": row "11" vanishes, "1" now appears
+  // twice. Row count is unchanged, so only the id checks reveal the corruption.
+  const r = checkRowIntegrity(['1', '11', 'x'], [
+    { videoId: '1' }, { videoId: '1' }, { videoId: 'x' },
+  ], 'videoId');
+  expect(r.inputRows).toBe(3);
+  expect(r.outputRows).toBe(3);
+  expect(r.duplicated).toEqual(['1']);
+  expect(r.dropped).toEqual(['11']);
+  expect(r.ok).toBe(false);
+});
+
+test('checkRowIntegrity fails on a plain row-count mismatch', () => {
+  const r = checkRowIntegrity(['a', 'b'], [{ videoId: 'a' }], 'videoId');
+  expect(r.outputRows).toBe(1);
+  expect(r.dropped).toEqual(['b']);
+  expect(r.ok).toBe(false);
 });
