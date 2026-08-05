@@ -26,6 +26,8 @@ jobs:
       # Build only when deploying. On close, pr-preview-action just removes the
       # preview dir, so the build steps are skipped.
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
         if: github.event.action != 'closed'
       - run: bun install
         working-directory: src
