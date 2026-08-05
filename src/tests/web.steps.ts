@@ -1038,6 +1038,24 @@ Then('the Row # column keeps the original row numbers', function (this: TamedTab
   nums.forEach((n, i) => assert.deepEqual(rows[i], derived[n - 1]));
 });
 
+Then('the Row # column no longer claims a shuffled view', function (this: TamedTableWorld) {
+  assert.ok(
+    !controller(this).shuffledView(),
+    'the grid still offers the shuffled-view hint while the flow decides the order',
+  );
+});
+
+Then('the page rows are in ascending {string} order', function (this: TamedTableWorld, column: string) {
+  const values = controller(this).pageRows().map((r) => String(r[column] ?? ''));
+  assert.ok(values.length > 1, 'expected a page with rows to check');
+  for (let i = 1; i < values.length; i++) {
+    assert.ok(
+      values[i - 1]! <= values[i]!,
+      `row ${i} breaks the ascending order: "${values[i - 1]}" then "${values[i]}"`,
+    );
+  }
+});
+
 When(
   'user sorts column {string} descending from the column menu',
   async function (this: TamedTableWorld, column: string) {
@@ -1184,21 +1202,30 @@ Then(
   },
 );
 
-// ── The post-run save confirmation (#LazyExec) ───────────────────────────────
+// ── The save gate (#SaveGate) ────────────────────────────────────────────────
 
-Then('the save-ready dialog is shown', async function (this: TamedTableWorld) {
+Then('the save gate is ready, titled {string}', async function (this: TamedTableWorld, title: string) {
   const c = controller(this);
-  await waitFor(() => c.saveReadyDialog !== null);
+  await waitFor(() => c.saveGate?.busy === false);
+  assert.equal(c.saveGate?.title, title, 'save gate title');
+});
+
+Then('the save gate is closed', function (this: TamedTableWorld) {
+  assert.equal(controller(this).saveGate, null, 'the save gate should be closed');
 });
 
 Then('no save dialog was opened yet', function (this: TamedTableWorld) {
   assert.ok(!ctxOf(this).filePort?.saveCalled, 'the save picker must wait for a fresh click');
 });
 
-When('user clicks Save file in the save-ready dialog', function (this: TamedTableWorld) {
-  const pending = controller(this).confirmSaveReady();
+When('user clicks Save file in the save gate', function (this: TamedTableWorld) {
+  const pending = controller(this).confirmSaveGate();
   pending.catch(() => {});
   ctxOf(this).pending = pending;
+});
+
+When('user cancels the save gate', function (this: TamedTableWorld) {
+  controller(this).dismissSaveGate();
 });
 
 Then('the newly evaluated cells carry the changed marker', function (this: TamedTableWorld) {

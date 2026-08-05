@@ -40,22 +40,36 @@ Feature: Export a flow as a Python script
 
   Rule: The web app exports the same flow through the Save-flow dropdown
 
-    # Generating the script is a model call, so it outlives the click that
-    # started it and the browser refuses the save picker ("Must be handling a
-    # user gesture"). The finished script parks in the save-ready dialog and
-    # the picker opens from its fresh click instead (issue #278).
+    # #SaveGate — writing the script is a model call, so it outlives the click
+    # that started it and the browser refuses the save picker ("Must be handling
+    # a user gesture"). The export runs behind the save gate, which collects the
+    # fresh click the picker needs (issue #278). The waiting phase — bar
+    # animating, Save file… disabled — is unit-tested in save-gate.test.ts,
+    # where the model call can be held open.
     @web
     Scenario: Save as Python writes a script for a deterministic flow
       Given the TamedTable web app
       And load "customers-input.csv"
       When user sends the chat message "Show only customers in the USA"
       And user says "Save as Python"
-      Then the save-ready dialog is shown
+      Then the save gate is ready, titled "Python script ready"
       And no save dialog was opened yet
-      When user clicks Save file in the save-ready dialog
+      When user clicks Save file in the save gate
       Then the suggested save name ends with ".py"
       When user saves as "customers-flow.py"
       Then a toast shows "Saved customers-flow.py."
+
+    # Cancelling throws the generated script away — no picker, no file.
+    @web
+    Scenario: Cancelling the save gate writes nothing
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      When user sends the chat message "Show only customers in the USA"
+      And user says "Save as Python"
+      Then the save gate is ready, titled "Python script ready"
+      When user cancels the save gate
+      Then the save gate is closed
+      And no save dialog was opened yet
 
   Rule: :save-py refuses a flow that cannot run deterministically
 

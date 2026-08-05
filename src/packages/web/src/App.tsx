@@ -12,7 +12,7 @@ import { Toasts } from './components/Toasts.tsx';
 import { ErrorDialog } from './components/ErrorDialog.tsx';
 import { ReplaceDialog } from './components/ReplaceDialog.tsx';
 import { LookupDialog } from './components/LookupDialog.tsx';
-import { LargeFileDialog, RunAllDialog, SaveReadyDialog } from './components/LazyDialogs.tsx';
+import { LargeFileDialog, RunAllDialog, SaveGateDialog } from './components/LazyDialogs.tsx';
 import { TutorialPanel } from './components/TutorialPanel.tsx';
 import { MobileShell } from './components/mobile/MobileShell.tsx';
 import { useIsMobile } from './hooks/useIsMobile.ts';
@@ -118,7 +118,7 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
       <OpenUrlDialog controller={controller} />
       <LargeFileDialog controller={controller} />
       <RunAllDialog controller={controller} />
-      <SaveReadyDialog controller={controller} />
+      <SaveGateDialog controller={controller} />
       <ReplaceDialog controller={controller} />
       <LookupDialog controller={controller} />
       <ErrorDialog controller={controller} />

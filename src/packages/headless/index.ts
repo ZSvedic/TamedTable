@@ -1,4 +1,5 @@
-import { generateText, tool, stepCountIs, jsonSchema } from 'ai';
+import { generateText, streamText, tool, stepCountIs, jsonSchema } from 'ai';
+import type { JSONValue } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -270,6 +271,14 @@ export interface HeadlessRunnerOptions {
  *  to the prompt text; `text` carries the instructions and table context. */
 export type RequestAudio = { data: Uint8Array; mediaType: string };
 
+// #PyExport
+export interface ExportPythonOpts {
+  /** The script so far, already unfenced, on every chunk that changes it —
+   *  the hook a host shows the script being written through. */
+  onProgress?: (scriptSoFar: string) => void;
+  signal?: AbortSignal;
+}
+
 export interface HeadlessRunner {
   loadInput(path: string): Promise<void>;
   /** Load an already-parsed table directly — the path-free sibling of
@@ -298,8 +307,9 @@ export interface HeadlessRunner {
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
   /** One model call: translate the current flow into a standalone
-   *  Python script. Returns the script source. */
-  exportPython(): Promise<string>;
+   *  Python script. Returns the script source, and streams it to
+   *  `onProgress` on the way (#PyExport). */
+  exportPython(opts?: ExportPythonOpts): Promise<string>;
   /** #ProviderSelect — one minimal call on the cell model with retries off,
    *  proving the configured key and provider work. Resolves with the model id
    *  it reached; rejects with the provider's own error. Needs no loaded
@@ -497,6 +507,58 @@ export function decodeOpValues(ops: unknown[]): unknown[] {
 
 // #CancelOp
 const ANTHROPIC_EPHEMERAL = { anthropic: { cacheControl: { type: 'ephemeral' as const } } };
+
+// #LowEffort
+/** The least deliberation each provider sells, in that provider's own words.
+ *  Reasoning tokens are generated one at a time like any other, so on a purely
+ *  mechanical job — translating an explicit spec — they are wall-clock time
+ *  spent on nothing (measured: 2-3x the script itself, and 19.5s -> 4.8s on
+ *  gemini-3.6-flash once capped).
+ *
+ *  Google's entry is a budget rather than the newer `thinkingLevel` because it
+ *  is the only knob BOTH catalogue generations accept: `thinkingLevel` 400s on
+ *  gemini-2.5-* ("Thinking level is not supported for this model") and
+ *  `thinkingBudget: 0` 400s on gemini-3.x, which cannot stop thinking at all.
+ *  512 is a cap, not a quota — 3.6 Flash spent 0 of it on the export prompt.
+ *
+ *  One table so a new provider is a row, not another branch at the call site.
+ *  A provider free to ignore the hint (a free OpenRouter model does) is not an
+ *  error: the request stays valid and the call just takes what it takes. */
+type ProviderOptions = Record<string, Record<string, JSONValue>>;
+
+const LOW_EFFORT: Record<ReturnType<typeof providerFor>, ProviderOptions> = {
+  gemini:     { google:    { thinkingConfig: { thinkingBudget: 512 } } },
+  openai:     { openai:    { reasoningEffort: 'low' } },
+  openrouter: { openai:    { reasoningEffort: 'low' } },
+  cerebras:   { openai:    { reasoningEffort: 'low' } },
+  anthropic:  { anthropic: { thinking: { type: 'disabled' } } },
+};
+
+/** `base` with `modelId`'s low-effort options folded in. Merged per provider
+ *  key, never replaced: Anthropic's entry has to land beside the prompt-cache
+ *  control that is already there. */
+function withLowEffort(modelId: string, base: ProviderOptions): ProviderOptions {
+  const merged = { ...base };
+  for (const [provider, options] of Object.entries(LOW_EFFORT[providerFor(modelId)])) {
+    merged[provider] = { ...(merged[provider] ?? {}), ...options };
+  }
+  return merged;
+}
+
+/** A model that wrapped the script in a markdown fence despite being told not
+ *  to. Stripped on the way out AND on every progress update, so a fence never
+ *  reaches the screen either. Tolerates a half-written closing fence: while the
+ *  stream is mid-flight the text can end in a stray backtick run. */
+function unfenceScript(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('```')) return trimmed;
+  return trimmed.replace(/^```(?:python)?\s*\n?/, '').replace(/\n?`{1,3}\s*$/, '').trim();
+}
+
+/** Retries for the Python export. Lower than DEFAULT_MAX_RETRIES on purpose:
+ *  the call is one cheap translation, and six exponential backoffs against a
+ *  queued free model is how a slow call becomes a six-minute one. */
+const EXPORT_MAX_RETRIES = 2;
 
 // #ConfigEnv
 const rateLimiter = (() => {
@@ -1124,26 +1186,41 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     return { model };
   }
 
-  async exportPython(): Promise<string> {
+  // The call streams (#PyExport): the script is the slowest thing the app
+  // asks a model for, and a host that can show it being written turns a blank
+  // wait into something to watch. Streaming unconditionally — `onProgress` or
+  // not — keeps ONE request shape, so the CLI and the web app share a cassette.
+  async exportPython(opts: ExportPythonOpts = {}): Promise<string> {
     this.requireLoaded();
     // Same trims as a patch turn: basename-only table, no query provenance.
     const spec = stripQueryMetadata(this.spec);
     const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
     const prompt = `Translate this TamedTable flow into a standalone Python 3 script.\n\nSpec:\n${JSON.stringify(llmSpec, null, 2)}`;
-    await rateLimiter.acquire();
-    const result = await generateText({
+    const modelId = this.opts.model ?? DEFAULT_MODEL;
+    await rateLimiter.acquire(opts.signal);
+    const result = streamText({
       model: this.model(),
       system: PYTHON_EXPORT_PROMPT,
       prompt,
-      ...this.samplingParams(this.opts.model ?? DEFAULT_MODEL),
-      maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
-      providerOptions: ANTHROPIC_EPHEMERAL,
+      ...this.samplingParams(modelId),
+      maxRetries: EXPORT_MAX_RETRIES,
+      providerOptions: withLowEffort(modelId, ANTHROPIC_EPHEMERAL),
+      abortSignal: opts.signal,
     });
-    let text = (result.text ?? '').trim();
-    // Strip a stray markdown fence if the model wrapped the code in one.
-    if (text.startsWith('```')) {
-      text = text.replace(/^```(?:python)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+    let raw = '';
+    let reported = '';
+    for await (const delta of result.textStream) {
+      raw += delta;
+      // Report the script as it stands, not the delta: the fence strip needs
+      // the whole text, and a host wanting deltas can diff two updates. A
+      // chunk that changes nothing visible (a lone fence) reports nothing.
+      const soFar = unfenceScript(raw);
+      if (soFar !== reported) {
+        reported = soFar;
+        opts.onProgress?.(soFar);
+      }
     }
+    const text = unfenceScript(raw);
     if (!text) throw new Error('Python export: the model returned no script.');
     return text.endsWith('\n') ? text : text + '\n';
   }

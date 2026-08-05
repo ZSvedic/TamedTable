@@ -238,7 +238,7 @@ export function TableView({ controller }: { controller: WebController }): ReactN
         // #LazyExec — row state, view state, and the grid upgrades.
         rowNumbers={controller.pageRowNumbers()}
         rowNumberHint={
-          controller.view.shuffleSeed !== null
+          controller.shuffledView()
             ? 'Original row numbers — the view is shuffled; saving keeps this order.'
             : undefined
         }

@@ -14,6 +14,7 @@ import { useTheme, Button } from '@tamedtable/ui-kit/components';
 import type { WebController, RunAllReason } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
+import { GateDialog, Overlay, cardStyle } from './Modal.tsx';
 
 /** Compact token count: 950, 12.4k, 1.9M. */
 export function formatTokens(n: number): string {
@@ -71,42 +72,6 @@ const CONFIRM_LABELS: Record<RunAllReason, { title: string; note: string; confir
   },
 };
 
-function Overlay({ isMobile, children, onBackdrop }: { isMobile: boolean; children: ReactNode; onBackdrop?: () => void }): ReactNode {
-  const t = useTheme();
-  return (
-    <div
-      onClick={onBackdrop}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 55,
-        background: t.overlay,
-        display: 'flex',
-        alignItems: isMobile ? 'flex-end' : 'center',
-        justifyContent: 'center',
-        padding: isMobile ? 0 : 16,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function cardStyle(t: ReturnType<typeof useTheme>, isMobile: boolean): CSSProperties {
-  return {
-    maxWidth: isMobile ? undefined : 420,
-    width: '100%',
-    background: t.surface,
-    border: `1px solid ${t.line2}`,
-    borderRadius: isMobile ? `${space.radius}px ${space.radius}px 0 0` : space.radius,
-    boxShadow: t.shadowLg,
-    padding: '18px 20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: space.px12,
-  };
-}
-
 export function LargeFileDialog({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
@@ -136,42 +101,27 @@ export function LargeFileDialog({ controller }: { controller: WebController }): 
   );
 }
 
-// #LazyExec — the save confirmation. The work that had to happen first —
-// running rows, or the model call that writes the Python script — consumed the
-// original click's user gesture, and browsers refuse a save picker outside
-// one — so the picker opens from this dialog's fresh click instead of
-// throwing "Must be handling a user gesture".
-const SAVE_READY_COPY = {
-  rows: { title: 'All rows evaluated', body: 'The table is fully evaluated and ready to write.' },
-  python: { title: 'Python script ready', body: 'The flow is translated to Python and ready to write.' },
-} as const;
-
-export function SaveReadyDialog({ controller }: { controller: WebController }): ReactNode {
+// #SaveGate — the one dialog every gesture-gated save waits behind. Its words
+// and its busy flag come from the controller (controller-files.ts), so adding a
+// wait is a copy entry, not another dialog. See spec/behavior.md § The save gate.
+export function SaveGateDialog({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
-  const t = useTheme();
   const isMobile = useIsMobile();
-  const kind = controller.saveReadyDialog;
-  if (!kind) return null;
-  const copy = SAVE_READY_COPY[kind];
+  const gate = controller.saveGate;
+  if (!gate) return null;
   return (
-    <Overlay isMobile={isMobile}>
-      <div data-tt-saveready-dialog="" role="dialog" onClick={(e) => e.stopPropagation()} style={cardStyle(t, isMobile)}>
-        <div style={{ fontFamily: typography.ui, fontSize: typography.size.md, fontWeight: 600, color: t.ink }}>
-          {copy.title}
-        </div>
-        <div style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2, lineHeight: 1.5 }}>
-          {copy.body}
-        </div>
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: space.px8 }}>
-          <Button variant="chrome" data-tt-saveready-cancel="" onClick={() => controller.dismissSaveReady()}>
-            Not now
-          </Button>
-          <Button variant="primary" data-tt-saveready-confirm="" onClick={() => void controller.confirmSaveReady()}>
-            Save file…
-          </Button>
-        </div>
-      </div>
-    </Overlay>
+    <GateDialog
+      testId="savegate"
+      isMobile={isMobile}
+      title={gate.title}
+      body={gate.body}
+      busy={gate.busy}
+      preview={gate.preview}
+      cancelLabel="Not now"
+      confirmLabel="Save file…"
+      onCancel={() => controller.dismissSaveGate()}
+      onConfirm={() => void controller.confirmSaveGate()}
+    />
   );
 }
 

@@ -11,6 +11,7 @@ import {
   isPendingCell,
   type ChunkUpdate,
   type HeadlessRunner,
+  type ExportPythonOpts,
   type RequestAudio,
   type StepUpdate,
 } from '@tamedtable/headless';
@@ -333,13 +334,13 @@ export class EngineManager {
     this.pruneViewToSpec();
   }
 
-  /** Drop view sort/filters on columns the spec no longer has — called after
-   *  every spec change (undo/redo/jump/gesture patches ride applySpecCached;
-   *  chat requests and flow replays call it on commit). */
+  /** Bring the view back in step with the spec — drops view sort/filters on
+   *  columns the spec no longer has, and stands the shuffled sample down (or
+   *  back up) as the spec gains or loses an ordering step. Called after every
+   *  spec change (undo/redo/jump/gesture patches ride applySpecCached; chat
+   *  requests and flow replays call it on commit). */
   private pruneViewToSpec(): void {
-    this.host.view.pruneToColumns(
-      new Set(this.ensureHeadless().currentSpec().columns.map((c) => c.id)),
-    );
+    this.host.view.syncToSpec(this.ensureHeadless().currentSpec());
   }
 
   /** Note a single-cell change (the inline-edit gesture) for the tint. */
@@ -591,8 +592,8 @@ export class EngineManager {
   }
 
   /** Translate the current flow to a standalone Python script (model-backed). */
-  exportPython(): Promise<string> {
-    return this.ensureHeadless().exportPython();
+  exportPython(opts?: ExportPythonOpts): Promise<string> {
+    return this.ensureHeadless().exportPython(opts);
   }
 
   // ── Streaming overlay ────────────────────────────────────────────────────

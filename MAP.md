@@ -28,6 +28,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | Provider & model selection | [#ProviderSelect](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ProviderSelect&type=code) | - | ✓ | ✓ | [model-config.feature](spec/packages/model-config/model-config.feature) |
 | Settings panel | [#SettingsCards](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SettingsCards&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
 | Python export | [#PyExport](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23PyExport&type=code) | ✓ | ✓ | ✓ | [save-py.feature](spec/test-cases/save-py.feature) |
+| Save gate (fresh-click dialog) | [#SaveGate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SaveGate&type=code) | - | - | ✓ | [save-py.feature](spec/test-cases/save-py.feature) + [lazy-exec.feature](spec/test-cases/lazy-exec.feature) (the post-run save) |
 | Record and replay cassettes | [#Cassettes](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Cassettes&type=code) | ✓ | ✓ | - | [cassettes.feature](spec/test-cases/cassettes.feature) |
 | REPL commands | [#ReplCmds](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ReplCmds&type=code) | - | ✓ | - | [repl-commands.feature](spec/test-cases/repl-commands.feature) |
 | Row and dataset validation | [#Validate](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Validate&type=code) | ✓ | ✓ | ✓ | [validate.feature](spec/test-cases/validate.feature) |
