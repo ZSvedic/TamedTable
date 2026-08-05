@@ -17190,18 +17190,13 @@ function resolveConfig(env, stored) {
   let provider;
   let anthropicKey = stored.anthropicKey ?? null;
   let geminiKey = stored.geminiKey ?? null;
-  let puterKey = stored.puterKey ?? null;
   let openaiKey = stored.openaiKey ?? null;
   let openrouterKey = stored.openrouterKey ?? null;
-  const envPuter = env["PUTER_TOKEN"];
   const envGemini = env["GEMINI_API_KEY"];
   const envOpenai = env["OPENAI_API_KEY"];
   const envAnthropic = env["ANTHROPIC_API_KEY"];
   const envOpenrouter = env["OPENROUTER_API_KEY"];
-  if (envPuter) {
-    provider = "puter";
-    puterKey = envPuter;
-  } else if (envGemini) {
+  if (envGemini) {
     provider = "gemini";
     geminiKey = envGemini;
   } else if (envOpenai) {
@@ -17228,7 +17223,6 @@ function resolveConfig(env, stored) {
     provider,
     anthropicKey,
     geminiKey,
-    puterKey,
     openaiKey,
     openrouterKey,
     model,
@@ -17263,12 +17257,13 @@ var PROVIDERS = [
     id: "puter",
     name: "Puter.js",
     tagline: "Gemini via developer.puter.com",
-    envHint: "or sign in with Puter.js",
-    keyPlaceholder: "Puter auth token…",
+    auth: "puter",
+    envHint: "Sign in with Puter.js — no API key needed.",
     keyUrl: "https://developer.puter.com/ai/google/"
   },
   {
     id: "gemini",
+    auth: "apiKey",
     name: "Google",
     tagline: "Gemini models",
     envHint: "or set GEMINI_API_KEY in .env",
@@ -17277,6 +17272,7 @@ var PROVIDERS = [
   },
   {
     id: "openai",
+    auth: "apiKey",
     name: "OpenAI",
     tagline: "GPT models",
     envHint: "or set OPENAI_API_KEY in .env",
@@ -17285,6 +17281,7 @@ var PROVIDERS = [
   },
   {
     id: "anthropic",
+    auth: "apiKey",
     name: "Anthropic",
     tagline: "Claude models",
     envHint: "or set ANTHROPIC_API_KEY in .env",
@@ -17293,6 +17290,7 @@ var PROVIDERS = [
   },
   {
     id: "openrouter",
+    auth: "apiKey",
     name: "OpenRouter",
     tagline: "Free models",
     envHint: "or set OPENROUTER_API_KEY in .env",
@@ -17331,6 +17329,7 @@ function ModelChooser({
   onProviderClick,
   onKeyChange,
   onKeyCommit,
+  onPuterSignIn,
   onTestKey
 }) {
   const [revealed, setRevealed] = import_react.useState({
@@ -17472,13 +17471,13 @@ function ModelChooser({
     if (!onTestKey)
       return null;
     const running = testState?.provider === meta.id && testState.state === "running";
-    const disabled = running || keys[meta.id].trim() === "";
+    const disabled = running || meta.auth === "apiKey" && keys[meta.id].trim() === "";
     return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
       type: "button",
       "data-mc-test": meta.id,
       disabled,
       onClick: () => onTestKey(meta.id),
-      title: disabled && !running ? "Enter an API key first" : "Check this key against the provider",
+      title: disabled && !running ? "Enter an API key first" : "Check this provider",
       style: {
         flex: "0 0 auto",
         padding: "7px 12px",
@@ -17537,7 +17536,7 @@ function ModelChooser({
           if (e.key === "Enter")
             onKeyCommit?.(meta.id, e.currentTarget.value);
         },
-        placeholder: meta.keyPlaceholder,
+        placeholder: meta.keyPlaceholder ?? "",
         style: {
           flex: 1,
           minWidth: 0,
@@ -17566,6 +17565,26 @@ function ModelChooser({
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
+  const puterSignInButton = () => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+    type: "button",
+    "data-mc-puter-signin": "",
+    onClick: () => void onPuterSignIn?.(),
+    style: {
+      flex: 1,
+      minWidth: 0,
+      padding: "7px 12px",
+      border: `1px solid ${line2}`,
+      borderRadius: radius,
+      background: surface2,
+      color: ink,
+      fontFamily: fontUi,
+      fontSize: 12.5,
+      fontWeight: 600,
+      cursor: onPuterSignIn ? "pointer" : "default",
+      textAlign: "left"
+    },
+    children: "☁ Sign in / Register"
+  }, undefined, false, undefined, this);
   const cardBody = (meta) => {
     return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
       style: { padding: "8px 14px 12px", borderTop: `1px solid ${line}` },
@@ -17576,7 +17595,7 @@ function ModelChooser({
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
               style: { display: "flex", alignItems: "stretch", gap: 6 },
               children: [
-                keyField(meta),
+                meta.auth === "puter" ? puterSignInButton() : keyField(meta),
                 testButton(meta)
               ]
             }, undefined, true, undefined, this),
@@ -17608,7 +17627,7 @@ function ModelChooser({
                     whiteSpace: "nowrap",
                     flexShrink: 0
                   },
-                  children: "Get API key ↗"
+                  children: meta.auth === "puter" ? "How Puter.js works ↗" : "Get API key ↗"
                 }, undefined, false, undefined, this)
               ]
             }, undefined, true, undefined, this)
@@ -17805,7 +17824,7 @@ function parseVoiceReply(raw) {
   return { transcript: "", answer: raw };
 }
 function keyFor(cfg) {
-  const key = cfg.provider === "puter" ? cfg.puterKey : cfg.provider === "gemini" ? cfg.geminiKey : cfg.provider === "openai" ? cfg.openaiKey : cfg.provider === "openrouter" ? cfg.openrouterKey : cfg.anthropicKey;
+  const key = cfg.provider === "gemini" ? cfg.geminiKey : cfg.provider === "openai" ? cfg.openaiKey : cfg.provider === "openrouter" ? cfg.openrouterKey : cfg.anthropicKey;
   if (!key)
     throw new Error(`No API key set for ${cfg.provider}.`);
   return key;
@@ -17920,18 +17939,18 @@ function Demo() {
   const stored = import_react2.useRef(readStoredConfig()).current;
   const [provider, setProvider] = import_react2.useState(stored.provider ?? "puter");
   const [keys, setKeys] = import_react2.useState({
-    puter: stored.puterKey ?? "",
+    puter: "",
     gemini: stored.geminiKey ?? "",
     openai: stored.openaiKey ?? "",
     anthropic: stored.anthropicKey ?? "",
     openrouter: stored.openrouterKey ?? ""
   });
   const [expanded, setExpanded] = import_react2.useState(null);
+  const [keyTest, setKeyTest] = import_react2.useState(null);
   const resolved = resolveConfig({}, {
     provider,
     model: defaultModel(provider),
     cellModel: defaultCellModel(provider),
-    puterKey: keys.puter || null,
     geminiKey: keys.gemini || null,
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
@@ -17948,13 +17967,12 @@ function Demo() {
       provider: resolved.provider,
       model: resolved.model,
       cellModel: resolved.cellModel,
-      puterKey: resolved.puterKey,
       geminiKey: resolved.geminiKey,
       openaiKey: resolved.openaiKey,
       anthropicKey: resolved.anthropicKey,
       openrouterKey: resolved.openrouterKey
     });
-  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.puterKey, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
+  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
   const [query, setQuery] = import_react2.useState("");
   const [response, setResponse] = import_react2.useState("");
   const [busy, setBusy] = import_react2.useState(false);
@@ -17962,6 +17980,35 @@ function Demo() {
   const recRef = import_react2.useRef(null);
   const startGate = import_react2.useRef(Promise.resolve());
   const hasVoice = ALL_MODELS.some((m) => m.id === resolved.model && m.voiceInput);
+  const signInPuter = async () => {
+    const signIn = globalThis.puter?.auth?.signIn;
+    if (!signIn) {
+      setKeyTest({ provider: "puter", state: "error", message: "Puter.js is not loaded." });
+      return;
+    }
+    try {
+      await signIn();
+      setKeyTest({ provider: "puter", state: "ok", message: "Signed in to Puter.js" });
+    } catch (e) {
+      const err2 = e;
+      setKeyTest({
+        provider: "puter",
+        state: "error",
+        message: String(err2.msg ?? err2.message ?? "Puter.js sign-in was cancelled.")
+      });
+    }
+  };
+  const testProvider = async (p) => {
+    setKeyTest({ provider: p, state: "running", message: "Testing…" });
+    const started = Date.now();
+    try {
+      const answer = await sendTestPrompt({ ...resolved, provider: p, model: defaultModel(p), cellModel: defaultCellModel(p) }, "Reply with OK.");
+      const seconds = ((Date.now() - started) / 1000).toFixed(1);
+      setKeyTest({ provider: p, state: "ok", message: `${answer.slice(0, 40) || defaultCellModel(p)} answered in ${seconds}s` });
+    } catch (e) {
+      setKeyTest({ provider: p, state: "error", message: e.message });
+    }
+  };
   const send = async () => {
     if (!query.trim() || busy)
       return;
@@ -18041,6 +18088,7 @@ function Demo() {
         expandedProvider: expanded,
         byokHelpUrl: "/TamedTable/BYOK-setup.html",
         changeModelsHelpUrl: "../../FAQ.html#change-models",
+        testState: keyTest,
         onProviderClick: (p) => {
           if (expanded === p) {
             setExpanded(null);
@@ -18049,7 +18097,9 @@ function Demo() {
             setProvider(p);
           }
         },
-        onKeyChange: (p, value) => setKeys((prev) => ({ ...prev, [p]: value }))
+        onKeyChange: (p, value) => setKeys((prev) => ({ ...prev, [p]: value })),
+        onPuterSignIn: () => void signInPuter(),
+        onTestKey: (p) => void testProvider(p)
       }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
         children: [
