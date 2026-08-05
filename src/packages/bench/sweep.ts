@@ -38,6 +38,11 @@ export interface SweepContext {
   baseFetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   /** Engine factory — defaults to createHeadlessRunner. Injected for tests. */
   runnerFactory?: (opts: HeadlessRunnerOptions) => HeadlessRunner;
+  /** Extra attempts per config before giving up. Free models occasionally
+   *  return the patch-turn tool call as plain text (the run then throws); a
+   *  retry re-does the cheap patch turn rather than losing the whole grid.
+   *  Defaults to 0 (paid providers don't need it). */
+  retries?: number;
 }
 
 export interface SweepResult {
@@ -103,9 +108,23 @@ export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<Sw
 /** Run every config sequentially (one at a time — the live API has a rate cap,
  *  and interleaving would muddy per-config timing). */
 export async function runSweep(configs: SweepConfig[], ctx: SweepContext): Promise<SweepResult[]> {
+  const retries = ctx.retries ?? 0;
   const results: SweepResult[] = [];
   for (const cfg of configs) {
-    results.push(await runConfig(cfg, ctx));
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        results.push(await runConfig(cfg, ctx));
+        lastErr = undefined;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < retries) {
+          console.error(`  ${cfg.cellModel} @ batch ${cfg.batchSize} failed (attempt ${attempt + 1}/${retries + 1}): ${e instanceof Error ? e.message.split('\n')[0] : e}`);
+        }
+      }
+    }
+    if (lastErr !== undefined) throw lastErr;
   }
   return results;
 }
@@ -117,7 +136,7 @@ function defaultPrimaryFor(cellModel: string): string {
     case 'gemini':     return 'gemini-3.6-flash';
     case 'openai':     return 'gpt-5.5';
     case 'cerebras':   return 'zai-glm-4.7';
-    case 'openrouter': return 'qwen/qwen3-coder:free';
+    case 'openrouter': return 'cohere/north-mini-code:free';
     default:           return 'claude-sonnet-4-6';
   }
 }

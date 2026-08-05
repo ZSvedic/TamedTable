@@ -3,8 +3,13 @@
 // CLI for the model & batch-size benchmark. Subcommands:
 //   sample [count]                 draw a subset of the fixture → ground-truth/music-sample.csv
 //   label  [model]                 auto-label the subset with a strong model → music-labels.jsonl
-//   sweep  [--models=…] [--batches=…] [--out=name]
+//   sweep  [--models=…] [--batches=…] [--out=name] [--retries=N] [--primary=id]
 //                                  run the (model × batch) grid, score vs labels → results/<name>.jsonl
+//                                  --retries re-tries a config that throws (free
+//                                  models sometimes flub the patch-turn tool call).
+//                                  --primary overrides the patch-turn model (must
+//                                  share the cell model's provider); default is the
+//                                  provider's mid-tier model.
 //   chart  [name] [--batch=N]      render SVGs from results/<name>.jsonl → charts/
 //   report [name]                  print the results table
 //
@@ -102,21 +107,30 @@ function readLabels(): Label[] {
 }
 
 // ── sweep ────────────────────────────────────────────────────────────────────
-async function cmdSweep(models: string[], batches: number[], out: string): Promise<void> {
+async function cmdSweep(models: string[], batches: number[], out: string, retries: number, primary?: string): Promise<void> {
   if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample — run "bench sample" then "bench label" first.`);
   const labels = readLabels();
+  // The patch turn shares the cell model's provider (one runner, one provider),
+  // so an explicit --primary must sit on that provider.
+  if (primary) {
+    for (const m of models) {
+      if (providerFor(primary) !== providerFor(m)) {
+        throw new Error(`--primary ${primary} is provider ${providerFor(primary)}, but cell model ${m} is ${providerFor(m)} — the patch turn shares the cell model's provider.`);
+      }
+    }
+  }
   // Fail fast if a key is missing for any provider in the model set.
   for (const provider of new Set(models.map(providerFor))) {
     if (!keyFor(provider)) throw new Error(`${provider} key not set — needed for ${models.filter((m) => providerFor(m) === provider).join(', ')}.`);
   }
-  const configs = grid(models, batches);
-  console.log(`Running ${configs.length} configs (${models.length} models × ${batches.length} batch sizes)…`);
+  const configs = grid(models, batches).map((c) => (primary ? { ...c, primaryModel: primary } : c));
+  console.log(`Running ${configs.length} configs (${models.length} models × ${batches.length} batch sizes)${retries ? `, up to ${retries} retries each` : ''}…`);
   // Do NOT pin a single apiKey — a sweep can span providers. Leaving apiKey
   // undefined lets each runner resolve its own provider's key from env
   // (GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY), which bun loads from
   // .env. The pre-flight check above guarantees each is present.
   const results: SweepResult[] = await runSweep(configs, {
-    inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels,
+    inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels, retries,
   });
   mkdirSync(RESULTS_DIR, { recursive: true });
   const file = join(RESULTS_DIR, `${out}.jsonl`);
@@ -180,7 +194,7 @@ async function main(): Promise<void> {
   switch (cmd) {
     case 'sample': return cmdSample(Number(positional[0] ?? 150));
     case 'label':  return cmdLabel(positional[0] ?? DEFAULT_LABELER);
-    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep');
+    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep', flags.retries ? Number(flags.retries) : 0, flags.primary);
     case 'chart':  return cmdChart(positional[0] ?? 'sweep', flags.batch ? Number(flags.batch) : undefined, flags.subtitle);
     case 'report': return cmdReport(positional[0] ?? 'sweep');
     default:

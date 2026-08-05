@@ -91,22 +91,43 @@ batch 5 in the [2026-07-17 run](../process/journal/2026-07-17-free-model-benchma
 and the app's OpenRouter default). The run overturned the on-paper picks:
 `qwen/qwen3-coder:free` and `meta-llama/llama-3.3-70b-instruct:free` never
 completed a call (single saturated host), and `tencent/hy3:free`, the best
-performer, lost its free route on 2026-07-21. Three gotchas:
+performer, lost its free route on 2026-07-21. The
+[2026-08-05 run](../process/journal/2026-08-05-openrouter-gemma-nemotron-run.md)
+added `google/gemma-4-31b-it:free` and `nvidia/nemotron-3-super-120b-a12b:free`
+and neither could produce a scored row (gemma's single free host was 429-saturated
+upstream; nemotron's reasoning output breaks the JSON cell protocol). Gotchas:
 
 1. **Privacy toggle.** `:free` endpoints return 404 (`No endpoints found
    matching your data policy`) until the account's
    [privacy settings](https://openrouter.ai/settings/privacy) allow free model
    publication — free models may train on your prompts.
 2. **20 req/min.** The engine's default is 40, so cap it with `TAMEDTABLE_RPM=20`.
+   A single-host `:free` model (e.g. gemma-4-31b via Google AI Studio) shares one
+   upstream pool with every other free user — lower it further (`TAMEDTABLE_RPM=6`)
+   and still expect `429 … upstream_provider_shared_pool` when that pool is busy.
 3. **~50 req/day on a $0 account** (1,000/day after a one-time $10 credit
    purchase that never expires). The full grid won't fit in 50 — drop batch
-   size 1 (alone 120 calls):
+   size 1 (alone 120 calls).
+4. **Flaky patch turn.** Free models sometimes return the `apply_spec_patch`
+   tool call as plain text; the run then throws. `--retries=N` re-attempts a
+   config (the patch turn runs before any cell call, so a retry is cheap), and
+   `--primary=<id>` overrides the patch model (it must share the cell model's
+   provider — the runner is single-provider). For a self-contained free sweep,
+   point `--primary` at the cell model itself.
 
 ```
 TAMEDTABLE_RPM=20 bun run bench:sweep \
   --models=cohere/north-mini-code:free \
-  --batches=10,20,40,80 --out=free-openrouter
+  --batches=10,20,40,80 --retries=5 --out=free-openrouter
 ```
+
+**Running from a proxied sandbox (Claude Code on the web).** Bun's built-in
+`fetch` does not tunnel TLS through the environment's CONNECT proxy — the proxy
+returns `200 Connection Established`, then the socket closes and every call fails
+with *"The socket connection was closed unexpectedly"* (`curl` through the same
+proxy works). Run the sweep with a preloaded `fetch` shim that routes the
+provider host through `curl`, or run it somewhere with direct egress. See the
+[2026-08-05 run](../process/journal/2026-08-05-openrouter-gemma-nemotron-run.md).
 
 Caveat for both: free lineups rotate without notice (Cerebras went from ~12
 free models to 2 in May 2026; OpenRouter `:free` models come and go weekly) —

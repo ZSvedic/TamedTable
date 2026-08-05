@@ -89,7 +89,7 @@ test('runConfig maps an OpenRouter cell model to the openrouter provider and its
     },
   );
   expect(r.provider).toBe('openrouter');
-  expect(r.primaryModel).toBe('qwen/qwen3-coder:free');
+  expect(r.primaryModel).toBe('cohere/north-mini-code:free');
   expect(r.costUsd).toBe(0); // free plan — both models priced 0/0
 });
 
@@ -104,4 +104,39 @@ test('runSweep runs every config; grid expands the cross product', async () => {
   });
   expect(results).toHaveLength(4);
   expect(results.map((r) => r.batchSize)).toEqual([10, 40, 10, 40]);
+});
+
+// A runner whose request() throws the first `failFirst` times it is called —
+// stands in for a free model that returns the patch turn as text on some
+// attempts. Shared counter across runnerFactory calls simulates per-config retry.
+function flakyRunner(failFirst: { n: number }): HeadlessRunner {
+  const stub: Partial<HeadlessRunner> = {
+    async loadInput() {},
+    async request() {
+      if (failFirst.n > 0) { failFirst.n -= 1; throw new Error('LLM did not call apply_spec_patch; returned text: {'); }
+    },
+    currentRows: () => [{ videoId: 'a', title: 't', Music: true }],
+    currentSpec: () => ({ table: 't', columns: [], transformations: [] }) as TablePlan,
+  };
+  return stub as HeadlessRunner;
+}
+
+test('runSweep retries a config that throws and succeeds within the budget', async () => {
+  const failFirst = { n: 2 }; // first two attempts throw, third succeeds
+  const results = await runSweep([{ cellModel: 'cohere/north-mini-code:free', batchSize: 10 }], {
+    inputCsv: 'x', request: 'r', idColumn: 'videoId', targetColumn: 'Music',
+    labels: [{ id: 'a', expected: true }], retries: 3,
+    runnerFactory: () => flakyRunner(failFirst),
+  });
+  expect(results).toHaveLength(1);
+  expect(results[0]!.accuracy).toBe(1);
+});
+
+test('runSweep rethrows when a config exhausts its retry budget', async () => {
+  const failFirst = { n: 99 }; // always throws
+  await expect(runSweep([{ cellModel: 'cohere/north-mini-code:free', batchSize: 10 }], {
+    inputCsv: 'x', request: 'r', idColumn: 'videoId', targetColumn: 'Music',
+    labels: [{ id: 'a', expected: true }], retries: 2,
+    runnerFactory: () => flakyRunner(failFirst),
+  })).rejects.toThrow('apply_spec_patch');
 });
