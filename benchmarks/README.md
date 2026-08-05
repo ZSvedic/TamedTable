@@ -125,8 +125,15 @@ TAMEDTABLE_RPM=20 bun run bench:sweep \
 `fetch` does not tunnel TLS through the environment's CONNECT proxy — the proxy
 returns `200 Connection Established`, then the socket closes and every call fails
 with *"The socket connection was closed unexpectedly"* (`curl` through the same
-proxy works). Run the sweep with a preloaded `fetch` shim that routes the
-provider host through `curl`, or run it somewhere with direct egress. See the
+proxy works). Prepend the [`process/proxy-fetch.ts`](../process/proxy-fetch.ts)
+shim, which routes provider calls through `curl`:
+
+```
+TAMEDTABLE_RPM=20 bun --preload ../process/proxy-fetch.ts \
+  packages/bench/cli.ts sweep --models=… --batches=10,20,40,80 --retries=5 --out=free-openrouter
+```
+
+A machine with direct egress needs none of this. See the
 [2026-08-05 run](../process/journal/2026-08-05-openrouter-gemma-nemotron-run.md).
 
 Caveat for both: free lineups rotate without notice (Cerebras went from ~12

@@ -48,10 +48,11 @@ through `curl`:
 bun --preload curlfetch.ts packages/bench/cli.ts sweep …
 ```
 
-where `curlfetch.ts` overrides `globalThis.fetch` for `openrouter.ai`, spawns
-`curl` (which honours `HTTPS_PROXY`), and rebuilds a `Response` from its output.
-The shim is environment-scrap, not committed — the fix belongs to whoever runs
-the sweep from a proxied box. A machine with direct egress needs none of this.
+The shim ([`process/proxy-fetch.ts`](../proxy-fetch.ts)) overrides
+`globalThis.fetch` for the provider hosts, spawns `curl` (which honours
+`HTTPS_PROXY`), and rebuilds a `Response` from its output. It is gated on a proxy
+being set, so it is a no-op on a box with direct egress — leave it preloaded
+everywhere. It covers the CLI too, not just the benchmark.
 
 ## Bottom line
 
