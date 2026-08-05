@@ -104,6 +104,24 @@ Optional env vars and defaults if you omit them:
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests that fire concurrently. Orthogonal to batch size — total parallel rows = batch × chunk. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a per-turn debug block after every request: executed expressions on success, per-turn detail on failure (indented, dimmed, capped at 20 lines). Set to `0`, `false`, or `off` to disable. |
 
+### Running behind an HTTPS proxy (sandboxes)
+
+Bun's built-in `fetch` can't tunnel TLS through a CONNECT proxy — the kind
+Claude Code on the web puts in front of outbound traffic. Every LLM call then
+fails with *"The socket connection was closed unexpectedly."* Prepend the
+[`process/proxy-fetch.ts`](process/proxy-fetch.ts) shim, which routes provider
+calls through `curl` (it honours the proxy) and is a no-op when no proxy is set:
+
+```
+cd src
+bun --preload ../process/proxy-fetch.ts packages/cli/index.ts …   # the CLI
+bun --preload ../process/proxy-fetch.ts packages/bench/cli.ts sweep …  # the benchmark
+```
+
+It covers the CLI and the benchmark — both make live calls through bun. The web
+app runs in a browser and needs nothing. A machine with direct internet needs
+nothing either.
+
 ## Run the CLI
 
 Interactive REPL — load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:reorder <cols>` sets the column order for the table view and saved files, `:exit` (or bare `exit`) leaves.  
