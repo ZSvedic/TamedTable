@@ -109,6 +109,33 @@ Feature: Lazy AI execution edge cases
       And user saves as "showcase-lazy-input.csv"
       Then the saved file keeps the original row order
 
+    # Regression: the shuffle permuted whatever the engine handed it, so a flow
+    # that sorted came out shuffled — the user asked to sort by a column and got
+    # the sample back, in an order that looked like nothing at all. A sort in the
+    # spec outranks the sample. Deterministic: a .flow replay, no model call.
+    @web
+    Scenario: A sort in the flow outranks the shuffled sample
+      When user drops the file "paginate-input.csv" onto the empty page
+      When user loads the shuffled sample
+      Then the Row # column keeps the original row numbers
+      When user says "Open flow"
+      And user selects "sort-name.flow"
+      Then the page rows are in ascending "Name" order
+      And the Row # column no longer claims a shuffled view
+
+    # Undo puts the sort back in the box, and the sample returns — same seed,
+    # so the rows come back in the order they were sampled in.
+    @web
+    Scenario: Undoing the sort brings the shuffled sample back
+      When user drops the file "paginate-input.csv" onto the empty page
+      When user loads the shuffled sample
+      Then the Row # column keeps the original row numbers
+      When user says "Open flow"
+      And user selects "sort-name.flow"
+      Then the page rows are in ascending "Name" order
+      When user undoes the last change
+      Then the Row # column keeps the original row numbers
+
   Rule: The dependency rule gates reads of AI-made columns
 
     @web
@@ -232,9 +259,10 @@ Feature: Lazy AI execution edge cases
       Then the run-all progress peaked at 146 of 146 rows
       And every row has a non-null "Tier"
 
-    # A save that had to run rows first parks behind one more click — the
-    # browser only opens a save picker inside a user gesture, and the run
-    # consumed the original one.
+    # #SaveGate — a save that had to run rows first parks behind one more
+    # click: the browser only opens a save picker inside a user gesture, and
+    # the run consumed the original one. The run had its own progress dialog,
+    # so this gate opens already ready.
     @web
     Scenario: Save with pending rows runs first, then writes on a fresh click
       Given load "paginate-input.csv"
@@ -243,9 +271,9 @@ Feature: Lazy AI execution edge cases
       When user says "Save data"
       Then the run-all confirmation is shown
       When user confirms the run
-      Then the save-ready dialog is shown
+      Then the save gate is ready, titled "All rows evaluated"
       And no save dialog was opened yet
-      When user clicks Save file in the save-ready dialog
+      When user clicks Save file in the save gate
       Then display Save File dialog
       When user saves as "paginate-input.csv"
 
