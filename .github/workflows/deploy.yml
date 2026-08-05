@@ -33,6 +33,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
       # Same cache as ci.yml (bun store + Playwright Chromium, keyed on
       # bun.lock), so a deploy reuses the browser a CI run already downloaded —
       # the fresh ~150MB download made the smoke gate slow and flaky.
