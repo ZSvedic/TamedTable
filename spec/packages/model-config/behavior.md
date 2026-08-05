@@ -25,7 +25,6 @@ stored preferences:
   provider: "anthropic",
   anthropicKey: "sk-ant-…",
   geminiKey: null,
-  puterKey: null,
   openaiKey: null,
   openrouterKey: null,
   model: "claude-sonnet-4-6",
@@ -101,25 +100,24 @@ providers without one (their engine keeps its own default).
 `resolveConfig(env, stored)` merges environment variables over stored values;
 env always wins. The rules:
 
-1. If `PUTER_TOKEN` is set in env → provider is puter, puterKey is that value.
-2. Else if `GEMINI_API_KEY` is set in env → provider is gemini, geminiKey is that value.
-3. Else if `OPENAI_API_KEY` is set in env → provider is openai, openaiKey is that value.
-4. Else if `ANTHROPIC_API_KEY` is set in env → provider is anthropic, anthropicKey is that value.
-5. Else if `OPENROUTER_API_KEY` is set in env → provider is openrouter,
+1. If `GEMINI_API_KEY` is set in env → provider is gemini, geminiKey is that value.
+2. Else if `OPENAI_API_KEY` is set in env → provider is openai, openaiKey is that value.
+3. Else if `ANTHROPIC_API_KEY` is set in env → provider is anthropic, anthropicKey is that value.
+4. Else if `OPENROUTER_API_KEY` is set in env → provider is openrouter,
    openrouterKey is that value — last so a paid key always outranks the free
    tier when both are present.
-6. Else use `stored.provider`, falling back to "gemini" — the provider whose
+5. Else use `stored.provider`, falling back to "gemini" — the provider whose
    defaults every committed cassette is recorded with, so key-free replay
    (tests, tours) resolves the models the recordings used.
-7. `TAMEDTABLE_MODEL` in env overrides the primary model from stored. An
+6. `TAMEDTABLE_MODEL` in env overrides the primary model from stored. An
    empty value counts as unset — like the `*_API_KEY` vars — and falls
    through to stored, then the provider default.
-8. Keys not present in env keep their stored values (or null).
-9. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`. A model id that belongs to **no** provider — one `providerFor` only reaches through its anthropic catch-all, without the `claude-` prefix — does not belong to anthropic either: it is replaced the same way, never sent to the API to 404.
-10. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`. An empty value counts as unset, as in rule 6.
-11. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't (including a no-provider id, as in rule 8), replace it with `defaultCellModel(provider)`.
+7. Keys not present in env keep their stored values (or null).
+8. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`. A model id that belongs to **no** provider — one `providerFor` only reaches through its anthropic catch-all, without the `claude-` prefix — does not belong to anthropic either: it is replaced the same way, never sent to the API to 404.
+9. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`. An empty value counts as unset, as in rule 6.
+10. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't (including a no-provider id, as in rule 8), replace it with `defaultCellModel(provider)`.
 
-When multiple provider keys are set in env, puter wins first, then gemini, then openai, then
+When multiple provider keys are set in env, gemini wins, then openai, then
 anthropic, then openrouter.
 
 `defaultModel(provider)` returns the `defaults[provider].primary` id (falling
@@ -167,9 +165,7 @@ marked `true` (so dated aliases still match) and `false` for everything else —
 including unknown ids, so new models default to the safe no-temperature path.
 The headless engine calls it to decide whether to send `temperature: 0`.
 
-`keyFor(config)` returns the API key for `config.provider` — `puterKey` when
-the provider is puter, `geminiKey` when
-the provider is gemini, `openaiKey` when openai, `openrouterKey` when
+`keyFor(config)` returns the API key for `config.provider` — `geminiKey` when the provider is gemini, `openaiKey` when openai, `openrouterKey` when
 openrouter, otherwise `anthropicKey` — or
 null when that provider's key is unset. Every surface that needs "the key for
 the active provider" (the CLI, the web controller) uses this one helper so the
@@ -198,7 +194,7 @@ served from the same origin).
 ## Reading from env
 
 `readConfigFromEnv()` reads `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `PUTER_TOKEN`, `TAMEDTABLE_MODEL`, and
+`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `TAMEDTABLE_MODEL`, and
 `TAMEDTABLE_CELL_MODEL` from
 `process.env` and returns them as a plain Record suitable for passing as
 `resolveConfig`'s first argument. It
@@ -215,8 +211,7 @@ headless runner. The help text mentions `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 ## Model chooser component
 
 `ModelChooser` is the provider accordion UI: five cards — Puter.js, Google, OpenAI,
-Anthropic, OpenRouter — each with an API-key field (masked, with an eye toggle
-to reveal it). **The user picks a provider, not individual models.** Each expanded card
+Anthropic, OpenRouter. Puter.js shows a `☁ Sign in / Register` button and a Test button; the other cards show an API-key field (masked, with an eye toggle to reveal it). **The user picks a provider, not individual models.** Each expanded card
 shows that provider's two fixed defaults **read-only** — a Primary row (the
 patch-turn model, which carries voice input) and a Secondary row (the per-row
 cell model) — each with its model id and per-Mtok price (`$in in / $out out`).

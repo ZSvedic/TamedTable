@@ -617,6 +617,7 @@ export class WebController implements ControllerHost {
   setKeyDraft(provider: Provider, value: string): void { this.settingsMgr.setKeyDraft(provider, value); }
   /** The user left a key field (or pressed Enter) — saves the draft. */
   commitKeyDraft(provider: Provider): Promise<void> { return this.settingsMgr.commitKeyDraft(provider); }
+  signInPuter(): Promise<void> { return this.settingsMgr.signInPuter(); }
   /** #ProviderSelect — run the Settings Test button's key check. */
   testKey(): Promise<void> { return this.settingsMgr.testKey(); }
   /** Whether there is a key to test (an empty field disables the button). */

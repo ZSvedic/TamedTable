@@ -16,21 +16,39 @@ import { userFacingMessage } from './controller-messages.ts';
 import { pageSizeFor } from './controller.ts';
 import type { ControllerHost } from './controller-context.ts';
 
+interface PuterGlobal {
+  auth?: { signIn?: () => Promise<unknown> };
+  ai?: { chat?: (prompt: string, options?: { model?: string }) => Promise<unknown> };
+}
+
+function puter(): PuterGlobal | undefined {
+  return (globalThis as { puter?: PuterGlobal }).puter;
+}
+
+function puterText(data: unknown): string {
+  if (typeof data === 'string') return data.trim();
+  if (data && typeof data === 'object') {
+    const maybe = data as { text?: unknown; message?: { content?: unknown } };
+    if (typeof maybe.text === 'string') return maybe.text.trim();
+    if (typeof maybe.message?.content === 'string') return maybe.message.content.trim();
+  }
+  return '';
+}
+
 /** The `ResolvedConfig` field each provider's key lives in. */
 const KEY_FIELD = {
-  puter: 'puterKey',
   gemini: 'geminiKey',
   openai: 'openaiKey',
   anthropic: 'anthropicKey',
   openrouter: 'openrouterKey',
-} as const satisfies Record<Provider, keyof ResolvedConfig>;
+} as const satisfies Record<Exclude<Provider, 'puter'>, keyof ResolvedConfig>;
 
 /** The provider whose key this partial saves, or null. A provider pick alone
  *  is not a save the "✓ Saved" badge should claim — the card's own radio shows
  *  the choice — and neither is clearing a key: a badge beside an empty field
  *  says a key landed when none did. */
 function savedKeyProvider(partial: Partial<ResolvedConfig>): Provider | null {
-  const providers = Object.keys(KEY_FIELD) as Provider[];
+  const providers = Object.keys(KEY_FIELD) as Array<Exclude<Provider, 'puter'>>;
   return providers.find((p) => {
     const value = partial[KEY_FIELD[p]];
     return typeof value === 'string' && value.trim() !== '';
@@ -46,7 +64,7 @@ export class ConfigManager {
   /** Refill every key draft from the saved config — the panel opens showing
    *  what is stored, not what a previous visit left half-typed. */
   private resetKeyDrafts(): void {
-    for (const p of Object.keys(KEY_FIELD) as Provider[]) {
+    for (const p of Object.keys(KEY_FIELD) as Array<Exclude<Provider, 'puter'>>) {
       this.host.keyDrafts[p] = (this.host.config[KEY_FIELD[p]] as string | null) ?? '';
     }
   }
@@ -55,6 +73,7 @@ export class ConfigManager {
    *  a key, and saving each keystroke rebuilds the engine (replaying the whole
    *  flow) for a value that is not finished. */
   setKeyDraft(provider: Provider, value: string): void {
+    if (provider === 'puter') return;
     this.host.keyDrafts[provider] = value;
     this.host.notify();
   }
@@ -63,6 +82,7 @@ export class ConfigManager {
    *  or they closed the panel. Saves the draft, unless it matches what is
    *  already stored: leaving a field untouched is not a save. */
   async commitKeyDraft(provider: Provider): Promise<void> {
+    if (provider === 'puter') return;
     const draft = (this.host.keyDrafts[provider] ?? '').trim();
     const stored = ((this.host.config[KEY_FIELD[provider]] as string | null) ?? '').trim();
     if (draft === stored) return;
@@ -74,10 +94,34 @@ export class ConfigManager {
     return keyFor(this.host.config);
   }
 
-  /** Whether the Settings "Test" button has anything to test: a key for the
-   *  selected provider. An empty field disables the button. */
+  /** Whether the Settings "Test" button has anything to test: either Puter.js
+   *  browser auth, or a key for a key-based provider. */
   canTestKey(): boolean {
+    if (this.host.config.provider === 'puter') return true;
     return Boolean(this.activeApiKey()?.trim());
+  }
+
+  /** Sign in/register through Puter.js. Must run from the user's click because
+   *  Puter opens a popup. */
+  async signInPuter(): Promise<void> {
+    const signIn = puter()?.auth?.signIn;
+    if (!signIn) {
+      this.host.keyTest = { provider: 'puter', state: 'error', message: 'Puter.js is not loaded.' };
+      this.host.notify();
+      return;
+    }
+    try {
+      await signIn();
+      this.host.keyTest = { provider: 'puter', state: 'ok', message: 'Signed in to Puter.js' };
+    } catch (e) {
+      const err = e as { msg?: unknown; message?: unknown };
+      this.host.keyTest = {
+        provider: 'puter',
+        state: 'error',
+        message: String(err.msg ?? err.message ?? 'Puter.js sign-in was cancelled.'),
+      };
+    }
+    this.host.notify();
   }
 
   /** #ProviderSelect — prove the selected provider's key works, now, instead
@@ -86,6 +130,23 @@ export class ConfigManager {
    *  with retries off, so a dead key answers in about a second. */
   async testKey(): Promise<void> {
     const provider = this.host.config.provider;
+    if (provider === 'puter') {
+      this.host.keyTest = { provider, state: 'running', message: 'Testing…' };
+      this.host.notify();
+      const started = Date.now();
+      try {
+        const chat = puter()?.ai?.chat;
+        if (!chat) throw new Error('Puter.js is not loaded.');
+        const text = puterText(await chat('Reply with OK.', { model: this.host.config.cellModel }));
+        if (!text) throw new Error('Puter.js returned no text.');
+        const seconds = ((Date.now() - started) / 1000).toFixed(1);
+        this.host.keyTest = { provider, state: 'ok', message: `${this.host.config.cellModel} answered in ${seconds}s` };
+      } catch (e) {
+        this.host.keyTest = { provider, state: 'error', message: userFacingMessage(e, provider) };
+      }
+      this.host.notify();
+      return;
+    }
     if (!this.canTestKey()) {
       this.host.keyTest = {
         provider,
@@ -124,7 +185,7 @@ export class ConfigManager {
   async closeSettings(): Promise<void> {
     this.host.settingsOpen = false;
     this.host.notify();
-    for (const p of Object.keys(KEY_FIELD) as Provider[]) await this.commitKeyDraft(p);
+    for (const p of Object.keys(KEY_FIELD) as Array<Exclude<Provider, 'puter'>>) await this.commitKeyDraft(p);
   }
 
   /** Toggle an accordion provider card. Expanding a card also selects that

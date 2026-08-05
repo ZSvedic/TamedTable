@@ -39,21 +39,14 @@ Feature: Model config
       And the resolved anthropicKey is null
       And the resolved geminiKey is null
 
-    @headless
-    Scenario: PUTER_TOKEN in env sets provider and key
-      When resolveConfig is called with env PUTER_TOKEN="puter-test"
-      Then the resolved provider is "puter"
-      And the resolved puterKey is "puter-test"
-      And the resolved geminiKey is null
-
     Scenario: OPENROUTER_API_KEY in env sets provider and key
       When resolveConfig is called with env OPENROUTER_API_KEY="sk-or-test"
       Then the resolved provider is "openrouter"
       And the resolved openrouterKey is "sk-or-test"
       And the resolved anthropicKey is null
 
-    # Precedence: when several provider keys are present, Puter beats Gemini,
-    # then OpenAI beats Anthropic beats OpenRouter — a paid key outranks the free
+    # Precedence: when several provider keys are present, Gemini beats OpenAI
+    # beats Anthropic beats OpenRouter — a paid key always outranks the free
     # tier. Anthropic is present (and loses) in the first rows, so its key
     # is nulled each time. Single-key resolution is covered by the scenarios above.
     @headless
@@ -64,7 +57,6 @@ Feature: Model config
 
       Examples:
         | present               | keys                                              | winner    | winnerKey    |
-        | Puter + Gemini        | PUTER_TOKEN, GEMINI_API_KEY                       | puter     | puterKey     |
         | Anthropic + Gemini    | ANTHROPIC_API_KEY, GEMINI_API_KEY                 | gemini    | geminiKey    |
         | All three paid        | ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY | gemini    | geminiKey    |
         | Anthropic + OpenAI    | ANTHROPIC_API_KEY, OPENAI_API_KEY                 | openai    | openaiKey    |
@@ -405,7 +397,7 @@ Feature: Model config
     Scenario: Clicking a provider card expands it and selects the provider
       Given the model-config demo page
       When the user clicks the "Puter.js" provider card
-      Then the "puter" card shows its API-key field and model list
+      Then the "puter" card shows a "☁ Sign in / Register" button
       And the demo shows resolved provider "puter"
 
     @web
@@ -450,10 +442,18 @@ Feature: Model config
       And the "secondary" default row shows the price "$0.25 in / $1.5 out"
 
     @web
-    Scenario: The card body shows the env-var hint under the key field
+    Scenario: Puter signs in instead of asking for an API key
       Given the model-config demo page
       When the user clicks the "Puter.js" provider card
-      Then the "puter" card shows the env hint "or sign in with Puter.js"
+      Then the "puter" card shows a "☁ Sign in / Register" button
+      And the "puter" card shows a Test button
+      And the "puter" card does not show an API-key field
+
+    @web
+    Scenario: Google still asks for an API key
+      Given the model-config demo page
+      When the user clicks the "Google" provider card
+      Then the "gemini" card shows the env hint "or set GEMINI_API_KEY in .env"
 
     @web
     Scenario: Each expanded card deep-links to that provider's key page

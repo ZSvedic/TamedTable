@@ -8,9 +8,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ALL_MODELS, defaultModel, defaultCellModel, resolveConfig, type Provider } from './index.ts';
-import { ModelChooser } from './ModelChooser.tsx';
+import { ModelChooser, type KeyTest } from './ModelChooser.tsx';
 import { readStoredConfig, writeStoredConfig } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
+
+interface PuterGlobal {
+  auth?: { signIn?: () => Promise<unknown> };
+}
 
 interface ActiveRecording {
   rec: MediaRecorder;
@@ -22,13 +26,14 @@ function Demo() {
   const stored = useRef(readStoredConfig()).current;
   const [provider, setProvider] = useState<Provider>(stored.provider ?? 'puter');
   const [keys, setKeys] = useState<Record<Provider, string>>({
-    puter: stored.puterKey ?? '',
+    puter: '',
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',
     anthropic: stored.anthropicKey ?? '',
     openrouter: stored.openrouterKey ?? '',
   });
   const [expanded, setExpanded] = useState<Provider | null>(null);
+  const [keyTest, setKeyTest] = useState<KeyTest | null>(null);
 
   // Models are no longer user-selectable — they follow the provider defaults.
   // Feeding the provider's defaults as the stored model/cellModel keeps the
@@ -37,7 +42,6 @@ function Demo() {
     provider,
     model: defaultModel(provider),
     cellModel: defaultCellModel(provider),
-    puterKey: keys.puter || null,
     geminiKey: keys.gemini || null,
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
@@ -60,13 +64,12 @@ function Demo() {
       provider: resolved.provider,
       model: resolved.model,
       cellModel: resolved.cellModel,
-      puterKey: resolved.puterKey,
       geminiKey: resolved.geminiKey,
       openaiKey: resolved.openaiKey,
       anthropicKey: resolved.anthropicKey,
       openrouterKey: resolved.openrouterKey,
     });
-  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.puterKey, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
+  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
 
   // ── Test call state ───────────────────────────────────────────────────────
 
@@ -80,6 +83,37 @@ function Demo() {
   const startGate = useRef<Promise<void>>(Promise.resolve());
 
   const hasVoice = ALL_MODELS.some((m) => m.id === resolved.model && m.voiceInput);
+
+  const signInPuter = async (): Promise<void> => {
+    const signIn = (globalThis as { puter?: PuterGlobal }).puter?.auth?.signIn;
+    if (!signIn) {
+      setKeyTest({ provider: 'puter', state: 'error', message: 'Puter.js is not loaded.' });
+      return;
+    }
+    try {
+      await signIn();
+      setKeyTest({ provider: 'puter', state: 'ok', message: 'Signed in to Puter.js' });
+    } catch (e) {
+      const err = e as { msg?: unknown; message?: unknown };
+      setKeyTest({
+        provider: 'puter',
+        state: 'error',
+        message: String(err.msg ?? err.message ?? 'Puter.js sign-in was cancelled.'),
+      });
+    }
+  };
+
+  const testProvider = async (p: Provider): Promise<void> => {
+    setKeyTest({ provider: p, state: 'running', message: 'Testing…' });
+    const started = Date.now();
+    try {
+      const answer = await sendTestPrompt({ ...resolved, provider: p, model: defaultModel(p), cellModel: defaultCellModel(p) }, 'Reply with OK.');
+      const seconds = ((Date.now() - started) / 1000).toFixed(1);
+      setKeyTest({ provider: p, state: 'ok', message: `${answer.slice(0, 40) || defaultCellModel(p)} answered in ${seconds}s` });
+    } catch (e) {
+      setKeyTest({ provider: p, state: 'error', message: (e as Error).message });
+    }
+  };
 
   const send = async (): Promise<void> => {
     if (!query.trim() || busy) return;
@@ -163,6 +197,7 @@ function Demo() {
         expandedProvider={expanded}
         byokHelpUrl="/TamedTable/BYOK-setup.html"
         changeModelsHelpUrl="../../FAQ.html#change-models"
+        testState={keyTest}
         onProviderClick={(p) => {
           // Same semantics as WebController.clickProviderCard: expanding a
           // card selects that provider; collapsing changes nothing. A stale
@@ -175,6 +210,8 @@ function Demo() {
           }
         }}
         onKeyChange={(p, value) => setKeys((prev) => ({ ...prev, [p]: value }))}
+        onPuterSignIn={() => void signInPuter()}
+        onTestKey={(p) => void testProvider(p)}
       />
 
       <h2>resolveConfig({'{}'}, stored)</h2>

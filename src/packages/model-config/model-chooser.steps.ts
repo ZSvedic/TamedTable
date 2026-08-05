@@ -101,6 +101,31 @@ Then(
   },
 );
 
+
+Then(
+  'the {string} card shows a {string} button',
+  async function (this: object, provider: string, label: string) {
+    const p = page(this);
+    const cardBody = provider === 'puter' ? '[data-mc-card="puter"] + div' : `[data-mc-card="${provider}"] + div`;
+    await expectText(p, cardBody, label);
+  },
+);
+
+Then(
+  'the {string} card shows a Test button',
+  async function (this: object, provider: string) {
+    await page(this).waitForSelector(`[data-mc-test="${provider}"]`, { timeout: 5_000 });
+  },
+);
+
+Then(
+  'the {string} card does not show an API-key field',
+  async function (this: object, provider: string) {
+    const fields = await page(this).$$(`[data-mc-key="${provider}"]`);
+    assert.equal(fields.length, 0, `expected ${provider} card not to show an API-key field`);
+  },
+);
+
 Then(
   'the {string} card shows its API-key field and model list',
   async function (this: object, provider: string) {

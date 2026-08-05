@@ -38,7 +38,6 @@ function parseVoiceReply(raw: string): VoiceReply {
 
 function keyFor(cfg: ResolvedConfig): string {
   const key =
-    cfg.provider === 'puter' ? cfg.puterKey :
     cfg.provider === 'gemini' ? cfg.geminiKey :
     cfg.provider === 'openai' ? cfg.openaiKey :
     cfg.provider === 'openrouter' ? cfg.openrouterKey :
