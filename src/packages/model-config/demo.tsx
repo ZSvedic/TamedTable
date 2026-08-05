@@ -20,8 +20,9 @@ interface ActiveRecording {
 
 function Demo() {
   const stored = useRef(readStoredConfig()).current;
-  const [provider, setProvider] = useState<Provider>(stored.provider ?? 'anthropic');
+  const [provider, setProvider] = useState<Provider>(stored.provider ?? 'puter');
   const [keys, setKeys] = useState<Record<Provider, string>>({
+    puter: stored.puterKey ?? '',
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',
     anthropic: stored.anthropicKey ?? '',
@@ -36,6 +37,7 @@ function Demo() {
     provider,
     model: defaultModel(provider),
     cellModel: defaultCellModel(provider),
+    puterKey: keys.puter || null,
     geminiKey: keys.gemini || null,
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
@@ -58,12 +60,13 @@ function Demo() {
       provider: resolved.provider,
       model: resolved.model,
       cellModel: resolved.cellModel,
+      puterKey: resolved.puterKey,
       geminiKey: resolved.geminiKey,
       openaiKey: resolved.openaiKey,
       anthropicKey: resolved.anthropicKey,
       openrouterKey: resolved.openrouterKey,
     });
-  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
+  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.puterKey, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
 
   // ── Test call state ───────────────────────────────────────────────────────
 

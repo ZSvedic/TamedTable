@@ -4,13 +4,13 @@
 
 import catalogue from './models.json' with { type: 'json' };
 
-export type Provider = 'anthropic' | 'gemini' | 'openai' | 'openrouter';
+export type Provider = 'puter' | 'anthropic' | 'gemini' | 'openai' | 'openrouter';
 
 /** Providers the engine can route a model id to. Cerebras is bench-only: the
  *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
  *  sweeps its models, but it has no catalogue entry, no defaults row, and no
  *  chooser card — `resolveConfig` never resolves it. */
-export type EngineProvider = Provider | 'cerebras';
+export type EngineProvider = Exclude<Provider, 'puter'> | 'cerebras';
 
 export interface ModelDef {
   id: string;
@@ -38,6 +38,7 @@ export interface ResolvedConfig {
   provider: Provider;
   anthropicKey: string | null;
   geminiKey: string | null;
+  puterKey: string | null;
   openaiKey: string | null;
   openrouterKey: string | null;
   /** Primary model: writes the spec patch each turn (and carries voice input). */
@@ -121,6 +122,7 @@ export function acceptsTemperature(modelId: string): boolean {
 /** The API key for the config's active provider, or null when it's unset.
  *  One home for the provider→key mapping, shared by the CLI and web surfaces. */
 export function keyFor(config: ResolvedConfig): string | null {
+  if (config.provider === 'puter') return config.puterKey;
   if (config.provider === 'gemini') return config.geminiKey;
   if (config.provider === 'openai') return config.openaiKey;
   if (config.provider === 'openrouter') return config.openrouterKey;
@@ -132,21 +134,22 @@ export function keyFor(config: ResolvedConfig): string | null {
 /**
  * Merge env vars over stored values into a complete ResolvedConfig.
  * Env always wins. Resolution order:
- *   1. GEMINI_API_KEY in env → provider=gemini, geminiKey=value
- *   2. OPENAI_API_KEY in env → provider=openai, openaiKey=value
- *   3. ANTHROPIC_API_KEY in env → provider=anthropic, anthropicKey=value
- *   4. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value —
+ *   1. PUTER_TOKEN in env → provider=puter, puterKey=value
+ *   2. GEMINI_API_KEY in env → provider=gemini, geminiKey=value
+ *   3. OPENAI_API_KEY in env → provider=openai, openaiKey=value
+ *   4. ANTHROPIC_API_KEY in env → provider=anthropic, anthropicKey=value
+ *   5. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value —
  *      last, so a paid key always outranks the free tier
- *   5. stored.provider (fallback: "gemini" — the provider every committed
+ *   6. stored.provider (fallback: "gemini" — the provider every committed
  *      cassette records with, so key-free replay resolves the taped models)
- *   6. TAMEDTABLE_MODEL in env overrides stored model
- *   7. Final model must belong to resolved provider; if not, use defaultModel
- *   8. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
+ *   7. TAMEDTABLE_MODEL in env overrides stored model
+ *   8. Final model must belong to resolved provider; if not, use defaultModel
+ *   9. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
  *      model must also belong to the provider, else use defaultCellModel
  */
 /** Whether a stored value names a provider this build knows. */
 function isProvider(p: unknown): p is Provider {
-  return p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
+  return p === 'puter' || p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
 }
 
 /** Whether a model id belongs to a provider — the same-provider guard's test.
@@ -155,6 +158,7 @@ function isProvider(p: unknown): p is Provider {
  *  belongs to no provider is treated as not belonging, so it is coerced to
  *  the provider default instead of being sent to the API to 404. */
 function modelBelongsTo(provider: Provider, modelId: string): boolean {
+  if (provider === 'puter') return modelId.startsWith('gemini-');
   if (provider === 'anthropic') return modelId.startsWith('claude-');
   return providerFor(modelId) === provider;
 }
@@ -166,15 +170,20 @@ export function resolveConfig(
   let provider: Provider;
   let anthropicKey: string | null  = stored.anthropicKey ?? null;
   let geminiKey: string | null     = stored.geminiKey ?? null;
+  let puterKey: string | null      = stored.puterKey ?? null;
   let openaiKey: string | null     = stored.openaiKey ?? null;
   let openrouterKey: string | null = stored.openrouterKey ?? null;
 
+  const envPuter      = env['PUTER_TOKEN'];
   const envGemini     = env['GEMINI_API_KEY'];
   const envOpenai     = env['OPENAI_API_KEY'];
   const envAnthropic  = env['ANTHROPIC_API_KEY'];
   const envOpenrouter = env['OPENROUTER_API_KEY'];
 
-  if (envGemini) {
+  if (envPuter) {
+    provider = 'puter';
+    puterKey = envPuter;
+  } else if (envGemini) {
     provider = 'gemini';
     geminiKey = envGemini;
   } else if (envOpenai) {
@@ -212,7 +221,7 @@ export function resolveConfig(
   }
 
   return {
-    provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel,
+    provider, anthropicKey, geminiKey, puterKey, openaiKey, openrouterKey, model, cellModel,
     alwaysRunAll: stored.alwaysRunAll ?? false,
   };
 }

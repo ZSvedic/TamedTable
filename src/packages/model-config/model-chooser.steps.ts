@@ -88,6 +88,20 @@ When(
 );
 
 Then(
+  'the {string} provider card appears before the {string} provider card',
+  async function (this: object, first: string, second: string) {
+    const labels = await page(this).$$eval('[data-mc-card]', (els) =>
+      els.map((el) => el.textContent ?? ''),
+    );
+    const firstIndex = labels.findIndex((text) => text.includes(first));
+    const secondIndex = labels.findIndex((text) => text.includes(second));
+    assert.ok(firstIndex >= 0, `missing provider card ${first}`);
+    assert.ok(secondIndex >= 0, `missing provider card ${second}`);
+    assert.ok(firstIndex < secondIndex, `${first} should appear before ${second}`);
+  },
+);
+
+Then(
   'the {string} card shows its API-key field and model list',
   async function (this: object, provider: string) {
     const p = page(this);

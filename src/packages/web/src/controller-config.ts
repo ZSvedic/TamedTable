@@ -18,6 +18,7 @@ import type { ControllerHost } from './controller-context.ts';
 
 /** The `ResolvedConfig` field each provider's key lives in. */
 const KEY_FIELD = {
+  puter: 'puterKey',
   gemini: 'geminiKey',
   openai: 'openaiKey',
   anthropic: 'anthropicKey',

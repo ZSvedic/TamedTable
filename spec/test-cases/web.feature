@@ -662,10 +662,10 @@ Feature: Web front-end
   Rule: The settings panel shows accordion provider cards
 
     @web
-    Scenario: Settings panel opens with four provider cards
+    Scenario: Settings panel opens with five provider cards
       Given the TamedTable web app
       When user opens the settings panel
-      Then the settings panel shows 4 provider cards
+      Then the settings panel shows 5 provider cards
       And no provider card is expanded
 
     @web

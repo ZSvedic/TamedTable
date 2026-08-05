@@ -97,6 +97,14 @@ interface ProviderMeta {
 
 const PROVIDERS: ProviderMeta[] = [
   {
+    id: 'puter',
+    name: 'Puter.js',
+    tagline: 'Gemini via developer.puter.com',
+    envHint: 'or sign in with Puter.js',
+    keyPlaceholder: 'Puter auth token…',
+    keyUrl: 'https://developer.puter.com/ai/google/',
+  },
+  {
     id: 'gemini',
     name: 'Google',
     tagline: 'Gemini models',
@@ -176,7 +184,7 @@ export function ModelChooser({
   onTestKey,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
-    gemini: false, openai: false, anthropic: false, openrouter: false,
+    puter: false, gemini: false, openai: false, anthropic: false, openrouter: false,
   });
 
   const toggleReveal = (p: Provider): void => {

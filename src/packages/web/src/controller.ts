@@ -118,7 +118,7 @@ export class WebController implements ControllerHost {
   keyTest: KeyTest | null = null;
   /** What each provider's key field currently holds. Typing moves the draft;
    *  the config only changes when the field is left (see ConfigManager). */
-  keyDrafts: Record<Provider, string> = { gemini: '', openai: '', anthropic: '', openrouter: '' };
+  keyDrafts: Record<Provider, string> = { puter: '', gemini: '', openai: '', anthropic: '', openrouter: '' };
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or

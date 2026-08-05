@@ -85,6 +85,7 @@ test.skipIf(!smoke)('RED-MC-3: merely loading the demo page leaves the stored co
     geminiKey: 'AIza-red-mc-3',
     openaiKey: null,
     openrouterKey: null,
+    puterKey: null,
     model: 'gemini-3.6-flash',
     cellModel: 'gemini-3.1-flash-lite',
     alwaysRunAll: true,

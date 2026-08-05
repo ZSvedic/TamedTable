@@ -55,6 +55,13 @@ When(
 );
 
 When(
+  'resolveConfig is called with env PUTER_TOKEN={string}',
+  function (this: ModelConfigWorld, key: string) {
+    ctx(this).resolved = resolveConfig({ PUTER_TOKEN: key }, {});
+  },
+);
+
+When(
   'resolveConfig is called with env GEMINI_API_KEY={string}',
   function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ GEMINI_API_KEY: key }, {});
@@ -192,6 +199,20 @@ Then(
 );
 
 Then(
+  'the resolved puterKey is {string}',
+  function (this: ModelConfigWorld, expected: string) {
+    assert.equal(ctx(this).resolved?.puterKey, expected);
+  },
+);
+
+Then(
+  'the resolved puterKey is null',
+  function (this: ModelConfigWorld) {
+    assert.equal(ctx(this).resolved?.puterKey, null);
+  },
+);
+
+Then(
   'the resolved geminiKey is {string}',
   function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.geminiKey, expected);
@@ -246,6 +267,7 @@ Given(
     ctx(this).resolved = {
       provider: provider as Provider,
       anthropicKey: anthropic || null,
+      puterKey: null,
       geminiKey: gemini || null,
       openaiKey: openai || null,
       openrouterKey: null,
@@ -263,6 +285,7 @@ Given(
       provider: provider as Provider,
       anthropicKey: null,
       geminiKey: null,
+      puterKey: null,
       openaiKey: null,
       openrouterKey: openrouterKey || null,
       model: defaultModel(provider as Provider),
