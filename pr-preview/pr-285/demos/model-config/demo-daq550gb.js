@@ -17937,7 +17937,7 @@ function toBase64(bytes) {
 var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
 function Demo() {
   const stored = import_react2.useRef(readStoredConfig()).current;
-  const [provider, setProvider] = import_react2.useState(stored.provider ?? "puter");
+  const [provider, setProvider] = import_react2.useState(stored.provider ?? "gemini");
   const [keys, setKeys] = import_react2.useState({
     puter: "",
     gemini: stored.geminiKey ?? "",
