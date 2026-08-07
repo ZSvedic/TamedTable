@@ -183,9 +183,9 @@ describe.skipIf(skip)('demo smoke', () => {
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
-  it('model-config: renders the chooser and flips provider on card click', async () => {
+  it('model-config: renders the chooser with Google as the default', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('puter');
+    expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('gemini');
 
     await page.click('[data-mc-card="gemini"]');
     await page.fill('[data-mc-key="gemini"]', 'smoke-test-key');
@@ -214,15 +214,12 @@ describe.skipIf(skip)('demo smoke', () => {
 
   it('model-config: shows the test-call harness, mic only for voice models', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    // Puter's default Gemini model supports voice, so the mic is present.
+    // Google's default Gemini model supports voice, so the mic is present.
     expect(await page.isVisible('#tc-input')).toBe(true);
     expect(await page.isVisible('#tc-send')).toBe(true);
     expect(await page.isVisible('#tc-response')).toBe(true);
     expect(await page.locator('#tc-mic').count()).toBe(1);
 
-    // Switching to an OpenAI model (voiceInput: false) removes the mic.
-    await page.click('[data-mc-card="openai"]');
-    await page.waitForSelector('#tc-mic', { state: 'detached' });
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 });

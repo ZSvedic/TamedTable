@@ -300,7 +300,8 @@ plays that role and `resolveConfig` renders the resulting config live.
 
 The demo (`demo.html` + `demo.tsx`, deployed under `/demos/model-config/`)
 mounts the real `ModelChooser` over plain React state and shows the
-`resolveConfig` result live. Two behaviors beyond the chooser itself:
+`resolveConfig` result live. With no stored provider it starts on Google
+(`gemini`). Two behaviors beyond the chooser itself:
 
 - **Shared persistence.** On load the demo seeds its state from
   `readStoredConfig()` and writes every change back — the same localStorage

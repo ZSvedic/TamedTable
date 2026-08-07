@@ -394,6 +394,11 @@ Feature: Model config
     demo page over local state; these scenarios drive that page in a browser.
 
     @web
+    Scenario: The demo defaults to Google
+      Given the model-config demo page
+      Then the demo shows resolved provider "gemini"
+
+    @web
     Scenario: Clicking a provider card expands it and selects the provider
       Given the model-config demo page
       When the user clicks the "Puter.js" provider card

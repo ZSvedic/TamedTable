@@ -24,7 +24,7 @@ interface ActiveRecording {
 
 function Demo() {
   const stored = useRef(readStoredConfig()).current;
-  const [provider, setProvider] = useState<Provider>(stored.provider ?? 'puter');
+  const [provider, setProvider] = useState<Provider>(stored.provider ?? 'gemini');
   const [keys, setKeys] = useState<Record<Provider, string>>({
     puter: '',
     gemini: stored.geminiKey ?? '',
