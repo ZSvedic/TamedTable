@@ -328,7 +328,7 @@ export class WebController implements ControllerHost {
     // untouched. A key for a different provider does not count. A playing
     // tutorial is the exception: it replays from a cassette and needs no key.
     // See spec/behavior.md § Web UI / settings.
-    if (!this.tutorial.isReplaying() && !this.settingsMgr.activeApiKey()?.trim()) {
+    if (!this.tutorial.isReplaying() && !this.settingsMgr.hasProviderAccess()) {
       this.fail(missingTextKeyMessage(this.config.provider), undefined, false);
       return;
     }
@@ -618,6 +618,7 @@ export class WebController implements ControllerHost {
   /** The user left a key field (or pressed Enter) — saves the draft. */
   commitKeyDraft(provider: Provider): Promise<void> { return this.settingsMgr.commitKeyDraft(provider); }
   signInPuter(): Promise<void> { return this.settingsMgr.signInPuter(); }
+  isPuterSignedIn(): boolean { return this.settingsMgr.isPuterSignedIn(); }
   /** #ProviderSelect — run the Settings Test button's key check. */
   testKey(): Promise<void> { return this.settingsMgr.testKey(); }
   /** Whether there is a key to test (an empty field disables the button). */

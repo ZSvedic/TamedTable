@@ -223,6 +223,15 @@ tag shows only on voice-capable models. It lives in its own entry point
 (`@tamedtable/model-config/ModelChooser`) so the main entry stays React-free;
 `react` is a peer dependency.
 
+Puter authentication is a browser session owned by the Puter SDK. The chooser
+checks `puter.auth.isSignedIn()` when it opens, calls `puter.auth.signIn()` as a
+method (preserving its receiver), and does not store the returned user object as
+an API key. A successful Puter session counts as provider access after reload.
+The chooser shows `Connected to Puter.js` instead of another sign-in button
+while that session is active.
+Patch-turn and per-cell calls both go through `puter.ai.chat`; they never enter
+the API-key model clients.
+
 Each expanded card also shows a **"Get API key ↗"** deep link to that
 provider's key page, opening in a new tab:
 

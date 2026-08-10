@@ -117,6 +117,26 @@ Then('the {string} card shows the official Puter logo', async function (this: ob
   assert.match(await logo.getAttribute('src') ?? '', /puter-logo.*\.png$/);
 });
 
+When('Puter sign-in fails with object message {string}', async function (this: object, message: string) {
+  await page(this).evaluate((text) => {
+    const root = globalThis as typeof globalThis & { puter?: { auth?: Record<string, unknown> } };
+    root.puter ??= {};
+    root.puter.auth ??= {};
+    root.puter.auth.signIn = async function () {
+      if (this !== root.puter!.auth) throw { message: { detail: 'lost receiver' } };
+      throw { message: text };
+    };
+  }, message);
+});
+
+When(/^the user clicks Puter Sign in \/ Register$/, async function (this: object) {
+  await page(this).getByRole('button', { name: 'Sign in / Register', exact: true }).click();
+});
+
+Then('the {string} card shows {string}', async function (this: object, provider: string, text: string) {
+  await expectText(page(this), `[data-mc-card="${provider}"] + div`, text);
+});
+
 Then(
   'the {string} card shows a Test button',
   async function (this: object, provider: string) {

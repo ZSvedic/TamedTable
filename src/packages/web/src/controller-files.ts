@@ -173,7 +173,7 @@ export class FilesManager {
         this.host.errorDialog = `${picked.name} does not fit the current table. ${mismatch}`;
         return;
       }
-      if (specHasLlmCell(spec) && !this.host.settingsMgr.activeApiKey()?.trim()) {
+      if (specHasLlmCell(spec) && !this.host.settingsMgr.hasProviderAccess()) {
         this.host.errorDialog = missingProviderKeyMessage(
           this.host.config.provider,
           'Running a flow with AI cells requires',
@@ -474,7 +474,7 @@ export class FilesManager {
       this.host.pushToast('error', 'Load a file before saving a flow.');
       return;
     }
-    if (!this.host.settingsMgr.activeApiKey()?.trim()) {
+    if (!this.host.settingsMgr.hasProviderAccess()) {
       this.host.pushToast(
         'error',
         missingProviderKeyMessage(this.host.config.provider, 'Exporting to Python requires'),

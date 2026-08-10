@@ -51,6 +51,8 @@ export interface ModelChooserProps {
   onKeyCommit?: (p: Provider, value: string) => void;
   /** Puter.js sign-in/register was clicked. Omit it to hide the Puter auth button. */
   onPuterSignIn?: () => void | Promise<void>;
+  /** Whether the Puter SDK already has a persisted browser session. */
+  puterSignedIn?: boolean;
   /** The card's Test button was clicked. Omit it and no card shows a Test
    *  button — a host with no way to reach a provider gets no button that
    *  cannot work. */
@@ -191,6 +193,7 @@ export function ModelChooser({
   onKeyChange,
   onKeyCommit,
   onPuterSignIn,
+  puterSignedIn = false,
   onTestKey,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
@@ -473,7 +476,14 @@ export function ModelChooser({
     </div>
   );
 
-  const puterSignInButton = (): ReactNode => (
+  const puterSignInButton = (): ReactNode => puterSignedIn ? (
+    <div
+      data-mc-puter-connected=""
+      style={{ flex: 1, padding: '7px 12px', border: `1px solid ${line2}`, borderRadius: radius, background: okSoft, color: ok, fontFamily: fontUi, fontSize: 12.5, fontWeight: 600 }}
+    >
+      ✓ Connected to Puter.js
+    </div>
+  ) : (
     <button
       type="button"
       data-mc-puter-signin=""

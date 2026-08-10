@@ -17,7 +17,7 @@ import { pageSizeFor } from './controller.ts';
 import type { ControllerHost } from './controller-context.ts';
 
 interface PuterGlobal {
-  auth?: { signIn?: () => Promise<unknown> };
+  auth?: { signIn?: () => Promise<unknown>; isSignedIn?: () => boolean };
   ai?: { chat?: (prompt: string, options?: { model?: string }) => Promise<unknown> };
 }
 
@@ -33,6 +33,19 @@ function puterText(data: unknown): string {
     if (typeof maybe.message?.content === 'string') return maybe.message.content.trim();
   }
   return '';
+}
+
+function puterErrorMessage(error: unknown): string {
+  if (error && typeof error === 'object') {
+    const value = error as { msg?: unknown; message?: unknown };
+    const message = value.msg ?? value.message;
+    if (typeof message === 'string') return message;
+    if (message !== undefined) {
+      try { return JSON.stringify(message); } catch { /* fall through */ }
+    }
+    try { return JSON.stringify(error); } catch { /* fall through */ }
+  }
+  return typeof error === 'string' ? error : 'Puter.js sign-in was cancelled.';
 }
 
 /** The `ResolvedConfig` field each provider's key lives in. */
@@ -94,6 +107,14 @@ export class ConfigManager {
     return keyFor(this.host.config);
   }
 
+  /** Whether the selected provider can make model calls now. */
+  hasProviderAccess(): boolean {
+    if (this.host.config.provider === 'puter') return Boolean(puter()?.auth?.isSignedIn?.());
+    return Boolean(this.activeApiKey()?.trim());
+  }
+
+  isPuterSignedIn(): boolean { return Boolean(puter()?.auth?.isSignedIn?.()); }
+
   /** Whether the Settings "Test" button has anything to test: either Puter.js
    *  browser auth, or a key for a key-based provider. */
   canTestKey(): boolean {
@@ -104,21 +125,20 @@ export class ConfigManager {
   /** Sign in/register through Puter.js. Must run from the user's click because
    *  Puter opens a popup. */
   async signInPuter(): Promise<void> {
-    const signIn = puter()?.auth?.signIn;
-    if (!signIn) {
+    const auth = puter()?.auth;
+    if (!auth?.signIn) {
       this.host.keyTest = { provider: 'puter', state: 'error', message: 'Puter.js is not loaded.' };
       this.host.notify();
       return;
     }
     try {
-      await signIn();
+      await auth.signIn();
       this.host.keyTest = { provider: 'puter', state: 'ok', message: 'Signed in to Puter.js' };
     } catch (e) {
-      const err = e as { msg?: unknown; message?: unknown };
       this.host.keyTest = {
         provider: 'puter',
         state: 'error',
-        message: String(err.msg ?? err.message ?? 'Puter.js sign-in was cancelled.'),
+        message: puterErrorMessage(e),
       };
     }
     this.host.notify();
@@ -217,6 +237,7 @@ export class ConfigManager {
     // user just typed sits unused until the page reloads and every request
     // keeps failing with "Invalid API key" under a "✓ Saved" badge.
     const engineChanged =
+      next.provider !== this.host.config.provider ||
       next.model !== this.host.config.model ||
       next.cellModel !== this.host.config.cellModel ||
       keyFor(next) !== keyFor(this.host.config);

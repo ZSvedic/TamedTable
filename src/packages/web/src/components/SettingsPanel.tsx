@@ -125,6 +125,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             onKeyChange={(p, value) => controller.setKeyDraft(p, value)}
             onKeyCommit={(p) => void controller.commitKeyDraft(p)}
             onPuterSignIn={() => void controller.signInPuter()}
+            puterSignedIn={controller.isPuterSignedIn()}
             onTestKey={() => void controller.testKey()}
           />
 

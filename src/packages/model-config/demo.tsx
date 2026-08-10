@@ -13,7 +13,7 @@ import { readStoredConfig, writeStoredConfig } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
 
 interface PuterGlobal {
-  auth?: { signIn?: () => Promise<unknown> };
+  auth?: { signIn?: () => Promise<unknown>; isSignedIn?: () => boolean };
 }
 
 interface ActiveRecording {
@@ -34,6 +34,7 @@ function Demo() {
   });
   const [expanded, setExpanded] = useState<Provider | null>(null);
   const [keyTest, setKeyTest] = useState<KeyTest | null>(null);
+  const [puterSignedIn, setPuterSignedIn] = useState(() => Boolean((globalThis as { puter?: PuterGlobal }).puter?.auth?.isSignedIn?.()));
 
   // Models are no longer user-selectable — they follow the provider defaults.
   // Feeding the provider's defaults as the stored model/cellModel keeps the
@@ -85,20 +86,24 @@ function Demo() {
   const hasVoice = ALL_MODELS.some((m) => m.id === resolved.model && m.voiceInput);
 
   const signInPuter = async (): Promise<void> => {
-    const signIn = (globalThis as { puter?: PuterGlobal }).puter?.auth?.signIn;
-    if (!signIn) {
+    const auth = (globalThis as { puter?: PuterGlobal }).puter?.auth;
+    if (!auth?.signIn) {
       setKeyTest({ provider: 'puter', state: 'error', message: 'Puter.js is not loaded.' });
       return;
     }
     try {
-      await signIn();
+      await auth.signIn();
+      setPuterSignedIn(true);
       setKeyTest({ provider: 'puter', state: 'ok', message: 'Signed in to Puter.js' });
     } catch (e) {
       const err = e as { msg?: unknown; message?: unknown };
+      const detail = err.msg ?? err.message;
       setKeyTest({
         provider: 'puter',
         state: 'error',
-        message: String(err.msg ?? err.message ?? 'Puter.js sign-in was cancelled.'),
+        message: typeof detail === 'string' ? detail : detail === undefined
+          ? JSON.stringify(e) || 'Puter.js sign-in was cancelled.'
+          : JSON.stringify(detail),
       });
     }
   };
@@ -211,6 +216,7 @@ function Demo() {
         }}
         onKeyChange={(p, value) => setKeys((prev) => ({ ...prev, [p]: value }))}
         onPuterSignIn={() => void signInPuter()}
+        puterSignedIn={puterSignedIn}
         onTestKey={(p) => void testProvider(p)}
       />
 

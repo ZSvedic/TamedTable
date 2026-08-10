@@ -457,6 +457,14 @@ Feature: Model config
       And the "puter" card does not show an API-key field
 
     @web
+    Scenario: Puter sign-in preserves the SDK receiver and reports object errors clearly
+      Given the model-config demo page
+      When Puter sign-in fails with object message "Sign-in denied"
+      And the user clicks the "Puter.js" provider card
+      And the user clicks Puter Sign in / Register
+      Then the "puter" card shows "Sign-in denied"
+
+    @web
     Scenario: Google still asks for an API key
       Given the model-config demo page
       When the user clicks the "Google" provider card

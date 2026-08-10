@@ -264,6 +264,10 @@ export interface HeadlessRunnerOptions {
   onUsage?: (u: { model: string; inputTokens: number; outputTokens: number; role: 'primary' | 'cell' }) => void;
   signal?: AbortSignal;
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  /** Host-provided model calls for account-auth providers that do not expose
+   * an API-key HTTP endpoint (Puter.js in the browser). */
+  callPatch?: (prompt: string, system: string, signal?: AbortSignal) => Promise<{ ops: unknown[]; transcript?: string }>;
+  callCells?: (prompts: string[], model: string, signal?: AbortSignal) => Promise<unknown[]>;
 }
 
 /** Spoken audio riding along on the patch turn (web voice input). When set,
@@ -1449,6 +1453,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     signal?: AbortSignal,
     audio?: RequestAudio,
   ): Promise<{ ops: unknown[]; transcript?: string }> {
+    if (this.opts.callPatch && !audio) {
+      const result = await this.opts.callPatch(prompt, SYSTEM_PROMPT, signal);
+      this.recordCall(this.opts.model ?? DEFAULT_MODEL, undefined, 'primary');
+      return { ops: decodeOpValues(result.ops), transcript: result.transcript?.trim() || undefined };
+    }
     let captured: unknown[] | undefined;
     let transcript: string | undefined;
     const applySpecPatch = tool({
@@ -1911,6 +1920,12 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
   private async callLlmCells(prompts: string[], perCellModel: string | undefined, signal?: AbortSignal): Promise<unknown[]> {
     if (prompts.length === 0) return [];
+    if (this.opts.callCells) {
+      const model = this.resolvedCellModelId(perCellModel);
+      const values = await this.opts.callCells(prompts, model, signal);
+      this.recordCall(model, undefined);
+      return values;
+    }
     if (prompts.length === 1) return [await this.callLlmCell(prompts[0]!, perCellModel, signal)];
     await rateLimiter.acquire(signal);
     const result = await generateText({

@@ -40,6 +40,66 @@ function flowLogExpr(body: string): string {
 
 const PLACEHOLDER_KEY = 'tamedtable-web';
 
+type PuterChat = (
+  prompt: string | Array<{ role: string; content: string }>,
+  options?: Record<string, unknown>,
+) => Promise<unknown>;
+
+function puterChat(): PuterChat | undefined {
+  const ai = (globalThis as { puter?: { ai?: { chat?: PuterChat } } }).puter?.ai;
+  return ai?.chat?.bind(ai);
+}
+
+function puterMessage(result: unknown): Record<string, unknown> {
+  if (!result || typeof result !== 'object') return {};
+  const value = result as { message?: unknown };
+  return value.message && typeof value.message === 'object'
+    ? value.message as Record<string, unknown>
+    : value as Record<string, unknown>;
+}
+
+function puterText(result: unknown): string {
+  if (typeof result === 'string') return result.trim();
+  const message = puterMessage(result);
+  return typeof message.content === 'string' ? message.content.trim()
+    : typeof message.text === 'string' ? message.text.trim() : '';
+}
+
+async function callPuterPatch(prompt: string, system: string): Promise<{ ops: unknown[] }> {
+  const chat = puterChat();
+  if (!chat) throw new Error('Puter.js is not loaded.');
+  const result = await chat([{ role: 'system', content: system }, { role: 'user', content: prompt }], {
+    model: 'gemini-3.6-flash',
+    tools: [{
+      type: 'function',
+      function: {
+        name: 'apply_spec_patch',
+        description: 'Apply RFC 6902 JSON Patch operations to the current spec.',
+        parameters: {
+          type: 'object',
+          properties: { operations: { type: 'array', items: { type: 'object' } } },
+          required: ['operations'],
+        },
+      },
+    }],
+  });
+  const calls = puterMessage(result).tool_calls;
+  const call = Array.isArray(calls) ? calls.find((c) => (c as { function?: { name?: string } }).function?.name === 'apply_spec_patch') : undefined;
+  const args = (call as { function?: { arguments?: unknown } } | undefined)?.function?.arguments;
+  const parsed = typeof args === 'string' ? JSON.parse(args) as { operations?: unknown[] } : args as { operations?: unknown[] } | undefined;
+  if (!parsed?.operations) throw new Error(`Puter.js did not return a spec patch: ${puterText(result).slice(0, 200) || '<empty>'}`);
+  return { ops: parsed.operations };
+}
+
+async function callPuterCells(prompts: string[], model: string): Promise<unknown[]> {
+  const chat = puterChat();
+  if (!chat) throw new Error('Puter.js is not loaded.');
+  return Promise.all(prompts.map(async (prompt) => {
+    const text = puterText(await chat(prompt, { model }));
+    return text === '' || text === 'null' ? null : text;
+  }));
+}
+
 export class EngineManager {
   private headless: HeadlessRunner | undefined;
   /** Whether the cached engine was built for tutorial replay, so a mode change
@@ -156,6 +216,8 @@ export class EngineManager {
       },
       // #LazyExec — the estimate math accumulates per-call token usage.
       onUsage: (u) => this.host.lazy.recordUsage(u),
+      callPatch: !replaying && this.host.config.provider === 'puter' ? callPuterPatch : undefined,
+      callCells: !replaying && this.host.config.provider === 'puter' ? callPuterCells : undefined,
     });
     // #LookupJoin — a fresh runner starts with no lookup tables; hand back the
     // ones already staged so a rebuild never re-asks for a picked file.
