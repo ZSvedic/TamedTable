@@ -111,6 +111,12 @@ Then(
   },
 );
 
+Then('the {string} card shows the official Puter logo', async function (this: object, provider: string) {
+  const logo = page(this).locator(`[data-mc-card="${provider}"] + div [data-mc-puter-logo]`);
+  await logo.waitFor({ state: 'visible' });
+  assert.match(await logo.getAttribute('src') ?? '', /puter-logo.*\.png$/);
+});
+
 Then(
   'the {string} card shows a Test button',
   async function (this: object, provider: string) {

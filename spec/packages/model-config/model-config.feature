@@ -402,7 +402,8 @@ Feature: Model config
     Scenario: Clicking a provider card expands it and selects the provider
       Given the model-config demo page
       When the user clicks the "Puter.js" provider card
-      Then the "puter" card shows a "☁ Sign in / Register" button
+      Then the "puter" card shows the official Puter logo
+      And the "puter" card shows a "Sign in / Register" button
       And the demo shows resolved provider "puter"
 
     @web
@@ -450,7 +451,8 @@ Feature: Model config
     Scenario: Puter signs in instead of asking for an API key
       Given the model-config demo page
       When the user clicks the "Puter.js" provider card
-      Then the "puter" card shows a "☁ Sign in / Register" button
+      Then the "puter" card shows the official Puter logo
+      And the "puter" card shows a "Sign in / Register" button
       And the "puter" card shows a Test button
       And the "puter" card does not show an API-key field
 

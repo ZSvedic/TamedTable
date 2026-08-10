@@ -211,7 +211,9 @@ headless runner. The help text mentions `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 ## Model chooser component
 
 `ModelChooser` is the provider accordion UI: five cards — Puter.js, Google, OpenAI,
-Anthropic, OpenRouter. Puter.js shows a `☁ Sign in / Register` button and a Test button; the other cards show an API-key field (masked, with an eye toggle to reveal it). **The user picks a provider, not individual models.** Each expanded card
+Anthropic, OpenRouter. Puter.js shows the official blue-and-white Puter logo in
+its `Sign in / Register` button, plus a Test button; the other cards show an
+API-key field (masked, with an eye toggle to reveal it). **The user picks a provider, not individual models.** Each expanded card
 shows that provider's two fixed defaults **read-only** — a Primary row (the
 patch-turn model, which carries voice input) and a Secondary row (the per-row
 cell model) — each with its model id and per-Mtok price (`$in in / $out out`).

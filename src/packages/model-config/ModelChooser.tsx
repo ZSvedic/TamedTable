@@ -12,6 +12,7 @@
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import { useState, type ReactNode } from 'react';
 import type { ModelDef, Provider } from './index.ts';
+import puterLogoUrl from './puter-logo.png';
 
 export interface ModelChooserProps {
   models: readonly ModelDef[];
@@ -490,9 +491,20 @@ export function ModelChooser({
         fontWeight: 600,
         cursor: onPuterSignIn ? 'pointer' : 'default',
         textAlign: 'left',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
       }}
     >
-      ☁ Sign in / Register
+      <img
+        data-mc-puter-logo=""
+        src={puterLogoUrl}
+        alt=""
+        width={18}
+        height={18}
+        style={{ display: 'block', borderRadius: 3, flex: '0 0 auto' }}
+      />
+      Sign in / Register
     </button>
   );
 
