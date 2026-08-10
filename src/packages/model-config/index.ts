@@ -4,13 +4,13 @@
 
 import catalogue from './models.json' with { type: 'json' };
 
-export type Provider = 'anthropic' | 'gemini' | 'openai' | 'openrouter';
+export type Provider = 'puter' | 'anthropic' | 'gemini' | 'openai' | 'openrouter';
 
 /** Providers the engine can route a model id to. Cerebras is bench-only: the
  *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
  *  sweeps its models, but it has no catalogue entry, no defaults row, and no
  *  chooser card — `resolveConfig` never resolves it. */
-export type EngineProvider = Provider | 'cerebras';
+export type EngineProvider = Exclude<Provider, 'puter'> | 'cerebras';
 
 export interface ModelDef {
   id: string;
@@ -121,6 +121,7 @@ export function acceptsTemperature(modelId: string): boolean {
 /** The API key for the config's active provider, or null when it's unset.
  *  One home for the provider→key mapping, shared by the CLI and web surfaces. */
 export function keyFor(config: ResolvedConfig): string | null {
+  if (config.provider === 'puter') return null;
   if (config.provider === 'gemini') return config.geminiKey;
   if (config.provider === 'openai') return config.openaiKey;
   if (config.provider === 'openrouter') return config.openrouterKey;
@@ -146,7 +147,7 @@ export function keyFor(config: ResolvedConfig): string | null {
  */
 /** Whether a stored value names a provider this build knows. */
 function isProvider(p: unknown): p is Provider {
-  return p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
+  return p === 'puter' || p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
 }
 
 /** Whether a model id belongs to a provider — the same-provider guard's test.
@@ -155,6 +156,7 @@ function isProvider(p: unknown): p is Provider {
  *  belongs to no provider is treated as not belonging, so it is coerced to
  *  the provider default instead of being sent to the API to 404. */
 function modelBelongsTo(provider: Provider, modelId: string): boolean {
+  if (provider === 'puter') return modelId.startsWith('gemini-');
   if (provider === 'anthropic') return modelId.startsWith('claude-');
   return providerFor(modelId) === provider;
 }

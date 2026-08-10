@@ -76,7 +76,7 @@ Then('no API key is configured', function (this: TamedTableWorld) {
 When(
   'user saves the {string} API key {string}',
   async function (this: TamedTableWorld, provider: string, key: string) {
-    const field = `${provider}Key` as 'geminiKey' | 'openaiKey' | 'anthropicKey' | 'openrouterKey';
+    const field = `${provider}Key` as 'puterKey' | 'geminiKey' | 'openaiKey' | 'anthropicKey' | 'openrouterKey';
     await controller(this).setConfig({ [field]: key });
   },
 );
@@ -611,7 +611,7 @@ import { ALL_MODELS, type Provider as ModelProvider } from '@tamedtable/model-co
 
 Then('the settings panel shows {int} provider cards', function (this: TamedTableWorld, n: number) {
   // The four providers are always shown: gemini, openai, anthropic, openrouter
-  const providers: ModelProvider[] = ['gemini', 'openai', 'anthropic', 'openrouter'];
+  const providers: ModelProvider[] = ['puter', 'gemini', 'openai', 'anthropic', 'openrouter'];
   assert.equal(n, providers.length, `expected ${providers.length} provider cards, got ${n}`);
   // Verify the catalogue backs every card
   for (const p of providers) {
