@@ -1,7 +1,6 @@
 // #ModelConfig #ProviderSelect
-// ModelChooser — the provider accordion: one card per provider. Puter.js uses
-// account sign-in; key-based providers use a masked API-key input (eye toggle
-// to reveal). The user picks a provider, not
+// ModelChooser — the provider accordion: one card per provider with a masked
+// API-key input (eye toggle to reveal). The user picks a provider, not
 // individual models — each provider's primary (patch-turn) and secondary
 // (per-row cell) models are fixed defaults, shown read-only inside the card
 // with their per-Mtok prices. A single generic explainer sits above the cards.
@@ -12,7 +11,6 @@
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import { useState, type ReactNode } from 'react';
 import type { ModelDef, Provider } from './index.ts';
-import puterLogoUrl from './puter-logo.png';
 
 export interface ModelChooserProps {
   models: readonly ModelDef[];
@@ -49,8 +47,6 @@ export interface ModelChooserProps {
    *  Enter. A host that saves on every keystroke can leave it unset and use
    *  `onKeyChange` alone. */
   onKeyCommit?: (p: Provider, value: string) => void;
-  /** Puter.js sign-in/register was clicked. Omit it to hide the Puter auth button. */
-  onPuterSignIn?: () => void | Promise<void>;
   /** The card's Test button was clicked. Omit it and no card shows a Test
    *  button — a host with no way to reach a provider gets no button that
    *  cannot work. */
@@ -94,24 +90,14 @@ interface ProviderMeta {
   name: string;
   tagline: string;
   envHint: string;
-  auth: 'puter' | 'apiKey';
-  keyPlaceholder?: string;
-  /** Direct link to that provider's setup or create API key page. */
+  keyPlaceholder: string;
+  /** Direct link to that provider's "create API key" page. */
   keyUrl: string;
 }
 
 const PROVIDERS: ProviderMeta[] = [
   {
-    id: 'puter',
-    name: 'Puter.js',
-    tagline: 'Gemini via developer.puter.com',
-    auth: 'puter',
-    envHint: 'Sign in with Puter.js — no API key needed.',
-    keyUrl: 'https://developer.puter.com/ai/google/',
-  },
-  {
     id: 'gemini',
-    auth: 'apiKey',
     name: 'Google',
     tagline: 'Gemini models',
     envHint: 'or set GEMINI_API_KEY in .env',
@@ -120,7 +106,6 @@ const PROVIDERS: ProviderMeta[] = [
   },
   {
     id: 'openai',
-    auth: 'apiKey',
     name: 'OpenAI',
     tagline: 'GPT models',
     envHint: 'or set OPENAI_API_KEY in .env',
@@ -129,7 +114,6 @@ const PROVIDERS: ProviderMeta[] = [
   },
   {
     id: 'anthropic',
-    auth: 'apiKey',
     name: 'Anthropic',
     tagline: 'Claude models',
     envHint: 'or set ANTHROPIC_API_KEY in .env',
@@ -138,7 +122,6 @@ const PROVIDERS: ProviderMeta[] = [
   },
   {
     id: 'openrouter',
-    auth: 'apiKey',
     name: 'OpenRouter',
     tagline: 'Free models',
     envHint: 'or set OPENROUTER_API_KEY in .env',
@@ -190,11 +173,10 @@ export function ModelChooser({
   onProviderClick,
   onKeyChange,
   onKeyCommit,
-  onPuterSignIn,
   onTestKey,
 }: ModelChooserProps): ReactNode {
   const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
-    puter: false, gemini: false, openai: false, anthropic: false, openrouter: false,
+    gemini: false, openai: false, anthropic: false, openrouter: false,
   });
 
   const toggleReveal = (p: Provider): void => {
@@ -369,14 +351,14 @@ export function ModelChooser({
   const testButton = (meta: ProviderMeta): ReactNode => {
     if (!onTestKey) return null;
     const running = testState?.provider === meta.id && testState.state === 'running';
-    const disabled = running || (meta.auth === 'apiKey' && keys[meta.id].trim() === '');
+    const disabled = running || keys[meta.id].trim() === '';
     return (
       <button
         type="button"
         data-mc-test={meta.id}
         disabled={disabled}
         onClick={() => onTestKey(meta.id)}
-        title={disabled && !running ? 'Enter an API key first' : 'Check this provider'}
+        title={disabled && !running ? 'Enter an API key first' : 'Check this key against the provider'}
         style={{
           flex: '0 0 auto',
           padding: '7px 12px',
@@ -442,7 +424,7 @@ export function ModelChooser({
         onKeyDown={(e) => {
           if (e.key === 'Enter') onKeyCommit?.(meta.id, e.currentTarget.value);
         }}
-        placeholder={meta.keyPlaceholder ?? ''}
+        placeholder={meta.keyPlaceholder}
         style={{
           flex: 1,
           minWidth: 0,
@@ -473,52 +455,17 @@ export function ModelChooser({
     </div>
   );
 
-  const puterSignInButton = (): ReactNode => (
-    <button
-      type="button"
-      data-mc-puter-signin=""
-      onClick={() => void onPuterSignIn?.()}
-      style={{
-        flex: 1,
-        minWidth: 0,
-        padding: '7px 12px',
-        border: `1px solid ${line2}`,
-        borderRadius: radius,
-        background: surface2,
-        color: ink,
-        fontFamily: fontUi,
-        fontSize: 12.5,
-        fontWeight: 600,
-        cursor: onPuterSignIn ? 'pointer' : 'default',
-        textAlign: 'left',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 7,
-      }}
-    >
-      <img
-        data-mc-puter-logo=""
-        src={puterLogoUrl}
-        alt=""
-        width={18}
-        height={18}
-        style={{ display: 'block', borderRadius: 3, flex: '0 0 auto' }}
-      />
-      Sign in / Register
-    </button>
-  );
-
   const cardBody = (meta: ProviderMeta): ReactNode => {
     return (
       <div style={{ padding: '8px 14px 12px', borderTop: `1px solid ${line}` }}>
-        {/* Auth control, with the Test button beside it */}
+        {/* API key field, with the Test button beside it */}
         <div style={{ marginBottom: 4 }}>
           <div style={{ display: 'flex', alignItems: 'stretch', gap: 6 }}>
-            {meta.auth === 'puter' ? puterSignInButton() : keyField(meta)}
+            {keyField(meta)}
             {testButton(meta)}
           </div>
           {testResult(meta)}
-          {/* Auth hint + deep link to the provider's setup/key page */}
+          {/* Env-var hint + deep link to the provider's key page */}
           <div
             style={{
               display: 'flex',
@@ -546,7 +493,7 @@ export function ModelChooser({
                 flexShrink: 0,
               }}
             >
-              {meta.auth === 'puter' ? 'How Puter.js works ↗' : 'Get API key ↗'}
+              Get API key ↗
             </a>
           </div>
         </div>

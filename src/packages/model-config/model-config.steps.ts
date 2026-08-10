@@ -55,13 +55,6 @@ When(
 );
 
 When(
-  'resolveConfig is called with env PUTER_TOKEN={string}',
-  function (this: ModelConfigWorld, key: string) {
-    ctx(this).resolved = resolveConfig({ PUTER_TOKEN: key }, {});
-  },
-);
-
-When(
   'resolveConfig is called with env GEMINI_API_KEY={string}',
   function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ GEMINI_API_KEY: key }, {});
@@ -197,7 +190,6 @@ Then(
     assert.equal(ctx(this).resolved?.anthropicKey, null);
   },
 );
-
 
 Then(
   'the resolved geminiKey is {string}',
