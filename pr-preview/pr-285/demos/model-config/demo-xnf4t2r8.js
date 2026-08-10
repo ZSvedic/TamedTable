@@ -17233,6 +17233,11 @@ function resolveConfig(env, stored) {
 
 // packages/model-config/ModelChooser.tsx
 var import_react = __toESM(require_react(), 1);
+
+// packages/model-config/puter-logo.png
+var puter_logo_default = "/pr-preview/pr-285/demos/model-config/puter-logo-57m189kd.png";
+
+// packages/model-config/ModelChooser.tsx
 var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 var v = (name, fallback) => `var(--mc-${name}, ${fallback})`;
 var ink = v("ink", "#27272a");
@@ -17581,10 +17586,23 @@ function ModelChooser({
       fontSize: 12.5,
       fontWeight: 600,
       cursor: onPuterSignIn ? "pointer" : "default",
-      textAlign: "left"
+      textAlign: "left",
+      display: "flex",
+      alignItems: "center",
+      gap: 7
     },
-    children: "☁ Sign in / Register"
-  }, undefined, false, undefined, this);
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("img", {
+        "data-mc-puter-logo": "",
+        src: puter_logo_default,
+        alt: "",
+        width: 18,
+        height: 18,
+        style: { display: "block", borderRadius: 3, flex: "0 0 auto" }
+      }, undefined, false, undefined, this),
+      "Sign in / Register"
+    ]
+  }, undefined, true, undefined, this);
   const cardBody = (meta) => {
     return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
       style: { padding: "8px 14px 12px", borderTop: `1px solid ${line}` },

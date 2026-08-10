@@ -1,4 +1,4 @@
-import{s as a,c as j}from"./index-CKS9n9Yx.js";const p={id:"jsonl",extensions:[".jsonl",".ndjson"],contentTypes:["jsonl","ndjson"],parse(l,s){const c=new TextDecoder().decode(l),n=[];c.split(`
+import{s as a,c as j}from"./index-C4YJWR6P.js";const p={id:"jsonl",extensions:[".jsonl",".ndjson"],contentTypes:["jsonl","ndjson"],parse(l,s){const c=new TextDecoder().decode(l),n=[];c.split(`
 `).forEach((f,t)=>{const i=f.trim();if(i==="")return;let r;try{r=JSON.parse(i)}catch(d){throw new Error(`${s}:${t+1} malformed JSON: ${d.message}`)}if(r===null||typeof r!="object"||Array.isArray(r))throw new Error(`${s}:${t+1} not a JSON object: ${i}`);n.push(r)});const o=[],e=new Set;for(const f of n)for(const t of Object.keys(f))e.has(t)||(e.add(t),o.push(t));return{rows:n,columns:o}},serialize(l,s){const c=l.map(n=>{if(!s)return JSON.stringify(n);const o={};for(const e of s)a(o,e,j(n,e)??null);for(const e of Object.keys(n))Object.hasOwn(o,e)||a(o,e,n[e]??null);return JSON.stringify(o)}).join(`
 `);return new TextEncoder().encode(c+(c.length?`
 `:""))}};export{p as jsonlCodec};
