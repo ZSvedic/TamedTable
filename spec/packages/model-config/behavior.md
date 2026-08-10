@@ -71,7 +71,7 @@ Each `models` entry carries:
 - `id` — the provider's exact API model id (verified against provider docs
   before any change; never invent or guess an id)
 - `name` — short display name
-- `provider` — `gemini` | `openai` | `anthropic` | `openrouter`
+- `provider` — `puter` | `gemini` | `openai` | `anthropic` | `openrouter`
 - `temperature` — whether the model still accepts a `temperature` sampling
   parameter (see `acceptsTemperature` below)
 - `voiceInput` — whether the model accepts audio input
@@ -82,6 +82,7 @@ decides the two roles. The current defaults:
 
 | provider | primary (`model`) | secondary (`cellModel`) |
 |---|---|---|
+| puter | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 | gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 | openai | `gpt-5.5` | `gpt-5.4-mini` |
 | anthropic | `claude-sonnet-4-6` | `claude-haiku-4-5` |
@@ -121,12 +122,12 @@ anthropic, then openrouter.
 
 `defaultModel(provider)` returns the `defaults[provider].primary` id (falling
 back to the provider's first catalogue entry). Currently: `claude-sonnet-4-6`
-for anthropic, `gemini-3.6-flash` for gemini, `gpt-5.5` for openai,
+for anthropic, `gemini-3.6-flash` for puter and gemini, `gpt-5.5` for openai,
 `cohere/north-mini-code:free` for openrouter.
 
 `defaultCellModel(provider)` returns the `defaults[provider].secondary` id
 (falling back to that provider's primary default). Currently: `claude-haiku-4-5`
-for anthropic, `gemini-3.1-flash-lite` for gemini, `gpt-5.4-mini` for openai,
+for anthropic, `gemini-3.1-flash-lite` for puter and gemini, `gpt-5.4-mini` for openai,
 `cohere/north-mini-code:free` for openrouter.
 
 `defaultBatchSize(provider)` returns the `defaults[provider].batchSize`
@@ -145,7 +146,8 @@ openrouter, `undefined` for the rest.
   served by Cerebras never land on the OpenAI provider
 - `openai` for any other id starting with `gpt-`
 
-The return type is `EngineProvider = Provider | 'cerebras'`. OpenRouter is a
+The return type is `EngineProvider = Exclude<Provider, 'puter'> | 'cerebras'`. Puter.js is a full app provider that reuses Gemini model ids through
+Puter.js rather than the engine model-id router. OpenRouter is a
 full app provider — chooser card, catalogue entry, `defaults` row, resolved
 by `resolveConfig`; the engine routes its ids to OpenRouter's OpenAI-compatible
 endpoint. Cerebras stays **bench-only**: the engine routes its ids the same
@@ -163,8 +165,7 @@ marked `true` (so dated aliases still match) and `false` for everything else —
 including unknown ids, so new models default to the safe no-temperature path.
 The headless engine calls it to decide whether to send `temperature: 0`.
 
-`keyFor(config)` returns the API key for `config.provider` — `geminiKey` when
-the provider is gemini, `openaiKey` when openai, `openrouterKey` when
+`keyFor(config)` returns the API key for `config.provider` — `geminiKey` when the provider is gemini, `openaiKey` when openai, `openrouterKey` when
 openrouter, otherwise `anthropicKey` — or
 null when that provider's key is unset. Every surface that needs "the key for
 the active provider" (the CLI, the web controller) uses this one helper so the
@@ -209,9 +210,10 @@ headless runner. The help text mentions `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 
 ## Model chooser component
 
-`ModelChooser` is the provider accordion UI: four cards — Google, OpenAI,
-Anthropic, OpenRouter — each with an API-key field (masked, with an eye toggle
-to reveal it). **The user picks a provider, not individual models.** Each expanded card
+`ModelChooser` is the provider accordion UI: five cards — Puter.js, Google, OpenAI,
+Anthropic, OpenRouter. Puter.js shows the official blue-and-white Puter logo in
+its `Sign in / Register` button, plus a Test button; the other cards show an
+API-key field (masked, with an eye toggle to reveal it). **The user picks a provider, not individual models.** Each expanded card
 shows that provider's two fixed defaults **read-only** — a Primary row (the
 patch-turn model, which carries voice input) and a Secondary row (the per-row
 cell model) — each with its model id and per-Mtok price (`$in in / $out out`).
@@ -300,7 +302,8 @@ plays that role and `resolveConfig` renders the resulting config live.
 
 The demo (`demo.html` + `demo.tsx`, deployed under `/demos/model-config/`)
 mounts the real `ModelChooser` over plain React state and shows the
-`resolveConfig` result live. Two behaviors beyond the chooser itself:
+`resolveConfig` result live. With no stored provider it starts on Google
+(`gemini`). Two behaviors beyond the chooser itself:
 
 - **Shared persistence.** On load the demo seeds its state from
   `readStoredConfig()` and writes every change back — the same localStorage

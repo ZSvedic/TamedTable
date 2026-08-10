@@ -105,6 +105,31 @@ async function callOpenRouter(key: string, model: string, content: unknown): Pro
   return text;
 }
 
+interface PuterGlobal {
+  ai?: {
+    chat?: (prompt: string, options?: { model?: string }) => Promise<unknown>;
+  };
+}
+
+function puterText(data: unknown): string {
+  if (typeof data === 'string') return data.trim();
+  if (data && typeof data === 'object') {
+    const maybe = data as { text?: unknown; message?: { content?: unknown } };
+    if (typeof maybe.text === 'string') return maybe.text.trim();
+    if (typeof maybe.message?.content === 'string') return maybe.message.content.trim();
+  }
+  return '';
+}
+
+async function callPuter(model: string, text: string): Promise<string> {
+  const puter = (globalThis as { puter?: PuterGlobal }).puter;
+  const chat = puter?.ai?.chat;
+  if (!chat) throw new Error('Puter.js is not loaded.');
+  const out = puterText(await chat(text, { model }));
+  if (!out) throw new Error('Puter.js returned no text.');
+  return out;
+}
+
 async function callAnthropic(key: string, model: string, text: string): Promise<string> {
   const data = (await post(
     'https://api.anthropic.com/v1/messages',
@@ -124,6 +149,7 @@ async function callAnthropic(key: string, model: string, text: string): Promise<
 
 /** One real completion round trip to the resolved provider/model. */
 export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise<string> {
+  if (cfg.provider === 'puter') return callPuter(cfg.model, text);
   const key = keyFor(cfg);
   if (cfg.provider === 'gemini') return callGemini(key, cfg.model, [{ text }]);
   if (cfg.provider === 'openai') return callOpenAI(key, cfg.model, text);
@@ -139,6 +165,9 @@ export async function sendVoicePrompt(cfg: ResolvedConfig, audio: Blob): Promise
   // Gemini accepts base64 WAV; MediaRecorder output (webm/opus or mp4/aac) is
   // re-encoded so the format is consistent.
   const wav = toBase64(await blobToWavBytes(audio));
+  if (cfg.provider === 'puter') {
+    throw new Error('Puter.js voice input is not wired yet.');
+  }
   if (cfg.provider !== 'gemini') {
     throw new Error(`${cfg.provider} models do not support voice input.`);
   }
