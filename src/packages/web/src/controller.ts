@@ -118,7 +118,7 @@ export class WebController implements ControllerHost {
   keyTest: KeyTest | null = null;
   /** What each provider's key field currently holds. Typing moves the draft;
    *  the config only changes when the field is left (see ConfigManager). */
-  keyDrafts: Record<Provider, string> = { puter: '', gemini: '', openai: '', anthropic: '', openrouter: '' };
+  keyDrafts: Record<Provider, string> = { gemini: '', openai: '', anthropic: '', openrouter: '' };
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or
@@ -617,7 +617,6 @@ export class WebController implements ControllerHost {
   setKeyDraft(provider: Provider, value: string): void { this.settingsMgr.setKeyDraft(provider, value); }
   /** The user left a key field (or pressed Enter) — saves the draft. */
   commitKeyDraft(provider: Provider): Promise<void> { return this.settingsMgr.commitKeyDraft(provider); }
-  signInPuter(): Promise<void> { return this.settingsMgr.signInPuter(); }
   /** #ProviderSelect — run the Settings Test button's key check. */
   testKey(): Promise<void> { return this.settingsMgr.testKey(); }
   /** Whether there is a key to test (an empty field disables the button). */

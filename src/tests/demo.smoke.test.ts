@@ -83,11 +83,6 @@ afterAll(async () => {
 // and wait until the demo script has rendered into #out.
 async function openDemo(name: (typeof DEMOS)[number]) {
   const page = await browser.newPage();
-  // Smoke tests verify the built demo, not Puter's external SDK availability.
-  // Keep them deterministic and offline like the rest of the test suite.
-  await page.route('https://js.puter.com/**', (route) =>
-    route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }),
-  );
   const consoleErrors: string[] = [];
   const failedRequests: string[] = [];
   page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
@@ -183,9 +178,9 @@ describe.skipIf(skip)('demo smoke', () => {
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
-  it('model-config: renders the chooser with Google as the default', async () => {
+  it('model-config: renders the chooser and flips provider on card click', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('gemini');
+    expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('anthropic');
 
     await page.click('[data-mc-card="gemini"]');
     await page.fill('[data-mc-key="gemini"]', 'smoke-test-key');
@@ -214,12 +209,15 @@ describe.skipIf(skip)('demo smoke', () => {
 
   it('model-config: shows the test-call harness, mic only for voice models', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    // Google's default Gemini model supports voice, so the mic is present.
+    // Anthropic default model: no voice support, so no mic.
     expect(await page.isVisible('#tc-input')).toBe(true);
     expect(await page.isVisible('#tc-send')).toBe(true);
     expect(await page.isVisible('#tc-response')).toBe(true);
-    expect(await page.locator('#tc-mic').count()).toBe(1);
+    expect(await page.locator('#tc-mic').count()).toBe(0);
 
+    // Switching to a Gemini model (voiceInput: true) shows the mic.
+    await page.click('[data-mc-card="gemini"]');
+    await page.waitForSelector('#tc-mic');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 });

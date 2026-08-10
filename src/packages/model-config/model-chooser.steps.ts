@@ -88,51 +88,6 @@ When(
 );
 
 Then(
-  'the {string} provider card appears before the {string} provider card',
-  async function (this: object, first: string, second: string) {
-    const labels = await page(this).$$eval('[data-mc-card]', (els) =>
-      els.map((el) => el.textContent ?? ''),
-    );
-    const firstIndex = labels.findIndex((text) => text.includes(first));
-    const secondIndex = labels.findIndex((text) => text.includes(second));
-    assert.ok(firstIndex >= 0, `missing provider card ${first}`);
-    assert.ok(secondIndex >= 0, `missing provider card ${second}`);
-    assert.ok(firstIndex < secondIndex, `${first} should appear before ${second}`);
-  },
-);
-
-
-Then(
-  'the {string} card shows a {string} button',
-  async function (this: object, provider: string, label: string) {
-    const p = page(this);
-    const cardBody = provider === 'puter' ? '[data-mc-card="puter"] + div' : `[data-mc-card="${provider}"] + div`;
-    await expectText(p, cardBody, label);
-  },
-);
-
-Then('the {string} card shows the official Puter logo', async function (this: object, provider: string) {
-  const logo = page(this).locator(`[data-mc-card="${provider}"] + div [data-mc-puter-logo]`);
-  await logo.waitFor({ state: 'visible' });
-  assert.match(await logo.getAttribute('src') ?? '', /puter-logo.*\.png$/);
-});
-
-Then(
-  'the {string} card shows a Test button',
-  async function (this: object, provider: string) {
-    await page(this).waitForSelector(`[data-mc-test="${provider}"]`, { timeout: 5_000 });
-  },
-);
-
-Then(
-  'the {string} card does not show an API-key field',
-  async function (this: object, provider: string) {
-    const fields = await page(this).$$(`[data-mc-key="${provider}"]`);
-    assert.equal(fields.length, 0, `expected ${provider} card not to show an API-key field`);
-  },
-);
-
-Then(
   'the {string} card shows its API-key field and model list',
   async function (this: object, provider: string) {
     const p = page(this);

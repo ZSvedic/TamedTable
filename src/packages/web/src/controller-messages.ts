@@ -7,7 +7,6 @@ import type { RequestDebugInfo } from '@tamedtable/headless';
 export function providerLabel(provider?: string): string {
   return provider === 'gemini' ? 'Google'
     : provider === 'openai' ? 'OpenAI'
-    : provider === 'puter' ? 'Puter.js'
     : provider === 'openrouter' ? 'OpenRouter'
     : 'Anthropic';
 }
