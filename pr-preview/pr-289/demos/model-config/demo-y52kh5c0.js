@@ -17319,6 +17319,7 @@ function ModelChooser(p) {
               children: label
             }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("code", {
+              "data-mc-model-id": "",
               title: id,
               style: {
                 fontSize: 13,
