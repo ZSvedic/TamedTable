@@ -17213,8 +17213,8 @@ var KEY_FIELD = {
   openrouter: "openrouterKey",
   puter: "puterToken"
 };
-function connectedProviders(config) {
-  return Object.keys(KEY_FIELD).filter((p) => (config[KEY_FIELD[p]] ?? "") !== "");
+function connectedProviders(config, order = {}) {
+  return Object.keys(KEY_FIELD).filter((p) => (config[KEY_FIELD[p]] ?? "") !== "").sort((a, b) => (order[a] ?? 0) - (order[b] ?? 0));
 }
 function isProvider(p) {
   return typeof p === "string" && p in KEY_FIELD;
@@ -17432,6 +17432,8 @@ async function verifyKey(provider, key, opts = {}) {
     throw failure(provider, answer);
   if (provider === "gemini") {
     const served = answer.headers.get("x-gemini-service-tier");
+    if (served === null || served === "")
+      return { tier: null };
     return { tier: served === "free" ? "free" : "paid" };
   }
   if (provider === "groq")
@@ -17524,19 +17526,66 @@ function streamRequest(provider, key, modelId) {
     }
   };
 }
-async function readStream(res, clock, started) {
+function dig(value, ...path) {
+  let cur = value;
+  for (const step of path) {
+    if (cur === null || cur === undefined)
+      return;
+    cur = cur[step];
+  }
+  return cur;
+}
+function textAt(value, ...path) {
+  const v = dig(value, ...path);
+  return typeof v === "string" ? v : "";
+}
+function frameHasContent(provider, f) {
+  if (provider === "gemini") {
+    const parts = dig(f, "candidates", 0, "content", "parts");
+    return Array.isArray(parts) && parts.some((p) => textAt(p, "text") !== "" && dig(p, "thought") !== true);
+  }
+  if (provider === "anthropic") {
+    return f["type"] === "content_block_delta" && textAt(f, "delta", "text") !== "";
+  }
+  return textAt(f, "text") !== "" || textAt(f, "choices", 0, "delta", "content") !== "";
+}
+function parseFrame(line) {
+  const trimmed = line.trim();
+  if (trimmed === "")
+    return;
+  const payload = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
+  if (payload === "" || payload === "[DONE]" || !payload.startsWith("{"))
+    return;
+  try {
+    return JSON.parse(payload);
+  } catch {
+    return;
+  }
+}
+async function readStream(res, provider, clock, started) {
   const frames = [];
-  let firstMs = clock();
-  let lastMs = firstMs;
-  let seenChunk = false;
+  let firstMs = started;
+  let lastMs = clock();
+  let streamed = false;
   let buffer = "";
-  const take = (text) => {
-    if (!seenChunk) {
-      firstMs = clock();
-      seenChunk = true;
-    }
+  let pending = "";
+  const take = (text, final) => {
     lastMs = clock();
     buffer += text;
+    pending += text;
+    const lines = pending.split(`
+`);
+    pending = final ? "" : lines.pop() ?? "";
+    for (const line of lines) {
+      const frame = parseFrame(line);
+      if (!frame)
+        continue;
+      frames.push(frame);
+      if (!streamed && frameHasContent(provider, frame)) {
+        firstMs = clock();
+        streamed = true;
+      }
+    }
   };
   if (res.body) {
     const reader = res.body.getReader();
@@ -17545,33 +17594,18 @@ async function readStream(res, clock, started) {
       const { done, value } = await reader.read();
       if (done)
         break;
-      take(decoder.decode(value, { stream: true }));
+      take(decoder.decode(value, { stream: true }), false);
     }
+    take("", true);
   } else {
-    take(await res.text());
-  }
-  if (!seenChunk) {
-    firstMs = started;
-    lastMs = clock();
-  }
-  for (const line of buffer.split(`
-`)) {
-    const trimmed = line.trim();
-    if (trimmed === "" || trimmed === "data: [DONE]")
-      continue;
-    const payload = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
-    if (payload === "" || payload === "[DONE]" || !payload.startsWith("{"))
-      continue;
-    try {
-      frames.push(JSON.parse(payload));
-    } catch {}
+    take(await res.text(), true);
   }
   if (frames.length === 0 && buffer.trim() !== "") {
     try {
       frames.push(JSON.parse(buffer));
     } catch {}
   }
-  return { frames, firstMs, lastMs };
+  return { frames, firstMs, lastMs, streamed };
 }
 async function measureModel(provider, key, modelId, opts = {}) {
   const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
@@ -17584,7 +17618,7 @@ async function measureModel(provider, key, modelId, opts = {}) {
   } catch {
     throw failure(provider, { status: 0, headers: new Headers, body: {} });
   }
-  const { frames, firstMs, lastMs } = await readStream(res, clock, started);
+  const { frames, firstMs, lastMs, streamed } = await readStream(res, provider, clock, started);
   const errFrame = frames.find((f) => f["error"] != null);
   if (res.status < 200 || res.status >= 300 || errFrame) {
     throw failure(provider, { status: res.status, headers: res.headers, body: errFrame ?? {} });
@@ -17598,7 +17632,7 @@ async function measureModel(provider, key, modelId, opts = {}) {
   const streamedSec = totalSec - ttftSec;
   if (outTok === 0 || totalSec <= 0)
     return { ttftSec: 0, tokPerSec: 0 };
-  if (frames.length >= 2 && streamedSec >= STREAMING_SHARE * totalSec) {
+  if (streamed && streamedSec >= STREAMING_SHARE * totalSec) {
     return { ttftSec, tokPerSec: outTok / streamedSec };
   }
   return { ttftSec: 0, tokPerSec: outTok / totalSec };
@@ -17617,9 +17651,10 @@ var PROVIDER_LABEL = {
   openrouter: "OpenRouter API",
   puter: "Puter.js"
 };
-var SUPPORTED_LIST = "Google / OpenAI / Anthropic / OpenRouter / Groq / Puter.js";
+var SUPPORTED_LIST = "Google / OpenAI / Anthropic / OpenRouter / Groq";
 var v = (name, fallback) => `var(--mc-${name}, ${fallback})`;
 var ink = v("ink", "#1c1f23");
+var inkOnInk = v("ink-on-ink", "#ffffff");
 var ink2 = v("ink2", "#4a5260");
 var ink3 = v("ink3", "#6b7280");
 var surface = v("surface", "#ffffff");
@@ -17644,13 +17679,15 @@ function money(usd) {
 function costLine(row) {
   const parts = [];
   if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
-    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tokens`);
+    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tok`);
   }
   if (row.speed === "measuring")
     parts.push("measuring…");
+  else if (row.speed === "failed")
+    parts.push("speed unknown");
   else if (row.speed !== null)
     parts.push(`~${estimateSecPer1kTok(row.speed).toFixed(1)} sec`);
-  return parts.length > 0 ? parts.join(" · ") : null;
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 var refreshIcon = /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
   width: 15,
@@ -17737,15 +17774,15 @@ function ModelChooser({
           children: [
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
               style: {
-                width: 68,
+                width: 104,
                 flex: "0 0 auto",
                 fontFamily: fontUi,
                 fontSize: 12,
                 fontWeight: 650,
                 whiteSpace: "nowrap",
-                color: role === "primary" ? ink2 : ink3
+                color: ink2
               },
-              children: role === "primary" ? "Primary" : "Secondary"
+              children: role === "primary" ? "Primary model" : "Secondary model"
             }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
               "data-mc-model-id": row.model,
@@ -17766,11 +17803,9 @@ function ModelChooser({
         cost !== null && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
           "data-mc-cost": "",
           style: {
-            paddingLeft: 76,
             fontFamily: fontUi,
             fontSize: 12,
-            color: ink3,
-            whiteSpace: "nowrap"
+            color: ink3
           },
           children: cost
         }, undefined, false, undefined, this)
@@ -17998,9 +18033,9 @@ function ModelChooser({
                   flex: "0 0 auto",
                   padding: "10px 18px",
                   borderRadius: radius,
-                  border: `1px solid ${canAdd ? accent : line}`,
-                  background: canAdd ? accent : surface3,
-                  color: canAdd ? "#fff" : ink3,
+                  border: `1px solid ${canAdd ? ink : line}`,
+                  background: canAdd ? ink : surface3,
+                  color: canAdd ? inkOnInk : ink3,
                   fontFamily: fontUi,
                   fontSize: 13,
                   fontWeight: 600,
@@ -18050,8 +18085,14 @@ function ModelChooser({
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
                 style: { fontFamily: fontUi, fontSize: 13, lineHeight: 1.5, color: ink2 },
-                children: "One Puter.js account reaches models from every vendor."
-              }, undefined, false, undefined, this),
+                children: [
+                  "$25 in API credits for ",
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("em", {
+                    children: "any model"
+                  }, undefined, false, undefined, this),
+                  " on Puter.js sign up."
+                ]
+              }, undefined, true, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
                 type: "button",
                 "data-mc-puter": "",
@@ -18131,16 +18172,52 @@ function writeStoredConfig(c) {
     localStorage.setItem(CONFIG_STORAGE, JSON.stringify(c));
   } catch {}
 }
-function readStoredProbes() {
+var PROBE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+function stillTrue(m, wanted, now) {
+  if (m == null)
+    return m;
+  if (m.model !== wanted)
+    return;
+  return now - m.at > PROBE_TTL_MS ? undefined : m;
+}
+function readStoredProbes(now = Date.now()) {
   try {
     const localStorage = store();
     if (localStorage === undefined)
       return {};
     const raw = localStorage.getItem(PROBE_STORAGE);
-    return raw ? JSON.parse(raw) : {};
+    if (!raw)
+      return {};
+    const stored = JSON.parse(raw);
+    const kept = {};
+    for (const id of Object.keys(stored)) {
+      const probe = stored[id];
+      if (!probe || !(id in DEFAULTS))
+        continue;
+      kept[id] = {
+        ...probe,
+        primary: stillTrue(probe.primary, defaultModel(id), now),
+        secondary: stillTrue(probe.secondary, defaultCellModel(id), now)
+      };
+    }
+    return kept;
   } catch {
     return {};
   }
+}
+function speedOf(reading, measuring) {
+  if (reading === undefined)
+    return measuring ? "measuring" : null;
+  return reading === null ? "failed" : reading;
+}
+function connectedOrder(probes) {
+  const order = {};
+  for (const id of Object.keys(probes)) {
+    const at = probes[id]?.connectedAt;
+    if (at !== undefined)
+      order[id] = at;
+  }
+  return order;
 }
 function writeStoredProbes(p) {
   try {
@@ -18355,13 +18432,17 @@ function Demo() {
   ]);
   const measureBoth = async (provider, key) => {
     setMeasuring((m) => ({ ...m, [provider]: true }));
-    setProbes((p) => ({ ...p, [provider]: { tier: p[provider]?.tier ?? null } }));
+    setProbes((p) => ({
+      ...p,
+      [provider]: { tier: p[provider]?.tier ?? null, connectedAt: p[provider]?.connectedAt }
+    }));
     const stub = stubProbe();
     for (const role of ["primary", "secondary"]) {
       const modelId = role === "primary" ? defaultModel(provider) : defaultCellModel(provider);
       try {
         const measure = await measureModel(provider, key, modelId, stub);
-        setProbes((p) => ({ ...p, [provider]: { ...p[provider], [role]: measure } }));
+        const reading = { ...measure, model: modelId, at: Date.now() };
+        setProbes((p) => ({ ...p, [provider]: { ...p[provider], [role]: reading } }));
       } catch {
         setProbes((p) => ({ ...p, [provider]: { ...p[provider], [role]: null } }));
       }
@@ -18383,7 +18464,10 @@ function Demo() {
     try {
       const { tier } = await verifyKey(provider, key, stubProbe());
       setStored((s) => ({ ...s, provider, [KEY_FIELD[provider]]: key }));
-      setProbes((p) => ({ ...p, [provider]: { tier } }));
+      setProbes((p) => ({
+        ...p,
+        [provider]: { tier, connectedAt: p[provider]?.connectedAt ?? Date.now() }
+      }));
       setKeyInput("");
       measureBoth(provider, key);
     } catch (e) {
@@ -18396,7 +18480,7 @@ function Demo() {
     setStored((s) => {
       const next = { ...s, [KEY_FIELD[p]]: null };
       if (s.provider === p) {
-        const left = connectedProviders(resolveConfig({}, next));
+        const left = connectedProviders(resolveConfig({}, next), connectedOrder(probes));
         next.provider = left[left.length - 1] ?? "gemini";
       }
       return next;
@@ -18406,15 +18490,14 @@ function Demo() {
   const roleRow = (p, role) => {
     const model = role === "primary" ? defaultModel(p) : defaultCellModel(p);
     const priced = modelFor(p, model);
-    const speed = probes[p]?.[role];
     return {
       model,
       inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
       outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
-      speed: speed === undefined ? measuring[p] ? "measuring" : null : speed
+      speed: speedOf(probes[p]?.[role], measuring[p] ?? false)
     };
   };
-  const connected = connectedProviders(resolved).map((p) => ({
+  const connected = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
     voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
