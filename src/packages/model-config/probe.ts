@@ -26,8 +26,9 @@ export interface ProbeOptions {
 /** How fast a model is, split into the two things a call actually spends time
  *  on. Price is never measured — it comes from the catalogue. */
 export interface ModelMeasure {
-  /** Seconds until the first streamed chunk: getting the model going. 0 when
-   *  the provider buffered the whole reply and there was nothing to separate. */
+  /** Seconds until the first streamed frame carrying text: getting the model
+   *  going. 0 when the provider buffered the whole reply and there was nothing
+   *  to separate. */
   ttftSec: number;
   /** Output tokens per second once generation is under way. */
   tokPerSec: number;
@@ -258,8 +259,11 @@ export async function verifyKey(
 
   if (provider === 'gemini') {
     // `free` when the key's project has no billing enabled, `standard` (or
-    // `priority`) when it does.
+    // `priority`) when it does — and absent where the tier concept doesn't
+    // apply. Silence is not "paid": that is the one word that tells a
+    // free-tier user not to worry about the bill.
     const served = answer.headers.get('x-gemini-service-tier');
+    if (served === null || served === '') return { tier: null };
     return { tier: served === 'free' ? 'free' : 'paid' };
   }
   // Neither OpenAI nor Anthropic has a free tier; Groq publishes no signal.
@@ -361,23 +365,103 @@ function streamRequest(
   };
 }
 
-/** Read an SSE body, timing the first chunk and the last, and collecting every
- *  `data:` frame as parsed JSON. A body that arrives in one piece — a buffering
- *  provider, or a stubbed Response in a test — simply yields one frame with
- *  first and last times equal. */
-async function readStream(
-  res: Response, clock: () => number, started: number,
-): Promise<{ frames: Record<string, unknown>[]; firstMs: number; lastMs: number }> {
-  const frames: Record<string, unknown>[] = [];
-  let firstMs = clock();
-  let lastMs = firstMs;
-  let seenChunk = false;
-  let buffer = '';
+/** Read a nested field out of a streamed frame. Every hop is an `unknown` that
+ *  may not be there — frames are provider-shaped JSON, not a type we own. */
+function dig(value: unknown, ...path: (string | number)[]): unknown {
+  let cur = value;
+  for (const step of path) {
+    if (cur === null || cur === undefined) return undefined;
+    cur = (cur as Record<string | number, unknown>)[step];
+  }
+  return cur;
+}
 
-  const take = (text: string): void => {
-    if (!seenChunk) { firstMs = clock(); seenChunk = true; }
+/** A non-empty string at that path, or ''. */
+function textAt(value: unknown, ...path: (string | number)[]): string {
+  const v = dig(value, ...path);
+  return typeof v === 'string' ? v : '';
+}
+
+/**
+ * Whether a streamed frame carries generated text — which is what the
+ * first-token clock is timing. A stream opens with frames that are not output:
+ * a role header, a `message_start`, a keep-alive ping, a usage report, and on
+ * a thinking model however many reasoning deltas it needs before it says
+ * anything. Stopping the clock on those would time the cheapest byte on the
+ * wire and make a slow thinker look instant.
+ */
+function frameHasContent(provider: Provider, f: Record<string, unknown>): boolean {
+  if (provider === 'gemini') {
+    const parts = dig(f, 'candidates', 0, 'content', 'parts');
+    // `thought: true` marks a reasoning part: text on the wire, not output on
+    // the screen.
+    return Array.isArray(parts)
+      && parts.some((p) => textAt(p, 'text') !== '' && dig(p, 'thought') !== true);
+  }
+  if (provider === 'anthropic') {
+    return f['type'] === 'content_block_delta' && textAt(f, 'delta', 'text') !== '';
+  }
+  // Puter streams NDJSON `{"type":"text","text":"…"}`; every OpenAI-compatible
+  // host streams `choices[].delta.content`. Accept either — the shapes don't
+  // collide, so one branch serves both.
+  return textAt(f, 'text') !== '' || textAt(f, 'choices', 0, 'delta', 'content') !== '';
+}
+
+/** One `data:` line (or one bare NDJSON line) as parsed JSON, or undefined for
+ *  the blanks, the `[DONE]` sentinel, and half a frame at a chunk boundary. */
+function parseFrame(line: string): Record<string, unknown> | undefined {
+  const trimmed = line.trim();
+  if (trimmed === '') return undefined;
+  // SSE frames are `data: {…}`; Puter streams bare NDJSON objects.
+  const payload = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed;
+  if (payload === '' || payload === '[DONE]' || !payload.startsWith('{')) return undefined;
+  try {
+    return JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Read a streaming body, collecting every frame and timing two moments: when
+ * the first frame carrying text arrived, and when the last byte did. Frames are
+ * parsed **as they arrive** rather than from the finished buffer, because the
+ * first of those two moments cannot be recovered afterwards.
+ *
+ * A body that arrives in one piece — a buffering provider, or a stubbed
+ * Response in a test — yields its frames with `streamed` false or with the two
+ * times equal, and the caller falls back to a plain average.
+ */
+async function readStream(
+  res: Response, provider: Provider, clock: () => number, started: number,
+): Promise<{
+  frames: Record<string, unknown>[]; firstMs: number; lastMs: number; streamed: boolean;
+}> {
+  const frames: Record<string, unknown>[] = [];
+  let firstMs = started;
+  let lastMs = clock();
+  let streamed = false;
+  let buffer = '';
+  let pending = '';
+
+  const take = (text: string, final: boolean): void => {
     lastMs = clock();
     buffer += text;
+    pending += text;
+    const lines = pending.split('\n');
+    // Hold the trailing partial line back for the next chunk — a frame split
+    // across a chunk boundary parses as nothing, and the last one to arrive is
+    // usually the usage report.
+    pending = final ? '' : lines.pop() ?? '';
+    for (const line of lines) {
+      const frame = parseFrame(line);
+      if (!frame) continue;
+      frames.push(frame);
+      if (!streamed && frameHasContent(provider, frame)) {
+        firstMs = clock();
+        streamed = true;
+      }
+    }
   };
 
   if (res.body) {
@@ -386,27 +470,15 @@ async function readStream(
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
-      take(decoder.decode(value, { stream: true }));
+      take(decoder.decode(value, { stream: true }), false);
     }
+    take('', true);
   } else {
-    take(await res.text());
+    take(await res.text(), true);
   }
-  if (!seenChunk) { firstMs = started; lastMs = clock(); }
 
-  for (const line of buffer.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed === '' || trimmed === 'data: [DONE]') continue;
-    // SSE frames are `data: {…}`; Puter streams bare NDJSON objects.
-    const payload = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed;
-    if (payload === '' || payload === '[DONE]' || !payload.startsWith('{')) continue;
-    try {
-      frames.push(JSON.parse(payload) as Record<string, unknown>);
-    } catch {
-      // A partial frame at the edge of a chunk boundary — skip it; the usage
-      // frame arrives whole.
-    }
-  }
-  // A non-SSE body (a stub, or an error response) is still one JSON object.
+  // A non-SSE body (a stub, or an error response) is still one JSON object,
+  // possibly pretty-printed across the lines the loop above discarded.
   if (frames.length === 0 && buffer.trim() !== '') {
     try {
       frames.push(JSON.parse(buffer) as Record<string, unknown>);
@@ -414,24 +486,24 @@ async function readStream(
       // Not JSON at all — no usage to read, handled by the caller.
     }
   }
-  return { frames, firstMs, lastMs };
+  return { frames, firstMs, lastMs, streamed };
 }
 
 /**
  * Measure one model's speed with a single capped streaming call. Price is not
  * measured — it comes from the catalogue.
  *
- *   ttftSec   = seconds until the first streamed chunk   (getting going)
- *   tokPerSec = outTok / (totalSec − ttftSec)            (generating)
+ *   ttftSec   = seconds until the first frame carrying text  (getting going)
+ *   tokPerSec = outTok / (totalSec − ttftSec)               (generating)
  *
  * Splitting them is what lets a 300-token sample extrapolate honestly: the
  * startup cost is paid once per call whatever its length, so folding it into a
  * per-token average makes short answers look slow. Measured against live
  * providers, dividing a whole round trip by its tokens inverted the ranking.
  *
- * When the reply arrives buffered — under a fifth of the call spent streaming —
- * there is no separable first-token time, so the whole call counts as
- * generation and the estimate becomes a plain average.
+ * When the reply arrives buffered — no frame carried text, or under a fifth of
+ * the call was spent streaming — there is no separable first-token time, so the
+ * whole call counts as generation and the estimate becomes a plain average.
  */
 export async function measureModel(
   provider: Provider,
@@ -450,7 +522,7 @@ export async function measureModel(
   } catch {
     throw failure(provider, { status: 0, headers: new Headers(), body: {} });
   }
-  const { frames, firstMs, lastMs } = await readStream(res, clock, started);
+  const { frames, firstMs, lastMs, streamed } = await readStream(res, provider, clock, started);
 
   // An error answer is a single JSON frame, not a stream.
   const errFrame = frames.find((f) => f['error'] != null);
@@ -470,7 +542,7 @@ export async function measureModel(
   const streamedSec = totalSec - ttftSec;
   if (outTok === 0 || totalSec <= 0) return { ttftSec: 0, tokPerSec: 0 };
 
-  if (frames.length >= 2 && streamedSec >= STREAMING_SHARE * totalSec) {
+  if (streamed && streamedSec >= STREAMING_SHARE * totalSec) {
     return { ttftSec, tokPerSec: outTok / streamedSec };
   }
   return { ttftSec: 0, tokPerSec: outTok / totalSec };

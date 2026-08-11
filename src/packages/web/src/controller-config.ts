@@ -15,7 +15,7 @@ import {
   type Provider,
   type ResolvedConfig,
 } from '@tamedtable/model-config';
-import { writeStoredConfig, writeStoredProbes } from '@tamedtable/model-config/storage';
+import { writeStoredConfig, writeStoredProbes, connectedOrder } from '@tamedtable/model-config/storage';
 import { verifyKey, measureModel } from '@tamedtable/model-config/probe';
 import { pageSizeFor } from './controller.ts';
 import { userFacingMessage } from './controller-messages.ts';
@@ -32,9 +32,10 @@ export class ConfigManager {
     return keyFor(this.host.config);
   }
 
-  /** Every provider with a key — the chooser's card list. */
+  /** Every provider with a key — the chooser's card list, in the order the
+   *  user added them (the `connectedAt` stamps kept beside the measurements). */
   connected(): Provider[] {
-    return connectedProviders(this.host.config);
+    return connectedProviders(this.host.config, connectedOrder(this.host.probes));
   }
 
   // ── The connect flow ──────────────────────────────────────────────────────
@@ -110,7 +111,10 @@ export class ConfigManager {
    *  that provider. Shared by the pasted-key path and the Puter sign-in. */
   private async connect(provider: Provider, key: string): Promise<void> {
     const { tier } = await verifyKey(provider, key, { fetch: this.host.opts.fetch });
-    this.host.probes = { ...this.host.probes, [provider]: { tier } };
+    // Re-adding keeps the original connected time, so fixing an expired key
+    // does not send the card to the bottom of the list.
+    const connectedAt = this.host.probes[provider]?.connectedAt ?? Date.now();
+    this.host.probes = { ...this.host.probes, [provider]: { tier, connectedAt } };
     this.host.keyInput = '';
     // A credential for an already-connected provider replaces it in place: the
     // card has no key field, so the alternative is deleting it to fix a key.
@@ -129,10 +133,14 @@ export class ConfigManager {
   async refreshProvider(provider: Provider): Promise<void> {
     const key = (this.host.config[KEY_FIELD[provider]] as string | null) ?? '';
     if (key === '' || this.host.measuring[provider]) return;
-    // Drop the old readings first, so both rows go back to "measuring…".
+    // Drop the old readings first, so both rows go back to "measuring…". The
+    // tier and the connected time are not measurements and stay put.
     this.host.probes = {
       ...this.host.probes,
-      [provider]: { tier: this.host.probes[provider]?.tier ?? null },
+      [provider]: {
+        tier: this.host.probes[provider]?.tier ?? null,
+        connectedAt: this.host.probes[provider]?.connectedAt,
+      },
     };
     await this.measure(provider, key);
   }
@@ -153,7 +161,10 @@ export class ConfigManager {
       }
       const probe = this.host.probes[provider];
       if (!probe) return; // Removed while measuring.
-      this.host.probes = { ...this.host.probes, [provider]: { ...probe, [role]: measure } };
+      // Stamped with the model and the moment, so a default change or a week
+      // gone by retires the reading instead of relabelling it.
+      const reading = measure && { ...measure, model: modelId, at: Date.now() };
+      this.host.probes = { ...this.host.probes, [provider]: { ...probe, [role]: reading } };
       this.host.notify();
     }
     this.host.measuring = { ...this.host.measuring, [provider]: false };
@@ -178,7 +189,12 @@ export class ConfigManager {
   async removeProvider(provider: Provider): Promise<void> {
     const cleared: Partial<ResolvedConfig> = { [KEY_FIELD[provider]]: null };
     if (this.host.config.provider === provider) {
-      const left = connectedProviders(resolveConfig({}, { ...this.host.config, ...cleared }));
+      // "The last remaining card" is the last one on screen, so the fallback
+      // reads the same order the user is looking at.
+      const left = connectedProviders(
+        resolveConfig({}, { ...this.host.config, ...cleared }),
+        connectedOrder(this.host.probes),
+      );
       const next = left[left.length - 1] ?? 'gemini';
       cleared.provider = next;
       cleared.model = defaultModel(next);

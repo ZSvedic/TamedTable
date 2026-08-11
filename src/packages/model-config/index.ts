@@ -193,13 +193,24 @@ export const KEY_FIELD = {
   puter:      'puterToken',
 } as const satisfies Record<Provider, keyof ResolvedConfig>;
 
-/** Every provider whose key is set, in catalogue order. A connected provider
- *  *is* a provider with a key — connecting stores nothing of its own, so the
- *  chooser's card list is derived from the config rather than tracked beside
- *  it. */
-export function connectedProviders(config: ResolvedConfig): Provider[] {
+/** Every provider whose key is set. A connected provider *is* a provider with
+ *  a key — connecting stores nothing of its own, so the chooser's card list is
+ *  derived from the config rather than tracked beside it.
+ *
+ *  The design orders cards by when they were added, which the config alone
+ *  cannot say, so `order` is an optional `Provider → timestamp` map (the
+ *  `connectedAt` values from the probe blob — see storage.ts `connectedOrder`).
+ *  A provider missing from it sorts as 0, and `sort` is stable, so untimed
+ *  providers keep catalogue order among themselves and sit ahead of the timed
+ *  ones — which is what a config written before the timestamps existed needs.
+ *  Callers that only want "which providers have a key" pass no map. */
+export function connectedProviders(
+  config: ResolvedConfig,
+  order: Partial<Record<Provider, number>> = {},
+): Provider[] {
   return (Object.keys(KEY_FIELD) as Provider[])
-    .filter((p) => (config[KEY_FIELD[p]] ?? '') !== '');
+    .filter((p) => (config[KEY_FIELD[p]] ?? '') !== '')
+    .sort((a, b) => (order[a] ?? 0) - (order[b] ?? 0));
 }
 
 // ── resolveConfig ──────────────────────────────────────────────────────────

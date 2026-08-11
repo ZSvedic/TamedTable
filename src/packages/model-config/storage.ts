@@ -8,6 +8,7 @@
 // doesn't, migrate the old value to { anthropicKey: oldValue } on first read
 // and remove the old key.
 
+import { DEFAULTS, defaultCellModel, defaultModel } from './index.ts';
 import type { Provider, ResolvedConfig, Tier } from './index.ts';
 import type { ModelMeasure } from './probe.ts';
 
@@ -88,26 +89,85 @@ export function clearStoredConfig(): void {
 // re-measure rather than a working setup. That is why it lives in its own blob
 // — the config blob stays exactly what the engine is built from.
 
+/** How long a speed reading is worth showing. A provider that was slow last
+ *  month is not a provider that is slow now. */
+export const PROBE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** A measurement plus what it was taken from. Both can go stale underneath it
+ *  — a `models.json` default change retires the model, and time retires the
+ *  numbers — so both are recorded and both are checked on read. */
+export interface StoredMeasure extends ModelMeasure {
+  /** The model id the numbers came from. */
+  model: string;
+  /** Milliseconds-since-epoch of the measurement. */
+  at: number;
+}
+
 /** One provider's card contents, beyond what the config already says. A role
  *  is absent while it has not been measured, null when its measurement failed,
  *  and the numbers once they are in. */
 export interface ProviderProbe {
   tier: Tier;
-  primary?: ModelMeasure | null;
-  secondary?: ModelMeasure | null;
+  /** Milliseconds-since-epoch the key was connected — what the card order is
+   *  sorted by. Absent in blobs written before card order was tracked. */
+  connectedAt?: number;
+  primary?: StoredMeasure | null;
+  secondary?: StoredMeasure | null;
 }
 
 export type StoredProbes = Partial<Record<Provider, ProviderProbe>>;
 
-export function readStoredProbes(): StoredProbes {
+/** Keep a reading only while it still describes the model the card names and
+ *  is recent enough to mean anything. Anything else reads as unmeasured, which
+ *  the card renders as no `~Z sec` tail at all rather than as a wrong one. */
+function stillTrue(
+  m: StoredMeasure | null | undefined, wanted: string, now: number,
+): StoredMeasure | null | undefined {
+  if (m == null) return m;
+  if (m.model !== wanted) return undefined;
+  return now - m.at > PROBE_TTL_MS ? undefined : m;
+}
+
+/** Read the cache, dropping readings that can no longer be trusted. The tier
+ *  and `connectedAt` survive — they are not measurements and do not go stale,
+ *  so a card whose numbers expired is still a card. `now` is injectable so a
+ *  scenario can age a reading without waiting a week. */
+export function readStoredProbes(now: number = Date.now()): StoredProbes {
   try {
     const localStorage = store();
     if (localStorage === undefined) return {};
     const raw = localStorage.getItem(PROBE_STORAGE);
-    return raw ? (JSON.parse(raw) as StoredProbes) : {};
+    if (!raw) return {};
+    const stored = JSON.parse(raw) as StoredProbes;
+    const kept: StoredProbes = {};
+    for (const id of Object.keys(stored) as Provider[]) {
+      const probe = stored[id];
+      // A provider this build has no defaults for — written by a newer build,
+      // or dropped since. There is no current model to compare against, so
+      // there is nothing to show either.
+      if (!probe || !(id in DEFAULTS)) continue;
+      kept[id] = {
+        ...probe,
+        primary: stillTrue(probe.primary, defaultModel(id), now),
+        secondary: stillTrue(probe.secondary, defaultCellModel(id), now),
+      };
+    }
+    return kept;
   } catch {
     return {};
   }
+}
+
+/** The `connectedProviders` order map, read out of the probe blob: card order
+ *  is display, so the timestamps live with the measurements rather than in the
+ *  config the engine is built from. */
+export function connectedOrder(probes: StoredProbes): Partial<Record<Provider, number>> {
+  const order: Partial<Record<Provider, number>> = {};
+  for (const id of Object.keys(probes) as Provider[]) {
+    const at = probes[id]?.connectedAt;
+    if (at !== undefined) order[id] = at;
+  }
+  return order;
 }
 
 export function writeStoredProbes(p: StoredProbes): void {

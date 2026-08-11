@@ -29,6 +29,8 @@ import {
   readStoredProbes, writeStoredProbes, clearStoredProbes,
 } from './storage.ts';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 interface ModelConfigCtx {
   resolved?: ResolvedConfig;
   stored?: Partial<ResolvedConfig>;
@@ -40,6 +42,8 @@ interface ModelConfigCtx {
   boolResult?: boolean;
   numberResult?: number | undefined;
   numberResultSet?: boolean;
+  /** The card order map a connectedProviders scenario is building up. */
+  order?: Partial<Record<Provider, number>>;
   /** The stub provider API a probe scenario installed, and what it saw. */
   stub?: StubApi;
   tier?: Tier;
@@ -405,11 +409,22 @@ Given(
   },
 );
 
+Given(
+  '{word} was connected at {int}',
+  function (this: ModelConfigWorld, provider: string, at: number) {
+    const c = ctx(this);
+    c.order = { ...c.order, [provider as Provider]: at };
+  },
+);
+
 // The empty string means "no providers connected" — a comma list otherwise.
+// With no `was connected at` step the order map is empty, which is the
+// catalogue-order case.
 Then(
   'connectedProviders returns {string}',
   function (this: ModelConfigWorld, expected: string) {
-    assert.equal(connectedProviders(ctx(this).resolved!).join(', '), expected);
+    const c = ctx(this);
+    assert.equal(connectedProviders(c.resolved!, c.order).join(', '), expected);
   },
 );
 
@@ -436,9 +451,31 @@ interface StubSpec {
   unreachable?: boolean;
   /** Provider error code carried in the body (e.g. OpenAI's insufficient_quota). */
   code?: string;
-  /** Streaming script: how many SSE frames, and when the first and last land. */
-  stream?: { frames: number; firstSec: number; lastSec: number; outTok: number };
+  /** Streaming script: how many SSE frames, when the first and last land, and
+   *  how many leading frames carry no text (a role header, a ping, thinking
+   *  deltas) — the ones the first-token clock has to see through. */
+  stream?: {
+    frames: number; firstSec: number; lastSec: number; outTok: number; silent?: number;
+  };
 }
+
+/** A frame carrying generated text, spelled every way at once — Gemini's
+ *  parts, Anthropic's content_block_delta, and the OpenAI-compatible delta —
+ *  so one stub serves whichever parser the provider under test uses. */
+const TEXT_FRAME = {
+  candidates: [{ content: { parts: [{ text: 'x' }] } }],
+  type: 'content_block_delta',
+  delta: { text: 'x' },
+  choices: [{ delta: { content: 'x' } }],
+};
+
+/** A frame carrying no output: a ping, an opening role header, and a Gemini
+ *  reasoning part — which is text on the wire and not output on the screen. */
+const SILENT_FRAME = {
+  candidates: [{ content: { parts: [{ text: 'hmm', thought: true }] } }],
+  type: 'ping',
+  choices: [{ delta: { role: 'assistant' } }],
+};
 
 /** One stub standing in for every provider. The body carries all three usage
  *  shapes at once (Gemini's, Anthropic's, and the OpenAI-compatible one) so a
@@ -458,7 +495,7 @@ function stubApi(spec: StubSpec): StubApi {
       // clock advances as each one is read — so a scenario controls exactly
       // when the first and last tokens land without waiting for real time.
       if (spec.stream && status < 400) {
-        const { frames, firstSec, lastSec, outTok: streamOut } = spec.stream;
+        const { frames, firstSec, lastSec, outTok: streamOut, silent = 0 } = spec.stream;
         const usage = {
           usageMetadata: { promptTokenCount: 100, candidatesTokenCount: streamOut },
           usage: {
@@ -466,8 +503,12 @@ function stubApi(spec: StubSpec): StubApi {
             prompt_tokens: 100, completion_tokens: streamOut,
           },
         };
+        // Last frame is the usage report (no text); the `silent` leading ones
+        // carry no text either; everything between is generated output.
+        const frameAt = (i: number): object =>
+          i === frames - 1 ? usage : i < silent ? SILENT_FRAME : TEXT_FRAME;
         const chunks = Array.from({ length: frames }, (_, i) =>
-          `data: ${JSON.stringify(i === frames - 1 ? usage : { delta: i })}\n\n`);
+          `data: ${JSON.stringify(frameAt(i))}\n\n`);
         let read = 0;
         const encoder = new TextEncoder();
         // highWaterMark 0 so `pull` only runs when a read is waiting — with the
@@ -560,6 +601,16 @@ Given(
   'a stub provider API that streams {int} output tokens, first chunk at {float}s, last at {float}s',
   function (this: ModelConfigWorld, outTok: number, firstSec: number, lastSec: number) {
     ctx(this).stub = stubApi({ stream: { frames: 20, firstSec, lastSec, outTok } });
+  },
+);
+
+Given(
+  'a stub provider API that streams {int} output tokens in {int} frames from {float}s to {float}s, the first {int} carrying no text',
+  function (
+    this: ModelConfigWorld,
+    outTok: number, frames: number, firstSec: number, lastSec: number, silent: number,
+  ) {
+    ctx(this).stub = stubApi({ stream: { frames, firstSec, lastSec, outTok, silent } });
   },
 );
 
@@ -943,16 +994,31 @@ Then(
 // Measurements are a display cache, so they live in their own blob and never
 // disturb the config the engine is built from.
 
+/** One provider's stored entry: a tier, a connected time, and a reading per
+ *  role taken from `model` at `at`. */
+function storeProbe(provider: Provider, model: string, at: number): void {
+  writeStoredProbes({
+    [provider]: {
+      tier: 'paid',
+      connectedAt: at,
+      primary: { ttftSec: 0.4, tokPerSec: 150, model, at },
+      secondary: { ttftSec: 0.2, tokPerSec: 400, model, at },
+    },
+  });
+}
+
 When(
   'writeStoredProbes is called for provider {string}',
   function (this: ModelConfigWorld, provider: string) {
-    writeStoredProbes({
-      [provider as Provider]: {
-        tier: 'paid',
-        primary: { usdPer1kTok: 0.007, secPer1kTok: 7 },
-        secondary: { usdPer1kTok: 0.0004, secPer1kTok: 2.3 },
-      },
-    });
+    const p = provider as Provider;
+    storeProbe(p, defaultModel(p), Date.now());
+  },
+);
+
+When(
+  'writeStoredProbes is called for provider {string} measured from {string} {int} day(s) ago',
+  function (this: ModelConfigWorld, provider: string, model: string, days: number) {
+    storeProbe(provider as Provider, model, Date.now() - days * DAY_MS);
   },
 );
 
@@ -970,3 +1036,29 @@ Then(
 Then('readStoredProbes returns nothing', function (this: ModelConfigWorld) {
   assert.deepEqual(readStoredProbes(), {});
 });
+
+Then(
+  'readStoredProbes returns a primary reading for {string}',
+  function (this: ModelConfigWorld, provider: string) {
+    assert.ok(
+      readStoredProbes()[provider as Provider]?.primary,
+      `expected a primary reading for "${provider}"`,
+    );
+  },
+);
+
+Then(
+  'readStoredProbes returns no primary reading for {string}',
+  function (this: ModelConfigWorld, provider: string) {
+    assert.equal(readStoredProbes()[provider as Provider]?.primary, undefined);
+  },
+);
+
+Then(
+  'readStoredProbes reports tier {string} and a connected time for {string}',
+  function (this: ModelConfigWorld, tier: string, provider: string) {
+    const probe = readStoredProbes()[provider as Provider];
+    assert.equal(probe?.tier, tier);
+    assert.equal(typeof probe?.connectedAt, 'number');
+  },
+);

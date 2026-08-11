@@ -345,9 +345,26 @@ Feature: Model config
       Then connectedProviders returns ""
 
     @headless
+    # No order map — what the CLI and the delete-fallback pick ask for.
     Scenario: Two stored keys make two connected providers, in catalogue order
       Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
       Then connectedProviders returns "gemini, groq"
+
+    @headless
+    # The design orders cards as they were added, which the config alone cannot
+    # say — hence the order map. Here it reverses the catalogue order.
+    Scenario: An order map puts the providers in the order they were added
+      Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
+      And groq was connected at 1000
+      And gemini was connected at 2000
+      Then connectedProviders returns "groq, gemini"
+
+    @headless
+    # A config written before the timestamps existed still has to order somehow.
+    Scenario: A provider with no recorded time sorts ahead of the timed ones
+      Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
+      And gemini was connected at 5000
+      Then connectedProviders returns "groq, gemini"
 
     @headless
     Scenario: An empty-string key does not count as connected
@@ -509,6 +526,15 @@ Feature: Model config
       Then the verified tier is "free"
 
     @headless
+    # Google omits the header where the tier concept doesn't apply. Reading
+    # silence as "paid" is the one word that tells a free-tier user not to
+    # worry about the bill, so silence reports nothing instead.
+    Scenario: A Gemini key with no tier header reports no tier
+      Given a stub provider API that accepts the key
+      When verifyKey is called for provider "gemini" with key "AIza-good"
+      Then the verified tier is unknown
+
+    @headless
     Scenario: OpenRouter reads its tier from the key endpoint
       Given a stub provider API that accepts the key and reports is_free_tier true
       When verifyKey is called for provider "openrouter" with key "sk-or-good"
@@ -600,6 +626,25 @@ Feature: Model config
       And the estimated seconds for 1000 tokens is 9.3
 
     @headless
+    # A stream opens with frames that carry no output — a role header, a ping,
+    # and on a thinking model however many reasoning deltas it needs before it
+    # says anything. Stopping the clock on the first of those would time the
+    # cheapest byte on the wire and make a slow thinker look instant.
+    Scenario: Frames with no text do not stop the first-token clock
+      Given a stub provider API that streams 300 output tokens in 5 frames from 0.2s to 1.0s, the first 2 carrying no text
+      When measureModel is called for provider "groq" with model "openai/gpt-oss-120b"
+      Then the measured first-token time is 0.6 seconds
+      And the measured rate is 750.0 tokens per second
+
+    @headless
+    # Gemini marks reasoning parts `thought: true`; they are text on the wire
+    # and not output on the screen.
+    Scenario: A Gemini thinking delta does not stop the first-token clock
+      Given a stub provider API that streams 300 output tokens in 5 frames from 0.2s to 1.0s, the first 2 carrying no text
+      When measureModel is called for provider "gemini" with model "gemini-3.6-flash"
+      Then the measured first-token time is 0.6 seconds
+
+    @headless
     Scenario: A refused measurement reports the provider's message
       Given a stub provider API that rejects the key with HTTP 401
       When measureModel is called for provider "gemini" with model "gemini-3.6-flash"
@@ -659,6 +704,36 @@ Feature: Model config
       And clearStoredProbes is called
       Then readStoredProbes returns nothing
       And readStoredConfig returns provider "gemini" and geminiKey "AIza-1"
+
+    @headless
+    Scenario: A reading from today's default model survives
+      Given a fake localStorage
+      When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 1 day ago
+      Then readStoredProbes returns a primary reading for "gemini"
+
+    @headless
+    # models.json picking a new default would otherwise show yesterday's model's
+    # speed under today's model's name.
+    Scenario: A reading from a model that is no longer the default is dropped
+      Given a fake localStorage
+      When writeStoredProbes is called for provider "gemini" measured from "gemini-2-retired" 1 day ago
+      Then readStoredProbes returns no primary reading for "gemini"
+      And readStoredProbes returns a measurement for "gemini"
+
+    @headless
+    # A provider that was slow last month is not a provider that is slow now.
+    Scenario: A reading older than a week is dropped
+      Given a fake localStorage
+      When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 8 days ago
+      Then readStoredProbes returns no primary reading for "gemini"
+
+    @headless
+    # Dropping the reading must not drop the card: the tier and the time the
+    # provider was connected are not measurements and do not go stale.
+    Scenario: Dropping a stale reading keeps the tier and the connected time
+      Given a fake localStorage
+      When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 8 days ago
+      Then readStoredProbes reports tier "paid" and a connected time for "gemini"
 
   Rule: ModelChooser component
 
@@ -830,18 +905,35 @@ Feature: Model config
       And the "groq" card has a refresh button
 
     @web
+    # Groq is added first and gemini second; the catalogue lists them the other
+    # way round, so this only passes if the cards follow the clock.
+    Scenario: Cards are ordered by when their provider was added
+      Given the model-config demo page
+      When the user adds the key "gsk_first"
+      Then the chooser shows a card for "groq" named "Groq API"
+      When the user adds the key "AIza-second"
+      Then the chooser shows a card for "gemini" named "Google API"
+      And the chooser's cards read "groq, gemini"
+
+    @web
+    # The card appearing is the observable "the connect finished" checkpoint.
+    # Reloading straight after the click races the demo's persistence effect —
+    # locally it always won, on a slower CI runner it did not.
     Scenario: Connected providers persist across a demo page reload
       Given the model-config demo page
       When the user adds the key "sk-ant-persist"
-      And the demo page reloads
+      Then the chooser shows a card for "anthropic" named "Anthropic API"
+      When the demo page reloads
       Then the chooser shows a card for "anthropic" named "Anthropic API"
       And the demo shows resolved provider "anthropic"
       And the demo shows resolved anthropicKey "sk-ant-persist"
 
     @web
-    Scenario: The chooser lists the providers it supports
+    # Puter is absent on purpose: its credential comes from the sign-in button
+    # below, not from the input this footer sits under.
+    Scenario: The chooser lists the providers a pasted key can belong to
       Given the model-config demo page
-      Then the chooser's footer reads "Google / OpenAI / Anthropic / OpenRouter / Groq / Puter.js"
+      Then the chooser's footer reads "Google / OpenAI / Anthropic / OpenRouter / Groq"
 
     @web
     Scenario: The chooser shows a how-to-get-a-key help link

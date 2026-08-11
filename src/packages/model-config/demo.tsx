@@ -16,7 +16,7 @@ import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.t
 import { verifyKey, measureModel, type FetchLike } from './probe.ts';
 import {
   readStoredConfig, writeStoredConfig,
-  readStoredProbes, writeStoredProbes, type ProviderProbe,
+  readStoredProbes, writeStoredProbes, connectedOrder, type ProviderProbe,
 } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
 
@@ -113,13 +113,19 @@ function Demo() {
 
   const measureBoth = async (provider: Provider, key: string): Promise<void> => {
     setMeasuring((m) => ({ ...m, [provider]: true }));
-    setProbes((p) => ({ ...p, [provider]: { tier: p[provider]?.tier ?? null } }));
+    setProbes((p) => ({
+      ...p,
+      [provider]: { tier: p[provider]?.tier ?? null, connectedAt: p[provider]?.connectedAt },
+    }));
     const stub = stubProbe();
     for (const role of ['primary', 'secondary'] as const) {
       const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
       try {
         const measure = await measureModel(provider, key, modelId, stub);
-        setProbes((p) => ({ ...p, [provider]: { ...p[provider]!, [role]: measure } }));
+        // Stamped with the model and the moment, so a default change or a week
+        // gone by retires the reading instead of relabelling it.
+        const reading = { ...measure, model: modelId, at: Date.now() };
+        setProbes((p) => ({ ...p, [provider]: { ...p[provider]!, [role]: reading } }));
       } catch {
         // A working key with an unknown price is still a working key.
         setProbes((p) => ({ ...p, [provider]: { ...p[provider]!, [role]: null } }));
@@ -145,7 +151,12 @@ function Demo() {
       // Re-adding a connected provider replaces its key in place: the card has
       // no key field, so the alternative is deleting the card to fix a key.
       setStored((s) => ({ ...s, provider, [KEY_FIELD[provider]]: key }));
-      setProbes((p) => ({ ...p, [provider]: { tier } }));
+      // Re-adding keeps the original connected time, so fixing a key does not
+      // send the card to the bottom of the list.
+      setProbes((p) => ({
+        ...p,
+        [provider]: { tier, connectedAt: p[provider]?.connectedAt ?? Date.now() },
+      }));
       setKeyInput('');
       void measureBoth(provider, key);
     } catch (e) {
@@ -160,7 +171,7 @@ function Demo() {
       const next = { ...s, [KEY_FIELD[p]]: null };
       // The default falls back to the last remaining card, or to none.
       if (s.provider === p) {
-        const left = connectedProviders(resolveConfig({}, next));
+        const left = connectedProviders(resolveConfig({}, next), connectedOrder(probes));
         next.provider = left[left.length - 1] ?? 'gemini';
       }
       return next;
@@ -181,7 +192,7 @@ function Demo() {
     };
   };
 
-  const connected: ConnectedCard[] = connectedProviders(resolved).map((p) => ({
+  const connected: ConnectedCard[] = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
     voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,

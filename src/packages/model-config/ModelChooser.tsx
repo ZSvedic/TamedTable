@@ -71,8 +71,11 @@ export const PROVIDER_LABEL: Record<Provider, string> = {
   puter: 'Puter.js',
 };
 
-/** The footer's supported-provider list, in the order the design names them. */
-const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq / Puter.js';
+/** The footer's supported-provider list, in the order the design names them.
+ *  These are the providers a pasted key can belong to — Puter is left out on
+ *  purpose: its credential comes from the sign-in button below, not from this
+ *  input, and naming it here sends users looking for a Puter key to paste. */
+const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq';
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
 

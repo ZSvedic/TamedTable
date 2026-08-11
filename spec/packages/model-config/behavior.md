@@ -198,10 +198,22 @@ through `KEY_FIELD` — `geminiKey` for gemini, `puterToken` for puter, and so o
 provider" (the CLI, the web controller) uses this one helper so the
 provider→key mapping lives in a single place.
 
-`connectedProviders(config)` returns the providers whose key is set, in
-catalogue order. It is what turns the stored config into the chooser's card
-list — a connected provider *is* a provider with a key, so connecting needs no
-storage of its own.
+`connectedProviders(config, order?)` returns the providers whose key is set. It
+is what turns the stored config into the chooser's card list — a connected
+provider *is* a provider with a key, so connecting needs no storage of its own.
+
+The design orders cards **as they were added**, which the config alone cannot
+say, so the optional second argument is a `Provider → timestamp` map and the
+result is sorted by it. Providers missing from the map sort as `0` and the sort
+is stable, so they keep catalogue order among themselves and sit ahead of the
+timestamped ones — which is exactly right for a config written by a build that
+predates the timestamps. Callers that only want "which providers have a key"
+(the CLI, the fallback pick when a card is deleted) pass no map and get
+catalogue order.
+
+The timestamps live with the measurements (`connectedAt` in `tamedtable.probes`,
+below), not in the config blob: card order is display, and the engine's input
+stays exactly what the engine is built from.
 
 ## Checking a key — the probe
 
@@ -223,10 +235,15 @@ Only real signals count; the chooser shows no tag rather than a guess:
 
 | provider | tier read from |
 |---|---|
-| gemini | the `x-gemini-service-tier` response header (`free` → free) |
+| gemini | the `x-gemini-service-tier` response header: `free` → free, any other value → paid, **header absent → null** |
 | openrouter | `GET /api/v1/key` → `is_free_tier` |
 | openai, anthropic | always `paid` — neither provider has a free tier |
 | groq, puter | `null` — neither publishes a tier signal |
+
+The absent-header case is null and not paid on purpose. Google sends the header
+on the endpoints and regions that have the tier concept and omits it elsewhere;
+reading silence as "paid" labels a free-tier account with the one word that
+tells its owner not to worry about the bill.
 
 Puter is checked with `GET /whoami` rather than a model call: it proves the
 token, costs nothing, and answers immediately.
@@ -248,9 +265,19 @@ twenty-row classification prompt the app runs, capped at 300 output tokens.
 Timing splits in two, because a model call is two different things end to end:
 
 ```
-ttftSec  = seconds until the first streamed chunk   — getting the model going
-tokPerSec = outTok / (totalSec − ttftSec)           — generating, once started
+ttftSec  = seconds until the first frame carrying text  — getting the model going
+tokPerSec = outTok / (totalSec − ttftSec)               — generating, once started
 ```
+
+"Carrying text" is the whole point of that first line. A stream opens with
+frames that are not output: a role header, a `message_start`, a keep-alive
+ping, and — on the thinking models — however many reasoning deltas the model
+needs before it says anything. Stamping the first *frame* would report the time
+to the cheapest byte on the wire and make a slow thinker look instant, so each
+provider's frames are read as they arrive and only one with a non-empty text
+delta stops the clock (Gemini's `candidates[].content.parts[].text`, skipping
+parts marked `thought`; Anthropic's `content_block_delta`; `choices[].delta.content`
+for everything OpenAI-compatible, and Puter's `{"type":"text"}` NDJSON).
 
 A card's `~Z sec` is those two put back together for a thousand tokens:
 `ttftSec + 1000 / tokPerSec`. Splitting them is what makes a small sample
@@ -266,11 +293,11 @@ tokens in a single frame. Turning thinking off is not the answer either: Gemini
 and stays provider-neutral.
 
 **When a provider buffers**, there is no separable first-token time: the reply
-arrives in one or two frames at the very end. If the streaming window is under a
-fifth of the call, the split is abandoned and the whole call counts as
-generation (`ttftSec = 0`, `tokPerSec = outTok / totalSec`). The estimate is
-then a plain average, which is the honest reading of a response nobody watched
-arrive.
+arrives in one or two frames at the very end. If no frame carried text, or the
+streaming window is under a fifth of the call, the split is abandoned and the
+whole call counts as generation (`ttftSec = 0`, `tokPerSec = outTok / totalSec`).
+The estimate is then a plain average, which is the honest reading of a response
+nobody watched arrive.
 
 Measuring is slow (a free OpenRouter model took eleven seconds), so it never
 blocks the card. `verifyKey` gates the card; the two measurements fill it in
@@ -345,7 +372,19 @@ Measurements live in their **own** blob under `tamedtable.probes`, read and
 written by `readStoredProbes` / `writeStoredProbes` / `clearStoredProbes`. They
 are a display cache, not config: the engine never reads them, and losing them
 costs a re-measure, not a working setup. Keeping them out of `tamedtable.config`
-keeps the engine's input exactly what it was.
+keeps the engine's input exactly what it was. Each provider's entry holds its
+tier, the `connectedAt` timestamp the card order reads, and one reading per
+role.
+
+A reading records **which model it came from and when**, because both can go
+stale under it. `models.json` picking a new default would otherwise show
+yesterday's model's speed under today's model's name, and a provider that was
+slow last month is not a provider that is slow now. So `readStoredProbes` drops
+any reading whose `model` is no longer that role's default, or whose `at` is
+more than seven days old. A dropped reading leaves the row without its `~Z sec`
+tail rather than with a wrong one; the card's ⟳ button puts a fresh number
+there. Nothing re-measures on its own — a panel that opens should not spend the
+user's money without a click.
 
 ## Reading from env
 
@@ -371,8 +410,15 @@ there are none), the "Already have an API key?" block that adds one, and the
 supported-providers footer. There is no provider list to choose from before
 connecting — the key names its own provider.
 
+The footer reads `Google / OpenAI / Anthropic / OpenRouter / Groq`: the
+providers a **pasted key** can belong to. Puter is deliberately not among them
+even though it is a full provider — its credential comes from the sign-in
+button below, not from the input the footer sits under, so naming it here would
+send users looking for a Puter key to paste.
+
 **Connected provider cards.** One card per connected provider, ordered as they
-were added. The header — the whole row is the click target — carries a radio
+were added — the host passes the chooser an already-ordered list, which in the
+web app and the demo is `connectedProviders(config, connectedAt)`. The header — the whole row is the click target — carries a radio
 knob, the provider's display name (`Google API`, `OpenAI API`, `Anthropic API`,
 `Groq API`, `OpenRouter API`), its tags, a **⟳ refresh** button and a delete
 button. Tags are `FREE`

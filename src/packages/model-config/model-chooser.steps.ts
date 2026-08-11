@@ -77,6 +77,17 @@ Then(
   },
 );
 
+// Cards in DOM order, by provider id — the design orders them by when they
+// were added, which is not the catalogue's order.
+Then(
+  "the chooser's cards read {string}",
+  async function (this: object, expected: string) {
+    const ids = await page(this).$$eval('[data-mc-card]', (els) =>
+      els.map((el) => el.getAttribute('data-mc-card')));
+    assert.equal(ids.join(', '), expected);
+  },
+);
+
 Then(
   'the chooser shows the empty row {string}',
   async function (this: object, text: string) {
@@ -203,6 +214,14 @@ Then(
 
 When('the demo page reloads', async function (this: object) {
   const p = page(this);
+  // The demo persists from a React effect, so a click's state change lands a
+  // few async hops after the click resolves. Wait for the write before
+  // reloading, or the reload can race it away.
+  await p.waitForFunction(
+    `(localStorage.getItem('tamedtable.config') ?? '') !== ''`,
+    undefined,
+    { timeout: 5_000 },
+  );
   await p.reload();
   await p.waitForSelector('#out');
 });

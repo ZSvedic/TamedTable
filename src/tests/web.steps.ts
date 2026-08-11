@@ -764,9 +764,12 @@ Given('the LLM API answers any completion', function (this: TamedTableWorld) {
         : url.includes('anthropic')
           ? { id: 'msg_1', type: 'message', role: 'assistant', model: 'test', content: [{ type: 'text', text: 'OK' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }
           : { id: 'c1', object: 'chat.completion', model: 'test', choices: [{ index: 0, message: { role: 'assistant', content: 'OK' }, finish_reason: 'stop' }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } };
-    return Promise.resolve(
-      new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }),
-    );
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    // Google reports the account tier in a response header; the connect flow
+    // reads it, and reads its absence as "no tier reported", so the stub has
+    // to send it wherever the real API would.
+    if (url.includes('generativelanguage')) headers['x-gemini-service-tier'] = 'standard';
+    return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers }));
   };
 });
 
