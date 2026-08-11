@@ -17728,6 +17728,7 @@ function ModelChooser({
   keyInput,
   error,
   busy,
+  puterBusy,
   byokHelpUrl,
   onKeyInputChange,
   onAdd,
@@ -18101,7 +18102,7 @@ function ModelChooser({
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
                 type: "button",
                 "data-mc-puter": "",
-                disabled: puterConnected,
+                disabled: puterConnected || busy,
                 onClick: () => onPuterSignIn(),
                 style: {
                   display: "flex",
@@ -18128,7 +18129,7 @@ function ModelChooser({
                     height: 17,
                     style: { borderRadius: 5, display: "block", flex: "0 0 auto" }
                   }, undefined, false, undefined, this),
-                  puterConnected ? "Connected to Puter.js" : "Sign in / Sign up to Puter.js"
+                  puterConnected ? "Connected to Puter.js" : puterBusy ? "Signing in…" : "Sign in / Sign up to Puter.js"
                 ]
               }, undefined, true, undefined, this)
             ]
