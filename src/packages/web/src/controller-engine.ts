@@ -170,13 +170,6 @@ export class EngineManager {
     return this.headless !== undefined;
   }
 
-  /** #ProviderSelect — the Settings Test button's one-call key check. Runs
-   *  through the same engine a request would, so a green tick means requests
-   *  will work; needs no loaded table. */
-  testConnection(): Promise<{ model: string }> {
-    return this.ensureHeadless().testConnection();
-  }
-
   /** Drop the engine so the next ensureHeadless() rebuilds it with current
    *  config (used after a model change with no file loaded). */
   reset(): void {

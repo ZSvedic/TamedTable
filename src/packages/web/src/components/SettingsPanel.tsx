@@ -1,16 +1,17 @@
 // #WebUI #SettingsCards — Settings panel: the sheet/overlay shell around the
-// generic ModelChooser accordion provider cards (from @tamedtable/model-config). The panel binds the
-// chooser's props/callbacks to WebController and injects the app theme via
-// the --mc-* CSS custom properties on the wrapping element.
+// generic ModelChooser (from @tamedtable/model-config), where a user connects
+// providers by pasting a key. The panel binds the chooser's props/callbacks to
+// WebController and injects the app theme via the --mc-* CSS custom properties
+// on the wrapping element.
 import type { CSSProperties, ReactNode } from 'react';
-import { space, typography, toastDurationMs } from '@tamedtable/ui-kit';
+import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Button, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 import { installPrompt } from '../install-prompt.ts';
-import { ALL_MODELS } from '@tamedtable/model-config';
-import { ModelChooser } from '@tamedtable/model-config/ModelChooser';
+import { ALL_MODELS, defaultModel, defaultCellModel, type Provider } from '@tamedtable/model-config';
+import { ModelChooser, type ConnectedCard, type RoleRow } from '@tamedtable/model-config/ModelChooser';
 
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
@@ -20,9 +21,29 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
 
   if (!controller.settingsOpen) return null;
 
+  // One card per connected provider. Everything the card shows beyond the
+  // model ids — the tier tag and the two measured lines — comes from the probe
+  // the controller ran when the key was connected.
+  const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
+    const measure = controller.probes[p]?.[role];
+    return {
+      model: role === 'primary' ? defaultModel(p) : defaultCellModel(p),
+      measure: measure === undefined ? (controller.measuring[p] ? 'measuring' : null) : measure,
+    };
+  };
+  const connected: ConnectedCard[] = controller.connectedProviders().map((p) => ({
+    id: p,
+    tier: controller.probes[p]?.tier ?? null,
+    // Driven by the catalogue's voiceInput flag, not hardcoded per provider.
+    voice: ALL_MODELS.find((m) => m.id === defaultModel(p))?.voiceInput ?? false,
+    primary: roleRow(p, 'primary'),
+    secondary: roleRow(p, 'secondary'),
+  }));
+
   // The app theme, expressed as the chooser's --mc-* variables.
   const chooserTheme = {
     '--mc-ink': t.ink,
+    '--mc-ink2': t.ink2,
     '--mc-ink3': t.ink3,
     '--mc-surface': t.surface,
     '--mc-surface2': t.surface2,
@@ -34,6 +55,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     '--mc-ok': t.ok,
     '--mc-ok-soft': t.okSoft,
     '--mc-err': t.err,
+    '--mc-err-soft': t.errSoft,
     '--mc-font-ui': typography.ui,
     '--mc-font-mono': typography.mono,
     '--mc-radius': `${space.radius}px`,
@@ -106,25 +128,19 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           </button>
         </div>
 
-        {/* body — scrollable provider accordion */}
+        {/* body — scrollable model chooser + the rest of the settings */}
         <div style={{ flex: 1, overflowY: 'auto', padding: space.px16, ...chooserTheme }}>
           <ModelChooser
-            models={ALL_MODELS}
-            provider={cfg.provider}
-            primaryModel={cfg.model}
-            secondaryModel={cfg.cellModel}
-            keys={controller.keyDrafts}
-            expandedProvider={controller.expandedProvider}
-            savedProvider={controller.savedProvider}
-            savedSeq={controller.savedSeq}
-            savedFadeMs={toastDurationMs('✓ Saved')}
-            byokHelpUrl="../BYOK-setup.html"
-            changeModelsHelpUrl="../FAQ.html#change-models"
-            testState={controller.keyTest}
-            onProviderClick={(p) => void controller.clickProviderCard(p)}
-            onKeyChange={(p, value) => controller.setKeyDraft(p, value)}
-            onKeyCommit={(p) => void controller.commitKeyDraft(p)}
-            onTestKey={() => void controller.testKey()}
+            connected={connected}
+            selected={connected.length > 0 ? cfg.provider : null}
+            keyInput={controller.keyInput}
+            error={controller.keyError}
+            busy={controller.keyBusy}
+            byokHelpUrl="../FAQ.html#byok"
+            onKeyInputChange={(value) => controller.setKeyInput(value)}
+            onAdd={() => void controller.addKey()}
+            onSelect={(p) => void controller.selectProvider(p)}
+            onRemove={(p) => void controller.removeProvider(p)}
           />
 
           {/* #LazyExec — Simple mode: every AI step runs table-wide at once,
@@ -256,8 +272,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           )}
         </div>
 
-        {/* footer — Close only (changes are live; each save confirms with the
-            inline ✓ Saved badge on the provider card) */}
+        {/* footer — Close only; changes are live, and a connected key shows as
+            its own card, so there is nothing to confirm separately */}
         <div
           style={{
             flex: '0 0 auto',

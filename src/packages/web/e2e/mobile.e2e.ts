@@ -549,14 +549,24 @@ test.describe('phone — the page is the table scroller', () => {
   });
 
   // H — the provider card's model rows must not squeeze the model id into a
-  // ragged multi-line column on a phone; the id stays one line and the price
-  // wraps below it.
+  // ragged multi-line column on a phone; the id stays one line and the
+  // cost/speed line sits below it.
   test('Settings model rows keep the model id on one line', async ({ page }) => {
+    await page.route('**/generativelanguage.googleapis.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          candidates: [{ content: { parts: [{ text: 'ok' }], role: 'model' }, finishReason: 'STOP' }],
+          usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 900 },
+        }),
+      }));
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-dock="menu"]').click();
     await page.locator('[data-mob-menu-item="Settings…"]').click();
-    // Expand a provider card so its PRIMARY/SECONDARY model rows render.
-    await page.locator('[data-mc-card]:has-text("Google")').click();
+    // Connect a provider so the selected card renders its Primary/Secondary rows.
+    await page.locator('[data-mc-keyinput]').fill('AIza-mobile-e2e');
+    await page.locator('[data-mc-add]').click();
     const id = page.locator('[data-mc-model-id]').first();
     await expect(id).toBeVisible();
     const height = await id.evaluate((el) => el.getBoundingClientRect().height);

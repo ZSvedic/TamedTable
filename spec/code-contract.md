@@ -347,18 +347,19 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `CEREBRAS_API_KEY` | — | Cerebras key (free tier). Bench-only: read by the engine when a `zai-*` / `gpt-oss-*` model id routes to Cerebras, and by `bench sweep`/`bench label`. Never resolved by `resolveConfig`, so it can't select the app's provider. |
+| `GROQ_API_KEY` | — | Groq key. Read by the engine when a catalogued Groq model id (`openai/gpt-oss-120b`) routes to Groq, and by `resolveConfig` (below OpenAI/Anthropic, above OpenRouter). Groq publishes no API signal for which tier a key is on, so the chooser shows it no tier tag. |
 | `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter, by `bench sweep`/`bench label`, and by `resolveConfig` (lowest env priority — any paid key outranks it). The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `openai/gpt-oss-20b` (Groq), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). Must be a positive number; `0`, a negative, or unparsable text falls back to the default — a cap the limiter can never satisfy would wedge every request in its wait loop. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
 
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, or `OPENROUTER_API_KEY`. `resolveConfig` picks the provider from whichever is set
-(Gemini > OpenAI > Anthropic > OpenRouter when several are), and `TAMEDTABLE_MODEL` must
+`OPENAI_API_KEY`, `GROQ_API_KEY`, or `OPENROUTER_API_KEY`. `resolveConfig` picks the provider from whichever is set
+(Gemini > OpenAI > Anthropic > Groq > OpenRouter when several are), and `TAMEDTABLE_MODEL` must
 name a model from that provider — one from another provider is coerced to
 the provider's default model.
 
@@ -1358,7 +1359,7 @@ and batching show up in the measurement.
 → [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini" | "openai" | "openrouter";  // app providers — catalogue, chooser, resolveConfig
+type Provider = "anthropic" | "gemini" | "openai" | "groq" | "openrouter";  // app providers — catalogue, chooser, resolveConfig
 type EngineProvider = Provider | "cerebras";  // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
@@ -1368,6 +1369,7 @@ interface ResolvedConfig {
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
+  groqKey: string | null;
   openrouterKey: string | null;
   model: string;      // primary — writes the spec patch (and carries voice)
   cellModel: string;  // secondary — fills per-row cells; always same-provider as model
@@ -1387,35 +1389,55 @@ function defaultCellModel(provider: Provider): string;  // secondary (per-row ce
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
 function providerFor(modelId: string): EngineProvider;
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
-function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey / openrouterKey)
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
+function connectedProviders(config: ResolvedConfig): Provider[];  // every provider with a key, in catalogue order — the chooser's card list
+function detectProvider(key: string): Provider | null;   // the provider a pasted key belongs to, by prefix; null when none matches
+const SUPPORTED_PREFIXES: readonly string[];             // 'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…' — the display list the chooser's error names
+const KEY_FIELD: Record<Provider, keyof ResolvedConfig>; // provider → the config field its key lives in
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+
+// probe.ts entry point — the only part of the module that touches the network
+type Tier = 'free' | 'paid' | null;                      // null = the provider reports nothing
+type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+interface ProbeOptions { fetch?: FetchLike; now?: () => number }
+interface ModelMeasure { usdPer1kTok: number; secPer1kTok: number }
+function verifyKey(p: Provider, key: string, o?: ProbeOptions): Promise<{ tier: Tier }>;  // one call, no retries; throws a user-facing sentence
+function measureModel(p: Provider, key: string, modelId: string, o?: ProbeOptions): Promise<ModelMeasure>;
+
+// storage.ts entry point — measurements cache under 'tamedtable.probes'
+interface ProviderProbe { tier: Tier; primary?: ModelMeasure | null; secondary?: ModelMeasure | null }
+function readStoredProbes(): Partial<Record<Provider, ProviderProbe>>;
+function writeStoredProbes(p: Partial<Record<Provider, ProviderProbe>>): void;
+function clearStoredProbes(): void;
 ```
 
 ```ts
 // ModelChooser.tsx entry point — react is a peer dependency
+interface RoleRow { model: string; measure: ModelMeasure | "measuring" | null }  // null = the measurement failed
+interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; primary: RoleRow; secondary: RoleRow }
 interface ModelChooserProps {
-  models: readonly ModelDef[];
-  provider: Provider;
-  primaryModel: string;           // provider default, shown read-only
-  secondaryModel: string;         // provider default, shown read-only
-  keys: Record<Provider, string>;
-  expandedProvider: Provider | null;
-  savedProvider?: Provider | null; // card showing the "✓ Saved" badge
-  savedSeq?: number;               // bumped per save — restarts the badge's green phase
-  savedFadeMs?: number;            // badge green-to-grey time; defaults to 3000 ms
-  byokHelpUrl?: string;            // "how to get an API key" link target
-  changeModelsHelpUrl?: string;    // "how to change the default models" link target
-  onProviderClick(p: Provider): void;
-  onKeyChange(p: Provider, value: string): void;
+  connected: readonly ConnectedCard[];  // one card per connected provider, in the order added
+  selected: Provider | null;            // the default provider; only its card shows model rows
+  keyInput: string;
+  error: string;
+  busy: boolean;                        // a connect is in flight — input and Add disabled
+  byokHelpUrl?: string;                 // "how to get an API key" link target
+  onKeyInputChange(value: string): void;
+  onAdd(): void;
+  onSelect(p: Provider): void;
+  onRemove(p: Provider): void;
 }
+const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
 
-`@tamedtable/model-config` has four entry points: the main `index.ts` (no
+`@tamedtable/model-config` has five entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads
-`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only), and
-`storage.ts` (the localStorage `StoragePort` implementation — browser only,
-but a safe no-op anywhere without localStorage):
+`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only),
+`probe.ts` (the only part that touches the network — hosts inject `fetch`), and
+`storage.ts` (the localStorage `StoragePort` implementation plus the
+measurement cache — browser only, but a safe no-op anywhere without
+localStorage):
 
 ```ts
 // storage.ts entry point — implements StoragePort over localStorage
@@ -1557,9 +1579,10 @@ the only provider wired for voice. The engine routes OpenAI models through the
 Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
 compatibility; Cerebras models (`zai-*` / `gpt-oss-*` ids) take the same
 Chat Completions path against `https://api.cerebras.ai/v1` with
-`CEREBRAS_API_KEY`, and OpenRouter models (slash-containing
-`vendor/model:free` ids) against `https://openrouter.ai/api/v1` with
-`OPENROUTER_API_KEY`.
+`CEREBRAS_API_KEY`; Groq models (catalogued `openai/gpt-oss-*` ids) against
+`https://api.groq.com/openai/v1` with `GROQ_API_KEY`; and OpenRouter models
+(slash-containing `vendor/model:free` ids) against
+`https://openrouter.ai/api/v1` with `OPENROUTER_API_KEY`.
 
 Text and voice requests route through the selected provider:
 `ensureHeadless` builds the engine with `config.model` / `config.cellModel`

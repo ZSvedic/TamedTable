@@ -8,7 +8,7 @@ test('loadModels parses benchmarks/models.jsonl', () => {
   const freeProviders = new Set(['cerebras', 'openrouter']);
   for (const m of models) {
     expect(typeof m.id).toBe('string');
-    expect(['anthropic', 'gemini', 'openai', 'cerebras', 'openrouter']).toContain(m.provider);
+    expect(['anthropic', 'gemini', 'openai', 'groq', 'cerebras', 'openrouter']).toContain(m.provider);
     // Free-tier rows (Cerebras, OpenRouter) are priced 0/0; every other row must be positive.
     if (freeProviders.has(m.provider)) {
       expect(m.inUsdPerMtok).toBe(0);

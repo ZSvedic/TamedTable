@@ -342,6 +342,7 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
   cerebras: 'gpt-oss-120b',
+  groq: 'openai/gpt-oss-20b',
   openrouter: 'cohere/north-mini-code:free',
 };
 
@@ -531,6 +532,7 @@ const LOW_EFFORT: Record<ReturnType<typeof providerFor>, ProviderOptions> = {
   openai:     { openai:    { reasoningEffort: 'low' } },
   openrouter: { openai:    { reasoningEffort: 'low' } },
   cerebras:   { openai:    { reasoningEffort: 'low' } },
+  groq:       { openai:    { reasoningEffort: 'low' } },
   anthropic:  { anthropic: { thinking: { type: 'disabled' } } },
 };
 
@@ -1067,6 +1069,15 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('CEREBRAS_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
+    } else if (detected === 'groq') {
+      // Shipped app provider: another OpenAI-compatible endpoint, so the same
+      // Chat Completions path as OpenAI, pointed at Groq. Its ids are
+      // vendor-prefixed (openai/gpt-oss-120b), which is why providerFor reads
+      // the catalogue before it reads prefixes.
+      const key = apiKey ?? process.env.GROQ_API_KEY;
+      if (!key) throw new Error('GROQ_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const groq = createOpenAI({ apiKey: key, baseURL: 'https://api.groq.com/openai/v1', ...fetchOpt });
+      this.providerCache = (modelId: string) => groq.chat(modelId);
     } else if (detected === 'openrouter') {
       // Shipped app provider (the 4th), same OpenAI-compatible path as
       // Cerebras. :free models 404 unless the account's privacy settings

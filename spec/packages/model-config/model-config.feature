@@ -1,6 +1,50 @@
 # #ModelConfig
-# Zero-dependency module: resolves provider/key/model from env + stored values.
+# Zero-dependency module: resolves provider/key/model from env + stored values,
+# detects a provider from a pasted key, and probes it for tier, cost and speed.
 Feature: Model config
+
+  Rule: detectProvider names the provider from the key's prefix
+
+    The user never picks a provider from a list — the key they paste names it.
+
+    @headless
+    Scenario Outline: <prefix> is a <provider> key
+      When detectProvider is called with "<key>"
+      Then the detected provider is "<provider>"
+
+      Examples:
+        | prefix    | key                  | provider   |
+        | AIza      | AIzaSyExample        | gemini     |
+        | sk-proj-  | sk-proj-example      | openai     |
+        | sk-ant-   | sk-ant-example       | anthropic  |
+        | sk-or-    | sk-or-v1-example     | openrouter |
+        | gsk_      | gsk_example          | groq       |
+
+    @headless
+    # sk-proj-, sk-ant- and sk-or- all start with sk-, so the generic OpenAI
+    # rule has to be tested last or it would swallow all three.
+    Scenario: A bare sk- key is OpenAI, tested after the longer prefixes
+      When detectProvider is called with "sk-legacy-openai"
+      Then the detected provider is "openai"
+
+    @headless
+    Scenario: Surrounding whitespace is trimmed before matching
+      When detectProvider is called with "  AIzaSyExample  "
+      Then the detected provider is "gemini"
+
+    @headless
+    Scenario: An unrecognised key detects no provider
+      When detectProvider is called with "hello-there"
+      Then no provider is detected
+
+    @headless
+    Scenario: An empty key detects no provider
+      When detectProvider is called with ""
+      Then no provider is detected
+
+    @headless
+    Scenario: SUPPORTED_PREFIXES lists every prefix the error message names
+      Then SUPPORTED_PREFIXES is "AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…"
 
   Rule: resolveConfig defaults
 
@@ -46,10 +90,18 @@ Feature: Model config
       And the resolved openrouterKey is "sk-or-test"
       And the resolved anthropicKey is null
 
+    @headless
+    Scenario: GROQ_API_KEY in env sets provider and key
+      When resolveConfig is called with env GROQ_API_KEY="gsk_test"
+      Then the resolved provider is "groq"
+      And the resolved groqKey is "gsk_test"
+      And the resolved model is "openai/gpt-oss-120b"
+      And the resolved cellModel is "openai/gpt-oss-20b"
+
     # Precedence: when several provider keys are present, Gemini beats OpenAI
-    # beats Anthropic beats OpenRouter — a paid key always outranks the free
-    # tier. Anthropic is present (and loses) in the first rows, so its key
-    # is nulled each time. Single-key resolution is covered by the scenarios above.
+    # beats Anthropic beats Groq beats OpenRouter — a paid key always outranks
+    # the free tier. Anthropic is present (and loses) in the first rows, so its
+    # key is nulled each time. Single-key resolution is covered above.
     @headless
     Scenario Outline: <present> in env — <winner> wins
       When resolveConfig is called with env keys "<keys>"
@@ -63,6 +115,8 @@ Feature: Model config
         | Anthropic + OpenAI    | ANTHROPIC_API_KEY, OPENAI_API_KEY                 | openai    | openaiKey    |
         | Anthropic + OpenRouter| ANTHROPIC_API_KEY, OPENROUTER_API_KEY             | anthropic | anthropicKey |
         | OpenAI + OpenRouter   | OPENAI_API_KEY, OPENROUTER_API_KEY                | openai    | openaiKey    |
+        | Anthropic + Groq      | ANTHROPIC_API_KEY, GROQ_API_KEY                   | anthropic | anthropicKey |
+        | Groq + OpenRouter     | GROQ_API_KEY, OPENROUTER_API_KEY                  | groq      | groqKey      |
 
   Rule: resolveConfig respects stored values
 
@@ -100,57 +154,59 @@ Feature: Model config
       Then the resolved cellModel is "gpt-5.4-mini"
 
     @headless
-    # Rule 7: the final primary model must belong to the resolved provider.
+    # Rule 9: the final primary model must belong to the resolved provider.
     Scenario: A cross-provider stored model is coerced to the provider default
       When resolveConfig is called with stored provider "openai" and model "claude-sonnet-4-6"
       Then the resolved model is "gpt-5.5"
       And the resolved cellModel is "gpt-5.4-mini"
 
     @headless
-    # Rules 5 + 7: the TAMEDTABLE_MODEL env override obeys the same provider guard.
+    # Rules 7 + 9: the TAMEDTABLE_MODEL env override obeys the same guard.
     Scenario: A cross-provider TAMEDTABLE_MODEL is coerced to the provider default
       When resolveConfig is called with env GEMINI_API_KEY="AIza-x" and TAMEDTABLE_MODEL="gpt-5.5"
       Then the resolved provider is "gemini"
       And the resolved model is "gemini-3.6-flash"
 
-  Rule: providerFor
+    @headless
+    # Groq's ids carry a vendor prefix, so this guard leans on the catalogue
+    # lookup rather than on a slash rule that would say "openrouter".
+    Scenario: A Groq model is kept when the provider is groq
+      When resolveConfig is called with stored provider "groq" and model "openai/gpt-oss-120b"
+      Then the resolved model is "openai/gpt-oss-120b"
 
     @headless
-    Scenario: providerFor returns anthropic for a claude-* id
-      When providerFor is called with "claude-sonnet-4-6"
-      Then the result is "anthropic"
+    Scenario: A Groq model stored under openrouter is coerced to the openrouter default
+      When resolveConfig is called with stored provider "openrouter" and model "openai/gpt-oss-120b"
+      Then the resolved model is "cohere/north-mini-code:free"
+
+  Rule: providerFor reads the catalogue before it reads prefixes
 
     @headless
-    Scenario: providerFor returns gemini for a gemini-* id
-      When providerFor is called with "gemini-3.5-flash"
-      Then the result is "gemini"
+    Scenario Outline: providerFor returns <provider> for "<id>"
+      When providerFor is called with "<id>"
+      Then the result is "<provider>"
+
+      Examples:
+        | id                                    | provider   |
+        | claude-sonnet-4-6                     | anthropic  |
+        | gemini-3.5-flash                      | gemini     |
+        | gpt-5.4-mini                          | openai     |
+        | zai-glm-4.7                           | cerebras   |
+        | gpt-oss-120b                          | cerebras   |
+        | qwen/qwen3-coder:free                 | openrouter |
+        | meta-llama/llama-3.3-70b-instruct:free| openrouter |
 
     @headless
-    Scenario: providerFor returns openai for a gpt-* id
-      When providerFor is called with "gpt-5.4-mini"
-      Then the result is "openai"
+    # The catalogue-first rule: Groq's vendor-prefixed ids would otherwise land
+    # on OpenRouter, and Cerebras's bare gpt-oss-120b must stay on Cerebras.
+    Scenario: providerFor returns groq for a catalogued Groq id with a slash
+      When providerFor is called with "openai/gpt-oss-120b"
+      Then the result is "groq"
 
     @headless
-    Scenario: providerFor returns cerebras for a zai-* id
-      When providerFor is called with "zai-glm-4.7"
-      Then the result is "cerebras"
-
-    @headless
-    # gpt-oss- must be checked before gpt-, else these ids would land on openai.
-    Scenario: providerFor returns cerebras for a gpt-oss-* id
-      When providerFor is called with "gpt-oss-120b"
-      Then the result is "cerebras"
-
-    @headless
-    # Every OpenRouter id is vendor-prefixed with a slash; no other provider's ids contain one.
-    Scenario: providerFor returns openrouter for a vendor/model id
-      When providerFor is called with "qwen/qwen3-coder:free"
-      Then the result is "openrouter"
-
-    @headless
-    Scenario: providerFor returns openrouter even when the vendor segment looks like another provider
-      When providerFor is called with "meta-llama/llama-3.3-70b-instruct:free"
-      Then the result is "openrouter"
+    Scenario: providerFor returns groq for the Groq secondary default
+      When providerFor is called with "openai/gpt-oss-20b"
+      Then the result is "groq"
 
   Rule: acceptsTemperature
 
@@ -178,6 +234,12 @@ Feature: Model config
     Scenario: An unknown future model defaults to no temperature
       When acceptsTemperature is called with "claude-sonnet-5"
       Then the boolean result is false
+
+    @headless
+    # Verified live against api.groq.com — the open-weight models still sample.
+    Scenario: Groq's gpt-oss models accept temperature
+      When acceptsTemperature is called with "openai/gpt-oss-120b"
+      Then the boolean result is true
 
   Rule: keyFor returns the active provider's key
 
@@ -211,50 +273,61 @@ Feature: Model config
       When keyFor is called
       Then the key result is "sk-or-w"
 
+    @headless
+    Scenario: keyFor returns the groq key when provider is groq
+      Given a resolved config for provider "groq" with groqKey "gsk_w"
+      When keyFor is called
+      Then the key result is "gsk_w"
+
+  Rule: connectedProviders lists the providers that have a key
+
+    A connected provider is a provider with a key — connecting stores nothing
+    of its own, so the card list is derived from the config.
+
+    @headless
+    Scenario: A config with no keys has no connected providers
+      When resolveConfig is called with empty env and empty stored
+      Then connectedProviders returns ""
+
+    @headless
+    Scenario: Two stored keys make two connected providers, in catalogue order
+      Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
+      Then connectedProviders returns "gemini, groq"
+
+    @headless
+    Scenario: An empty-string key does not count as connected
+      Given a stored config with geminiKey "AIza-x" and openaiKey ""
+      Then connectedProviders returns "gemini"
+
   Rule: defaultModel
 
     @headless
-    Scenario: defaultModel for anthropic returns claude-sonnet-4-6
-      When defaultModel is called with "anthropic"
-      Then the result is "claude-sonnet-4-6"
+    Scenario Outline: defaultModel for <provider>
+      When defaultModel is called with "<provider>"
+      Then the result is "<primary>"
 
-    @headless
-    Scenario: defaultModel for gemini returns gemini-3.6-flash
-      When defaultModel is called with "gemini"
-      Then the result is "gemini-3.6-flash"
-
-    @headless
-    Scenario: defaultModel for openai returns gpt-5.5
-      When defaultModel is called with "openai"
-      Then the result is "gpt-5.5"
-
-    @headless
-    # The free tier: one model fills both roles, so primary = the north-mini pick.
-    Scenario: defaultModel for openrouter returns the free north-mini pick
-      When defaultModel is called with "openrouter"
-      Then the result is "cohere/north-mini-code:free"
+      Examples:
+        | provider   | primary                     |
+        | anthropic  | claude-sonnet-4-6           |
+        | gemini     | gemini-3.6-flash            |
+        | openai     | gpt-5.5                     |
+        | groq       | openai/gpt-oss-120b         |
+        | openrouter | cohere/north-mini-code:free |
 
   Rule: defaultCellModel
 
     @headless
-    Scenario: defaultCellModel for anthropic returns claude-haiku-4-5
-      When defaultCellModel is called with "anthropic"
-      Then the result is "claude-haiku-4-5"
+    Scenario Outline: defaultCellModel for <provider>
+      When defaultCellModel is called with "<provider>"
+      Then the result is "<secondary>"
 
-    @headless
-    Scenario: defaultCellModel for openai returns gpt-5.4-mini
-      When defaultCellModel is called with "openai"
-      Then the result is "gpt-5.4-mini"
-
-    @headless
-    Scenario: defaultCellModel for gemini returns gemini-3.1-flash-lite
-      When defaultCellModel is called with "gemini"
-      Then the result is "gemini-3.1-flash-lite"
-
-    @headless
-    Scenario: defaultCellModel for openrouter returns the same free north-mini pick
-      When defaultCellModel is called with "openrouter"
-      Then the result is "cohere/north-mini-code:free"
+      Examples:
+        | provider   | secondary                   |
+        | anthropic  | claude-haiku-4-5            |
+        | openai     | gpt-5.4-mini                |
+        | gemini     | gemini-3.1-flash-lite       |
+        | groq       | openai/gpt-oss-20b          |
+        | openrouter | cohere/north-mini-code:free |
 
   Rule: defaultBatchSize pins the benchmarked cell batch
 
@@ -283,6 +356,10 @@ Feature: Model config
       Then ALL_MODELS contains at least one model with provider "openai"
 
     @headless
+    Scenario: ALL_MODELS has at least one Groq entry
+      Then ALL_MODELS contains at least one model with provider "groq"
+
+    @headless
     Scenario: ALL_MODELS entries each have a voiceInput boolean
       Then every ALL_MODELS entry has a voiceInput boolean field
 
@@ -308,6 +385,11 @@ Feature: Model config
       Then the model "gemini-3.1-flash-lite" has voiceInput false
 
     @headless
+    # Groq's chat models take text only; audio needs its Whisper endpoints.
+    Scenario: openai/gpt-oss-120b has voiceInput false
+      Then the model "openai/gpt-oss-120b" has voiceInput false
+
+    @headless
     # Membership rule: the catalogue equals models.jsonl minus runnable:false.
     Scenario: The catalogue carries every runnable benchmark model
       Then ALL_MODELS contains the model "gemini-2.5-flash"
@@ -327,6 +409,11 @@ Feature: Model config
       Then the model "gemini-3.5-flash" costs 1.5 in and 9 out per Mtok
 
     @headless
+    Scenario: The Groq defaults carry their published prices
+      Then the model "openai/gpt-oss-120b" costs 0.15 in and 0.6 out per Mtok
+      And the model "openai/gpt-oss-20b" costs 0.075 in and 0.3 out per Mtok
+
+    @headless
     # The free tier's single catalogue entry: $0 both ways, no voice.
     Scenario: The openrouter catalogue entry is the free north-mini pick
       Then ALL_MODELS contains the model "cohere/north-mini-code:free"
@@ -344,7 +431,108 @@ Feature: Model config
         | gemini     | gemini-3.6-flash            | gemini-3.1-flash-lite       |
         | openai     | gpt-5.5                     | gpt-5.4-mini                |
         | anthropic  | claude-sonnet-4-6           | claude-haiku-4-5            |
+        | groq       | openai/gpt-oss-120b         | openai/gpt-oss-20b          |
         | openrouter | cohere/north-mini-code:free | cohere/north-mini-code:free |
+
+  Rule: verifyKey checks a key against the provider and reports its tier
+
+    The gate before anything is stored. One cheap call, no retries, and a tier
+    only when the provider actually reports one.
+
+    @headless
+    Scenario: A working Gemini key reports the paid tier from the response header
+      Given a stub provider API that accepts the key and returns service tier "standard"
+      When verifyKey is called for provider "gemini" with key "AIza-good"
+      Then the verified tier is "paid"
+
+    @headless
+    Scenario: A Gemini key on the free tier reports it
+      Given a stub provider API that accepts the key and returns service tier "free"
+      When verifyKey is called for provider "gemini" with key "AIza-good"
+      Then the verified tier is "free"
+
+    @headless
+    Scenario: OpenRouter reads its tier from the key endpoint
+      Given a stub provider API that accepts the key and reports is_free_tier true
+      When verifyKey is called for provider "openrouter" with key "sk-or-good"
+      Then the verified tier is "free"
+
+    @headless
+    Scenario: OpenAI is always paid — it has no free tier
+      Given a stub provider API that accepts the key
+      When verifyKey is called for provider "openai" with key "sk-proj-good"
+      Then the verified tier is "paid"
+
+    @headless
+    Scenario: Anthropic is always paid — it has no free tier
+      Given a stub provider API that accepts the key
+      When verifyKey is called for provider "anthropic" with key "sk-ant-good"
+      Then the verified tier is "paid"
+
+    @headless
+    # Groq publishes no tier signal, so the card shows no tag rather than a guess.
+    Scenario: Groq reports no tier
+      Given a stub provider API that accepts the key
+      When verifyKey is called for provider "groq" with key "gsk_good"
+      Then the verified tier is unknown
+
+    @headless
+    Scenario: A rejected key fails with a sentence naming the provider
+      Given a stub provider API that rejects the key with HTTP 401
+      When verifyKey is called for provider "gemini" with key "AIza-bad"
+      Then verifyKey fails with "Key rejected by Google. Check the key and try again."
+
+    @headless
+    Scenario: A rate-limited check says to wait, not to re-enter the key
+      Given a stub provider API that rejects the key with HTTP 429
+      When verifyKey is called for provider "openai" with key "sk-proj-x"
+      Then verifyKey fails with "OpenAI rate-limited the check. Wait a minute and try again."
+
+    @headless
+    # An empty balance arrives as a 429 too, so the quota case is checked first
+    # — "wait a minute" would send that user into a wait that never ends.
+    Scenario: An account with no credit says so, not "wait a minute"
+      Given a stub provider API that rejects the key with HTTP 429 and code "insufficient_quota"
+      When verifyKey is called for provider "openai" with key "sk-proj-broke"
+      Then verifyKey fails with "Your OpenAI account has no credit left. Add credit (or a billing method) and try again."
+
+    @headless
+    Scenario: An unreachable provider says so
+      Given a stub provider API that cannot be reached
+      When verifyKey is called for provider "groq" with key "gsk_x"
+      Then verifyKey fails with "Could not reach Groq."
+
+    @headless
+    # Retries are off: a user with an empty account should not watch a spinner
+    # for a minute to learn what the first response already said.
+    Scenario: A failing check makes exactly one call
+      Given a stub provider API that rejects the key with HTTP 401
+      When verifyKey is called for provider "openai" with key "sk-proj-x"
+      Then the stub provider API received 1 call
+
+  Rule: measureModel reports cost and speed per 1000 tokens
+
+    @headless
+    Scenario: Cost blends the two rates at the ratio the call used
+      Given a stub provider API that answers with 100 input and 900 output tokens in 2.0 seconds
+      When measureModel is called for provider "gemini" with model "gemini-3.6-flash"
+      Then the measured cost per 1000 tokens is 0.00690
+      And the measured seconds per 1000 tokens is 2.2
+
+    @headless
+    # Latency divides by output tokens only. Dividing by the round trip made the
+    # cheap fast model look slower than the expensive one — see the 2026-08-11
+    # provider probe.
+    Scenario: A short answer is not reported as slow
+      Given a stub provider API that answers with 100 input and 10 output tokens in 0.9 seconds
+      When measureModel is called for provider "gemini" with model "gemini-3.1-flash-lite"
+      Then the measured seconds per 1000 tokens is 90.0
+
+    @headless
+    Scenario: A free model measures at zero cost
+      Given a stub provider API that answers with 100 input and 900 output tokens in 12.0 seconds
+      When measureModel is called for provider "openrouter" with model "cohere/north-mini-code:free"
+      Then the measured cost per 1000 tokens is 0.00000
 
   Rule: storage.ts persists config in localStorage
 
@@ -379,106 +567,174 @@ Feature: Model config
       Then readStoredConfig returns an empty config
       And writeStoredConfig and clearStoredConfig do not throw
 
+  Rule: storage.ts keeps measurements in their own blob
+
+    Measurements are a display cache, not config — the engine never reads them,
+    so they stay out of the blob the engine's input is built from.
+
+    @headless
+    Scenario: Probes round-trip under their own key
+      Given a fake localStorage
+      When writeStoredProbes is called for provider "gemini"
+      Then readStoredProbes returns a measurement for "gemini"
+      And the fake localStorage holds a "tamedtable.probes" blob
+      And the fake localStorage has no "tamedtable.config" blob
+
+    @headless
+    Scenario: Clearing probes leaves the config blob alone
+      Given a fake localStorage
+      When writeStoredConfig is called with provider "gemini" and geminiKey "AIza-1"
+      And writeStoredProbes is called for provider "gemini"
+      And clearStoredProbes is called
+      Then readStoredProbes returns nothing
+      And readStoredConfig returns provider "gemini" and geminiKey "AIza-1"
+
   Rule: ModelChooser component
 
-    The provider accordion is a pure React component, mounted on the package
-    demo page over local state; these scenarios drive that page in a browser.
+    The chooser is a pure React component, mounted on the package demo page over
+    local state; these scenarios drive that page in a browser. The demo's stub
+    provider accepts any key whose prefix is recognised, so no scenario here
+    reaches a real API.
 
     @web
-    Scenario: Clicking a provider card expands it and selects the provider
+    Scenario: With nothing connected the chooser shows the empty row
       Given the model-config demo page
-      When the user clicks the "Google" provider card
-      Then the "gemini" card shows its API-key field and model list
+      Then the chooser shows the empty row "No provider or model added."
+      And no provider card is shown
+
+    @web
+    Scenario: The Add button is disabled until a key is typed
+      Given the model-config demo page
+      Then the chooser's Add button is disabled
+      When the user types "AIza-demo" into the key input
+      Then the chooser's Add button is enabled
+
+    @web
+    Scenario: Adding a Google key connects it and makes it the default
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      Then the chooser shows a card for "gemini" named "Google API"
+      And the "gemini" card is selected
       And the demo shows resolved provider "gemini"
+      And the demo shows resolved geminiKey "AIza-demo"
+      And the key input is empty
 
     @web
-    Scenario: Clicking the expanded card collapses it without changing the provider
+    Scenario: Pressing Enter in the key input adds the key
       Given the model-config demo page
-      When the user clicks the "Google" provider card
-      And the user clicks the "Google" provider card
-      Then no card shows an API-key field
+      When the user types "gsk_demo" into the key input
+      And the user presses Enter in the key input
+      Then the chooser shows a card for "groq" named "Groq API"
+
+    @web
+    Scenario: The selected card shows its two models with measured cost and speed
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      Then the "gemini" card's primary model is "gemini-3.6-flash"
+      And the "gemini" card's secondary model is "gemini-3.1-flash-lite"
+      And the "gemini" card's "primary" cost line matches "$0.0069 / 7.0sec for 1000 tokens"
+
+    @web
+    Scenario: An unselected card shows no model rows
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      And the user adds the key "sk-proj-demo"
+      Then the "openai" card is selected
+      And the "gemini" card shows no model rows
+
+    @web
+    Scenario: Clicking a card header makes it the default
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      And the user adds the key "sk-proj-demo"
+      And the user clicks the "gemini" card
+      Then the "gemini" card is selected
       And the demo shows resolved provider "gemini"
-
-    @web
-    Scenario: Selecting a provider pins its default primary and secondary models
-      Given the model-config demo page
-      When the user clicks the "Google" provider card
-      Then the demo shows resolved model "gemini-3.6-flash"
+      And the demo shows resolved model "gemini-3.6-flash"
       And the demo shows resolved cellModel "gemini-3.1-flash-lite"
 
     @web
-    Scenario: The expanded card shows its two default models read-only
+    Scenario: The tier tag shows only where the provider reports one
       Given the model-config demo page
-      When the user clicks the "OpenAI" provider card
-      Then the "openai" card's primary default is "gpt-5.5"
-      And the "openai" card's secondary default is "gpt-5.4-mini"
+      When the user adds the key "AIza-demo"
+      And the user adds the key "gsk_demo"
+      Then the "gemini" card shows the tag "PAID"
+      And the "groq" card shows no tier tag
 
     @web
-    Scenario: Each default row shows its per-Mtok price
+    # Driven by the catalogue's voiceInput flag, not hardcoded per provider.
+    Scenario: The VOICE tag follows the primary model's audio support
       Given the model-config demo page
-      When the user clicks the "Google" provider card
-      Then the "primary" default row shows the price "$1.5 in / $7.5 out"
-      And the "secondary" default row shows the price "$0.25 in / $1.5 out"
+      When the user adds the key "AIza-demo"
+      And the user adds the key "sk-proj-demo"
+      Then the "gemini" card shows the tag "VOICE"
+      And the "openai" card shows no VOICE tag
 
     @web
-    Scenario: The card body shows the env-var hint under the key field
+    Scenario: An unrecognised key is refused with the supported prefixes
       Given the model-config demo page
-      When the user clicks the "Google" provider card
-      Then the "gemini" card shows the env hint "or set GEMINI_API_KEY in .env"
+      When the user adds the key "hello-there"
+      Then the chooser shows the error "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…."
+      And no provider card is shown
 
     @web
-    Scenario: Each expanded card deep-links to that provider's key page
+    Scenario: Typing clears the error
       Given the model-config demo page
-      When the user clicks the "Google" provider card
-      Then the "gemini" card's Get-API-key link opens "https://aistudio.google.com/apikey" in a new tab
-      When the user clicks the "OpenAI" provider card
-      Then the "openai" card's Get-API-key link opens "https://platform.openai.com/api-keys" in a new tab
-      When the user clicks the "Anthropic" provider card
-      Then the "anthropic" card's Get-API-key link opens "https://console.anthropic.com/settings/keys" in a new tab
-      When the user clicks the "OpenRouter" provider card
-      Then the "openrouter" card's Get-API-key link opens "https://openrouter.ai/settings/keys" in a new tab
+      When the user adds the key "hello-there"
+      And the user types "A" into the key input
+      Then the chooser shows no error
 
     @web
-    # The free tier: one $0 model fills both roles.
-    Scenario: Selecting OpenRouter pins the free model in both roles
+    # The card has no key field, so a user whose key expired would otherwise
+    # have to delete the card to fix it.
+    Scenario: Re-adding a connected provider's key replaces it in place
       Given the model-config demo page
-      When the user clicks the "OpenRouter" provider card
-      Then the demo shows resolved provider "openrouter"
-      And the demo shows resolved model "cohere/north-mini-code:free"
-      And the demo shows resolved cellModel "cohere/north-mini-code:free"
-      And the "primary" default row shows the price "$0 in / $0 out"
+      When the user adds the key "AIza-first"
+      And the user adds the key "AIza-second"
+      Then the chooser shows 1 provider card
+      And the demo shows resolved geminiKey "AIza-second"
+      And the chooser shows no error
 
     @web
-    Scenario: The OpenRouter card shows its env-var hint
+    Scenario: Deleting a card removes the provider and its key
       Given the model-config demo page
-      When the user clicks the "OpenRouter" provider card
-      Then the "openrouter" card shows the env hint "or set OPENROUTER_API_KEY in .env"
+      When the user adds the key "AIza-demo"
+      And the user deletes the "gemini" card
+      Then the chooser shows the empty row "No provider or model added."
+      And the demo shows resolved geminiKey null
 
     @web
-    Scenario: The chooser shows a general how-to-get-a-key help link
+    Scenario: Deleting the default falls back to the remaining card
       Given the model-config demo page
-      Then the chooser shows a BYOK help link to "BYOK-setup.html" in a new tab
+      When the user adds the key "AIza-demo"
+      And the user adds the key "sk-proj-demo"
+      And the user deletes the "openai" card
+      Then the "gemini" card is selected
+      And the demo shows resolved provider "gemini"
 
     @web
-    Scenario: The chooser links to the FAQ on changing the default models
+    Scenario: Deleting a card does not also select it
       Given the model-config demo page
-      Then the chooser shows a change-models help link to "FAQ.html#change-models" in a new tab
+      When the user adds the key "AIza-demo"
+      And the user adds the key "sk-proj-demo"
+      And the user deletes the "gemini" card
+      Then the "openai" card is selected
 
     @web
-    Scenario: A typed key persists across a demo page reload
+    Scenario: Connected providers persist across a demo page reload
       Given the model-config demo page
-      When the user clicks the "Anthropic" provider card
-      And the user types "sk-ant-persist" into the "anthropic" key field
+      When the user adds the key "sk-ant-persist"
       And the demo page reloads
-      Then the demo shows resolved provider "anthropic"
+      Then the chooser shows a card for "anthropic" named "Anthropic API"
+      And the demo shows resolved provider "anthropic"
       And the demo shows resolved anthropicKey "sk-ant-persist"
 
     @web
-    Scenario: A typed API key stays masked until the eye toggle reveals it
+    Scenario: The chooser lists the providers it supports
       Given the model-config demo page
-      When the user clicks the "Anthropic" provider card
-      And the user types "sk-ant-demo" into the "anthropic" key field
-      Then the "anthropic" key field hides its value
-      And the demo shows resolved anthropicKey "sk-ant-demo"
-      When the user clicks the "anthropic" key reveal toggle
-      Then the "anthropic" key field shows "sk-ant-demo"
+      Then the chooser's footer reads "Google / OpenAI / Anthropic / OpenRouter / Groq"
+
+    @web
+    Scenario: The chooser shows a how-to-get-a-key help link
+      Given the model-config demo page
+      Then the chooser shows a BYOK help link to "FAQ.html#byok" in a new tab

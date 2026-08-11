@@ -7,16 +7,18 @@ import type { RequestDebugInfo } from '@tamedtable/headless';
 export function providerLabel(provider?: string): string {
   return provider === 'gemini' ? 'Google'
     : provider === 'openai' ? 'OpenAI'
+    : provider === 'groq' ? 'Groq'
     : provider === 'openrouter' ? 'OpenRouter'
     : 'Anthropic';
 }
 
 /** A "<lead> … API key — open Settings and add one." toast that names the
  *  selected provider, so a user holding the wrong provider's key acts on the
- *  right one. `an` for OpenAI/Anthropic, `a` for Google. */
+ *  right one. `an` before a vowel sound (OpenAI, Anthropic, OpenRouter), `a`
+ *  otherwise (Google, Groq). */
 export function missingProviderKeyMessage(provider: string | undefined, lead: string): string {
   const label = providerLabel(provider);
-  const article = label === 'Google' ? 'a' : 'an';
+  const article = /^[AEIOU]/.test(label) ? 'an' : 'a';
   return `${lead} ${article} ${label} API key — open Settings and add one.`;
 }
 

@@ -20,7 +20,7 @@ import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, defaultBatchSize, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
-import { readStoredConfig } from '@tamedtable/model-config/storage';
+import { readStoredConfig, readStoredProbes, type ProviderProbe } from '@tamedtable/model-config/storage';
 import { describeError, userFacingMessage, summarizeDebug, missingTextKeyMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { EngineManager } from './controller-engine.ts';
@@ -38,7 +38,6 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
-  KeyTest,
   RunProgress,
   Toast,
   TutorialManifestEntry,
@@ -57,7 +56,6 @@ export type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
-  KeyTest,
   ResolvedConfig,
   RunProgress,
   Toast,
@@ -104,21 +102,18 @@ export class WebController implements ControllerHost {
   loaded = false;
   sourcePath = '';
   settingsOpen = false;
-  /** Provider card expanded in the settings panel, or null when none is. */
-  expandedProvider: Provider | null = null;
-  /** Provider whose config most recently saved while the panel is open — its
-   *  card header shows the "✓ Saved" badge. Cleared on panel open. */
-  savedProvider: Provider | null = null;
-  /** Bumped on every settings save; keys the badge so each save restarts its
-   *  green phase. */
-  savedSeq = 0;
-  /** #ProviderSelect — the Test button's verdict on the selected provider's
-   *  key, or null before any test. Cleared on panel open and whenever the
-   *  provider or its key moves. */
-  keyTest: KeyTest | null = null;
-  /** What each provider's key field currently holds. Typing moves the draft;
-   *  the config only changes when the field is left (see ConfigManager). */
-  keyDrafts: Record<Provider, string> = { gemini: '', openai: '', anthropic: '', openrouter: '' };
+  /** What the chooser's key input holds. Cleared on a successful connect. */
+  keyInput = '';
+  /** The chooser's error banner, or '' when there is none. */
+  keyError = '';
+  /** Whether a connect is in flight — the input and Add button are disabled. */
+  keyBusy = false;
+  /** Per-provider tier and measured cost/speed, seeded from the cache written
+   *  on the last connect (see ConfigManager). */
+  probes: Partial<Record<Provider, ProviderProbe>> = readStoredProbes();
+  /** Providers whose measurements are still running — their rows read
+   *  "measuring…" until each call lands. */
+  measuring: Partial<Record<Provider, boolean>> = {};
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or
@@ -611,16 +606,17 @@ export class WebController implements ControllerHost {
   // ── Settings / config (→ config) ───────────────────────────────────────────
 
   openSettings(): void { this.settingsMgr.openSettings(); }
-  closeSettings(): Promise<void> { return this.settingsMgr.closeSettings(); }
-  clickProviderCard(provider: Provider): Promise<void> { return this.settingsMgr.clickProviderCard(provider); }
-  /** The user typed in a key field — moves the draft, saves nothing. */
-  setKeyDraft(provider: Provider, value: string): void { this.settingsMgr.setKeyDraft(provider, value); }
-  /** The user left a key field (or pressed Enter) — saves the draft. */
-  commitKeyDraft(provider: Provider): Promise<void> { return this.settingsMgr.commitKeyDraft(provider); }
-  /** #ProviderSelect — run the Settings Test button's key check. */
-  testKey(): Promise<void> { return this.settingsMgr.testKey(); }
-  /** Whether there is a key to test (an empty field disables the button). */
-  canTestKey(): boolean { return this.settingsMgr.canTestKey(); }
+  closeSettings(): void { this.settingsMgr.closeSettings(); }
+  /** The user typed in the chooser's key input. */
+  setKeyInput(value: string): void { this.settingsMgr.setKeyInput(value); }
+  /** #ProviderSelect — check the pasted key and connect its provider. */
+  addKey(): Promise<void> { return this.settingsMgr.addKey(); }
+  /** Make a connected provider the default. */
+  selectProvider(provider: Provider): Promise<void> { return this.settingsMgr.selectProvider(provider); }
+  /** Remove a connected provider and its key. */
+  removeProvider(provider: Provider): Promise<void> { return this.settingsMgr.removeProvider(provider); }
+  /** Every provider with a key — the chooser's card list. */
+  connectedProviders(): Provider[] { return this.settingsMgr.connected(); }
   getConfig(): ResolvedConfig { return this.config; }
   setConfig(partial: Partial<ResolvedConfig>): Promise<void> { return this.settingsMgr.setConfig(partial); }
   /** @deprecated Use getConfig() instead. */

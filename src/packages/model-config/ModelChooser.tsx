@@ -1,600 +1,456 @@
 // #ModelConfig #ProviderSelect
-// ModelChooser — the provider accordion: one card per provider with a masked
-// API-key input (eye toggle to reveal). The user picks a provider, not
-// individual models — each provider's primary (patch-turn) and secondary
-// (per-row cell) models are fixed defaults, shown read-only inside the card
-// with their per-Mtok prices. A single generic explainer sits above the cards.
-// Pure component: props in, callbacks out; the host owns all state except the
-// per-provider reveal toggles. Styled only via --mc-* CSS custom properties,
-// each with a presentable light default, so it renders standalone and the host
-// injects its theme by setting the variables on a wrapper.
+// ModelChooser — the panel a user connects providers in. Three parts, stacked:
+// the connected-provider list (or an empty row), the "Already have an API key?"
+// block that adds one, and the supported-providers footer. There is no provider
+// list to pick from before connecting — the key names its own provider.
+// Pure component: props in, callbacks out, no state of its own. Styled only via
+// --mc-* CSS custom properties, each with a presentable light default, so it
+// renders standalone and the host injects its theme by setting the variables on
+// a wrapper.
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
-import { useState, type ReactNode } from 'react';
-import type { ModelDef, Provider } from './index.ts';
+import type { ReactNode } from 'react';
+import type { Provider, Tier } from './index.ts';
+import type { ModelMeasure } from './probe.ts';
+
+/** One role row on a card. `measure` is the numbers when they are in,
+ *  `'measuring'` while the call is still out, and null when the measurement
+ *  failed — a working key with an unknown price is still a working key. */
+export interface RoleRow {
+  model: string;
+  measure: ModelMeasure | 'measuring' | null;
+}
+
+export interface ConnectedCard {
+  id: Provider;
+  tier: Tier;
+  /** Whether this provider's primary model accepts audio input. */
+  voice: boolean;
+  primary: RoleRow;
+  secondary: RoleRow;
+}
 
 export interface ModelChooserProps {
-  models: readonly ModelDef[];
-  provider: Provider;
-  /** Primary (patch-turn) model id — the provider default, shown read-only. */
-  primaryModel: string;
-  /** Secondary (per-row cell) model id — the provider default, shown read-only. */
-  secondaryModel: string;
-  keys: Record<Provider, string>;
-  expandedProvider: Provider | null;
-  /** Provider whose config the host most recently saved, or null. That card's
-   * header shows a "✓ Saved" badge, green fading to grey after savedFadeMs. */
-  savedProvider?: Provider | null;
-  /** Bumped by the host on every save — keys the badge so each save restarts
-   * its green phase even when savedProvider is unchanged. */
-  savedSeq?: number;
-  /** How long the badge stays green before fading to grey. The host passes its
-   * standard toast duration; defaults to 3000 ms. */
-  savedFadeMs?: number;
-  /** Optional URL for a general "how to get an API key" help link, shown at the
-   * top below the explainer. The host supplies the path so the component
-   * carries no site URL. */
+  /** The cards to render, in the order they were connected. */
+  connected: readonly ConnectedCard[];
+  /** The default provider every run uses, or null when nothing is connected. */
+  selected: Provider | null;
+  keyInput: string;
+  error: string;
+  /** An add is in flight — the input and button are disabled so a slow
+   *  provider cannot be double-submitted. */
+  busy: boolean;
+  /** Optional URL for the "How to get ↗" link. The host supplies the path so
+   *  the component carries no site URL; the link is omitted when unset. */
   byokHelpUrl?: string;
-  /** Optional URL for a "how to change the default models" help link, shown at
-   * the bottom below the cards. Points at the FAQ entry that explains editing
-   * models.json. The host supplies the path. */
-  changeModelsHelpUrl?: string;
-  /** The key test the host last ran, or null. Only the matching card renders
-   *  it — every other card shows nothing. */
-  testState?: KeyTest | null;
-  onProviderClick: (p: Provider) => void;
-  onKeyChange: (p: Provider, value: string) => void;
-  /** The user finished with a key field — it lost focus, or they pressed
-   *  Enter. A host that saves on every keystroke can leave it unset and use
-   *  `onKeyChange` alone. */
-  onKeyCommit?: (p: Provider, value: string) => void;
-  /** The card's Test button was clicked. Omit it and no card shows a Test
-   *  button — a host with no way to reach a provider gets no button that
-   *  cannot work. */
-  onTestKey?: (p: Provider) => void;
+  onKeyInputChange: (value: string) => void;
+  onAdd: () => void;
+  onSelect: (p: Provider) => void;
+  onRemove: (p: Provider) => void;
 }
 
-/** A card's verdict on its API key: what the host reports back after
- *  `onTestKey`. */
-export interface KeyTest {
-  provider: Provider;
-  state: 'running' | 'ok' | 'error';
-  message: string;
-}
+/** The display name for each provider. One home, so the host never spells
+ *  these out again. */
+export const PROVIDER_LABEL: Record<Provider, string> = {
+  gemini: 'Google API',
+  openai: 'OpenAI API',
+  anthropic: 'Anthropic API',
+  groq: 'Groq API',
+  openrouter: 'OpenRouter API',
+};
+
+/** The footer's supported-provider list, in the order the design names them. */
+const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq';
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
 
 const v = (name: string, fallback: string): string => `var(--mc-${name}, ${fallback})`;
 
-const ink = v('ink', '#27272a');
-const ink3 = v('ink3', '#71717a');
+const ink = v('ink', '#1c1f23');
+const ink2 = v('ink2', '#4a5260');
+const ink3 = v('ink3', '#6b7280');
 const surface = v('surface', '#ffffff');
-const surface2 = v('surface2', '#f7f7f8');
-const surface3 = v('surface3', '#ececef');
-const line = v('line', '#e0e0e3');
-const line2 = v('line2', '#cfcfd4');
-const accent = v('accent', '#4a8fd4');
-const accentSoft = v('accent-soft', '#e9f2fb');
-const ok = v('ok', '#247a4d');
-const okSoft = v('ok-soft', '#e4f4ea');
-const err = v('err', '#b3261e');
+const surface2 = v('surface2', '#fbfbfc');
+const surface3 = v('surface3', '#eceef1');
+const line = v('line', '#e8eaee');
+const line2 = v('line2', '#d5d9de');
+const accent = v('accent', '#1a73e8');
+const accentSoft = v('accent-soft', '#eef4fe');
+const ok = v('ok', '#1a6b38');
+const okSoft = v('ok-soft', '#e7f6ec');
+const err = v('err', '#a3312b');
+const errSoft = v('err-soft', '#fbeceb');
 const fontUi = v('font-ui', 'system-ui, sans-serif');
-const fontMono = v('font-mono', 'ui-monospace, SFMono-Regular, Menlo, monospace');
-const radius = v('radius', '6px');
+const fontMono = v('font-mono', 'ui-monospace, Menlo, monospace');
+const radius = v('radius', '8px');
 const radiusSm = v('radius-sm', '4px');
-const radiusLg = v('radius-lg', '10px');
+const radiusLg = v('radius-lg', '11px');
 
-// ── Provider metadata ──────────────────────────────────────────────────────
+// ── Formatting ─────────────────────────────────────────────────────────────
 
-interface ProviderMeta {
-  id: Provider;
-  name: string;
-  tagline: string;
-  envHint: string;
-  keyPlaceholder: string;
-  /** Direct link to that provider's "create API key" page. */
-  keyUrl: string;
+/** Price with as many decimals as it needs and no more: 0.0068, 0.00075, 0. */
+function money(usd: number): string {
+  return String(Number(usd.toFixed(5)));
 }
 
-const PROVIDERS: ProviderMeta[] = [
-  {
-    id: 'gemini',
-    name: 'Google',
-    tagline: 'Gemini models',
-    envHint: 'or set GEMINI_API_KEY in .env',
-    keyPlaceholder: 'AIza…',
-    keyUrl: 'https://aistudio.google.com/apikey',
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    tagline: 'GPT models',
-    envHint: 'or set OPENAI_API_KEY in .env',
-    keyPlaceholder: 'sk-…',
-    keyUrl: 'https://platform.openai.com/api-keys',
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    tagline: 'Claude models',
-    envHint: 'or set ANTHROPIC_API_KEY in .env',
-    keyPlaceholder: 'sk-ant-…',
-    keyUrl: 'https://console.anthropic.com/settings/keys',
-  },
-  {
-    id: 'openrouter',
-    name: 'OpenRouter',
-    tagline: 'Free models',
-    envHint: 'or set OPENROUTER_API_KEY in .env',
-    keyPlaceholder: 'sk-or-…',
-    keyUrl: 'https://openrouter.ai/settings/keys',
-  },
-];
+/** The card's measured line, or the placeholder that stands in for it. */
+function costLine(row: RoleRow): string | null {
+  if (row.measure === 'measuring') return 'measuring…';
+  if (row.measure === null) return null;
+  return `$${money(row.measure.usdPer1kTok)} / ${row.measure.secPer1kTok.toFixed(1)}sec for 1000 tokens`;
+}
 
 // ── Inline icons (no host icon set) ────────────────────────────────────────
 
-const eyeIcon = (open: boolean): ReactNode => (
+const trashIcon = (
   <svg
-    width={14}
-    height={14}
-    viewBox="0 0 16 16"
+    width={15}
+    height={15}
+    viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="1.5"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={{ flex: '0 0 auto', display: 'block' }}
+    style={{ display: 'block' }}
     aria-hidden="true"
   >
-    <path
-      d={
-        open
-          ? 'M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z'
-          : 'M6.2 6.2A2 2 0 0 0 9.8 9.8 M3 3l10 10 M5.2 5.3C2.9 6.6 1.5 8 1.5 8S4 12.5 8 12.5c1 0 1.9-.2 2.7-.6 M10.8 10.7C13 9.4 14.5 8 14.5 8S12 3.5 8 3.5'
-      }
-    />
+    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
   </svg>
 );
 
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function ModelChooser({
-  models,
-  provider,
-  primaryModel,
-  secondaryModel,
-  keys,
-  expandedProvider,
-  savedProvider,
-  savedSeq,
-  savedFadeMs = 3000,
+  connected,
+  selected,
+  keyInput,
+  error,
+  busy,
   byokHelpUrl,
-  changeModelsHelpUrl,
-  testState,
-  onProviderClick,
-  onKeyChange,
-  onKeyCommit,
-  onTestKey,
+  onKeyInputChange,
+  onAdd,
+  onSelect,
+  onRemove,
 }: ModelChooserProps): ReactNode {
-  const [revealed, setRevealed] = useState<Record<Provider, boolean>>({
-    gemini: false, openai: false, anthropic: false, openrouter: false,
-  });
+  const canAdd = keyInput.trim() !== '' && !busy;
 
-  const toggleReveal = (p: Provider): void => {
-    setRevealed((prev) => ({ ...prev, [p]: !prev[p] }));
-  };
-
-  // ── sub-renderers ───────────────────────────────────────────────────────
-
-  // "✓ Saved" confirmation on the card whose config just saved: green while
-  // fresh, then fades to the grey of the surrounding metadata. Keyed on
-  // savedSeq so every save replays the animation from green.
-  const savedBadge = (p: Provider): ReactNode => (
+  // A small monospace tag: FREE / PAID / VOICE.
+  const tag = (label: string, fg: string, bg: string, attr?: Record<string, string>): ReactNode => (
     <span
-      key={savedSeq}
-      data-mc-saved={p}
+      {...attr}
       style={{
-        fontFamily: fontUi,
-        fontSize: 11.5,
-        fontWeight: 500,
-        flexShrink: 0,
-        animation: `mc-saved-fade 400ms ease ${savedFadeMs}ms forwards`,
-        color: ok,
-      }}
-    >
-      ✓ Saved
-    </span>
-  );
-
-  const voiceBadge = (hasVoice: boolean): ReactNode => (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 3,
-        padding: '2px 7px',
-        borderRadius: 12,
-        fontFamily: fontUi,
-        fontSize: 11.5,
-        fontWeight: 500,
-        background: hasVoice ? okSoft : surface3,
-        color: hasVoice ? ok : ink3,
-        flexShrink: 0,
-      }}
-    >
-      {hasVoice ? '🎙 Voice input' : 'No voice input'}
-    </span>
-  );
-
-  // Per-model tag: shown only for voice-capable models. Non-voice models carry
-  // no tag (so OpenAI's text-only GPT models show none at all).
-  const voiceTag = (voice: boolean): ReactNode =>
-    voice ? (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 2,
-          padding: '1px 6px',
-          borderRadius: 10,
-          fontFamily: fontUi,
-          fontSize: 11.5,
-          background: okSoft,
-          color: ok,
-          flexShrink: 0,
-          marginLeft: 8,
-        }}
-      >
-        🎙 voice
-      </span>
-    ) : null;
-
-  // A small accent-coloured, new-tab help link. `attr` is the stable data
-  // attribute the tests hook onto (data-mc-byok / data-mc-changemodels).
-  const helpLink = (attr: string, href: string, label: string): ReactNode => (
-    <a
-      {...{ [attr]: '' }}
-      href={href}
-      target="_blank"
-      rel="noopener"
-      style={{
-        fontFamily: fontUi,
-        fontSize: 11.5,
-        fontWeight: 500,
-        color: accent,
-        textDecoration: 'none',
-        alignSelf: 'flex-start',
+        padding: '4px 6px',
+        borderRadius: radiusSm,
+        fontFamily: fontMono,
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: '.04em',
+        whiteSpace: 'nowrap',
+        color: fg,
+        background: bg,
       }}
     >
       {label}
-    </a>
+    </span>
   );
 
-  const radioKnob = (selected: boolean): ReactNode => (
-    <span
-      aria-hidden="true"
-      style={{
-        flex: '0 0 auto',
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        border: `1.5px solid ${selected ? accent : line2}`,
-        background: selected ? accent : 'transparent',
-        boxShadow: selected ? `inset 0 0 0 2.5px ${surface}` : 'none',
-      }}
-    />
-  );
+  // One role row: the label column, the model id, and the measured line under
+  // it — aligned to the model id, not the label.
+  const roleRow = (role: 'primary' | 'secondary', row: RoleRow): ReactNode => {
+    const cost = costLine(row);
+    return (
+      <div data-mc-model={row.model} data-mc-role={role}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span
+            style={{
+              width: 68,
+              flex: '0 0 auto',
+              fontFamily: fontUi,
+              fontSize: 12,
+              fontWeight: 650,
+              whiteSpace: 'nowrap',
+              color: role === 'primary' ? ink2 : ink3,
+            }}
+          >
+            {role === 'primary' ? 'Primary' : 'Secondary'}
+          </span>
+          <span
+            data-mc-model-id={row.model}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontFamily: fontMono,
+              fontSize: 13,
+              color: ink,
+              // A long id truncates rather than wrapping: on a phone a
+              // char-wrapped id turns the row into a ragged three-line column.
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {row.model}
+          </span>
+        </div>
+        {cost !== null && (
+          <div
+            data-mc-cost=""
+            style={{
+              paddingLeft: 76,
+              fontFamily: fontUi,
+              fontSize: 12,
+              color: ink3,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {cost}
+          </div>
+        )}
+      </div>
+    );
+  };
 
-  // Per-Mtok price pill: "$3 in / $15 out". Shown on each read-only default row.
-  const priceTag = (m: ModelDef | undefined): ReactNode =>
-    m ? (
-      <span
-        style={{
-          fontFamily: fontMono,
-          fontSize: 11.5,
-          color: ink3,
-          flexShrink: 0,
-          marginLeft: 8,
-        }}
-      >
-        ${m.inUsdPerMtok} in / ${m.outUsdPerMtok} out
-      </span>
-    ) : null;
-
-  // One read-only row for a fixed role default: role label, model id, its
-  // price, and (for voice-capable primaries) the voice tag.
-  const defaultRow = (role: 'primary' | 'secondary', modelId: string): ReactNode => {
-    const m = models.find((x) => x.id === modelId);
+  const card = (c: ConnectedCard): ReactNode => {
+    const isSelected = selected === c.id;
     return (
       <div
-        data-mc-model={modelId}
-        data-mc-role={role}
+        key={c.id}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          // Wrap on a narrow phone: the voice tag and price drop to a second
-          // line instead of squeezing the model id into a ragged three-line
-          // column.
-          flexWrap: 'wrap',
-          gap: 8,
-          padding: '7px 6px',
-          borderRadius: radiusSm,
-          background: role === 'primary' ? accentSoft : 'transparent',
+          border: `1px solid ${isSelected ? accent : line}`,
+          borderRadius: radiusLg,
+          overflow: 'hidden',
+          background: isSelected ? accentSoft : surface,
         }}
       >
-        <span
+        <div
+          data-mc-card={c.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => onSelect(c.id)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSelect(c.id);
+            }
+          }}
           style={{
-            width: 74,
-            fontFamily: fontUi,
-            fontSize: 10.5,
-            fontWeight: 600,
-            letterSpacing: 0.3,
-            textTransform: 'uppercase',
-            color: ink3,
-            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 9,
+            padding: '11px 12px',
+            cursor: 'pointer',
           }}
         >
-          {role}
-        </span>
-        <span data-mc-model-id={modelId} style={{ fontFamily: fontMono, fontSize: 12.5, color: ink, flex: 1, whiteSpace: 'nowrap' }}>
-          {modelId}
-        </span>
-        {voiceTag(m?.voiceInput ?? false)}
-        {priceTag(m)}
-      </div>
-    );
-  };
-
-  // The Test button + its verdict. A key that is merely typed is not a key
-  // that works, and the alternative to asking now is finding out from a failed
-  // transformation minutes later. The component runs nothing: it reports the
-  // click and renders whatever the host hands back.
-  const testButton = (meta: ProviderMeta): ReactNode => {
-    if (!onTestKey) return null;
-    const running = testState?.provider === meta.id && testState.state === 'running';
-    const disabled = running || keys[meta.id].trim() === '';
-    return (
-      <button
-        type="button"
-        data-mc-test={meta.id}
-        disabled={disabled}
-        onClick={() => onTestKey(meta.id)}
-        title={disabled && !running ? 'Enter an API key first' : 'Check this key against the provider'}
-        style={{
-          flex: '0 0 auto',
-          padding: '7px 12px',
-          border: `1px solid ${line2}`,
-          borderRadius: radius,
-          background: surface2,
-          color: disabled ? ink3 : ink,
-          fontFamily: fontUi,
-          fontSize: 12.5,
-          fontWeight: 500,
-          cursor: disabled ? 'default' : 'pointer',
-        }}
-      >
-        {running ? 'Testing…' : 'Test'}
-      </button>
-    );
-  };
-
-  const testResult = (meta: ProviderMeta): ReactNode => {
-    if (!testState || testState.provider !== meta.id || testState.state === 'running') return null;
-    const good = testState.state === 'ok';
-    return (
-      <div
-        data-mc-testresult={meta.id}
-        data-mc-teststate={testState.state}
-        style={{
-          marginTop: 6,
-          padding: '5px 8px',
-          borderRadius: radiusSm,
-          background: good ? okSoft : 'transparent',
-          color: good ? ok : err,
-          fontFamily: fontUi,
-          fontSize: 11.5,
-          lineHeight: 1.45,
-        }}
-      >
-        {good ? `✓ ${testState.message}` : testState.message}
-      </div>
-    );
-  };
-
-  // The masked key input and its reveal toggle, in one bordered box.
-  const keyField = (meta: ProviderMeta): ReactNode => (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        flex: 1,
-        minWidth: 0,
-        border: `1px solid ${line2}`,
-        borderRadius: radius,
-        padding: '6px 8px',
-        background: surface2,
-      }}
-    >
-      <input
-        type={revealed[meta.id] ? 'text' : 'password'}
-        data-mc-key={meta.id}
-        value={keys[meta.id]}
-        onChange={(e) => onKeyChange(meta.id, e.target.value)}
-        onBlur={(e) => onKeyCommit?.(meta.id, e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') onKeyCommit?.(meta.id, e.currentTarget.value);
-        }}
-        placeholder={meta.keyPlaceholder}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          border: 'none',
-          outline: 'none',
-          background: 'transparent',
-          fontFamily: fontMono,
-          fontSize: 12.5,
-          color: ink,
-        }}
-      />
-      <button
-        type="button"
-        data-mc-reveal={meta.id}
-        onClick={() => toggleReveal(meta.id)}
-        title={revealed[meta.id] ? 'Hide key' : 'Show key'}
-        style={{
-          background: 'transparent',
-          border: 0,
-          padding: 2,
-          cursor: 'pointer',
-          color: ink3,
-          display: 'flex',
-        }}
-      >
-        {eyeIcon(!revealed[meta.id])}
-      </button>
-    </div>
-  );
-
-  const cardBody = (meta: ProviderMeta): ReactNode => {
-    return (
-      <div style={{ padding: '8px 14px 12px', borderTop: `1px solid ${line}` }}>
-        {/* API key field, with the Test button beside it */}
-        <div style={{ marginBottom: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: 6 }}>
-            {keyField(meta)}
-            {testButton(meta)}
-          </div>
-          {testResult(meta)}
-          {/* Env-var hint + deep link to the provider's key page */}
-          <div
+          {/* radio knob */}
+          <span
+            aria-hidden="true"
             style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              justifyContent: 'space-between',
-              gap: 8,
-              marginTop: 4,
+              flex: '0 0 auto',
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              border: `2px solid ${isSelected ? accent : line2}`,
+              background: isSelected ? accent : 'transparent',
+              boxShadow: isSelected ? `inset 0 0 0 2px ${surface}` : 'none',
+            }}
+          />
+          <span
+            style={{
+              fontFamily: fontUi,
+              fontSize: 14,
+              fontWeight: 650,
+              color: ink,
+              whiteSpace: 'nowrap',
             }}
           >
-            <span style={{ fontFamily: fontMono, fontSize: 11.5, color: ink3 }}>
-              {meta.envHint}
-            </span>
-            <a
-              data-mc-keyurl={meta.id}
-              href={meta.keyUrl}
-              target="_blank"
-              rel="noopener"
-              style={{
-                fontFamily: fontUi,
-                fontSize: 11.5,
-                fontWeight: 500,
-                color: accent,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              Get API key ↗
-            </a>
-          </div>
+            {PROVIDER_LABEL[c.id]}
+          </span>
+          <span style={{ flex: 1, display: 'flex', gap: 5, alignItems: 'center' }}>
+            {c.tier === 'free' && tag('FREE', ok, okSoft, { 'data-mc-tier': c.id })}
+            {c.tier === 'paid' && tag('PAID', ink2, surface3, { 'data-mc-tier': c.id })}
+            {c.voice && tag('VOICE', '#1a4a8a', accentSoft, { 'data-mc-voice': c.id })}
+          </span>
+          {/* Deleting must not also select the card the user is removing. */}
+          <button
+            type="button"
+            data-mc-remove={c.id}
+            title={`Remove ${PROVIDER_LABEL[c.id]}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(c.id);
+            }}
+            style={{
+              flex: '0 0 auto',
+              width: 26,
+              height: 26,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              border: 0,
+              borderRadius: 6,
+              background: 'transparent',
+              color: err,
+              cursor: 'pointer',
+            }}
+          >
+            {trashIcon}
+          </button>
         </div>
 
-        {/* Fixed role defaults for this provider — read-only, not selectable. */}
-        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {defaultRow('primary', primaryModel)}
-          {defaultRow('secondary', secondaryModel)}
-        </div>
+        {/* Only the selected card shows its models — it is the one that runs. */}
+        {isSelected && (
+          <div
+            style={{
+              padding: '0 12px 12px 37px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            {roleRow('primary', c.primary)}
+            {roleRow('secondary', c.secondary)}
+          </div>
+        )}
       </div>
     );
   };
-
-  // ── accordion cards ─────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Keyframes for the Saved badge's green→grey fade. */}
-      <style>{`@keyframes mc-saved-fade { to { color: ${ink3}; } }`}</style>
-      {/* Generic role explainer — once, above the provider cards. */}
-      <p
-        style={{
-          margin: 0,
-          fontFamily: fontUi,
-          fontSize: 11.5,
-          lineHeight: 1.45,
-          color: ink3,
-        }}
-      >
-        Pick a provider — its models are chosen for you.{' '}
-        <b style={{ color: ink }}>Primary</b> writes the spec patch each turn and
-        handles voice input; <b style={{ color: ink }}>Secondary</b> fills per-row
-        AI cells with a cheaper model for bulk work.
-      </p>
-      {/* General "how to get an API key" help link — top, below the explainer. */}
-      {byokHelpUrl && helpLink('data-mc-byok', byokHelpUrl, 'New here? How to get an API key ↗')}
-      {PROVIDERS.map((meta) => {
-        const isSelected = provider === meta.id;
-        const isExpanded = expandedProvider === meta.id;
-        const hasVoice = models.some((m) => m.provider === meta.id && m.voiceInput);
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {connected.length === 0 ? (
+        <div
+          data-mc-empty=""
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            padding: 14,
+            border: `1px dashed ${line2}`,
+            borderRadius: radiusLg,
+            background: surface2,
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{ width: 7, height: 7, borderRadius: 4, background: ink3, flex: '0 0 auto' }}
+          />
+          <span style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 600, color: ink2 }}>
+            No provider or model added.
+          </span>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {connected.map(card)}
+        </div>
+      )}
 
-        return (
+      {/* ── Already have an API key? ───────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink }}>
+          Already have an API key?
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'baseline',
+            gap: 8,
+            fontFamily: fontUi,
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: ink2,
+          }}
+        >
+          <span>Paste it below, we do the rest.</span>
+          {byokHelpUrl && (
+            <a
+              data-mc-byok=""
+              href={byokHelpUrl}
+              target="_blank"
+              rel="noopener"
+              style={{ fontWeight: 600, color: accent, textDecoration: 'none' }}
+            >
+              How to get ↗
+            </a>
+          )}
+        </div>
+
+        {error !== '' && (
           <div
-            key={meta.id}
+            data-mc-error=""
             style={{
-              border: `1px solid ${isExpanded ? accent : line}`,
-              borderRadius: radiusLg,
-              overflow: 'hidden',
-              background: surface,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+              padding: '10px 11px',
+              borderRadius: radius,
+              background: errSoft,
             }}
           >
-            {/* Card header — always visible */}
-            <button
-              type="button"
-              data-mc-card={meta.id}
-              onClick={() => onProviderClick(meta.id)}
+            <span
+              aria-hidden="true"
               style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                background: 'transparent',
-                border: 0,
-                cursor: 'pointer',
-                textAlign: 'left',
+                width: 6, height: 6, borderRadius: 3, background: err,
+                flex: '0 0 auto', marginTop: 6,
               }}
-            >
-              {radioKnob(isSelected)}
-              <span style={{ flex: 1 }}>
-                <span
-                  style={{
-                    fontFamily: fontUi,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: ink,
-                    display: 'block',
-                  }}
-                >
-                  {meta.name}
-                </span>
-                <span style={{ fontFamily: fontUi, fontSize: 11.5, color: ink3 }}>
-                  {meta.tagline}
-                </span>
-              </span>
-              {savedProvider === meta.id && savedBadge(meta.id)}
-              {voiceBadge(hasVoice)}
-            </button>
-
-            {/* Card body — visible only when expanded */}
-            {isExpanded && cardBody(meta)}
+            />
+            <span style={{ fontFamily: fontUi, fontSize: 12, fontWeight: 600, color: err, lineHeight: 1.45 }}>
+              {error}
+            </span>
           </div>
-        );
-      })}
-      {/* "How to change the default models" FAQ link — bottom, below the cards. */}
-      {changeModelsHelpUrl &&
-        helpLink(
-          'data-mc-changemodels',
-          changeModelsHelpUrl,
-          'How to change primary and secondary models? ↗',
         )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            data-mc-keyinput=""
+            value={keyInput}
+            disabled={busy}
+            onChange={(e) => onKeyInputChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && canAdd) onAdd();
+            }}
+            placeholder="AIza… / sk-proj-… / sk-ant-…"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: '10px 11px',
+              border: `1px solid ${line2}`,
+              borderRadius: radius,
+              background: surface2,
+              fontFamily: fontMono,
+              fontSize: 13,
+              color: ink,
+            }}
+          />
+          <button
+            type="button"
+            data-mc-add=""
+            disabled={!canAdd}
+            onClick={onAdd}
+            style={{
+              flex: '0 0 auto',
+              padding: '10px 18px',
+              borderRadius: radius,
+              border: `1px solid ${canAdd ? accent : line}`,
+              background: canAdd ? accent : surface3,
+              color: canAdd ? '#fff' : ink3,
+              fontFamily: fontUi,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: canAdd ? 'pointer' : 'default',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {busy ? 'Checking…' : 'Add'}
+          </button>
+        </div>
+
+        <div data-mc-providers="" style={{ fontFamily: fontUi, fontSize: 12, color: ink3 }}>
+          {SUPPORTED_LIST}
+        </div>
+      </div>
     </div>
   );
 }

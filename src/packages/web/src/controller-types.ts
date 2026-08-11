@@ -151,15 +151,3 @@ export interface RunProgress {
   /** Newest-last event feed, capped at the newest 500 lines. */
   log: string[];
 }
-
-// #ProviderSelect
-/** The Settings "Test" button's verdict on one provider's API key, or null
- *  before any test. Cleared whenever the provider or its key moves — the
- *  verdict is about one key on one provider, nothing else. */
-export interface KeyTest {
-  provider: Provider;
-  state: 'running' | 'ok' | 'error';
-  /** What the card shows: "gemini-3.1-flash-lite answered in 0.8s", or the
-   *  same sentence a failed request would have surfaced. */
-  message: string;
-}

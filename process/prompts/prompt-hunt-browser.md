@@ -61,7 +61,7 @@ Cover, at minimum:
 - **Grid** — inline edit, column drag-reorder, column resize, paging, sort and
   filter menus, selection, changed-cell tint, the reveal scroll.
 - **Undo/redo/history** — after each of the above, and interleaved.
-- **Settings** — provider cards, key fields, the Saved badge, the model rows,
+- **Settings** — pasting a key, the connected-provider cards, the model rows,
   and what a change does to a table already on screen.
 - **Tours** — every tour in the panel, start to finish, including deep links,
   staying in a finished tour, and exiting mid-tour. Tours replay committed

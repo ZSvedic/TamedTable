@@ -16,10 +16,14 @@
 </head>
 <body>
   <h1>model-config — ModelChooser &amp; resolveConfig</h1>
-  <p>Pick a provider and type a key; its primary and secondary models are fixed
-     defaults, shown read-only with prices, and the resolved config updates live.
-     Config is shared with the main app via localStorage. The test-call box at the
-     bottom issues a real call to the selected model.</p>
+  <p>Paste an API key and press Add; its prefix names the provider, and that
+     provider's primary and secondary models are fixed defaults shown with their
+     measured cost and speed. The resolved config updates live, and config is
+     shared with the main app via localStorage.</p>
+  <p>The chooser above runs against a <b>stub</b> provider, so any key with a
+     recognised prefix connects and no real account is billed. The test-call box
+     at the bottom is the live one — it issues a real call to the selected model
+     with the key you entered.</p>
   <div id="root"></div>
   <script type="module" src="./demo.tsx"></script>
 </body>

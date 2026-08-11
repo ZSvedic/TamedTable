@@ -8,10 +8,12 @@
 // doesn't, migrate the old value to { anthropicKey: oldValue } on first read
 // and remove the old key.
 
-import type { ResolvedConfig } from './index.ts';
+import type { Provider, ResolvedConfig, Tier } from './index.ts';
+import type { ModelMeasure } from './probe.ts';
 
 const CONFIG_STORAGE = 'tamedtable.config';
 const LEGACY_KEY_STORAGE = 'tamedtable.apiKey';
+const PROBE_STORAGE = 'tamedtable.probes';
 
 // Minimal localStorage surface, looked up via globalThis: this file is part
 // of the Node typecheck, which has no DOM lib.
@@ -74,6 +76,55 @@ export function clearStoredConfig(): void {
     if (localStorage === undefined) return;
     localStorage.removeItem(CONFIG_STORAGE);
     localStorage.removeItem(LEGACY_KEY_STORAGE);
+  } catch {
+    // Swallow as above.
+  }
+}
+
+// ── Measurement cache ──────────────────────────────────────────────────────
+// What each connected provider's models cost and how fast they are, so a
+// reopened panel shows its numbers without paying for the calls again. This is
+// a display cache, not config: the engine never reads it, and losing it costs a
+// re-measure rather than a working setup. That is why it lives in its own blob
+// — the config blob stays exactly what the engine is built from.
+
+/** One provider's card contents, beyond what the config already says. A role
+ *  is absent while it has not been measured, null when its measurement failed,
+ *  and the numbers once they are in. */
+export interface ProviderProbe {
+  tier: Tier;
+  primary?: ModelMeasure | null;
+  secondary?: ModelMeasure | null;
+}
+
+export type StoredProbes = Partial<Record<Provider, ProviderProbe>>;
+
+export function readStoredProbes(): StoredProbes {
+  try {
+    const localStorage = store();
+    if (localStorage === undefined) return {};
+    const raw = localStorage.getItem(PROBE_STORAGE);
+    return raw ? (JSON.parse(raw) as StoredProbes) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeStoredProbes(p: StoredProbes): void {
+  try {
+    const localStorage = store();
+    if (localStorage === undefined) return;
+    localStorage.setItem(PROBE_STORAGE, JSON.stringify(p));
+  } catch {
+    // Swallow as above — an unwritable cache just means measuring again.
+  }
+}
+
+export function clearStoredProbes(): void {
+  try {
+    const localStorage = store();
+    if (localStorage === undefined) return;
+    localStorage.removeItem(PROBE_STORAGE);
   } catch {
     // Swallow as above.
   }

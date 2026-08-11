@@ -178,46 +178,72 @@ describe.skipIf(skip)('demo smoke', () => {
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
-  it('model-config: renders the chooser and flips provider on card click', async () => {
-    const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('anthropic');
-
-    await page.click('[data-mc-card="gemini"]');
-    await page.fill('[data-mc-key="gemini"]', 'smoke-test-key');
-    await page.waitForFunction(
-      `(() => { try { return JSON.parse(document.querySelector('#out').textContent).provider === 'gemini'; } catch { return false; } })()`,
+  /** Pages share one browser context, so a demo that persists to localStorage
+   *  would otherwise inherit whatever the previous test left there. */
+  async function openFreshModelConfig() {
+    const opened = await openDemo('model-config');
+    await opened.page.evaluate(() => { localStorage.clear(); });
+    await opened.page.reload();
+    await opened.page.waitForFunction(
+      `(document.querySelector('#out')?.textContent ?? '').trim().length > 0`,
     );
-    expect(JSON.parse((await page.textContent('#out'))!).geminiKey).toBe('smoke-test-key');
+    return opened;
+  }
+
+  it('model-config: connects a provider from a pasted key', async () => {
+    const { page, consoleErrors, failedRequests } = await openFreshModelConfig();
+    // Nothing connected yet: the empty row, no cards.
+    expect(await page.isVisible('[data-mc-empty]')).toBe(true);
+    expect(await page.locator('[data-mc-card]').count()).toBe(0);
+
+    await page.fill('[data-mc-keyinput]', 'sk-ant-smoke-test-key');
+    await page.click('[data-mc-add]');
+    await page.waitForSelector('[data-mc-card="anthropic"]');
+    await page.waitForFunction(
+      `(() => { try { return JSON.parse(document.querySelector('#out').textContent).provider === 'anthropic'; } catch { return false; } })()`,
+    );
+    expect(JSON.parse((await page.textContent('#out'))!).anthropicKey).toBe('sk-ant-smoke-test-key');
+    await expectClean(page, consoleErrors, failedRequests);
+  }, 30_000);
+
+  it('model-config: refuses a key whose prefix names no provider', async () => {
+    const { page, consoleErrors, failedRequests } = await openFreshModelConfig();
+    await page.fill('[data-mc-keyinput]', 'hello-there');
+    await page.click('[data-mc-add]');
+    await page.waitForSelector('[data-mc-error]');
+    expect(await page.locator('[data-mc-card]').count()).toBe(0);
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
   it('model-config: persists config to localStorage and restores it on reload', async () => {
-    const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    await page.click('[data-mc-card="gemini"]');
-    await page.fill('[data-mc-key="gemini"]', 'persisted-key');
+    const { page, consoleErrors, failedRequests } = await openFreshModelConfig();
+    await page.fill('[data-mc-keyinput]', 'AIza-persisted-key');
+    await page.click('[data-mc-add]');
     await page.waitForFunction(
-      `(() => { try { return JSON.parse(localStorage.getItem('tamedtable.config') ?? '{}').geminiKey === 'persisted-key'; } catch { return false; } })()`,
+      `(() => { try { return JSON.parse(localStorage.getItem('tamedtable.config') ?? '{}').geminiKey === 'AIza-persisted-key'; } catch { return false; } })()`,
     );
 
     await page.reload();
     await page.waitForFunction(`(document.querySelector('#out')?.textContent ?? '').trim().length > 0`);
     const resolved = JSON.parse((await page.textContent('#out'))!);
     expect(resolved.provider).toBe('gemini');
-    expect(resolved.geminiKey).toBe('persisted-key');
+    expect(resolved.geminiKey).toBe('AIza-persisted-key');
+    await page.waitForSelector('[data-mc-card="gemini"]');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
   it('model-config: shows the test-call harness, mic only for voice models', async () => {
-    const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    // Anthropic default model: no voice support, so no mic.
+    const { page, consoleErrors, failedRequests } = await openFreshModelConfig();
     expect(await page.isVisible('#tc-input')).toBe(true);
     expect(await page.isVisible('#tc-send')).toBe(true);
     expect(await page.isVisible('#tc-response')).toBe(true);
-    expect(await page.locator('#tc-mic').count()).toBe(0);
-
-    // Switching to a Gemini model (voiceInput: true) shows the mic.
-    await page.click('[data-mc-card="gemini"]');
+    // The key-free default resolves to Gemini, whose primary takes audio.
     await page.waitForSelector('#tc-mic');
+
+    // Connecting Anthropic makes it the default; its models are text-only.
+    await page.fill('[data-mc-keyinput]', 'sk-ant-smoke');
+    await page.click('[data-mc-add]');
+    await page.waitForSelector('#tc-mic', { state: 'detached' });
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 });

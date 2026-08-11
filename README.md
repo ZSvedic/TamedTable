@@ -77,7 +77,7 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 
 ## Setup
 
-You need [bun](https://bun.sh) and an API key from any provider — Google, Anthropic, OpenAI, or OpenRouter.
+You need [bun](https://bun.sh) and an API key from any provider — Google, Anthropic, OpenAI, Groq, or OpenRouter.
 
 1. Install the project's libraries — a one-time step you repeat only if the
    dependencies change:
@@ -89,6 +89,7 @@ You need [bun](https://bun.sh) and an API key from any provider — Google, Anth
    GEMINI_API_KEY=...                # Google Gemini
    ANTHROPIC_API_KEY=sk-ant-...      # Anthropic
    OPENAI_API_KEY=sk-...             # OpenAI
+   GROQ_API_KEY=gsk_...              # Groq
    OPENROUTER_API_KEY=sk-or-...      # OpenRouter
    ```
    The runtime picks the provider from the model id (`TAMEDTABLE_MODEL` below), so set the model to one from your provider unless you use the default Gemini model.

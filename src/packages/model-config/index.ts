@@ -4,7 +4,12 @@
 
 import catalogue from './models.json' with { type: 'json' };
 
-export type Provider = 'anthropic' | 'gemini' | 'openai' | 'openrouter';
+export type Provider = 'anthropic' | 'gemini' | 'openai' | 'groq' | 'openrouter';
+
+/** What a provider says about the account behind a key. `null` means the
+ *  provider reports nothing — the chooser then shows no tag rather than a
+ *  guess. See spec § Checking a key. */
+export type Tier = 'free' | 'paid' | null;
 
 /** Providers the engine can route a model id to. Cerebras is bench-only: the
  *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
@@ -39,6 +44,7 @@ export interface ResolvedConfig {
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
+  groqKey: string | null;
   openrouterKey: string | null;
   /** Primary model: writes the spec patch each turn (and carries voice input). */
   model: string;
@@ -93,18 +99,52 @@ export function defaultBatchSize(provider: Provider): number | undefined {
   return DEFAULTS[provider]?.batchSize;
 }
 
-/** Infer provider from a model id prefix. Returns 'anthropic' for unknown ids.
- *  Slash-containing ids are OpenRouter's vendor/model form and no other
- *  provider's ids contain one, so that rule goes first; `gpt-oss-` is checked
- *  before `gpt-`, so the open-weight OpenAI models served by Cerebras never
- *  land on the OpenAI provider. */
+/** The provider that serves a model id. The catalogue is asked first: an exact
+ *  match returns its own `provider`, which is what keeps Groq's vendor-prefixed
+ *  ids (`openai/gpt-oss-120b`) off OpenRouter and makes the next provider a
+ *  data change rather than a new prefix rule. Ids the catalogue doesn't know —
+ *  bench-only sweep candidates, dated aliases, anything new — fall back to
+ *  prefixes: a slash means an OpenRouter vendor/model id, and `gpt-oss-` is
+ *  checked before `gpt-` so the open-weight OpenAI models served by Cerebras
+ *  never land on the OpenAI provider. Unknown ids end on 'anthropic'. */
 export function providerFor(modelId: string): EngineProvider {
+  const known = ALL_MODELS.find((m) => m.id === modelId);
+  if (known)                          return known.provider;
   if (modelId.includes('/'))          return 'openrouter';
   if (modelId.startsWith('gemini-'))  return 'gemini';
   if (modelId.startsWith('zai-'))     return 'cerebras';
   if (modelId.startsWith('gpt-oss-')) return 'cerebras';
   if (modelId.startsWith('gpt-'))     return 'openai';
   return 'anthropic';
+}
+
+// ── Detecting a provider from a pasted key ─────────────────────────────────
+// The user never picks a provider from a list — the key names it. Order
+// matters here: sk-proj-, sk-ant- and sk-or- all start with sk-, so the
+// generic OpenAI rule is tested last or it would swallow all three.
+
+const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
+  ['sk-proj-', 'openai'],
+  ['sk-ant-',  'anthropic'],
+  ['sk-or-',   'openrouter'],
+  ['gsk_',     'groq'],
+  ['AIza',     'gemini'],
+  ['sk-',      'openai'],
+];
+
+/** The prefixes named in the chooser's "key not recognised" message, in the
+ *  order a user reads them — not the order they are matched in. */
+export const SUPPORTED_PREFIXES: readonly string[] = [
+  'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…',
+];
+
+/** The provider a pasted key belongs to, or null when no prefix matches. A
+ *  prefix is a guess, not proof — `verifyKey` (probe.ts) is what confirms it
+ *  against the provider before anything is stored. */
+export function detectProvider(key: string): Provider | null {
+  const k = key.trim();
+  if (k === '') return null;
+  return KEY_PREFIXES.find(([prefix]) => k.startsWith(prefix))?.[1] ?? null;
 }
 
 /** Whether a model accepts a `temperature` (sampling) parameter. The newest
@@ -121,10 +161,27 @@ export function acceptsTemperature(modelId: string): boolean {
 /** The API key for the config's active provider, or null when it's unset.
  *  One home for the provider→key mapping, shared by the CLI and web surfaces. */
 export function keyFor(config: ResolvedConfig): string | null {
-  if (config.provider === 'gemini') return config.geminiKey;
-  if (config.provider === 'openai') return config.openaiKey;
-  if (config.provider === 'openrouter') return config.openrouterKey;
-  return config.anthropicKey;
+  return config[KEY_FIELD[config.provider]];
+}
+
+/** The `ResolvedConfig` field each provider's key lives in. One table so the
+ *  provider→key mapping is stated once; `keyFor` and `connectedProviders` both
+ *  read it, as does the web controller. */
+export const KEY_FIELD = {
+  gemini:     'geminiKey',
+  openai:     'openaiKey',
+  anthropic:  'anthropicKey',
+  groq:       'groqKey',
+  openrouter: 'openrouterKey',
+} as const satisfies Record<Provider, keyof ResolvedConfig>;
+
+/** Every provider whose key is set, in catalogue order. A connected provider
+ *  *is* a provider with a key — connecting stores nothing of its own, so the
+ *  chooser's card list is derived from the config rather than tracked beside
+ *  it. */
+export function connectedProviders(config: ResolvedConfig): Provider[] {
+  return (Object.keys(KEY_FIELD) as Provider[])
+    .filter((p) => (config[KEY_FIELD[p]] ?? '') !== '');
 }
 
 // ── resolveConfig ──────────────────────────────────────────────────────────
@@ -135,18 +192,19 @@ export function keyFor(config: ResolvedConfig): string | null {
  *   1. GEMINI_API_KEY in env → provider=gemini, geminiKey=value
  *   2. OPENAI_API_KEY in env → provider=openai, openaiKey=value
  *   3. ANTHROPIC_API_KEY in env → provider=anthropic, anthropicKey=value
- *   4. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value —
+ *   4. GROQ_API_KEY in env → provider=groq, groqKey=value
+ *   5. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value —
  *      last, so a paid key always outranks the free tier
- *   5. stored.provider (fallback: "gemini" — the provider every committed
+ *   6. stored.provider (fallback: "gemini" — the provider every committed
  *      cassette records with, so key-free replay resolves the taped models)
- *   6. TAMEDTABLE_MODEL in env overrides stored model
- *   7. Final model must belong to resolved provider; if not, use defaultModel
- *   8. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
+ *   7. TAMEDTABLE_MODEL in env overrides stored model
+ *   8. Final model must belong to resolved provider; if not, use defaultModel
+ *   9. TAMEDTABLE_CELL_MODEL in env overrides stored cellModel; the final cell
  *      model must also belong to the provider, else use defaultCellModel
  */
 /** Whether a stored value names a provider this build knows. */
 function isProvider(p: unknown): p is Provider {
-  return p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
+  return typeof p === 'string' && p in KEY_FIELD;
 }
 
 /** Whether a model id belongs to a provider — the same-provider guard's test.
@@ -167,11 +225,13 @@ export function resolveConfig(
   let anthropicKey: string | null  = stored.anthropicKey ?? null;
   let geminiKey: string | null     = stored.geminiKey ?? null;
   let openaiKey: string | null     = stored.openaiKey ?? null;
+  let groqKey: string | null       = stored.groqKey ?? null;
   let openrouterKey: string | null = stored.openrouterKey ?? null;
 
   const envGemini     = env['GEMINI_API_KEY'];
   const envOpenai     = env['OPENAI_API_KEY'];
   const envAnthropic  = env['ANTHROPIC_API_KEY'];
+  const envGroq       = env['GROQ_API_KEY'];
   const envOpenrouter = env['OPENROUTER_API_KEY'];
 
   if (envGemini) {
@@ -183,6 +243,9 @@ export function resolveConfig(
   } else if (envAnthropic) {
     provider = 'anthropic';
     anthropicKey = envAnthropic;
+  } else if (envGroq) {
+    provider = 'groq';
+    groqKey = envGroq;
   } else if (envOpenrouter) {
     provider = 'openrouter';
     openrouterKey = envOpenrouter;
@@ -212,7 +275,7 @@ export function resolveConfig(
   }
 
   return {
-    provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel,
+    provider, anthropicKey, geminiKey, openaiKey, groqKey, openrouterKey, model, cellModel,
     alwaysRunAll: stored.alwaysRunAll ?? false,
   };
 }
