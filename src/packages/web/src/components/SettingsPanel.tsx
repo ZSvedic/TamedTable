@@ -114,17 +114,15 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             primaryModel={cfg.model}
             secondaryModel={cfg.cellModel}
             keys={controller.keyDrafts}
-            expandedProvider={controller.expandedProvider}
-            savedProvider={controller.savedProvider}
-            savedSeq={controller.savedSeq}
-            savedFadeMs={toastDurationMs('✓ Saved')}
+            puterConnected={cfg.puterConnected}
+            measurements={controller.providerMeasurements}
+            busyProvider={controller.measuringProvider}
             byokHelpUrl="../BYOK-setup.html"
-            changeModelsHelpUrl="../FAQ.html#change-models"
-            testState={controller.keyTest}
-            onProviderClick={(p) => void controller.clickProviderCard(p)}
-            onKeyChange={(p, value) => controller.setKeyDraft(p, value)}
-            onKeyCommit={(p) => void controller.commitKeyDraft(p)}
-            onTestKey={() => void controller.testKey()}
+            onAddKey={(key) => controller.addProviderKey(key)}
+            onSelect={(p) => void controller.clickProviderCard(p)}
+            onRemove={(p) => void controller.removeProvider(p)}
+            onRefresh={(p) => controller.refreshProviderMeasurement(p)}
+            onConnectPuter={() => controller.connectPuter()}
           />
 
           {/* #LazyExec — Simple mode: every AI step runs table-wide at once,

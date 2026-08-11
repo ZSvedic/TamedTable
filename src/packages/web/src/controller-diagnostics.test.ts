@@ -23,6 +23,10 @@ describe('redactString', () => {
     expect(redactString('key=AIzaSyA-1234_xyz here')).toBe('key=[redacted] here');
   });
 
+  it('redacts a gsk_ Groq key', () => {
+    expect(redactString('key=gsk_demo-secret here')).toBe('key=[redacted] here');
+  });
+
   it('leaves ordinary text untouched', () => {
     expect(redactString('no secrets here, just text')).toBe('no secrets here, just text');
   });

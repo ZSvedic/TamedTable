@@ -19,12 +19,20 @@
     { "id": "claude-sonnet-4-5",      "name": "Sonnet 4.5",           "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
     { "id": "claude-haiku-4-5",       "name": "Haiku 4.5",            "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 1,    "outUsdPerMtok": 5    },
 
-    { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 }
+    { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 },
+
+    { "id": "groq/openai/gpt-oss-120b", "name": "GPT OSS 120B", "provider": "groq", "temperature": true, "voiceInput": false, "inUsdPerMtok": 0.15, "outUsdPerMtok": 0.75 },
+    { "id": "groq/llama-3.1-8b-instant", "name": "Llama 3.1 8B Instant", "provider": "groq", "temperature": true, "voiceInput": false, "inUsdPerMtok": 0.05, "outUsdPerMtok": 0.08 },
+
+    { "id": "puter/gemini-2.5-flash", "name": "Gemini 2.5 Flash via Puter", "provider": "puter", "temperature": true, "voiceInput": true, "inUsdPerMtok": 0.3, "outUsdPerMtok": 2.5 },
+    { "id": "puter/gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash-Lite via Puter", "provider": "puter", "temperature": true, "voiceInput": false, "inUsdPerMtok": 0.1, "outUsdPerMtok": 0.4 }
   ],
   "defaults": {
     "gemini":     { "primary": "gemini-3.6-flash",  "secondary": "gemini-3.1-flash-lite" },
     "openai":     { "primary": "gpt-5.5",           "secondary": "gpt-5.4-mini" },
     "anthropic":  { "primary": "claude-sonnet-4-6", "secondary": "claude-haiku-4-5" },
-    "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5 }
+    "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5 },
+    "groq": { "primary": "groq/openai/gpt-oss-120b", "secondary": "groq/llama-3.1-8b-instant" },
+    "puter": { "primary": "puter/gemini-2.5-flash", "secondary": "puter/gemini-2.5-flash-lite" }
   }
 }

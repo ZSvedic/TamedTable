@@ -173,7 +173,7 @@ export class EngineManager {
   /** #ProviderSelect — the Settings Test button's one-call key check. Runs
    *  through the same engine a request would, so a green tick means requests
    *  will work; needs no loaded table. */
-  testConnection(): Promise<{ model: string }> {
+  testConnection(): Promise<{ model: string; estimated1000TokenSec: number }> {
     return this.ensureHeadless().testConnection();
   }
 

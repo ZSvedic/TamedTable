@@ -178,26 +178,19 @@ describe.skipIf(skip)('demo smoke', () => {
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
-  it('model-config: renders the chooser and flips provider on card click', async () => {
+  it('model-config: renders the paste-first empty chooser', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
     expect(JSON.parse((await page.textContent('#out'))!).provider).toBe('anthropic');
 
-    await page.click('[data-mc-card="gemini"]');
-    await page.fill('[data-mc-key="gemini"]', 'smoke-test-key');
-    await page.waitForFunction(
-      `(() => { try { return JSON.parse(document.querySelector('#out').textContent).provider === 'gemini'; } catch { return false; } })()`,
-    );
-    expect(JSON.parse((await page.textContent('#out'))!).geminiKey).toBe('smoke-test-key');
+    expect(await page.textContent('[data-mc-empty]')).toContain('No provider or model added.');
+    expect(await page.locator('input[aria-label="API key"]').count()).toBe(1);
+    expect(await page.getByText('Sign in / Sign up to Puter.js').count()).toBe(1);
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);
 
   it('model-config: persists config to localStorage and restores it on reload', async () => {
     const { page, consoleErrors, failedRequests } = await openDemo('model-config');
-    await page.click('[data-mc-card="gemini"]');
-    await page.fill('[data-mc-key="gemini"]', 'persisted-key');
-    await page.waitForFunction(
-      `(() => { try { return JSON.parse(localStorage.getItem('tamedtable.config') ?? '{}').geminiKey === 'persisted-key'; } catch { return false; } })()`,
-    );
+    await page.evaluate(() => localStorage.setItem('tamedtable.config', JSON.stringify({ provider:'gemini', geminiKey:'persisted-key' })));
 
     await page.reload();
     await page.waitForFunction(`(document.querySelector('#out')?.textContent ?? '').trim().length > 0`);
@@ -215,8 +208,9 @@ describe.skipIf(skip)('demo smoke', () => {
     expect(await page.isVisible('#tc-response')).toBe(true);
     expect(await page.locator('#tc-mic').count()).toBe(0);
 
-    // Switching to a Gemini model (voiceInput: true) shows the mic.
-    await page.click('[data-mc-card="gemini"]');
+    // Restoring a connected Gemini model (voiceInput: true) shows the mic.
+    await page.evaluate(() => localStorage.setItem('tamedtable.config', JSON.stringify({ provider:'gemini', geminiKey:'demo-key' })));
+    await page.reload();
     await page.waitForSelector('#tc-mic');
     await expectClean(page, consoleErrors, failedRequests);
   }, 30_000);

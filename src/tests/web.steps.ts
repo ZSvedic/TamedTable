@@ -607,7 +607,7 @@ Then('loading fails with {string}', function (this: TamedTableWorld, needle: str
 
 // ── Settings panel accordion cards ─────────────────────────────────────────
 
-import { ALL_MODELS, type Provider as ModelProvider } from '@tamedtable/model-config';
+import { ALL_MODELS, keyFor, type Provider as ModelProvider } from '@tamedtable/model-config';
 
 Then('the settings panel shows {int} provider cards', function (this: TamedTableWorld, n: number) {
   // The four providers are always shown: gemini, openai, anthropic, openrouter
@@ -716,7 +716,7 @@ Then('the key test fails with {string}', function (this: TamedTableWorld, expect
   const test = controller(this).keyTest;
   assert.ok(test, 'no key test has run');
   assert.equal(test.state, 'error', `expected a failed key test, got ${test.state}`);
-  assert.ok(test.message.includes(expected), `expected "${expected}" in "${test.message}"`);
+  if (!test.message.includes(expected)) assert.fail(`expected "${expected}" in "${test.message}"`);
 });
 
 Then('the key test is unavailable', function (this: TamedTableWorld) {
@@ -1296,3 +1296,31 @@ Then(
     assert.equal(unmarked, 0, `${unmarked} filled AI cell(s) on the page lack the changed marker`);
   },
 );
+
+When('user adds API key {string}', async function (this: TamedTableWorld, key: string) {
+  await controller(this).addProviderKey(key);
+});
+When('user tries to add API key {string}', async function (this: TamedTableWorld, key: string) {
+  try { await controller(this).addProviderKey(key); }
+  catch (error) { ctxOf(this).caughtError = error as Error; }
+});
+Then('adding the key fails with {string}', function (this: TamedTableWorld, expected: string) {
+  const error=ctxOf(this).caughtError as Error | undefined;
+  assert.ok(error?.message.includes(expected), `expected add failure containing ${expected}, got ${error?.message}`);
+});
+Then('provider {string} has a speed measurement', function (this: TamedTableWorld, provider: string) {
+  assert.ok(controller(this).providerMeasurements[provider as ModelProvider]?.latencySec);
+});
+Then('the selected provider key is {string}', function (this: TamedTableWorld, key: string) {
+  assert.equal(keyFor(controller(this).getConfig()), key);
+});
+Then('the saved {string} provider key is {string}', function (this: TamedTableWorld, provider: string, key: string) {
+  const config=controller(this).getConfig() as unknown as Record<string, unknown>;
+  assert.equal(config[`${provider}Key`], key);
+});
+Given('the LLM API streams a measured completion', function (this: TamedTableWorld) {
+  ctxOf(this).mockLlmFetch = () => Promise.resolve(new Response(
+    'data: {"candidates":[{"content":{"parts":[{"text":"OK"}],"role":"model"},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1}}\n\n',
+    { status:200, headers:{'content-type':'text/event-stream'} },
+  ));
+});

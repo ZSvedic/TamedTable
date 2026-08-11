@@ -13,6 +13,7 @@ export function readConfigFromEnv(): Record<string, string | undefined> {
     GEMINI_API_KEY:       process.env['GEMINI_API_KEY'],
     OPENAI_API_KEY:       process.env['OPENAI_API_KEY'],
     OPENROUTER_API_KEY:   process.env['OPENROUTER_API_KEY'],
+    GROQ_API_KEY:         process.env['GROQ_API_KEY'],
     TAMEDTABLE_MODEL:     process.env['TAMEDTABLE_MODEL'],
     TAMEDTABLE_CELL_MODEL: process.env['TAMEDTABLE_CELL_MODEL'],
   };

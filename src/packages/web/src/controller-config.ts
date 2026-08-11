@@ -10,8 +10,10 @@ import {
   defaultCellModel,
   type Provider,
   type ResolvedConfig,
+  detectProvider,
 } from '@tamedtable/model-config';
 import { writeStoredConfig } from '@tamedtable/model-config/storage';
+import { loadPuterSdk } from '@tamedtable/model-config/puter';
 import { userFacingMessage } from './controller-messages.ts';
 import { pageSizeFor } from './controller.ts';
 import type { ControllerHost } from './controller-context.ts';
@@ -22,14 +24,15 @@ const KEY_FIELD = {
   openai: 'openaiKey',
   anthropic: 'anthropicKey',
   openrouter: 'openrouterKey',
-} as const satisfies Record<Provider, keyof ResolvedConfig>;
+  groq: 'groqKey',
+} as const satisfies Record<Exclude<Provider, 'puter'>, keyof ResolvedConfig>;
 
 /** The provider whose key this partial saves, or null. A provider pick alone
  *  is not a save the "✓ Saved" badge should claim — the card's own radio shows
  *  the choice — and neither is clearing a key: a badge beside an empty field
  *  says a key landed when none did. */
 function savedKeyProvider(partial: Partial<ResolvedConfig>): Provider | null {
-  const providers = Object.keys(KEY_FIELD) as Provider[];
+  const providers = Object.keys(KEY_FIELD) as Exclude<Provider, 'puter'>[];
   return providers.find((p) => {
     const value = partial[KEY_FIELD[p]];
     return typeof value === 'string' && value.trim() !== '';
@@ -45,7 +48,7 @@ export class ConfigManager {
   /** Refill every key draft from the saved config — the panel opens showing
    *  what is stored, not what a previous visit left half-typed. */
   private resetKeyDrafts(): void {
-    for (const p of Object.keys(KEY_FIELD) as Provider[]) {
+    for (const p of Object.keys(KEY_FIELD) as Exclude<Provider, 'puter'>[]) {
       this.host.keyDrafts[p] = (this.host.config[KEY_FIELD[p]] as string | null) ?? '';
     }
   }
@@ -53,7 +56,7 @@ export class ConfigManager {
   /** The user typed in a key field. Moves the draft only — half a key is not
    *  a key, and saving each keystroke rebuilds the engine (replaying the whole
    *  flow) for a value that is not finished. */
-  setKeyDraft(provider: Provider, value: string): void {
+  setKeyDraft(provider: Exclude<Provider, 'puter'>, value: string): void {
     this.host.keyDrafts[provider] = value;
     this.host.notify();
   }
@@ -61,7 +64,7 @@ export class ConfigManager {
   /** The user finished with a key field — it lost focus, they pressed Enter,
    *  or they closed the panel. Saves the draft, unless it matches what is
    *  already stored: leaving a field untouched is not a save. */
-  async commitKeyDraft(provider: Provider): Promise<void> {
+  async commitKeyDraft(provider: Exclude<Provider, 'puter'>): Promise<void> {
     const draft = (this.host.keyDrafts[provider] ?? '').trim();
     const stored = ((this.host.config[KEY_FIELD[provider]] as string | null) ?? '').trim();
     if (draft === stored) return;
@@ -107,6 +110,55 @@ export class ConfigManager {
     this.host.notify();
   }
 
+  /** Detect, validate, then persist a pasted key. A failed replacement leaves
+   * the working key untouched. */
+  async addKey(key: string): Promise<void> {
+    const provider = detectProvider(key);
+    if (!provider) throw new Error('Key not recognised.');
+    const field = KEY_FIELD[provider];
+    const previous = this.host.config;
+    await this.setConfig({ provider, [field]: key.trim(), model: defaultModel(provider), cellModel: defaultCellModel(provider) });
+    try {
+      await this.measure(provider);
+    } catch (error) {
+      await this.setConfig(previous);
+      throw error;
+    }
+  }
+
+  async measure(provider: Provider): Promise<void> {
+    if (provider !== this.host.config.provider) await this.clickProviderCard(provider);
+    this.host.measuringProvider = provider;
+    this.host.notify();
+    try {
+      const { estimated1000TokenSec } = await this.host.engine.testConnection();
+      this.host.providerMeasurements[provider] = { latencySec: estimated1000TokenSec, measuredAt: Date.now() };
+    } catch (error) {
+      throw new Error(userFacingMessage(error, provider));
+    } finally {
+      this.host.measuringProvider = null;
+      this.host.notify();
+    }
+  }
+
+  async removeProvider(provider: Provider): Promise<void> {
+    const connected = (Object.keys(KEY_FIELD) as Exclude<Provider, 'puter'>[]).filter((p) => Boolean(this.host.config[KEY_FIELD[p]]));
+    const fallback = [...connected.filter((p) => p !== provider), ...(provider !== 'puter' && this.host.config.puterConnected ? ['puter' as const] : [])].at(-1);
+    let partial: Partial<ResolvedConfig>;
+    if (provider === 'puter') partial = { puterConnected: false };
+    else partial = { [KEY_FIELD[provider]]: null };
+    delete this.host.providerMeasurements[provider];
+    if (fallback) Object.assign(partial, { provider: fallback, model: defaultModel(fallback), cellModel: defaultCellModel(fallback) });
+    await this.setConfig(partial);
+  }
+
+  async connectPuter(): Promise<void> {
+    const puter = await loadPuterSdk();
+    await puter.auth.signIn();
+    await this.setConfig({ puterConnected: true, provider: 'puter', model: defaultModel('puter'), cellModel: defaultCellModel('puter') });
+    await this.measure('puter');
+  }
+
   openSettings(): void {
     this.host.settingsOpen = true;
     // The Saved badge only ever states a save made this visit.
@@ -123,7 +175,7 @@ export class ConfigManager {
   async closeSettings(): Promise<void> {
     this.host.settingsOpen = false;
     this.host.notify();
-    for (const p of Object.keys(KEY_FIELD) as Provider[]) await this.commitKeyDraft(p);
+    for (const p of Object.keys(KEY_FIELD) as Exclude<Provider, 'puter'>[]) await this.commitKeyDraft(p);
   }
 
   /** Toggle an accordion provider card. Expanding a card also selects that
@@ -217,7 +269,7 @@ export class ConfigManager {
   /** Clear every provider key — "no API key is set" regardless of provider.
    *  @deprecated Use setConfig with explicit null keys instead. */
   clearApiKey(): void {
-    void this.setConfig({ anthropicKey: null, geminiKey: null, openaiKey: null, openrouterKey: null });
+    void this.setConfig({ anthropicKey: null, geminiKey: null, openaiKey: null, openrouterKey: null, groqKey: null });
   }
 
   /** @deprecated Use setConfig({ model }) instead. */

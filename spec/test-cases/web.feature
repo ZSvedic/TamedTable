@@ -659,171 +659,25 @@ Feature: Web front-end
       And cell at row 1 column "Country" shows "United States"
       And the spec has 1 transformation
 
-  Rule: The settings panel shows accordion provider cards
+  Rule: Settings connects providers after a real test
 
     @web
-    Scenario: Settings panel opens with four provider cards
+    Scenario: Adding a working key connects and selects its provider
       Given the TamedTable web app
-      When user opens the settings panel
-      Then the settings panel shows 4 provider cards
-      And no provider card is expanded
+      And the LLM API streams a measured completion
+      When user adds API key "AIza-demo-key"
+      Then the configured provider is "gemini"
+      And the selected provider key is "AIza-demo-key"
+      And provider "gemini" has a speed measurement
 
     @web
-    Scenario: Clicking the Google card expands it and selects Google
+    Scenario: A failed replacement keeps the working key
       Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      Then the provider card "gemini" is expanded
-      And the configured provider is "gemini"
-
-    @web
-    Scenario: Clicking the Google card shows the GEMINI_API_KEY env hint
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      Then the expanded card body shows env hint "GEMINI_API_KEY"
-
-    @web
-    Scenario: Clicking a second card collapses the first
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      And user clicks the provider card "openai"
-      Then the provider card "openai" is expanded
-      And the provider card "gemini" is collapsed
-
-    @web
-    Scenario: Clicking the OpenAI card shows GPT models and the env hint
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "openai"
-      Then the model list contains "gpt-5.5" with voice tag false
-      And the model list contains "gpt-5.4-mini" with voice tag false
-      And the expanded card body shows env hint "OPENAI_API_KEY"
-
-    @web
-    Scenario: Clicking an already-open card collapses it
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      And user clicks the provider card "gemini"
-      Then no provider card is expanded
-
-    @web
-    Scenario: Clicking the Anthropic card shows the ANTHROPIC_API_KEY env hint
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      Then the expanded card body shows env hint "ANTHROPIC_API_KEY"
-      And the configured provider is "anthropic"
-
-    @web
-    # The free tier: OpenRouter's single $0 model fills both roles.
-    Scenario: Clicking the OpenRouter card selects the free provider and models
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "openrouter"
-      Then the expanded card body shows env hint "OPENROUTER_API_KEY"
-      And the configured provider is "openrouter"
-      And the configured model is "cohere/north-mini-code:free"
-      And the configured cellModel is "cohere/north-mini-code:free"
-
-    @web
-    Scenario: Settings panel opens with the currently selected provider card expanded
-      Given the TamedTable web app
-      When user selects the provider "openai"
-      And user opens the settings panel
-      Then the provider card "openai" is expanded
-
-  Rule: Settings changes confirm with a Saved badge on the touched card
-
-    @web
-    Scenario: Opening the settings panel shows no Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      Then no provider card shows a Saved badge
-
-    @web
-    Scenario: Saving an API key shows the Saved badge on that provider's card
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the API key "sk-ant-example-key"
-      Then the provider card "anthropic" shows the Saved badge
-
-    # A provider with no key is not "saved" — the card's own radio already
-    # shows the choice, and the badge beside an empty field claims otherwise.
-    @web
-    Scenario: Picking a provider card shows no Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      Then no provider card shows a Saved badge
-
-    @web
-    Scenario: Clearing a key shows no Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the "gemini" API key ""
-      Then no provider card shows a Saved badge
-
-    @web
-    Scenario: Each save restarts the badge's green phase
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the API key "sk-ant"
-      And user saves the API key "sk-ant-example-key"
-      Then the provider card "anthropic" shows the Saved badge
-      And the Saved badge has restarted 2 times
-
-  # Half a key is not a key: typing moves a draft, leaving the field saves it.
-  Rule: A key field saves when it loses focus
-
-    @web
-    Scenario: Typing in a key field saves nothing yet
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      And user types the "anthropic" API key "sk-ant-half"
-      Then no API key is configured
-      And no provider card shows a Saved badge
-
-    @web
-    Scenario: Leaving the key field saves it and shows the Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      And user types the "anthropic" API key "sk-ant-whole"
-      And the "anthropic" key field loses focus
-      Then the configured API key is "sk-ant-whole"
-      And the provider card "anthropic" shows the Saved badge
-
-    @web
-    Scenario: Leaving an untouched key field saves nothing
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the "anthropic" API key "sk-ant-already"
-      And user opens the settings panel
-      And the "anthropic" key field loses focus
-      Then no provider card shows a Saved badge
-
-    # A key typed but never blurred must not be lost to the Close button.
-    @web
-    Scenario: Closing the panel commits a key still being typed
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      And user types the "anthropic" API key "sk-ant-unblurred"
-      And user closes the settings panel
-      Then the configured API key is "sk-ant-unblurred"
-
-    @web
-    Scenario: Reopening the settings panel clears the Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the API key "sk-ant-example-key"
-      And user closes the settings panel
-      And user opens the settings panel
-      Then no provider card shows a Saved badge
+      And the gemini key is set to "AIza-working"
+      And the LLM API returns a 401 unauthorized error
+      When user tries to add API key "AIza-broken"
+      Then adding the key fails with "Invalid API key"
+      And the saved "gemini" provider key is "AIza-working"
 
   Rule: Provider API errors surface descriptive messages
 

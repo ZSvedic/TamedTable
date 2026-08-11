@@ -1101,89 +1101,13 @@ view state (it feeds the voice prompt's context); saving is confirmed
 by its toast, and run activity shows in the chat thread, so the table
 carries no separate status readout.
 
-The settings panel shows four provider accordion cards stacked vertically:
-Google, OpenAI, Anthropic, OpenRouter. On open, no card is expanded. Clicking a collapsed
-card expands it and selects that provider; clicking an already-open card
-collapses it without changing the provider. Opening a card collapses any other
-open card.
+The settings panel uses a paste-first model chooser. With no connected provider it shows an empty state, one masked API-key field, and a Puter.js sign-in button. It supports Google, OpenAI, Anthropic, OpenRouter, Groq, and Puter.js.
 
-Each card header (always visible, clickable) shows a radio knob, the provider
-name and tagline, and a voice badge on the right edge. The voice badge is green
-with a microphone icon when the provider supports voice input, or grey "No voice
-input" when it does not. Google shows the green badge; OpenAI, Anthropic, and
-OpenRouter show grey.
+Adding a key detects its likely provider from its prefix, then makes a small real request before saving it. A prefix never proves a key works. A failed test leaves the old connection untouched and shows the provider error inline. Adding a new working key for an existing provider replaces the old key. Puter uses its SDK for sign-in and model calls; TamedTable never sends API keys to Puter.
 
-Text requests route through the selected provider — pick Google and a text
-request goes to Gemini, pick OpenAI and it goes to OpenAI, pick Anthropic and it
-goes to Anthropic. A natural-language chat request therefore needs a key for the
-selected provider: when that provider's key is missing the request never fires
-and a toast names the provider it needs, e.g. `Text requests require a Google API
-key — open Settings and add one.` (or `an OpenAI` / `an Anthropic` / `an
-OpenRouter`). A key for a
-different provider does not satisfy the requirement — selecting Google still
-needs a Google key even when an Anthropic key is set. This is the same provider
-the voice mic already uses, so text and voice share one key per provider.
+Each working connection is a card. Clicking a header selects the default provider and expands only that card. The body shows the fixed Primary and Secondary models and one line per model: `$X in / $Y out per 1000 tokens · ~Z sec`. Prices come from the model catalogue. Speed comes from the latest small test call normalized to 1,000 output tokens. The `⟳` button immediately left of delete repeats the measurement. Delete removes the connection and falls back to the last remaining card.
 
-When a card is open its body shows an API key field with a show/hide toggle, a
-grey monospace env-var hint beneath the key field (`or set GEMINI_API_KEY in
-.env`, `or set OPENAI_API_KEY in .env`, `or set ANTHROPIC_API_KEY in .env`,
-`or set OPENROUTER_API_KEY in .env`
-respectively), and that provider's two fixed default models **read-only** — a
-**Primary** row (the patch-turn model, which carries voice input) and a
-**Secondary** row (the per-row cell model), each with its model id and per-Mtok
-price. The user picks a provider, not individual models; a green "🎙 voice" tag
-shows on a row only when that model supports voice. A single generic explainer
-of the two roles sits above the cards, a "New here? How to get an API key" link
-sits directly below it, and a "How to change primary and secondary models?" link
-(to `FAQ.html#change-models`) sits below the cards.
-
-Each open card also has a **Test** button beside its key field, so a user
-learns their key works before they have written a single transformation.
-Clicking it makes one tiny call to that provider's secondary model with
-**retries switched off**, and answers in about a second: `✓ <model> answered in
-<n.n>s` in green, or the same red sentence a failed request would have shown —
-invalid key, no credit, rate limit, network. Retries are off on purpose. The
-normal request path retries a 429 with backoff before giving up, which is right
-for a real transformation and wrong for a test: a user with an empty billing
-account would sit watching a spinner for a minute to learn something the first
-response already said. The test runs against the secondary model because it is
-the cheap one, and it goes through the app's own engine — same SDK, same
-routing, same headers — so a green tick means requests will work, not just that
-some endpoint answered. A card with an empty key field has its button
-disabled.
-
-Changes apply immediately — selecting a provider card calls
-`controller.clickProviderCard(p)`, which pins that provider and its two fixed
-defaults (`setConfig({ provider, model, cellModel })`). The footer has only a
-"Close" button; there is no separate "Save" button.
-
-A **key is saved when its field loses focus** (or on Enter), not on every
-keystroke. Typing only moves a draft the card renders; nothing is persisted and
-the engine is not rebuilt until the field is left. Half a key is not a key, and
-rebuilding the engine per keystroke replays the whole flow for a value the user
-has not finished typing. Closing the panel commits any field still holding an
-unsaved draft, so a key is never lost to a missed blur. Leaving a field the user
-did not change saves nothing.
-
-Because saving is silent, a save confirms inline on the card it touched: a
-`✓ Saved` badge appears in that provider's card header, right of the provider
-name and left of the voice badge. It starts green and fades to grey after the
-standard toast time for that text (the 3-second toast floor); each new save
-restarts the green phase. **Only a key landing earns the badge.** Picking a
-provider card does not: the card's own radio already shows the choice, and
-`✓ Saved` beside an empty key field claims something that isn't true. Clearing
-a key earns no badge either. The badge marks only the most recently saved
-provider's card and clears when the panel opens, so it never claims a save from
-an earlier visit. Switching provider changes
-the models, which rebuilds the engine and replays the current transformations
-against the source, so the table on screen is preserved and the new models drive
-the next request. **Editing the selected provider's key rebuilds it too.** The
-engine builds its model clients once, with the key it was handed, so a key
-typed after the first request would otherwise sit unused until the page was
-reloaded — every call still failing `Invalid API key` while the card read
-`✓ Saved`. The rebuild keeps the table exactly as the model-switch rebuild
-does, and the next request, typed or spoken, carries the new key. Full detail in
-[spec/packages/model-config/behavior.md](packages/model-config/behavior.md).
+Cards label a zero-price catalogue route `FREE` and a non-zero route `PAID`; this describes the route, not the account plan. A `VOICE` tag appears when the primary model accepts audio. Keys and the selected default remain in local storage.
 
 While a request or flow replay is still running, any change that would
 rebuild the engine — switching provider, or editing the selected provider's

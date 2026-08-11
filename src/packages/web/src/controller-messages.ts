@@ -8,6 +8,8 @@ export function providerLabel(provider?: string): string {
   return provider === 'gemini' ? 'Google'
     : provider === 'openai' ? 'OpenAI'
     : provider === 'openrouter' ? 'OpenRouter'
+    : provider === 'groq' ? 'Groq'
+    : provider === 'puter' ? 'Puter.js'
     : 'Anthropic';
 }
 
@@ -67,7 +69,17 @@ export function describeError(error: unknown, provider?: string): { message: str
     Record<string, unknown> | undefined;
   const statusCode = cause?.statusCode as number | undefined;
   const responseBody = String(cause?.responseBody ?? '');
-  const fullText = `${message} ${responseBody}`;
+  const nestedText = (value: unknown, depth = 0): string => {
+    if (depth > 4 || value == null) return '';
+    if (typeof value === 'string') return value;
+    if (value instanceof Error || typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      return [record.message, record.responseBody, record.cause, ...(Array.isArray(record.errors) ? record.errors : [])]
+        .map((part) => nestedText(part, depth + 1)).join(' ');
+    }
+    return String(value);
+  };
+  const fullText = `${message} ${responseBody} ${nestedText(error)}`;
 
   if (statusCode === 401 || /\b401\b|authentication_error|invalid.*api.{0,5}key|api key not valid|unauthenticated/i.test(fullText)) {
     const base = `Invalid API key. Open Settings to update your ${label} key.`;

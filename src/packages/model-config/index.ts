@@ -4,7 +4,7 @@
 
 import catalogue from './models.json' with { type: 'json' };
 
-export type Provider = 'anthropic' | 'gemini' | 'openai' | 'openrouter';
+export type Provider = 'anthropic' | 'gemini' | 'openai' | 'openrouter' | 'groq' | 'puter';
 
 /** Providers the engine can route a model id to. Cerebras is bench-only: the
  *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
@@ -40,6 +40,10 @@ export interface ResolvedConfig {
   geminiKey: string | null;
   openaiKey: string | null;
   openrouterKey: string | null;
+  groqKey: string | null;
+  /** Puter authentication is owned by its SDK; this only remembers that the
+   * user connected it on this origin. */
+  puterConnected: boolean;
   /** Primary model: writes the spec patch each turn (and carries voice input). */
   model: string;
   /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
@@ -70,6 +74,19 @@ export const ALL_MODELS: readonly ModelDef[] =
 export const DEFAULTS: Readonly<Record<Provider, ProviderDefaults>> =
   (catalogue as { defaults: Record<Provider, ProviderDefaults> }).defaults;
 
+/** Prefixes only choose the API used for validation; a provider is not
+ * connected until that API accepts the key. Specific sk-* forms go first. */
+export function detectProvider(key: string): Exclude<Provider, 'puter'> | null {
+  const value = key.trim();
+  if (value.startsWith('sk-proj-')) return 'openai';
+  if (value.startsWith('sk-ant-')) return 'anthropic';
+  if (value.startsWith('sk-or-')) return 'openrouter';
+  if (value.startsWith('gsk_')) return 'groq';
+  if (value.startsWith('AIza')) return 'gemini';
+  if (value.startsWith('sk-')) return 'openai';
+  return null;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 /** Default patch-turn (primary) model for a provider: the `defaults` entry for
@@ -99,6 +116,8 @@ export function defaultBatchSize(provider: Provider): number | undefined {
  *  before `gpt-`, so the open-weight OpenAI models served by Cerebras never
  *  land on the OpenAI provider. */
 export function providerFor(modelId: string): EngineProvider {
+  if (modelId.startsWith('puter/'))   return 'puter';
+  if (modelId.startsWith('groq/'))    return 'groq';
   if (modelId.includes('/'))          return 'openrouter';
   if (modelId.startsWith('gemini-'))  return 'gemini';
   if (modelId.startsWith('zai-'))     return 'cerebras';
@@ -124,6 +143,8 @@ export function keyFor(config: ResolvedConfig): string | null {
   if (config.provider === 'gemini') return config.geminiKey;
   if (config.provider === 'openai') return config.openaiKey;
   if (config.provider === 'openrouter') return config.openrouterKey;
+  if (config.provider === 'groq') return config.groqKey;
+  if (config.provider === 'puter') return 'puter-session';
   return config.anthropicKey;
 }
 
@@ -146,7 +167,7 @@ export function keyFor(config: ResolvedConfig): string | null {
  */
 /** Whether a stored value names a provider this build knows. */
 function isProvider(p: unknown): p is Provider {
-  return p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter';
+  return p === 'anthropic' || p === 'gemini' || p === 'openai' || p === 'openrouter' || p === 'groq' || p === 'puter';
 }
 
 /** Whether a model id belongs to a provider — the same-provider guard's test.
@@ -168,11 +189,13 @@ export function resolveConfig(
   let geminiKey: string | null     = stored.geminiKey ?? null;
   let openaiKey: string | null     = stored.openaiKey ?? null;
   let openrouterKey: string | null = stored.openrouterKey ?? null;
+  let groqKey: string | null       = stored.groqKey ?? null;
 
   const envGemini     = env['GEMINI_API_KEY'];
   const envOpenai     = env['OPENAI_API_KEY'];
   const envAnthropic  = env['ANTHROPIC_API_KEY'];
   const envOpenrouter = env['OPENROUTER_API_KEY'];
+  const envGroq       = env['GROQ_API_KEY'];
 
   if (envGemini) {
     provider = 'gemini';
@@ -186,6 +209,9 @@ export function resolveConfig(
   } else if (envOpenrouter) {
     provider = 'openrouter';
     openrouterKey = envOpenrouter;
+  } else if (envGroq) {
+    provider = 'groq';
+    groqKey = envGroq;
   } else {
     // The stored blob is written by whatever build last ran on the origin
     // (production and pr-preview share one blob), so an unknown provider
@@ -212,7 +238,8 @@ export function resolveConfig(
   }
 
   return {
-    provider, anthropicKey, geminiKey, openaiKey, openrouterKey, model, cellModel,
+    provider, anthropicKey, geminiKey, openaiKey, openrouterKey, groqKey,
+    puterConnected: stored.puterConnected ?? false, model, cellModel,
     alwaysRunAll: stored.alwaysRunAll ?? false,
   };
 }

@@ -55,6 +55,8 @@ export interface ControllerHost {
   savedSeq: number;
   keyTest: KeyTest | null;
   keyDrafts: Record<Provider, string>;
+  providerMeasurements: Partial<Record<Provider, { latencySec: number; measuredAt: number }>>;
+  measuringProvider: Provider | null;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;

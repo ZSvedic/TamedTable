@@ -16,6 +16,7 @@ import type {
 import type { TamedTableWorld } from './world.ts';
 
 export interface WebScenarioCtx {
+  caughtError?: Error;
   /** Peak run-all progress captured by the watching confirm step (#LazyExec). */
   runPeak?: { done: number; total: number };
   /** Set by the "without File System Access support" Given before the runner builds. */
