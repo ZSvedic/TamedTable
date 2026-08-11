@@ -14,7 +14,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 </script>
 <link rel="canonical" href="https://www.tamedtable.com/pr-preview/pr-289/FAQ">
 <title>Frequently Asked Questions — TamedTable</title>
-<meta name="description" content="TamedTable FAQ — how to bring your own API key (BYOK) from Google, OpenAI, Anthropic, or OpenRouter, privacy, and other common questions.">
+<meta name="description" content="TamedTable FAQ — connect Google, OpenAI, Anthropic, OpenRouter, Groq, or Puter.js, privacy, and other common questions.">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
@@ -169,11 +169,11 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="byok" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p class="lede">TamedTable runs on <em>your</em> API key. The key stays in your browser. We never see it, and nothing is stored on our servers.</p>
+        <p class="lede">TamedTable runs on the provider you connect. API keys stay in your browser; Puter.js signs you in without an API key. We never see or store either credential.</p>
 
         <div class="gotcha">
           <h3>The #1 gotcha</h3>
-          <p>A ChatGPT, Claude, or Gemini <strong>subscription is not API access</strong>. The API is a separate account, billed by usage (usually a few cents for a session). You sign up for it separately from any chat subscription.</p>
+          <p>A ChatGPT, Claude, or Gemini <strong>subscription is not API access</strong>. The API is a separate account, billed by usage (usually a few cents for a session). You sign up for it separately from any chat subscription. Puter.js is the no-key alternative.</p>
         </div>
 
         <div class="prov">
@@ -212,6 +212,24 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             </h3>
             <p>One no-credit-card signup unlocks free models from many vendors. Create a key, and allow free-model publication in your <a href="https://openrouter.ai/settings/privacy" target="_blank" rel="noopener">privacy settings</a> — free models may train on your prompts.</p>
             <a class="key-link" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Create an OpenRouter API key ↗</a>
+          </div>
+
+          <div class="prov-card">
+            <h3 id="byok-groq" class="anchored">
+              Groq
+              <button class="copy-link" data-target="byok-groq" aria-label="Copy link to Groq"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+            </h3>
+            <p>Sign in to GroqCloud, open API Keys, and create a key. Copy it when Groq shows it, then paste it into TamedTable Settings.</p>
+            <a class="key-link" href="https://console.groq.com/keys" target="_blank" rel="noopener">Create a Groq API key ↗</a>
+          </div>
+
+          <div class="prov-card">
+            <h3 id="byok-puter" class="anchored">
+              Puter.js (no API key)
+              <button class="copy-link" data-target="byok-puter" aria-label="Copy link to Puter.js"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+            </h3>
+            <p>Choose “Sign in / Sign up to Puter.js” in TamedTable Settings. Puter handles the account and model usage, so there is no API key to create or paste.</p>
+            <a class="key-link" href="https://www.tamedtable.com/pr-preview/pr-289/app/" target="_blank" rel="noopener">Connect Puter.js in TamedTable ↗</a>
           </div>
         </div>
 
