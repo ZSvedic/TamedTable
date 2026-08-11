@@ -131,6 +131,42 @@ export function providerFor(modelId: string): EngineProvider {
   return 'anthropic';
 }
 
+// ── Where each provider lives ──────────────────────────────────────────────
+// Two things reach these hosts: the engine (via the AI SDK clients) and the
+// probe that checks a pasted key. They used to carry their own copies of the
+// URLs, which is a drift waiting to happen — a provider that moves its
+// endpoint would have left the chooser measuring one host while the engine
+// called another. One table instead.
+
+/** Each provider's API base. Gemini's is the AI SDK's own default too, so the
+ *  engine leaves that one to the SDK and only the probe reads it here. */
+export const PROVIDER_BASE_URL = {
+  gemini:     'https://generativelanguage.googleapis.com/v1beta',
+  openai:     'https://api.openai.com/v1',
+  anthropic:  'https://api.anthropic.com/v1',
+  groq:       'https://api.groq.com/openai/v1',
+  openrouter: 'https://openrouter.ai/api/v1',
+  cerebras:   'https://api.cerebras.ai/v1',
+  // Puter is a gateway, not an API in the usual sense: one endpoint takes an
+  // envelope whose `args` happen to be an OpenAI chat-completions body.
+  puter:      'https://api.puter.com',
+} as const satisfies Record<EngineProvider, string>;
+
+/** Puter's single endpoint — see `puterEnvelope`. */
+export const PUTER_DRIVERS_URL = `${PROVIDER_BASE_URL.puter}/drivers/call`;
+
+/** Wrap an OpenAI-shaped request body in Puter's driver envelope. Shared by the
+ *  engine's gateway fetch and the probe, so the two cannot disagree about the
+ *  shape Puter expects. */
+export function puterEnvelope(body: Record<string, unknown>): Record<string, unknown> {
+  return {
+    interface: 'puter-chat-completion',
+    driver: 'ai-chat',
+    method: 'complete',
+    args: body,
+  };
+}
+
 // ── Detecting a provider from a pasted key ─────────────────────────────────
 // The user never picks a provider from a list — the key names it. Order
 // matters here: sk-proj-, sk-ant- and sk-or- all start with sk-, so the

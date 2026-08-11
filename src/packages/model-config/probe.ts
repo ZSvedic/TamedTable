@@ -5,11 +5,10 @@
 // real API. Kept in its own entry point so the main entry stays offline.
 // Spec: spec/packages/model-config/behavior.md § Checking a key — the probe.
 
-import { defaultCellModel, type Provider, type Tier } from './index.ts';
-
-/** Puter is a gateway, not an API in the usual sense: one endpoint takes an
- *  envelope whose `args` happen to be an OpenAI chat-completions body. */
-const PUTER_DRIVERS_URL = 'https://api.puter.com/drivers/call';
+import {
+  defaultCellModel, puterEnvelope, PROVIDER_BASE_URL, PUTER_DRIVERS_URL,
+  type Provider, type Tier,
+} from './index.ts';
 
 /** The slice of `fetch` this module uses. Narrower than the DOM's `typeof
  *  fetch` on purpose, so a host can inject its own wrapper (the web app routes
@@ -51,23 +50,9 @@ const PROVIDER_NAME: Record<Provider, string> = {
   puter: 'Puter.js',
 };
 
-/** Wrap an OpenAI-shaped body in Puter's driver envelope. */
-export function puterEnvelope(body: Record<string, unknown>): string {
-  return JSON.stringify({
-    interface: 'puter-chat-completion',
-    driver: 'ai-chat',
-    method: 'complete',
-    args: body,
-  });
-}
-
-/** OpenAI-compatible chat-completions hosts. Each of these three speaks the
- *  same request and usage shape, so one branch serves all of them. */
-const OPENAI_COMPATIBLE_BASE: Partial<Record<Provider, string>> = {
-  openai: 'https://api.openai.com/v1',
-  groq: 'https://api.groq.com/openai/v1',
-  openrouter: 'https://openrouter.ai/api/v1',
-};
+// openai, groq and openrouter all speak the same OpenAI chat-completions
+// request and usage shape, so one branch serves all three; their base URLs come
+// from the shared PROVIDER_BASE_URL table the engine reads too.
 
 /** The reference task: twenty rows to classify, which is the app's own hot
  *  path. It asks for a sentence per row so the model has real work to stream. */
@@ -109,19 +94,18 @@ async function call(
   opts: ProbeOptions,
 ): Promise<Answer> {
   const doFetch: FetchLike = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-  const base = OPENAI_COMPATIBLE_BASE[provider];
   let url: string;
   let init: RequestInit;
 
   if (provider === 'gemini') {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+    url = `${PROVIDER_BASE_URL.gemini}/models/${modelId}:generateContent`;
     init = {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
     };
   } else if (provider === 'anthropic') {
-    url = 'https://api.anthropic.com/v1/messages';
+    url = `${PROVIDER_BASE_URL.anthropic}/messages`;
     init = {
       method: 'POST',
       headers: {
@@ -142,10 +126,12 @@ async function call(
     init = {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: puterEnvelope({ model: modelId, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify(
+        puterEnvelope({ model: modelId, messages: [{ role: 'user', content: prompt }] }),
+      ),
     };
   } else {
-    url = `${base}/chat/completions`;
+    url = `${PROVIDER_BASE_URL[provider]}/chat/completions`;
     init = {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
@@ -224,7 +210,7 @@ export async function verifyKey(
     const doFetch: FetchLike = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
     let answer: Answer;
     try {
-      const res = await doFetch('https://openrouter.ai/api/v1/key', {
+      const res = await doFetch(`${PROVIDER_BASE_URL.openrouter}/key`, {
         headers: { authorization: `Bearer ${key}` },
       });
       answer = { status: res.status, headers: res.headers, body: await readJson(res) };
@@ -242,7 +228,7 @@ export async function verifyKey(
     const doFetch: FetchLike = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
     let answer: Answer;
     try {
-      const res = await doFetch('https://api.puter.com/whoami', {
+      const res = await doFetch(`${PROVIDER_BASE_URL.puter}/whoami`, {
         headers: { authorization: `Bearer ${key}` },
       });
       answer = { status: res.status, headers: res.headers, body: await readJson(res) };
@@ -308,7 +294,7 @@ function streamRequest(
 ): { url: string; init: RequestInit } {
   if (provider === 'gemini') {
     return {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`,
+      url: `${PROVIDER_BASE_URL.gemini}/models/${modelId}:streamGenerateContent?alt=sse`,
       init: {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
@@ -321,7 +307,7 @@ function streamRequest(
   }
   if (provider === 'anthropic') {
     return {
-      url: 'https://api.anthropic.com/v1/messages',
+      url: `${PROVIDER_BASE_URL.anthropic}/messages`,
       init: {
         method: 'POST',
         headers: {
@@ -343,15 +329,15 @@ function streamRequest(
       init: {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-        body: puterEnvelope({
+        body: JSON.stringify(puterEnvelope({
           model: modelId, stream: true, max_tokens: MEASURE_MAX_TOKENS,
           messages: [{ role: 'user', content: REFERENCE_PROMPT }],
-        }),
+        })),
       },
     };
   }
   return {
-    url: `${OPENAI_COMPATIBLE_BASE[provider]}/chat/completions`,
+    url: `${PROVIDER_BASE_URL[provider]}/chat/completions`,
     init: {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },

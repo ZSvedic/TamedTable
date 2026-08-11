@@ -345,6 +345,9 @@ export function ModelChooser({
             <button
               type="button"
               data-mc-refresh={c.id}
+              // Icon-only, so the label has to be the accessible name too — a
+              // tooltip alone leaves a screen reader reading "button".
+              aria-label={`Re-measure ${PROVIDER_LABEL[c.id]}`}
               title={`Re-measure ${PROVIDER_LABEL[c.id]}`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -358,6 +361,7 @@ export function ModelChooser({
           <button
             type="button"
             data-mc-remove={c.id}
+            aria-label={`Remove ${PROVIDER_LABEL[c.id]}`}
             title={`Remove ${PROVIDER_LABEL[c.id]}`}
             onClick={(e) => {
               e.stopPropagation();

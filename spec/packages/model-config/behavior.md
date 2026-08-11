@@ -119,6 +119,16 @@ cheapest of the paid providers — see the
 Its model ids are vendor-prefixed (`openai/gpt-oss-120b`), which is why
 `providerFor` reads the catalogue before it reads prefixes.
 
+## Where each provider lives
+
+Two things reach a provider's API: the engine, through the AI SDK clients, and
+the probe that checks a pasted key. `PROVIDER_BASE_URL` is the one table both
+read, so a provider that moves its endpoint cannot leave the chooser measuring
+one host while the engine calls another. `PUTER_DRIVERS_URL` and
+`puterEnvelope(body)` are shared the same way — the gateway's request shape is
+stated once rather than once per caller. Gemini's base is the AI SDK's own
+default, so there the engine keeps the SDK's and only the probe reads the table.
+
 ## Config resolution
 
 `resolveConfig(env, stored)` merges environment variables over stored values;
@@ -427,8 +437,9 @@ button. Tags are `FREE`
 or `PAID` when the provider reported a tier and nothing when it didn't, plus
 `VOICE` when that provider's primary model accepts audio input — read from the
 catalogue, not hardcoded. Both buttons stop the click from also selecting the
-card. ⟳ re-runs that provider's two measurements; its rows fall back to
-`measuring…` while they are out.
+card, and both carry an `aria-label` as well as a tooltip — they are icon-only,
+so without one a screen reader announces "button". ⟳ re-runs that provider's
+two measurements; its rows fall back to `measuring…` while they are out.
 
 Only the **selected** card shows a body, and the selected card is the default
 provider every run uses. The body has two rows, **Primary model** and

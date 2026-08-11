@@ -3,7 +3,10 @@ import type { JSONValue } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { providerFor, acceptsTemperature, type EngineProvider } from '@tamedtable/model-config';
+import {
+  providerFor, acceptsTemperature, puterEnvelope, PROVIDER_BASE_URL, PUTER_DRIVERS_URL,
+  type EngineProvider,
+} from '@tamedtable/model-config';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
@@ -976,15 +979,12 @@ function puterFetch(inner?: typeof globalThis.fetch): typeof globalThis.fetch {
     delete sent['stream'];
     delete sent['stream_options'];
 
-    const res = await doFetch('https://api.puter.com/drivers/call', {
+    const res = await doFetch(PUTER_DRIVERS_URL, {
       ...init,
       method: 'POST',
-      body: JSON.stringify({
-        interface: 'puter-chat-completion',
-        driver: 'ai-chat',
-        method: 'complete',
-        args: sent,
-      }),
+      // The envelope shape lives in model-config, shared with the key probe, so
+      // the two cannot disagree about what Puter expects.
+      body: JSON.stringify(puterEnvelope(sent)),
     } as RequestInit);
     if (!res.ok) return res;
 
@@ -1155,14 +1155,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('OPENAI_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       // Chat Completions, not the SDK's default Responses API: it is the
       // broadly-compatible endpoint for the GPT models in the catalogue.
-      const openai = createOpenAI({ apiKey: key, ...fetchOpt });
+      const openai = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.openai, ...fetchOpt });
       this.providerCache = (modelId: string) => openai.chat(modelId);
     } else if (detected === 'cerebras') {
       // Bench-only free provider: an OpenAI-compatible endpoint, so the same
       // Chat Completions path as OpenAI, pointed at Cerebras.
       const key = apiKey ?? process.env.CEREBRAS_API_KEY;
       if (!key) throw new Error('CEREBRAS_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
+      const cerebras = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.cerebras, ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
     } else if (detected === 'puter') {
       // #PuterGateway — Puter is not OpenAI-compatible at the transport level,
@@ -1177,7 +1177,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('PUTER_TOKEN is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const puter = createOpenAI({
         apiKey: key,
-        baseURL: 'https://api.puter.com',
+        baseURL: PROVIDER_BASE_URL.puter,
         fetch: puterFetch(fetchImpl as typeof globalThis.fetch | undefined),
       });
       this.providerCache = (modelId: string) => puter.chat(modelId);
@@ -1188,7 +1188,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       // the catalogue before it reads prefixes.
       const key = apiKey ?? process.env.GROQ_API_KEY;
       if (!key) throw new Error('GROQ_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      const groq = createOpenAI({ apiKey: key, baseURL: 'https://api.groq.com/openai/v1', ...fetchOpt });
+      const groq = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.groq, ...fetchOpt });
       this.providerCache = (modelId: string) => groq.chat(modelId);
     } else if (detected === 'openrouter') {
       // Shipped app provider (the 4th), same OpenAI-compatible path as
@@ -1196,7 +1196,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       // allow free model publication — see benchmarks/README.md.
       const key = apiKey ?? process.env.OPENROUTER_API_KEY;
       if (!key) throw new Error('OPENROUTER_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      const openrouter = createOpenAI({ apiKey: key, baseURL: 'https://openrouter.ai/api/v1', ...fetchOpt });
+      const openrouter = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.openrouter, ...fetchOpt });
       this.providerCache = (modelId: string) => openrouter.chat(modelId);
     } else {
       // Anthropic (default)
@@ -1207,7 +1207,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         ? rawBase.replace(/\/$/, '').endsWith('/v1')
           ? rawBase.replace(/\/$/, '')
           : `${rawBase.replace(/\/$/, '')}/v1`
-        : 'https://api.anthropic.com/v1';
+        : PROVIDER_BASE_URL.anthropic;
       this.providerCache = createAnthropic({ apiKey: key, baseURL, ...fetchOpt });
     }
 
