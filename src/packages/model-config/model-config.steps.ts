@@ -11,6 +11,7 @@ import {
   keyFor,
   ALL_MODELS,
   DEFAULTS,
+  detectProvider,
   type ResolvedConfig,
   type Provider,
   type EngineProvider,
@@ -249,6 +250,8 @@ Given(
       geminiKey: gemini || null,
       openaiKey: openai || null,
       openrouterKey: null,
+      groqKey: null,
+      puterConnected: false,
       model: defaultModel(provider as Provider),
       cellModel: defaultCellModel(provider as Provider),
       alwaysRunAll: false,
@@ -265,6 +268,8 @@ Given(
       geminiKey: null,
       openaiKey: null,
       openrouterKey: openrouterKey || null,
+      groqKey: null,
+      puterConnected: false,
       model: defaultModel(provider as Provider),
       cellModel: defaultCellModel(provider as Provider),
       alwaysRunAll: false,
@@ -551,4 +556,12 @@ Then(
 Then('writeStoredConfig and clearStoredConfig do not throw', function (this: ModelConfigWorld) {
   writeStoredConfig({ provider: 'anthropic', anthropicKey: 'sk-noop' });
   clearStoredConfig();
+});
+
+When('provider detection examines {string}', function (this: ModelConfigWorld, key: string) {
+  ctx(this).providerResult = detectProvider(key) ?? undefined;
+});
+
+Then('the detected provider is {string}', function (this: ModelConfigWorld, provider: string) {
+  assert.equal(ctx(this).providerResult, provider);
 });

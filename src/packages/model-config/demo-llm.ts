@@ -37,10 +37,12 @@ function parseVoiceReply(raw: string): VoiceReply {
 }
 
 function keyFor(cfg: ResolvedConfig): string {
+  if (cfg.provider === 'puter') return 'puter-session';
   const key =
     cfg.provider === 'gemini' ? cfg.geminiKey :
     cfg.provider === 'openai' ? cfg.openaiKey :
     cfg.provider === 'openrouter' ? cfg.openrouterKey :
+    cfg.provider === 'groq' ? cfg.groqKey :
     cfg.anthropicKey;
   if (!key) throw new Error(`No API key set for ${cfg.provider}.`);
   return key;
@@ -105,6 +107,20 @@ async function callOpenRouter(key: string, model: string, content: unknown): Pro
   return text;
 }
 
+async function callGroq(key: string, model: string, content: unknown): Promise<string> {
+  const data = await post('https://api.groq.com/openai/v1/chat/completions', { authorization: `Bearer ${key}` }, { model:model.replace(/^groq\//,''), messages:[{role:'user',content}] }) as OpenAIResponse;
+  const text = (data.choices?.[0]?.message?.content ?? '').trim();
+  if (!text) throw new Error('Groq returned no text.');
+  return text;
+}
+
+async function callPuter(model: string, text: string): Promise<string> {
+  const puter=(globalThis as {puter?:{ai?:{chat(prompt:string, options:Record<string,unknown>):Promise<unknown>}}}).puter;
+  if(!puter?.ai) throw new Error('Puter.js did not load.');
+  const reply=await puter.ai.chat(text,{model:model.replace(/^puter\//,'')});
+  return typeof reply==='string'?reply:String((reply as {message?:{content?:string}})?.message?.content??'');
+}
+
 async function callAnthropic(key: string, model: string, text: string): Promise<string> {
   const data = (await post(
     'https://api.anthropic.com/v1/messages',
@@ -128,6 +144,8 @@ export async function sendTestPrompt(cfg: ResolvedConfig, text: string): Promise
   if (cfg.provider === 'gemini') return callGemini(key, cfg.model, [{ text }]);
   if (cfg.provider === 'openai') return callOpenAI(key, cfg.model, text);
   if (cfg.provider === 'openrouter') return callOpenRouter(key, cfg.model, text);
+  if (cfg.provider === 'groq') return callGroq(key, cfg.model, text);
+  if (cfg.provider === 'puter') return callPuter(cfg.model, text);
   return callAnthropic(key, cfg.model, text);
 }
 

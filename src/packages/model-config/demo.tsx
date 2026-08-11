@@ -7,10 +7,11 @@
 // Spec: spec/packages/model-config/behavior.md § Demo page.
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ALL_MODELS, defaultModel, defaultCellModel, resolveConfig, type Provider } from './index.ts';
+import { ALL_MODELS, defaultModel, defaultCellModel, detectProvider, resolveConfig, type Provider } from './index.ts';
 import { ModelChooser } from './ModelChooser.tsx';
 import { readStoredConfig, writeStoredConfig } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
+import { loadPuterSdk } from './puter.ts';
 
 interface ActiveRecording {
   rec: MediaRecorder;
@@ -21,13 +22,14 @@ interface ActiveRecording {
 function Demo() {
   const stored = useRef(readStoredConfig()).current;
   const [provider, setProvider] = useState<Provider>(stored.provider ?? 'anthropic');
-  const [keys, setKeys] = useState<Record<Provider, string>>({
+  const [keys, setKeys] = useState<Record<Exclude<Provider, 'puter'>, string>>({
     gemini: stored.geminiKey ?? '',
     openai: stored.openaiKey ?? '',
     anthropic: stored.anthropicKey ?? '',
     openrouter: stored.openrouterKey ?? '',
+    groq: stored.groqKey ?? '',
   });
-  const [expanded, setExpanded] = useState<Provider | null>(null);
+  const [puterConnected, setPuterConnected] = useState(stored.puterConnected ?? false);
 
   // Models are no longer user-selectable — they follow the provider defaults.
   // Feeding the provider's defaults as the stored model/cellModel keeps the
@@ -40,6 +42,8 @@ function Demo() {
     openaiKey: keys.openai || null,
     anthropicKey: keys.anthropic || null,
     openrouterKey: keys.openrouter || null,
+    groqKey: keys.groq || null,
+    puterConnected,
   });
 
   // Persist every CHANGE to the blob the main app reads (and vice versa) — a
@@ -62,8 +66,10 @@ function Demo() {
       openaiKey: resolved.openaiKey,
       anthropicKey: resolved.anthropicKey,
       openrouterKey: resolved.openrouterKey,
+      groqKey: resolved.groqKey,
+      puterConnected: resolved.puterConnected,
     });
-  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey]);
+  }, [resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey, resolved.openaiKey, resolved.anthropicKey, resolved.openrouterKey, resolved.groqKey, resolved.puterConnected]);
 
   // ── Test call state ───────────────────────────────────────────────────────
 
@@ -157,21 +163,20 @@ function Demo() {
         primaryModel={resolved.model}
         secondaryModel={resolved.cellModel}
         keys={keys}
-        expandedProvider={expanded}
+        puterConnected={puterConnected}
         byokHelpUrl="/TamedTable/BYOK-setup.html"
-        changeModelsHelpUrl="../../FAQ.html#change-models"
-        onProviderClick={(p) => {
-          // Same semantics as WebController.clickProviderCard: expanding a
-          // card selects that provider; collapsing changes nothing. A stale
-          // stored model is coerced to the provider default by resolveConfig.
-          if (expanded === p) {
-            setExpanded(null);
-          } else {
-            setExpanded(p);
-            setProvider(p);
-          }
+        onAddKey={async (key) => {
+          const p = detectProvider(key);
+          if (!p) throw new Error('Key not recognised.');
+          const candidateKeys = { ...keys, [p]: key };
+          const candidate = resolveConfig({}, { provider:p, model:defaultModel(p), cellModel:defaultCellModel(p), geminiKey:candidateKeys.gemini||null, openaiKey:candidateKeys.openai||null, anthropicKey:candidateKeys.anthropic||null, openrouterKey:candidateKeys.openrouter||null, groqKey:candidateKeys.groq||null });
+          await sendTestPrompt(candidate, 'Reply with OK.');
+          setKeys(candidateKeys); setProvider(p);
         }}
-        onKeyChange={(p, value) => setKeys((prev) => ({ ...prev, [p]: value }))}
+        onSelect={setProvider}
+        onRemove={(p) => { if(p==='puter') setPuterConnected(false); else setKeys(prev=>({...prev,[p]:''})); }}
+        onRefresh={async () => {}}
+        onConnectPuter={async () => { const puter=await loadPuterSdk(); await puter.auth.signIn(); setPuterConnected(true); setProvider('puter'); }}
       />
 
       <h2>resolveConfig({'{}'}, stored)</h2>

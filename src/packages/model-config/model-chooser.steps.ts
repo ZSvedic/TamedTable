@@ -186,3 +186,13 @@ Then(
     await expectResolved(page(this), 'anthropicKey', expected);
   },
 );
+
+Then('the chooser says {string}', async function (this: object, text: string) {
+  await expectText(page(this), '[data-mc-empty]', text);
+});
+Then('the chooser offers one API key field', async function (this: object) {
+  assert.equal(await page(this).locator('input[aria-label="API key"]').count(), 1);
+});
+Then('the chooser offers Puter.js sign in', async function (this: object) {
+  await expectText(page(this), 'button', 'Sign in / Sign up to Puter.js');
+});

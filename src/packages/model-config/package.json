@@ -10,7 +10,8 @@
     "./env": "./env.ts",
     "./storage": "./storage.ts",
     "./audio-wav": "./audio-wav.ts",
-    "./ModelChooser": "./ModelChooser.tsx"
+    "./ModelChooser": "./ModelChooser.tsx",
+    "./puter": "./puter.ts"
   },
   "scripts": {
     "demo": "bun demo.html"

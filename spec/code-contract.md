@@ -1358,7 +1358,7 @@ and batching show up in the measurement.
 → [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini" | "openai" | "openrouter";  // app providers — catalogue, chooser, resolveConfig
+type Provider = "anthropic" | "gemini" | "openai" | "openrouter" | "groq" | "puter";  // app providers — catalogue, chooser, resolveConfig
 type EngineProvider = Provider | "cerebras";  // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
@@ -1369,6 +1369,8 @@ interface ResolvedConfig {
   geminiKey: string | null;
   openaiKey: string | null;
   openrouterKey: string | null;
+  groqKey: string | null;
+  puterConnected: boolean;
   model: string;      // primary — writes the spec patch (and carries voice)
   cellModel: string;  // secondary — fills per-row cells; always same-provider as model
   alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
@@ -1388,34 +1390,36 @@ function defaultBatchSize(provider: Provider): number | undefined;  // defaults'
 function providerFor(modelId: string): EngineProvider;
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey / openrouterKey)
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 ```
 
 ```ts
 // ModelChooser.tsx entry point — react is a peer dependency
+interface ProviderMeasurement { latencySec: number; measuredAt: number; }
 interface ModelChooserProps {
   models: readonly ModelDef[];
   provider: Provider;
-  primaryModel: string;           // provider default, shown read-only
-  secondaryModel: string;         // provider default, shown read-only
-  keys: Record<Provider, string>;
-  expandedProvider: Provider | null;
-  savedProvider?: Provider | null; // card showing the "✓ Saved" badge
-  savedSeq?: number;               // bumped per save — restarts the badge's green phase
-  savedFadeMs?: number;            // badge green-to-grey time; defaults to 3000 ms
-  byokHelpUrl?: string;            // "how to get an API key" link target
-  changeModelsHelpUrl?: string;    // "how to change the default models" link target
-  onProviderClick(p: Provider): void;
-  onKeyChange(p: Provider, value: string): void;
+  primaryModel: string;
+  secondaryModel: string;
+  keys: Record<Exclude<Provider, "puter">, string>;
+  puterConnected?: boolean;
+  measurements?: Partial<Record<Provider, ProviderMeasurement>>;
+  byokHelpUrl?: string;
+  busyProvider?: Provider | null;
+  onAddKey(key: string): Promise<void>;
+  onSelect(provider: Provider): void;
+  onRemove(provider: Provider): void;
+  onRefresh(provider: Provider): Promise<void>;
+  onConnectPuter(): Promise<void>;
 }
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
 
-`@tamedtable/model-config` has four entry points: the main `index.ts` (no
+`@tamedtable/model-config` has five entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads
-`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only), and
-`storage.ts` (the localStorage `StoragePort` implementation — browser only,
-but a safe no-op anywhere without localStorage):
+`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only),
+`storage.ts` (localStorage, but a safe no-op without it), and `puter.ts`
+(loads the optional Puter SDK on demand):
 
 ```ts
 // storage.ts entry point — implements StoragePort over localStorage

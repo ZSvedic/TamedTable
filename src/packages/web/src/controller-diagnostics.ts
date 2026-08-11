@@ -46,7 +46,7 @@ const URL_REPORT_BUDGET = 2000;
 // ── Pure helpers (unit-tested directly) ─────────────────────────────────────
 
 /** api-key shapes that must never reach the log. */
-const KEY_SHAPES = [/sk-[A-Za-z0-9_-]+/g, /AIza[A-Za-z0-9_-]+/g];
+const KEY_SHAPES = [/sk-[A-Za-z0-9_-]+/g, /AIza[A-Za-z0-9_-]+/g, /gsk_[A-Za-z0-9_-]+/g];
 
 /** Replace any api-key-shaped substring with `[redacted]`. */
 export function redactString(s: string): string {

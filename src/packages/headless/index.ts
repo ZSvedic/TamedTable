@@ -314,7 +314,7 @@ export interface HeadlessRunner {
    *  proving the configured key and provider work. Resolves with the model id
    *  it reached; rejects with the provider's own error. Needs no loaded
    *  table. */
-  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }>;
+  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string; estimated1000TokenSec: number }>;
   // #LazyExec — web-shell seams. adoptState swaps in a spec + derived rows
   // with no replay and no model call (provider switch keeps evaluated rows);
   // `origins` carries the adopted rows' source origins (see rowOrigins) so
@@ -343,6 +343,8 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   openai: 'gpt-5.4-mini',
   cerebras: 'gpt-oss-120b',
   openrouter: 'cohere/north-mini-code:free',
+  groq: 'groq/llama-3.1-8b-instant',
+  puter: 'puter/gemini-2.5-flash-lite',
 };
 
 /** @internal — exported for unit tests. Pick the model for per-cell LLM
@@ -532,7 +534,21 @@ const LOW_EFFORT: Record<ReturnType<typeof providerFor>, ProviderOptions> = {
   openrouter: { openai:    { reasoningEffort: 'low' } },
   cerebras:   { openai:    { reasoningEffort: 'low' } },
   anthropic:  { anthropic: { thinking: { type: 'disabled' } } },
+  groq:       { openai:    { reasoningEffort: 'low' } },
+  puter:      {},
 };
+
+/** Translate the OpenAI-compatible request emitted by AI SDK into the Puter
+ * SDK call. Puter owns authentication; no API key leaves the browser. */
+const puterFetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
+  const puter = (globalThis as unknown as { puter?: { ai?: { chat(prompt: string, options: Record<string, unknown>): Promise<unknown> } } }).puter;
+  if (!puter?.ai) throw new Error('Puter.js is unavailable. Sign in again from Settings.');
+  const body = JSON.parse(String(init?.body ?? '{}')) as { model?: string; messages?: Array<{ content?: string }> };
+  const model = (body.model ?? '').replace(/^puter\//, '');
+  const answer = await puter.ai.chat(body.messages?.map((m) => m.content ?? '').join('\n') ?? '', { model });
+  const text = typeof answer === 'string' ? answer : String((answer as { message?: { content?: string } })?.message?.content ?? '');
+  return new Response(JSON.stringify({ id:'puter', object:'chat.completion', created:Math.floor(Date.now()/1000), model, choices:[{index:0,message:{role:'assistant',content:text},finish_reason:'stop'}], usage:{prompt_tokens:0,completion_tokens:0,total_tokens:0} }), { status:200, headers:{'content-type':'application/json'} });
+}) as typeof globalThis.fetch;
 
 /** `base` with `modelId`'s low-effort options folded in. Merged per provider
  *  key, never replaced: Anthropic's entry has to land beside the prompt-cache
@@ -1075,6 +1091,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('OPENROUTER_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const openrouter = createOpenAI({ apiKey: key, baseURL: 'https://openrouter.ai/api/v1', ...fetchOpt });
       this.providerCache = (modelId: string) => openrouter.chat(modelId);
+    } else if (detected === 'groq') {
+      const key = apiKey ?? process.env.GROQ_API_KEY;
+      if (!key) throw new Error('GROQ_API_KEY is not set. Export it in your shell or add it in Settings.');
+      const groq = createOpenAI({ apiKey: key, baseURL: 'https://api.groq.com/openai/v1', ...fetchOpt });
+      this.providerCache = (modelId: string) => groq.chat(modelId.replace(/^groq\//, ''));
+    } else if (detected === 'puter') {
+      const puter = createOpenAI({ apiKey: 'puter-session', baseURL: 'https://puter.local/v1', fetch: puterFetch });
+      this.providerCache = (modelId: string) => puter.chat(modelId);
     } else {
       // Anthropic (default)
       const key = apiKey ?? process.env.ANTHROPIC_API_KEY;
@@ -1174,16 +1198,30 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // the user watching a spinner for a minute to learn what the first response
   // already said. No rate-limiter wait (a key test must not queue behind a
   // run) and no usage recorded — a test is not part of any request.
-  async testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }> {
+  async testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string; estimated1000TokenSec: number }> {
     const model = this.resolvedCellModelId();
-    await generateText({
+    const started = performance.now();
+    let first = started;
+    let sawText = false;
+    let streamError: unknown;
+    const result = streamText({
       model: this.cellModel(),
-      prompt: 'Reply with OK.',
+      prompt: 'Write exactly 100 short words about tables. No title or formatting.',
       abortSignal: opts?.signal,
       ...this.samplingParams(model),
       maxRetries: 0,
+      maxOutputTokens: 160,
     });
-    return { model };
+    for await (const part of result.fullStream) {
+      if (!sawText && part.type === 'text-delta' && part.text) { first = performance.now(); sawText = true; }
+      if (part.type === 'error') streamError = part.error;
+    }
+    if (streamError) throw streamError;
+    const finished = performance.now();
+    const usage = await result.usage;
+    const outputTokens = Math.max(1, usage.outputTokens ?? 100);
+    const estimated1000TokenSec = ((first - started) + ((finished - first) / outputTokens) * 1000) / 1000;
+    return { model, estimated1000TokenSec };
   }
 
   // The call streams (#PyExport): the script is the slowest thing the app
