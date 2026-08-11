@@ -510,29 +510,43 @@ Feature: Model config
       When verifyKey is called for provider "openai" with key "sk-proj-x"
       Then the stub provider API received 1 call
 
-  Rule: measureModel reports cost and speed per 1000 tokens
+  Rule: measureModel measures speed, never price
+
+    Price comes from the catalogue; only the seconds are measured. Timing splits
+    into getting the model going and generating once started, so a small sample
+    extrapolates honestly.
 
     @headless
-    Scenario: Cost blends the two rates at the ratio the call used
-      Given a stub provider API that answers with 100 input and 900 output tokens in 2.0 seconds
+    Scenario: A streaming answer splits into first-token time and a token rate
+      Given a stub provider API that streams 300 output tokens, first chunk at 0.4s, last at 1.0s
+      When measureModel is called for provider "groq" with model "openai/gpt-oss-120b"
+      Then the measured first-token time is 0.4 seconds
+      And the measured rate is 500.0 tokens per second
+      And the estimated seconds for 1000 tokens is 2.4
+
+    @headless
+    # 300 tokens, all arriving at 2.8s in one frame: there is no separable
+    # first-token time, so the whole call counts as generation.
+    Scenario: A buffered answer falls back to a plain average
+      Given a stub provider API that buffers 300 output tokens into one chunk at 2.8s
       When measureModel is called for provider "gemini" with model "gemini-3.6-flash"
-      Then the measured cost per 1000 tokens is 0.00690
-      And the measured seconds per 1000 tokens is 2.2
+      Then the measured first-token time is 0.0 seconds
+      And the estimated seconds for 1000 tokens is 9.3
 
     @headless
-    # Latency divides by output tokens only. Dividing by the round trip made the
-    # cheap fast model look slower than the expensive one — see the 2026-08-11
-    # provider probe.
-    Scenario: A short answer is not reported as slow
-      Given a stub provider API that answers with 100 input and 10 output tokens in 0.9 seconds
-      When measureModel is called for provider "gemini" with model "gemini-3.1-flash-lite"
-      Then the measured seconds per 1000 tokens is 90.0
+    # Under a fifth of the call spent streaming is buffering by another name —
+    # gemini-3.6-flash streams its thinking silently, then flushes.
+    Scenario: A last-moment flush counts as buffered, not as a fast rate
+      Given a stub provider API that streams 300 output tokens, first chunk at 2.77s, last at 2.79s
+      When measureModel is called for provider "gemini" with model "gemini-3.6-flash"
+      Then the measured first-token time is 0.0 seconds
+      And the estimated seconds for 1000 tokens is 9.3
 
     @headless
-    Scenario: A free model measures at zero cost
-      Given a stub provider API that answers with 100 input and 900 output tokens in 12.0 seconds
-      When measureModel is called for provider "openrouter" with model "cohere/north-mini-code:free"
-      Then the measured cost per 1000 tokens is 0.00000
+    Scenario: A refused measurement reports the provider's message
+      Given a stub provider API that rejects the key with HTTP 401
+      When measureModel is called for provider "gemini" with model "gemini-3.6-flash"
+      Then measureModel fails with "Key rejected by Google. Check the key and try again."
 
   Rule: storage.ts persists config in localStorage
 
@@ -632,7 +646,8 @@ Feature: Model config
       When the user adds the key "AIza-demo"
       Then the "gemini" card's primary model is "gemini-3.6-flash"
       And the "gemini" card's secondary model is "gemini-3.1-flash-lite"
-      And the "gemini" card's "primary" cost line matches "$0.0069 / 7.0sec for 1000 tokens"
+      And the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tokens"
+      And the "gemini" card's "primary" cost line matches "· ~"
 
     @web
     Scenario: An unselected card shows no model rows
@@ -719,6 +734,21 @@ Feature: Model config
       And the user adds the key "sk-proj-demo"
       And the user deletes the "gemini" card
       Then the "openai" card is selected
+
+    @web
+    Scenario: The refresh button re-runs that provider's measurements
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      And the user refreshes the "gemini" card
+      Then the "gemini" card's "primary" cost line matches "· ~"
+
+    @web
+    Scenario: Every card carries its own refresh and delete buttons
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      And the user adds the key "gsk_demo"
+      Then the "gemini" card has a refresh button
+      And the "groq" card has a refresh button
 
     @web
     Scenario: Connected providers persist across a demo page reload

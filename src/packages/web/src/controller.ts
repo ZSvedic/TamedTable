@@ -615,6 +615,8 @@ export class WebController implements ControllerHost {
   selectProvider(provider: Provider): Promise<void> { return this.settingsMgr.selectProvider(provider); }
   /** Remove a connected provider and its key. */
   removeProvider(provider: Provider): Promise<void> { return this.settingsMgr.removeProvider(provider); }
+  /** Re-run a connected provider's measurements (the card's ⟳ button). */
+  refreshProvider(provider: Provider): Promise<void> { return this.settingsMgr.refreshProvider(provider); }
   /** Every provider with a key — the chooser's card list. */
   connectedProviders(): Provider[] { return this.settingsMgr.connected(); }
   getConfig(): ResolvedConfig { return this.config; }

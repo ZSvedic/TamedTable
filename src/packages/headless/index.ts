@@ -3,7 +3,7 @@ import type { JSONValue } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { providerFor, acceptsTemperature } from '@tamedtable/model-config';
+import { providerFor, acceptsTemperature, type EngineProvider } from '@tamedtable/model-config';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
@@ -245,6 +245,13 @@ export interface LazyEvalOpts {
 }
 
 export interface HeadlessRunnerOptions {
+  /** Who serves the models. A model id cannot say who hosts it —
+   *  `openai/gpt-oss-120b` is Groq's here, and OpenRouter serves the same
+   *  weights under the same name — so the runner is told rather than left to
+   *  guess. Callers holding only an id (the benchmark sweeping from a command
+   *  line, a CLI with just TAMEDTABLE_MODEL) omit it and get
+   *  `providerFor(model)`. */
+  provider?: EngineProvider;
   model?: string;
   cellModel?: string;
   apiKey?: string;
@@ -1049,7 +1056,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const fetchImpl = this.opts.fetch;
     const fetchOpt = fetchImpl ? { fetch: fetchImpl as typeof globalThis.fetch } : {};
     const modelId = this.opts.model ?? DEFAULT_MODEL;
-    const detected = providerFor(modelId);
+    const detected = this.opts.provider ?? providerFor(modelId);
 
     if (detected === 'gemini') {
       const key = apiKey ?? process.env.GEMINI_API_KEY;

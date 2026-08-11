@@ -10,14 +10,18 @@
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import type { ReactNode } from 'react';
 import type { Provider, Tier } from './index.ts';
-import type { ModelMeasure } from './probe.ts';
+import { estimateSecPer1kTok, type ModelMeasure } from './probe.ts';
 
-/** One role row on a card. `measure` is the numbers when they are in,
- *  `'measuring'` while the call is still out, and null when the measurement
- *  failed — a working key with an unknown price is still a working key. */
+/** One role row on a card. The two prices are catalogue values per thousand
+ *  tokens (null for a model the catalogue doesn't price); `speed` is the
+ *  measurement — the numbers when they are in, `'measuring'` while the call is
+ *  still out, and null when it failed. A working key with no speed reading is
+ *  still a working key. */
 export interface RoleRow {
   model: string;
-  measure: ModelMeasure | 'measuring' | null;
+  inUsdPer1kTok: number | null;
+  outUsdPer1kTok: number | null;
+  speed: ModelMeasure | 'measuring' | null;
 }
 
 export interface ConnectedCard {
@@ -46,6 +50,9 @@ export interface ModelChooserProps {
   onAdd: () => void;
   onSelect: (p: Provider) => void;
   onRemove: (p: Provider) => void;
+  /** The ⟳ button — re-run this provider's measurements. Omit it and no card
+   *  shows one, so a host with nothing to re-measure gets no dead button. */
+  onRefresh?: (p: Provider) => void;
 }
 
 /** The display name for each provider. One home, so the host never spells
@@ -87,19 +94,46 @@ const radiusLg = v('radius-lg', '11px');
 
 // ── Formatting ─────────────────────────────────────────────────────────────
 
-/** Price with as many decimals as it needs and no more: 0.0068, 0.00075, 0. */
+/** Price with as many decimals as it needs and no more: 0.0075, 0.00025, 0. */
 function money(usd: number): string {
-  return String(Number(usd.toFixed(5)));
+  return String(Number(usd.toFixed(6)));
 }
 
-/** The card's measured line, or the placeholder that stands in for it. */
+/** The line under a model id: catalogue prices, then the measured time.
+ *
+ *   $0.0015 in / $0.0075 out per 1000 tokens · ~9.4 sec
+ *
+ * The prices are always there once the catalogue knows the model; the `· ~Z sec`
+ * tail is the measurement, so it reads `· measuring…` while the call is out and
+ * is dropped entirely if it failed. */
 function costLine(row: RoleRow): string | null {
-  if (row.measure === 'measuring') return 'measuring…';
-  if (row.measure === null) return null;
-  return `$${money(row.measure.usdPer1kTok)} / ${row.measure.secPer1kTok.toFixed(1)}sec for 1000 tokens`;
+  const parts: string[] = [];
+  if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
+    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tokens`);
+  }
+  if (row.speed === 'measuring') parts.push('measuring…');
+  else if (row.speed !== null) parts.push(`~${estimateSecPer1kTok(row.speed).toFixed(1)} sec`);
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 // ── Inline icons (no host icon set) ────────────────────────────────────────
+
+const refreshIcon = (
+  <svg
+    width={15}
+    height={15}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ display: 'block' }}
+    aria-hidden="true"
+  >
+    <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />
+  </svg>
+);
 
 const trashIcon = (
   <svg
@@ -131,8 +165,24 @@ export function ModelChooser({
   onAdd,
   onSelect,
   onRemove,
+  onRefresh,
 }: ModelChooserProps): ReactNode {
   const canAdd = keyInput.trim() !== '' && !busy;
+
+  /** Shared shape for the two 26px header buttons (⟳ and delete). */
+  const iconButton = {
+    flex: '0 0 auto' as const,
+    width: 26,
+    height: 26,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    border: 0,
+    borderRadius: 6,
+    background: 'transparent',
+    cursor: 'pointer',
+  };
 
   // A small monospace tag: FREE / PAID / VOICE.
   const tag = (label: string, fg: string, bg: string, attr?: Record<string, string>): ReactNode => (
@@ -270,7 +320,21 @@ export function ModelChooser({
             {c.tier === 'paid' && tag('PAID', ink2, surface3, { 'data-mc-tier': c.id })}
             {c.voice && tag('VOICE', '#1a4a8a', accentSoft, { 'data-mc-voice': c.id })}
           </span>
-          {/* Deleting must not also select the card the user is removing. */}
+          {/* Neither button may also select the card it sits on. */}
+          {onRefresh && (
+            <button
+              type="button"
+              data-mc-refresh={c.id}
+              title={`Re-measure ${PROVIDER_LABEL[c.id]}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRefresh(c.id);
+              }}
+              style={{ ...iconButton, color: ink3 }}
+            >
+              {refreshIcon}
+            </button>
+          )}
           <button
             type="button"
             data-mc-remove={c.id}
@@ -279,20 +343,7 @@ export function ModelChooser({
               e.stopPropagation();
               onRemove(c.id);
             }}
-            style={{
-              flex: '0 0 auto',
-              width: 26,
-              height: 26,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              border: 0,
-              borderRadius: 6,
-              background: 'transparent',
-              color: err,
-              cursor: 'pointer',
-            }}
+            style={{ ...iconButton, color: err }}
           >
             {trashIcon}
           </button>

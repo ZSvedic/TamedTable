@@ -18,17 +18,17 @@ await verifyKey("gemini", "AIza…") → { tier: "paid" }
 ```
 
 The card appears at once, marked as the default, with both model rows still
-measuring. Two reference calls later the card is complete:
+measuring. Two reference calls later the card reads:
 
 ```
-{
-  provider: "gemini", tier: "paid",
-  primary:   { model: "gemini-3.6-flash",      usdPer1kTok: 0.0066, secPer1kTok: 5.1 },
-  secondary: { model: "gemini-3.1-flash-lite", usdPer1kTok: 0.0011, secPer1kTok: 4.1 }
-}
+Primary    gemini-3.6-flash
+           $0.0015 in / $0.0075 out per 1000 tokens · ~9.7 sec
+Secondary  gemini-3.1-flash-lite
+           $0.00025 in / $0.0015 out per 1000 tokens · ~3.4 sec
 ```
 
-and the stored config is `{ provider: "gemini", geminiKey: "AIza…",
+The prices are the catalogue's, divided by a thousand. Only the seconds are
+measured. The stored config is `{ provider: "gemini", geminiKey: "AIza…",
 model: "gemini-3.6-flash", cellModel: "gemini-3.1-flash-lite" }`.
 
 ## Detecting the provider from the key
@@ -140,11 +140,16 @@ back to the provider's first catalogue entry). `defaultCellModel(provider)`
 returns `defaults[provider].secondary` (falling back to that provider's
 primary default). Both read the table above — the ids are not restated here.
 
-`providerFor(modelId)` reads the **catalogue first**: an id that matches a
-catalogue entry exactly returns that entry's provider. This is what keeps
-Groq's vendor-prefixed ids (`openai/gpt-oss-120b`) off OpenRouter, and it is
-why adding a provider is a catalogue edit rather than a new prefix rule. For
-an id the catalogue doesn't know it falls back to prefixes:
+`providerFor(modelId)` is a **fallback, not the routing authority**. A model id
+cannot say who serves it — `openai/gpt-oss-120b` is Groq's here, and OpenRouter
+and half a dozen other hosts serve the same weights under the same name. So the
+engine is **told** its provider (`createHeadlessRunner({ provider, … })`), which
+the connection has known since the key named it. `providerFor` is what's left
+for callers holding only an id: the benchmark sweeping a model off a command
+line, and a stored config from an older build.
+
+It reads the **catalogue first** — an id matching a catalogue entry exactly
+returns that entry's provider — then falls back to prefixes:
 
 - `openrouter` for any id containing `/` — every unknown vendor-prefixed id is
   an OpenRouter sweep candidate
@@ -217,33 +222,48 @@ Failures come back as one sentence the user can act on, named for the provider:
 `Could not reach Google.` (network or CORS), and anything else passes the
 provider's own message through so no information is lost.
 
-**`measureModel(provider, key, modelId, { fetch })` → `{ usdPer1kTok,
-secPer1kTok }`** runs one reference call and reports what a thousand tokens cost
-and how long they take. The reference task is a fixed twenty-row classification
-prompt — the app's own hot path — and it asks for a sentence of justification
-per row, which is what makes the answer a real sample rather than round-trip
-overhead:
+**Price is never measured.** It comes from the catalogue, shown per thousand
+tokens (`inUsdPerMtok / 1000`), input and output separately. Providers do not
+report what a call cost — only OpenRouter does, and one exception is not worth a
+second source of truth. A model the catalogue doesn't price shows no price.
+
+**`measureModel(provider, key, modelId, { fetch, now })` → `{ ttftSec,
+tokPerSec }`** measures **speed only**, with one small streaming call: the same
+twenty-row classification prompt the app runs, capped at 300 output tokens.
+Timing splits in two, because a model call is two different things end to end:
 
 ```
-usdPer1kTok = (inTok × inUsdPerMtok + outTok × outUsdPerMtok) / (inTok + outTok) / 1000
-secPer1kTok = elapsedSeconds / outTok × 1000
+ttftSec  = seconds until the first streamed chunk   — getting the model going
+tokPerSec = outTok / (totalSec − ttftSec)           — generating, once started
 ```
 
-Cost blends the two rates at the ratio the call actually used, so it is exact.
-Latency divides by **output** tokens only: output is what a run spends its time
-generating. Both halves of that — the output-token divisor and a prompt big
-enough to earn a real answer — are needed. Measured against live providers,
-dividing by the round trip inverted the ranking outright, and keeping the
-divisor but letting `gemini-3.1-flash-lite` answer in 41 tokens still read as
-25 sec per 1000 against `gemini-3.6-flash`'s 7.6. Asking for a justification per
-row pulls every model to several hundred output tokens, and the order comes out
-right: 4.1 sec against 5.1.
+A card's `~Z sec` is those two put back together for a thousand tokens:
+`ttftSec + 1000 / tokPerSec`. Splitting them is what makes a small sample
+extrapolate honestly — the startup cost is paid once per call whatever its
+length, so folding it into a per-token average makes short answers look slow.
+Measured against live providers, dividing a whole round trip by its tokens
+inverted the ranking outright.
 
-Measuring is slow (a free OpenRouter model took twelve seconds), so it never
+The 300-token cap is not arbitrary. At 100 a thinking model spends the entire
+budget reasoning and never streams a word — `gemini-3.6-flash` returned 96
+tokens in a single frame. Turning thinking off is not the answer either: Gemini
+3.6 rejects `thinkingBudget: 0`, so the probe sends no reasoning options at all
+and stays provider-neutral.
+
+**When a provider buffers**, there is no separable first-token time: the reply
+arrives in one or two frames at the very end. If the streaming window is under a
+fifth of the call, the split is abandoned and the whole call counts as
+generation (`ttftSec = 0`, `tokPerSec = outTok / totalSec`). The estimate is
+then a plain average, which is the honest reading of a response nobody watched
+arrive.
+
+Measuring is slow (a free OpenRouter model took eleven seconds), so it never
 blocks the card. `verifyKey` gates the card; the two measurements fill it in
 afterwards, and each row reads `measuring…` until its own call lands. A
-measurement that fails leaves the row blank rather than the card broken — a
-working key with an unknown price is still a working key.
+measurement that fails leaves the row's speed blank rather than the card broken
+— the price still shows, and a working key is still a working key. The card's
+**⟳ button re-runs both measurements** for that provider, so a number taken when
+the provider was having a bad minute is one click from being replaced.
 
 ## StoragePort
 
@@ -298,17 +318,22 @@ connecting — the key names its own provider.
 **Connected provider cards.** One card per connected provider, ordered as they
 were added. The header — the whole row is the click target — carries a radio
 knob, the provider's display name (`Google API`, `OpenAI API`, `Anthropic API`,
-`Groq API`, `OpenRouter API`), its tags, and a delete button. Tags are `FREE`
+`Groq API`, `OpenRouter API`), its tags, a **⟳ refresh** button and a delete
+button. Tags are `FREE`
 or `PAID` when the provider reported a tier and nothing when it didn't, plus
 `VOICE` when that provider's primary model accepts audio input — read from the
-catalogue, not hardcoded. The delete button stops the click from also selecting
-the card.
+catalogue, not hardcoded. Both buttons stop the click from also selecting the
+card. ⟳ re-runs that provider's two measurements; its rows fall back to
+`measuring…` while they are out.
 
 Only the **selected** card shows a body, and the selected card is the default
 provider every run uses. The body has two rows, Primary and Secondary, each
-with the model id and its measured line: `$0.0068 / 7.0sec for 1000 tokens`, or
-`measuring…` while the call is out, or nothing at all if the measurement
-failed.
+with the model id and a line beneath it:
+`$0.0015 in / $0.0075 out per 1000 tokens · ~9.4 sec`. The prices are catalogue
+values per thousand tokens and are always there; the `· ~Z sec` tail is the
+measurement, replaced by `· measuring…` while the call is out and dropped
+entirely if it failed. A model the catalogue doesn't price shows only the
+seconds.
 
 **Adding a key.** One input and an Add button, enabled as soon as the input is
 non-empty; Enter does the same thing as the button. The host detects, verifies,
@@ -335,16 +360,18 @@ The component is pure — props in, callbacks out — and holds no state at all.
 never touches storage or the network:
 
 - `connected` — the cards to render: `{ id, tier, voice, primary, secondary }`.
-  Each role is `{ model, measure }`, where `measure` is the numbers when they
-  are in, `'measuring'` while the call is out, and null when it failed. Display
-  names live in the component's exported `PROVIDER_LABEL`, so a host never
-  spells them out.
+  Each role is `{ model, inUsdPer1kTok, outUsdPer1kTok, speed }`: the two prices
+  come from the catalogue (null for a model it doesn't price), and `speed` is
+  the measurement — the numbers when they are in, `'measuring'` while the call
+  is out, and null when it failed. Display names live in the component's
+  exported `PROVIDER_LABEL`, so a host never spells them out.
 - `selected` — the default provider, or null when nothing is connected
 - `keyInput`, `error`, `busy` — the add row's state
 - `byokHelpUrl` — optional; renders the `How to get ↗` link beside the
   subtitle. The host supplies the path so the component carries no site URL,
   and the link is omitted when the prop is unset.
-- `onKeyInputChange(v)`, `onAdd()`, `onSelect(p)`, `onRemove(p)`
+- `onKeyInputChange(v)`, `onAdd()`, `onSelect(p)`, `onRemove(p)`,
+  `onRefresh(p)` — the ⟳ button; omit it and no card shows one
 
 The host owns all state and semantics. In the web app, `SettingsPanel` binds
 the props to `WebController`. On the demo page, plain React state plays that
@@ -362,7 +389,8 @@ For tests, each element carries a stable data attribute: `data-mc-empty` on the
 empty row, `data-mc-card`, `data-mc-tier`, `data-mc-voice` and `data-mc-remove`
 keyed by provider id, `data-mc-model` (keyed by model id) plus `data-mc-role`
 (`"primary"` or `"secondary"`) on each role row, `data-mc-model-id` on the id
-itself and `data-mc-cost` on its measured line, `data-mc-keyinput` and `data-mc-add` on the add row,
+itself and `data-mc-cost` on the line beneath it, `data-mc-refresh` on the ⟳
+button, `data-mc-keyinput` and `data-mc-add` on the add row,
 `data-mc-error` on the banner, `data-mc-providers` on the footer, and
 `data-mc-byok` on the help link.
 

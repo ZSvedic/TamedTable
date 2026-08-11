@@ -143,6 +143,10 @@ export class EngineManager {
       // fallback lets the SDK initialise even with no key — the real error then
       // surfaces from the API response, which userFacingMessage describes).
       apiKey: replaying ? PLACEHOLDER_KEY : (this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY),
+      // The engine is told its provider rather than left to infer it from the
+      // model id: an id cannot say who serves it (openai/gpt-oss-120b is Groq's
+      // here, and OpenRouter hosts the same weights under the same name).
+      provider: replaying ? replayProvider : this.host.config.provider,
       model: replaying ? defaultModel(replayProvider) : this.host.config.model,
       cellModel: replaying ? defaultCellModel(replayProvider) : this.host.config.cellModel,
       fetch: this.makeFetch(),

@@ -25,10 +25,15 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   // model ids — the tier tag and the two measured lines — comes from the probe
   // the controller ran when the key was connected.
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
-    const measure = controller.probes[p]?.[role];
+    const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
+    const priced = ALL_MODELS.find((m) => m.id === model);
+    const speed = controller.probes[p]?.[role];
     return {
-      model: role === 'primary' ? defaultModel(p) : defaultCellModel(p),
-      measure: measure === undefined ? (controller.measuring[p] ? 'measuring' : null) : measure,
+      model,
+      // Price is the catalogue's, per thousand tokens — never measured.
+      inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
+      outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
+      speed: speed === undefined ? (controller.measuring[p] ? 'measuring' : null) : speed,
     };
   };
   const connected: ConnectedCard[] = controller.connectedProviders().map((p) => ({
@@ -141,6 +146,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             onAdd={() => void controller.addKey()}
             onSelect={(p) => void controller.selectProvider(p)}
             onRemove={(p) => void controller.removeProvider(p)}
+            onRefresh={(p) => void controller.refreshProvider(p)}
           />
 
           {/* #LazyExec — Simple mode: every AI step runs table-wide at once,

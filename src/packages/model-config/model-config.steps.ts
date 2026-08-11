@@ -19,7 +19,10 @@ import {
   type EngineProvider,
   type Tier,
 } from '@tamedtable/model-config';
-import { verifyKey, measureModel, type FetchLike } from './probe.ts';
+import {
+  verifyKey, measureModel, estimateSecPer1kTok,
+  type FetchLike, type ModelMeasure,
+} from './probe.ts';
 import {
   readStoredConfig, writeStoredConfig, clearStoredConfig,
   readStoredProbes, writeStoredProbes, clearStoredProbes,
@@ -40,7 +43,7 @@ interface ModelConfigCtx {
   stub?: StubApi;
   tier?: Tier;
   probeError?: string;
-  measured?: { usdPer1kTok: number; secPer1kTok: number };
+  measured?: ModelMeasure;
 }
 
 // The only shape these steps need from the cucumber World — state hangs off
@@ -399,6 +402,8 @@ interface StubSpec {
   unreachable?: boolean;
   /** Provider error code carried in the body (e.g. OpenAI's insufficient_quota). */
   code?: string;
+  /** Streaming script: how many SSE frames, and when the first and last land. */
+  stream?: { frames: number; firstSec: number; lastSec: number; outTok: number };
 }
 
 /** One stub standing in for every provider. The body carries all three usage
@@ -415,6 +420,39 @@ function stubApi(spec: StubSpec): StubApi {
     fetch: async () => {
       api.calls++;
       if (spec.unreachable) throw new TypeError('Failed to fetch');
+      // Streaming mode: the body is delivered as scripted SSE chunks, and the
+      // clock advances as each one is read — so a scenario controls exactly
+      // when the first and last tokens land without waiting for real time.
+      if (spec.stream && status < 400) {
+        const { frames, firstSec, lastSec, outTok: streamOut } = spec.stream;
+        const usage = {
+          usageMetadata: { promptTokenCount: 100, candidatesTokenCount: streamOut },
+          usage: {
+            input_tokens: 100, output_tokens: streamOut,
+            prompt_tokens: 100, completion_tokens: streamOut,
+          },
+        };
+        const chunks = Array.from({ length: frames }, (_, i) =>
+          `data: ${JSON.stringify(i === frames - 1 ? usage : { delta: i })}\n\n`);
+        let read = 0;
+        const encoder = new TextEncoder();
+        // highWaterMark 0 so `pull` only runs when a read is waiting — with the
+        // default of 1 the stream fills a chunk ahead, and the clock would run
+        // one chunk in front of the reader.
+        const body = new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (read >= chunks.length) { controller.close(); return; }
+            // First chunk lands at firstSec, last at lastSec, rest spread evenly.
+            const at = chunks.length === 1
+              ? firstSec
+              : firstSec + ((lastSec - firstSec) * read) / (chunks.length - 1);
+            clock = at * 1000;
+            controller.enqueue(encoder.encode(chunks[read]!));
+            read++;
+          },
+        }, new CountQueuingStrategy({ highWaterMark: 0 }));
+        return new Response(body, { status, headers: { 'content-type': 'text/event-stream' } });
+      }
       clock += elapsed * 1000;
       const body = {
         data: { is_free_tier: spec.isFreeTier ?? false },
@@ -484,6 +522,20 @@ Given(
   },
 );
 
+Given(
+  'a stub provider API that streams {int} output tokens, first chunk at {float}s, last at {float}s',
+  function (this: ModelConfigWorld, outTok: number, firstSec: number, lastSec: number) {
+    ctx(this).stub = stubApi({ stream: { frames: 20, firstSec, lastSec, outTok } });
+  },
+);
+
+Given(
+  'a stub provider API that buffers {int} output tokens into one chunk at {float}s',
+  function (this: ModelConfigWorld, outTok: number, at: number) {
+    ctx(this).stub = stubApi({ stream: { frames: 1, firstSec: at, lastSec: at, outTok } });
+  },
+);
+
 When(
   'verifyKey is called for provider {string} with key {string}',
   async function (this: ModelConfigWorld, provider: string, key: string) {
@@ -523,31 +575,50 @@ Then(
 When(
   'measureModel is called for provider {string} with model {string}',
   async function (this: ModelConfigWorld, provider: string, modelId: string) {
-    const stub = ctx(this).stub!;
-    ctx(this).measured = await measureModel(provider as Provider, 'key', modelId, {
-      fetch: stub.fetch,
-      now: stub.now,
-    });
+    const c = ctx(this);
+    const stub = c.stub!;
+    try {
+      c.measured = await measureModel(provider as Provider, 'key', modelId, {
+        fetch: stub.fetch,
+        now: stub.now,
+      });
+    } catch (e) {
+      c.probeError = (e as Error).message;
+    }
+  },
+);
+
+function measured(world: ModelConfigWorld): ModelMeasure {
+  const c = ctx(world);
+  assert.equal(c.probeError, undefined, `measureModel threw: ${c.probeError}`);
+  assert.ok(c.measured, 'measureModel was not called');
+  return c.measured;
+}
+
+Then(
+  'the measured first-token time is {float} seconds',
+  function (this: ModelConfigWorld, expected: number) {
+    assert.equal(measured(this).ttftSec.toFixed(2), expected.toFixed(2));
   },
 );
 
 Then(
-  'the measured cost per {int} tokens is {float}',
-  function (this: ModelConfigWorld, _per: number, expected: number) {
-    const actual = ctx(this).measured?.usdPer1kTok;
-    assert.ok(actual !== undefined, 'measureModel was not called');
-    assert.equal(actual.toFixed(5), expected.toFixed(5));
+  'the measured rate is {float} tokens per second',
+  function (this: ModelConfigWorld, expected: number) {
+    assert.equal(measured(this).tokPerSec.toFixed(1), expected.toFixed(1));
   },
 );
 
 Then(
-  'the measured seconds per {int} tokens is {float}',
+  'the estimated seconds for {int} tokens is {float}',
   function (this: ModelConfigWorld, _per: number, expected: number) {
-    const actual = ctx(this).measured?.secPer1kTok;
-    assert.ok(actual !== undefined, 'measureModel was not called');
-    assert.equal(actual.toFixed(1), expected.toFixed(1));
+    assert.equal(estimateSecPer1kTok(measured(this)).toFixed(1), expected.toFixed(1));
   },
 );
+
+Then('measureModel fails with {string}', function (this: ModelConfigWorld, expected: string) {
+  assert.equal(ctx(this).probeError, expected);
+});
 
 // ── providerFor steps ────────────────────────────────────────────────────────
 

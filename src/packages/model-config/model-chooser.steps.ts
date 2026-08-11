@@ -92,6 +92,14 @@ When('the user deletes the {string} card', async function (this: object, provide
   await page(this).click(`[data-mc-remove="${provider}"]`);
 });
 
+When('the user refreshes the {string} card', async function (this: object, provider: string) {
+  await page(this).click(`[data-mc-refresh="${provider}"]`);
+});
+
+Then('the {string} card has a refresh button', async function (this: object, provider: string) {
+  await page(this).waitForSelector(`[data-mc-refresh="${provider}"]`, { timeout: 5_000 });
+});
+
 // Only the selected card renders a body, so "selected" is checked by the
 // presence of its model rows rather than by reading a style.
 Then('the {string} card is selected', async function (this: object, provider: string) {

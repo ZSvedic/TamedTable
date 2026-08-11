@@ -255,6 +255,7 @@ registry row.
 function createHeadlessRunner(opts?: HeadlessRunnerOptions): Runner;
 
 interface HeadlessRunnerOptions {
+  provider?: EngineProvider;  // who serves the models; omit to fall back to providerFor(model)
   model?: string;
   cellModel?: string;
   apiKey?: string;
@@ -1400,9 +1401,10 @@ function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun o
 type Tier = 'free' | 'paid' | null;                      // null = the provider reports nothing
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 interface ProbeOptions { fetch?: FetchLike; now?: () => number }
-interface ModelMeasure { usdPer1kTok: number; secPer1kTok: number }
+interface ModelMeasure { ttftSec: number; tokPerSec: number }   // speed only — price comes from the catalogue
 function verifyKey(p: Provider, key: string, o?: ProbeOptions): Promise<{ tier: Tier }>;  // one call, no retries; throws a user-facing sentence
-function measureModel(p: Provider, key: string, modelId: string, o?: ProbeOptions): Promise<ModelMeasure>;
+function measureModel(p: Provider, key: string, modelId: string, o?: ProbeOptions): Promise<ModelMeasure>;  // one capped streaming call
+function estimateSecPer1kTok(m: ModelMeasure): number;          // ttftSec + 1000 / tokPerSec — the card's "~Z sec"
 
 // storage.ts entry point — measurements cache under 'tamedtable.probes'
 interface ProviderProbe { tier: Tier; primary?: ModelMeasure | null; secondary?: ModelMeasure | null }
@@ -1413,7 +1415,12 @@ function clearStoredProbes(): void;
 
 ```ts
 // ModelChooser.tsx entry point — react is a peer dependency
-interface RoleRow { model: string; measure: ModelMeasure | "measuring" | null }  // null = the measurement failed
+interface RoleRow {                       // prices are catalogue values per 1000 tokens; speed is measured
+  model: string;
+  inUsdPer1kTok: number | null;           // null = the catalogue doesn't price this model
+  outUsdPer1kTok: number | null;
+  speed: ModelMeasure | "measuring" | null;  // null = the measurement failed
+}
 interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; primary: RoleRow; secondary: RoleRow }
 interface ModelChooserProps {
   connected: readonly ConnectedCard[];  // one card per connected provider, in the order added
@@ -1426,6 +1433,7 @@ interface ModelChooserProps {
   onAdd(): void;
   onSelect(p: Provider): void;
   onRemove(p: Provider): void;
+  onRefresh?(p: Provider): void;          // the ⟳ button; omit it and no card shows one
 }
 const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
@@ -1575,19 +1583,27 @@ assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` dis
 gated on the selected model's `voiceInput` flag plus a key for the selected
 provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
 mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`) —
-the only provider wired for voice. The engine routes OpenAI models through the
-Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
-compatibility; Cerebras models (`zai-*` / `gpt-oss-*` ids) take the same
-Chat Completions path against `https://api.cerebras.ai/v1` with
-`CEREBRAS_API_KEY`; Groq models (catalogued `openai/gpt-oss-*` ids) against
-`https://api.groq.com/openai/v1` with `GROQ_API_KEY`; and OpenRouter models
-(slash-containing `vendor/model:free` ids) against
-`https://openrouter.ai/api/v1` with `OPENROUTER_API_KEY`.
+the only provider wired for voice.
+
+The runner is **told** which provider to call: `createHeadlessRunner({ provider,
+… })`. A model id cannot say who serves it — `openai/gpt-oss-120b` is Groq's in
+this catalogue and OpenRouter serves the same weights under the same name — so
+inferring it from the string is guessing. Callers that hold only an id (the
+benchmark sweeping from a command line, a CLI with just `TAMEDTABLE_MODEL`)
+leave `provider` unset and the runner falls back to `providerFor(model)`.
+
+Each provider's endpoint: OpenAI through the Chat Completions API
+(`.chat(...)` on the AI SDK provider) for broad compatibility; Cerebras the
+same Chat Completions path against `https://api.cerebras.ai/v1` with
+`CEREBRAS_API_KEY`; Groq against `https://api.groq.com/openai/v1` with
+`GROQ_API_KEY`; OpenRouter against `https://openrouter.ai/api/v1` with
+`OPENROUTER_API_KEY`.
 
 Text and voice requests route through the selected provider:
-`ensureHeadless` builds the engine with `config.model` / `config.cellModel`
-and the active provider's key (see [§ Web UI](#web-ui-webui)). Only tutorial
-replay overrides this, pinning the recorded provider's defaults.
+`ensureHeadless` builds the engine with `config.provider`, `config.model` /
+`config.cellModel` and the active provider's key (see
+[§ Web UI](#web-ui-webui)). Only tutorial replay overrides this, pinning the
+recorded provider's defaults.
 
 ## Tutorial mode
 

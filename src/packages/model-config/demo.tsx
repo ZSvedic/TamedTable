@@ -111,6 +111,7 @@ function Demo() {
 
   const measureBoth = async (provider: Provider, key: string): Promise<void> => {
     setMeasuring((m) => ({ ...m, [provider]: true }));
+    setProbes((p) => ({ ...p, [provider]: { tier: p[provider]?.tier ?? null } }));
     const stub = stubProbe();
     for (const role of ['primary', 'secondary'] as const) {
       const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
@@ -164,11 +165,15 @@ function Demo() {
   };
 
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
-    const probe = probes[p];
-    const measure = probe?.[role];
+    const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
+    const priced = ALL_MODELS.find((m) => m.id === model);
+    const speed = probes[p]?.[role];
     return {
-      model: role === 'primary' ? defaultModel(p) : defaultCellModel(p),
-      measure: measure === undefined ? (measuring[p] ? 'measuring' : null) : measure,
+      model,
+      // Price is the catalogue's, per thousand tokens — never measured.
+      inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
+      outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
+      speed: speed === undefined ? (measuring[p] ? 'measuring' : null) : speed,
     };
   };
 
@@ -281,6 +286,10 @@ function Demo() {
         onAdd={() => void addKey()}
         onSelect={(p) => setStored((s) => ({ ...s, provider: p }))}
         onRemove={removeProvider}
+        onRefresh={(p) => {
+          const key = (resolved[KEY_FIELD[p]] as string | null) ?? '';
+          if (key) void measureBoth(p, key);
+        }}
       />
 
       <h2>resolveConfig({'{}'}, stored)</h2>

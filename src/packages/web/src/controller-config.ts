@@ -90,10 +90,24 @@ export class ConfigManager {
     }
   }
 
-  /** Fill in the card's two cost/speed lines. Each row lands on its own, and a
+  /** Re-run a connected provider's measurements — the card's ⟳ button. A
+   *  number taken while the provider was having a bad minute is one click from
+   *  being replaced. */
+  async refreshProvider(provider: Provider): Promise<void> {
+    const key = (this.host.config[KEY_FIELD[provider]] as string | null) ?? '';
+    if (key === '' || this.host.measuring[provider]) return;
+    // Drop the old readings first, so both rows go back to "measuring…".
+    this.host.probes = {
+      ...this.host.probes,
+      [provider]: { tier: this.host.probes[provider]?.tier ?? null },
+    };
+    await this.measure(provider, key);
+  }
+
+  /** Fill in the card's two speed lines. Each row lands on its own, and a
    *  measurement that fails leaves that row blank rather than the card broken —
    *  a working key with an unknown price is still a working key. */
-  private async measure(provider: Provider, key: string): Promise<void> {
+  async measure(provider: Provider, key: string): Promise<void> {
     this.host.measuring = { ...this.host.measuring, [provider]: true };
     this.host.notify();
     for (const role of ['primary', 'secondary'] as const) {

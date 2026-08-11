@@ -21,10 +21,21 @@ export interface ProbeOptions {
   now?: () => number;
 }
 
-/** What a thousand tokens cost, and how long they take. */
+/** How fast a model is, split into the two things a call actually spends time
+ *  on. Price is never measured — it comes from the catalogue. */
 export interface ModelMeasure {
-  usdPer1kTok: number;
-  secPer1kTok: number;
+  /** Seconds until the first streamed chunk: getting the model going. 0 when
+   *  the provider buffered the whole reply and there was nothing to separate. */
+  ttftSec: number;
+  /** Output tokens per second once generation is under way. */
+  tokPerSec: number;
+}
+
+/** The card's `~Z sec`: the two halves put back together for a thousand output
+ *  tokens. The startup cost is paid once per call whatever its length, which is
+ *  why it is added rather than averaged in. */
+export function estimateSecPer1kTok(m: ModelMeasure): number {
+  return m.tokPerSec > 0 ? m.ttftSec + 1000 / m.tokPerSec : 0;
 }
 
 /** Display name used in every message this module produces. */
@@ -44,14 +55,8 @@ const OPENAI_COMPATIBLE_BASE: Partial<Record<Provider, string>> = {
   openrouter: 'https://openrouter.ai/api/v1',
 };
 
-/** The reference task: twenty rows to classify, which is the app's own hot path.
- *  It asks for a sentence per row on purpose. A bare true/false answer is a few
- *  dozen output tokens, and at that size the fixed round trip dwarfs the
- *  generation — measured against live providers, a terse answer from
- *  `gemini-3.1-flash-lite` read as 25 sec per 1000 tokens against `gemini-3.6-flash`'s
- *  7.6, the reverse of the truth. Asking for a justification pulls every model
- *  up to several hundred output tokens, and the ranking comes out right.
- *  See the 2026-08-11 provider probe. */
+/** The reference task: twenty rows to classify, which is the app's own hot
+ *  path. It asks for a sentence per row so the model has real work to stream. */
 const REFERENCE_PROMPT =
   'For each numbered title below, decide whether it is a music video. ' +
   'Reply with a JSON array of twenty objects and nothing else, each ' +
@@ -60,6 +65,19 @@ const REFERENCE_PROMPT =
 
 /** The cheapest thing we can ask a provider, used only to prove the key works. */
 const VERIFY_PROMPT = 'Reply with the single word: ok';
+
+/** Output-token cap for the measurement. Small enough to be cheap, big enough
+ *  that a thinking model still streams: at 100, `gemini-3.6-flash` spent the
+ *  whole budget reasoning and returned 96 tokens in a single frame. Turning
+ *  thinking off is not the alternative — Gemini 3.6 rejects
+ *  `thinkingBudget: 0` — so the probe sends no reasoning options at all and
+ *  stays provider-neutral. See the 2026-08-11 provider probe. */
+const MEASURE_MAX_TOKENS = 300;
+
+/** Below this share of the call spent streaming, treat the reply as buffered:
+ *  a provider that flushes at the end (or a model that thinks silently, then
+ *  dumps it all) has no separable first-token time to report. */
+const STREAMING_SHARE = 0.2;
 
 interface Answer {
   status: number;
@@ -226,18 +244,128 @@ function usageOf(provider: Provider, body: Record<string, unknown>): { inTok: nu
   return { inTok: u['prompt_tokens'] ?? 0, outTok: u['completion_tokens'] ?? 0 };
 }
 
+/** The streaming request body/URL for one provider. Deliberately minimal: no
+ *  reasoning or thinking options, because the one knob that would help
+ *  (Gemini's `thinkingBudget: 0`) is rejected by the very model that needs it. */
+function streamRequest(
+  provider: Provider, key: string, modelId: string,
+): { url: string; init: RequestInit } {
+  if (provider === 'gemini') {
+    return {
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`,
+      init: {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: REFERENCE_PROMPT }] }],
+          generationConfig: { maxOutputTokens: MEASURE_MAX_TOKENS },
+        }),
+      },
+    };
+  }
+  if (provider === 'anthropic') {
+    return {
+      url: 'https://api.anthropic.com/v1/messages',
+      init: {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: modelId, stream: true, max_tokens: MEASURE_MAX_TOKENS,
+          messages: [{ role: 'user', content: REFERENCE_PROMPT }],
+        }),
+      },
+    };
+  }
+  return {
+    url: `${OPENAI_COMPATIBLE_BASE[provider]}/chat/completions`,
+    init: {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: modelId, stream: true,
+        stream_options: { include_usage: true },
+        max_completion_tokens: MEASURE_MAX_TOKENS,
+        messages: [{ role: 'user', content: REFERENCE_PROMPT }],
+      }),
+    },
+  };
+}
+
+/** Read an SSE body, timing the first chunk and the last, and collecting every
+ *  `data:` frame as parsed JSON. A body that arrives in one piece — a buffering
+ *  provider, or a stubbed Response in a test — simply yields one frame with
+ *  first and last times equal. */
+async function readStream(
+  res: Response, clock: () => number, started: number,
+): Promise<{ frames: Record<string, unknown>[]; firstMs: number; lastMs: number }> {
+  const frames: Record<string, unknown>[] = [];
+  let firstMs = clock();
+  let lastMs = firstMs;
+  let seenChunk = false;
+  let buffer = '';
+
+  const take = (text: string): void => {
+    if (!seenChunk) { firstMs = clock(); seenChunk = true; }
+    lastMs = clock();
+    buffer += text;
+  };
+
+  if (res.body) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      take(decoder.decode(value, { stream: true }));
+    }
+  } else {
+    take(await res.text());
+  }
+  if (!seenChunk) { firstMs = started; lastMs = clock(); }
+
+  for (const line of buffer.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) continue;
+    const payload = trimmed.slice(5).trim();
+    if (payload === '' || payload === '[DONE]') continue;
+    try {
+      frames.push(JSON.parse(payload) as Record<string, unknown>);
+    } catch {
+      // A partial frame at the edge of a chunk boundary — skip it; the usage
+      // frame arrives whole.
+    }
+  }
+  // A non-SSE body (a stub, or an error response) is still one JSON object.
+  if (frames.length === 0 && buffer.trim() !== '') {
+    try {
+      frames.push(JSON.parse(buffer) as Record<string, unknown>);
+    } catch {
+      // Not JSON at all — no usage to read, handled by the caller.
+    }
+  }
+  return { frames, firstMs, lastMs };
+}
+
 /**
- * Run the reference task once and report what a thousand tokens cost and how
- * long they take.
+ * Measure one model's speed with a single capped streaming call. Price is not
+ * measured — it comes from the catalogue.
  *
- *   usdPer1kTok = total price / total tokens × 1000
- *   secPer1kTok = elapsed seconds / output tokens × 1000
+ *   ttftSec   = seconds until the first streamed chunk   (getting going)
+ *   tokPerSec = outTok / (totalSec − ttftSec)            (generating)
  *
- * Cost blends the two per-Mtok rates at the ratio the call actually used, so it
- * is exact. Latency divides by **output** tokens only: output is what a run
- * spends its time generating, and dividing by the round trip lets a short
- * answer's fixed overhead make the cheap fast model look slower than the
- * expensive one — measured, not hypothetical.
+ * Splitting them is what lets a 300-token sample extrapolate honestly: the
+ * startup cost is paid once per call whatever its length, so folding it into a
+ * per-token average makes short answers look slow. Measured against live
+ * providers, dividing a whole round trip by its tokens inverted the ranking.
+ *
+ * When the reply arrives buffered — under a fifth of the call spent streaming —
+ * there is no separable first-token time, so the whole call counts as
+ * generation and the estimate becomes a plain average.
  */
 export async function measureModel(
   provider: Provider,
@@ -245,19 +373,39 @@ export async function measureModel(
   modelId: string,
   opts: ProbeOptions = {},
 ): Promise<ModelMeasure> {
+  const doFetch: FetchLike = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
   const clock = opts.now ?? (() => Date.now());
+  const { url, init } = streamRequest(provider, key, modelId);
+
   const started = clock();
-  const answer = await call(provider, key, modelId, REFERENCE_PROMPT, opts);
-  const elapsedSec = (clock() - started) / 1000;
-  if (!ok(answer)) throw failure(provider, answer);
+  let res: Response;
+  try {
+    res = await doFetch(url, init);
+  } catch {
+    throw failure(provider, { status: 0, headers: new Headers(), body: {} });
+  }
+  const { frames, firstMs, lastMs } = await readStream(res, clock, started);
 
-  const { inTok, outTok } = usageOf(provider, answer.body);
-  const model = ALL_MODELS.find((m) => m.id === modelId);
-  const total = inTok + outTok;
-  const usd = model ? (inTok * model.inUsdPerMtok + outTok * model.outUsdPerMtok) / 1e6 : 0;
+  // An error answer is a single JSON frame, not a stream.
+  const errFrame = frames.find((f) => f['error'] != null);
+  if (res.status < 200 || res.status >= 300 || errFrame) {
+    throw failure(provider, { status: res.status, headers: res.headers, body: errFrame ?? {} });
+  }
 
-  return {
-    usdPer1kTok: total > 0 ? (usd / total) * 1000 : 0,
-    secPer1kTok: outTok > 0 ? (elapsedSec / outTok) * 1000 : 0,
-  };
+  // Usage lands in one frame or is spread across several (Anthropic reports
+  // input on message_start and output on message_delta), so merge as we go.
+  let outTok = 0;
+  for (const frame of frames) {
+    outTok = Math.max(outTok, usageOf(provider, frame).outTok);
+  }
+
+  const totalSec = (lastMs - started) / 1000;
+  const ttftSec = (firstMs - started) / 1000;
+  const streamedSec = totalSec - ttftSec;
+  if (outTok === 0 || totalSec <= 0) return { ttftSec: 0, tokPerSec: 0 };
+
+  if (frames.length >= 2 && streamedSec >= STREAMING_SHARE * totalSec) {
+    return { ttftSec, tokPerSec: outTok / streamedSec };
+  }
+  return { ttftSec: 0, tokPerSec: outTok / totalSec };
 }
