@@ -50,6 +50,14 @@ export interface WebScenarioCtx {
   lastCallApiKey?: string;
   /** Model calls this scenario has made — proves a key test does not retry. */
   llmCallCount?: number;
+  /** #PuterGateway — what the injected sign-in port does. Unset resolves a
+   *  token (the happy path); `closed` is the user dismissing the window;
+   *  `error` is any real failure, which must reach the banner. */
+  puterSignInClosed?: boolean;
+  puterSignInError?: string;
+  /** Set by the injected sign-out port — deleting the Puter card must end the
+   *  session, and deleting any other card must not. */
+  puterSignedOut?: boolean;
   /** #LookupJoin — background tasks that answer the lookup dialog through the
    *  public `chooseLookupFile()` seam when a join later raises it, so a @web
    *  `load the lookup table …` Given never reaches into the controller engine. */

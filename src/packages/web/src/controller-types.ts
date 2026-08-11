@@ -52,6 +52,11 @@ export interface WebControllerOptions {
    *  SDK, loaded on click; hosts that cannot open a window (tests, the CLI)
    *  leave it unset and the chooser shows no Puter button. */
   puterSignIn?: () => Promise<string | null>;
+  /** #PuterGateway — forget the Puter session, wired to the same SDK. Deleting
+   *  the Puter card calls it: dropping only our own token would leave the SDK's
+   *  copy behind, and the next sign-in would silently return the same account
+   *  with no way to switch. */
+  puterSignOut?: () => void;
   /** The running deployment's address for a bundled sample, or null when the
    *  name is no longer bundled. Opening a sample Recent asks this first — a
    *  stored address goes stale when a deployment moves — falling back to the

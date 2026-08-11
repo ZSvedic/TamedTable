@@ -182,6 +182,54 @@ Feature: Web front-end
       And the configured cellModel is "gemini-3.1-flash-lite"
 
     @web
+    # Every other card holds a key the user has their own copy of, so deleting
+    # it only forgets ours. Puter's is a session the SDK also keeps — leave it
+    # behind and the next sign-in silently returns the same account.
+    Scenario: Deleting the Puter card signs out of Puter
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "eyJhbGciOiJIUzI1Ni-demo"
+      And user removes the provider "puter"
+      Then the connected providers are ""
+      And the Puter session has been signed out
+
+    @web
+    # Deleting any other card is not a sign-out — there is no session to end.
+    Scenario: Deleting a Google card does not touch the Puter session
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "AIza-good"
+      And user removes the provider "gemini"
+      Then the Puter session has not been signed out
+
+    @web
+    # The old code returned null for every failure, and null means "the user
+    # closed the window" — so a blocked sign-in looked like a click that never
+    # registered.
+    Scenario: A failed Puter sign-in says so instead of doing nothing
+      Given the TamedTable web app
+      And the API key has not been set
+      And the Puter sign-in fails with "Your browser blocked the Puter.js sign-in window."
+      When user opens the settings panel
+      And user signs in to Puter
+      Then the connect error is "Your browser blocked the Puter.js sign-in window."
+      And the connected providers are ""
+
+    @web
+    Scenario: Closing the Puter sign-in window is not an error
+      Given the TamedTable web app
+      And the API key has not been set
+      And the Puter sign-in is closed without signing in
+      When user opens the settings panel
+      And user signs in to Puter
+      Then the connect error is empty
+      And the connected providers are ""
+
+    @web
     Scenario: Connecting Groq pins its two open-weight defaults
       Given the TamedTable web app
       And the API key has not been set

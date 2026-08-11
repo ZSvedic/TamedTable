@@ -1142,8 +1142,19 @@ from every vendor — and its credential is a session token only its popup can
 mint, so this is the one provider that cannot be typed in. Clicking calls
 `controller.signInPuter()`, which loads Puter's SDK **at that moment**, opens
 the popup, and connects the token it returns through the same check-then-store
-path a pasted key takes. Dismissing the popup does nothing. The button is absent
-in builds with no way to open one, and reads `Connected to Puter.js` once it is.
+path a pasted key takes. While that window is open the button reads
+`Signing in…`, and a click on the panel's backdrop no longer closes the panel —
+the sign-in happens in front of it, and a panel that looks untouched (or is
+gone) when the user comes back reads as a click that never registered.
+Dismissing the window does nothing; any *other* failure, a browser-blocked
+window included, shows in the error banner rather than passing for a
+dismissal. The button is absent in builds with no way to open one, and reads
+`Connected to Puter.js` once connected.
+
+**Removing the Puter card signs out of Puter.** Every other card holds a key
+the user has their own copy of, so removing it only forgets ours; Puter's is a
+session the SDK also stores, and leaving that behind would hand the next
+sign-in the same account with no way to switch.
 
 Loading the SDK on click rather than on page load is deliberate: the app pulls
 in no third-party scripts, and a user who never touches Puter should keep it

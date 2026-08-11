@@ -80,6 +80,50 @@ test('the icon buttons carry an accessible name, not just a tooltip', () => {
   assert.ok(html.includes('aria-label="Remove Google API"'), 'the delete button needs a label');
 });
 
+/** The Puter sign-in button's own markup — the whole page also holds a
+ *  disabled Add button, so `disabled` has to be looked for on this tag alone. */
+function puterButton(html: string): string {
+  const start = html.indexOf('<button', html.indexOf('data-mc-puter') - 300);
+  assert.notEqual(start, -1, 'no Puter sign-in button rendered');
+  return html.slice(start, html.indexOf('</button>', start));
+}
+
+/** The Puter block, rendered with nothing connected. */
+function renderPuter(props: { busy?: boolean; puterBusy?: boolean } = {}): string {
+  return renderToString(h(ModelChooser, {
+    connected: [],
+    selected: null,
+    keyInput: '',
+    error: '',
+    busy: props.busy ?? false,
+    puterBusy: props.puterBusy ?? false,
+    onKeyInputChange: () => {},
+    onAdd: () => {},
+    onSelect: () => {},
+    onRemove: () => {},
+    onPuterSignIn: () => {},
+  }));
+}
+
+test('the Puter button says the sign-in started, and cannot be clicked twice', () => {
+  // The sign-in opens a window in front of the panel. A panel that looks
+  // untouched when the user comes back reads as a click that never registered.
+  const idle = puterButton(renderPuter());
+  assert.ok(idle.includes('Sign in / Sign up to Puter.js'), 'expected the idle label');
+  assert.ok(!idle.includes('disabled'), 'the idle button is clickable');
+
+  const busy = puterButton(renderPuter({ busy: true, puterBusy: true }));
+  assert.ok(busy.includes('Signing in…'), 'expected the in-flight label');
+  assert.ok(busy.includes('disabled'), 'the in-flight button is disabled');
+});
+
+test('a pasted-key connect disables the Puter button without relabelling it', () => {
+  // One connect at a time, but this one is not the Puter sign-in.
+  const html = puterButton(renderPuter({ busy: true, puterBusy: false }));
+  assert.ok(html.includes('Sign in / Sign up to Puter.js'), 'the label belongs to the Puter flow');
+  assert.ok(html.includes('disabled'), 'a connect in flight still blocks a second one');
+});
+
 test('speedOf tells "never measured" from "measured and failed"', () => {
   assert.equal(speedOf(undefined, false), null);
   assert.equal(speedOf(undefined, true), 'measuring');

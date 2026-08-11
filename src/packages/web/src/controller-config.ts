@@ -93,6 +93,10 @@ export class ConfigManager {
   async signInPuter(): Promise<void> {
     if (this.host.keyBusy) return;
     this.host.keyBusy = true;
+    // The sign-in happens in a window in front of the panel, so the button
+    // has to show it started — otherwise coming back to an unchanged panel
+    // reads as a click that never registered.
+    this.host.puterBusy = true;
     this.host.keyError = '';
     this.host.notify();
     try {
@@ -103,6 +107,7 @@ export class ConfigManager {
       this.host.keyError = (e as Error).message;
     } finally {
       this.host.keyBusy = false;
+      this.host.puterBusy = false;
       this.host.notify();
     }
   }
@@ -187,6 +192,11 @@ export class ConfigManager {
    *  back to the last remaining connected provider — or, with none left, to the
    *  gemini fallback resolveConfig uses everywhere else. */
   async removeProvider(provider: Provider): Promise<void> {
+    // #PuterGateway — Puter's credential is a session, not a key the user
+    // holds a copy of, so deleting the card has to end the session as well.
+    // Dropping only our token would leave the SDK's own copy behind, and the
+    // next sign-in would hand back the same account with no way to switch.
+    if (provider === 'puter') this.host.opts.puterSignOut?.();
     const cleared: Partial<ResolvedConfig> = { [KEY_FIELD[provider]]: null };
     if (this.host.config.provider === provider) {
       // "The last remaining card" is the last one on screen, so the fallback

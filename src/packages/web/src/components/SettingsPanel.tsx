@@ -70,8 +70,12 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   } as CSSProperties;
 
   return (
+    // A backdrop click closes the panel — except mid-connect. The Puter
+    // sign-in puts a window in front of this one, and the click that brings the
+    // tab back would otherwise dismiss the panel just as the new card was about
+    // to appear on it.
     <div
-      onClick={() => controller.closeSettings()}
+      onClick={() => { if (!controller.keyBusy) controller.closeSettings(); }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -142,6 +146,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             keyInput={controller.keyInput}
             error={controller.keyError}
             busy={controller.keyBusy}
+            puterBusy={controller.puterBusy}
             byokHelpUrl="../FAQ.html#byok"
             onKeyInputChange={(value) => controller.setKeyInput(value)}
             onAdd={() => void controller.addKey()}

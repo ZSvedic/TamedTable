@@ -108,6 +108,8 @@ export class WebController implements ControllerHost {
   keyError = '';
   /** Whether a connect is in flight — the input and Add button are disabled. */
   keyBusy = false;
+  /** #PuterGateway — the in-flight connect is the Puter sign-in. */
+  puterBusy = false;
   /** Per-provider tier and measured cost/speed, seeded from the cache written
    *  on the last connect (see ConfigManager). */
   probes: Partial<Record<Provider, ProviderProbe>> = readStoredProbes();

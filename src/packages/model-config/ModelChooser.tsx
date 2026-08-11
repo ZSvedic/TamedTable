@@ -46,6 +46,11 @@ export interface ModelChooserProps {
   /** An add is in flight — the input and button are disabled so a slow
    *  provider cannot be double-submitted. */
   busy: boolean;
+  /** The in-flight connect is the Puter sign-in, so its button says so rather
+   *  than just greying. The sign-in happens in a window in front of the panel;
+   *  a panel that looks untouched when the user comes back reads as a click
+   *  that never registered. */
+  puterBusy?: boolean;
   /** Optional URL for the "How to get ↗" link. The host supplies the path so
    *  the component carries no site URL; the link is omitted when unset. */
   byokHelpUrl?: string;
@@ -175,6 +180,7 @@ export function ModelChooser({
   keyInput,
   error,
   busy,
+  puterBusy,
   byokHelpUrl,
   onKeyInputChange,
   onAdd,
@@ -559,7 +565,7 @@ export function ModelChooser({
             <button
               type="button"
               data-mc-puter=""
-              disabled={puterConnected}
+              disabled={puterConnected || busy}
               onClick={() => onPuterSignIn()}
               style={{
                 display: 'flex',
@@ -586,7 +592,9 @@ export function ModelChooser({
                 height={17}
                 style={{ borderRadius: 5, display: 'block', flex: '0 0 auto' }}
               />
-              {puterConnected ? 'Connected to Puter.js' : 'Sign in / Sign up to Puter.js'}
+              {puterConnected
+                ? 'Connected to Puter.js'
+                : puterBusy ? 'Signing in…' : 'Sign in / Sign up to Puter.js'}
             </button>
           </div>
         </>

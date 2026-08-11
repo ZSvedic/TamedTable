@@ -1443,7 +1443,8 @@ interface ModelChooserProps {
   selected: Provider | null;            // the default provider; only its card shows model rows
   keyInput: string;
   error: string;
-  busy: boolean;                        // a connect is in flight — input and Add disabled
+  busy: boolean;                        // a connect is in flight — input, Add and the Puter button all disabled
+  puterBusy?: boolean;                  // that connect is the Puter sign-in — its button reads "Signing in…"
   byokHelpUrl?: string;                 // "how to get an API key" link target
   onKeyInputChange(value: string): void;
   onAdd(): void;

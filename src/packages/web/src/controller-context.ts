@@ -53,6 +53,10 @@ export interface ControllerHost {
   keyInput: string;
   keyError: string;
   keyBusy: boolean;
+  /** The connect in flight is the Puter sign-in, so its button can say so.
+   *  A click that opens a window in front of the panel needs to leave a mark
+   *  on the panel too, or coming back looks like nothing happened. */
+  puterBusy: boolean;
   probes: Partial<Record<Provider, ProviderProbe>>;
   measuring: Partial<Record<Provider, boolean>>;
   voiceStatus: VoiceStatus;

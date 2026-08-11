@@ -86,6 +86,15 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
         return () => { ctx.voiceAutoStop = undefined; };
       },
       fetch: compositeFetch,
+      // #PuterGateway — the browser opens Puter's sign-in window here; a
+      // scenario decides what that window did. Wiring it at all is also what
+      // makes the chooser show the Puter block.
+      puterSignIn: () => {
+        if (ctx.puterSignInError) return Promise.reject(new Error(ctx.puterSignInError));
+        if (ctx.puterSignInClosed) return Promise.resolve(null);
+        return Promise.resolve('eyJhbGciOiJIUzI1Ni-signed-in');
+      },
+      puterSignOut: () => { ctx.puterSignedOut = true; },
       // The recents re-resolve seam: a "the sample … is bundled at URL …"
       // Given fills the map; empty means no sample is bundled (null → the
       // stored address is used as-is, like the browser with a stale name).

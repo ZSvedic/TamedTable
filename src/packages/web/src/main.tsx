@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createWebController } from './controller.ts';
 import type { TutorialSources, TutorialManifestEntry } from './controller.ts';
 import { BrowserFilePort } from '@tamedtable/file-io/browser-fs';
-import { browserPuterSignIn } from './puter-signin.ts';
+import { browserPuterSignIn, browserPuterSignOut } from './puter-signin.ts';
 import { browserVoicePort } from '@tamedtable/voice-input/browser-voice';
 import { browserContinuousPort } from '@tamedtable/voice-input/browser-vad';
 import { App } from './App.tsx';
@@ -42,6 +42,7 @@ const controller = createWebController({
   file: new BrowserFilePort(),
   // #PuterGateway — loads Puter's SDK on click, never on page load.
   puterSignIn: browserPuterSignIn,
+  puterSignOut: browserPuterSignOut,
   // The port factories return null on a browser without the capture APIs;
   // unset here keeps the mic / waveform buttons hidden there.
   voice: browserVoicePort() ?? undefined,

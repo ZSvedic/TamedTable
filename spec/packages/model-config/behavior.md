@@ -215,15 +215,43 @@ Puter is a **gateway**, not a model provider: one account reaches 800-odd
 models from every vendor, billed against one balance. It connects like any
 other provider, but three things about it are its own.
 
-**The credential is a session token, not an API key.** A signed-in browser
-holds it at `localStorage["puter.auth.token.v2"]`; the CLI reads `PUTER_TOKEN`.
-Only Puter's popup can mint one, which is what the chooser's **Sign in / Sign
-up to Puter.js** button is for: the web app wires it to `browserPuterSignIn`,
-which loads Puter's SDK, calls `puter.auth.signIn()`, reads the token back out
-of localStorage, and hands it to the same connect path a pasted credential
-takes. The SDK is fetched **on click, never on page load** — TamedTable's pages
-pull in no third-party scripts, and a user who never touches Puter keeps it
-that way. A dismissed popup resolves to null and is not an error.
+**The credential is a session token, not an API key.** The CLI reads
+`PUTER_TOKEN`; in the browser only Puter's own sign-in window can mint one,
+which is what the chooser's **Sign in / Sign up to Puter.js** button is for. The
+web app wires it to `browserPuterSignIn`: load Puter's SDK, call
+`puter.auth.signIn()`, and hand the token it resolves with to the same connect
+path a pasted credential takes. The SDK is fetched **on click, never on page
+load** — TamedTable's pages pull in no third-party scripts, and a user who never
+touches Puter keeps it that way.
+
+Three things about that flow are the difference between it working and it
+looking broken:
+
+- **The token comes from the answer**, with the SDK's
+  `localStorage["puter.auth.token.v2"]` copy as a fallback. Reading only
+  storage meant a sign-in that succeeded but could not write (private mode,
+  partitioned storage) came back as `null` — which the caller reads as "the
+  user cancelled" and answers by doing nothing.
+- **Only a closed window is silent.** `auth_window_closed` is the user changing
+  their mind and resolves to null; everything else throws and lands in the
+  error banner. A browser-blocked window gets its own sentence — *Your browser
+  blocked the Puter.js sign-in window. Allow pop-ups for this site and try
+  again.* — because the old catch-all turned it into a click that appeared not
+  to register.
+- **The button says it started.** While the sign-in is out it reads
+  `Signing in…` and is disabled, and a click on the panel's backdrop no longer
+  closes it. All of this happens behind a window sitting in front of the panel;
+  a panel that looks untouched when the user comes back is a panel that looks
+  broken.
+
+**Deleting the Puter card signs out.** Every other card holds a key the user
+has their own copy of, so deleting it only forgets ours. Puter's is a session,
+and the SDK keeps its own copy — so `removeProvider('puter')` also calls
+`browserPuterSignOut`, which drops the SDK's stored token. Without it, a user
+who deleted the card and signed in again would be handed the same account back
+with no way to switch. The sign-out is deliberately local: no SDK load, no
+network call, because deleting a card has to work on a page that never loaded
+Puter.js.
 
 **The transport is one endpoint.** `POST /drivers/call` takes an envelope whose
 `args` are an OpenAI chat-completions body and answers with an OpenAI choice,

@@ -617,6 +617,31 @@ When('user removes the provider {string}', async function (this: TamedTableWorld
   await controller(this).removeProvider(provider as ModelProvider);
 });
 
+// ── #PuterGateway — the sign-in window, and the session behind it ──────────
+
+Given(
+  'the Puter sign-in fails with {string}',
+  function (this: TamedTableWorld, message: string) {
+    ctxOf(this).puterSignInError = message;
+  },
+);
+
+Given('the Puter sign-in is closed without signing in', function (this: TamedTableWorld) {
+  ctxOf(this).puterSignInClosed = true;
+});
+
+When('user signs in to Puter', async function (this: TamedTableWorld) {
+  await controller(this).signInPuter();
+});
+
+Then('the Puter session has been signed out', function (this: TamedTableWorld) {
+  assert.equal(ctxOf(this).puterSignedOut, true, 'the Puter session was left signed in');
+});
+
+Then('the Puter session has not been signed out', function (this: TamedTableWorld) {
+  assert.notEqual(ctxOf(this).puterSignedOut, true, 'the Puter session was signed out');
+});
+
 /** The comma list of connected providers, or "" when none is. */
 Then('the connected providers are {string}', function (this: TamedTableWorld, expected: string) {
   assert.equal(controller(this).connectedProviders().join(', '), expected);
