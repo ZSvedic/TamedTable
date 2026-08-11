@@ -778,8 +778,8 @@ Feature: Model config
       When the user adds the key "AIza-demo"
       Then the "gemini" card's primary model is "gemini-3.6-flash"
       And the "gemini" card's secondary model is "gemini-3.1-flash-lite"
-      And the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tokens"
-      And the "gemini" card's "primary" cost line matches "· ~"
+      And the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
+      And the "gemini" card's "primary" cost line matches ", ~"
 
     @web
     Scenario: An unselected card shows no model rows
@@ -894,7 +894,7 @@ Feature: Model config
       Given the model-config demo page
       When the user adds the key "AIza-demo"
       And the user refreshes the "gemini" card
-      Then the "gemini" card's "primary" cost line matches "· ~"
+      Then the "gemini" card's "primary" cost line matches ", ~"
 
     @web
     Scenario: Every card carries its own refresh and delete buttons

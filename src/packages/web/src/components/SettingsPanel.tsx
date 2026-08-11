@@ -12,6 +12,7 @@ import { useIsMobile } from '../hooks/useIsMobile.ts';
 import { installPrompt } from '../install-prompt.ts';
 import { modelFor, defaultModel, defaultCellModel, type Provider } from '@tamedtable/model-config';
 import { ModelChooser, type ConnectedCard, type RoleRow } from '@tamedtable/model-config/ModelChooser';
+import { speedOf } from '@tamedtable/model-config/storage';
 
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
@@ -27,13 +28,12 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
     const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
     const priced = modelFor(p, model);
-    const speed = controller.probes[p]?.[role];
     return {
       model,
       // Price is the catalogue's, per thousand tokens — never measured.
       inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
       outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
-      speed: speed === undefined ? (controller.measuring[p] ? 'measuring' : null) : speed,
+      speed: speedOf(controller.probes[p]?.[role], controller.measuring[p] ?? false),
     };
   };
   const connected: ConnectedCard[] = controller.connectedProviders().map((p) => ({
@@ -48,6 +48,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   // The app theme, expressed as the chooser's --mc-* variables.
   const chooserTheme = {
     '--mc-ink': t.ink,
+    '--mc-ink-on-ink': t.inkOnInk,
     '--mc-ink2': t.ink2,
     '--mc-ink3': t.ink3,
     '--mc-surface': t.surface,

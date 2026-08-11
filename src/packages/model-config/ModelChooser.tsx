@@ -10,19 +10,21 @@
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import type { ReactNode } from 'react';
 import type { Provider, Tier } from './index.ts';
-import { estimateSecPer1kTok, type ModelMeasure } from './probe.ts';
+import { estimateSecPer1kTok } from './probe.ts';
+// Type-only: the component still touches no storage at runtime, it just names
+// the same four-state speed value the cache reader produces.
+import type { RoleSpeed } from './storage.ts';
 import puterLogoUrl from './puter-logo.png';
 
 /** One role row on a card. The two prices are catalogue values per thousand
  *  tokens (null for a model the catalogue doesn't price); `speed` is the
- *  measurement — the numbers when they are in, `'measuring'` while the call is
- *  still out, and null when it failed. A working key with no speed reading is
- *  still a working key. */
+ *  four-state measurement (`speedOf` in storage.ts builds it). A working key
+ *  with no speed reading is still a working key. */
 export interface RoleRow {
   model: string;
   inUsdPer1kTok: number | null;
   outUsdPer1kTok: number | null;
-  speed: ModelMeasure | 'measuring' | null;
+  speed: RoleSpeed;
 }
 
 export interface ConnectedCard {
@@ -82,6 +84,8 @@ const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq';
 const v = (name: string, fallback: string): string => `var(--mc-${name}, ${fallback})`;
 
 const ink = v('ink', '#1c1f23');
+/** Readable *on* `ink` — the primary button's text. */
+const inkOnInk = v('ink-on-ink', '#ffffff');
 const ink2 = v('ink2', '#4a5260');
 const ink3 = v('ink3', '#6b7280');
 const surface = v('surface', '#ffffff');
@@ -110,19 +114,21 @@ function money(usd: number): string {
 
 /** The line under a model id: catalogue prices, then the measured time.
  *
- *   $0.0015 in / $0.0075 out per 1000 tokens · ~9.4 sec
+ *   $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
  *
- * The prices are always there once the catalogue knows the model; the `· ~Z sec`
- * tail is the measurement, so it reads `· measuring…` while the call is out and
- * is dropped entirely if it failed. */
+ * The prices are always there once the catalogue knows the model; the `~Z sec`
+ * tail is the measurement, so it reads `measuring…` while the call is out and
+ * `speed unknown` when the call came back an error — a row that simply went
+ * blank looked identical to one still loading. */
 function costLine(row: RoleRow): string | null {
   const parts: string[] = [];
   if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
-    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tokens`);
+    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tok`);
   }
   if (row.speed === 'measuring') parts.push('measuring…');
+  else if (row.speed === 'failed') parts.push('speed unknown');
   else if (row.speed !== null) parts.push(`~${estimateSecPer1kTok(row.speed).toFixed(1)} sec`);
-  return parts.length > 0 ? parts.join(' · ') : null;
+  return parts.length > 0 ? parts.join(', ') : null;
 }
 
 // ── Inline icons (no host icon set) ────────────────────────────────────────
@@ -215,8 +221,10 @@ export function ModelChooser({
     </span>
   );
 
-  // One role row: the label column, the model id, and the measured line under
-  // it — aligned to the model id, not the label.
+  // One role row: the label column and the model id on one line, the priced
+  // line under both. The cost line starts at the row's left edge rather than
+  // indented under the model id — indented, it had a third of the card to fit
+  // a sentence in and got clipped.
   const roleRow = (role: 'primary' | 'secondary', row: RoleRow): ReactNode => {
     const cost = costLine(row);
     return (
@@ -224,16 +232,19 @@ export function ModelChooser({
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span
             style={{
-              width: 68,
+              // Fixed, so the two rows' model ids line up under each other.
+              width: 104,
               flex: '0 0 auto',
               fontFamily: fontUi,
               fontSize: 12,
               fontWeight: 650,
               whiteSpace: 'nowrap',
-              color: role === 'primary' ? ink2 : ink3,
+              // Both roles read the same: the secondary model is not a lesser
+              // setting, it is the one that runs on every row.
+              color: ink2,
             }}
           >
-            {role === 'primary' ? 'Primary' : 'Secondary'}
+            {role === 'primary' ? 'Primary model' : 'Secondary model'}
           </span>
           <span
             data-mc-model-id={row.model}
@@ -257,11 +268,9 @@ export function ModelChooser({
           <div
             data-mc-cost=""
             style={{
-              paddingLeft: 76,
               fontFamily: fontUi,
               fontSize: 12,
               color: ink3,
-              whiteSpace: 'nowrap',
             }}
           >
             {cost}
@@ -495,9 +504,12 @@ export function ModelChooser({
               flex: '0 0 auto',
               padding: '10px 18px',
               borderRadius: radius,
-              border: `1px solid ${canAdd ? accent : line}`,
-              background: canAdd ? accent : surface3,
-              color: canAdd ? '#fff' : ink3,
+              // Filled ink once there is something to add — the host's primary
+              // button. The accent is a pale sky in this theme, so an
+              // accent-filled button read as the secondary of the pair.
+              border: `1px solid ${canAdd ? ink : line}`,
+              background: canAdd ? ink : surface3,
+              color: canAdd ? inkOnInk : ink3,
               fontFamily: fontUi,
               fontSize: 13,
               fontWeight: 600,
@@ -538,7 +550,7 @@ export function ModelChooser({
               No API key?
             </div>
             <div style={{ fontFamily: fontUi, fontSize: 13, lineHeight: 1.5, color: ink2 }}>
-              One Puter.js account reaches models from every vendor.
+              $25 in API credits for <em>any model</em> on Puter.js sign up.
             </div>
             <button
               type="button"

@@ -600,6 +600,7 @@ Then('loading fails with {string}', function (this: TamedTableWorld, needle: str
 // ── Settings panel: the model chooser ──────────────────────────────────────
 
 import { ALL_MODELS, KEY_FIELD, type Provider as ModelProvider } from '@tamedtable/model-config';
+import { speedOf } from '@tamedtable/model-config/storage';
 
 When('user closes the settings panel', function (this: TamedTableWorld) {
   controller(this).closeSettings();
@@ -650,6 +651,18 @@ Then(
 Then('the {string} card has no tier', function (this: TamedTableWorld, provider: string) {
   assert.equal(controller(this).probes[provider as ModelProvider]?.tier, null);
 });
+
+/** What the panel's row would show for speed: `speedOf` is the mapping both
+ *  hosts render through, so asserting it here asserts the row. */
+Then(
+  "the {string} card's {word} speed reads {string}",
+  function (this: TamedTableWorld, provider: string, role: string, expected: string) {
+    const c = controller(this);
+    const p = provider as ModelProvider;
+    const reading = c.probes[p]?.[role as 'primary' | 'secondary'];
+    assert.equal(speedOf(reading, c.measuring[p] ?? false), expected);
+  },
+);
 
 /** Only the selected card renders a body, so an unselected provider's rows are
  *  the ones the panel does not draw. */
@@ -772,6 +785,29 @@ Given('the LLM API answers any completion', function (this: TamedTableWorld) {
     return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers }));
   };
 });
+
+/** The key check passes and the speed measurement doesn't. Told apart by the
+ *  request body: only the measurement asks for a stream. */
+Given(
+  'the LLM API answers the key check but refuses the measurement',
+  function (this: TamedTableWorld) {
+    ctxOf(this).mockLlmFetch = (input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const streaming = typeof init?.body === 'string' && init.body.includes('"stream"')
+        || url.includes('stream');
+      if (streaming) {
+        return Promise.resolve(new Response(
+          JSON.stringify({ error: { message: 'Rate limit reached', code: 'rate_limit_exceeded' } }),
+          { status: 429, headers: { 'content-type': 'application/json' } },
+        ));
+      }
+      return Promise.resolve(new Response(
+        JSON.stringify({ candidates: [{ content: { parts: [{ text: 'OK' }], role: 'model' }, finishReason: 'STOP' }] }),
+        { status: 200, headers: { 'content-type': 'application/json', 'x-gemini-service-tier': 'standard' } },
+      ));
+    };
+  },
+);
 
 Given('the LLM API returns a 401 unauthorized error', function (this: TamedTableWorld) {
   ctxOf(this).mockLlmFetch = () =>

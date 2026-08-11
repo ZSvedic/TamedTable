@@ -158,6 +158,25 @@ export function readStoredProbes(now: number = Date.now()): StoredProbes {
   }
 }
 
+/** What a card row shows for speed: the numbers once they are in,
+ *  `'measuring'` while the call is out, `'failed'` when it came back an error,
+ *  and null when the row has never been measured. The last two are separate
+ *  states because they are separate facts, and a row that just went blank told
+ *  the user neither one. */
+export type RoleSpeed = ModelMeasure | 'measuring' | 'failed' | null;
+
+/** Read a stored reading as a row's speed. Absent and null are different
+ *  things — never measured versus measured and failed — so they must not
+ *  render the same. Lives here rather than in the component because both hosts
+ *  (the web app's SettingsPanel and the demo page) build their rows from this
+ *  same blob, and only one place should have to remember which is which. */
+export function speedOf(
+  reading: StoredMeasure | null | undefined, measuring: boolean,
+): RoleSpeed {
+  if (reading === undefined) return measuring ? 'measuring' : null;
+  return reading === null ? 'failed' : reading;
+}
+
 /** The `connectedProviders` order map, read out of the probe blob: card order
  *  is display, so the timestamps live with the measurements rather than in the
  *  config the engine is built from. */

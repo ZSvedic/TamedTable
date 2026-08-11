@@ -21,10 +21,10 @@ The card appears at once, marked as the default, with both model rows still
 measuring. Two reference calls later the card reads:
 
 ```
-Primary    gemini-3.6-flash
-           $0.0015 in / $0.0075 out per 1000 tokens · ~9.7 sec
-Secondary  gemini-3.1-flash-lite
-           $0.00025 in / $0.0015 out per 1000 tokens · ~3.4 sec
+Primary model    gemini-3.6-flash
+$0.0015 in / $0.0075 out per 1000 tok, ~9.7 sec
+Secondary model  gemini-3.1-flash-lite
+$0.00025 in / $0.0015 out per 1000 tok, ~3.4 sec
 ```
 
 The prices are the catalogue's, divided by a thousand. Only the seconds are
@@ -302,8 +302,10 @@ nobody watched arrive.
 Measuring is slow (a free OpenRouter model took eleven seconds), so it never
 blocks the card. `verifyKey` gates the card; the two measurements fill it in
 afterwards, and each row reads `measuring…` until its own call lands. A
-measurement that fails leaves the row's speed blank rather than the card broken
-— the price still shows, and a working key is still a working key. The card's
+measurement that fails leaves the row reading `speed unknown` rather than the
+card broken — the price still shows, and a working key is still a working key.
+Saying so beats going blank: blank is what an unmeasured row looks like too.
+The card's
 **⟳ button re-runs both measurements** for that provider, so a number taken when
 the provider was having a bad minute is one click from being replaced.
 
@@ -429,13 +431,30 @@ card. ⟳ re-runs that provider's two measurements; its rows fall back to
 `measuring…` while they are out.
 
 Only the **selected** card shows a body, and the selected card is the default
-provider every run uses. The body has two rows, Primary and Secondary, each
-with the model id and a line beneath it:
-`$0.0015 in / $0.0075 out per 1000 tokens · ~9.4 sec`. The prices are catalogue
-values per thousand tokens and are always there; the `· ~Z sec` tail is the
-measurement, replaced by `· measuring…` while the call is out and dropped
-entirely if it failed. A model the catalogue doesn't price shows only the
-seconds.
+provider every run uses. The body has two rows, **Primary model** and
+**Secondary model**, labelled in the same colour — the secondary is not a
+lesser setting, it is the one that runs on every row. Each row puts its label
+and model id on one line and the priced line beneath *both*, starting at the
+row's left edge rather than indented under the id: indented it had a third of
+the card in which to fit a sentence, and got clipped.
+
+```
+Primary model    gemini-3.6-flash
+$0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
+```
+
+The prices are catalogue values per thousand tokens and are always there. The
+`~Z sec` tail is the measurement, and it has four states, because "blank" was
+telling the user three different things at once:
+
+| state | tail |
+|---|---|
+| the call is out | `measuring…` |
+| the numbers are in | `~9.4 sec` |
+| the call came back an error | `speed unknown` |
+| never measured | nothing |
+
+A model the catalogue doesn't price shows only the tail.
 
 **Adding a key.** One input and an Add button, enabled as soon as the input is
 non-empty; Enter does the same thing as the button. The host detects, verifies,
@@ -453,8 +472,9 @@ rather than erroring. The card has no key field, so a user whose key expired
 would otherwise have to delete the card to fix it — and the design's own note
 asks for exactly this.
 
-**No API key?** Below the supported-providers footer, an `OR` divider and a
-full-width **Sign in / Sign up to Puter.js** button carrying Puter's mark.
+**No API key?** Below the supported-providers footer, an `OR` divider, the line
+`$25 in API credits for *any model* on Puter.js sign up.`, and a full-width
+**Sign in / Sign up to Puter.js** button carrying Puter's mark.
 Puter's credential is a session token that only its popup can mint, so the
 button is the way in for a user with no API key at all. Once Puter is connected
 the button turns green, reads `Connected to Puter.js`, and is inert. The whole
@@ -472,9 +492,11 @@ never touches storage or the network:
 - `connected` — the cards to render: `{ id, tier, voice, primary, secondary }`.
   Each role is `{ model, inUsdPer1kTok, outUsdPer1kTok, speed }`: the two prices
   come from the catalogue (null for a model it doesn't price), and `speed` is
-  the measurement — the numbers when they are in, `'measuring'` while the call
-  is out, and null when it failed. Display names live in the component's
-  exported `PROVIDER_LABEL`, so a host never spells them out.
+  the four-state measurement above. Both hosts turn a stored probe into that
+  value with the component's exported `speedOf(reading, measuring)` — an absent
+  reading is unmeasured, a null one failed, and only one place has to remember
+  which. Display names live in the exported `PROVIDER_LABEL`, so a host never
+  spells them out.
 - `selected` — the default provider, or null when nothing is connected
 - `keyInput`, `error`, `busy` — the add row's state
 - `byokHelpUrl` — optional; renders the `How to get ↗` link beside the
@@ -491,11 +513,16 @@ role and `resolveConfig` renders the resulting config live.
 
 Styling comes only from `--mc-*` CSS custom properties, each with a default
 that gives a presentable light look standalone. The host injects its theme by
-setting the variables on any wrapping element: `--mc-ink`, `--mc-ink2`,
-`--mc-ink3`, `--mc-surface`, `--mc-surface2`, `--mc-surface3`, `--mc-line`,
-`--mc-line2`, `--mc-accent`, `--mc-accent-soft`, `--mc-ok`, `--mc-ok-soft`,
-`--mc-err`, `--mc-err-soft`, `--mc-font-ui`, `--mc-font-mono`, `--mc-radius`,
-`--mc-radius-sm`, `--mc-radius-lg`.
+setting the variables on any wrapping element: `--mc-ink`, `--mc-ink-on-ink`,
+`--mc-ink2`, `--mc-ink3`, `--mc-surface`, `--mc-surface2`, `--mc-surface3`,
+`--mc-line`, `--mc-line2`, `--mc-accent`, `--mc-accent-soft`, `--mc-ok`,
+`--mc-ok-soft`, `--mc-err`, `--mc-err-soft`, `--mc-font-ui`, `--mc-font-mono`,
+`--mc-radius`, `--mc-radius-sm`, `--mc-radius-lg`.
+
+The **Add** button is filled `ink` on `ink-on-ink` once the input is non-empty,
+which is the host's *primary* button — a deliberate departure from the
+handoff's accent fill. This theme's accent is a pale sky, so an accent-filled
+Add read as the quieter half of the pair rather than the action.
 
 For tests, each element carries a stable data attribute: `data-mc-empty` on the
 empty row, `data-mc-card`, `data-mc-tier`, `data-mc-voice` and `data-mc-remove`

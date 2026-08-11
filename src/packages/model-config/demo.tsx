@@ -16,7 +16,7 @@ import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.t
 import { verifyKey, measureModel, type FetchLike } from './probe.ts';
 import {
   readStoredConfig, writeStoredConfig,
-  readStoredProbes, writeStoredProbes, connectedOrder, type ProviderProbe,
+  readStoredProbes, writeStoredProbes, connectedOrder, speedOf, type ProviderProbe,
 } from './storage.ts';
 import { sendTestPrompt, sendVoicePrompt } from './demo-llm.ts';
 
@@ -182,13 +182,12 @@ function Demo() {
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
     const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
     const priced = modelFor(p, model);
-    const speed = probes[p]?.[role];
     return {
       model,
       // Price is the catalogue's, per thousand tokens — never measured.
       inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
       outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
-      speed: speed === undefined ? (measuring[p] ? 'measuring' : null) : speed,
+      speed: speedOf(probes[p]?.[role], measuring[p] ?? false),
     };
   };
 

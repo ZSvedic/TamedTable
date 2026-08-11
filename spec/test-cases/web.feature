@@ -793,6 +793,20 @@ Feature: Web front-end
       And the "groq" card has no tier
 
     @web
+    # A row that just went blank looked exactly like one still loading, so a
+    # measurement that failed says so and the ⟳ button is the retry.
+    Scenario: A refused measurement leaves the row saying the speed is unknown
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers the key check but refuses the measurement
+      When user opens the settings panel
+      And user connects the key "AIza-good"
+      Then the connect error is empty
+      And the connected providers are "gemini"
+      And the "gemini" card's primary speed reads "failed"
+      And the "gemini" card's secondary speed reads "failed"
+
+    @web
     # The free tier: OpenRouter's single $0 model fills both roles.
     Scenario: Selecting OpenRouter pins the free model in both roles
       Given the TamedTable web app
