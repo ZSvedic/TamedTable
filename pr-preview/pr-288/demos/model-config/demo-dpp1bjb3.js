@@ -17182,6 +17182,24 @@ function providerFor(modelId) {
     return "openai";
   return "anthropic";
 }
+var PROVIDER_BASE_URL = {
+  gemini: "https://generativelanguage.googleapis.com/v1beta",
+  openai: "https://api.openai.com/v1",
+  anthropic: "https://api.anthropic.com/v1",
+  groq: "https://api.groq.com/openai/v1",
+  openrouter: "https://openrouter.ai/api/v1",
+  cerebras: "https://api.cerebras.ai/v1",
+  puter: "https://api.puter.com"
+};
+var PUTER_DRIVERS_URL = `${PROVIDER_BASE_URL.puter}/drivers/call`;
+function puterEnvelope(body) {
+  return {
+    interface: "puter-chat-completion",
+    driver: "ai-chat",
+    method: "complete",
+    args: body
+  };
+}
 var KEY_PREFIXES = [
   ["sk-proj-", "openai"],
   ["sk-ant-", "anthropic"],
@@ -17286,7 +17304,6 @@ function resolveConfig(env, stored) {
 }
 
 // packages/model-config/probe.ts
-var PUTER_DRIVERS_URL = "https://api.puter.com/drivers/call";
 function estimateSecPer1kTok(m) {
   return m.tokPerSec > 0 ? m.ttftSec + 1000 / m.tokPerSec : 0;
 }
@@ -17298,19 +17315,6 @@ var PROVIDER_NAME = {
   openrouter: "OpenRouter",
   puter: "Puter.js"
 };
-function puterEnvelope(body) {
-  return JSON.stringify({
-    interface: "puter-chat-completion",
-    driver: "ai-chat",
-    method: "complete",
-    args: body
-  });
-}
-var OPENAI_COMPATIBLE_BASE = {
-  openai: "https://api.openai.com/v1",
-  groq: "https://api.groq.com/openai/v1",
-  openrouter: "https://openrouter.ai/api/v1"
-};
 var REFERENCE_PROMPT = "For each numbered title below, decide whether it is a music video. " + "Reply with a JSON array of twenty objects and nothing else, each " + `{"n": <number>, "music": <boolean>, "why": "<one short sentence>"}.
 ` + Array.from({ length: 20 }, (_, i) => `${i + 1}. Sample video title ${i + 1}`).join(`
 `);
@@ -17319,18 +17323,17 @@ var MEASURE_MAX_TOKENS = 300;
 var STREAMING_SHARE = 0.2;
 async function call(provider, key, modelId, prompt, opts) {
   const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-  const base = OPENAI_COMPATIBLE_BASE[provider];
   let url;
   let init;
   if (provider === "gemini") {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+    url = `${PROVIDER_BASE_URL.gemini}/models/${modelId}:generateContent`;
     init = {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     };
   } else if (provider === "anthropic") {
-    url = "https://api.anthropic.com/v1/messages";
+    url = `${PROVIDER_BASE_URL.anthropic}/messages`;
     init = {
       method: "POST",
       headers: {
@@ -17350,10 +17353,10 @@ async function call(provider, key, modelId, prompt, opts) {
     init = {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: puterEnvelope({ model: modelId, messages: [{ role: "user", content: prompt }] })
+      body: JSON.stringify(puterEnvelope({ model: modelId, messages: [{ role: "user", content: prompt }] }))
     };
   } else {
-    url = `${base}/chat/completions`;
+    url = `${PROVIDER_BASE_URL[provider]}/chat/completions`;
     init = {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
@@ -17400,7 +17403,7 @@ async function verifyKey(provider, key, opts = {}) {
     const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
     let answer2;
     try {
-      const res = await doFetch("https://openrouter.ai/api/v1/key", {
+      const res = await doFetch(`${PROVIDER_BASE_URL.openrouter}/key`, {
         headers: { authorization: `Bearer ${key}` }
       });
       answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
@@ -17416,7 +17419,7 @@ async function verifyKey(provider, key, opts = {}) {
     const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
     let answer2;
     try {
-      const res = await doFetch("https://api.puter.com/whoami", {
+      const res = await doFetch(`${PROVIDER_BASE_URL.puter}/whoami`, {
         headers: { authorization: `Bearer ${key}` }
       });
       answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
@@ -17465,7 +17468,7 @@ function usageOf(provider, body) {
 function streamRequest(provider, key, modelId) {
   if (provider === "gemini") {
     return {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`,
+      url: `${PROVIDER_BASE_URL.gemini}/models/${modelId}:streamGenerateContent?alt=sse`,
       init: {
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": key },
@@ -17478,7 +17481,7 @@ function streamRequest(provider, key, modelId) {
   }
   if (provider === "anthropic") {
     return {
-      url: "https://api.anthropic.com/v1/messages",
+      url: `${PROVIDER_BASE_URL.anthropic}/messages`,
       init: {
         method: "POST",
         headers: {
@@ -17502,17 +17505,17 @@ function streamRequest(provider, key, modelId) {
       init: {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-        body: puterEnvelope({
+        body: JSON.stringify(puterEnvelope({
           model: modelId,
           stream: true,
           max_tokens: MEASURE_MAX_TOKENS,
           messages: [{ role: "user", content: REFERENCE_PROMPT }]
-        })
+        }))
       }
     };
   }
   return {
-    url: `${OPENAI_COMPATIBLE_BASE[provider]}/chat/completions`,
+    url: `${PROVIDER_BASE_URL[provider]}/chat/completions`,
     init: {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
@@ -17874,6 +17877,7 @@ function ModelChooser({
             onRefresh && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
               type: "button",
               "data-mc-refresh": c.id,
+              "aria-label": `Re-measure ${PROVIDER_LABEL[c.id]}`,
               title: `Re-measure ${PROVIDER_LABEL[c.id]}`,
               onClick: (e) => {
                 e.stopPropagation();
@@ -17885,6 +17889,7 @@ function ModelChooser({
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
               type: "button",
               "data-mc-remove": c.id,
+              "aria-label": `Remove ${PROVIDER_LABEL[c.id]}`,
               title: `Remove ${PROVIDER_LABEL[c.id]}`,
               onClick: (e) => {
                 e.stopPropagation();
