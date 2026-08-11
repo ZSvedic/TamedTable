@@ -11,6 +11,7 @@
 import type { ReactNode } from 'react';
 import type { Provider, Tier } from './index.ts';
 import { estimateSecPer1kTok, type ModelMeasure } from './probe.ts';
+import puterLogoUrl from './puter-logo.png';
 
 /** One role row on a card. The two prices are catalogue values per thousand
  *  tokens (null for a model the catalogue doesn't price); `speed` is the
@@ -53,6 +54,10 @@ export interface ModelChooserProps {
   /** The ⟳ button — re-run this provider's measurements. Omit it and no card
    *  shows one, so a host with nothing to re-measure gets no dead button. */
   onRefresh?: (p: Provider) => void;
+  /** The "No API key?" block's Puter.js sign-in. Omit it and the whole block —
+   *  divider included — is left out, so a host that cannot open a sign-in
+   *  window (the CLI, the demo page) shows no button that would not work. */
+  onPuterSignIn?: () => void;
 }
 
 /** The display name for each provider. One home, so the host never spells
@@ -167,7 +172,9 @@ export function ModelChooser({
   onSelect,
   onRemove,
   onRefresh,
+  onPuterSignIn,
 }: ModelChooserProps): ReactNode {
+  const puterConnected = connected.some((c) => c.id === 'puter');
   const canAdd = keyInput.trim() !== '' && !busy;
 
   /** Shared shape for the two 26px header buttons (⟳ and delete). */
@@ -503,6 +510,68 @@ export function ModelChooser({
           {SUPPORTED_LIST}
         </div>
       </div>
+
+      {/* ── No API key? — sign in to the Puter.js gateway ───────────────── */}
+      {onPuterSignIn && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ flex: 1, height: 1, background: surface3 }} />
+            <span
+              style={{
+                fontFamily: fontMono,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '.1em',
+                color: ink3,
+              }}
+            >
+              OR
+            </span>
+            <span style={{ flex: 1, height: 1, background: surface3 }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <div style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink }}>
+              No API key?
+            </div>
+            <div style={{ fontFamily: fontUi, fontSize: 13, lineHeight: 1.5, color: ink2 }}>
+              One Puter.js account reaches models from every vendor.
+            </div>
+            <button
+              type="button"
+              data-mc-puter=""
+              disabled={puterConnected}
+              onClick={() => onPuterSignIn()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 9,
+                width: '100%',
+                padding: '11px 14px',
+                borderRadius: 9,
+                border: `1px solid ${puterConnected ? okSoft : line2}`,
+                background: puterConnected ? okSoft : surface,
+                color: puterConnected ? ok : ink,
+                fontFamily: fontUi,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: puterConnected ? 'default' : 'pointer',
+              }}
+            >
+              <img
+                data-mc-puter-logo=""
+                src={puterLogoUrl}
+                alt=""
+                width={17}
+                height={17}
+                style={{ borderRadius: 5, display: 'block', flex: '0 0 auto' }}
+              />
+              {puterConnected ? 'Connected to Puter.js' : 'Sign in / Sign up to Puter.js'}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

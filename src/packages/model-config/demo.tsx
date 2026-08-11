@@ -128,8 +128,10 @@ function Demo() {
     setMeasuring((m) => ({ ...m, [provider]: false }));
   };
 
-  const addKey = async (): Promise<void> => {
-    const key = keyInput.trim();
+  const addKey = (): Promise<void> => addKeyWith(keyInput.trim());
+
+  const addKeyWith = async (raw: string): Promise<void> => {
+    const key = raw.trim();
     if (key === '' || busy) return;
     const provider = detectProvider(key);
     if (!provider) {
@@ -288,6 +290,12 @@ function Demo() {
         onAdd={() => void addKey()}
         onSelect={(p) => setStored((s) => ({ ...s, provider: p }))}
         onRemove={removeProvider}
+        onPuterSignIn={() => {
+          // No popup on a demo page: a stub token stands in for the one the
+          // real sign-in mints, so the block still drives the connect path.
+          setKeyInput('eyJhbGciOiJIUzI1NiJ9.demo');
+          void addKeyWith('eyJhbGciOiJIUzI1NiJ9.demo');
+        }}
         onRefresh={(p) => {
           const key = (resolved[KEY_FIELD[p]] as string | null) ?? '';
           if (key) void measureBoth(p, key);

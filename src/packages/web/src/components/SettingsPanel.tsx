@@ -147,6 +147,9 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             onSelect={(p) => void controller.selectProvider(p)}
             onRemove={(p) => void controller.removeProvider(p)}
             onRefresh={(p) => void controller.refreshProvider(p)}
+            onPuterSignIn={
+              controller.canSignInPuter() ? () => void controller.signInPuter() : undefined
+            }
           />
 
           {/* #LazyExec — Simple mode: every AI step runs table-wide at once,

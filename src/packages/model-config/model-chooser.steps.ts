@@ -154,6 +154,23 @@ Then('the {string} card shows no VOICE tag', async function (this: object, provi
   assert.equal(tags.length, 0, `expected no VOICE tag on the ${provider} card`);
 });
 
+// ── the Puter sign-in block ──────────────────────────────────────────────────
+
+When('the user clicks the Puter sign-in button', async function (this: object) {
+  await page(this).click('[data-mc-puter]');
+});
+
+Then(
+  'the chooser shows the Puter sign-in button reading {string}',
+  async function (this: object, label: string) {
+    await expectText(page(this), '[data-mc-puter]', label);
+  },
+);
+
+Then('the Puter sign-in button is disabled', async function (this: object) {
+  assert.equal(await page(this).isDisabled('[data-mc-puter]'), true);
+});
+
 // ── errors, footer, help link ────────────────────────────────────────────────
 
 Then('the chooser shows the error {string}', async function (this: object, text: string) {

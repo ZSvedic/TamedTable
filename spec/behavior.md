@@ -1136,6 +1136,19 @@ A key for an **already-connected provider replaces it in place** and
 re-measures. The card carries no key field, so a user whose key expired would
 otherwise have to delete the card to fix it.
 
+**No API key at all?** Below the add row sits an `OR` divider and a **Sign in /
+Sign up to Puter.js** button. Puter is a gateway — one account reaches models
+from every vendor — and its credential is a session token only its popup can
+mint, so this is the one provider that cannot be typed in. Clicking calls
+`controller.signInPuter()`, which loads Puter's SDK **at that moment**, opens
+the popup, and connects the token it returns through the same check-then-store
+path a pasted key takes. Dismissing the popup does nothing. The button is absent
+in builds with no way to open one, and reads `Connected to Puter.js` once it is.
+
+Loading the SDK on click rather than on page load is deliberate: the app pulls
+in no third-party scripts, and a user who never touches Puter should keep it
+that way.
+
 **Selecting and removing.** Clicking any card header makes that provider the
 default (`controller.selectProvider(p)`); only the selected card shows its two
 model rows, since it is the one that runs. The trash button removes the provider

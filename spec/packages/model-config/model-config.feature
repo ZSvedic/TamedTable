@@ -793,6 +793,28 @@ Feature: Model config
       Then the "openai" card is selected
 
     @web
+    Scenario: The chooser offers a Puter sign-in when the host can open one
+      Given the model-config demo page
+      Then the chooser shows the Puter sign-in button reading "Sign in / Sign up to Puter.js"
+
+    @web
+    # Puter's credential can only be minted by its popup, so the button is the
+    # way in for a user with no API key at all.
+    Scenario: Signing in to Puter connects it like any other provider
+      Given the model-config demo page
+      When the user clicks the Puter sign-in button
+      Then the chooser shows a card for "puter" named "Puter.js"
+      And the demo shows resolved provider "puter"
+      And the demo shows resolved model "gemini-3.6-flash"
+
+    @web
+    Scenario: Once connected the Puter button says so and is inert
+      Given the model-config demo page
+      When the user clicks the Puter sign-in button
+      Then the chooser shows the Puter sign-in button reading "Connected to Puter.js"
+      And the Puter sign-in button is disabled
+
+    @web
     Scenario: The refresh button re-runs that provider's measurements
       Given the model-config demo page
       When the user adds the key "AIza-demo"

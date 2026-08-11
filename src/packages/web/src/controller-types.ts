@@ -47,6 +47,11 @@ export interface WebControllerOptions {
   file: FilePort;
   /** Custom fetch — the Cucumber cassette recorder in tests; unset in the browser. */
   fetch?: FetchLike;
+  /** #PuterGateway — open Puter's sign-in and resolve the session token it
+   *  mints, or null when the user closed it. The browser wires this to Puter's
+   *  SDK, loaded on click; hosts that cannot open a window (tests, the CLI)
+   *  leave it unset and the chooser shows no Puter button. */
+  puterSignIn?: () => Promise<string | null>;
   /** The running deployment's address for a bundled sample, or null when the
    *  name is no longer bundled. Opening a sample Recent asks this first — a
    *  stored address goes stale when a deployment moves — falling back to the

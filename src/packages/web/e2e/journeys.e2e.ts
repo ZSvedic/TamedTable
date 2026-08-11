@@ -344,6 +344,21 @@ test.describe('Settings', () => {
     await expect(page.locator('[data-mc-keyinput]')).toHaveValue('');
   });
 
+  // Puter's credential can only be minted by its popup, so the block is the way
+  // in for a user with no API key at all — and its SDK must not be fetched
+  // until they ask for it.
+  test('the Puter sign-in block renders, and loads no script until pressed', async ({ page }) => {
+    const requested: string[] = [];
+    page.on('request', (r) => requested.push(r.url()));
+    await boot(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByText('No API key?')).toBeVisible();
+    await expect(page.locator('[data-mc-puter]')).toContainText('Sign in / Sign up to Puter.js');
+    await expect(page.locator('[data-mc-puter-logo]')).toBeVisible();
+    // The privacy claim in the FAQ: no third-party script on page load.
+    expect(requested.filter((u) => u.includes('js.puter.com'))).toEqual([]);
+  });
+
   test('deleting the card removes the provider and the empty row returns', async ({ page }) => {
     await boot(page);
     await connectKey(page, 'sk-ant-e2e');

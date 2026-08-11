@@ -292,6 +292,14 @@ a JWT, so `detectProvider` matches it on `eyJ` — the loosest of the prefixes,
 since any JWT matches, which is why `verifyKey` has Puter confirm it before
 anything is stored.
 
+Only Puter's popup can mint one, which is what the chooser's **Sign in / Sign up
+to Puter.js** button is for. The web app wires it to `browserPuterSignIn`: load
+Puter's SDK, call `puter.auth.signIn()`, read the token back out of
+localStorage, and hand it to the same connect path a pasted credential takes.
+The SDK is fetched **on click, never on page load** — TamedTable's pages pull in
+no third-party scripts, and a user who never touches Puter keeps it that way.
+A dismissed popup resolves to null and is not an error.
+
 **The transport is one endpoint.** `POST https://api.puter.com/drivers/call`
 takes `{ interface: "puter-chat-completion", driver: "ai-chat", method:
 "complete", args }`, where `args` is an OpenAI chat-completions body, and
@@ -399,6 +407,14 @@ rather than erroring. The card has no key field, so a user whose key expired
 would otherwise have to delete the card to fix it — and the design's own note
 asks for exactly this.
 
+**No API key?** Below the supported-providers footer, an `OR` divider and a
+full-width **Sign in / Sign up to Puter.js** button carrying Puter's mark.
+Puter's credential is a session token that only its popup can mint, so the
+button is the way in for a user with no API key at all. Once Puter is connected
+the button turns green, reads `Connected to Puter.js`, and is inert. The whole
+block — divider included — is rendered only when `onPuterSignIn` is supplied, so
+a host that cannot open a sign-in window shows no button that would not work.
+
 **Selecting and deleting.** Clicking any card header makes it the default; the
 previously selected card collapses. Deleting removes the card and its key; if
 it was the default, the default falls back to the last remaining card, or to
@@ -420,6 +436,8 @@ never touches storage or the network:
   and the link is omitted when the prop is unset.
 - `onKeyInputChange(v)`, `onAdd()`, `onSelect(p)`, `onRemove(p)`,
   `onRefresh(p)` — the ⟳ button; omit it and no card shows one
+- `onPuterSignIn()` — the "No API key?" button; omit it and the block is left
+  out entirely
 
 The host owns all state and semantics. In the web app, `SettingsPanel` binds
 the props to `WebController`. On the demo page, plain React state plays that
@@ -439,8 +457,8 @@ keyed by provider id, `data-mc-model` (keyed by model id) plus `data-mc-role`
 (`"primary"` or `"secondary"`) on each role row, `data-mc-model-id` on the id
 itself and `data-mc-cost` on the line beneath it, `data-mc-refresh` on the ⟳
 button, `data-mc-keyinput` and `data-mc-add` on the add row,
-`data-mc-error` on the banner, `data-mc-providers` on the footer, and
-`data-mc-byok` on the help link.
+`data-mc-error` on the banner, `data-mc-providers` on the footer, `data-mc-puter` on the
+Puter sign-in button, and `data-mc-byok` on the help link.
 
 ## Demo page
 

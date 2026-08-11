@@ -70,24 +70,57 @@ export class ConfigManager {
     this.host.keyError = '';
     this.host.notify();
     try {
-      const { tier } = await verifyKey(provider, key, { fetch: this.host.opts.fetch });
-      this.host.probes = { ...this.host.probes, [provider]: { tier } };
-      this.host.keyInput = '';
-      // A key for an already-connected provider replaces it in place: the card
-      // has no key field, so the alternative is deleting it to fix a key.
-      await this.setConfig({
-        provider,
-        [KEY_FIELD[provider]]: key,
-        model: defaultModel(provider),
-        cellModel: defaultCellModel(provider),
-      });
-      void this.measure(provider, key);
+      await this.connect(provider, key);
     } catch (e) {
       this.host.keyError = (e as Error).message;
     } finally {
       this.host.keyBusy = false;
       this.host.notify();
     }
+  }
+
+  /**
+   * #PuterGateway — the "No API key?" button. Puter's credential is a session
+   * token, and the only way to mint one is its sign-in popup, so this loads
+   * Puter's SDK, opens it, and then connects the resulting token through the
+   * very same path a pasted one takes.
+   *
+   * The SDK is fetched **on click, never on load**. TamedTable's pages pull in
+   * no third-party scripts, and a user who does not use Puter should keep it
+   * that way — see the FAQ's key-safety answer.
+   */
+  async signInPuter(): Promise<void> {
+    if (this.host.keyBusy) return;
+    this.host.keyBusy = true;
+    this.host.keyError = '';
+    this.host.notify();
+    try {
+      const token = await this.host.opts.puterSignIn!();
+      if (token === null) return;            // The user closed the popup.
+      await this.connect('puter', token);
+    } catch (e) {
+      this.host.keyError = (e as Error).message;
+    } finally {
+      this.host.keyBusy = false;
+      this.host.notify();
+    }
+  }
+
+  /** Check a credential and, if the provider accepts it, store it and select
+   *  that provider. Shared by the pasted-key path and the Puter sign-in. */
+  private async connect(provider: Provider, key: string): Promise<void> {
+    const { tier } = await verifyKey(provider, key, { fetch: this.host.opts.fetch });
+    this.host.probes = { ...this.host.probes, [provider]: { tier } };
+    this.host.keyInput = '';
+    // A credential for an already-connected provider replaces it in place: the
+    // card has no key field, so the alternative is deleting it to fix a key.
+    await this.setConfig({
+      provider,
+      [KEY_FIELD[provider]]: key,
+      model: defaultModel(provider),
+      cellModel: defaultCellModel(provider),
+    });
+    void this.measure(provider, key);
   }
 
   /** Re-run a connected provider's measurements — the card's ⟳ button. A
