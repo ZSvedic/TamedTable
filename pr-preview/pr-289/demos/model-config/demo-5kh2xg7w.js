@@ -17257,8 +17257,25 @@ function resolveConfig(env, stored) {
 // packages/model-config/ModelChooser.tsx
 var import_react = __toESM(require_react(), 1);
 var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
-var META = { gemini: { name: "Google API", voice: true }, openai: { name: "OpenAI API", voice: false }, anthropic: { name: "Anthropic API", voice: false }, openrouter: { name: "OpenRouter API", voice: false }, groq: { name: "Groq API", voice: false }, puter: { name: "Puter.js", voice: true } };
-var action = { width: 26, height: 26, padding: 0, border: "1px solid transparent", borderRadius: 6, background: "transparent", display: "grid", placeItems: "center", cursor: "pointer" };
+var META = {
+  gemini: { name: "Google API", voice: true },
+  openai: { name: "OpenAI API", voice: false },
+  anthropic: { name: "Anthropic API", voice: false },
+  openrouter: { name: "OpenRouter API", voice: false },
+  groq: { name: "Groq API", voice: false },
+  puter: { name: "Puter.js", voice: true }
+};
+var action = {
+  width: 26,
+  height: 26,
+  padding: 0,
+  border: "1px solid transparent",
+  borderRadius: 6,
+  background: "transparent",
+  display: "grid",
+  placeItems: "center",
+  cursor: "pointer"
+};
 var price = (n) => `$${(n / 1000).toFixed(n === 0 ? 1 : 5).replace(/0+$/, "").replace(/\.$/, "")}`;
 function ModelChooser(p) {
   const [input, setInput] = import_react.useState("");
@@ -17293,21 +17310,37 @@ function ModelChooser(p) {
           style: { display: "flex", gap: 8, minWidth: 0 },
           children: [
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("b", {
-              style: { width: 68, flex: "0 0 68px", fontSize: 12, color: "#4a5260" },
+              style: {
+                width: 68,
+                flex: "0 0 68px",
+                fontSize: 12,
+                color: "#4a5260"
+              },
               children: label
             }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("code", {
               title: id,
-              style: { fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+              style: {
+                fontSize: 13,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              },
               children: id.replace(/^(groq|puter)\//, "")
             }, undefined, false, undefined, this)
           ]
         }, undefined, true, undefined, this),
         /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-          style: { paddingLeft: 76, color: "#6b7280", fontSize: 12, whiteSpace: "nowrap" },
+          style: {
+            paddingLeft: 76,
+            color: "#6b7280",
+            fontSize: 12,
+            whiteSpace: "nowrap"
+          },
           children: [
             m ? `${price(m.inUsdPerMtok)} in / ${price(m.outUsdPerMtok)} out per 1000 tokens` : "Price unavailable",
-            " · ",
+            " ",
+            "· ",
             sec == null ? "not measured" : `~${sec.toFixed(1)} sec`
           ]
         }, undefined, true, undefined, this)
@@ -17316,14 +17349,41 @@ function ModelChooser(p) {
   };
   return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("section", {
     "data-mc-chooser": "",
-    style: { boxSizing: "border-box", width: "100%", background: "#fff", border: "1px solid #e3e6ea", borderRadius: 14, padding: 18, boxShadow: "0 1px 2px rgba(16,24,40,.05)", display: "flex", flexDirection: "column", gap: 18, fontFamily: "system-ui,sans-serif", color: "#1c1f23" },
+    style: {
+      boxSizing: "border-box",
+      width: "100%",
+      background: "#fff",
+      border: "1px solid #e3e6ea",
+      borderRadius: 14,
+      padding: 18,
+      boxShadow: "0 1px 2px rgba(16,24,40,.05)",
+      display: "flex",
+      flexDirection: "column",
+      gap: 18,
+      fontFamily: "system-ui,sans-serif",
+      color: "#1c1f23"
+    },
     children: [
       connected.length === 0 ? /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
         "data-mc-empty": "",
-        style: { padding: 14, border: "1px dashed #d5d9de", borderRadius: 11, background: "#fbfbfc", display: "flex", gap: 10, alignItems: "center", justifyContent: "center" },
+        style: {
+          padding: 14,
+          border: "1px dashed #d5d9de",
+          borderRadius: 11,
+          background: "#fbfbfc",
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          justifyContent: "center"
+        },
         children: [
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("i", {
-            style: { width: 7, height: 7, borderRadius: "50%", background: "#b6bcc5" }
+            style: {
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: "#b6bcc5"
+            }
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("b", {
             style: { fontSize: 14, color: "#4a5260" },
@@ -17336,7 +17396,12 @@ function ModelChooser(p) {
           const selected = provider === p.provider, m = META[provider], all = p.models.filter((x) => x.provider === provider), tier = provider === "puter" ? "" : all.every((x) => x.inUsdPerMtok === 0 && x.outUsdPerMtok === 0) ? "FREE" : "PAID", primary = selected ? p.primaryModel : all[0]?.id ?? "", secondary = selected ? p.secondaryModel : all[1]?.id ?? primary;
           return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             "data-mc-provider": provider,
-            style: { border: `1px solid ${selected ? "#1a73e8" : "#e8eaee"}`, borderRadius: 11, overflow: "hidden", background: selected ? "#fbfcfe" : "#fff" },
+            style: {
+              border: `1px solid ${selected ? "#1a73e8" : "#e8eaee"}`,
+              borderRadius: 11,
+              overflow: "hidden",
+              background: selected ? "#fbfcfe" : "#fff"
+            },
             children: [
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
                 role: "button",
@@ -17346,12 +17411,31 @@ function ModelChooser(p) {
                   if (e.key === "Enter" || e.key === " ")
                     p.onSelect(provider);
                 },
-                style: { padding: "11px 12px", display: "flex", gap: 9, alignItems: "center", cursor: "pointer" },
+                style: {
+                  padding: "11px 12px",
+                  display: "flex",
+                  gap: 9,
+                  alignItems: "center",
+                  cursor: "pointer"
+                },
                 children: [
                   /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                    style: { width: 16, height: 16, boxSizing: "border-box", borderRadius: "50%", border: `2px solid ${selected ? "#1a73e8" : "#c8cdd4"}`, display: "grid", placeItems: "center" },
+                    style: {
+                      width: 16,
+                      height: 16,
+                      boxSizing: "border-box",
+                      borderRadius: "50%",
+                      border: `2px solid ${selected ? "#1a73e8" : "#c8cdd4"}`,
+                      display: "grid",
+                      placeItems: "center"
+                    },
                     children: selected && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("i", {
-                      style: { width: 8, height: 8, borderRadius: "50%", background: "#1a73e8" }
+                      style: {
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: "#1a73e8"
+                      }
                     }, undefined, false, undefined, this)
                   }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsx_dev_runtime.jsxDEV("b", {
@@ -17362,11 +17446,25 @@ function ModelChooser(p) {
                     style: { display: "flex", gap: 5, flex: 1 },
                     children: [
                       tier && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("small", {
-                        style: { font: "600 10px ui-monospace,monospace", letterSpacing: ".04em", padding: "4px 6px", borderRadius: 4, background: tier === "FREE" ? "#e7f6ec" : "#eceef1", color: tier === "FREE" ? "#1a6b38" : "#4a5260" },
+                        style: {
+                          font: "600 10px ui-monospace,monospace",
+                          letterSpacing: ".04em",
+                          padding: "4px 6px",
+                          borderRadius: 4,
+                          background: tier === "FREE" ? "#e7f6ec" : "#eceef1",
+                          color: tier === "FREE" ? "#1a6b38" : "#4a5260"
+                        },
                         children: tier
                       }, undefined, false, undefined, this),
                       m.voice && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("small", {
-                        style: { font: "600 10px ui-monospace,monospace", letterSpacing: ".04em", padding: "4px 6px", borderRadius: 4, background: "#eef4fe", color: "#1a4a8a" },
+                        style: {
+                          font: "600 10px ui-monospace,monospace",
+                          letterSpacing: ".04em",
+                          padding: "4px 6px",
+                          borderRadius: 4,
+                          background: "#eef4fe",
+                          color: "#1a4a8a"
+                        },
                         children: "VOICE"
                       }, undefined, false, undefined, this)
                     ]
@@ -17405,7 +17503,11 @@ function ModelChooser(p) {
                 ]
               }, undefined, true, undefined, this),
               selected && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-                style: { padding: "0 12px 12px 37px", display: "grid", gap: 10 },
+                style: {
+                  padding: "0 12px 12px 37px",
+                  display: "grid",
+                  gap: 10
+                },
                 children: [
                   modelRow("Primary", primary, provider),
                   modelRow("Secondary", secondary, provider)
@@ -17424,9 +17526,16 @@ function ModelChooser(p) {
             children: "Already have an API key?"
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { display: "flex", gap: 8, flexWrap: "wrap", fontSize: 13, color: "#5b6169" },
+            style: {
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              fontSize: 13,
+              color: "#5b6169"
+            },
             children: [
-              "Paste it below, we do the rest. ",
+              "Paste it below, we do the rest.",
+              " ",
               p.byokHelpUrl && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
                 href: p.byokHelpUrl,
                 target: "_blank",
@@ -17448,11 +17557,27 @@ function ModelChooser(p) {
                   setError("");
                 },
                 placeholder: "AIza… / sk-proj-… / sk-ant-…",
-                style: { flex: 1, minWidth: 0, font: "13px ui-monospace,monospace", padding: "10px 11px", border: "1px solid #d5d9de", borderRadius: 8, background: "#fbfbfc" }
+                style: {
+                  flex: 1,
+                  minWidth: 0,
+                  font: "13px ui-monospace,monospace",
+                  padding: "10px 11px",
+                  border: "1px solid #d5d9de",
+                  borderRadius: 8,
+                  background: "#fbfbfc"
+                }
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
                 disabled: !input.trim(),
-                style: { fontSize: 13, fontWeight: 600, padding: "10px 18px", borderRadius: 8, border: 0, background: input.trim() ? "#1a73e8" : "#eceef1", color: input.trim() ? "#fff" : "#9aa1aa" },
+                style: {
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: "10px 18px",
+                  borderRadius: 8,
+                  border: 0,
+                  background: input.trim() ? "#1a73e8" : "#eceef1",
+                  color: input.trim() ? "#fff" : "#9aa1aa"
+                },
                 children: "Add"
               }, undefined, false, undefined, this)
             ]
@@ -17463,7 +17588,14 @@ function ModelChooser(p) {
           }, undefined, false, undefined, this),
           error && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             role: "alert",
-            style: { padding: "10px 11px", borderRadius: 8, background: "#fbeceb", color: "#8a2b26", fontSize: 12, fontWeight: 600 },
+            style: {
+              padding: "10px 11px",
+              borderRadius: 8,
+              background: "#fbeceb",
+              color: "#8a2b26",
+              fontSize: 12,
+              fontWeight: 600
+            },
             children: error
           }, undefined, false, undefined, this)
         ]
@@ -17475,7 +17607,11 @@ function ModelChooser(p) {
             style: { height: 1, background: "#eceef1", flex: 1 }
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("small", {
-            style: { font: "600 10px ui-monospace,monospace", letterSpacing: ".1em", color: "#9aa1aa" },
+            style: {
+              font: "600 10px ui-monospace,monospace",
+              letterSpacing: ".1em",
+              color: "#9aa1aa"
+            },
             children: "OR"
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("i", {
@@ -17497,7 +17633,15 @@ function ModelChooser(p) {
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
             disabled: p.puterConnected,
             onClick: () => void p.onConnectPuter(),
-            style: { fontSize: 13, fontWeight: 600, padding: "11px 14px", borderRadius: 9, border: `1px solid ${p.puterConnected ? "#bfe3cb" : "#d5d9de"}`, background: p.puterConnected ? "#e7f6ec" : "#fff", color: p.puterConnected ? "#1a6b38" : "#1c1f23" },
+            style: {
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "11px 14px",
+              borderRadius: 9,
+              border: `1px solid ${p.puterConnected ? "#bfe3cb" : "#d5d9de"}`,
+              background: p.puterConnected ? "#e7f6ec" : "#fff",
+              color: p.puterConnected ? "#1a6b38" : "#1c1f23"
+            },
             children: p.puterConnected ? "Connected to Puter.js" : "▣  Sign in / Sign up to Puter.js"
           }, undefined, false, undefined, this)
         ]
