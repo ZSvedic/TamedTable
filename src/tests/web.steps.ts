@@ -1311,6 +1311,9 @@ Then('adding the key fails with {string}', function (this: TamedTableWorld, expe
 Then('provider {string} has a speed measurement', function (this: TamedTableWorld, provider: string) {
   assert.ok(controller(this).providerMeasurements[provider as ModelProvider]?.latencySec);
 });
+Then('provider {string} is connected in the chooser', function (this: TamedTableWorld, provider: string) {
+  assert.ok(controller(this).keyDrafts[provider as ModelProvider]);
+});
 Then('the selected provider key is {string}', function (this: TamedTableWorld, key: string) {
   assert.equal(keyFor(controller(this).getConfig()), key);
 });

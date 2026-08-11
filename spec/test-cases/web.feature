@@ -668,6 +668,7 @@ Feature: Web front-end
       When user adds API key "AIza-demo-key"
       Then the configured provider is "gemini"
       And the selected provider key is "AIza-demo-key"
+      And provider "gemini" is connected in the chooser
       And provider "gemini" has a speed measurement
 
     @web

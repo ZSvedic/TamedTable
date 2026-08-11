@@ -547,6 +547,14 @@ const puterFetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
   const model = (body.model ?? '').replace(/^puter\//, '');
   const answer = await puter.ai.chat(body.messages?.map((m) => m.content ?? '').join('\n') ?? '', { model });
   const text = typeof answer === 'string' ? answer : String((answer as { message?: { content?: string } })?.message?.content ?? '');
+  if ((body as { stream?: boolean }).stream) {
+    const id = `puter-${Date.now()}`;
+    const chunk = (delta: Record<string, unknown>, finish_reason: string | null) =>
+      `data: ${JSON.stringify({ id, object:'chat.completion.chunk', created:Math.floor(Date.now()/1000), model, choices:[{index:0,delta,finish_reason}] })}\n\n`;
+    return new Response(`${chunk({role:'assistant',content:text},null)}${chunk({},'stop')}data: [DONE]\n\n`, {
+      status: 200, headers: { 'content-type': 'text/event-stream' },
+    });
+  }
   return new Response(JSON.stringify({ id:'puter', object:'chat.completion', created:Math.floor(Date.now()/1000), model, choices:[{index:0,message:{role:'assistant',content:text},finish_reason:'stop'}], usage:{prompt_tokens:0,completion_tokens:0,total_tokens:0} }), { status:200, headers:{'content-type':'application/json'} });
 }) as typeof globalThis.fetch;
 

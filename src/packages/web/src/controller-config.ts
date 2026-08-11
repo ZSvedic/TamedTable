@@ -113,6 +113,9 @@ export class ConfigManager {
   /** Detect, validate, then persist a pasted key. A failed replacement leaves
    * the working key untouched. */
   async addKey(key: string): Promise<void> {
+    if (this.host.streaming) {
+      throw new Error('A request is running — stop it or let it finish before adding a provider.');
+    }
     const provider = detectProvider(key);
     if (!provider) throw new Error('Key not recognised.');
     const field = KEY_FIELD[provider];
@@ -120,6 +123,8 @@ export class ConfigManager {
     await this.setConfig({ provider, [field]: key.trim(), model: defaultModel(provider), cellModel: defaultCellModel(provider) });
     try {
       await this.measure(provider);
+      this.host.keyDrafts[provider] = key.trim();
+      this.host.notify();
     } catch (error) {
       await this.setConfig(previous);
       throw error;
@@ -146,17 +151,29 @@ export class ConfigManager {
     const fallback = [...connected.filter((p) => p !== provider), ...(provider !== 'puter' && this.host.config.puterConnected ? ['puter' as const] : [])].at(-1);
     let partial: Partial<ResolvedConfig>;
     if (provider === 'puter') partial = { puterConnected: false };
-    else partial = { [KEY_FIELD[provider]]: null };
+    else {
+      partial = { [KEY_FIELD[provider]]: null };
+      this.host.keyDrafts[provider] = '';
+    }
     delete this.host.providerMeasurements[provider];
     if (fallback) Object.assign(partial, { provider: fallback, model: defaultModel(fallback), cellModel: defaultCellModel(fallback) });
     await this.setConfig(partial);
   }
 
   async connectPuter(): Promise<void> {
+    if (this.host.streaming) {
+      throw new Error('A request is running — stop it or let it finish before adding a provider.');
+    }
     const puter = await loadPuterSdk();
     await puter.auth.signIn();
+    const previous = this.host.config;
     await this.setConfig({ puterConnected: true, provider: 'puter', model: defaultModel('puter'), cellModel: defaultCellModel('puter') });
-    await this.measure('puter');
+    try {
+      await this.measure('puter');
+    } catch (error) {
+      await this.setConfig(previous);
+      throw error;
+    }
   }
 
   openSettings(): void {

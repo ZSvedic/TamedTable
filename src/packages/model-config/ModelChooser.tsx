@@ -1,16 +1,436 @@
 // #ModelConfig #ProviderSelect — paste-first provider chooser.
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { detectProvider, type ModelDef, type Provider } from './index.ts';
-export interface ProviderMeasurement { latencySec: number; measuredAt: number }
-type KeyProvider = Exclude<Provider, 'puter'>;
-export interface ModelChooserProps { models:readonly ModelDef[]; provider:Provider; primaryModel:string; secondaryModel:string; keys:Record<KeyProvider,string>; puterConnected?:boolean; measurements?:Partial<Record<Provider,ProviderMeasurement>>; byokHelpUrl?:string; busyProvider?:Provider|null; onAddKey(key:string):Promise<void>; onSelect(p:Provider):void; onRemove(p:Provider):void; onRefresh(p:Provider):Promise<void>; onConnectPuter():Promise<void> }
-const META:Record<Provider,{name:string;voice:boolean}>={gemini:{name:'Google API',voice:true},openai:{name:'OpenAI API',voice:false},anthropic:{name:'Anthropic API',voice:false},openrouter:{name:'OpenRouter API',voice:false},groq:{name:'Groq API',voice:false},puter:{name:'Puter.js',voice:true}};
-const action:CSSProperties={width:26,height:26,padding:0,border:'1px solid transparent',borderRadius:6,background:'transparent',display:'grid',placeItems:'center',cursor:'pointer'};
-const price=(n:number)=>`$${(n/1000).toFixed(n===0?1:5).replace(/0+$/,'').replace(/\.$/,'')}`;
-export function ModelChooser(p:ModelChooserProps):ReactNode {const[input,setInput]=useState('');const[error,setError]=useState('');const connected=(Object.entries(p.keys) as [KeyProvider,string][]).filter(([,v])=>v.trim()).map(([k])=>k as Provider);if(p.puterConnected)connected.push('puter');
- const submit=async(e:FormEvent)=>{e.preventDefault();const value=input.trim();if(!detectProvider(value)){setInput('');setError('Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_….');return}try{await p.onAddKey(value);setInput('');setError('')}catch(x){setError(x instanceof Error?x.message:'The key could not be validated.')}};
- const modelRow=(label:string,id:string,provider:Provider)=>{const m=p.models.find(x=>x.id===id);const sec=p.measurements?.[provider]?.latencySec;return <div data-mc-model={label.toLowerCase()} style={{display:'grid',gap:3}}><div style={{display:'flex',gap:8,minWidth:0}}><b style={{width:68,flex:'0 0 68px',fontSize:12,color:'#4a5260'}}>{label}</b><code title={id} style={{fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{id.replace(/^(groq|puter)\//,'')}</code></div><div style={{paddingLeft:76,color:'#6b7280',fontSize:12,whiteSpace:'nowrap'}}>{m?`${price(m.inUsdPerMtok)} in / ${price(m.outUsdPerMtok)} out per 1000 tokens`:'Price unavailable'} · {sec==null?'not measured':`~${sec.toFixed(1)} sec`}</div></div>};
- return <section data-mc-chooser="" style={{boxSizing:'border-box',width:'100%',background:'#fff',border:'1px solid #e3e6ea',borderRadius:14,padding:18,boxShadow:'0 1px 2px rgba(16,24,40,.05)',display:'flex',flexDirection:'column',gap:18,fontFamily:'system-ui,sans-serif',color:'#1c1f23'}}>
- {connected.length===0?<div data-mc-empty="" style={{padding:14,border:'1px dashed #d5d9de',borderRadius:11,background:'#fbfbfc',display:'flex',gap:10,alignItems:'center',justifyContent:'center'}}><i style={{width:7,height:7,borderRadius:'50%',background:'#b6bcc5'}}/><b style={{fontSize:14,color:'#4a5260'}}>No provider or model added.</b></div>:<div style={{display:'grid',gap:8}}>{connected.map(provider=>{const selected=provider===p.provider,m=META[provider],all=p.models.filter(x=>x.provider===provider),tier=provider==='puter'?'':all.every(x=>x.inUsdPerMtok===0&&x.outUsdPerMtok===0)?'FREE':'PAID',primary=selected?p.primaryModel:all[0]?.id??'',secondary=selected?p.secondaryModel:all[1]?.id??primary;return <div key={provider} data-mc-provider={provider} style={{border:`1px solid ${selected?'#1a73e8':'#e8eaee'}`,borderRadius:11,overflow:'hidden',background:selected?'#fbfcfe':'#fff'}}><div role="button" tabIndex={0} onClick={()=>p.onSelect(provider)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' ')p.onSelect(provider)}} style={{padding:'11px 12px',display:'flex',gap:9,alignItems:'center',cursor:'pointer'}}><span style={{width:16,height:16,boxSizing:'border-box',borderRadius:'50%',border:`2px solid ${selected?'#1a73e8':'#c8cdd4'}`,display:'grid',placeItems:'center'}}>{selected&&<i style={{width:8,height:8,borderRadius:'50%',background:'#1a73e8'}}/>}</span><b style={{fontSize:14,whiteSpace:'nowrap'}}>{m.name}</b><span style={{display:'flex',gap:5,flex:1}}>{tier&&<small style={{font:'600 10px ui-monospace,monospace',letterSpacing:'.04em',padding:'4px 6px',borderRadius:4,background:tier==='FREE'?'#e7f6ec':'#eceef1',color:tier==='FREE'?'#1a6b38':'#4a5260'}}>{tier}</small>}{m.voice&&<small style={{font:'600 10px ui-monospace,monospace',letterSpacing:'.04em',padding:'4px 6px',borderRadius:4,background:'#eef4fe',color:'#1a4a8a'}}>VOICE</small>}</span><button type="button" aria-label={`Refresh ${m.name} measurement`} disabled={p.busyProvider===provider} onClick={e=>{e.stopPropagation();void p.onRefresh(provider)}} style={{...action,color:'#1a73e8',fontSize:18}}>{p.busyProvider===provider?'…':'⟳'}</button><button type="button" aria-label={`Remove ${m.name}`} onClick={e=>{e.stopPropagation();p.onRemove(provider)}} style={{...action,color:'#c0392f'}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/></svg></button></div>{selected&&<div style={{padding:'0 12px 12px 37px',display:'grid',gap:10}}>{modelRow('Primary',primary,provider)}{modelRow('Secondary',secondary,provider)}</div>}</div>})}</div>}
- <form onSubmit={e=>void submit(e)} style={{display:'grid',gap:9}}><b style={{fontSize:14}}>Already have an API key?</b><div style={{display:'flex',gap:8,flexWrap:'wrap',fontSize:13,color:'#5b6169'}}>Paste it below, we do the rest. {p.byokHelpUrl&&<a href={p.byokHelpUrl} target="_blank" rel="noopener" style={{color:'#1a73e8',fontWeight:600}}>How to get ↗</a>}</div><div style={{display:'flex',gap:8}}><input aria-label="API key" type="password" value={input} onChange={e=>{setInput(e.target.value);setError('')}} placeholder="AIza… / sk-proj-… / sk-ant-…" style={{flex:1,minWidth:0,font:'13px ui-monospace,monospace',padding:'10px 11px',border:'1px solid #d5d9de',borderRadius:8,background:'#fbfbfc'}}/><button disabled={!input.trim()} style={{fontSize:13,fontWeight:600,padding:'10px 18px',borderRadius:8,border:0,background:input.trim()?'#1a73e8':'#eceef1',color:input.trim()?'#fff':'#9aa1aa'}}>Add</button></div><small style={{color:'#6b7280'}}>Google / OpenAI / Anthropic / OpenRouter / Groq</small>{error&&<div role="alert" style={{padding:'10px 11px',borderRadius:8,background:'#fbeceb',color:'#8a2b26',fontSize:12,fontWeight:600}}>{error}</div>}</form>
- <div style={{display:'flex',alignItems:'center',gap:12}}><i style={{height:1,background:'#eceef1',flex:1}}/><small style={{font:'600 10px ui-monospace,monospace',letterSpacing:'.1em',color:'#9aa1aa'}}>OR</small><i style={{height:1,background:'#eceef1',flex:1}}/></div><div style={{display:'grid',gap:9}}><b style={{fontSize:14}}>No API key?</b><span style={{fontSize:13,color:'#5b6169'}}>$25 in API credits on Puter.js sign up.</span><button disabled={p.puterConnected} onClick={()=>void p.onConnectPuter()} style={{fontSize:13,fontWeight:600,padding:'11px 14px',borderRadius:9,border:`1px solid ${p.puterConnected?'#bfe3cb':'#d5d9de'}`,background:p.puterConnected?'#e7f6ec':'#fff',color:p.puterConnected?'#1a6b38':'#1c1f23'}}>{p.puterConnected?'Connected to Puter.js':'▣  Sign in / Sign up to Puter.js'}</button></div></section>}
+import {
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { detectProvider, type ModelDef, type Provider } from "./index.ts";
+export interface ProviderMeasurement {
+  latencySec: number;
+  measuredAt: number;
+}
+type KeyProvider = Exclude<Provider, "puter">;
+export interface ModelChooserProps {
+  models: readonly ModelDef[];
+  provider: Provider;
+  primaryModel: string;
+  secondaryModel: string;
+  keys: Record<KeyProvider, string>;
+  puterConnected?: boolean;
+  measurements?: Partial<Record<Provider, ProviderMeasurement>>;
+  byokHelpUrl?: string;
+  busyProvider?: Provider | null;
+  onAddKey(key: string): Promise<void>;
+  onSelect(p: Provider): void;
+  onRemove(p: Provider): void;
+  onRefresh(p: Provider): Promise<void>;
+  onConnectPuter(): Promise<void>;
+}
+const META: Record<Provider, { name: string; voice: boolean }> = {
+  gemini: { name: "Google API", voice: true },
+  openai: { name: "OpenAI API", voice: false },
+  anthropic: { name: "Anthropic API", voice: false },
+  openrouter: { name: "OpenRouter API", voice: false },
+  groq: { name: "Groq API", voice: false },
+  puter: { name: "Puter.js", voice: true },
+};
+const action: CSSProperties = {
+  width: 26,
+  height: 26,
+  padding: 0,
+  border: "1px solid transparent",
+  borderRadius: 6,
+  background: "transparent",
+  display: "grid",
+  placeItems: "center",
+  cursor: "pointer",
+};
+const price = (n: number) =>
+  `$${(n / 1000)
+    .toFixed(n === 0 ? 1 : 5)
+    .replace(/0+$/, "")
+    .replace(/\.$/, "")}`;
+export function ModelChooser(p: ModelChooserProps): ReactNode {
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
+  const connected = (Object.entries(p.keys) as [KeyProvider, string][])
+    .filter(([, v]) => v.trim())
+    .map(([k]) => k as Provider);
+  if (p.puterConnected) connected.push("puter");
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const value = input.trim();
+    if (!detectProvider(value)) {
+      setInput("");
+      setError(
+        "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_….",
+      );
+      return;
+    }
+    try {
+      await p.onAddKey(value);
+      setInput("");
+      setError("");
+    } catch (x) {
+      setError(
+        x instanceof Error ? x.message : "The key could not be validated.",
+      );
+    }
+  };
+  const modelRow = (label: string, id: string, provider: Provider) => {
+    const m = p.models.find((x) => x.id === id);
+    const sec = p.measurements?.[provider]?.latencySec;
+    return (
+      <div
+        data-mc-model={label.toLowerCase()}
+        style={{ display: "grid", gap: 3 }}
+      >
+        <div style={{ display: "flex", gap: 8, minWidth: 0 }}>
+          <b
+            style={{
+              width: 68,
+              flex: "0 0 68px",
+              fontSize: 12,
+              color: "#4a5260",
+            }}
+          >
+            {label}
+          </b>
+          <code
+            title={id}
+            style={{
+              fontSize: 13,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {id.replace(/^(groq|puter)\//, "")}
+          </code>
+        </div>
+        <div
+          style={{
+            paddingLeft: 76,
+            color: "#6b7280",
+            fontSize: 12,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {m
+            ? `${price(m.inUsdPerMtok)} in / ${price(m.outUsdPerMtok)} out per 1000 tokens`
+            : "Price unavailable"}{" "}
+          · {sec == null ? "not measured" : `~${sec.toFixed(1)} sec`}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <section
+      data-mc-chooser=""
+      style={{
+        boxSizing: "border-box",
+        width: "100%",
+        background: "#fff",
+        border: "1px solid #e3e6ea",
+        borderRadius: 14,
+        padding: 18,
+        boxShadow: "0 1px 2px rgba(16,24,40,.05)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+        fontFamily: "system-ui,sans-serif",
+        color: "#1c1f23",
+      }}
+    >
+      {connected.length === 0 ? (
+        <div
+          data-mc-empty=""
+          style={{
+            padding: 14,
+            border: "1px dashed #d5d9de",
+            borderRadius: 11,
+            background: "#fbfbfc",
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <i
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: "#b6bcc5",
+            }}
+          />
+          <b style={{ fontSize: 14, color: "#4a5260" }}>
+            No provider or model added.
+          </b>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 8 }}>
+          {connected.map((provider) => {
+            const selected = provider === p.provider,
+              m = META[provider],
+              all = p.models.filter((x) => x.provider === provider),
+              tier =
+                provider === "puter"
+                  ? ""
+                  : all.every(
+                        (x) => x.inUsdPerMtok === 0 && x.outUsdPerMtok === 0,
+                      )
+                    ? "FREE"
+                    : "PAID",
+              primary = selected ? p.primaryModel : (all[0]?.id ?? ""),
+              secondary = selected ? p.secondaryModel : (all[1]?.id ?? primary);
+            return (
+              <div
+                key={provider}
+                data-mc-provider={provider}
+                style={{
+                  border: `1px solid ${selected ? "#1a73e8" : "#e8eaee"}`,
+                  borderRadius: 11,
+                  overflow: "hidden",
+                  background: selected ? "#fbfcfe" : "#fff",
+                }}
+              >
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => p.onSelect(provider)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ")
+                      p.onSelect(provider);
+                  }}
+                  style={{
+                    padding: "11px 12px",
+                    display: "flex",
+                    gap: 9,
+                    alignItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 16,
+                      height: 16,
+                      boxSizing: "border-box",
+                      borderRadius: "50%",
+                      border: `2px solid ${selected ? "#1a73e8" : "#c8cdd4"}`,
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    {selected && (
+                      <i
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: "#1a73e8",
+                        }}
+                      />
+                    )}
+                  </span>
+                  <b style={{ fontSize: 14, whiteSpace: "nowrap" }}>{m.name}</b>
+                  <span style={{ display: "flex", gap: 5, flex: 1 }}>
+                    {tier && (
+                      <small
+                        style={{
+                          font: "600 10px ui-monospace,monospace",
+                          letterSpacing: ".04em",
+                          padding: "4px 6px",
+                          borderRadius: 4,
+                          background: tier === "FREE" ? "#e7f6ec" : "#eceef1",
+                          color: tier === "FREE" ? "#1a6b38" : "#4a5260",
+                        }}
+                      >
+                        {tier}
+                      </small>
+                    )}
+                    {m.voice && (
+                      <small
+                        style={{
+                          font: "600 10px ui-monospace,monospace",
+                          letterSpacing: ".04em",
+                          padding: "4px 6px",
+                          borderRadius: 4,
+                          background: "#eef4fe",
+                          color: "#1a4a8a",
+                        }}
+                      >
+                        VOICE
+                      </small>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Refresh ${m.name} measurement`}
+                    disabled={p.busyProvider === provider}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void p.onRefresh(provider);
+                    }}
+                    style={{ ...action, color: "#1a73e8", fontSize: 18 }}
+                  >
+                    {p.busyProvider === provider ? "…" : "⟳"}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${m.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      p.onRemove(provider);
+                    }}
+                    style={{ ...action, color: "#c0392f" }}
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7" />
+                    </svg>
+                  </button>
+                </div>
+                {selected && (
+                  <div
+                    style={{
+                      padding: "0 12px 12px 37px",
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    {modelRow("Primary", primary, provider)}
+                    {modelRow("Secondary", secondary, provider)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <form
+        onSubmit={(e) => void submit(e)}
+        style={{ display: "grid", gap: 9 }}
+      >
+        <b style={{ fontSize: 14 }}>Already have an API key?</b>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            fontSize: 13,
+            color: "#5b6169",
+          }}
+        >
+          Paste it below, we do the rest.{" "}
+          {p.byokHelpUrl && (
+            <a
+              href={p.byokHelpUrl}
+              target="_blank"
+              rel="noopener"
+              style={{ color: "#1a73e8", fontWeight: 600 }}
+            >
+              How to get ↗
+            </a>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            aria-label="API key"
+            type="password"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setError("");
+            }}
+            placeholder="AIza… / sk-proj-… / sk-ant-…"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              font: "13px ui-monospace,monospace",
+              padding: "10px 11px",
+              border: "1px solid #d5d9de",
+              borderRadius: 8,
+              background: "#fbfbfc",
+            }}
+          />
+          <button
+            disabled={!input.trim()}
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              padding: "10px 18px",
+              borderRadius: 8,
+              border: 0,
+              background: input.trim() ? "#1a73e8" : "#eceef1",
+              color: input.trim() ? "#fff" : "#9aa1aa",
+            }}
+          >
+            Add
+          </button>
+        </div>
+        <small style={{ color: "#6b7280" }}>
+          Google / OpenAI / Anthropic / OpenRouter / Groq
+        </small>
+        {error && (
+          <div
+            role="alert"
+            style={{
+              padding: "10px 11px",
+              borderRadius: 8,
+              background: "#fbeceb",
+              color: "#8a2b26",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {error}
+          </div>
+        )}
+      </form>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <i style={{ height: 1, background: "#eceef1", flex: 1 }} />
+        <small
+          style={{
+            font: "600 10px ui-monospace,monospace",
+            letterSpacing: ".1em",
+            color: "#9aa1aa",
+          }}
+        >
+          OR
+        </small>
+        <i style={{ height: 1, background: "#eceef1", flex: 1 }} />
+      </div>
+      <div style={{ display: "grid", gap: 9 }}>
+        <b style={{ fontSize: 14 }}>No API key?</b>
+        <span style={{ fontSize: 13, color: "#5b6169" }}>
+          $25 in API credits on Puter.js sign up.
+        </span>
+        <button
+          disabled={p.puterConnected}
+          onClick={() => void p.onConnectPuter()}
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            padding: "11px 14px",
+            borderRadius: 9,
+            border: `1px solid ${p.puterConnected ? "#bfe3cb" : "#d5d9de"}`,
+            background: p.puterConnected ? "#e7f6ec" : "#fff",
+            color: p.puterConnected ? "#1a6b38" : "#1c1f23",
+          }}
+        >
+          {p.puterConnected
+            ? "Connected to Puter.js"
+            : "▣  Sign in / Sign up to Puter.js"}
+        </button>
+      </div>
+    </section>
+  );
+}
