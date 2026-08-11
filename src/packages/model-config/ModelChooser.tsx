@@ -98,6 +98,7 @@ export function ModelChooser(p: ModelChooserProps): ReactNode {
             {label}
           </b>
           <code
+            data-mc-model-id=""
             title={id}
             style={{
               fontSize: 13,

@@ -552,11 +552,15 @@ test.describe('phone — the page is the table scroller', () => {
   // ragged multi-line column on a phone; the id stays one line and the price
   // wraps below it.
   test('Settings model rows keep the model id on one line', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('tamedtable.config', JSON.stringify({
+      provider: 'gemini', geminiKey: 'AIza-e2e',
+      model: 'gemini-3.6-flash', cellModel: 'gemini-3.1-flash-lite',
+    })));
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-dock="menu"]').click();
     await page.locator('[data-mob-menu-item="Settings…"]').click();
     // Expand a provider card so its PRIMARY/SECONDARY model rows render.
-    await page.locator('[data-mc-card]:has-text("Google")').click();
+    await page.locator('[data-mc-provider="gemini"]').click();
     const id = page.locator('[data-mc-model-id]').first();
     await expect(id).toBeVisible();
     const height = await id.evaluate((el) => el.getBoundingClientRect().height);

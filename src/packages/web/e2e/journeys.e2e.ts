@@ -285,42 +285,41 @@ test.describe('Grid', () => {
 
 // ── Settings ────────────────────────────────────────────────────────────
 test.describe('Settings', () => {
-  /** Open Settings, pick the Anthropic card, and save a key the way a user
-   *  does: type, then leave the field. Only a key landing earns the badge —
-   *  picking a card does not. */
-  const saveAnthropicKey = async (page: Page, key: string): Promise<void> => {
-    await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByText('Anthropic', { exact: false }).first().click();
-    await page.locator('[data-mc-key="anthropic"]').fill(key);
-    await page.locator('[data-mc-key="anthropic"]').blur();
+  const seedAnthropic = async (page: Page): Promise<void> => {
+    await page.addInitScript(() => localStorage.setItem('tamedtable.config', JSON.stringify({
+      provider: 'anthropic',
+      anthropicKey: 'sk-ant-e2e',
+      model: 'claude-sonnet-4-6',
+      cellModel: 'claude-haiku-4-5',
+    })));
   };
 
-  test('picking a provider card shows no Saved badge', async ({ page }) => {
+  test('an empty chooser offers one key field and Puter sign-in', async ({ page }) => {
     await boot(page);
     await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByText('Anthropic', { exact: false }).first().click();
-    await expect(page.locator('[data-mc-key="anthropic"]')).toBeVisible();
-    await expect(page.getByText(/Saved/)).toHaveCount(0);
+    await expect(page.getByText('No provider or model added.')).toBeVisible();
+    await expect(page.locator('input[aria-label="API key"]')).toHaveCount(1);
+    await expect(page.getByText('Sign in / Sign up to Puter.js')).toBeVisible();
   });
 
-  test('saving a key keeps the table on screen and confirms with a badge', async ({ page }) => {
+  test('a stored connection renders its provider card and fixed models', async ({ page }) => {
+    await seedAnthropic(page);
+    await boot(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    const card = page.locator('[data-mc-provider="anthropic"]');
+    await expect(card).toBeVisible();
+    await expect(card).toContainText('claude-sonnet-4-6');
+    await expect(card).toContainText('claude-haiku-4-5');
+  });
+
+  test('selecting a connected provider keeps the loaded table on screen', async ({ page }) => {
+    await seedAnthropic(page);
     await boot(page);
     await loadSample(page, 'customers-input.csv');
     await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('USA');
-    await saveAnthropicKey(page, 'sk-ant-e2e');
-    await expect(page.getByText(/Saved/)).toBeVisible();
-    await page.getByText('Close', { exact: true }).click();
-    // The table is preserved across the key-change rebuild.
-    await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('USA');
-  });
-
-  test('the Saved badge clears when the panel is reopened', async ({ page }) => {
-    await boot(page);
-    await loadSample(page, 'customers-input.csv');
-    await saveAnthropicKey(page, 'sk-ant-e2e');
-    await expect(page.getByText(/Saved/)).toBeVisible();
-    await page.getByText('Close', { exact: true }).click();
     await page.getByRole('button', { name: 'Settings' }).click();
-    await expect(page.getByText(/Saved/)).toHaveCount(0);
+    await page.locator('[data-mc-provider="anthropic"]').click();
+    await page.getByText('Close', { exact: true }).click();
+    await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('USA');
   });
 });
