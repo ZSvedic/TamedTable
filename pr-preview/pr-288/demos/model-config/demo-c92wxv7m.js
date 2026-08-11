@@ -17266,6 +17266,269 @@ function resolveConfig(env, stored) {
   };
 }
 
+// packages/model-config/probe.ts
+function estimateSecPer1kTok(m) {
+  return m.tokPerSec > 0 ? m.ttftSec + 1000 / m.tokPerSec : 0;
+}
+var PROVIDER_NAME = {
+  gemini: "Google",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  groq: "Groq",
+  openrouter: "OpenRouter"
+};
+var OPENAI_COMPATIBLE_BASE = {
+  openai: "https://api.openai.com/v1",
+  groq: "https://api.groq.com/openai/v1",
+  openrouter: "https://openrouter.ai/api/v1"
+};
+var REFERENCE_PROMPT = "For each numbered title below, decide whether it is a music video. " + "Reply with a JSON array of twenty objects and nothing else, each " + `{"n": <number>, "music": <boolean>, "why": "<one short sentence>"}.
+` + Array.from({ length: 20 }, (_, i) => `${i + 1}. Sample video title ${i + 1}`).join(`
+`);
+var VERIFY_PROMPT = "Reply with the single word: ok";
+var MEASURE_MAX_TOKENS = 300;
+var STREAMING_SHARE = 0.2;
+async function call(provider, key, modelId, prompt, opts) {
+  const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
+  const base = OPENAI_COMPATIBLE_BASE[provider];
+  let url;
+  let init;
+  if (provider === "gemini") {
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+    init = {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    };
+  } else if (provider === "anthropic") {
+    url = "https://api.anthropic.com/v1/messages";
+    init = {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: modelId,
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }]
+      })
+    };
+  } else {
+    url = `${base}/chat/completions`;
+    init = {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: modelId, messages: [{ role: "user", content: prompt }] })
+    };
+  }
+  try {
+    const res = await doFetch(url, init);
+    return { status: res.status, headers: res.headers, body: await readJson(res) };
+  } catch {
+    return { status: 0, headers: new Headers, body: {} };
+  }
+}
+async function readJson(res) {
+  try {
+    return await res.json();
+  } catch {
+    return {};
+  }
+}
+function failure(provider, answer) {
+  const who = PROVIDER_NAME[provider];
+  if (answer.status === 0)
+    return new Error(`Could not reach ${who}.`);
+  if (answer.status === 401 || answer.status === 403) {
+    return new Error(`Key rejected by ${who}. Check the key and try again.`);
+  }
+  const err = answer.body["error"];
+  if (answer.status === 429) {
+    const quota = `${err?.code ?? ""} ${err?.type ?? ""} ${err?.message ?? ""}`;
+    if (/insufficient_quota|exceeded your current quota/i.test(quota)) {
+      return new Error(`Your ${who} account has no credit left. Add credit (or a billing method) and try again.`);
+    }
+    return new Error(`${who} rate-limited the check. Wait a minute and try again.`);
+  }
+  return new Error(err?.message ?? `${who} refused the key (HTTP ${answer.status}).`);
+}
+function ok(answer) {
+  return answer.status >= 200 && answer.status < 300 && answer.body["error"] == null;
+}
+async function verifyKey(provider, key, opts = {}) {
+  if (provider === "openrouter") {
+    const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
+    let answer2;
+    try {
+      const res = await doFetch("https://openrouter.ai/api/v1/key", {
+        headers: { authorization: `Bearer ${key}` }
+      });
+      answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
+    } catch {
+      answer2 = { status: 0, headers: new Headers, body: {} };
+    }
+    if (!ok(answer2))
+      throw failure(provider, answer2);
+    const data = answer2.body["data"];
+    return { tier: data?.is_free_tier ? "free" : "paid" };
+  }
+  const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
+  if (!ok(answer))
+    throw failure(provider, answer);
+  if (provider === "gemini") {
+    const served = answer.headers.get("x-gemini-service-tier");
+    return { tier: served === "free" ? "free" : "paid" };
+  }
+  if (provider === "groq")
+    return { tier: null };
+  return { tier: "paid" };
+}
+function usageOf(provider, body) {
+  if (provider === "gemini") {
+    const u2 = body["usageMetadata"] ?? {};
+    return {
+      inTok: u2["promptTokenCount"] ?? 0,
+      outTok: (u2["candidatesTokenCount"] ?? 0) + (u2["thoughtsTokenCount"] ?? 0)
+    };
+  }
+  const u = body["usage"] ?? {};
+  if (provider === "anthropic") {
+    return { inTok: u["input_tokens"] ?? 0, outTok: u["output_tokens"] ?? 0 };
+  }
+  return { inTok: u["prompt_tokens"] ?? 0, outTok: u["completion_tokens"] ?? 0 };
+}
+function streamRequest(provider, key, modelId) {
+  if (provider === "gemini") {
+    return {
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`,
+      init: {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: REFERENCE_PROMPT }] }],
+          generationConfig: { maxOutputTokens: MEASURE_MAX_TOKENS }
+        })
+      }
+    };
+  }
+  if (provider === "anthropic") {
+    return {
+      url: "https://api.anthropic.com/v1/messages",
+      init: {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: modelId,
+          stream: true,
+          max_tokens: MEASURE_MAX_TOKENS,
+          messages: [{ role: "user", content: REFERENCE_PROMPT }]
+        })
+      }
+    };
+  }
+  return {
+    url: `${OPENAI_COMPATIBLE_BASE[provider]}/chat/completions`,
+    init: {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: modelId,
+        stream: true,
+        stream_options: { include_usage: true },
+        max_completion_tokens: MEASURE_MAX_TOKENS,
+        messages: [{ role: "user", content: REFERENCE_PROMPT }]
+      })
+    }
+  };
+}
+async function readStream(res, clock, started) {
+  const frames = [];
+  let firstMs = clock();
+  let lastMs = firstMs;
+  let seenChunk = false;
+  let buffer = "";
+  const take = (text) => {
+    if (!seenChunk) {
+      firstMs = clock();
+      seenChunk = true;
+    }
+    lastMs = clock();
+    buffer += text;
+  };
+  if (res.body) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder;
+    for (;; ) {
+      const { done, value } = await reader.read();
+      if (done)
+        break;
+      take(decoder.decode(value, { stream: true }));
+    }
+  } else {
+    take(await res.text());
+  }
+  if (!seenChunk) {
+    firstMs = started;
+    lastMs = clock();
+  }
+  for (const line of buffer.split(`
+`)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:"))
+      continue;
+    const payload = trimmed.slice(5).trim();
+    if (payload === "" || payload === "[DONE]")
+      continue;
+    try {
+      frames.push(JSON.parse(payload));
+    } catch {}
+  }
+  if (frames.length === 0 && buffer.trim() !== "") {
+    try {
+      frames.push(JSON.parse(buffer));
+    } catch {}
+  }
+  return { frames, firstMs, lastMs };
+}
+async function measureModel(provider, key, modelId, opts = {}) {
+  const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
+  const clock = opts.now ?? (() => Date.now());
+  const { url, init } = streamRequest(provider, key, modelId);
+  const started = clock();
+  let res;
+  try {
+    res = await doFetch(url, init);
+  } catch {
+    throw failure(provider, { status: 0, headers: new Headers, body: {} });
+  }
+  const { frames, firstMs, lastMs } = await readStream(res, clock, started);
+  const errFrame = frames.find((f) => f["error"] != null);
+  if (res.status < 200 || res.status >= 300 || errFrame) {
+    throw failure(provider, { status: res.status, headers: res.headers, body: errFrame ?? {} });
+  }
+  let outTok = 0;
+  for (const frame of frames) {
+    outTok = Math.max(outTok, usageOf(provider, frame).outTok);
+  }
+  const totalSec = (lastMs - started) / 1000;
+  const ttftSec = (firstMs - started) / 1000;
+  const streamedSec = totalSec - ttftSec;
+  if (outTok === 0 || totalSec <= 0)
+    return { ttftSec: 0, tokPerSec: 0 };
+  if (frames.length >= 2 && streamedSec >= STREAMING_SHARE * totalSec) {
+    return { ttftSec, tokPerSec: outTok / streamedSec };
+  }
+  return { ttftSec: 0, tokPerSec: outTok / totalSec };
+}
+
 // packages/model-config/ModelChooser.tsx
 var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 var PROVIDER_LABEL = {
@@ -17287,7 +17550,7 @@ var line = v("line", "#e8eaee");
 var line2 = v("line2", "#d5d9de");
 var accent = v("accent", "#1a73e8");
 var accentSoft = v("accent-soft", "#eef4fe");
-var ok = v("ok", "#1a6b38");
+var ok2 = v("ok", "#1a6b38");
 var okSoft = v("ok-soft", "#e7f6ec");
 var err = v("err", "#a3312b");
 var errSoft = v("err-soft", "#fbeceb");
@@ -17297,15 +17560,34 @@ var radius = v("radius", "8px");
 var radiusSm = v("radius-sm", "4px");
 var radiusLg = v("radius-lg", "11px");
 function money(usd) {
-  return String(Number(usd.toFixed(5)));
+  return String(Number(usd.toFixed(6)));
 }
 function costLine(row) {
-  if (row.measure === "measuring")
-    return "measuring…";
-  if (row.measure === null)
-    return null;
-  return `$${money(row.measure.usdPer1kTok)} / ${row.measure.secPer1kTok.toFixed(1)}sec for 1000 tokens`;
+  const parts = [];
+  if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
+    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tokens`);
+  }
+  if (row.speed === "measuring")
+    parts.push("measuring…");
+  else if (row.speed !== null)
+    parts.push(`~${estimateSecPer1kTok(row.speed).toFixed(1)} sec`);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
+var refreshIcon = /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
+  width: 15,
+  height: 15,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  style: { display: "block" },
+  "aria-hidden": "true",
+  children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
+    d: "M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"
+  }, undefined, false, undefined, this)
+}, undefined, false, undefined, this);
 var trashIcon = /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
   width: 15,
   height: 15,
@@ -17331,9 +17613,23 @@ function ModelChooser({
   onKeyInputChange,
   onAdd,
   onSelect,
-  onRemove
+  onRemove,
+  onRefresh
 }) {
   const canAdd = keyInput.trim() !== "" && !busy;
+  const iconButton = {
+    flex: "0 0 auto",
+    width: 26,
+    height: 26,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+    border: 0,
+    borderRadius: 6,
+    background: "transparent",
+    cursor: "pointer"
+  };
   const tag = (label, fg, bg, attr) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
     ...attr,
     style: {
@@ -17454,11 +17750,22 @@ function ModelChooser({
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
               style: { flex: 1, display: "flex", gap: 5, alignItems: "center" },
               children: [
-                c.tier === "free" && tag("FREE", ok, okSoft, { "data-mc-tier": c.id }),
+                c.tier === "free" && tag("FREE", ok2, okSoft, { "data-mc-tier": c.id }),
                 c.tier === "paid" && tag("PAID", ink2, surface3, { "data-mc-tier": c.id }),
                 c.voice && tag("VOICE", "#1a4a8a", accentSoft, { "data-mc-voice": c.id })
               ]
             }, undefined, true, undefined, this),
+            onRefresh && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+              type: "button",
+              "data-mc-refresh": c.id,
+              title: `Re-measure ${PROVIDER_LABEL[c.id]}`,
+              onClick: (e) => {
+                e.stopPropagation();
+                onRefresh(c.id);
+              },
+              style: { ...iconButton, color: ink3 },
+              children: refreshIcon
+            }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
               type: "button",
               "data-mc-remove": c.id,
@@ -17467,20 +17774,7 @@ function ModelChooser({
                 e.stopPropagation();
                 onRemove(c.id);
               },
-              style: {
-                flex: "0 0 auto",
-                width: 26,
-                height: 26,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 0,
-                border: 0,
-                borderRadius: 6,
-                background: "transparent",
-                color: err,
-                cursor: "pointer"
-              },
+              style: { ...iconButton, color: err },
               children: trashIcon
             }, undefined, false, undefined, this)
           ]
@@ -17645,152 +17939,6 @@ function ModelChooser({
       }, undefined, true, undefined, this)
     ]
   }, undefined, true, undefined, this);
-}
-
-// packages/model-config/probe.ts
-var PROVIDER_NAME = {
-  gemini: "Google",
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  groq: "Groq",
-  openrouter: "OpenRouter"
-};
-var OPENAI_COMPATIBLE_BASE = {
-  openai: "https://api.openai.com/v1",
-  groq: "https://api.groq.com/openai/v1",
-  openrouter: "https://openrouter.ai/api/v1"
-};
-var REFERENCE_PROMPT = "For each numbered title below, decide whether it is a music video. " + "Reply with a JSON array of twenty objects and nothing else, each " + `{"n": <number>, "music": <boolean>, "why": "<one short sentence>"}.
-` + Array.from({ length: 20 }, (_, i) => `${i + 1}. Sample video title ${i + 1}`).join(`
-`);
-var VERIFY_PROMPT = "Reply with the single word: ok";
-async function call(provider, key, modelId, prompt, opts) {
-  const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-  const base = OPENAI_COMPATIBLE_BASE[provider];
-  let url;
-  let init;
-  if (provider === "gemini") {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
-    init = {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    };
-  } else if (provider === "anthropic") {
-    url = "https://api.anthropic.com/v1/messages";
-    init = {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: modelId,
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }]
-      })
-    };
-  } else {
-    url = `${base}/chat/completions`;
-    init = {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: modelId, messages: [{ role: "user", content: prompt }] })
-    };
-  }
-  try {
-    const res = await doFetch(url, init);
-    return { status: res.status, headers: res.headers, body: await readJson(res) };
-  } catch {
-    return { status: 0, headers: new Headers, body: {} };
-  }
-}
-async function readJson(res) {
-  try {
-    return await res.json();
-  } catch {
-    return {};
-  }
-}
-function failure(provider, answer) {
-  const who = PROVIDER_NAME[provider];
-  if (answer.status === 0)
-    return new Error(`Could not reach ${who}.`);
-  if (answer.status === 401 || answer.status === 403) {
-    return new Error(`Key rejected by ${who}. Check the key and try again.`);
-  }
-  const err2 = answer.body["error"];
-  if (answer.status === 429) {
-    const quota = `${err2?.code ?? ""} ${err2?.type ?? ""} ${err2?.message ?? ""}`;
-    if (/insufficient_quota|exceeded your current quota/i.test(quota)) {
-      return new Error(`Your ${who} account has no credit left. Add credit (or a billing method) and try again.`);
-    }
-    return new Error(`${who} rate-limited the check. Wait a minute and try again.`);
-  }
-  return new Error(err2?.message ?? `${who} refused the key (HTTP ${answer.status}).`);
-}
-function ok2(answer) {
-  return answer.status >= 200 && answer.status < 300 && answer.body["error"] == null;
-}
-async function verifyKey(provider, key, opts = {}) {
-  if (provider === "openrouter") {
-    const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-    let answer2;
-    try {
-      const res = await doFetch("https://openrouter.ai/api/v1/key", {
-        headers: { authorization: `Bearer ${key}` }
-      });
-      answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
-    } catch {
-      answer2 = { status: 0, headers: new Headers, body: {} };
-    }
-    if (!ok2(answer2))
-      throw failure(provider, answer2);
-    const data = answer2.body["data"];
-    return { tier: data?.is_free_tier ? "free" : "paid" };
-  }
-  const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
-  if (!ok2(answer))
-    throw failure(provider, answer);
-  if (provider === "gemini") {
-    const served = answer.headers.get("x-gemini-service-tier");
-    return { tier: served === "free" ? "free" : "paid" };
-  }
-  if (provider === "groq")
-    return { tier: null };
-  return { tier: "paid" };
-}
-function usageOf(provider, body) {
-  if (provider === "gemini") {
-    const u2 = body["usageMetadata"] ?? {};
-    return {
-      inTok: u2["promptTokenCount"] ?? 0,
-      outTok: (u2["candidatesTokenCount"] ?? 0) + (u2["thoughtsTokenCount"] ?? 0)
-    };
-  }
-  const u = body["usage"] ?? {};
-  if (provider === "anthropic") {
-    return { inTok: u["input_tokens"] ?? 0, outTok: u["output_tokens"] ?? 0 };
-  }
-  return { inTok: u["prompt_tokens"] ?? 0, outTok: u["completion_tokens"] ?? 0 };
-}
-async function measureModel(provider, key, modelId, opts = {}) {
-  const clock = opts.now ?? (() => Date.now());
-  const started = clock();
-  const answer = await call(provider, key, modelId, REFERENCE_PROMPT, opts);
-  const elapsedSec = (clock() - started) / 1000;
-  if (!ok2(answer))
-    throw failure(provider, answer);
-  const { inTok, outTok } = usageOf(provider, answer.body);
-  const model = ALL_MODELS.find((m) => m.id === modelId);
-  const total = inTok + outTok;
-  const usd = model ? (inTok * model.inUsdPerMtok + outTok * model.outUsdPerMtok) / 1e6 : 0;
-  return {
-    usdPer1kTok: total > 0 ? usd / total * 1000 : 0,
-    secPer1kTok: outTok > 0 ? elapsedSec / outTok * 1000 : 0
-  };
 }
 
 // packages/model-config/storage.ts
@@ -18053,6 +18201,7 @@ function Demo() {
   ]);
   const measureBoth = async (provider, key) => {
     setMeasuring((m) => ({ ...m, [provider]: true }));
+    setProbes((p) => ({ ...p, [provider]: { tier: p[provider]?.tier ?? null } }));
     const stub = stubProbe();
     for (const role of ["primary", "secondary"]) {
       const modelId = role === "primary" ? defaultModel(provider) : defaultCellModel(provider);
@@ -18100,11 +18249,14 @@ function Demo() {
     setProbes(({ [p]: _dropped, ...rest }) => rest);
   };
   const roleRow = (p, role) => {
-    const probe = probes[p];
-    const measure = probe?.[role];
+    const model = role === "primary" ? defaultModel(p) : defaultCellModel(p);
+    const priced = ALL_MODELS.find((m) => m.id === model);
+    const speed = probes[p]?.[role];
     return {
-      model: role === "primary" ? defaultModel(p) : defaultCellModel(p),
-      measure: measure === undefined ? measuring[p] ? "measuring" : null : measure
+      model,
+      inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
+      outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
+      speed: speed === undefined ? measuring[p] ? "measuring" : null : speed
     };
   };
   const connected = connectedProviders(resolved).map((p) => ({
@@ -18205,7 +18357,12 @@ function Demo() {
         },
         onAdd: () => void addKey(),
         onSelect: (p) => setStored((s) => ({ ...s, provider: p })),
-        onRemove: removeProvider
+        onRemove: removeProvider,
+        onRefresh: (p) => {
+          const key = resolved[KEY_FIELD[p]] ?? "";
+          if (key)
+            measureBoth(p, key);
+        }
       }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
         children: [
