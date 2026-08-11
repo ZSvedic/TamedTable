@@ -8,6 +8,7 @@ import {
   defaultBatchSize,
   detectProvider,
   connectedProviders,
+  modelFor,
   providerFor,
   acceptsTemperature,
   keyFor,
@@ -91,6 +92,13 @@ When(
   'resolveConfig is called with env OPENROUTER_API_KEY={string}',
   function (this: ModelConfigWorld, key: string) {
     ctx(this).resolved = resolveConfig({ OPENROUTER_API_KEY: key }, {});
+  },
+);
+
+When(
+  'resolveConfig is called with env PUTER_TOKEN={string}',
+  function (this: ModelConfigWorld, key: string) {
+    ctx(this).resolved = resolveConfig({ PUTER_TOKEN: key }, {});
   },
 );
 
@@ -253,6 +261,13 @@ Then(
 );
 
 Then(
+  'the resolved puterToken is {string}',
+  function (this: ModelConfigWorld, expected: string) {
+    assert.equal(ctx(this).resolved?.puterToken, expected);
+  },
+);
+
+Then(
   'the resolved groqKey is {string}',
   function (this: ModelConfigWorld, expected: string) {
     assert.equal(ctx(this).resolved?.groqKey, expected);
@@ -284,6 +299,7 @@ function configFor(provider: string, keys: Partial<ResolvedConfig>): ResolvedCon
     openaiKey: null,
     groqKey: null,
     openrouterKey: null,
+    puterToken: null,
     model: defaultModel(provider as Provider),
     cellModel: defaultCellModel(provider as Provider),
     alwaysRunAll: false,
@@ -354,6 +370,24 @@ Then('no provider is detected', function (this: ModelConfigWorld) {
 Then('SUPPORTED_PREFIXES is {string}', function (this: ModelConfigWorld, expected: string) {
   assert.equal(SUPPORTED_PREFIXES.join(', '), expected);
 });
+
+// ── modelFor steps ───────────────────────────────────────────────────────────
+// Ids are shared across providers (Puter re-serves them), so the catalogue is
+// keyed by both.
+
+Then(
+  'modelFor {string} {string} is named {string}',
+  function (this: ModelConfigWorld, provider: string, modelId: string, name: string) {
+    assert.equal(modelFor(provider as Provider, modelId)?.name, name);
+  },
+);
+
+Then(
+  'modelFor {string} {string} is missing',
+  function (this: ModelConfigWorld, provider: string, modelId: string) {
+    assert.equal(modelFor(provider as Provider, modelId), undefined);
+  },
+);
 
 // ── connectedProviders steps ─────────────────────────────────────────────────
 

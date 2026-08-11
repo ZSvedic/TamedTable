@@ -98,25 +98,53 @@ before it reads prefixes.
 
 ## Puter.js
 
-Left out of this PR, but not blocked — and the first reading of it here was
-wrong. Puter does have an HTTP API behind a bearer token:
+Shipped, and the first reading of it here was wrong. Puter has an HTTP API
+behind a bearer token:
 
 ```
-POST https://api.puter.com/drivers/call   401 {"code":"token_missing"}
-GET  https://api.puter.com/whoami         401 {"code":"token_missing"}
+GET  https://api.puter.com/whoami        → the account
+POST https://api.puter.com/drivers/call  → chat completion
 ```
 
-That is what `puter.ai.chat()` calls underneath, so a token works from Node and
-the CLI as well as the browser. What is browser-only is **obtaining** the token:
+That is what `puter.ai.chat()` calls underneath, so it works from Node and the
+CLI as well as the browser. Only **obtaining** the token is browser-only —
 `puter.auth.signIn()` opens a popup, and there is no device-code or `/login`
-endpoint to mint one headlessly (both 404). A signed-in browser holds it at
-`localStorage["puter.auth.token.v2"]`, which is where the reverted PR's
-`PUTER_TOKEN` came from.
+endpoint (both 404). A signed-in browser holds it at
+`localStorage["puter.auth.token.v2"]`, which is where `PUTER_TOKEN` comes from.
 
-So Puter fits the redesigned chooser better than the old one: a Puter token is
-another pasted credential, and the design's "Sign in" button is a shortcut for
-getting one rather than a separate mechanism. What it needs before landing is a
-sample token, to see whether it carries a prefix `detectProvider` can recognise.
-It was [reverted from `main`](https://github.com/ZSvedic/TamedTable/pull/286)
-the day before this probe over sign-in persistence and routing bugs, and returns
-in its own PR.
+**It is a gateway, not a provider.** One account reaches 866 models from every
+vendor against one balance, and it passes list price through — Puter quotes
+`gemini-3.1-flash-lite` at 25/150 usd-cents per Mtok, exactly our catalogue's
+$0.25/$1.50. Every one of the app's eight default models is available.
+
+**Its payload is OpenAI's, only wrapped.** The driver takes
+`{interface, driver, method, args}` where `args` is an OpenAI chat-completions
+body, and answers `{success, result}` where `result` is an OpenAI choice —
+`finish_reason: "tool_calls"` with `message.tool_calls[]` included, verified
+live. So the engine needs no bespoke `LanguageModel`: the ordinary OpenAI client
+is pointed at a fetch that wraps the request and unwraps the reply
+(`#PuterGateway`), and tool calling, retries and usage stay on the tested path.
+
+Two things the translation has to know:
+
+- **Always call non-streaming.** Puter streams newline-delimited JSON rather
+  than SSE, and its streamed frames carry no tool calls — which the patch turn
+  depends on. The single place the engine streams (the Python export) gets the
+  finished answer replayed as one SSE frame.
+- **Usage is spelled two ways.** A finished call reports `prompt`/`completion`;
+  a streamed usage frame reports `prompt_tokens`/`completion_tokens`. Reading
+  only the first spelling measured `gemini-3.1-flash-lite` at zero tokens.
+
+Driven end to end against the live gateway, the engine applied a real
+transformation through a real tool call, and the probe measured
+`gemini-3.1-flash-lite` at ~3.0 sec per 1000 tokens against Google's own 3.4 —
+the same model, one hop further away.
+
+## Ids are not unique
+
+Puter forces the last piece. `gemini-3.6-flash` is Google's id *and* Puter's, so
+`ALL_MODELS.find(m => m.id === …)` picks whichever row comes first — silently.
+Every lookup that reads a price, a voice flag or a temperature flag now goes
+through `modelFor(provider, id)`, and `providerFor` skips Puter rows entirely:
+no id can point at a gateway, and every Puter connection reaches the engine with
+its provider already named.

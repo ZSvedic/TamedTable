@@ -10,7 +10,7 @@ import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 import { installPrompt } from '../install-prompt.ts';
-import { ALL_MODELS, defaultModel, defaultCellModel, type Provider } from '@tamedtable/model-config';
+import { modelFor, defaultModel, defaultCellModel, type Provider } from '@tamedtable/model-config';
 import { ModelChooser, type ConnectedCard, type RoleRow } from '@tamedtable/model-config/ModelChooser';
 
 export function SettingsPanel({ controller }: { controller: WebController }): ReactNode {
@@ -26,7 +26,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   // the controller ran when the key was connected.
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
     const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
-    const priced = ALL_MODELS.find((m) => m.id === model);
+    const priced = modelFor(p, model);
     const speed = controller.probes[p]?.[role];
     return {
       model,
@@ -40,7 +40,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     id: p,
     tier: controller.probes[p]?.tier ?? null,
     // Driven by the catalogue's voiceInput flag, not hardcoded per provider.
-    voice: ALL_MODELS.find((m) => m.id === defaultModel(p))?.voiceInput ?? false,
+    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));

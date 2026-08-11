@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  ALL_MODELS, KEY_FIELD, SUPPORTED_PREFIXES,
+  ALL_MODELS, KEY_FIELD, SUPPORTED_PREFIXES, modelFor,
   connectedProviders, defaultModel, defaultCellModel, detectProvider, resolveConfig,
   type Provider, type ResolvedConfig,
 } from './index.ts';
@@ -96,11 +96,13 @@ function Demo() {
       anthropicKey: resolved.anthropicKey,
       groqKey: resolved.groqKey,
       openrouterKey: resolved.openrouterKey,
+      puterToken: resolved.puterToken,
     });
     writeStoredProbes(probes);
   }, [
     resolved.provider, resolved.model, resolved.cellModel, resolved.geminiKey,
     resolved.openaiKey, resolved.anthropicKey, resolved.groqKey, resolved.openrouterKey,
+    resolved.puterToken,
     probes,
   ]);
 
@@ -166,7 +168,7 @@ function Demo() {
 
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
     const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
-    const priced = ALL_MODELS.find((m) => m.id === model);
+    const priced = modelFor(p, model);
     const speed = probes[p]?.[role];
     return {
       model,
@@ -180,7 +182,7 @@ function Demo() {
   const connected: ConnectedCard[] = connectedProviders(resolved).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: ALL_MODELS.find((m) => m.id === defaultModel(p))?.voiceInput ?? false,
+    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));

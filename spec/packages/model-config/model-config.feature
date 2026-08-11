@@ -19,6 +19,7 @@ Feature: Model config
         | sk-ant-   | sk-ant-example       | anthropic  |
         | sk-or-    | sk-or-v1-example     | openrouter |
         | gsk_      | gsk_example          | groq       |
+        | eyJ       | eyJhbGciOiJIUzI1Ni    | puter      |
 
     @headless
     # sk-proj-, sk-ant- and sk-or- all start with sk-, so the generic OpenAI
@@ -44,7 +45,7 @@ Feature: Model config
 
     @headless
     Scenario: SUPPORTED_PREFIXES lists every prefix the error message names
-      Then SUPPORTED_PREFIXES is "AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…"
+      Then SUPPORTED_PREFIXES is "AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…"
 
   Rule: resolveConfig defaults
 
@@ -179,6 +180,60 @@ Feature: Model config
       When resolveConfig is called with stored provider "openrouter" and model "openai/gpt-oss-120b"
       Then the resolved model is "cohere/north-mini-code:free"
 
+  Rule: Puter is a gateway, so its models are keyed by provider
+
+    Puter re-serves other providers' models under their own ids, so an id alone
+    cannot say who is serving it. Every lookup that reads a model's price, voice
+    support or routing has to name the provider too.
+
+    @headless
+    Scenario: modelFor finds the same id under two different providers
+      Then modelFor "gemini" "gemini-3.6-flash" is named "Gemini 3.6 Flash"
+      And modelFor "puter" "gemini-3.6-flash" is named "Gemini 3.6 Flash (Puter.js)"
+
+    @headless
+    Scenario: modelFor returns nothing for a model that provider does not serve
+      Then modelFor "puter" "gpt-5.5" is missing
+      And modelFor "groq" "gemini-3.6-flash" is missing
+
+    @headless
+    # An id can never point at Puter, so providerFor keeps naming the origin.
+    Scenario: providerFor never returns puter for a shared id
+      When providerFor is called with "gemini-3.6-flash"
+      Then the result is "gemini"
+
+    @headless
+    Scenario: A Puter model is kept when the provider is puter
+      When resolveConfig is called with stored provider "puter" and model "gemini-3.6-flash"
+      Then the resolved model is "gemini-3.6-flash"
+
+    @headless
+    Scenario: A model Puter does not serve is coerced to the Puter default
+      When resolveConfig is called with stored provider "puter" and model "gpt-5.5"
+      Then the resolved model is "gemini-3.6-flash"
+
+    @headless
+    Scenario: PUTER_TOKEN in env sets provider and token
+      When resolveConfig is called with env PUTER_TOKEN="eyJ-test"
+      Then the resolved provider is "puter"
+      And the resolved puterToken is "eyJ-test"
+      And the resolved model is "gemini-3.6-flash"
+      And the resolved cellModel is "gemini-3.1-flash-lite"
+
+    @headless
+    # Puter's whoami proves the token without spending anything.
+    Scenario: A Puter token is verified without a model call
+      Given a stub provider API that accepts the key
+      When verifyKey is called for provider "puter" with key "eyJ-good"
+      Then the verified tier is unknown
+      And the stub provider API received 1 call
+
+    @headless
+    Scenario: A rejected Puter token names Puter.js
+      Given a stub provider API that rejects the key with HTTP 401
+      When verifyKey is called for provider "puter" with key "eyJ-bad"
+      Then verifyKey fails with "Key rejected by Puter.js. Check the key and try again."
+
   Rule: providerFor reads the catalogue before it reads prefixes
 
     @headless
@@ -308,6 +363,7 @@ Feature: Model config
 
       Examples:
         | provider   | primary                     |
+        | puter      | gemini-3.6-flash            |
         | anthropic  | claude-sonnet-4-6           |
         | gemini     | gemini-3.6-flash            |
         | openai     | gpt-5.5                     |
@@ -323,6 +379,7 @@ Feature: Model config
 
       Examples:
         | provider   | secondary                   |
+        | puter      | gemini-3.1-flash-lite       |
         | anthropic  | claude-haiku-4-5            |
         | openai     | gpt-5.4-mini                |
         | gemini     | gemini-3.1-flash-lite       |
@@ -689,7 +746,7 @@ Feature: Model config
     Scenario: An unrecognised key is refused with the supported prefixes
       Given the model-config demo page
       When the user adds the key "hello-there"
-      Then the chooser shows the error "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…."
+      Then the chooser shows the error "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
       And no provider card is shown
 
     @web
@@ -762,7 +819,7 @@ Feature: Model config
     @web
     Scenario: The chooser lists the providers it supports
       Given the model-config demo page
-      Then the chooser's footer reads "Google / OpenAI / Anthropic / OpenRouter / Groq"
+      Then the chooser's footer reads "Google / OpenAI / Anthropic / OpenRouter / Groq / Puter.js"
 
     @web
     Scenario: The chooser shows a how-to-get-a-key help link

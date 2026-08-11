@@ -171,7 +171,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <div class="faq-a">
         <p class="lede">TamedTable runs on <em>your</em> API key. Paste it into Settings and we work out the rest — which provider it belongs to, which models to use, and what they cost. The key stays in your browser. We never see it, and nothing is stored on our servers.</p>
 
-        <p>You never pick a provider from a list. The key's own prefix names it: <code>AIza…</code> is Google, <code>sk-proj-…</code> OpenAI, <code>sk-ant-…</code> Anthropic, <code>sk-or-…</code> OpenRouter, <code>gsk_…</code> Groq. We check the key against that provider before saving anything, so a key that doesn't work never becomes a setting you have to hunt down. Add as many as you like; the card you select is the one your runs use.</p>
+        <p>You never pick a provider from a list. The key's own prefix names it: <code>AIza…</code> is Google, <code>sk-proj-…</code> OpenAI, <code>sk-ant-…</code> Anthropic, <code>sk-or-…</code> OpenRouter, <code>gsk_…</code> Groq, <code>eyJ…</code> Puter.js. We check the key against that provider before saving anything, so a key that doesn't work never becomes a setting you have to hunt down. Add as many as you like; the card you select is the one your runs use.</p>
 
         <div class="gotcha">
           <h3>The #1 gotcha</h3>
@@ -225,6 +225,16 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             <a class="key-link" href="https://console.groq.com/keys" target="_blank" rel="noopener">Create a Groq API key ↗</a>
             <p class="note">Groq publishes no way to tell a free developer key from a paid one, so its card carries no Free/Paid tag — we would rather show nothing than a guess.</p>
           </div>
+
+          <div class="prov-card">
+            <h3 id="byok-puter" class="anchored">
+              Puter.js
+              <button class="copy-link" data-target="byok-puter" aria-label="Copy link to Puter.js"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
+            </h3>
+            <p>A gateway rather than a provider: one Puter account reaches models from every vendor, billed against a single balance, so there is no separate signup per vendor. What you paste is a <strong>session token</strong>, not an API key — sign in at puter.com, then copy <code>puter.auth.token.v2</code> from your browser's local storage (DevTools → Application → Local Storage).</p>
+            <a class="key-link" href="https://puter.com" target="_blank" rel="noopener">Sign in to Puter.js ↗</a>
+            <p class="note">Because the token is a JWT it starts with <code>eyJ</code>, the loosest prefix we match on — so we always confirm it with Puter before saving it.</p>
+          </div>
         </div>
 
         <p class="closing">Tip: store the key in your browser or a password manager. Clearing your browser data or switching devices means entering it again. Ready? <a href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open the web app ↗</a></p>
@@ -251,7 +261,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="change-models" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>You connect a <strong>provider</strong> (Google, OpenAI, Anthropic, OpenRouter, or Groq) in Settings by pasting its key, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk. When you add a key we run one call against each and time it, so the card shows both what a thousand tokens cost (input and output, from our price table) and roughly how long they take. The ⟳ button on a card re-runs the timing — a number taken while a provider was having a bad minute is one click from being replaced.</p>
+        <p>You connect a <strong>provider</strong> (Google, OpenAI, Anthropic, OpenRouter, Groq, or Puter.js) in Settings by pasting its key, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk. When you add a key we run one call against each and time it, so the card shows both what a thousand tokens cost (input and output, from our price table) and roughly how long they take. The ⟳ button on a card re-runs the timing — a number taken while a provider was having a bad minute is one click from being replaced.</p>
         <p>To change the Primary or Secondary model, or add new models, edit the <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/model-config/models.json" target="_blank" rel="noopener">models.json file</a> and rebuild. (A rebuild is required: the catalogue is compiled into the app bundle, so editing the file in a deployed directory has no effect.)</p>
       </div>
     </section>

@@ -1113,7 +1113,7 @@ this section covers what the app does with it.
 `controller.addKey()`, which detects the provider, checks the key against that
 provider, and only then stores anything. An unrecognised prefix is refused
 before any call goes out — `Key not recognised. Supported prefixes: AIza…,
-sk-proj-…, sk-ant-…, sk-or-…, gsk_….` A key the provider rejects reports what
+sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ….` A key the provider rejects reports what
 the provider said, in one sentence naming it. Nothing is stored in either case,
 so a bad key never becomes a setting the user has to hunt down and undo. On
 success the key is saved, that provider becomes the default, and its two fixed
@@ -1149,7 +1149,8 @@ request goes to Gemini, connect OpenAI and it goes to OpenAI. A natural-language
 chat request therefore needs a key for the selected provider: when that
 provider's key is missing the request never fires and a toast names the provider
 it needs, e.g. `Text requests require a Google API key — open Settings and add
-one.` (or `an OpenAI` / `an Anthropic` / `a Groq` / `an OpenRouter`). A key for
+one.` (or `an OpenAI` / `an Anthropic` / `a Groq` / `an OpenRouter` / `a
+Puter.js`). A key for
 a different provider does not satisfy the requirement — selecting Google still
 needs a Google key even when an Anthropic key is set. This is the same provider
 the voice mic already uses, so text and voice share one key per provider.

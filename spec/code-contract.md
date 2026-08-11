@@ -348,6 +348,7 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `CEREBRAS_API_KEY` | — | Cerebras key (free tier). Bench-only: read by the engine when a `zai-*` / `gpt-oss-*` model id routes to Cerebras, and by `bench sweep`/`bench label`. Never resolved by `resolveConfig`, so it can't select the app's provider. |
+| `PUTER_TOKEN` | — | Puter.js session token (a JWT, not an API key). Read by the engine for the Puter gateway and by `resolveConfig` (lowest env priority — a direct provider key always outranks the gateway). A signed-in browser holds it at `localStorage["puter.auth.token.v2"]`. |
 | `GROQ_API_KEY` | — | Groq key. Read by the engine when a catalogued Groq model id (`openai/gpt-oss-120b`) routes to Groq, and by `resolveConfig` (below OpenAI/Anthropic, above OpenRouter). Groq publishes no API signal for which tier a key is on, so the chooser shows it no tier tag. |
 | `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter, by `bench sweep`/`bench label`, and by `resolveConfig` (lowest env priority — any paid key outranks it). The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
@@ -359,8 +360,8 @@ Env vars:
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
 
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, `GROQ_API_KEY`, or `OPENROUTER_API_KEY`. `resolveConfig` picks the provider from whichever is set
-(Gemini > OpenAI > Anthropic > Groq > OpenRouter when several are), and `TAMEDTABLE_MODEL` must
+`OPENAI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `PUTER_TOKEN`. `resolveConfig` picks the provider from whichever is set
+(Gemini > OpenAI > Anthropic > Groq > OpenRouter > Puter when several are), and `TAMEDTABLE_MODEL` must
 name a model from that provider — one from another provider is coerced to
 the provider's default model.
 
@@ -1360,7 +1361,7 @@ and batching show up in the measurement.
 → [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini" | "openai" | "groq" | "openrouter";  // app providers — catalogue, chooser, resolveConfig
+type Provider = "anthropic" | "gemini" | "openai" | "groq" | "openrouter" | "puter";  // app providers — catalogue, chooser, resolveConfig
 type EngineProvider = Provider | "cerebras";  // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
@@ -1372,6 +1373,7 @@ interface ResolvedConfig {
   openaiKey: string | null;
   groqKey: string | null;
   openrouterKey: string | null;
+  puterToken: string | null;          // a Puter session token, not an API key
   model: string;      // primary — writes the spec patch (and carries voice)
   cellModel: string;  // secondary — fills per-row cells; always same-provider as model
   alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
@@ -1388,7 +1390,8 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
-function providerFor(modelId: string): EngineProvider;
+function providerFor(modelId: string): EngineProvider;   // fallback only; never returns "puter"
+function modelFor(p: Provider, modelId: string): ModelDef | undefined;  // ids are shared — Puter re-serves them — so lookups name the provider
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
 function connectedProviders(config: ResolvedConfig): Provider[];  // every provider with a key, in catalogue order — the chooser's card list

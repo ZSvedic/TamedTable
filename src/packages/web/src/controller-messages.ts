@@ -9,6 +9,7 @@ export function providerLabel(provider?: string): string {
     : provider === 'openai' ? 'OpenAI'
     : provider === 'groq' ? 'Groq'
     : provider === 'openrouter' ? 'OpenRouter'
+    : provider === 'puter' ? 'Puter.js'
     : 'Anthropic';
 }
 

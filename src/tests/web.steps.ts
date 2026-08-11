@@ -51,6 +51,7 @@ Given(
     else if (provider === 'openai') partial.openaiKey = (recording && process.env.OPENAI_API_KEY) || key;
     else if (provider === 'groq') partial.groqKey = (recording && process.env.GROQ_API_KEY) || key;
     else if (provider === 'openrouter') partial.openrouterKey = (recording && process.env.OPENROUTER_API_KEY) || key;
+    else if (provider === 'puter') partial.puterToken = (recording && process.env.PUTER_TOKEN) || key;
     else partial.anthropicKey = (recording && process.env.ANTHROPIC_API_KEY) || key;
     await controller(this).setConfig(partial);
   },

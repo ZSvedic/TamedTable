@@ -4,7 +4,7 @@
 
 import catalogue from './models.json' with { type: 'json' };
 
-export type Provider = 'anthropic' | 'gemini' | 'openai' | 'groq' | 'openrouter';
+export type Provider = 'anthropic' | 'gemini' | 'openai' | 'groq' | 'openrouter' | 'puter';
 
 /** What a provider says about the account behind a key. `null` means the
  *  provider reports nothing — the chooser then shows no tag rather than a
@@ -46,6 +46,8 @@ export interface ResolvedConfig {
   openaiKey: string | null;
   groqKey: string | null;
   openrouterKey: string | null;
+  /** Puter.js session token, not an API key — see § Puter.js. */
+  puterToken: string | null;
   /** Primary model: writes the spec patch each turn (and carries voice input). */
   model: string;
   /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
@@ -85,6 +87,14 @@ export function defaultModel(provider: Provider): string {
     ?? ALL_MODELS.find((m) => m.provider === provider)!.id;
 }
 
+/** The catalogue entry for one model **as served by one provider**. Ids are not
+ *  unique on their own — Puter re-serves `gemini-3.6-flash` under that exact
+ *  name — so anything reading a model's price, voice support or temperature
+ *  flag has to say who is serving it. */
+export function modelFor(provider: Provider, modelId: string): ModelDef | undefined {
+  return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
+}
+
 /** Default per-row cell (secondary) model for a provider: the `defaults` entry
  *  for that provider, falling back to that provider's primary default. Always
  *  same-provider — cell calls never cross providers. */
@@ -108,7 +118,10 @@ export function defaultBatchSize(provider: Provider): number | undefined {
  *  checked before `gpt-` so the open-weight OpenAI models served by Cerebras
  *  never land on the OpenAI provider. Unknown ids end on 'anthropic'. */
 export function providerFor(modelId: string): EngineProvider {
-  const known = ALL_MODELS.find((m) => m.id === modelId);
+  // Puter is skipped on purpose: it is a gateway that re-serves other
+  // providers' models under their own ids, so no id could ever point at it.
+  // Every Puter connection reaches the engine with an explicit provider.
+  const known = ALL_MODELS.find((m) => m.provider !== 'puter' && m.id === modelId);
   if (known)                          return known.provider;
   if (modelId.includes('/'))          return 'openrouter';
   if (modelId.startsWith('gemini-'))  return 'gemini';
@@ -129,13 +142,17 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
   ['sk-or-',   'openrouter'],
   ['gsk_',     'groq'],
   ['AIza',     'gemini'],
+  // A Puter token is a JWT, so it opens with the base64 of `{"alg":`. Looser
+  // than the others — any JWT matches — but no other provider issues one, and
+  // verifyKey has Puter confirm it before anything is stored.
+  ['eyJ',      'puter'],
   ['sk-',      'openai'],
 ];
 
 /** The prefixes named in the chooser's "key not recognised" message, in the
  *  order a user reads them — not the order they are matched in. */
 export const SUPPORTED_PREFIXES: readonly string[] = [
-  'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…',
+  'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…',
 ];
 
 /** The provider a pasted key belongs to, or null when no prefix matches. A
@@ -173,6 +190,7 @@ export const KEY_FIELD = {
   anthropic:  'anthropicKey',
   groq:       'groqKey',
   openrouter: 'openrouterKey',
+  puter:      'puterToken',
 } as const satisfies Record<Provider, keyof ResolvedConfig>;
 
 /** Every provider whose key is set, in catalogue order. A connected provider
@@ -213,6 +231,10 @@ function isProvider(p: unknown): p is Provider {
  *  belongs to no provider is treated as not belonging, so it is coerced to
  *  the provider default instead of being sent to the API to 404. */
 function modelBelongsTo(provider: Provider, modelId: string): boolean {
+  // A provider that re-serves other providers' ids (Puter) can only be checked
+  // against the catalogue — `providerFor` deliberately never returns it.
+  if (modelFor(provider, modelId)) return true;
+  if (provider === 'puter') return false;
   if (provider === 'anthropic') return modelId.startsWith('claude-');
   return providerFor(modelId) === provider;
 }
@@ -227,12 +249,14 @@ export function resolveConfig(
   let openaiKey: string | null     = stored.openaiKey ?? null;
   let groqKey: string | null       = stored.groqKey ?? null;
   let openrouterKey: string | null = stored.openrouterKey ?? null;
+  let puterToken: string | null    = stored.puterToken ?? null;
 
   const envGemini     = env['GEMINI_API_KEY'];
   const envOpenai     = env['OPENAI_API_KEY'];
   const envAnthropic  = env['ANTHROPIC_API_KEY'];
   const envGroq       = env['GROQ_API_KEY'];
   const envOpenrouter = env['OPENROUTER_API_KEY'];
+  const envPuter      = env['PUTER_TOKEN'];
 
   if (envGemini) {
     provider = 'gemini';
@@ -249,6 +273,9 @@ export function resolveConfig(
   } else if (envOpenrouter) {
     provider = 'openrouter';
     openrouterKey = envOpenrouter;
+  } else if (envPuter) {
+    provider = 'puter';
+    puterToken = envPuter;
   } else {
     // The stored blob is written by whatever build last ran on the origin
     // (production and pr-preview share one blob), so an unknown provider
@@ -275,7 +302,8 @@ export function resolveConfig(
   }
 
   return {
-    provider, anthropicKey, geminiKey, openaiKey, groqKey, openrouterKey, model, cellModel,
+    provider, anthropicKey, geminiKey, openaiKey, groqKey, openrouterKey, puterToken,
+    model, cellModel,
     alwaysRunAll: stored.alwaysRunAll ?? false,
   };
 }

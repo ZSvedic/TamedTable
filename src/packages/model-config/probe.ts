@@ -5,9 +5,11 @@
 // real API. Kept in its own entry point so the main entry stays offline.
 // Spec: spec/packages/model-config/behavior.md § Checking a key — the probe.
 
-import {
-  ALL_MODELS, defaultCellModel, type Provider, type Tier,
-} from './index.ts';
+import { defaultCellModel, type Provider, type Tier } from './index.ts';
+
+/** Puter is a gateway, not an API in the usual sense: one endpoint takes an
+ *  envelope whose `args` happen to be an OpenAI chat-completions body. */
+const PUTER_DRIVERS_URL = 'https://api.puter.com/drivers/call';
 
 /** The slice of `fetch` this module uses. Narrower than the DOM's `typeof
  *  fetch` on purpose, so a host can inject its own wrapper (the web app routes
@@ -45,7 +47,18 @@ const PROVIDER_NAME: Record<Provider, string> = {
   anthropic: 'Anthropic',
   groq: 'Groq',
   openrouter: 'OpenRouter',
+  puter: 'Puter.js',
 };
+
+/** Wrap an OpenAI-shaped body in Puter's driver envelope. */
+export function puterEnvelope(body: Record<string, unknown>): string {
+  return JSON.stringify({
+    interface: 'puter-chat-completion',
+    driver: 'ai-chat',
+    method: 'complete',
+    args: body,
+  });
+}
 
 /** OpenAI-compatible chat-completions hosts. Each of these three speaks the
  *  same request and usage shape, so one branch serves all of them. */
@@ -123,6 +136,13 @@ async function call(
         messages: [{ role: 'user', content: prompt }],
       }),
     };
+  } else if (provider === 'puter') {
+    url = PUTER_DRIVERS_URL;
+    init = {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: puterEnvelope({ model: modelId, messages: [{ role: 'user', content: prompt }] }),
+    };
   } else {
     url = `${base}/chat/completions`;
     init = {
@@ -157,7 +177,9 @@ function failure(provider: Provider, answer: Answer): Error {
   if (answer.status === 401 || answer.status === 403) {
     return new Error(`Key rejected by ${who}. Check the key and try again.`);
   }
-  const err = answer.body['error'] as { message?: string; type?: string; code?: string } | undefined;
+  const raw = answer.body['error'];
+  const err = (typeof raw === 'string' ? { message: raw } : raw) as
+    { message?: string; type?: string; code?: string } | undefined;
   if (answer.status === 429) {
     // An account with no money left arrives as a 429 too — OpenAI answers an
     // empty balance with `insufficient_quota`. Checked first: telling that user
@@ -213,6 +235,24 @@ export async function verifyKey(
     return { tier: data?.is_free_tier ? 'free' : 'paid' };
   }
 
+  // Puter's whoami proves the token without spending anything — no model call
+  // needed at all, so connecting is free as well as fast.
+  if (provider === 'puter') {
+    const doFetch: FetchLike = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
+    let answer: Answer;
+    try {
+      const res = await doFetch('https://api.puter.com/whoami', {
+        headers: { authorization: `Bearer ${key}` },
+      });
+      answer = { status: res.status, headers: res.headers, body: await readJson(res) };
+    } catch {
+      answer = { status: 0, headers: new Headers(), body: {} };
+    }
+    if (!ok(answer)) throw failure(provider, answer);
+    // Puter bills per call against one balance; it reports no free/paid tier.
+    return { tier: null };
+  }
+
   const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
   if (!ok(answer)) throw failure(provider, answer);
 
@@ -229,6 +269,18 @@ export async function verifyKey(
 
 /** Input and output tokens a provider reported, whichever shape it used. */
 function usageOf(provider: Provider, body: Record<string, unknown>): { inTok: number; outTok: number } {
+  if (provider === 'puter') {
+    // Streaming: a {"type":"usage","usage":{…}} frame. Non-streaming: the same
+    // object under result.usage. The two spell the counters differently —
+    // `prompt_tokens`/`completion_tokens` when streamed, `prompt`/`completion`
+    // when not — so read whichever is there.
+    const result = (body['result'] ?? {}) as Record<string, unknown>;
+    const u = (body['usage'] ?? result['usage'] ?? {}) as Record<string, number>;
+    return {
+      inTok: u['prompt_tokens'] ?? u['prompt'] ?? 0,
+      outTok: u['completion_tokens'] ?? u['completion'] ?? 0,
+    };
+  }
   if (provider === 'gemini') {
     const u = (body['usageMetadata'] ?? {}) as Record<string, number>;
     return {
@@ -275,6 +327,19 @@ function streamRequest(
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
+          model: modelId, stream: true, max_tokens: MEASURE_MAX_TOKENS,
+          messages: [{ role: 'user', content: REFERENCE_PROMPT }],
+        }),
+      },
+    };
+  }
+  if (provider === 'puter') {
+    return {
+      url: PUTER_DRIVERS_URL,
+      init: {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+        body: puterEnvelope({
           model: modelId, stream: true, max_tokens: MEASURE_MAX_TOKENS,
           messages: [{ role: 'user', content: REFERENCE_PROMPT }],
         }),
@@ -330,9 +395,10 @@ async function readStream(
 
   for (const line of buffer.split('\n')) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('data:')) continue;
-    const payload = trimmed.slice(5).trim();
-    if (payload === '' || payload === '[DONE]') continue;
+    if (trimmed === '' || trimmed === 'data: [DONE]') continue;
+    // SSE frames are `data: {…}`; Puter streams bare NDJSON objects.
+    const payload = trimmed.startsWith('data:') ? trimmed.slice(5).trim() : trimmed;
+    if (payload === '' || payload === '[DONE]' || !payload.startsWith('{')) continue;
     try {
       frames.push(JSON.parse(payload) as Record<string, unknown>);
     } catch {

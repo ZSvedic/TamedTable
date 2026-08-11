@@ -350,6 +350,7 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   openai: 'gpt-5.4-mini',
   cerebras: 'gpt-oss-120b',
   groq: 'openai/gpt-oss-20b',
+  puter: 'gemini-3.1-flash-lite',
   openrouter: 'cohere/north-mini-code:free',
 };
 
@@ -540,6 +541,7 @@ const LOW_EFFORT: Record<ReturnType<typeof providerFor>, ProviderOptions> = {
   openrouter: { openai:    { reasoningEffort: 'low' } },
   cerebras:   { openai:    { reasoningEffort: 'low' } },
   groq:       { openai:    { reasoningEffort: 'low' } },
+  puter:      { openai:    { reasoningEffort: 'low' } },
   anthropic:  { anthropic: { thinking: { type: 'disabled' } } },
 };
 
@@ -954,6 +956,92 @@ export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]):
 
 // ── Runner ─────────────────────────────────────────────────────────────────
 
+// #PuterGateway
+// Puter takes one endpoint — POST /drivers/call — whose `args` are an OpenAI
+// chat-completions body, and answers `{success, result}` where `result` is an
+// OpenAI choice. That is close enough to translate rather than reimplement:
+// this fetch sits under the ordinary OpenAI client, wrapping the request and
+// unwrapping the reply, so tool calling and retries stay on the tested path.
+//
+// It always calls Puter **non-streaming**. Puter streams newline-delimited
+// JSON rather than SSE, and its streamed frames carry no tool calls — which the
+// patch turn depends on. When the SDK asked for a stream (only the Python
+// export does), the finished answer is replayed as a single SSE frame: the
+// script lands in one piece instead of typing out, and nothing else changes.
+function puterFetch(inner?: typeof globalThis.fetch): typeof globalThis.fetch {
+  const doFetch = inner ?? globalThis.fetch;
+  return (async (input: string | URL | Request, init?: RequestInit) => {
+    const sent = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+    const wantsStream = sent['stream'] === true;
+    delete sent['stream'];
+    delete sent['stream_options'];
+
+    const res = await doFetch('https://api.puter.com/drivers/call', {
+      ...init,
+      method: 'POST',
+      body: JSON.stringify({
+        interface: 'puter-chat-completion',
+        driver: 'ai-chat',
+        method: 'complete',
+        args: sent,
+      }),
+    } as RequestInit);
+    if (!res.ok) return res;
+
+    const envelope = await res.json() as {
+      success?: boolean;
+      result?: Record<string, unknown>;
+      error?: unknown;
+    };
+    if (envelope.success === false || !envelope.result) {
+      const message = typeof envelope.error === 'string'
+        ? envelope.error
+        : JSON.stringify(envelope.error ?? 'Puter.js refused the request');
+      return new Response(JSON.stringify({ error: { message } }), {
+        status: 502, headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const choice = envelope.result;
+    const u = (choice['usage'] ?? {}) as Record<string, number>;
+    const completion = {
+      id: 'puter', object: 'chat.completion', created: Math.floor(Date.now() / 1000),
+      model: String(sent['model'] ?? ''),
+      choices: [{
+        index: 0,
+        message: choice['message'],
+        finish_reason: choice['finish_reason'] ?? 'stop',
+      }],
+      // Puter names its counters `prompt`/`completion` on a finished call and
+      // `prompt_tokens`/`completion_tokens` in a streamed usage frame.
+      usage: {
+        prompt_tokens: u['prompt_tokens'] ?? u['prompt'] ?? 0,
+        completion_tokens: u['completion_tokens'] ?? u['completion'] ?? 0,
+        total_tokens: (u['prompt_tokens'] ?? u['prompt'] ?? 0)
+          + (u['completion_tokens'] ?? u['completion'] ?? 0),
+      },
+    };
+
+    if (!wantsStream) {
+      return new Response(JSON.stringify(completion), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    // One SSE frame carrying the whole answer, then the usage frame and [DONE].
+    const message = (choice['message'] ?? {}) as { content?: string };
+    const frame = (delta: unknown, extra: Record<string, unknown> = {}): string =>
+      `data: ${JSON.stringify({ ...completion, object: 'chat.completion.chunk', choices: [{ index: 0, delta, finish_reason: null }], ...extra })}\n\n`;
+    const body =
+      frame({ role: 'assistant', content: message.content ?? '' }) +
+      `data: ${JSON.stringify({ ...completion, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: completion.choices[0]!.finish_reason }] })}\n\n` +
+      'data: [DONE]\n\n';
+    return new Response(body, {
+      status: 200, headers: { 'content-type': 'text/event-stream' },
+    });
+  }) as typeof globalThis.fetch;
+}
+
 class HeadlessRunnerImpl implements HeadlessRunner {
   private opts: HeadlessRunnerOptions;
   private sourceRows: Row[] = [];
@@ -1076,6 +1164,23 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('CEREBRAS_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
+    } else if (detected === 'puter') {
+      // #PuterGateway — Puter is not OpenAI-compatible at the transport level,
+      // but its `ai-chat` driver speaks OpenAI's *payload*: the same messages,
+      // the same `tools`, and `finish_reason: "tool_calls"` with
+      // `message.tool_calls[]` coming back. So rather than a bespoke
+      // LanguageModel implementation, the OpenAI client is pointed at a fetch
+      // that puts the body into Puter's envelope and takes the answer out
+      // again. Everything downstream — tool calling, retries, usage — is the
+      // path the other providers already use.
+      const key = apiKey ?? process.env.PUTER_TOKEN;
+      if (!key) throw new Error('PUTER_TOKEN is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const puter = createOpenAI({
+        apiKey: key,
+        baseURL: 'https://api.puter.com',
+        fetch: puterFetch(fetchImpl as typeof globalThis.fetch | undefined),
+      });
+      this.providerCache = (modelId: string) => puter.chat(modelId);
     } else if (detected === 'groq') {
       // Shipped app provider: another OpenAI-compatible endpoint, so the same
       // Chat Completions path as OpenAI, pointed at Groq. Its ids are

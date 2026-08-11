@@ -86,7 +86,7 @@ Feature: Web front-end
       And the API key has not been set
       When user opens the settings panel
       And user connects the key "hello-there"
-      Then the connect error is "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…."
+      Then the connect error is "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
       And the connected providers are ""
       And the LLM API was called 0 times
 
@@ -166,6 +166,20 @@ Feature: Web front-end
       And user connects the key "AIza-good"
       And user removes the provider "gemini"
       Then the connected providers are ""
+
+    @web
+    # Puter is a gateway: the token is pasted like any other credential, and
+    # its whoami proves it without a model call.
+    Scenario: Connecting a Puter token pins its Gemini defaults
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "eyJhbGciOiJIUzI1Ni-demo"
+      Then the connected providers are "puter"
+      And the selected provider is "puter"
+      And the configured model is "gemini-3.6-flash"
+      And the configured cellModel is "gemini-3.1-flash-lite"
 
     @web
     Scenario: Connecting Groq pins its two open-weight defaults

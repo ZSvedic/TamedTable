@@ -236,7 +236,7 @@ export class ConfigManager {
   clearApiKey(): void {
     void this.setConfig({
       anthropicKey: null, geminiKey: null, openaiKey: null,
-      groqKey: null, openrouterKey: null,
+      groqKey: null, openrouterKey: null, puterToken: null,
     });
   }
 

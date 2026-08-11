@@ -3,7 +3,7 @@
 
 /**
  * Read ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY,
- * OPENROUTER_API_KEY, TAMEDTABLE_MODEL, and TAMEDTABLE_CELL_MODEL from
+ * OPENROUTER_API_KEY, PUTER_TOKEN, TAMEDTABLE_MODEL, and TAMEDTABLE_CELL_MODEL from
  * process.env and return them as a plain Record suitable for resolveConfig's
  * first argument. Only these keys are included.
  */
@@ -14,6 +14,7 @@ export function readConfigFromEnv(): Record<string, string | undefined> {
     OPENAI_API_KEY:       process.env['OPENAI_API_KEY'],
     GROQ_API_KEY:         process.env['GROQ_API_KEY'],
     OPENROUTER_API_KEY:   process.env['OPENROUTER_API_KEY'],
+    PUTER_TOKEN:          process.env['PUTER_TOKEN'],
     TAMEDTABLE_MODEL:     process.env['TAMEDTABLE_MODEL'],
     TAMEDTABLE_CELL_MODEL: process.env['TAMEDTABLE_CELL_MODEL'],
   };

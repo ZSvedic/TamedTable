@@ -63,10 +63,11 @@ export const PROVIDER_LABEL: Record<Provider, string> = {
   anthropic: 'Anthropic API',
   groq: 'Groq API',
   openrouter: 'OpenRouter API',
+  puter: 'Puter.js',
 };
 
 /** The footer's supported-provider list, in the order the design names them. */
-const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq';
+const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq / Puter.js';
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
 

@@ -44,11 +44,14 @@ names the provider. `detectProvider(key)` trims the key, tests these prefixes
 | `sk-or-` | openrouter |
 | `gsk_` | groq |
 | `AIza` | gemini |
+| `eyJ` | puter |
 | `sk-` | openai |
 
 Order matters: `sk-proj-`, `sk-ant-` and `sk-or-` all start with `sk-`, so the
-generic OpenAI rule is tested last. `SUPPORTED_PREFIXES` exposes the display
-list (`AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…`) that the chooser's error
+generic OpenAI rule is tested last. `eyJ` is the base64 of `{"alg":` — a Puter
+token is a JWT, which makes it the loosest rule here, since any JWT matches.
+`SUPPORTED_PREFIXES` exposes the display list
+(`AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…`) that the chooser's error
 message names.
 
 A prefix is a guess, not proof. Nothing is stored until `verifyKey` has had the
@@ -79,7 +82,7 @@ Each `models` entry carries:
 - `id` — the provider's exact API model id (verified against provider docs
   before any change; never invent or guess an id)
 - `name` — short display name
-- `provider` — `gemini` | `openai` | `anthropic` | `openrouter` | `groq`
+- `provider` — `gemini` | `openai` | `anthropic` | `openrouter` | `groq` | `puter`
 - `temperature` — whether the model still accepts a `temperature` sampling
   parameter (see `acceptsTemperature` below)
 - `voiceInput` — whether the model accepts audio input
@@ -95,6 +98,7 @@ decides the two roles. The current defaults:
 | anthropic | `claude-sonnet-4-6` | `claude-haiku-4-5` |
 | groq | `openai/gpt-oss-120b` | `openai/gpt-oss-20b` |
 | openrouter | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` |
+| puter | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 
 OpenRouter is the free tier: one model fills both roles, at $0. Its defaults
 row also pins `batchSize: 5` — the [2026-07-17 benchmark](../../../process/journal/2026-07-17-free-model-benchmark-run.md)
@@ -102,6 +106,12 @@ measured `cohere/north-mini-code:free` at 96% accuracy at batch 5 and sharply
 worse at 40+, so the engine batches cells in fives for this provider.
 `defaultBatchSize(provider)` returns that pinned size, or `undefined` for
 providers without one (their engine keeps its own default).
+
+Ids are **not unique**. Puter is a gateway: it re-serves other providers'
+models under their own names, so `gemini-3.6-flash` appears twice in the
+catalogue — once as Google's, once as Puter's. `modelFor(provider, id)` is the
+lookup anything reading a price, a voice flag or a temperature flag must use;
+`ALL_MODELS.find(m => m.id === …)` would silently pick whichever came first.
 
 Groq serves open-weight models on its own hardware and is the fastest and
 cheapest of the paid providers — see the
@@ -119,21 +129,24 @@ env always wins. The rules:
 3. Else if `ANTHROPIC_API_KEY` is set in env → provider is anthropic, anthropicKey is that value.
 4. Else if `GROQ_API_KEY` is set in env → provider is groq, groqKey is that value.
 5. Else if `OPENROUTER_API_KEY` is set in env → provider is openrouter,
-   openrouterKey is that value — last so a paid key always outranks the free
-   tier when both are present.
-6. Else use `stored.provider`, falling back to "gemini" — the provider whose
+   openrouterKey is that value.
+6. Else if `PUTER_TOKEN` is set in env → provider is puter, puterToken is that
+   value — last, so a direct provider key always outranks the gateway.
+7. Else use `stored.provider`, falling back to "gemini" — the provider whose
    defaults every committed cassette is recorded with, so key-free replay
    (tests, tours) resolves the models the recordings used.
-7. `TAMEDTABLE_MODEL` in env overrides the primary model from stored. An
+8. `TAMEDTABLE_MODEL` in env overrides the primary model from stored. An
    empty value counts as unset — like the `*_API_KEY` vars — and falls
    through to stored, then the provider default.
-8. Keys not present in env keep their stored values (or null).
-9. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`. A model id that belongs to **no** provider — one `providerFor` only reaches through its anthropic catch-all, without the `claude-` prefix — does not belong to anthropic either: it is replaced the same way, never sent to the API to 404.
-10. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`. An empty value counts as unset, as in rule 7.
-11. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't (including a no-provider id, as in rule 9), replace it with `defaultCellModel(provider)`.
+9. Keys not present in env keep their stored values (or null).
+10. The final primary model must belong to the resolved provider; if it doesn't, replace it with `defaultModel(provider)`. A model id that belongs to **no** provider — one `providerFor` only reaches through its anthropic catch-all, without the `claude-` prefix — does not belong to anthropic either: it is replaced the same way, never sent to the API to 404.
+11. `TAMEDTABLE_CELL_MODEL` in env overrides the secondary (`cellModel`) from stored; otherwise stored, otherwise `defaultCellModel(provider)`. An empty value counts as unset, as in rule 8.
+12. The final `cellModel` must belong to the resolved provider too — cell calls never cross providers; if it doesn't (including a no-provider id, as in rule 10), replace it with `defaultCellModel(provider)`.
 
 When multiple provider keys are set in env, gemini wins, then openai, then
-anthropic, then groq, then openrouter.
+anthropic, then groq, then openrouter, then puter. A model belongs to a
+provider when `modelFor` finds it there — the check `providerFor` can't make for
+a gateway.
 
 `defaultModel(provider)` returns the `defaults[provider].primary` id (falling
 back to the provider's first catalogue entry). `defaultCellModel(provider)`
@@ -179,10 +192,9 @@ marked `true` (so dated aliases still match) and `false` for everything else —
 including unknown ids, so new models default to the safe no-temperature path.
 The headless engine calls it to decide whether to send `temperature: 0`.
 
-`keyFor(config)` returns the API key for `config.provider` — `geminiKey` when
-the provider is gemini, `openaiKey` when openai, `groqKey` when groq,
-`openrouterKey` when openrouter, otherwise `anthropicKey` — or null when that
-provider's key is unset. Every surface that needs "the key for the active
+`keyFor(config)` returns the credential for `config.provider`, looked up
+through `KEY_FIELD` — `geminiKey` for gemini, `puterToken` for puter, and so on
+— or null when it is unset. Every surface that needs "the key for the active
 provider" (the CLI, the web controller) uses this one helper so the
 provider→key mapping lives in a single place.
 
@@ -214,7 +226,10 @@ Only real signals count; the chooser shows no tag rather than a guess:
 | gemini | the `x-gemini-service-tier` response header (`free` → free) |
 | openrouter | `GET /api/v1/key` → `is_free_tier` |
 | openai, anthropic | always `paid` — neither provider has a free tier |
-| groq | `null` — Groq publishes no tier signal |
+| groq, puter | `null` — neither publishes a tier signal |
+
+Puter is checked with `GET /whoami` rather than a model call: it proves the
+token, costs nothing, and answers immediately.
 
 Failures come back as one sentence the user can act on, named for the provider:
 `Key rejected by Google. Check the key and try again.` (401/403),
@@ -264,6 +279,39 @@ measurement that fails leaves the row's speed blank rather than the card broken
 — the price still shows, and a working key is still a working key. The card's
 **⟳ button re-runs both measurements** for that provider, so a number taken when
 the provider was having a bad minute is one click from being replaced.
+
+## Puter.js
+
+Puter is a **gateway**, not a model provider: one account reaches 800-odd models
+from every vendor, billed against one balance. It is connected like any other
+provider — paste the credential — but three things about it are its own.
+
+**The credential is a session token, not an API key.** A signed-in browser holds
+it at `localStorage["puter.auth.token.v2"]`; the CLI reads `PUTER_TOKEN`. It is
+a JWT, so `detectProvider` matches it on `eyJ` — the loosest of the prefixes,
+since any JWT matches, which is why `verifyKey` has Puter confirm it before
+anything is stored.
+
+**The transport is one endpoint.** `POST https://api.puter.com/drivers/call`
+takes `{ interface: "puter-chat-completion", driver: "ai-chat", method:
+"complete", args }`, where `args` is an OpenAI chat-completions body, and
+answers `{ success, result }` with `result` an OpenAI choice —
+`finish_reason: "tool_calls"` and `message.tool_calls[]` included. Close enough
+to translate rather than reimplement: the engine points the ordinary OpenAI
+client at a fetch that wraps the body and unwraps the reply
+(`#PuterGateway` in `src/packages/headless/`), so tool calling, retries and
+usage all stay on the path the other providers already use.
+
+That translation always calls Puter **non-streaming**. Puter streams
+newline-delimited JSON rather than SSE, and its streamed frames carry no tool
+calls — which the patch turn depends on. The one place the engine streams is the
+Python export, and there the finished script is replayed as a single frame: it
+lands in one piece instead of typing out.
+
+**Its models are other providers' models.** Puter's catalogue rows mirror the
+Gemini defaults, at the same prices — Puter passes list price through. This is
+what makes ids non-unique, and why `providerFor` skips Puter entirely: no id
+could ever point at a gateway.
 
 ## StoragePort
 
