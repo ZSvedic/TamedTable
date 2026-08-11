@@ -17140,14 +17140,17 @@ var models_default = {
     { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.075, outUsdPerMtok: 0.3 },
     { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.59, outUsdPerMtok: 0.79 },
     { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.05, outUsdPerMtok: 0.08 },
-    { id: "cohere/north-mini-code:free", name: "North Mini Code (OpenRouter free)", provider: "openrouter", temperature: false, voiceInput: false, inUsdPerMtok: 0, outUsdPerMtok: 0 }
+    { id: "cohere/north-mini-code:free", name: "North Mini Code (OpenRouter free)", provider: "openrouter", temperature: false, voiceInput: false, inUsdPerMtok: 0, outUsdPerMtok: 0 },
+    { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (Puter.js)", provider: "puter", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
+    { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (Puter.js)", provider: "puter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 }
   ],
   defaults: {
     gemini: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" },
     openai: { primary: "gpt-5.5", secondary: "gpt-5.4-mini" },
     anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5" },
     groq: { primary: "openai/gpt-oss-120b", secondary: "openai/gpt-oss-20b" },
-    openrouter: { primary: "cohere/north-mini-code:free", secondary: "cohere/north-mini-code:free", batchSize: 5 }
+    openrouter: { primary: "cohere/north-mini-code:free", secondary: "cohere/north-mini-code:free", batchSize: 5 },
+    puter: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" }
   }
 };
 
@@ -17157,11 +17160,14 @@ var DEFAULTS = models_default.defaults;
 function defaultModel(provider) {
   return DEFAULTS[provider]?.primary ?? ALL_MODELS.find((m) => m.provider === provider).id;
 }
+function modelFor(provider, modelId) {
+  return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
+}
 function defaultCellModel(provider) {
   return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
 }
 function providerFor(modelId) {
-  const known = ALL_MODELS.find((m) => m.id === modelId);
+  const known = ALL_MODELS.find((m) => m.provider !== "puter" && m.id === modelId);
   if (known)
     return known.provider;
   if (modelId.includes("/"))
@@ -17182,6 +17188,7 @@ var KEY_PREFIXES = [
   ["sk-or-", "openrouter"],
   ["gsk_", "groq"],
   ["AIza", "gemini"],
+  ["eyJ", "puter"],
   ["sk-", "openai"]
 ];
 var SUPPORTED_PREFIXES = [
@@ -17189,7 +17196,8 @@ var SUPPORTED_PREFIXES = [
   "sk-proj-…",
   "sk-ant-…",
   "sk-or-…",
-  "gsk_…"
+  "gsk_…",
+  "eyJ…"
 ];
 function detectProvider(key) {
   const k = key.trim();
@@ -17202,7 +17210,8 @@ var KEY_FIELD = {
   openai: "openaiKey",
   anthropic: "anthropicKey",
   groq: "groqKey",
-  openrouter: "openrouterKey"
+  openrouter: "openrouterKey",
+  puter: "puterToken"
 };
 function connectedProviders(config) {
   return Object.keys(KEY_FIELD).filter((p) => (config[KEY_FIELD[p]] ?? "") !== "");
@@ -17211,6 +17220,10 @@ function isProvider(p) {
   return typeof p === "string" && p in KEY_FIELD;
 }
 function modelBelongsTo(provider, modelId) {
+  if (modelFor(provider, modelId))
+    return true;
+  if (provider === "puter")
+    return false;
   if (provider === "anthropic")
     return modelId.startsWith("claude-");
   return providerFor(modelId) === provider;
@@ -17222,11 +17235,13 @@ function resolveConfig(env, stored) {
   let openaiKey = stored.openaiKey ?? null;
   let groqKey = stored.groqKey ?? null;
   let openrouterKey = stored.openrouterKey ?? null;
+  let puterToken = stored.puterToken ?? null;
   const envGemini = env["GEMINI_API_KEY"];
   const envOpenai = env["OPENAI_API_KEY"];
   const envAnthropic = env["ANTHROPIC_API_KEY"];
   const envGroq = env["GROQ_API_KEY"];
   const envOpenrouter = env["OPENROUTER_API_KEY"];
+  const envPuter = env["PUTER_TOKEN"];
   if (envGemini) {
     provider = "gemini";
     geminiKey = envGemini;
@@ -17242,6 +17257,9 @@ function resolveConfig(env, stored) {
   } else if (envOpenrouter) {
     provider = "openrouter";
     openrouterKey = envOpenrouter;
+  } else if (envPuter) {
+    provider = "puter";
+    puterToken = envPuter;
   } else {
     provider = isProvider(stored.provider) ? stored.provider : "gemini";
   }
@@ -17260,6 +17278,7 @@ function resolveConfig(env, stored) {
     openaiKey,
     groqKey,
     openrouterKey,
+    puterToken,
     model,
     cellModel,
     alwaysRunAll: stored.alwaysRunAll ?? false
@@ -17267,6 +17286,7 @@ function resolveConfig(env, stored) {
 }
 
 // packages/model-config/probe.ts
+var PUTER_DRIVERS_URL = "https://api.puter.com/drivers/call";
 function estimateSecPer1kTok(m) {
   return m.tokPerSec > 0 ? m.ttftSec + 1000 / m.tokPerSec : 0;
 }
@@ -17275,8 +17295,17 @@ var PROVIDER_NAME = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   groq: "Groq",
-  openrouter: "OpenRouter"
+  openrouter: "OpenRouter",
+  puter: "Puter.js"
 };
+function puterEnvelope(body) {
+  return JSON.stringify({
+    interface: "puter-chat-completion",
+    driver: "ai-chat",
+    method: "complete",
+    args: body
+  });
+}
 var OPENAI_COMPATIBLE_BASE = {
   openai: "https://api.openai.com/v1",
   groq: "https://api.groq.com/openai/v1",
@@ -17316,6 +17345,13 @@ async function call(provider, key, modelId, prompt, opts) {
         messages: [{ role: "user", content: prompt }]
       })
     };
+  } else if (provider === "puter") {
+    url = PUTER_DRIVERS_URL;
+    init = {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: puterEnvelope({ model: modelId, messages: [{ role: "user", content: prompt }] })
+    };
   } else {
     url = `${base}/chat/completions`;
     init = {
@@ -17345,7 +17381,8 @@ function failure(provider, answer) {
   if (answer.status === 401 || answer.status === 403) {
     return new Error(`Key rejected by ${who}. Check the key and try again.`);
   }
-  const err = answer.body["error"];
+  const raw = answer.body["error"];
+  const err = typeof raw === "string" ? { message: raw } : raw;
   if (answer.status === 429) {
     const quota = `${err?.code ?? ""} ${err?.type ?? ""} ${err?.message ?? ""}`;
     if (/insufficient_quota|exceeded your current quota/i.test(quota)) {
@@ -17375,6 +17412,21 @@ async function verifyKey(provider, key, opts = {}) {
     const data = answer2.body["data"];
     return { tier: data?.is_free_tier ? "free" : "paid" };
   }
+  if (provider === "puter") {
+    const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
+    let answer2;
+    try {
+      const res = await doFetch("https://api.puter.com/whoami", {
+        headers: { authorization: `Bearer ${key}` }
+      });
+      answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
+    } catch {
+      answer2 = { status: 0, headers: new Headers, body: {} };
+    }
+    if (!ok(answer2))
+      throw failure(provider, answer2);
+    return { tier: null };
+  }
   const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
   if (!ok(answer))
     throw failure(provider, answer);
@@ -17387,6 +17439,14 @@ async function verifyKey(provider, key, opts = {}) {
   return { tier: "paid" };
 }
 function usageOf(provider, body) {
+  if (provider === "puter") {
+    const result = body["result"] ?? {};
+    const u2 = body["usage"] ?? result["usage"] ?? {};
+    return {
+      inTok: u2["prompt_tokens"] ?? u2["prompt"] ?? 0,
+      outTok: u2["completion_tokens"] ?? u2["completion"] ?? 0
+    };
+  }
   if (provider === "gemini") {
     const u2 = body["usageMetadata"] ?? {};
     return {
@@ -17426,6 +17486,21 @@ function streamRequest(provider, key, modelId) {
           "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
+          model: modelId,
+          stream: true,
+          max_tokens: MEASURE_MAX_TOKENS,
+          messages: [{ role: "user", content: REFERENCE_PROMPT }]
+        })
+      }
+    };
+  }
+  if (provider === "puter") {
+    return {
+      url: PUTER_DRIVERS_URL,
+      init: {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+        body: puterEnvelope({
           model: modelId,
           stream: true,
           max_tokens: MEASURE_MAX_TOKENS,
@@ -17482,10 +17557,10 @@ async function readStream(res, clock, started) {
   for (const line of buffer.split(`
 `)) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith("data:"))
+    if (trimmed === "" || trimmed === "data: [DONE]")
       continue;
-    const payload = trimmed.slice(5).trim();
-    if (payload === "" || payload === "[DONE]")
+    const payload = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
+    if (payload === "" || payload === "[DONE]" || !payload.startsWith("{"))
       continue;
     try {
       frames.push(JSON.parse(payload));
@@ -17536,9 +17611,10 @@ var PROVIDER_LABEL = {
   openai: "OpenAI API",
   anthropic: "Anthropic API",
   groq: "Groq API",
-  openrouter: "OpenRouter API"
+  openrouter: "OpenRouter API",
+  puter: "Puter.js"
 };
-var SUPPORTED_LIST = "Google / OpenAI / Anthropic / OpenRouter / Groq";
+var SUPPORTED_LIST = "Google / OpenAI / Anthropic / OpenRouter / Groq / Puter.js";
 var v = (name, fallback) => `var(--mc-${name}, ${fallback})`;
 var ink = v("ink", "#1c1f23");
 var ink2 = v("ink2", "#4a5260");
@@ -18185,7 +18261,8 @@ function Demo() {
       openaiKey: resolved.openaiKey,
       anthropicKey: resolved.anthropicKey,
       groqKey: resolved.groqKey,
-      openrouterKey: resolved.openrouterKey
+      openrouterKey: resolved.openrouterKey,
+      puterToken: resolved.puterToken
     });
     writeStoredProbes(probes);
   }, [
@@ -18197,6 +18274,7 @@ function Demo() {
     resolved.anthropicKey,
     resolved.groqKey,
     resolved.openrouterKey,
+    resolved.puterToken,
     probes
   ]);
   const measureBoth = async (provider, key) => {
@@ -18250,7 +18328,7 @@ function Demo() {
   };
   const roleRow = (p, role) => {
     const model = role === "primary" ? defaultModel(p) : defaultCellModel(p);
-    const priced = ALL_MODELS.find((m) => m.id === model);
+    const priced = modelFor(p, model);
     const speed = probes[p]?.[role];
     return {
       model,
@@ -18262,7 +18340,7 @@ function Demo() {
   const connected = connectedProviders(resolved).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: ALL_MODELS.find((m) => m.id === defaultModel(p))?.voiceInput ?? false,
+    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
     primary: roleRow(p, "primary"),
     secondary: roleRow(p, "secondary")
   }));
