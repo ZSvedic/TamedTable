@@ -1394,10 +1394,13 @@ function providerFor(modelId: string): EngineProvider;   // fallback only; never
 function modelFor(p: Provider, modelId: string): ModelDef | undefined;  // ids are shared — Puter re-serves them — so lookups name the provider
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
-function connectedProviders(config: ResolvedConfig): Provider[];  // every provider with a key, in catalogue order — the chooser's card list
+function connectedProviders(config: ResolvedConfig, order?: Partial<Record<Provider, number>>): Provider[];  // every provider with a key; `order` (connectedAt stamps) sorts the cards, absent = catalogue order
 function detectProvider(key: string): Provider | null;   // the provider a pasted key belongs to, by prefix; null when none matches
-const SUPPORTED_PREFIXES: readonly string[];             // 'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…' — the display list the chooser's error names
+const SUPPORTED_PREFIXES: readonly string[];             // 'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
 const KEY_FIELD: Record<Provider, keyof ResolvedConfig>; // provider → the config field its key lives in
+const PROVIDER_BASE_URL: Record<EngineProvider, string>; // one table the engine and the probe both read, so their endpoints cannot drift
+const PUTER_DRIVERS_URL: string;                         // `${PROVIDER_BASE_URL.puter}/drivers/call` — the gateway's single endpoint
+function puterEnvelope(body: Record<string, unknown>): Record<string, unknown>;  // { interface:'puter-chat-completion', driver:'ai-chat', method:'complete', args: body }
 function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 
 // probe.ts entry point — the only part of the module that touches the network
@@ -1410,10 +1413,20 @@ function measureModel(p: Provider, key: string, modelId: string, o?: ProbeOption
 function estimateSecPer1kTok(m: ModelMeasure): number;          // ttftSec + 1000 / tokPerSec — the card's "~Z sec"
 
 // storage.ts entry point — measurements cache under 'tamedtable.probes'
-interface ProviderProbe { tier: Tier; primary?: ModelMeasure | null; secondary?: ModelMeasure | null }
-function readStoredProbes(): Partial<Record<Provider, ProviderProbe>>;
+interface StoredMeasure extends ModelMeasure { model: string; at: number }  // which model, and when — both go stale under the numbers
+interface ProviderProbe {
+  tier: Tier;
+  connectedAt?: number;                    // ms since epoch; what card order sorts by (see connectedProviders)
+  primary?: StoredMeasure | null;          // absent = never measured, null = the measurement failed
+  secondary?: StoredMeasure | null;
+}
+const PROBE_TTL_MS: number;                // 7 days — past it a reading is dropped on read
+function readStoredProbes(now?: number): Partial<Record<Provider, ProviderProbe>>;  // drops readings whose model is no longer the role's default, or older than the TTL
 function writeStoredProbes(p: Partial<Record<Provider, ProviderProbe>>): void;
 function clearStoredProbes(): void;
+function connectedOrder(p: Partial<Record<Provider, ProviderProbe>>): Partial<Record<Provider, number>>;  // the connectedProviders order map
+type RoleSpeed = ModelMeasure | 'measuring' | 'failed' | null;   // null = never measured
+function speedOf(reading: StoredMeasure | null | undefined, measuring: boolean): RoleSpeed;  // the one place that tells "never measured" from "measured and failed"
 ```
 
 ```ts
@@ -1422,7 +1435,7 @@ interface RoleRow {                       // prices are catalogue values per 100
   model: string;
   inUsdPer1kTok: number | null;           // null = the catalogue doesn't price this model
   outUsdPer1kTok: number | null;
-  speed: ModelMeasure | "measuring" | null;  // null = the measurement failed
+  speed: RoleSpeed;                       // 'measuring' → "measuring…", 'failed' → "speed unknown", null → no tail
 }
 interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; primary: RoleRow; secondary: RoleRow }
 interface ModelChooserProps {
@@ -1437,10 +1450,77 @@ interface ModelChooserProps {
   onSelect(p: Provider): void;
   onRemove(p: Provider): void;
   onRefresh?(p: Provider): void;          // the ⟳ button; omit it and no card shows one
+  onPuterSignIn?(): void;                 // the "No API key?" block; omit it and the whole block is left out
 }
 const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
+
+### Model config reference tables
+
+Key prefix → provider, tested **in order** (`detectProvider`); the `sk-` rule is
+last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
+
+| prefix | provider | | prefix | provider |
+|---|---|---|---|---|
+| `sk-proj-` | openai | | `AIza` | gemini |
+| `sk-ant-` | anthropic | | `eyJ` | puter |
+| `sk-or-` | openrouter | | `sk-` | openai |
+| `gsk_` | groq | | | |
+
+Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
+provider pins:
+
+| provider | primary (`model`) | secondary (`cellModel`) |
+|---|---|---|
+| gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
+| openai | `gpt-5.5` | `gpt-5.4-mini` |
+| anthropic | `claude-sonnet-4-6` | `claude-haiku-4-5` |
+| groq | `openai/gpt-oss-120b` | `openai/gpt-oss-20b` |
+| openrouter | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` |
+| puter | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
+
+Each `models` entry: `id` (the provider's exact API id), `name`, `provider`,
+`temperature` (still accepts a sampling parameter — the newest models reject it
+with a 400), `voiceInput` (mirrors the bench row's `audioInput`), and
+`inUsdPerMtok` / `outUsdPerMtok`.
+
+`providerFor(modelId)` reads the catalogue first — an exact match returns that
+entry's provider — then falls back to prefixes, in this order:
+
+| test | provider | why |
+|---|---|---|
+| contains `/` | openrouter | an unknown vendor-prefixed id is a sweep candidate |
+| `claude-` | anthropic | |
+| `gemini-` | gemini | |
+| `zai-`, `gpt-oss-` | cerebras | `gpt-oss-` is tested **before** `gpt-` |
+| `gpt-` | openai | |
+| anything else | anthropic | the catch-all |
+
+`verifyKey` tier sources — only real signals, so an unknown reports `null` and
+the chooser shows no tag:
+
+| provider | tier read from |
+|---|---|
+| gemini | `x-gemini-service-tier`: `free` → free, any other value → paid, **header absent → null** |
+| openrouter | `GET /api/v1/key` → `is_free_tier` |
+| openai, anthropic | always `paid` — neither has a free tier |
+| groq, puter | `null` — neither publishes a signal |
+
+`ModelChooser` theme variables, each with a presentable light default:
+`--mc-ink`, `--mc-ink-on-ink`, `--mc-ink2`, `--mc-ink3`, `--mc-surface`,
+`--mc-surface2`, `--mc-surface3`, `--mc-line`, `--mc-line2`, `--mc-accent`,
+`--mc-accent-soft`, `--mc-ok`, `--mc-ok-soft`, `--mc-err`, `--mc-err-soft`,
+`--mc-font-ui`, `--mc-font-mono`, `--mc-radius`, `--mc-radius-sm`,
+`--mc-radius-lg`.
+
+Test hooks: `data-mc-empty` on the empty row; `data-mc-card`, `data-mc-tier`,
+`data-mc-voice`, `data-mc-refresh` and `data-mc-remove` keyed by provider id;
+`data-mc-role` (`"primary"`/`"secondary"`) and `data-mc-model` (keyed by model
+id) on each role row, with `data-mc-model-id` on the id and `data-mc-cost` on
+the line beneath; `data-mc-keyinput` and `data-mc-add` on the add row;
+`data-mc-error` on the banner; `data-mc-providers` on the footer;
+`data-mc-puter` on the Puter sign-in button; `data-mc-byok` on the help link.
 
 `@tamedtable/model-config` has five entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads
