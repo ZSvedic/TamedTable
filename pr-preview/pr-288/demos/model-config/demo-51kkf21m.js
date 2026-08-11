@@ -17604,6 +17604,9 @@ async function measureModel(provider, key, modelId, opts = {}) {
   return { ttftSec: 0, tokPerSec: outTok / totalSec };
 }
 
+// packages/model-config/puter-logo.png
+var puter_logo_default = "/pr-preview/pr-288/demos/model-config/puter-logo-57m189kd.png";
+
 // packages/model-config/ModelChooser.tsx
 var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
 var PROVIDER_LABEL = {
@@ -17690,8 +17693,10 @@ function ModelChooser({
   onAdd,
   onSelect,
   onRemove,
-  onRefresh
+  onRefresh,
+  onPuterSignIn
 }) {
+  const puterConnected = connected.some((c) => c.id === "puter");
   const canAdd = keyInput.trim() !== "" && !busy;
   const iconButton = {
     flex: "0 0 auto",
@@ -18012,6 +18017,77 @@ function ModelChooser({
             children: SUPPORTED_LIST
           }, undefined, false, undefined, this)
         ]
+      }, undefined, true, undefined, this),
+      onPuterSignIn && /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            style: { display: "flex", alignItems: "center", gap: 12 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                style: { flex: 1, height: 1, background: surface3 }
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                style: {
+                  fontFamily: fontMono,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: ".1em",
+                  color: ink3
+                },
+                children: "OR"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                style: { flex: 1, height: 1, background: surface3 }
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            style: { display: "flex", flexDirection: "column", gap: 9 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+                style: { fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink },
+                children: "No API key?"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+                style: { fontFamily: fontUi, fontSize: 13, lineHeight: 1.5, color: ink2 },
+                children: "One Puter.js account reaches models from every vendor."
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+                type: "button",
+                "data-mc-puter": "",
+                disabled: puterConnected,
+                onClick: () => onPuterSignIn(),
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 9,
+                  width: "100%",
+                  padding: "11px 14px",
+                  borderRadius: 9,
+                  border: `1px solid ${puterConnected ? okSoft : line2}`,
+                  background: puterConnected ? okSoft : surface,
+                  color: puterConnected ? ok2 : ink,
+                  fontFamily: fontUi,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: puterConnected ? "default" : "pointer"
+                },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("img", {
+                    "data-mc-puter-logo": "",
+                    src: puter_logo_default,
+                    alt: "",
+                    width: 17,
+                    height: 17,
+                    style: { borderRadius: 5, display: "block", flex: "0 0 auto" }
+                  }, undefined, false, undefined, this),
+                  puterConnected ? "Connected to Puter.js" : "Sign in / Sign up to Puter.js"
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
       }, undefined, true, undefined, this)
     ]
   }, undefined, true, undefined, this);
@@ -18292,8 +18368,9 @@ function Demo() {
     }
     setMeasuring((m) => ({ ...m, [provider]: false }));
   };
-  const addKey = async () => {
-    const key = keyInput.trim();
+  const addKey = () => addKeyWith(keyInput.trim());
+  const addKeyWith = async (raw) => {
+    const key = raw.trim();
     if (key === "" || busy)
       return;
     const provider = detectProvider(key);
@@ -18436,6 +18513,10 @@ function Demo() {
         onAdd: () => void addKey(),
         onSelect: (p) => setStored((s) => ({ ...s, provider: p })),
         onRemove: removeProvider,
+        onPuterSignIn: () => {
+          setKeyInput("eyJhbGciOiJIUzI1NiJ9.demo");
+          addKeyWith("eyJhbGciOiJIUzI1NiJ9.demo");
+        },
         onRefresh: (p) => {
           const key = resolved[KEY_FIELD[p]] ?? "";
           if (key)
