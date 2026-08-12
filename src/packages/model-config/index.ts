@@ -228,7 +228,10 @@ export interface KeySetup {
    *  can check the thing they just copied. Also the display list
    *  `SUPPORTED_PREFIXES` is built from. */
   prefix: string;
-  /** Two or three short lines — what the user has to do, and the one gotcha. */
+  /** Three or four short lines in one fixed order — what it costs, who it
+   *  suits, whether the key can be re-read later, and the one extra
+   *  requirement where a provider has one. Same beats in the same places for
+   *  every provider, because this section exists to be compared. */
   steps: readonly string[];
   /** Where the key is created. */
   url: string;
@@ -241,9 +244,10 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'gemini',
     prefix: 'AIza…',
     steps: [
-      'Sign in at Google AI Studio and create a key.',
-      'Gemini keys stay viewable, so you can come back for one later.',
-      'In the EEA, UK or Switzerland you must enable billing even for the free tier.',
+      'Free and paid plans.',
+      'High accuracy, workable free daily quotas.',
+      'Keys stay viewable, so you can come back for yours later.',
+      'In the EEA, UK or Switzerland you must turn on billing even for the free tier, using the card already on your Google account.',
     ],
     url: 'https://aistudio.google.com/apikey',
     action: 'Create a Gemini API key',
@@ -252,8 +256,9 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'openai',
     prefix: 'sk-proj-…',
     steps: [
-      'Sign in at the OpenAI platform and create a key.',
-      'It is shown once — copy it straight away.',
+      'Paid only.',
+      'Best if you already buy OpenAI API credits (separate from a ChatGPT subscription).',
+      'The key is shown once, so copy it straight away.',
     ],
     url: 'https://platform.openai.com/api-keys',
     action: 'Create an OpenAI API key',
@@ -262,8 +267,9 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'anthropic',
     prefix: 'sk-ant-…',
     steps: [
-      'Sign in to the Anthropic Console and create a key.',
-      'It is shown once — copy it straight away.',
+      'Paid only.',
+      'Best if you already buy Anthropic API credits (separate from a Claude subscription).',
+      'The key is shown once, so copy it straight away.',
     ],
     url: 'https://console.anthropic.com/settings/keys',
     action: 'Create an Anthropic API key',
@@ -272,8 +278,10 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'openrouter',
     prefix: 'sk-or-…',
     steps: [
-      'One signup, no credit card, reaches free models from many vendors.',
-      'Allow free-model publication in your privacy settings — free models may train on your prompts.',
+      'Free models, no credit card.',
+      'Free models are slow and can drop rows on large batches.',
+      'The key is shown once, so copy it straight away.',
+      'Allow free model publication in your privacy settings, because free models may train on your prompts.',
     ],
     url: 'https://openrouter.ai/settings/keys',
     action: 'Create an OpenRouter API key',
@@ -282,8 +290,9 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'groq',
     prefix: 'gsk_…',
     steps: [
-      "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
-      'Sign in to the Groq Console and create a key; it is shown once.',
+      'Free and paid plans.',
+      "Open weight models on Groq's own hardware, fast per call. The free tier allows 8,000 tokens a minute, which stalls on larger tables.",
+      'The key is shown once, so copy it straight away.',
     ],
     url: 'https://console.groq.com/keys',
     action: 'Create a Groq API key',

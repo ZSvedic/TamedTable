@@ -324,6 +324,19 @@ This replaces a `How to get ↗` link to the FAQ. The user who needs the
 instructions is standing in front of this input, and a new tab onto a page
 covering six providers is a round trip many never come back from.
 
+Every provider's paragraph follows the **same four-beat shape**, so a user
+comparing two of them reads the same facts in the same places: what it costs
+(`Free and paid plans.` / `Paid only.` / `Free models, no credit card.`), who it
+suits, whether the key survives the page that mints it, and finally the one
+extra requirement if the provider has one (billing in the EEA/UK/Switzerland for
+Google, the privacy toggle for OpenRouter). Providers without a fourth beat stop
+at three. Before this the five paragraphs each argued their own case in their own
+order, which made the section impossible to skim — and the one thing a user is
+doing here *is* comparing providers. Two rules on the prose: no em dashes, and
+the paid-only providers say plainly that an OpenAI or Anthropic *subscription* is
+not the same thing as API credits, because assuming it is costs a user the whole
+setup before they find out.
+
 The text comes from `KEY_SETUP` in the package — one ordered table of
 `{ provider, label, steps, url, action }`, which also supplies the row's
 labels, so the list of providers is stated once. The FAQ keeps its own longer

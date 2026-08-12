@@ -972,12 +972,12 @@ Feature: Model config
 
     @web
     # The instructions arrive where the blocker is. A link to the FAQ opened a
-    # tab covering six providers; this opens the two lines for the one asked for.
+    # tab covering six providers; this opens the few lines for the one asked for.
     Scenario: Clicking a provider opens its instructions in place
       Given the model-config demo page
       Then no provider instructions are shown
       When the user clicks the "groq" instructions link
-      Then the "groq" instructions mention "Groq Console"
+      Then the "groq" instructions mention "Groq's own hardware"
       And the "groq" instructions mention "starts with gsk_…"
       And the "groq" instructions link is marked open
       And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
@@ -986,7 +986,7 @@ Feature: Model config
     Scenario: Clicking the open provider again closes its instructions
       Given the model-config demo page
       When the user clicks the "gemini" instructions link
-      Then the "gemini" instructions mention "Google AI Studio"
+      Then the "gemini" instructions mention "workable free daily quotas"
       When the user clicks the "gemini" instructions link
       Then no provider instructions are shown
 
@@ -996,5 +996,5 @@ Feature: Model config
       Given the model-config demo page
       When the user clicks the "gemini" instructions link
       And the user clicks the "openai" instructions link
-      Then the "openai" instructions mention "OpenAI platform"
+      Then the "openai" instructions mention "OpenAI API credits"
       And the "gemini" instructions are closed
