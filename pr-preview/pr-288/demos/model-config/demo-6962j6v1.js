@@ -18015,7 +18015,7 @@ function ModelChooser({
         style: { display: "flex", flexDirection: "column", gap: 9 },
         children: [
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink },
+            style: { fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink },
             children: "Already have an API key?"
           }, undefined, false, undefined, this),
           error !== "" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
@@ -18097,7 +18097,7 @@ function ModelChooser({
             "data-mc-providers": "",
             style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.6, color: ink3 },
             children: [
-              "How to: ",
+              "Instructions: ",
               KEY_SETUP.map((setup, i) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV(import_react.Fragment, {
                 children: [
                   i > 0 && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
@@ -18110,7 +18110,7 @@ function ModelChooser({
                     "aria-expanded": howTo === setup.provider,
                     onClick: () => setHowTo(howTo === setup.provider ? null : setup.provider),
                     style: {
-                      padding: 0,
+                      padding: "0 3px",
                       border: 0,
                       background: "transparent",
                       fontFamily: fontUi,
@@ -18165,79 +18165,54 @@ function ModelChooser({
           }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      onPuterSignIn && /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
+      onPuterSignIn && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+        style: { display: "flex", flexDirection: "column", gap: 9 },
         children: [
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { display: "flex", alignItems: "center", gap: 12 },
+            style: { fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink },
+            children: "No API key?"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+            type: "button",
+            "data-mc-puter": "",
+            disabled: puterConnected || busy,
+            onClick: () => onPuterSignIn(),
+            style: {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 9,
+              width: "100%",
+              padding: "11px 14px",
+              borderRadius: 9,
+              border: `1px solid ${puterConnected ? okSoft : line2}`,
+              background: puterConnected ? okSoft : surface,
+              color: puterConnected ? ok2 : ink,
+              fontFamily: fontUi,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: puterConnected ? "default" : "pointer"
+            },
             children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                style: { flex: 1, height: 1, background: surface3 }
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("img", {
+                "data-mc-puter-logo": "",
+                src: puter_logo_default,
+                alt: "",
+                width: 17,
+                height: 17,
+                style: { borderRadius: 5, display: "block", flex: "0 0 auto" }
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                style: {
-                  fontFamily: fontMono,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: ".1em",
-                  color: ink3
-                },
-                children: "OR"
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                style: { flex: 1, height: 1, background: surface3 }
-              }, undefined, false, undefined, this)
+              puterConnected ? "Connected to Puter.js" : puterBusy ? "Signing in…" : "Sign in / Sign up to Puter.js"
             ]
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { display: "flex", flexDirection: "column", gap: 9 },
+            style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 },
             children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-                style: { fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink },
-                children: "No API key?"
+              "$25 in API credits for ",
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("em", {
+                children: "any model"
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-                type: "button",
-                "data-mc-puter": "",
-                disabled: puterConnected || busy,
-                onClick: () => onPuterSignIn(),
-                style: {
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 9,
-                  width: "100%",
-                  padding: "11px 14px",
-                  borderRadius: 9,
-                  border: `1px solid ${puterConnected ? okSoft : line2}`,
-                  background: puterConnected ? okSoft : surface,
-                  color: puterConnected ? ok2 : ink,
-                  fontFamily: fontUi,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: puterConnected ? "default" : "pointer"
-                },
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("img", {
-                    "data-mc-puter-logo": "",
-                    src: puter_logo_default,
-                    alt: "",
-                    width: 17,
-                    height: 17,
-                    style: { borderRadius: 5, display: "block", flex: "0 0 auto" }
-                  }, undefined, false, undefined, this),
-                  puterConnected ? "Connected to Puter.js" : puterBusy ? "Signing in…" : "Sign in / Sign up to Puter.js"
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-                style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 },
-                children: [
-                  "$25 in API credits for ",
-                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("em", {
-                    children: "any model"
-                  }, undefined, false, undefined, this),
-                  " on Puter.js sign up."
-                ]
-              }, undefined, true, undefined, this)
+              " on Puter.js sign up."
             ]
           }, undefined, true, undefined, this)
         ]
