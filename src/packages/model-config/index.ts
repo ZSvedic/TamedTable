@@ -200,6 +200,19 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
   ['sk-',      'openai'],
 ];
 
+/** What each provider is called in prose — the probe's error sentences, the
+ *  chooser's card headers and its instructions row all read from here. It used
+ *  to be spelled out in three places, which is three chances to rename Groq
+ *  everywhere but one. */
+export const PROVIDER_NAME = {
+  gemini:     'Google',
+  openai:     'OpenAI',
+  anthropic:  'Anthropic',
+  groq:       'Groq',
+  openrouter: 'OpenRouter',
+  puter:      'Puter.js',
+} as const satisfies Record<Provider, string>;
+
 // ── How to get a key ───────────────────────────────────────────────────────
 // The five providers a key can be pasted for, in the order the chooser names
 // them, each with the short version of the FAQ's instructions. Puter is absent:
@@ -211,8 +224,6 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
 
 export interface KeySetup {
   provider: Provider;
-  /** How the chooser's instructions row names it. */
-  label: string;
   /** What this provider's keys start with, shown beside the link so a user
    *  can check the thing they just copied. Also the display list
    *  `SUPPORTED_PREFIXES` is built from. */
@@ -229,7 +240,6 @@ export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'gemini',
     prefix: 'AIza…',
-    label: 'Google',
     steps: [
       'Sign in at Google AI Studio and create a key.',
       'Gemini keys stay viewable, so you can come back for one later.',
@@ -241,7 +251,6 @@ export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'openai',
     prefix: 'sk-proj-…',
-    label: 'OpenAI',
     steps: [
       'Sign in at the OpenAI platform and create a key.',
       'It is shown once — copy it straight away.',
@@ -252,7 +261,6 @@ export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'anthropic',
     prefix: 'sk-ant-…',
-    label: 'Anthropic',
     steps: [
       'Sign in to the Anthropic Console and create a key.',
       'It is shown once — copy it straight away.',
@@ -263,7 +271,6 @@ export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'openrouter',
     prefix: 'sk-or-…',
-    label: 'OpenRouter',
     steps: [
       'One signup, no credit card, reaches free models from many vendors.',
       'Allow free-model publication in your privacy settings — free models may train on your prompts.',
@@ -274,7 +281,6 @@ export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'groq',
     prefix: 'gsk_…',
-    label: 'Groq',
     steps: [
       "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
       'Sign in to the Groq Console and create a key; it is shown once.',

@@ -1270,23 +1270,6 @@ The `onPlanEdits` callback dispatch in `Runner.request` is wrapped in
 `try/catch`. `diffPlans` and the callback can throw without aborting
 the request — the edit line is dropped, the commit proceeds.
 
-### Test the configured key (#ProviderSelect)
-
-```ts
-interface HeadlessRunner {
-  // …
-  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }>;
-}
-```
-
-One `generateText` call against the runner's cell model with `maxRetries: 0`,
-resolving with the model id it reached and rejecting with the provider's own
-error. It skips the rate limiter (one tiny call must not queue behind a run)
-and records no usage — a key test is not part of any request, so it never
-moves the estimate math or the debug info. The web Settings **Test** button is
-its only caller; `maxRetries: 0` is what makes a dead key answer in a second
-instead of after the SDK's backoff.
-
 ### Export a flow as a Python script (#PyExport)
 
 ```ts
@@ -1421,8 +1404,7 @@ interface ProviderProbe {
   primary?: StoredMeasure | null;          // absent = never measured, null = the measurement failed
   secondary?: StoredMeasure | null;
 }
-const PROBE_TTL_MS: number;                // 7 days — past it a reading is dropped on read
-function readStoredProbes(now?: number): Partial<Record<Provider, ProviderProbe>>;  // drops readings whose model is no longer the role's default, or older than the TTL
+function readStoredProbes(now?: number): Partial<Record<Provider, ProviderProbe>>;  // drops readings whose model is no longer the role's default, or older than 7 days
 function writeStoredProbes(p: Partial<Record<Provider, ProviderProbe>>): void;
 function clearStoredProbes(): void;
 function connectedOrder(p: Partial<Record<Provider, ProviderProbe>>): Partial<Record<Provider, number>>;  // the connectedProviders order map

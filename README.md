@@ -93,7 +93,7 @@ You need [bun](https://bun.sh) and an API key from any provider — Google, Anth
    OPENROUTER_API_KEY=sk-or-...      # OpenRouter
    PUTER_TOKEN=eyJ...                # Puter.js (localStorage "puter.auth.token.v2")
    ```
-   The runtime picks the provider from the model id (`TAMEDTABLE_MODEL` below), so set the model to one from your provider unless you use the default Gemini model.
+   The provider comes from whichever key you set — a model id cannot say who serves it, so the runtime is told rather than left to guess. Set `TAMEDTABLE_MODEL` (below) only to pick a *different* model from that same provider.
 
 Optional env vars and defaults if you omit them:
 

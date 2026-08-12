@@ -91,7 +91,7 @@ export function clearStoredConfig(): void {
 
 /** How long a speed reading is worth showing. A provider that was slow last
  *  month is not a provider that is slow now. */
-export const PROBE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PROBE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** A measurement plus what it was taken from. Both can go stale underneath it
  *  — a `models.json` default change retires the model, and time retires the

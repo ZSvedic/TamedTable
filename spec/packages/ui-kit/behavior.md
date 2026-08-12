@@ -32,7 +32,11 @@ design canvas globals). The guard test fails CI if either copy drifts. The main 
 exporting the brand system as plain objects — no React:
 
 - `brand` — the brand-literal hex constants (Aubergine ink `#281C60`, Pale Sky
-  accent `#96BED7`, Silver line, white, Mist ground, Linen)
+  accent `#96BED7`, Silver line, white, Mist ground, Linen). Pale Sky is the
+  **mark's** accent cell and nothing else — `theme.accent` is a separate,
+  saturated blue, because a colour picked to sit inside a logo is too quiet to
+  carry a link. The marketing site has always drawn that line (`--mark-accent`
+  vs `--accent`); the app now draws it too.
 - `typography` — UI / mono / brand font stacks and the size scale
 - `space` — spacing, fixed dimensions, corner radii
 - `lightTheme` / `darkTheme` — two `Theme` objects sharing one shape: surfaces,

@@ -6,7 +6,7 @@
 // Spec: spec/packages/model-config/behavior.md § Checking a key — the probe.
 
 import {
-  defaultCellModel, puterEnvelope, PROVIDER_BASE_URL, PUTER_DRIVERS_URL,
+  defaultCellModel, puterEnvelope, PROVIDER_BASE_URL, PROVIDER_NAME, PUTER_DRIVERS_URL,
   type Provider, type Tier,
 } from './index.ts';
 
@@ -39,16 +39,6 @@ export interface ModelMeasure {
 export function estimateSecPer1kTok(m: ModelMeasure): number {
   return m.tokPerSec > 0 ? m.ttftSec + 1000 / m.tokPerSec : 0;
 }
-
-/** Display name used in every message this module produces. */
-const PROVIDER_NAME: Record<Provider, string> = {
-  gemini: 'Google',
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  groq: 'Groq',
-  openrouter: 'OpenRouter',
-  puter: 'Puter.js',
-};
 
 // openai, groq and openrouter all speak the same OpenAI chat-completions
 // request and usage shape, so one branch serves all three; their base URLs come

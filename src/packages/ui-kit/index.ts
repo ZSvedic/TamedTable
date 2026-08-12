@@ -12,7 +12,10 @@
 //
 // Brand system (see marketing/brand/brand.md):
 //   Ink     · Aubergine  #281C60   replaces black throughout
-//   Accent  · Pale Sky   #96BED7   the mark's accent cell + focus only
+//   Accent  · Pale Sky   #96BED7   the MARK's accent cell only (brand.accent).
+//                                   theme.accent is a saturated blue instead:
+//                                   a colour tuned to sit inside a logo is too
+//                                   quiet to carry a link or a primary action.
 //   Lines   · Silver     #DCDCDC
 //   White   · #FFFFFF              icon empty cells, panel surface
 //   Ground  · Mist       #ECF0F7   cool page background

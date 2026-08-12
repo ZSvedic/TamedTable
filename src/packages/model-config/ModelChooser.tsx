@@ -9,7 +9,7 @@
 // a wrapper.
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
 import { Fragment, useState, type ReactNode } from 'react';
-import { KEY_SETUP } from './index.ts';
+import { KEY_SETUP, PROVIDER_NAME } from './index.ts';
 import type { Provider, Tier } from './index.ts';
 import { estimateSecPer1kTok } from './probe.ts';
 // Type-only: the component still touches no storage at runtime, it just names
@@ -70,16 +70,13 @@ export interface ModelChooserProps {
   onPuterSignIn?: () => void;
 }
 
-/** The display name for each provider. One home, so the host never spells
- *  these out again. */
-export const PROVIDER_LABEL: Record<Provider, string> = {
-  gemini: 'Google API',
-  openai: 'OpenAI API',
-  anthropic: 'Anthropic API',
-  groq: 'Groq API',
-  openrouter: 'OpenRouter API',
-  puter: 'Puter.js',
-};
+/** What a card header reads. Derived from PROVIDER_NAME rather than spelled out
+ *  again: every provider but the gateway is "<name> API", and Puter is not an
+ *  API you hold a key to. Exported so the host never spells these out either. */
+export const PROVIDER_LABEL: Record<Provider, string> = Object.fromEntries(
+  (Object.keys(PROVIDER_NAME) as Provider[])
+    .map((p) => [p, p === 'puter' ? PROVIDER_NAME[p] : `${PROVIDER_NAME[p]} API`]),
+) as Record<Provider, string>;
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
 
@@ -548,7 +545,7 @@ export function ModelChooser({
                   textUnderlineOffset: 3,
                 }}
               >
-                {setup.label}
+                {PROVIDER_NAME[setup.provider]}
               </button>
             </Fragment>
           ))}
