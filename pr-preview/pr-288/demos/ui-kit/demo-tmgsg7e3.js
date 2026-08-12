@@ -17114,1654 +17114,888 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
   }
 });
 
-// packages/model-config/demo.tsx
-var import_react2 = __toESM(require_react(), 1);
+// packages/ui-kit/demo.tsx
+var import_react5 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
-// packages/model-config/models.json
-var models_default = {
-  models: [
-    { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash", provider: "gemini", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
-    { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash", provider: "gemini", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 9 },
-    { id: "gemini-3.1-pro-preview", name: "Gemini 3.1 Pro", provider: "gemini", temperature: true, voiceInput: true, inUsdPerMtok: 2, outUsdPerMtok: 12 },
-    { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite", provider: "gemini", temperature: true, voiceInput: true, inUsdPerMtok: 0.3, outUsdPerMtok: 2.5 },
-    { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite", provider: "gemini", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 },
-    { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "gemini", temperature: true, voiceInput: true, inUsdPerMtok: 0.3, outUsdPerMtok: 2.5 },
-    { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash-Lite", provider: "gemini", temperature: true, voiceInput: true, inUsdPerMtok: 0.1, outUsdPerMtok: 0.4 },
-    { id: "gpt-5.5", name: "GPT-5.5", provider: "openai", temperature: false, voiceInput: false, inUsdPerMtok: 5, outUsdPerMtok: 30 },
-    { id: "gpt-5.4", name: "GPT-5.4", provider: "openai", temperature: false, voiceInput: false, inUsdPerMtok: 2.5, outUsdPerMtok: 15 },
-    { id: "gpt-5.4-mini", name: "GPT-5.4 Mini", provider: "openai", temperature: false, voiceInput: false, inUsdPerMtok: 0.75, outUsdPerMtok: 4.5 },
-    { id: "gpt-5.4-nano", name: "GPT-5.4 Nano", provider: "openai", temperature: false, voiceInput: false, inUsdPerMtok: 0.2, outUsdPerMtok: 1.25 },
-    { id: "claude-fable-5", name: "Fable 5", provider: "anthropic", temperature: false, voiceInput: false, inUsdPerMtok: 10, outUsdPerMtok: 50 },
-    { id: "claude-opus-4-8", name: "Opus 4.8", provider: "anthropic", temperature: false, voiceInput: false, inUsdPerMtok: 5, outUsdPerMtok: 25 },
-    { id: "claude-sonnet-4-6", name: "Sonnet 4.6", provider: "anthropic", temperature: true, voiceInput: false, inUsdPerMtok: 3, outUsdPerMtok: 15 },
-    { id: "claude-sonnet-4-5", name: "Sonnet 4.5", provider: "anthropic", temperature: true, voiceInput: false, inUsdPerMtok: 3, outUsdPerMtok: 15 },
-    { id: "claude-haiku-4-5", name: "Haiku 4.5", provider: "anthropic", temperature: true, voiceInput: false, inUsdPerMtok: 1, outUsdPerMtok: 5 },
-    { id: "openai/gpt-oss-120b", name: "GPT-OSS 120B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.15, outUsdPerMtok: 0.6 },
-    { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.075, outUsdPerMtok: 0.3 },
-    { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.59, outUsdPerMtok: 0.79 },
-    { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.05, outUsdPerMtok: 0.08 },
-    { id: "cohere/north-mini-code:free", name: "North Mini Code (OpenRouter free)", provider: "openrouter", temperature: false, voiceInput: false, inUsdPerMtok: 0, outUsdPerMtok: 0 },
-    { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (Puter.js)", provider: "puter", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
-    { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (Puter.js)", provider: "puter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 }
-  ],
-  defaults: {
-    gemini: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" },
-    openai: { primary: "gpt-5.5", secondary: "gpt-5.4-mini" },
-    anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5" },
-    groq: {
-      primary: "openai/gpt-oss-120b",
-      secondary: "openai/gpt-oss-20b",
-      priceVariesByPlan: true
+// packages/ui-kit/tokens.json
+var tokens_default = {
+  brand: {
+    ink: "#281C60",
+    accent: "#96BED7",
+    line: "#DCDCDC",
+    white: "#FFFFFF",
+    ground: "#ECF0F7",
+    linen: "#F6F2EB"
+  },
+  typography: {
+    ui: '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
+    mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
+    brand: '"Outfit", "Inter", ui-sans-serif, system-ui, sans-serif',
+    size: {
+      micro: 10.5,
+      xs: 11.5,
+      sm: 12.5,
+      base: 13,
+      md: 14,
+      lg: 16,
+      xl: 20
+    }
+  },
+  space: {
+    px1: 1,
+    px2: 2,
+    px4: 4,
+    px6: 6,
+    px8: 8,
+    px10: 10,
+    px12: 12,
+    px14: 14,
+    px16: 16,
+    px20: 20,
+    px24: 24,
+    px32: 32,
+    rowH: 28,
+    headerH: 32,
+    topbarH: 40,
+    radiusSm: 4,
+    radius: 6,
+    radiusLg: 10
+  },
+  themes: {
+    light: {
+      name: "light",
+      bg: "oklch(0.962 0.014 250)",
+      surface: "oklch(1.00 0 0)",
+      surface2: "oklch(0.975 0.010 250)",
+      surface3: "oklch(0.940 0.015 250)",
+      overlay: "oklch(0.20 0.10 287 / 0.45)",
+      ink: "oklch(0.26 0.13 287)",
+      ink2: "oklch(0.42 0.10 287)",
+      ink3: "oklch(0.58 0.06 287)",
+      ink4: "oklch(0.74 0.03 287)",
+      inkOnAcc: "oklch(0.97 0.012 89)",
+      inkOnInk: "oklch(0.97 0.012 89)",
+      line: "oklch(0.89 0 0)",
+      line2: "oklch(0.84 0 0)",
+      ring: "oklch(0.77 0.06 240 / 0.55)",
+      accent: "oklch(0.54 0.23 269)",
+      accentHover: "oklch(0.49 0.23 269)",
+      accentSoft: "oklch(0.94 0.03 279)",
+      ok: "oklch(0.55 0.11 150)",
+      okSoft: "oklch(0.94 0.04 150)",
+      err: "oklch(0.54 0.18 25)",
+      errSoft: "oklch(0.95 0.04 25)",
+      rec: "#dc2626",
+      onRec: "#ffffff",
+      cellHi: "oklch(0.86 0.08 240)",
+      cellHi2: "oklch(0.93 0.04 240)",
+      shadow: "0 1px 2px rgba(40,28,96,.05), 0 4px 16px rgba(40,28,96,.07)",
+      shadowLg: "0 10px 32px rgba(40,28,96,.14), 0 1px 0 rgba(40,28,96,.04)",
+      dockBg: "oklch(0.26 0.13 287)",
+      dockInk: "oklch(1 0 0 / 0.86)",
+      dockBorder: "oklch(0.26 0.13 287)"
     },
-    openrouter: { primary: "cohere/north-mini-code:free", secondary: "cohere/north-mini-code:free", batchSize: 5 },
-    puter: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" }
+    dark: {
+      name: "dark",
+      bg: "oklch(0.16 0.06 287)",
+      surface: "oklch(0.20 0.08 287)",
+      surface2: "oklch(0.23 0.09 287)",
+      surface3: "oklch(0.27 0.10 287)",
+      overlay: "oklch(0.10 0.05 287 / 0.65)",
+      ink: "oklch(0.96 0.010 89)",
+      ink2: "oklch(0.78 0.012 240)",
+      ink3: "oklch(0.62 0.020 240)",
+      ink4: "oklch(0.48 0.025 240)",
+      inkOnAcc: "oklch(0.26 0.13 287)",
+      inkOnInk: "oklch(0.26 0.13 287)",
+      line: "oklch(0.32 0.05 287)",
+      line2: "oklch(0.38 0.06 287)",
+      ring: "oklch(0.77 0.06 240 / 0.65)",
+      accent: "oklch(0.68 0.19 269)",
+      accentHover: "oklch(0.74 0.18 269)",
+      accentSoft: "oklch(0.32 0.09 269)",
+      ok: "oklch(0.74 0.13 150)",
+      okSoft: "oklch(0.30 0.06 150)",
+      err: "oklch(0.70 0.17 25)",
+      errSoft: "oklch(0.30 0.10 25)",
+      rec: "#dc2626",
+      onRec: "#ffffff",
+      cellHi: "oklch(0.46 0.10 240)",
+      cellHi2: "oklch(0.34 0.07 240)",
+      shadow: "0 1px 2px rgba(0,0,0,.40), 0 6px 18px rgba(0,0,0,.40)",
+      shadowLg: "0 12px 40px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04)",
+      dockBg: "#0c0c11",
+      dockInk: "#ffffff",
+      dockBorder: "oklch(1 0 0 / 0.10)"
+    }
   }
 };
 
-// packages/model-config/index.ts
-var ALL_MODELS = models_default.models;
-var DEFAULTS = models_default.defaults;
-function defaultModel(provider) {
-  return DEFAULTS[provider]?.primary ?? ALL_MODELS.find((m) => m.provider === provider).id;
-}
-function modelFor(provider, modelId) {
-  return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
-}
-function defaultCellModel(provider) {
-  return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
-}
-function priceVariesByPlan(provider) {
-  return DEFAULTS[provider]?.priceVariesByPlan === true;
-}
-function providerFor(modelId) {
-  const known = ALL_MODELS.find((m) => m.provider !== "puter" && m.id === modelId);
-  if (known)
-    return known.provider;
-  if (modelId.includes("/"))
-    return "openrouter";
-  if (modelId.startsWith("gemini-"))
-    return "gemini";
-  if (modelId.startsWith("zai-"))
-    return "cerebras";
-  if (modelId.startsWith("gpt-oss-"))
-    return "cerebras";
-  if (modelId.startsWith("gpt-"))
-    return "openai";
-  return "anthropic";
-}
-var PROVIDER_BASE_URL = {
-  gemini: "https://generativelanguage.googleapis.com/v1beta",
-  openai: "https://api.openai.com/v1",
-  anthropic: "https://api.anthropic.com/v1",
-  groq: "https://api.groq.com/openai/v1",
-  openrouter: "https://openrouter.ai/api/v1",
-  cerebras: "https://api.cerebras.ai/v1",
-  puter: "https://api.puter.com"
-};
-var PUTER_DRIVERS_URL = `${PROVIDER_BASE_URL.puter}/drivers/call`;
-function puterEnvelope(body) {
-  return {
-    interface: "puter-chat-completion",
-    driver: "ai-chat",
-    method: "complete",
-    args: body
-  };
-}
-var KEY_PREFIXES = [
-  ["sk-proj-", "openai"],
-  ["sk-ant-", "anthropic"],
-  ["sk-or-", "openrouter"],
-  ["gsk_", "groq"],
-  ["AIza", "gemini"],
-  ["eyJ", "puter"],
-  ["sk-", "openai"]
-];
-var KEY_SETUP = [
-  {
-    provider: "gemini",
-    prefix: "AIza…",
-    label: "Google",
-    steps: [
-      "Sign in at Google AI Studio and create a key.",
-      "Gemini keys stay viewable, so you can come back for one later.",
-      "In the EEA, UK or Switzerland you must enable billing even for the free tier."
-    ],
-    url: "https://aistudio.google.com/apikey",
-    action: "Create a Gemini API key"
-  },
-  {
-    provider: "openai",
-    prefix: "sk-proj-…",
-    label: "OpenAI",
-    steps: [
-      "Sign in at the OpenAI platform and create a key.",
-      "It is shown once — copy it straight away."
-    ],
-    url: "https://platform.openai.com/api-keys",
-    action: "Create an OpenAI API key"
-  },
-  {
-    provider: "anthropic",
-    prefix: "sk-ant-…",
-    label: "Anthropic",
-    steps: [
-      "Sign in to the Anthropic Console and create a key.",
-      "It is shown once — copy it straight away."
-    ],
-    url: "https://console.anthropic.com/settings/keys",
-    action: "Create an Anthropic API key"
-  },
-  {
-    provider: "openrouter",
-    prefix: "sk-or-…",
-    label: "OpenRouter",
-    steps: [
-      "One signup, no credit card, reaches free models from many vendors.",
-      "Allow free-model publication in your privacy settings — free models may train on your prompts."
-    ],
-    url: "https://openrouter.ai/settings/keys",
-    action: "Create an OpenRouter API key"
-  },
-  {
-    provider: "groq",
-    prefix: "gsk_…",
-    label: "Groq",
-    steps: [
-      "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
-      "Sign in to the Groq Console and create a key; it is shown once."
-    ],
-    url: "https://console.groq.com/keys",
-    action: "Create a Groq API key"
-  }
-];
-var SUPPORTED_PREFIXES = [
-  ...KEY_SETUP.map((s) => s.prefix),
-  "eyJ…"
-];
-function detectProvider(key) {
-  const k = key.trim();
-  if (k === "")
-    return null;
-  return KEY_PREFIXES.find(([prefix]) => k.startsWith(prefix))?.[1] ?? null;
-}
-var KEY_FIELD = {
-  gemini: "geminiKey",
-  openai: "openaiKey",
-  anthropic: "anthropicKey",
-  groq: "groqKey",
-  openrouter: "openrouterKey",
-  puter: "puterToken"
-};
-function connectedProviders(config, order = {}) {
-  return Object.keys(KEY_FIELD).filter((p) => (config[KEY_FIELD[p]] ?? "") !== "").sort((a, b) => (order[a] ?? 0) - (order[b] ?? 0));
-}
-function isProvider(p) {
-  return typeof p === "string" && p in KEY_FIELD;
-}
-function modelBelongsTo(provider, modelId) {
-  if (modelFor(provider, modelId))
-    return true;
-  if (provider === "puter")
-    return false;
-  if (provider === "anthropic")
-    return modelId.startsWith("claude-");
-  return providerFor(modelId) === provider;
-}
-function resolveConfig(env, stored) {
-  let provider;
-  let anthropicKey = stored.anthropicKey ?? null;
-  let geminiKey = stored.geminiKey ?? null;
-  let openaiKey = stored.openaiKey ?? null;
-  let groqKey = stored.groqKey ?? null;
-  let openrouterKey = stored.openrouterKey ?? null;
-  let puterToken = stored.puterToken ?? null;
-  const envGemini = env["GEMINI_API_KEY"];
-  const envOpenai = env["OPENAI_API_KEY"];
-  const envAnthropic = env["ANTHROPIC_API_KEY"];
-  const envGroq = env["GROQ_API_KEY"];
-  const envOpenrouter = env["OPENROUTER_API_KEY"];
-  const envPuter = env["PUTER_TOKEN"];
-  if (envGemini) {
-    provider = "gemini";
-    geminiKey = envGemini;
-  } else if (envOpenai) {
-    provider = "openai";
-    openaiKey = envOpenai;
-  } else if (envAnthropic) {
-    provider = "anthropic";
-    anthropicKey = envAnthropic;
-  } else if (envGroq) {
-    provider = "groq";
-    groqKey = envGroq;
-  } else if (envOpenrouter) {
-    provider = "openrouter";
-    openrouterKey = envOpenrouter;
-  } else if (envPuter) {
-    provider = "puter";
-    puterToken = envPuter;
-  } else {
-    provider = isProvider(stored.provider) ? stored.provider : "gemini";
-  }
-  let model = env["TAMEDTABLE_MODEL"] || stored.model || defaultModel(provider);
-  if (!modelBelongsTo(provider, model)) {
-    model = defaultModel(provider);
-  }
-  let cellModel = env["TAMEDTABLE_CELL_MODEL"] || stored.cellModel || defaultCellModel(provider);
-  if (!modelBelongsTo(provider, cellModel)) {
-    cellModel = defaultCellModel(provider);
-  }
-  return {
-    provider,
-    anthropicKey,
-    geminiKey,
-    openaiKey,
-    groqKey,
-    openrouterKey,
-    puterToken,
-    model,
-    cellModel,
-    alwaysRunAll: stored.alwaysRunAll ?? false
-  };
+// packages/ui-kit/index.ts
+var brand = tokens_default.brand;
+var typography = tokens_default.typography;
+var space = tokens_default.space;
+var lightTheme = tokens_default.themes.light;
+var darkTheme = tokens_default.themes.dark;
+var TYPING_MS_PER_CHAR = 40;
+var TOAST_FLOOR_MS = 3000;
+var TOAST_CEILING_MS = 12000;
+function toastDurationMs(message) {
+  const readMs = message.length * TYPING_MS_PER_CHAR;
+  return Math.min(TOAST_CEILING_MS, Math.max(TOAST_FLOOR_MS, readMs * 2));
 }
 
-// packages/model-config/ModelChooser.tsx
+// packages/ui-kit/ThemeProvider.tsx
 var import_react = __toESM(require_react(), 1);
-
-// packages/model-config/probe.ts
-function estimateSecPer1kTok(m) {
-  return m.tokPerSec > 0 ? m.ttftSec + 1000 / m.tokPerSec : 0;
-}
-var PROVIDER_NAME = {
-  gemini: "Google",
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  groq: "Groq",
-  openrouter: "OpenRouter",
-  puter: "Puter.js"
-};
-var REFERENCE_PROMPT = "For each numbered title below, decide whether it is a music video. " + "Reply with a JSON array of twenty objects and nothing else, each " + `{"n": <number>, "music": <boolean>, "why": "<one short sentence>"}.
-` + Array.from({ length: 20 }, (_, i) => `${i + 1}. Sample video title ${i + 1}`).join(`
-`);
-var VERIFY_PROMPT = "Reply with the single word: ok";
-var MEASURE_MAX_TOKENS = 300;
-var STREAMING_SHARE = 0.2;
-async function call(provider, key, modelId, prompt, opts) {
-  const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-  let url;
-  let init;
-  if (provider === "gemini") {
-    url = `${PROVIDER_BASE_URL.gemini}/models/${modelId}:generateContent`;
-    init = {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    };
-  } else if (provider === "anthropic") {
-    url = `${PROVIDER_BASE_URL.anthropic}/messages`;
-    init = {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: modelId,
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }]
-      })
-    };
-  } else if (provider === "puter") {
-    url = PUTER_DRIVERS_URL;
-    init = {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify(puterEnvelope({ model: modelId, messages: [{ role: "user", content: prompt }] }))
-    };
-  } else {
-    url = `${PROVIDER_BASE_URL[provider]}/chat/completions`;
-    init = {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: modelId, messages: [{ role: "user", content: prompt }] })
-    };
-  }
-  try {
-    const res = await doFetch(url, init);
-    return { status: res.status, headers: res.headers, body: await readJson(res) };
-  } catch {
-    return { status: 0, headers: new Headers, body: {} };
-  }
-}
-async function readJson(res) {
-  try {
-    return await res.json();
-  } catch {
-    return {};
-  }
-}
-function failure(provider, answer) {
-  const who = PROVIDER_NAME[provider];
-  if (answer.status === 0)
-    return new Error(`Could not reach ${who}.`);
-  if (answer.status === 401 || answer.status === 403) {
-    return new Error(`Key rejected by ${who}. Check the key and try again.`);
-  }
-  const raw = answer.body["error"];
-  const err = typeof raw === "string" ? { message: raw } : raw;
-  if (answer.status === 429) {
-    const quota = `${err?.code ?? ""} ${err?.type ?? ""} ${err?.message ?? ""}`;
-    if (/insufficient_quota|exceeded your current quota/i.test(quota)) {
-      return new Error(`Your ${who} account has no credit left. Add credit (or a billing method) and try again.`);
-    }
-    return new Error(`${who} rate-limited the check. Wait a minute and try again.`);
-  }
-  return new Error(err?.message ?? `${who} refused the key (HTTP ${answer.status}).`);
-}
-function ok(answer) {
-  return answer.status >= 200 && answer.status < 300 && answer.body["error"] == null;
-}
-async function verifyKey(provider, key, opts = {}) {
-  if (provider === "openrouter") {
-    const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-    let answer2;
-    try {
-      const res = await doFetch(`${PROVIDER_BASE_URL.openrouter}/key`, {
-        headers: { authorization: `Bearer ${key}` }
-      });
-      answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
-    } catch {
-      answer2 = { status: 0, headers: new Headers, body: {} };
-    }
-    if (!ok(answer2))
-      throw failure(provider, answer2);
-    const data = answer2.body["data"];
-    return { tier: data?.is_free_tier ? "free" : "paid" };
-  }
-  if (provider === "puter") {
-    const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-    let answer2;
-    try {
-      const res = await doFetch(`${PROVIDER_BASE_URL.puter}/whoami`, {
-        headers: { authorization: `Bearer ${key}` }
-      });
-      answer2 = { status: res.status, headers: res.headers, body: await readJson(res) };
-    } catch {
-      answer2 = { status: 0, headers: new Headers, body: {} };
-    }
-    if (!ok(answer2))
-      throw failure(provider, answer2);
-    return { tier: null };
-  }
-  const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
-  if (!ok(answer))
-    throw failure(provider, answer);
-  if (provider === "gemini") {
-    const served = answer.headers.get("x-gemini-service-tier");
-    if (served === null || served === "")
-      return { tier: null };
-    return { tier: served === "free" ? "free" : "paid" };
-  }
-  if (provider === "groq")
-    return { tier: null };
-  return { tier: "paid" };
-}
-function usageOf(provider, body) {
-  if (provider === "puter") {
-    const result = body["result"] ?? {};
-    const u2 = body["usage"] ?? result["usage"] ?? {};
-    return {
-      inTok: u2["prompt_tokens"] ?? u2["prompt"] ?? 0,
-      outTok: u2["completion_tokens"] ?? u2["completion"] ?? 0
-    };
-  }
-  if (provider === "gemini") {
-    const u2 = body["usageMetadata"] ?? {};
-    return {
-      inTok: u2["promptTokenCount"] ?? 0,
-      outTok: (u2["candidatesTokenCount"] ?? 0) + (u2["thoughtsTokenCount"] ?? 0)
-    };
-  }
-  const u = body["usage"] ?? {};
-  if (provider === "anthropic") {
-    return { inTok: u["input_tokens"] ?? 0, outTok: u["output_tokens"] ?? 0 };
-  }
-  return { inTok: u["prompt_tokens"] ?? 0, outTok: u["completion_tokens"] ?? 0 };
-}
-function streamRequest(provider, key, modelId) {
-  if (provider === "gemini") {
-    return {
-      url: `${PROVIDER_BASE_URL.gemini}/models/${modelId}:streamGenerateContent?alt=sse`,
-      init: {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: REFERENCE_PROMPT }] }],
-          generationConfig: { maxOutputTokens: MEASURE_MAX_TOKENS }
-        })
-      }
-    };
-  }
-  if (provider === "anthropic") {
-    return {
-      url: `${PROVIDER_BASE_URL.anthropic}/messages`,
-      init: {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": key,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-          model: modelId,
-          stream: true,
-          max_tokens: MEASURE_MAX_TOKENS,
-          messages: [{ role: "user", content: REFERENCE_PROMPT }]
-        })
-      }
-    };
-  }
-  if (provider === "puter") {
-    return {
-      url: PUTER_DRIVERS_URL,
-      init: {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-        body: JSON.stringify(puterEnvelope({
-          model: modelId,
-          stream: true,
-          max_tokens: MEASURE_MAX_TOKENS,
-          messages: [{ role: "user", content: REFERENCE_PROMPT }]
-        }))
-      }
-    };
-  }
-  return {
-    url: `${PROVIDER_BASE_URL[provider]}/chat/completions`,
-    init: {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: modelId,
-        stream: true,
-        stream_options: { include_usage: true },
-        max_completion_tokens: MEASURE_MAX_TOKENS,
-        messages: [{ role: "user", content: REFERENCE_PROMPT }]
-      })
-    }
-  };
-}
-function dig(value, ...path) {
-  let cur = value;
-  for (const step of path) {
-    if (cur === null || cur === undefined)
-      return;
-    cur = cur[step];
-  }
-  return cur;
-}
-function textAt(value, ...path) {
-  const v = dig(value, ...path);
-  return typeof v === "string" ? v : "";
-}
-function frameHasContent(provider, f) {
-  if (provider === "gemini") {
-    const parts = dig(f, "candidates", 0, "content", "parts");
-    return Array.isArray(parts) && parts.some((p) => textAt(p, "text") !== "" && dig(p, "thought") !== true);
-  }
-  if (provider === "anthropic") {
-    return f["type"] === "content_block_delta" && textAt(f, "delta", "text") !== "";
-  }
-  return textAt(f, "text") !== "" || textAt(f, "choices", 0, "delta", "content") !== "";
-}
-function parseFrame(line) {
-  const trimmed = line.trim();
-  if (trimmed === "")
-    return;
-  const payload = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
-  if (payload === "" || payload === "[DONE]" || !payload.startsWith("{"))
-    return;
-  try {
-    return JSON.parse(payload);
-  } catch {
-    return;
-  }
-}
-async function readStream(res, provider, clock, started) {
-  const frames = [];
-  let firstMs = started;
-  let lastMs = clock();
-  let streamed = false;
-  let buffer = "";
-  let pending = "";
-  const take = (text, final) => {
-    lastMs = clock();
-    buffer += text;
-    pending += text;
-    const lines = pending.split(`
-`);
-    pending = final ? "" : lines.pop() ?? "";
-    for (const line of lines) {
-      const frame = parseFrame(line);
-      if (!frame)
-        continue;
-      frames.push(frame);
-      if (!streamed && frameHasContent(provider, frame)) {
-        firstMs = clock();
-        streamed = true;
-      }
-    }
-  };
-  if (res.body) {
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder;
-    for (;; ) {
-      const { done, value } = await reader.read();
-      if (done)
-        break;
-      take(decoder.decode(value, { stream: true }), false);
-    }
-    take("", true);
-  } else {
-    take(await res.text(), true);
-  }
-  if (frames.length === 0 && buffer.trim() !== "") {
-    try {
-      frames.push(JSON.parse(buffer));
-    } catch {}
-  }
-  return { frames, firstMs, lastMs, streamed };
-}
-async function measureModel(provider, key, modelId, opts = {}) {
-  const doFetch = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
-  const clock = opts.now ?? (() => Date.now());
-  const { url, init } = streamRequest(provider, key, modelId);
-  const started = clock();
-  let res;
-  try {
-    res = await doFetch(url, init);
-  } catch {
-    throw failure(provider, { status: 0, headers: new Headers, body: {} });
-  }
-  const { frames, firstMs, lastMs, streamed } = await readStream(res, provider, clock, started);
-  const errFrame = frames.find((f) => f["error"] != null);
-  if (res.status < 200 || res.status >= 300 || errFrame) {
-    throw failure(provider, { status: res.status, headers: res.headers, body: errFrame ?? {} });
-  }
-  let outTok = 0;
-  for (const frame of frames) {
-    outTok = Math.max(outTok, usageOf(provider, frame).outTok);
-  }
-  const totalSec = (lastMs - started) / 1000;
-  const ttftSec = (firstMs - started) / 1000;
-  const streamedSec = totalSec - ttftSec;
-  if (outTok === 0 || totalSec <= 0)
-    return { ttftSec: 0, tokPerSec: 0 };
-  if (streamed && streamedSec >= STREAMING_SHARE * totalSec) {
-    return { ttftSec, tokPerSec: outTok / streamedSec };
-  }
-  return { ttftSec: 0, tokPerSec: outTok / totalSec };
-}
-
-// packages/model-config/puter-logo.png
-var puter_logo_default = "/pr-preview/pr-288/demos/model-config/puter-logo-57m189kd.png";
-
-// packages/model-config/ModelChooser.tsx
 var jsx_dev_runtime = __toESM(require_jsx_dev_runtime(), 1);
-var PROVIDER_LABEL = {
-  gemini: "Google API",
-  openai: "OpenAI API",
-  anthropic: "Anthropic API",
-  groq: "Groq API",
-  openrouter: "OpenRouter API",
-  puter: "Puter.js"
-};
-var v = (name, fallback) => `var(--mc-${name}, ${fallback})`;
-var ink = v("ink", "#1c1f23");
-var inkOnInk = v("ink-on-ink", "#ffffff");
-var ink2 = v("ink2", "#4a5260");
-var ink3 = v("ink3", "#6b7280");
-var surface = v("surface", "#ffffff");
-var surface2 = v("surface2", "#fbfbfc");
-var surface3 = v("surface3", "#eceef1");
-var line = v("line", "#e8eaee");
-var line2 = v("line2", "#d5d9de");
-var accent = v("accent", "#1a73e8");
-var accentSoft = v("accent-soft", "#eef4fe");
-var ok2 = v("ok", "#1a6b38");
-var okSoft = v("ok-soft", "#e7f6ec");
-var err = v("err", "#a3312b");
-var errSoft = v("err-soft", "#fbeceb");
-var fontUi = v("font-ui", "system-ui, sans-serif");
-var fontMono = v("font-mono", "ui-monospace, Menlo, monospace");
-var radius = v("radius", "8px");
-var radiusSm = v("radius-sm", "4px");
-var radiusLg = v("radius-lg", "11px");
-function money(usd) {
-  return String(Number(usd.toFixed(6)));
-}
-function costLine(row, priceVariesByPlan2 = false) {
-  const parts = [];
-  if (priceVariesByPlan2) {
-    parts.push("Price depends on your plan");
-  } else if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
-    parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tok`);
-  }
-  if (row.speed === "measuring")
-    parts.push("measuring…");
-  else if (row.speed === "failed")
-    parts.push("speed unknown");
-  else if (row.speed !== null)
-    parts.push(`~${estimateSecPer1kTok(row.speed).toFixed(1)} sec`);
-  return parts.length > 0 ? parts.join(", ") : null;
-}
-var refreshIcon = /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
-  width: 15,
-  height: 15,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: "2",
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  style: { display: "block" },
-  "aria-hidden": "true",
-  children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
-    d: "M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"
-  }, undefined, false, undefined, this)
-}, undefined, false, undefined, this);
-var trashIcon = /* @__PURE__ */ jsx_dev_runtime.jsxDEV("svg", {
-  width: 15,
-  height: 15,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: "2",
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  style: { display: "block" },
-  "aria-hidden": "true",
-  children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("path", {
-    d: "M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"
-  }, undefined, false, undefined, this)
-}, undefined, false, undefined, this);
-function ModelChooser({
-  connected,
-  selected,
-  keyInput,
-  error,
-  busy,
-  puterBusy,
-  onKeyInputChange,
-  onAdd,
-  onSelect,
-  onRemove,
-  onRefresh,
-  onPuterSignIn
+var ThemeContext = import_react.createContext(null);
+function ThemeProvider({
+  initialMode = "light",
+  onModeChange,
+  children
 }) {
-  const puterConnected = connected.some((c) => c.id === "puter");
-  const canAdd = keyInput.trim() !== "" && !busy;
-  const [howTo, setHowTo] = import_react.useState(null);
-  const open = KEY_SETUP.find((s) => s.provider === howTo);
-  const iconButton = {
-    flex: "0 0 auto",
-    width: 26,
-    height: 26,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-    border: 0,
-    borderRadius: 6,
-    background: "transparent",
-    cursor: "pointer"
-  };
-  const tag = (label, fg, bg, attr) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-    ...attr,
-    style: {
-      padding: "4px 6px",
-      borderRadius: radiusSm,
-      fontFamily: fontMono,
-      fontSize: 10,
-      fontWeight: 600,
-      letterSpacing: ".04em",
-      whiteSpace: "nowrap",
-      color: fg,
-      background: bg
-    },
-    children: label
-  }, undefined, false, undefined, this);
-  const roleRow = (role, row, priceVaries) => {
-    const cost = costLine(row, priceVaries);
-    return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-      "data-mc-model": row.model,
-      "data-mc-role": role,
-      children: [
-        /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-          style: { display: "flex", alignItems: "baseline", gap: 8 },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              style: {
-                width: 104,
-                flex: "0 0 auto",
-                fontFamily: fontUi,
-                fontSize: 12,
-                fontWeight: 650,
-                whiteSpace: "nowrap",
-                color: ink2
-              },
-              children: role === "primary" ? "Primary model" : "Secondary model"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              "data-mc-model-id": row.model,
-              style: {
-                flex: 1,
-                minWidth: 0,
-                fontFamily: fontMono,
-                fontSize: 13,
-                color: ink,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              },
-              children: row.model
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        cost !== null && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-          "data-mc-cost": "",
-          style: {
-            fontFamily: fontUi,
-            fontSize: 12,
-            color: ink3
-          },
-          children: cost
-        }, undefined, false, undefined, this)
-      ]
-    }, undefined, true, undefined, this);
-  };
-  const card = (c) => {
-    const isSelected = selected === c.id;
-    return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-      style: {
-        border: `1px solid ${isSelected ? accent : line}`,
-        borderRadius: radiusLg,
-        overflow: "hidden",
-        background: isSelected ? accentSoft : surface
-      },
-      children: [
-        /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-          "data-mc-card": c.id,
-          role: "button",
-          tabIndex: 0,
-          onClick: () => onSelect(c.id),
-          onKeyDown: (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onSelect(c.id);
-            }
-          },
-          style: {
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            padding: "11px 12px",
-            cursor: "pointer"
-          },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              "aria-hidden": "true",
-              style: {
-                flex: "0 0 auto",
-                width: 16,
-                height: 16,
-                borderRadius: 8,
-                border: `2px solid ${isSelected ? accent : line2}`,
-                background: isSelected ? accent : "transparent",
-                boxShadow: isSelected ? `inset 0 0 0 2px ${surface}` : "none"
-              }
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              style: {
-                fontFamily: fontUi,
-                fontSize: 14,
-                fontWeight: 650,
-                color: ink,
-                whiteSpace: "nowrap"
-              },
-              children: PROVIDER_LABEL[c.id]
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              style: { flex: 1, display: "flex", gap: 5, alignItems: "center" },
-              children: [
-                c.tier === "free" && tag("FREE", ok2, okSoft, { "data-mc-tier": c.id }),
-                c.tier === "paid" && tag("PAID", ink2, surface3, { "data-mc-tier": c.id }),
-                c.voice && tag("VOICE", "#1a4a8a", accentSoft, { "data-mc-voice": c.id })
-              ]
-            }, undefined, true, undefined, this),
-            onRefresh && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-              type: "button",
-              "data-mc-refresh": c.id,
-              "aria-label": `Re-measure ${PROVIDER_LABEL[c.id]}`,
-              title: `Re-measure ${PROVIDER_LABEL[c.id]}`,
-              onClick: (e) => {
-                e.stopPropagation();
-                onRefresh(c.id);
-              },
-              style: { ...iconButton, color: ink3 },
-              children: refreshIcon
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-              type: "button",
-              "data-mc-remove": c.id,
-              "aria-label": `Remove ${PROVIDER_LABEL[c.id]}`,
-              title: `Remove ${PROVIDER_LABEL[c.id]}`,
-              onClick: (e) => {
-                e.stopPropagation();
-                onRemove(c.id);
-              },
-              style: { ...iconButton, color: err },
-              children: trashIcon
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        isSelected && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-          style: {
-            padding: "0 12px 12px 37px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 10
-          },
-          children: [
-            roleRow("primary", c.primary, c.priceVariesByPlan === true),
-            roleRow("secondary", c.secondary, c.priceVariesByPlan === true)
-          ]
-        }, undefined, true, undefined, this)
-      ]
-    }, c.id, true, undefined, this);
-  };
-  return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-    style: { display: "flex", flexDirection: "column", gap: 18 },
-    children: [
-      connected.length === 0 ? /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        "data-mc-empty": "",
-        style: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          padding: 14,
-          border: `1px dashed ${line2}`,
-          borderRadius: radiusLg,
-          background: surface2
-        },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-            "aria-hidden": "true",
-            style: { width: 7, height: 7, borderRadius: 4, background: ink3, flex: "0 0 auto" }
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-            style: { fontFamily: fontUi, fontSize: 14, fontWeight: 600, color: ink2 },
-            children: "No provider or model added."
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this) : /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        style: { display: "flex", flexDirection: "column", gap: 8 },
-        children: connected.map(card)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        style: { display: "flex", flexDirection: "column", gap: 9 },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink },
-            children: "Already have an API key?"
-          }, undefined, false, undefined, this),
-          error !== "" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            "data-mc-error": "",
-            style: {
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 8,
-              padding: "10px 11px",
-              borderRadius: radius,
-              background: errSoft
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                "aria-hidden": "true",
-                style: {
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  background: err,
-                  flex: "0 0 auto",
-                  marginTop: 6
-                }
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                style: { fontFamily: fontUi, fontSize: 12, fontWeight: 600, color: err, lineHeight: 1.45 },
-                children: error
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { display: "flex", gap: 8 },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("input", {
-                "data-mc-keyinput": "",
-                value: keyInput,
-                disabled: busy,
-                onChange: (e) => onKeyInputChange(e.target.value),
-                onKeyDown: (e) => {
-                  if (e.key === "Enter" && canAdd)
-                    onAdd();
-                },
-                placeholder: "Paste an API key here",
-                style: {
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "10px 11px",
-                  border: `1px solid ${line2}`,
-                  borderRadius: radius,
-                  background: surface2,
-                  fontFamily: fontMono,
-                  fontSize: 13,
-                  color: ink
-                }
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-                type: "button",
-                "data-mc-add": "",
-                disabled: !canAdd,
-                onClick: onAdd,
-                style: {
-                  flex: "0 0 auto",
-                  padding: "10px 18px",
-                  borderRadius: radius,
-                  border: `1px solid ${canAdd ? ink : line}`,
-                  background: canAdd ? ink : surface3,
-                  color: canAdd ? inkOnInk : ink3,
-                  fontFamily: fontUi,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: canAdd ? "pointer" : "default",
-                  whiteSpace: "nowrap"
-                },
-                children: busy ? "Checking…" : "Add"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            "data-mc-providers": "",
-            style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.6, color: ink3 },
-            children: [
-              "Instructions: ",
-              KEY_SETUP.map((setup, i) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV(import_react.Fragment, {
-                children: [
-                  i > 0 && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                    "aria-hidden": "true",
-                    children: "/"
-                  }, undefined, false, undefined, this),
-                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-                    type: "button",
-                    "data-mc-howto": setup.provider,
-                    "aria-expanded": howTo === setup.provider,
-                    onClick: () => setHowTo(howTo === setup.provider ? null : setup.provider),
-                    style: {
-                      padding: "0 3px",
-                      border: 0,
-                      background: "transparent",
-                      fontFamily: fontUi,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: accent,
-                      cursor: "pointer",
-                      textDecoration: howTo === setup.provider ? "underline" : "none",
-                      textUnderlineOffset: 3
-                    },
-                    children: setup.label
-                  }, undefined, false, undefined, this)
-                ]
-              }, setup.provider, true, undefined, this))
-            ]
-          }, undefined, true, undefined, this),
-          open !== undefined && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            "data-mc-howto-body": open.provider,
-            style: {
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              padding: "10px 11px",
-              borderRadius: radius,
-              background: surface2,
-              border: `1px solid ${line}`,
-              fontFamily: fontUi,
-              fontSize: 12,
-              lineHeight: 1.5,
-              color: ink2
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                children: open.steps.join(" ")
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                children: [
-                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
-                    href: open.url,
-                    target: "_blank",
-                    rel: "noopener",
-                    style: { fontWeight: 600, color: accent, textDecoration: "none" },
-                    children: [
-                      open.action,
-                      " ↗"
-                    ]
-                  }, undefined, true, undefined, this),
-                  ` (starts with ${open.prefix})`
-                ]
-              }, undefined, true, undefined, this)
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      onPuterSignIn && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-        style: { display: "flex", flexDirection: "column", gap: 9 },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink },
-            children: "No API key?"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
-            type: "button",
-            "data-mc-puter": "",
-            disabled: puterConnected || busy,
-            onClick: () => onPuterSignIn(),
-            style: {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 9,
-              width: "100%",
-              padding: "11px 14px",
-              borderRadius: 9,
-              border: `1px solid ${puterConnected ? okSoft : line2}`,
-              background: puterConnected ? okSoft : surface,
-              color: puterConnected ? ok2 : ink,
-              fontFamily: fontUi,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: puterConnected ? "default" : "pointer"
-            },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("img", {
-                "data-mc-puter-logo": "",
-                src: puter_logo_default,
-                alt: "",
-                width: 17,
-                height: 17,
-                style: { borderRadius: 5, display: "block", flex: "0 0 auto" }
-              }, undefined, false, undefined, this),
-              puterConnected ? "Connected to Puter.js" : puterBusy ? "Signing in…" : "Sign in / Sign up to Puter.js"
-            ]
-          }, undefined, true, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 },
-            children: [
-              "$25 in API credits for ",
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("em", {
-                children: "any model"
-              }, undefined, false, undefined, this),
-              " on Puter.js sign up."
-            ]
-          }, undefined, true, undefined, this)
-        ]
-      }, undefined, true, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-
-// packages/model-config/storage.ts
-var CONFIG_STORAGE = "tamedtable.config";
-var LEGACY_KEY_STORAGE = "tamedtable.apiKey";
-var PROBE_STORAGE = "tamedtable.probes";
-function store() {
-  return globalThis.localStorage;
-}
-function readStoredConfig() {
-  try {
-    const localStorage = store();
-    if (localStorage === undefined)
-      return {};
-    const raw = localStorage.getItem(CONFIG_STORAGE);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-    const legacy = localStorage.getItem(LEGACY_KEY_STORAGE);
-    if (legacy) {
-      const migrated = { anthropicKey: legacy };
-      try {
-        localStorage.setItem(CONFIG_STORAGE, JSON.stringify(migrated));
-        localStorage.removeItem(LEGACY_KEY_STORAGE);
-      } catch {}
-      return migrated;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-}
-function writeStoredConfig(c) {
-  try {
-    const localStorage = store();
-    if (localStorage === undefined)
-      return;
-    localStorage.setItem(CONFIG_STORAGE, JSON.stringify(c));
-  } catch {}
-}
-var PROBE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-function stillTrue(m, wanted, now) {
-  if (m == null)
-    return m;
-  if (m.model !== wanted)
-    return;
-  return now - m.at > PROBE_TTL_MS ? undefined : m;
-}
-function readStoredProbes(now = Date.now()) {
-  try {
-    const localStorage = store();
-    if (localStorage === undefined)
-      return {};
-    const raw = localStorage.getItem(PROBE_STORAGE);
-    if (!raw)
-      return {};
-    const stored = JSON.parse(raw);
-    const kept = {};
-    for (const id of Object.keys(stored)) {
-      const probe = stored[id];
-      if (!probe || !(id in DEFAULTS))
-        continue;
-      kept[id] = {
-        ...probe,
-        primary: stillTrue(probe.primary, defaultModel(id), now),
-        secondary: stillTrue(probe.secondary, defaultCellModel(id), now)
-      };
-    }
-    return kept;
-  } catch {
-    return {};
-  }
-}
-function speedOf(reading, measuring) {
-  if (reading === undefined)
-    return measuring ? "measuring" : null;
-  return reading === null ? "failed" : reading;
-}
-function connectedOrder(probes) {
-  const order = {};
-  for (const id of Object.keys(probes)) {
-    const at = probes[id]?.connectedAt;
-    if (at !== undefined)
-      order[id] = at;
-  }
-  return order;
-}
-function writeStoredProbes(p) {
-  try {
-    const localStorage = store();
-    if (localStorage === undefined)
-      return;
-    localStorage.setItem(PROBE_STORAGE, JSON.stringify(p));
-  } catch {}
-}
-
-// packages/model-config/audio-wav.ts
-async function blobToWavBytes(blob) {
-  const rate = 16000;
-  const ctx = new OfflineAudioContext(1, 1, rate);
-  const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
-  const mono = new Float32Array(decoded.length);
-  for (let ch = 0;ch < decoded.numberOfChannels; ch++) {
-    const data = decoded.getChannelData(ch);
-    for (let i = 0;i < decoded.length; i++)
-      mono[i] += data[i] / decoded.numberOfChannels;
-  }
-  const out = new DataView(new ArrayBuffer(44 + mono.length * 2));
-  const ascii = (off, s) => {
-    for (let i = 0;i < s.length; i++)
-      out.setUint8(off + i, s.charCodeAt(i));
-  };
-  ascii(0, "RIFF");
-  out.setUint32(4, 36 + mono.length * 2, true);
-  ascii(8, "WAVE");
-  ascii(12, "fmt ");
-  out.setUint32(16, 16, true);
-  out.setUint16(20, 1, true);
-  out.setUint16(22, 1, true);
-  out.setUint32(24, decoded.sampleRate, true);
-  out.setUint32(28, decoded.sampleRate * 2, true);
-  out.setUint16(32, 2, true);
-  out.setUint16(34, 16, true);
-  ascii(36, "data");
-  out.setUint32(40, mono.length * 2, true);
-  for (let i = 0;i < mono.length; i++) {
-    const s = Math.max(-1, Math.min(1, mono[i]));
-    out.setInt16(44 + i * 2, s < 0 ? s * 32768 : s * 32767, true);
-  }
-  return new Uint8Array(out.buffer);
-}
-
-// packages/model-config/demo-llm.ts
-var VOICE_PROMPT = "The user's query is spoken in the attached audio. Reply with ONLY a JSON " + "object — no markdown fences, no other text — of the shape " + '{"transcript": "<verbatim transcript of the audio>", ' + '"answer": "<your answer to the query>"}.';
-function parseVoiceReply(raw) {
-  const text = raw.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
-  try {
-    const parsed = JSON.parse(text);
-    if (typeof parsed.answer === "string") {
-      return {
-        transcript: typeof parsed.transcript === "string" ? parsed.transcript : "",
-        answer: parsed.answer
-      };
-    }
-  } catch {}
-  return { transcript: "", answer: raw };
-}
-function keyFor(cfg) {
-  const key = cfg.provider === "gemini" ? cfg.geminiKey : cfg.provider === "openai" ? cfg.openaiKey : cfg.provider === "openrouter" ? cfg.openrouterKey : cfg.anthropicKey;
-  if (!key)
-    throw new Error(`No API key set for ${cfg.provider}.`);
-  return key;
-}
-async function post(url, headers, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const detail = (await res.text()).slice(0, 500);
-    throw new Error(`HTTP ${res.status} ${res.statusText}: ${detail}`);
-  }
-  return res.json();
-}
-function geminiText(data) {
-  return (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
-}
-async function callGemini(key, model, parts) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-  const text = geminiText(await post(url, {}, { contents: [{ parts }] }));
-  if (!text)
-    throw new Error("Gemini returned no text.");
-  return text;
-}
-async function callOpenAI(key, model, content) {
-  const data = await post("https://api.openai.com/v1/chat/completions", { authorization: `Bearer ${key}` }, { model, messages: [{ role: "user", content }] });
-  const text = (data.choices?.[0]?.message?.content ?? "").trim();
-  if (!text)
-    throw new Error("OpenAI returned no text.");
-  return text;
-}
-async function callOpenRouter(key, model, content) {
-  const data = await post("https://openrouter.ai/api/v1/chat/completions", { authorization: `Bearer ${key}` }, { model, messages: [{ role: "user", content }] });
-  const text = (data.choices?.[0]?.message?.content ?? "").trim();
-  if (!text)
-    throw new Error("OpenRouter returned no text.");
-  return text;
-}
-async function callAnthropic(key, model, text) {
-  const data = await post("https://api.anthropic.com/v1/messages", {
-    "x-api-key": key,
-    "anthropic-version": "2023-06-01",
-    "anthropic-dangerous-direct-browser-access": "true"
-  }, { model, max_tokens: 1024, messages: [{ role: "user", content: text }] });
-  const out = (data.content ?? []).map((b) => b.text ?? "").join("").trim();
-  if (!out)
-    throw new Error("Anthropic returned no text.");
-  return out;
-}
-async function sendTestPrompt(cfg, text) {
-  const key = keyFor(cfg);
-  if (cfg.provider === "gemini")
-    return callGemini(key, cfg.model, [{ text }]);
-  if (cfg.provider === "openai")
-    return callOpenAI(key, cfg.model, text);
-  if (cfg.provider === "openrouter")
-    return callOpenRouter(key, cfg.model, text);
-  return callAnthropic(key, cfg.model, text);
-}
-async function sendVoicePrompt(cfg, audio) {
-  const key = keyFor(cfg);
-  const wav = toBase64(await blobToWavBytes(audio));
-  if (cfg.provider !== "gemini") {
-    throw new Error(`${cfg.provider} models do not support voice input.`);
-  }
-  const raw = await callGemini(key, cfg.model, [
-    { text: VOICE_PROMPT },
-    { inline_data: { mime_type: "audio/wav", data: wav } }
-  ]);
-  return parseVoiceReply(raw);
-}
-function toBase64(bytes) {
-  let binary = "";
-  for (let i = 0;i < bytes.length; i += 32768) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 32768));
-  }
-  return btoa(binary);
-}
-
-// packages/model-config/demo.tsx
-var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
-function stubProbe() {
-  let clock = 0;
-  return {
-    now: () => clock,
-    fetch: async () => {
-      clock += 6300;
-      return new Response(JSON.stringify({
-        data: { is_free_tier: false },
-        candidates: [{ content: { parts: [{ text: "ok" }] } }],
-        content: [{ type: "text", text: "ok" }],
-        choices: [{ message: { content: "ok" } }],
-        usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 900 },
-        usage: {
-          input_tokens: 100,
-          output_tokens: 900,
-          prompt_tokens: 100,
-          completion_tokens: 900
-        }
-      }), { status: 200, headers: { "x-gemini-service-tier": "standard" } });
-    }
-  };
-}
-function Demo() {
-  const seed = import_react2.useRef(readStoredConfig()).current;
-  const [stored, setStored] = import_react2.useState(seed);
-  const [probes, setProbes] = import_react2.useState(import_react2.useRef(readStoredProbes()).current);
-  const [measuring, setMeasuring] = import_react2.useState({});
-  const [keyInput, setKeyInput] = import_react2.useState("");
-  const [error, setError] = import_react2.useState("");
-  const [busy, setBusy] = import_react2.useState(false);
-  const resolved = resolveConfig({}, {
-    ...stored,
-    model: defaultModel(stored.provider ?? "gemini"),
-    cellModel: defaultCellModel(stored.provider ?? "gemini")
-  });
-  const mounted = import_react2.useRef(false);
-  import_react2.useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
-    writeStoredConfig({
-      ...readStoredConfig(),
-      provider: resolved.provider,
-      model: resolved.model,
-      cellModel: resolved.cellModel,
-      geminiKey: resolved.geminiKey,
-      openaiKey: resolved.openaiKey,
-      anthropicKey: resolved.anthropicKey,
-      groqKey: resolved.groqKey,
-      openrouterKey: resolved.openrouterKey,
-      puterToken: resolved.puterToken
-    });
-    writeStoredProbes(probes);
-  }, [
-    resolved.provider,
-    resolved.model,
-    resolved.cellModel,
-    resolved.geminiKey,
-    resolved.openaiKey,
-    resolved.anthropicKey,
-    resolved.groqKey,
-    resolved.openrouterKey,
-    resolved.puterToken,
-    probes
-  ]);
-  const measureBoth = async (provider, key) => {
-    setMeasuring((m) => ({ ...m, [provider]: true }));
-    setProbes((p) => ({
-      ...p,
-      [provider]: { tier: p[provider]?.tier ?? null, connectedAt: p[provider]?.connectedAt }
-    }));
-    const stub = stubProbe();
-    for (const role of ["primary", "secondary"]) {
-      const modelId = role === "primary" ? defaultModel(provider) : defaultCellModel(provider);
-      try {
-        const measure = await measureModel(provider, key, modelId, stub);
-        const reading = { ...measure, model: modelId, at: Date.now() };
-        setProbes((p) => ({ ...p, [provider]: { ...p[provider], [role]: reading } }));
-      } catch {
-        setProbes((p) => ({ ...p, [provider]: { ...p[provider], [role]: null } }));
-      }
-    }
-    setMeasuring((m) => ({ ...m, [provider]: false }));
-  };
-  const addKey = () => addKeyWith(keyInput.trim());
-  const addKeyWith = async (raw) => {
-    const key = raw.trim();
-    if (key === "" || busy)
-      return;
-    const provider = detectProvider(key);
-    if (!provider) {
-      setError(`Key not recognised. Supported prefixes: ${SUPPORTED_PREFIXES.join(", ")}.`);
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      const { tier } = await verifyKey(provider, key, stubProbe());
-      setStored((s) => ({ ...s, provider, [KEY_FIELD[provider]]: key }));
-      setProbes((p) => ({
-        ...p,
-        [provider]: { tier, connectedAt: p[provider]?.connectedAt ?? Date.now() }
-      }));
-      setKeyInput("");
-      measureBoth(provider, key);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const removeProvider = (p) => {
-    setStored((s) => {
-      const next = { ...s, [KEY_FIELD[p]]: null };
-      if (s.provider === p) {
-        const left = connectedProviders(resolveConfig({}, next), connectedOrder(probes));
-        next.provider = left[left.length - 1] ?? "gemini";
-      }
+  const [mode, setMode] = import_react.useState(initialMode);
+  const theme = mode === "dark" ? darkTheme : lightTheme;
+  import_react.useEffect(() => {
+    document.body.style.background = theme.bg;
+    document.documentElement.style.colorScheme = mode;
+  }, [theme.bg, mode]);
+  const value = import_react.useMemo(() => ({
+    theme,
+    mode,
+    toggle: () => setMode((m) => {
+      const next = m === "dark" ? "light" : "dark";
+      onModeChange?.(next);
       return next;
-    });
-    setProbes(({ [p]: _dropped, ...rest }) => rest);
+    })
+  }), [theme, mode, onModeChange]);
+  return /* @__PURE__ */ jsx_dev_runtime.jsxDEV(ThemeContext.Provider, {
+    value,
+    children
+  }, undefined, false, undefined, this);
+}
+function useTheme() {
+  const ctx = import_react.useContext(ThemeContext);
+  if (!ctx)
+    throw new Error("useTheme must be used within a ThemeProvider");
+  return ctx.theme;
+}
+function useThemeControls() {
+  const ctx = import_react.useContext(ThemeContext);
+  if (!ctx)
+    throw new Error("useThemeControls must be used within a ThemeProvider");
+  return { mode: ctx.mode, toggle: ctx.toggle };
+}
+// packages/ui-kit/icons.ts
+var PATHS = {
+  bug: "M5.5 8A2.5 2.5 0 0 1 8 5.5 2.5 2.5 0 0 1 10.5 8v2a2.5 2.5 0 0 1-5 0Z M6.2 5.9 4.8 4.2 M9.8 5.9 11.2 4.2 M5.5 8.5H3 M10.5 8.5H13 M5.9 11 4.2 12.6 M10.1 11 11.8 12.6",
+  check: "m3 8 3.5 3.5L13 5",
+  chevLeft: "M10 4 6 8l4 4",
+  chevRight: "M6 4l4 4-4 4",
+  chevron: "m4 6 4 4 4-4",
+  clock: "M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M8 5.3V8l2 1.3",
+  code: "M6 5 3 8l3 3 M10 5l3 3-3 3",
+  copy: "M6 6h7v7H6Z M10 6V3.5A.5.5 0 0 0 9.5 3h-6a.5.5 0 0 0-.5.5v6a.5.5 0 0 0 .5.5H6",
+  err: "M8 2 14 13H2L8 2Z M8 7v3 M8 12v.01",
+  eye: "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
+  eyeOff: "M6.2 6.2A2 2 0 0 0 9.8 9.8 M3 3l10 10 M5.2 5.3C2.9 6.6 1.5 8 1.5 8S4 12.5 8 12.5c1 0 1.9-.2 2.7-.6 M10.8 10.7C13 9.4 14.5 8 14.5 8S12 3.5 8 3.5",
+  file: "M9 2H4.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5z M9 2v3h3",
+  folder: "M2 4.5A1.5 1.5 0 0 1 3.5 3h2.6a1 1 0 0 1 .7.3l1 1H12.5A1.5 1.5 0 0 1 14 5.8v5.7A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5z",
+  funnel: "M2.5 4 L13.5 4 L9 9 L9 12.5 L7 13.5 L7 9 Z",
+  grip: "M6 4v8 M10 4v8",
+  keyboard: "M2 4.75h12A1.25 1.25 0 0 1 15.25 6v4A1.25 1.25 0 0 1 14 11.25H2A1.25 1.25 0 0 1 .75 10V6A1.25 1.25 0 0 1 2 4.75Z M3.4 7.4h.01 M5.7 7.4h.01 M8 7.4h.01 M10.3 7.4h.01 M12.6 7.4h.01 M5.2 9.6h5.6",
+  link: "M6.6 9.4 9.4 6.6 M7.2 5 8.2 4a2.5 2.5 0 0 1 3.5 3.5l-1 1 M8.8 11l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1",
+  menu: "M2.5 4.5h11 M2.5 8h11 M2.5 11.5h11",
+  mic: "M8 2.5a2 2 0 0 1 2 2v3.5a2 2 0 0 1-4 0V4.5a2 2 0 0 1 2-2Z M4.5 8a3.5 3.5 0 0 0 7 0 M8 11.5V14 M6 14h4",
+  moon: "M13.2 9.4A5.5 5.5 0 0 1 6.6 2.8 5.5 5.5 0 1 0 13.2 9.4Z",
+  ok: "m3 8 3.5 3.5L13 5",
+  play: "M5 3.4 12.5 8 5 12.6Z",
+  redo: "m11 5 2.5 2.5L11 10 M13.5 7.5H6a3.5 3.5 0 1 0 0 7h3",
+  save: "M3 3h7l3 3v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M5 3v3h5V3 M5 13v-4h6v4",
+  send: "m2.5 8 11-5-3 12-3-5-5-2Z",
+  sparkle: "M8 2.5 9.2 5.8 12.5 7 9.2 8.2 8 11.5 6.8 8.2 3.5 7 6.8 5.8Z",
+  stop: "M5 5h6v6H5z",
+  sun: "M8 5.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2Z M8 1.4v1.8 M8 12.8v1.8 M1.4 8h1.8 M12.8 8h1.8 M3.4 3.4l1.3 1.3 M11.3 11.3l1.3 1.3 M3.4 12.6l1.3-1.3 M11.3 4.7l1.3-1.3",
+  tour: "M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z M10.3 5.7 9 9 5.7 10.3 7 7z",
+  undo: "M5 5 2.5 7.5 5 10 M2.5 7.5h7.5a3.5 3.5 0 1 1 0 7H7",
+  upload: "M8 10V3 M5 6l3-3 3 3 M2.5 11.5v1A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5v-1",
+  wave: "M2.5 6.5v3 M5.25 4v8 M8 2v12 M10.75 4v8 M13.5 6.5v3",
+  wrench: "M9.8 4.2a.67.67 0 0 0 0 .94l1.06 1.06a.67.67 0 0 0 .94 0l2.51-2.51a4 4 0 0 1-5.29 5.29l-4.61 4.61a1.41 1.41 0 0 1-2-2l4.61-4.61a4 4 0 0 1 5.29-5.29L9.8 4.2Z",
+  x: "m4 4 8 8 M12 4l-8 8"
+};
+var FILLED = new Set(["play", "stop"]);
+var ICON_NAMES = Object.keys(PATHS);
+
+// packages/ui-kit/Icon.tsx
+var jsx_dev_runtime2 = __toESM(require_jsx_dev_runtime(), 1);
+function Icon({
+  name,
+  size = 14,
+  strokeWidth = 1.5
+}) {
+  return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("svg", {
+    "data-uk-icon": name,
+    width: size,
+    height: size,
+    viewBox: "0 0 16 16",
+    fill: FILLED.has(name) ? "currentColor" : "none",
+    stroke: "currentColor",
+    strokeWidth,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    style: { flex: "0 0 auto", display: "block" },
+    "aria-hidden": "true",
+    children: /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("path", {
+      d: PATHS[name]
+    }, undefined, false, undefined, this)
+  }, undefined, false, undefined, this);
+}
+// packages/ui-kit/Button.tsx
+var import_react2 = __toESM(require_react(), 1);
+var jsx_dev_runtime3 = __toESM(require_jsx_dev_runtime(), 1);
+function Button({
+  children,
+  onClick,
+  disabled,
+  variant = "ghost",
+  title
+}) {
+  const t = useTheme();
+  const [hover, setHover] = import_react2.useState(false);
+  const base = {
+    height: 28,
+    padding: "0 10px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: space.px6,
+    border: "1px solid transparent",
+    borderRadius: space.radiusSm,
+    background: "transparent",
+    color: t.ink2,
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 500,
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+    cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.4 : 1,
+    transition: "background .12s, color .12s, border-color .12s"
   };
-  const roleRow = (p, role) => {
-    const model = role === "primary" ? defaultModel(p) : defaultCellModel(p);
-    const priced = modelFor(p, model);
-    return {
-      model,
-      inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
-      outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
-      speed: speedOf(probes[p]?.[role], measuring[p] ?? false)
+  const variants = {
+    ghost: {},
+    chrome: { color: t.ink, borderColor: t.line },
+    primary: { background: t.ink, color: t.inkOnInk, borderColor: t.ink, fontWeight: 600 },
+    danger: { color: t.err, borderColor: t.line }
+  };
+  const hoverFill = !disabled && hover && (variant === "ghost" || variant === "chrome") ? { background: t.surface3 } : !disabled && hover && variant === "primary" ? { background: t.ink2, borderColor: t.ink2 } : !disabled && hover && variant === "danger" ? { background: t.errSoft } : {};
+  return /* @__PURE__ */ jsx_dev_runtime3.jsxDEV("button", {
+    type: "button",
+    "data-uk-button": variant,
+    title,
+    disabled,
+    onClick,
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    style: { ...base, ...variants[variant], ...hoverFill },
+    children
+  }, undefined, false, undefined, this);
+}
+// packages/ui-kit/MenuButton.tsx
+var import_react3 = __toESM(require_react(), 1);
+var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
+function MenuButton({
+  children,
+  sections,
+  disabled,
+  title,
+  id,
+  align = "left"
+}) {
+  const t = useTheme();
+  const [open, setOpen] = import_react3.useState(false);
+  const [hover, setHover] = import_react3.useState(false);
+  const [expanded, setExpanded] = import_react3.useState(null);
+  const rootRef = import_react3.useRef(null);
+  const close = () => {
+    setOpen(false);
+    setExpanded(null);
+  };
+  import_react3.useEffect(() => {
+    if (!open)
+      return;
+    const onDoc = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target))
+        close();
     };
+    const onKey = (e) => {
+      if (e.key === "Escape")
+        close();
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const tinted = !disabled && (hover || open);
+  const triggerStyle = {
+    height: 28,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: space.px6,
+    padding: "0 6px 0 10px",
+    background: tinted ? t.surface3 : "transparent",
+    color: t.ink2,
+    border: 0,
+    borderRadius: space.radiusSm,
+    fontFamily: typography.ui,
+    fontSize: typography.size.sm,
+    fontWeight: 500,
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+    cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.4 : 1,
+    transition: "background .12s"
   };
-  const connected = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
-    id: p,
-    tier: probes[p]?.tier ?? null,
-    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
-    priceVariesByPlan: priceVariesByPlan(p),
-    primary: roleRow(p, "primary"),
-    secondary: roleRow(p, "secondary")
-  }));
-  const [query, setQuery] = import_react2.useState("");
-  const [response, setResponse] = import_react2.useState("");
-  const [sending, setSending] = import_react2.useState(false);
-  const [recording, setRecording] = import_react2.useState(false);
-  const recRef = import_react2.useRef(null);
-  const startGate = import_react2.useRef(Promise.resolve());
-  const hasVoice = ALL_MODELS.some((m) => m.id === resolved.model && m.voiceInput);
-  const send = async () => {
-    if (!query.trim() || sending)
-      return;
-    setSending(true);
-    setResponse("…");
-    try {
-      setResponse(await sendTestPrompt(resolved, query.trim()));
-    } catch (e) {
-      setResponse(`Error: ${e.message}`);
-    } finally {
-      setSending(false);
-    }
-  };
-  const startMic = async () => {
-    if (sending || recRef.current)
-      return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const chunks = [];
-      const rec = new MediaRecorder(stream);
-      rec.ondataavailable = (e) => {
-        if (e.data.size > 0)
-          chunks.push(e.data);
-      };
-      rec.start();
-      recRef.current = { rec, stream, chunks };
-      setRecording(true);
-    } catch (e) {
-      setResponse(`Error: could not start recording: ${e.message}`);
-    }
-  };
-  const stopMic = async () => {
-    if (!recRef.current)
-      return;
-    const { rec, stream, chunks } = recRef.current;
-    const audio = await new Promise((resolve) => {
-      rec.onstop = () => resolve(new Blob(chunks, { type: rec.mimeType || "audio/webm" }));
-      rec.stop();
-    });
-    stream.getTracks().forEach((t) => t.stop());
-    recRef.current = null;
-    setRecording(false);
-    setSending(true);
-    setResponse("…");
-    try {
-      const reply = await sendVoicePrompt(resolved, audio);
-      if (reply.transcript)
-        setQuery(reply.transcript);
-      setResponse(reply.answer);
-    } catch (e) {
-      setResponse(`Error: ${e.message}`);
-    } finally {
-      setSending(false);
-    }
-  };
-  const cancelMic = () => {
-    const active = recRef.current;
-    if (!active)
-      return;
-    active.rec.onstop = null;
-    active.rec.stop();
-    active.stream.getTracks().forEach((t) => t.stop());
-    recRef.current = null;
-    setRecording(false);
-  };
-  return /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(jsx_dev_runtime2.Fragment, {
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+    ref: rootRef,
+    id,
+    style: { position: "relative", display: "inline-flex" },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
-        children: "ModelChooser"
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV(ModelChooser, {
-        connected,
-        selected: connected.length > 0 ? resolved.provider : null,
-        keyInput,
-        error,
-        busy,
-        onKeyInputChange: (value) => {
-          setKeyInput(value);
-          if (error !== "")
-            setError("");
-        },
-        onAdd: () => void addKey(),
-        onSelect: (p) => setStored((s) => ({ ...s, provider: p })),
-        onRemove: removeProvider,
-        onPuterSignIn: () => {
-          setKeyInput("eyJhbGciOiJIUzI1NiJ9.demo");
-          addKeyWith("eyJhbGciOiJIUzI1NiJ9.demo");
-        },
-        onRefresh: (p) => {
-          const key = resolved[KEY_FIELD[p]] ?? "";
-          if (key)
-            measureBoth(p, key);
-        }
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+        type: "button",
+        "data-uk-menubtn": "",
+        title,
+        "aria-haspopup": "menu",
+        "aria-expanded": open,
+        disabled,
+        onClick: () => open ? close() : setOpen(true),
+        onMouseEnter: () => setHover(true),
+        onMouseLeave: () => setHover(false),
+        style: triggerStyle,
         children: [
-          "resolveConfig(",
-          "{}",
-          ", stored)"
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("pre", {
-        id: "out",
-        children: JSON.stringify(resolved, null, 2)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
-        children: [
-          "Test call — ",
-          resolved.model
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("div", {
-        style: { display: "flex", gap: 6 },
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("input", {
-            id: "tc-input",
-            value: query,
-            onChange: (e) => setQuery(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === "Enter")
-                send();
-            },
-            placeholder: hasVoice ? "Type a query, or use the mic to speak one…" : "Type a query…",
-            disabled: sending,
-            style: { flex: 1, padding: "6px 8px", font: "inherit" }
-          }, undefined, false, undefined, this),
-          hasVoice && /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
-            id: "tc-mic",
-            type: "button",
-            onPointerDown: (e) => {
-              e.preventDefault();
-              e.currentTarget.setPointerCapture(e.pointerId);
-              startGate.current = startMic();
-            },
-            onPointerUp: () => void startGate.current.then(stopMic),
-            onPointerCancel: () => void startGate.current.then(cancelMic),
-            disabled: sending,
-            title: recording ? "Release to send" : "Hold to record a spoken query",
-            style: {
-              padding: "6px 10px",
-              font: "inherit",
-              cursor: "pointer",
-              background: recording ? "#dc2626" : undefined,
-              color: recording ? "#fff" : undefined
-            },
-            children: recording ? "●" : "\uD83C\uDF99"
-          }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("button", {
-            id: "tc-send",
-            type: "button",
-            onClick: () => void send(),
-            disabled: sending || !query.trim(),
-            style: { padding: "6px 12px", font: "inherit", cursor: "pointer" },
-            children: sending ? "…" : "Send"
+          children,
+          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+            style: { color: t.ink3, display: "inline-flex" },
+            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
+              name: "chevron",
+              size: 12
+            }, undefined, false, undefined, this)
           }, undefined, false, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("pre", {
-        id: "tc-response",
-        style: { whiteSpace: "pre-wrap", minHeight: "2.5rem" },
-        children: response
+      open && !disabled && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+        role: "menu",
+        style: {
+          position: "absolute",
+          top: "100%",
+          [align === "right" ? "right" : "left"]: 0,
+          marginTop: 4,
+          minWidth: 190,
+          maxWidth: "min(320px, 88vw)",
+          background: t.surface,
+          border: `1px solid ${t.line2}`,
+          borderRadius: space.radius,
+          boxShadow: t.shadow,
+          padding: space.px4,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          zIndex: 50
+        },
+        children: sections.map((section, si) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+          style: { display: "flex", flexDirection: "column", gap: 2 },
+          children: [
+            si > 0 && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+              style: { height: 1, background: t.line, margin: `${space.px4}px 2px` }
+            }, undefined, false, undefined, this),
+            section.header && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+              "data-uk-menu-header": section.header,
+              style: {
+                fontFamily: typography.ui,
+                fontSize: typography.size.xs,
+                fontWeight: 700,
+                letterSpacing: ".06em",
+                textTransform: "uppercase",
+                color: t.ink3,
+                padding: "4px 10px 2px"
+              },
+              children: section.header
+            }, undefined, false, undefined, this),
+            section.items.map((item) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+              style: { position: "relative" },
+              onMouseEnter: () => {
+                if (item.submenu && !item.disabled)
+                  setExpanded(item.label);
+              },
+              onMouseLeave: () => {
+                if (item.submenu)
+                  setExpanded((e) => e === item.label ? null : e);
+              },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(MenuRow, {
+                  label: item.label,
+                  icon: item.icon,
+                  disabled: item.disabled,
+                  trailing: item.submenu ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+                    style: {
+                      color: t.ink3,
+                      display: "inline-flex",
+                      transform: align === "right" ? "rotate(90deg)" : "rotate(-90deg)"
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
+                      name: "chevron",
+                      size: 11
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : undefined,
+                  onClick: () => {
+                    if (item.disabled)
+                      return;
+                    if (item.submenu) {
+                      setExpanded(item.label);
+                      return;
+                    }
+                    close();
+                    item.onClick?.();
+                  }
+                }, undefined, false, undefined, this),
+                item.submenu && expanded === item.label && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
+                  role: "menu",
+                  style: {
+                    position: "absolute",
+                    top: -space.px4,
+                    [align === "right" ? "right" : "left"]: "calc(100% - 4px)",
+                    minWidth: 180,
+                    maxWidth: "min(280px, 70vw)",
+                    background: t.surface,
+                    border: `1px solid ${t.line2}`,
+                    borderRadius: space.radius,
+                    boxShadow: t.shadow,
+                    padding: space.px4,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    zIndex: 51
+                  },
+                  children: item.submenu.map((sub) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(MenuRow, {
+                    label: sub.label,
+                    tag: sub.tag,
+                    onClick: () => {
+                      close();
+                      sub.onClick();
+                    }
+                  }, `${sub.label} ${sub.tag ?? ""}`, false, undefined, this))
+                }, undefined, false, undefined, this)
+              ]
+            }, item.label, true, undefined, this))
+          ]
+        }, si, true, undefined, this))
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime2.jsxDEV(Demo, {}, undefined, false, undefined, this));
+function MenuRow({
+  label,
+  icon,
+  tag,
+  trailing,
+  disabled,
+  onClick
+}) {
+  const t = useTheme();
+  const [hover, setHover] = import_react3.useState(false);
+  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
+    type: "button",
+    role: "menuitem",
+    "data-uk-menu-item": label,
+    disabled,
+    onClick,
+    onMouseEnter: () => setHover(true),
+    onMouseLeave: () => setHover(false),
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: space.px8,
+      width: "100%",
+      textAlign: "left",
+      border: 0,
+      background: !disabled && hover ? t.surface3 : "transparent",
+      borderRadius: space.radiusSm,
+      padding: "6px 10px",
+      cursor: disabled ? "default" : "pointer",
+      color: t.ink,
+      fontFamily: typography.ui,
+      fontSize: typography.size.sm,
+      whiteSpace: "nowrap",
+      opacity: disabled ? 0.4 : 1
+    },
+    children: [
+      icon && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+        style: { color: t.ink3, display: "inline-flex" },
+        children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
+          name: icon,
+          size: 14
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+        style: { flex: 1, overflow: "hidden", textOverflow: "ellipsis" },
+        children: label
+      }, undefined, false, undefined, this),
+      tag && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
+        "data-uk-menu-tag": "",
+        style: {
+          fontFamily: typography.ui,
+          fontSize: typography.size.xs,
+          color: t.ink3,
+          background: t.surface3,
+          borderRadius: 4,
+          padding: "1px 6px"
+        },
+        children: tag
+      }, undefined, false, undefined, this),
+      trailing
+    ]
+  }, undefined, true, undefined, this);
+}
+// packages/ui-kit/Toasts.tsx
+var import_react4 = __toESM(require_react(), 1);
+var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
+var FADE_MS = 320;
+var SHEET_CSS = "@keyframes uk-sheet-kf { from { opacity: 0; transform: translateY(6px); }" + " to { opacity: 1; transform: translateY(0); } }" + " .uk-sheet { animation: uk-sheet-kf 0.14s ease-out; }" + ` @keyframes uk-fade-kf { to { opacity: 0; transform: translateY(6px); } }` + ` .uk-sheet-leaving { animation: uk-fade-kf ${FADE_MS}ms ease-in forwards; }`;
+function Toasts({
+  toasts,
+  onDismiss,
+  onAction
+}) {
+  if (toasts.length === 0)
+    return null;
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+    style: {
+      position: "fixed",
+      right: space.px16,
+      bottom: space.px16,
+      display: "flex",
+      flexDirection: "column",
+      gap: space.px8,
+      zIndex: 200,
+      maxWidth: 380
+    },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("style", {
+        children: SHEET_CSS
+      }, undefined, false, undefined, this),
+      toasts.map((toast) => /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(ToastRow, {
+        toast,
+        onDismiss,
+        onAction
+      }, toast.id, false, undefined, this))
+    ]
+  }, undefined, true, undefined, this);
+}
+function ToastRow({
+  toast,
+  onDismiss,
+  onAction
+}) {
+  const t = useTheme();
+  const isError = toast.kind === "error";
+  const [leaving, setLeaving] = import_react4.useState(false);
+  const timers = import_react4.useRef({
+    dismiss: null,
+    remove: null
+  });
+  const fadeOut = () => {
+    setLeaving(true);
+    timers.current.remove = setTimeout(() => onDismiss(toast.id), FADE_MS);
+  };
+  const arm = () => {
+    if (timers.current.dismiss)
+      clearTimeout(timers.current.dismiss);
+    timers.current.dismiss = setTimeout(fadeOut, toastDurationMs(toast.message));
+  };
+  const pause = () => {
+    if (timers.current.dismiss) {
+      clearTimeout(timers.current.dismiss);
+      timers.current.dismiss = null;
+    }
+  };
+  import_react4.useEffect(() => {
+    arm();
+    return () => {
+      if (timers.current.dismiss)
+        clearTimeout(timers.current.dismiss);
+      if (timers.current.remove)
+        clearTimeout(timers.current.remove);
+    };
+  }, []);
+  return /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+    className: leaving ? "uk-sheet uk-sheet-leaving" : "uk-sheet",
+    "data-uk-toast": toast.kind,
+    "data-uk-toast-leaving": leaving ? "" : undefined,
+    onMouseEnter: pause,
+    onMouseLeave: () => {
+      if (!leaving)
+        arm();
+    },
+    style: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: space.px10,
+      minWidth: 280,
+      padding: "10px 12px",
+      borderRadius: space.radius,
+      background: t.surface,
+      color: t.ink,
+      border: `1px solid ${isError ? t.err : t.line2}`,
+      borderLeft: `3px solid ${isError ? t.err : t.ok}`,
+      boxShadow: t.shadowLg,
+      fontFamily: typography.ui,
+      fontSize: typography.size.sm,
+      lineHeight: 1.5
+    },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("span", {
+        style: { flex: "0 0 auto", marginTop: 1, color: isError ? t.err : t.ok },
+        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(Icon, {
+          name: isError ? "err" : "ok"
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("div", {
+        style: { flex: 1 },
+        children: toast.message
+      }, undefined, false, undefined, this),
+      toast.action && onAction && /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+        type: "button",
+        "data-uk-toast-action": "",
+        onClick: () => onAction(toast.id),
+        style: {
+          flex: "0 0 auto",
+          background: "transparent",
+          border: 0,
+          padding: space.px2,
+          cursor: "pointer",
+          color: t.accent,
+          fontFamily: typography.ui,
+          fontSize: typography.size.sm,
+          fontWeight: 600,
+          textDecoration: "underline"
+        },
+        children: toast.action
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime5.jsxDEV("button", {
+        type: "button",
+        "data-uk-toast-dismiss": "",
+        onClick: () => onDismiss(toast.id),
+        title: "Dismiss",
+        style: {
+          background: "transparent",
+          border: 0,
+          padding: space.px2,
+          cursor: "pointer",
+          color: t.ink3,
+          display: "flex"
+        },
+        children: /* @__PURE__ */ jsx_dev_runtime5.jsxDEV(Icon, {
+          name: "x",
+          size: 12
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+// packages/ui-kit/demo.tsx
+var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
+function Demo() {
+  const t = useTheme();
+  const { mode, toggle } = useThemeControls();
+  const [log, setLog] = import_react5.useState(["ready"]);
+  const [toasts, setToasts] = import_react5.useState([]);
+  const [toastSeq, setToastSeq] = import_react5.useState(0);
+  const report = (event) => setLog((l) => [...l, event]);
+  const addToast = (kind, action) => {
+    setToasts((list) => [
+      ...list,
+      { id: toastSeq, kind, message: `Sample ${kind} toast #${toastSeq}`, ...action ? { action } : {} }
+    ]);
+    setToastSeq((n) => n + 1);
+  };
+  const section = { margin: "1rem 0" };
+  const heading = { font: `600 14px/1.4 ${typography.ui}`, color: t.ink, margin: "0 0 .5rem" };
+  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+    "data-uk-mode": mode,
+    style: { color: t.ink, fontFamily: typography.ui },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("h1", {
+        style: { font: `600 18px/1.4 ${typography.ui}`, margin: 0 },
+        children: "ui-kit — tokens & primitives"
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Buttons"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", gap: 8 },
+            children: [
+              ["ghost", "chrome", "primary", "danger"].map((variant) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant,
+                onClick: () => report(`${variant} clicked`),
+                children: variant
+              }, variant, false, undefined, this)),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "chrome",
+                disabled: true,
+                children: "disabled"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Theme"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+            variant: "chrome",
+            onClick: toggle,
+            title: "Toggle light/dark",
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                name: mode === "dark" ? "sun" : "moon"
+              }, undefined, false, undefined, this),
+              " ",
+              mode,
+              " → toggle"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Icons"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            "data-icon-count": ICON_NAMES.length,
+            style: { display: "flex", flexWrap: "wrap", gap: 12 },
+            children: ICON_NAMES.map((name) => /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+              style: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11 },
+              children: [
+                /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                  name
+                }, undefined, false, undefined, this),
+                " ",
+                name
+              ]
+            }, name, true, undefined, this))
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Menu button"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(MenuButton, {
+            sections: [
+              {
+                items: [
+                  {
+                    label: "Recent",
+                    icon: "clock",
+                    submenu: [
+                      { label: "alpha.csv", tag: "local", onClick: () => report("alpha.csv clicked") },
+                      { label: "beta.jsonl", tag: "URL", onClick: () => report("beta.jsonl clicked") }
+                    ]
+                  }
+                ]
+              },
+              {
+                header: "Data",
+                items: [
+                  { label: "Save as flow", onClick: () => report("Save as flow clicked") },
+                  { label: "Save as data", onClick: () => report("Save as data clicked") },
+                  { label: "Disabled item", onClick: () => report("never"), disabled: true }
+                ]
+              }
+            ],
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Icon, {
+                name: "save"
+              }, undefined, false, undefined, this),
+              " Save"
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Toasts"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+            style: { display: "flex", gap: 8 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => addToast("info"),
+                children: "Add info toast"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "danger",
+                onClick: () => addToast("error"),
+                children: "Add error toast"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => addToast("error", "Copy report"),
+                children: "Add action toast"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("div", {
+        style: section,
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("p", {
+            style: heading,
+            children: "Event log"
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("pre", {
+            id: "out",
+            style: {
+              font: `12px/1.5 ${typography.mono}`,
+              background: t.surface2,
+              border: `1px solid ${t.line}`,
+              padding: ".5rem",
+              borderRadius: 6
+            },
+            children: log.join(`
+`)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Toasts, {
+        toasts,
+        onDismiss: (id) => setToasts((l) => l.filter((x) => x.id !== id)),
+        onAction: (id) => report(`toast action ${id}`)
+      }, undefined, false, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+import_client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx_dev_runtime6.jsxDEV(ThemeProvider, {
+  children: /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Demo, {}, undefined, false, undefined, this)
+}, undefined, false, undefined, this));
