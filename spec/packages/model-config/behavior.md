@@ -388,7 +388,7 @@ key expired would otherwise have to delete the card to fix it.
 
 **No API key?** Below the instructions row, a full-width
 **Sign in / Sign up to Puter.js** button carrying Puter's mark, with
-`$25 in API credits for *any model* on Puter.js sign up.` underneath it — it is
+`$0.25 in API credits for any model on Puter.js sign up.` underneath it — it is
 the reason to press the button, which reads better as a footnote than as a
 preamble. There is no `OR` divider: the host's section heading above the whole
 chooser already separates it from what comes next, and a second separator

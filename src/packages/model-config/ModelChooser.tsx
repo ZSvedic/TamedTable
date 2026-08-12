@@ -629,7 +629,7 @@ export function ModelChooser({
           {/* Under the button, not above it: it is the reason to press the
               button, which reads better as a footnote than as a preamble. */}
           <div style={{ fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 }}>
-            $25 in API credits for <em>any model</em> on Puter.js sign up.
+            $0.25 in API credits for any model on Puter.js sign up.
           </div>
         </div>
       )}
