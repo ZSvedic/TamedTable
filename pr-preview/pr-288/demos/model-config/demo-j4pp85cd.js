@@ -17148,7 +17148,11 @@ var models_default = {
     gemini: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" },
     openai: { primary: "gpt-5.5", secondary: "gpt-5.4-mini" },
     anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5" },
-    groq: { primary: "openai/gpt-oss-120b", secondary: "openai/gpt-oss-20b" },
+    groq: {
+      primary: "openai/gpt-oss-120b",
+      secondary: "openai/gpt-oss-20b",
+      priceVariesByPlan: true
+    },
     openrouter: { primary: "cohere/north-mini-code:free", secondary: "cohere/north-mini-code:free", batchSize: 5 },
     puter: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" }
   }
@@ -17165,6 +17169,9 @@ function modelFor(provider, modelId) {
 }
 function defaultCellModel(provider) {
   return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
+}
+function priceVariesByPlan(provider) {
+  return DEFAULTS[provider]?.priceVariesByPlan === true;
 }
 function providerFor(modelId) {
   const known = ALL_MODELS.find((m) => m.provider !== "puter" && m.id === modelId);
@@ -17212,6 +17219,7 @@ var KEY_PREFIXES = [
 var KEY_SETUP = [
   {
     provider: "gemini",
+    prefix: "AIza…",
     label: "Google",
     steps: [
       "Sign in at Google AI Studio and create a key.",
@@ -17223,6 +17231,7 @@ var KEY_SETUP = [
   },
   {
     provider: "openai",
+    prefix: "sk-proj-…",
     label: "OpenAI",
     steps: [
       "Sign in at the OpenAI platform and create a key.",
@@ -17233,6 +17242,7 @@ var KEY_SETUP = [
   },
   {
     provider: "anthropic",
+    prefix: "sk-ant-…",
     label: "Anthropic",
     steps: [
       "Sign in to the Anthropic Console and create a key.",
@@ -17243,6 +17253,7 @@ var KEY_SETUP = [
   },
   {
     provider: "openrouter",
+    prefix: "sk-or-…",
     label: "OpenRouter",
     steps: [
       "One signup, no credit card, reaches free models from many vendors.",
@@ -17253,6 +17264,7 @@ var KEY_SETUP = [
   },
   {
     provider: "groq",
+    prefix: "gsk_…",
     label: "Groq",
     steps: [
       "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
@@ -17263,11 +17275,7 @@ var KEY_SETUP = [
   }
 ];
 var SUPPORTED_PREFIXES = [
-  "AIza…",
-  "sk-proj-…",
-  "sk-ant-…",
-  "sk-or-…",
-  "gsk_…",
+  ...KEY_SETUP.map((s) => s.prefix),
   "eyJ…"
 ];
 function detectProvider(key) {
@@ -17734,9 +17742,11 @@ var radiusLg = v("radius-lg", "11px");
 function money(usd) {
   return String(Number(usd.toFixed(6)));
 }
-function costLine(row) {
+function costLine(row, priceVariesByPlan2 = false) {
   const parts = [];
-  if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
+  if (priceVariesByPlan2) {
+    parts.push("Price depends on your plan");
+  } else if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
     parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tok`);
   }
   if (row.speed === "measuring")
@@ -17823,8 +17833,8 @@ function ModelChooser({
     },
     children: label
   }, undefined, false, undefined, this);
-  const roleRow = (role, row) => {
-    const cost = costLine(row);
+  const roleRow = (role, row, priceVaries) => {
+    const cost = costLine(row, priceVaries);
     return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
       "data-mc-model": row.model,
       "data-mc-role": role,
@@ -17965,8 +17975,8 @@ function ModelChooser({
             gap: 10
           },
           children: [
-            roleRow("primary", c.primary),
-            roleRow("secondary", c.secondary)
+            roleRow("primary", c.primary, c.priceVariesByPlan === true),
+            roleRow("secondary", c.secondary, c.priceVariesByPlan === true)
           ]
         }, undefined, true, undefined, this)
       ]
@@ -18008,21 +18018,6 @@ function ModelChooser({
             style: { fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink },
             children: "Already have an API key?"
           }, undefined, false, undefined, this),
-          /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-            style: {
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "baseline",
-              gap: 8,
-              fontFamily: fontUi,
-              fontSize: 13,
-              lineHeight: 1.5,
-              color: ink2
-            },
-            children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-              children: "Paste it below, we do the rest."
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this),
           error !== "" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             "data-mc-error": "",
             style: {
@@ -18063,7 +18058,7 @@ function ModelChooser({
                   if (e.key === "Enter" && canAdd)
                     onAdd();
                 },
-                placeholder: "AIza… / sk-proj-… / sk-ant-…",
+                placeholder: "Paste an API key here",
                 style: {
                   flex: 1,
                   minWidth: 0,
@@ -18100,22 +18095,15 @@ function ModelChooser({
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             "data-mc-providers": "",
-            style: {
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "baseline",
-              gap: 6,
-              fontFamily: fontUi,
-              fontSize: 12,
-              color: ink3
-            },
+            style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.6, color: ink3 },
             children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                children: "Instructions:"
-              }, undefined, false, undefined, this),
-              KEY_SETUP.map((setup, i) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                style: { display: "flex", gap: 6 },
+              "How to: ",
+              KEY_SETUP.map((setup, i) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV(import_react.Fragment, {
                 children: [
+                  i > 0 && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                    "aria-hidden": "true",
+                    children: "/"
+                  }, undefined, false, undefined, this),
                   /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
                     type: "button",
                     "data-mc-howto": setup.provider,
@@ -18127,15 +18115,13 @@ function ModelChooser({
                       background: "transparent",
                       fontFamily: fontUi,
                       fontSize: 12,
-                      fontWeight: howTo === setup.provider ? 700 : 600,
+                      fontWeight: 600,
                       color: accent,
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      textDecoration: howTo === setup.provider ? "underline" : "none",
+                      textUnderlineOffset: 3
                     },
                     children: setup.label
-                  }, undefined, false, undefined, this),
-                  i < KEY_SETUP.length - 1 && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                    "aria-hidden": "true",
-                    children: "/"
                   }, undefined, false, undefined, this)
                 ]
               }, setup.provider, true, undefined, this))
@@ -18157,17 +18143,22 @@ function ModelChooser({
               color: ink2
             },
             children: [
-              open.steps.map((step) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                children: step
-              }, step, false, undefined, this)),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
-                href: open.url,
-                target: "_blank",
-                rel: "noopener",
-                style: { fontWeight: 600, color: accent, textDecoration: "none" },
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                children: open.steps.join(" ")
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
                 children: [
-                  open.action,
-                  " ↗"
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
+                    href: open.url,
+                    target: "_blank",
+                    rel: "noopener",
+                    style: { fontWeight: 600, color: accent, textDecoration: "none" },
+                    children: [
+                      open.action,
+                      " ↗"
+                    ]
+                  }, undefined, true, undefined, this),
+                  ` (starts with ${open.prefix})`
                 ]
               }, undefined, true, undefined, this)
             ]
@@ -18204,16 +18195,6 @@ function ModelChooser({
                 style: { fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink },
                 children: "No API key?"
               }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
-                style: { fontFamily: fontUi, fontSize: 13, lineHeight: 1.5, color: ink2 },
-                children: [
-                  "$25 in API credits for ",
-                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("em", {
-                    children: "any model"
-                  }, undefined, false, undefined, this),
-                  " on Puter.js sign up."
-                ]
-              }, undefined, true, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
                 type: "button",
                 "data-mc-puter": "",
@@ -18245,6 +18226,16 @@ function ModelChooser({
                     style: { borderRadius: 5, display: "block", flex: "0 0 auto" }
                   }, undefined, false, undefined, this),
                   puterConnected ? "Connected to Puter.js" : puterBusy ? "Signing in…" : "Sign in / Sign up to Puter.js"
+                ]
+              }, undefined, true, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+                style: { fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 },
+                children: [
+                  "$25 in API credits for ",
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("em", {
+                    children: "any model"
+                  }, undefined, false, undefined, this),
+                  " on Puter.js sign up."
                 ]
               }, undefined, true, undefined, this)
             ]
@@ -18622,6 +18613,7 @@ function Demo() {
     id: p,
     tier: probes[p]?.tier ?? null,
     voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    priceVariesByPlan: priceVariesByPlan(p),
     primary: roleRow(p, "primary"),
     secondary: roleRow(p, "secondary")
   }));
