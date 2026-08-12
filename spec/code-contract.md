@@ -1445,7 +1445,6 @@ interface ModelChooserProps {
   error: string;
   busy: boolean;                        // a connect is in flight — input, Add and the Puter button all disabled
   puterBusy?: boolean;                  // that connect is the Puter sign-in — its button reads "Signing in…"
-  byokHelpUrl?: string;                 // "how to get an API key" link target
   onKeyInputChange(value: string): void;
   onAdd(): void;
   onSelect(p: Provider): void;
@@ -1454,6 +1453,8 @@ interface ModelChooserProps {
   onPuterSignIn?(): void;                 // the "No API key?" block; omit it and the whole block is left out
 }
 const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
+interface KeySetup { provider: Provider; label: string; steps: readonly string[]; url: string; action: string }
+const KEY_SETUP: readonly KeySetup[];            // the five pasteable providers in row order, with the panel's short how-to-get; a test asserts each `url` appears in FAQ.html
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
 
@@ -1521,7 +1522,9 @@ Test hooks: `data-mc-empty` on the empty row; `data-mc-card`, `data-mc-tier`,
 id) on each role row, with `data-mc-model-id` on the id and `data-mc-cost` on
 the line beneath; `data-mc-keyinput` and `data-mc-add` on the add row;
 `data-mc-error` on the banner; `data-mc-providers` on the footer;
-`data-mc-puter` on the Puter sign-in button; `data-mc-byok` on the help link.
+`data-mc-puter` on the Puter sign-in button; `data-mc-howto` keyed by provider
+on each instructions link, and `data-mc-howto-body` keyed by provider on the
+expanded block.
 
 `@tamedtable/model-config` has five entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads

@@ -196,17 +196,56 @@ Then("the chooser's footer reads {string}", async function (this: object, text: 
   await expectText(page(this), '[data-mc-providers]', text);
 });
 
+// ── how-to-get-a-key instructions ────────────────────────────────────────────
+
+// The link labels in DOM order. Asserted as a list rather than as the row's
+// text, because the row's spacing is flex gap — its textContent runs the
+// labels together.
 Then(
-  'the chooser shows a BYOK help link to {string} in a new tab',
-  async function (this: object, url: string) {
+  "the chooser's instructions row lists {string}",
+  async function (this: object, expected: string) {
+    const labels = await page(this).$$eval('[data-mc-howto]', (els) =>
+      els.map((el) => el.textContent ?? ''));
+    assert.equal(labels.join(', '), expected);
+  },
+);
+
+When(
+  'the user clicks the {string} instructions link',
+  async function (this: object, provider: string) {
+    await page(this).click(`[data-mc-howto="${provider}"]`);
+  },
+);
+
+Then('no provider instructions are shown', async function (this: object) {
+  const open = await page(this).$$('[data-mc-howto-body]');
+  assert.equal(open.length, 0, `expected no open instructions, found ${open.length}`);
+});
+
+Then(
+  'the {string} instructions are closed',
+  async function (this: object, provider: string) {
+    const open = await page(this).$$(`[data-mc-howto-body="${provider}"]`);
+    assert.equal(open.length, 0, `expected the ${provider} instructions to be closed`);
+  },
+);
+
+Then(
+  'the {string} instructions mention {string}',
+  async function (this: object, provider: string, text: string) {
+    await expectText(page(this), `[data-mc-howto-body="${provider}"]`, text);
+  },
+);
+
+Then(
+  'the {string} instructions link to {string} in a new tab',
+  async function (this: object, provider: string, url: string) {
     const p = page(this);
-    await p.waitForSelector('[data-mc-byok]', { timeout: 5_000 });
-    assert.ok(
-      (await p.getAttribute('[data-mc-byok]', 'href'))?.includes(url),
-      `expected the BYOK help link href to include "${url}"`,
-    );
-    assert.equal(await p.getAttribute('[data-mc-byok]', 'target'), '_blank');
-    assert.match(await p.getAttribute('[data-mc-byok]', 'rel') ?? '', /noopener/);
+    const link = `[data-mc-howto-body="${provider}"] a`;
+    await p.waitForSelector(link, { timeout: 5_000 });
+    assert.equal(await p.getAttribute(link, 'href'), url);
+    assert.equal(await p.getAttribute(link, 'target'), '_blank');
+    assert.match(await p.getAttribute(link, 'rel') ?? '', /noopener/);
   },
 );
 

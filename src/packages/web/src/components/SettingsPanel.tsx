@@ -147,7 +147,6 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             error={controller.keyError}
             busy={controller.keyBusy}
             puterBusy={controller.puterBusy}
-            byokHelpUrl="../FAQ.html#byok"
             onKeyInputChange={(value) => controller.setKeyInput(value)}
             onAdd={() => void controller.addKey()}
             onSelect={(p) => void controller.selectProvider(p)}
@@ -230,17 +229,19 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               Hit a bug? Send the TamedTable maintainers a redacted report (no API keys) so they can
               reproduce it.
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: space.px8 }}>
+            {/* One row, short labels — the section heading above already says
+                these are about diagnostics, so the buttons need not repeat it.
+                chrome, not ghost, on the two secondary actions: a borderless
+                text action beside a real button reads as a label. */}
+            <div style={{ display: 'flex', gap: space.px8 }}>
               <Button variant="primary" onClick={() => void controller.sendBugReport()}>
-                Send a bug report
+                Report a bug
               </Button>
               <Button variant="chrome" onClick={() => void controller.copyDiagnosticsReport()}>
-                Copy diagnostics report
+                Copy report
               </Button>
-              {/* chrome, not ghost: a borderless text action next to two real
-                  buttons reads as a label, not a button. */}
               <Button variant="chrome" onClick={() => controller.clearDiagnostics()}>
-                Clear diagnostics
+                Reset
               </Button>
             </div>
           </div>

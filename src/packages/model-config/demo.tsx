@@ -291,7 +291,6 @@ function Demo() {
         keyInput={keyInput}
         error={error}
         busy={busy}
-        byokHelpUrl="../../FAQ.html#byok"
         onKeyInputChange={(value) => {
           setKeyInput(value);
           // Typing clears the error — the user is already fixing it.

@@ -306,11 +306,24 @@ Three parts, stacked: the list of connected providers (or an empty row), the
 footer. There is no provider list to choose from before connecting — the key
 names its own provider.
 
-The footer reads `Google / OpenAI / Anthropic / OpenRouter / Groq`: the
-providers a **pasted key** can belong to. Puter is deliberately absent even
-though it is a full provider — its credential comes from the sign-in button
-below, not from the input the footer sits under, so naming it here would send
-users looking for a Puter key to paste.
+**Instructions, in the panel.** Under the input sits
+`Instructions: Google / OpenAI / Anthropic / OpenRouter / Groq`, each provider a
+button that expands two or three lines and a link straight to that provider's
+key page. One is open at a time; clicking the open one closes it. Puter is
+deliberately absent even though it is a full provider — its credential comes
+from the sign-in button below, not from this input, so naming it here would
+send users looking for a Puter key to paste.
+
+This replaces a `How to get ↗` link to the FAQ. The user who needs the
+instructions is standing in front of this input, and a new tab onto a page
+covering six providers is a round trip many never come back from.
+
+The text comes from `KEY_SETUP` in the package — one ordered table of
+`{ provider, label, steps, url, action }`, which also supplies the row's
+labels, so the list of providers is stated once. The FAQ keeps its own longer
+BYOK cards; the two are **allowed to differ in prose and not in destination**,
+and a test asserts every `KEY_SETUP` URL appears in `FAQ.html`. A key page that
+moves would otherwise leave one of the two pointing at nothing.
 
 **Connected provider cards.** One per connected provider, in the order the host
 passes them (see *Card order*). The header — the whole row is the click target
@@ -375,8 +388,11 @@ previously selected card collapses. Deleting removes the card and its key; if
 it was the default, the default falls back to the last remaining card, or to
 none, and the empty row returns.
 
-The component is pure — props in, callbacks out, no state, no storage, no
-network. The host owns all state and semantics: `SettingsPanel` binds the props
+The component is pure — props in, callbacks out, no storage, no network — and
+holds exactly one piece of state: which provider's instructions are expanded.
+That is ephemeral display state the host has no use for (nothing is stored,
+nothing is resolved from it), so threading it through two hosts would buy
+nothing. Everything else the host owns: `SettingsPanel` binds the props
 to `WebController` in the app, and plain React state does it on the demo page.
 
 Styling comes only from `--mc-*` CSS custom properties (listed in the code

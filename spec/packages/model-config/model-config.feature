@@ -930,12 +930,35 @@ Feature: Model config
 
     @web
     # Puter is absent on purpose: its credential comes from the sign-in button
-    # below, not from the input this footer sits under.
-    Scenario: The chooser lists the providers a pasted key can belong to
+    # below, not from the input this row sits under.
+    Scenario: The chooser offers instructions for every provider a key can belong to
       Given the model-config demo page
-      Then the chooser's footer reads "Google / OpenAI / Anthropic / OpenRouter / Groq"
+      Then the chooser's footer reads "Instructions"
+      And the chooser's instructions row lists "Google, OpenAI, Anthropic, OpenRouter, Groq"
 
     @web
-    Scenario: The chooser shows a how-to-get-a-key help link
+    # The instructions arrive where the blocker is. A link to the FAQ opened a
+    # tab covering six providers; this opens the two lines for the one asked for.
+    Scenario: Clicking a provider opens its instructions in place
       Given the model-config demo page
-      Then the chooser shows a BYOK help link to "FAQ.html#byok" in a new tab
+      Then no provider instructions are shown
+      When the user clicks the "groq" instructions link
+      Then the "groq" instructions mention "Groq Console"
+      And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
+
+    @web
+    Scenario: Clicking the open provider again closes its instructions
+      Given the model-config demo page
+      When the user clicks the "gemini" instructions link
+      Then the "gemini" instructions mention "Google AI Studio"
+      When the user clicks the "gemini" instructions link
+      Then no provider instructions are shown
+
+    @web
+    # One at a time — the panel is 400px wide and five open blocks is a wall.
+    Scenario: Opening another provider closes the one before it
+      Given the model-config demo page
+      When the user clicks the "gemini" instructions link
+      And the user clicks the "openai" instructions link
+      Then the "openai" instructions mention "OpenAI platform"
+      And the "gemini" instructions are closed

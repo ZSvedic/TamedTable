@@ -185,6 +185,81 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
   ['sk-',      'openai'],
 ];
 
+// ── How to get a key ───────────────────────────────────────────────────────
+// The five providers a key can be pasted for, in the order the chooser names
+// them, each with the short version of the FAQ's instructions. Puter is absent:
+// its credential comes from the sign-in button, not from the key input.
+//
+// The console URLs are the part that must not drift from the FAQ — a test
+// asserts each one appears there. The prose is deliberately allowed to differ:
+// the FAQ is the long form, this is the two lines that fit in a 400px panel.
+
+export interface KeySetup {
+  provider: Provider;
+  /** How the chooser's instructions row names it. */
+  label: string;
+  /** Two or three short lines — what the user has to do, and the one gotcha. */
+  steps: readonly string[];
+  /** Where the key is created. */
+  url: string;
+  /** The link's text. */
+  action: string;
+}
+
+export const KEY_SETUP: readonly KeySetup[] = [
+  {
+    provider: 'gemini',
+    label: 'Google',
+    steps: [
+      'Sign in at Google AI Studio and create a key.',
+      'Gemini keys stay viewable, so you can come back for one later.',
+      'In the EEA, UK or Switzerland you must enable billing even for the free tier.',
+    ],
+    url: 'https://aistudio.google.com/apikey',
+    action: 'Create a Gemini API key',
+  },
+  {
+    provider: 'openai',
+    label: 'OpenAI',
+    steps: [
+      'Sign in at the OpenAI platform and create a key.',
+      'It is shown once — copy it straight away.',
+    ],
+    url: 'https://platform.openai.com/api-keys',
+    action: 'Create an OpenAI API key',
+  },
+  {
+    provider: 'anthropic',
+    label: 'Anthropic',
+    steps: [
+      'Sign in to the Anthropic Console and create a key.',
+      'It is shown once — copy it straight away.',
+    ],
+    url: 'https://console.anthropic.com/settings/keys',
+    action: 'Create an Anthropic API key',
+  },
+  {
+    provider: 'openrouter',
+    label: 'OpenRouter',
+    steps: [
+      'One signup, no credit card, reaches free models from many vendors.',
+      'Allow free-model publication in your privacy settings — free models may train on your prompts.',
+    ],
+    url: 'https://openrouter.ai/settings/keys',
+    action: 'Create an OpenRouter API key',
+  },
+  {
+    provider: 'groq',
+    label: 'Groq',
+    steps: [
+      "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
+      'Sign in to the Groq Console and create a key; it is shown once.',
+    ],
+    url: 'https://console.groq.com/keys',
+    action: 'Create a Groq API key',
+  },
+];
+
 /** The prefixes named in the chooser's "key not recognised" message, in the
  *  order a user reads them — not the order they are matched in. */
 export const SUPPORTED_PREFIXES: readonly string[] = [

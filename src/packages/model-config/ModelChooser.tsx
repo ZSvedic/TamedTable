@@ -8,7 +8,8 @@
 // renders standalone and the host injects its theme by setting the variables on
 // a wrapper.
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { KEY_SETUP } from './index.ts';
 import type { Provider, Tier } from './index.ts';
 import { estimateSecPer1kTok } from './probe.ts';
 // Type-only: the component still touches no storage at runtime, it just names
@@ -51,9 +52,6 @@ export interface ModelChooserProps {
    *  a panel that looks untouched when the user comes back reads as a click
    *  that never registered. */
   puterBusy?: boolean;
-  /** Optional URL for the "How to get ↗" link. The host supplies the path so
-   *  the component carries no site URL; the link is omitted when unset. */
-  byokHelpUrl?: string;
   onKeyInputChange: (value: string) => void;
   onAdd: () => void;
   onSelect: (p: Provider) => void;
@@ -77,12 +75,6 @@ export const PROVIDER_LABEL: Record<Provider, string> = {
   openrouter: 'OpenRouter API',
   puter: 'Puter.js',
 };
-
-/** The footer's supported-provider list, in the order the design names them.
- *  These are the providers a pasted key can belong to — Puter is left out on
- *  purpose: its credential comes from the sign-in button below, not from this
- *  input, and naming it here sends users looking for a Puter key to paste. */
-const SUPPORTED_LIST = 'Google / OpenAI / Anthropic / OpenRouter / Groq';
 
 // ── Theme variables — every visual choice reads var(--mc-*, default) ───────
 
@@ -181,7 +173,6 @@ export function ModelChooser({
   error,
   busy,
   puterBusy,
-  byokHelpUrl,
   onKeyInputChange,
   onAdd,
   onSelect,
@@ -191,6 +182,12 @@ export function ModelChooser({
 }: ModelChooserProps): ReactNode {
   const puterConnected = connected.some((c) => c.id === 'puter');
   const canAdd = keyInput.trim() !== '' && !busy;
+  // The one piece of state the component owns: which provider's instructions
+  // are expanded. It is ephemeral and means nothing to the host — nothing is
+  // stored, nothing is resolved from it — so threading it through two hosts
+  // would buy nothing.
+  const [howTo, setHowTo] = useState<Provider | null>(null);
+  const open = KEY_SETUP.find((s) => s.provider === howTo);
 
   /** Shared shape for the two 26px header buttons (⟳ and delete). */
   const iconButton = {
@@ -445,17 +442,6 @@ export function ModelChooser({
           }}
         >
           <span>Paste it below, we do the rest.</span>
-          {byokHelpUrl && (
-            <a
-              data-mc-byok=""
-              href={byokHelpUrl}
-              target="_blank"
-              rel="noopener"
-              style={{ fontWeight: 600, color: accent, textDecoration: 'none' }}
-            >
-              How to get ↗
-            </a>
-          )}
         </div>
 
         {error !== '' && (
@@ -531,9 +517,70 @@ export function ModelChooser({
           </button>
         </div>
 
-        <div data-mc-providers="" style={{ fontFamily: fontUi, fontSize: 12, color: ink3 }}>
-          {SUPPORTED_LIST}
+        {/* Instructions live here rather than behind a link to the FAQ: the
+            user who needs them is standing in front of this input, and a new
+            tab is a round trip many never come back from. */}
+        <div
+          data-mc-providers=""
+          style={{
+            display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 6,
+            fontFamily: fontUi, fontSize: 12, color: ink3,
+          }}
+        >
+          <span>Instructions:</span>
+          {KEY_SETUP.map((setup, i) => (
+            <span key={setup.provider} style={{ display: 'flex', gap: 6 }}>
+              <button
+                type="button"
+                data-mc-howto={setup.provider}
+                aria-expanded={howTo === setup.provider}
+                onClick={() => setHowTo(howTo === setup.provider ? null : setup.provider)}
+                style={{
+                  padding: 0,
+                  border: 0,
+                  background: 'transparent',
+                  fontFamily: fontUi,
+                  fontSize: 12,
+                  fontWeight: howTo === setup.provider ? 700 : 600,
+                  color: accent,
+                  cursor: 'pointer',
+                }}
+              >
+                {setup.label}
+              </button>
+              {i < KEY_SETUP.length - 1 && <span aria-hidden="true">/</span>}
+            </span>
+          ))}
         </div>
+
+        {open !== undefined && (
+          <div
+            data-mc-howto-body={open.provider}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              padding: '10px 11px',
+              borderRadius: radius,
+              background: surface2,
+              border: `1px solid ${line}`,
+              fontFamily: fontUi,
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: ink2,
+            }}
+          >
+            {open.steps.map((step) => <span key={step}>{step}</span>)}
+            <a
+              href={open.url}
+              target="_blank"
+              rel="noopener"
+              style={{ fontWeight: 600, color: accent, textDecoration: 'none' }}
+            >
+              {open.action} ↗
+            </a>
+          </div>
+        )}
       </div>
 
       {/* ── No API key? — sign in to the Puter.js gateway ───────────────── */}
