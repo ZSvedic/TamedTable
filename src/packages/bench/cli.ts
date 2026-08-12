@@ -130,11 +130,20 @@ async function cmdSweep(models: string[], batches: number[], out: string, retrie
   // undefined lets each runner resolve its own provider's key from env
   // (GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY), which bun loads from
   // .env. The pre-flight check above guarantees each is present.
-  const results: SweepResult[] = await runSweep(configs, {
-    inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels, retries,
-  });
   mkdirSync(RESULTS_DIR, { recursive: true });
   const file = join(RESULTS_DIR, `${out}.jsonl`);
+  // Report and persist per config rather than only at the end: a free-tier grid
+  // spends most of its wall clock waiting out a tokens-per-minute cap, and a
+  // config that throws after an hour must not take the finished ones with it.
+  const done: SweepResult[] = [];
+  const results: SweepResult[] = await runSweep(configs, {
+    inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels, retries,
+    onResult: (r, n, total) => {
+      done.push(r);
+      writeFileSync(file, done.map((x) => JSON.stringify(x)).join('\n') + '\n');
+      console.log(`  [${n}/${total}] ${r.cellModel} @ batch ${r.batchSize}: acc ${(r.accuracy * 100).toFixed(0)}%, ${(r.timeMs / 1000).toFixed(1)}s, $${r.costUsd.toFixed(4)}, ${r.calls} calls`);
+    },
+  });
   writeFileSync(file, results.map((r) => JSON.stringify(r)).join('\n') + '\n');
   console.log(`Wrote ${results.length} results → ${rel(file)}`);
   printReport(results);

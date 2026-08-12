@@ -43,6 +43,11 @@ export interface SweepContext {
    *  retry re-does the cheap patch turn rather than losing the whole grid.
    *  Defaults to 0 (paid providers don't need it). */
   retries?: number;
+  /** Called as each config lands. A free-tier grid can run for half an hour
+   *  under the provider's token-per-minute cap, so the caller needs somewhere
+   *  to print progress and to persist partial results before a late failure
+   *  throws the whole run away. */
+  onResult?: (result: SweepResult, done: number, total: number) => void;
 }
 
 export interface SweepResult {
@@ -114,7 +119,9 @@ export async function runSweep(configs: SweepConfig[], ctx: SweepContext): Promi
     let lastErr: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        results.push(await runConfig(cfg, ctx));
+        const result = await runConfig(cfg, ctx);
+        results.push(result);
+        ctx.onResult?.(result, results.length, configs.length);
         lastErr = undefined;
         break;
       } catch (e) {
