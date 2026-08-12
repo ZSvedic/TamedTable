@@ -67,11 +67,30 @@ Defaults: cell models `claude-sonnet-4-5, claude-haiku-4-5, gemini-3.1-flash-lit
 gpt-5.4-mini`; batch sizes `1, 5, 10, 20, 40, 80`; labeller `claude-fable-5`.
 Override with `--models=…`, `--batches=…`, `--out=name` on `sweep`.
 
-## Free providers (Cerebras, OpenRouter)
+## Free providers (Cerebras, OpenRouter, Groq, Google)
 
-Two free providers sit next to the paid three, both OpenAI-compatible, both $0
-in `models.jsonl`. Cerebras is bench-only; OpenRouter graduated to the app's
-fourth provider (its chooser card defaults to `cohere/north-mini-code:free`).
+Two of them are free-only providers sitting next to the paid three, both
+OpenAI-compatible, both $0 in `models.jsonl`. Cerebras is bench-only;
+OpenRouter graduated to the app's fourth provider (its chooser card defaults to
+`cohere/north-mini-code:free`). Groq and Google are the other shape: paid
+providers whose free developer tier serves the same models under a quota, so
+their `models.jsonl` rows carry the paid rates and a free-tier run prices as if
+it were paid.
+
+**Which free tier a user should actually pick: Google.** The
+[2026-08-12 run](../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
+swept both (`results/free-gemini.jsonl`, `results/free-groq.jsonl`).
+`gemini-2.5-flash-lite` at batch 20 scores 97%, the highest accuracy in this
+benchmark from any model, at $0.0043 per 120-row task. Groq's best,
+`openai/gpt-oss-120b`, reaches 93% and costs $0.0062. Groq's free tier is also
+the only one of the four whose limit is *tokens per minute* (8,000) rather than
+requests per day, and a single batch-10 cell call asks for ~6,700 of them — the
+engine exhausts its seven internal retries and the config fails outright. Sweep
+Groq's free tier at `TAMEDTABLE_RPM=5` and expect to re-run configs.
+
+Times in both files are throttled on purpose to imitate free-tier throughput,
+so read them as a floor rather than as model speed; accuracy and cost compare
+fairly.
 
 **Cerebras** ([cloud.cerebras.ai](https://cloud.cerebras.ai)) — `zai-glm-4.7`
 (primary/patch role) and `gpt-oss-120b` (cell role). The highest free limits
@@ -187,3 +206,11 @@ gain over the lineup above; 3.6 Flash matches 3.5 Flash at a 17% lower output
 price, 3.5 Flash-Lite loses to 3.1 Flash-Lite on both accuracy and price.
 Findings + recommendation:
 [`process/journal/2026-07-22-gemini-new-flash-benchmark.md`](../process/journal/2026-07-22-gemini-new-flash-benchmark.md).
+
+A 2026-08-12 run (`results/free-gemini.jsonl`, `results/free-groq.jsonl`) asked
+which free tier serves a free user best, and overturned two standing calls:
+`gemini-2.5-flash-lite` beats `gemini-3.1-flash-lite` on both axes ($0.0043 vs
+$0.0176 per task, 97% vs 96% at batch 20), so the "flash-lite wins on value"
+line above now points at the wrong flash-lite; and Groq is not the cheapest
+provider per task, only per token. Findings:
+[`process/journal/2026-08-12-google-groq-free-tier-benchmark.md`](../process/journal/2026-08-12-google-groq-free-tier-benchmark.md).
