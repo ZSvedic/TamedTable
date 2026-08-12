@@ -17115,7 +17115,7 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
 });
 
 // packages/model-config/demo.tsx
-var import_react = __toESM(require_react(), 1);
+var import_react2 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 // packages/model-config/models.json
 var models_default = {
@@ -17208,6 +17208,59 @@ var KEY_PREFIXES = [
   ["AIza", "gemini"],
   ["eyJ", "puter"],
   ["sk-", "openai"]
+];
+var KEY_SETUP = [
+  {
+    provider: "gemini",
+    label: "Google",
+    steps: [
+      "Sign in at Google AI Studio and create a key.",
+      "Gemini keys stay viewable, so you can come back for one later.",
+      "In the EEA, UK or Switzerland you must enable billing even for the free tier."
+    ],
+    url: "https://aistudio.google.com/apikey",
+    action: "Create a Gemini API key"
+  },
+  {
+    provider: "openai",
+    label: "OpenAI",
+    steps: [
+      "Sign in at the OpenAI platform and create a key.",
+      "It is shown once — copy it straight away."
+    ],
+    url: "https://platform.openai.com/api-keys",
+    action: "Create an OpenAI API key"
+  },
+  {
+    provider: "anthropic",
+    label: "Anthropic",
+    steps: [
+      "Sign in to the Anthropic Console and create a key.",
+      "It is shown once — copy it straight away."
+    ],
+    url: "https://console.anthropic.com/settings/keys",
+    action: "Create an Anthropic API key"
+  },
+  {
+    provider: "openrouter",
+    label: "OpenRouter",
+    steps: [
+      "One signup, no credit card, reaches free models from many vendors.",
+      "Allow free-model publication in your privacy settings — free models may train on your prompts."
+    ],
+    url: "https://openrouter.ai/settings/keys",
+    action: "Create an OpenRouter API key"
+  },
+  {
+    provider: "groq",
+    label: "Groq",
+    steps: [
+      "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
+      "Sign in to the Groq Console and create a key; it is shown once."
+    ],
+    url: "https://console.groq.com/keys",
+    action: "Create a Groq API key"
+  }
 ];
 var SUPPORTED_PREFIXES = [
   "AIza…",
@@ -17302,6 +17355,9 @@ function resolveConfig(env, stored) {
     alwaysRunAll: stored.alwaysRunAll ?? false
   };
 }
+
+// packages/model-config/ModelChooser.tsx
+var import_react = __toESM(require_react(), 1);
 
 // packages/model-config/probe.ts
 function estimateSecPer1kTok(m) {
@@ -17654,7 +17710,6 @@ var PROVIDER_LABEL = {
   openrouter: "OpenRouter API",
   puter: "Puter.js"
 };
-var SUPPORTED_LIST = "Google / OpenAI / Anthropic / OpenRouter / Groq";
 var v = (name, fallback) => `var(--mc-${name}, ${fallback})`;
 var ink = v("ink", "#1c1f23");
 var inkOnInk = v("ink-on-ink", "#ffffff");
@@ -17729,7 +17784,6 @@ function ModelChooser({
   error,
   busy,
   puterBusy,
-  byokHelpUrl,
   onKeyInputChange,
   onAdd,
   onSelect,
@@ -17739,6 +17793,8 @@ function ModelChooser({
 }) {
   const puterConnected = connected.some((c) => c.id === "puter");
   const canAdd = keyInput.trim() !== "" && !busy;
+  const [howTo, setHowTo] = import_react.useState(null);
+  const open = KEY_SETUP.find((s) => s.provider === howTo);
   const iconButton = {
     flex: "0 0 auto",
     width: 26,
@@ -17963,20 +18019,10 @@ function ModelChooser({
               lineHeight: 1.5,
               color: ink2
             },
-            children: [
-              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                children: "Paste it below, we do the rest."
-              }, undefined, false, undefined, this),
-              byokHelpUrl && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
-                "data-mc-byok": "",
-                href: byokHelpUrl,
-                target: "_blank",
-                rel: "noopener",
-                style: { fontWeight: 600, color: accent, textDecoration: "none" },
-                children: "How to get ↗"
-              }, undefined, false, undefined, this)
-            ]
-          }, undefined, true, undefined, this),
+            children: /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+              children: "Paste it below, we do the rest."
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
           error !== "" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             "data-mc-error": "",
             style: {
@@ -18054,9 +18100,78 @@ function ModelChooser({
           }, undefined, true, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             "data-mc-providers": "",
-            style: { fontFamily: fontUi, fontSize: 12, color: ink3 },
-            children: SUPPORTED_LIST
-          }, undefined, false, undefined, this)
+            style: {
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "baseline",
+              gap: 6,
+              fontFamily: fontUi,
+              fontSize: 12,
+              color: ink3
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                children: "Instructions:"
+              }, undefined, false, undefined, this),
+              KEY_SETUP.map((setup, i) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                style: { display: "flex", gap: 6 },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+                    type: "button",
+                    "data-mc-howto": setup.provider,
+                    "aria-expanded": howTo === setup.provider,
+                    onClick: () => setHowTo(howTo === setup.provider ? null : setup.provider),
+                    style: {
+                      padding: 0,
+                      border: 0,
+                      background: "transparent",
+                      fontFamily: fontUi,
+                      fontSize: 12,
+                      fontWeight: howTo === setup.provider ? 700 : 600,
+                      color: accent,
+                      cursor: "pointer"
+                    },
+                    children: setup.label
+                  }, undefined, false, undefined, this),
+                  i < KEY_SETUP.length - 1 && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                    "aria-hidden": "true",
+                    children: "/"
+                  }, undefined, false, undefined, this)
+                ]
+              }, setup.provider, true, undefined, this))
+            ]
+          }, undefined, true, undefined, this),
+          open !== undefined && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            "data-mc-howto-body": open.provider,
+            style: {
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              padding: "10px 11px",
+              borderRadius: radius,
+              background: surface2,
+              border: `1px solid ${line}`,
+              fontFamily: fontUi,
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: ink2
+            },
+            children: [
+              open.steps.map((step) => /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                children: step
+              }, step, false, undefined, this)),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
+                href: open.url,
+                target: "_blank",
+                rel: "noopener",
+                style: { fontWeight: 600, color: accent, textDecoration: "none" },
+                children: [
+                  open.action,
+                  " ↗"
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
       onPuterSignIn && /* @__PURE__ */ jsx_dev_runtime.jsxDEV(jsx_dev_runtime.Fragment, {
@@ -18393,20 +18508,20 @@ function stubProbe() {
   };
 }
 function Demo() {
-  const seed = import_react.useRef(readStoredConfig()).current;
-  const [stored, setStored] = import_react.useState(seed);
-  const [probes, setProbes] = import_react.useState(import_react.useRef(readStoredProbes()).current);
-  const [measuring, setMeasuring] = import_react.useState({});
-  const [keyInput, setKeyInput] = import_react.useState("");
-  const [error, setError] = import_react.useState("");
-  const [busy, setBusy] = import_react.useState(false);
+  const seed = import_react2.useRef(readStoredConfig()).current;
+  const [stored, setStored] = import_react2.useState(seed);
+  const [probes, setProbes] = import_react2.useState(import_react2.useRef(readStoredProbes()).current);
+  const [measuring, setMeasuring] = import_react2.useState({});
+  const [keyInput, setKeyInput] = import_react2.useState("");
+  const [error, setError] = import_react2.useState("");
+  const [busy, setBusy] = import_react2.useState(false);
   const resolved = resolveConfig({}, {
     ...stored,
     model: defaultModel(stored.provider ?? "gemini"),
     cellModel: defaultCellModel(stored.provider ?? "gemini")
   });
-  const mounted = import_react.useRef(false);
-  import_react.useEffect(() => {
+  const mounted = import_react2.useRef(false);
+  import_react2.useEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
       return;
@@ -18510,12 +18625,12 @@ function Demo() {
     primary: roleRow(p, "primary"),
     secondary: roleRow(p, "secondary")
   }));
-  const [query, setQuery] = import_react.useState("");
-  const [response, setResponse] = import_react.useState("");
-  const [sending, setSending] = import_react.useState(false);
-  const [recording, setRecording] = import_react.useState(false);
-  const recRef = import_react.useRef(null);
-  const startGate = import_react.useRef(Promise.resolve());
+  const [query, setQuery] = import_react2.useState("");
+  const [response, setResponse] = import_react2.useState("");
+  const [sending, setSending] = import_react2.useState(false);
+  const [recording, setRecording] = import_react2.useState(false);
+  const recRef = import_react2.useRef(null);
+  const startGate = import_react2.useRef(Promise.resolve());
   const hasVoice = ALL_MODELS.some((m) => m.id === resolved.model && m.voiceInput);
   const send = async () => {
     if (!query.trim() || sending)
@@ -18593,7 +18708,6 @@ function Demo() {
         keyInput,
         error,
         busy,
-        byokHelpUrl: "../../FAQ.html#byok",
         onKeyInputChange: (value) => {
           setKeyInput(value);
           if (error !== "")
