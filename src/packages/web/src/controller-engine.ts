@@ -143,6 +143,10 @@ export class EngineManager {
       // fallback lets the SDK initialise even with no key — the real error then
       // surfaces from the API response, which userFacingMessage describes).
       apiKey: replaying ? PLACEHOLDER_KEY : (this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY),
+      // The engine is told its provider rather than left to infer it from the
+      // model id: an id cannot say who serves it (openai/gpt-oss-120b is Groq's
+      // here, and OpenRouter hosts the same weights under the same name).
+      provider: replaying ? replayProvider : this.host.config.provider,
       model: replaying ? defaultModel(replayProvider) : this.host.config.model,
       cellModel: replaying ? defaultCellModel(replayProvider) : this.host.config.cellModel,
       fetch: this.makeFetch(),
@@ -168,13 +172,6 @@ export class EngineManager {
    *  when there is a live engine to rebuild). */
   hasRunner(): boolean {
     return this.headless !== undefined;
-  }
-
-  /** #ProviderSelect — the Settings Test button's one-call key check. Runs
-   *  through the same engine a request would, so a green tick means requests
-   *  will work; needs no loaded table. */
-  testConnection(): Promise<{ model: string }> {
-    return this.ensureHeadless().testConnection();
   }
 
   /** Drop the engine so the next ensureHeadless() rebuilds it with current

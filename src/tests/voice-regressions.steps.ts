@@ -200,7 +200,7 @@ Given('a second regression voice session listening hands-free', async function (
 When('the provider is switched mid-recording and the key is removed mid-listening', async function () {
   const s = state(this);
   // Settings is reachable while recording/listening — no voiceStatus guard.
-  await s.rig.c.clickProviderCard('anthropic');
+  await s.rig.c.selectProvider('anthropic');
   await s.contRig!.c.setConfig({ geminiKey: null });
 });
 

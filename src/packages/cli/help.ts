@@ -17,8 +17,8 @@ Usage:
   tamedtable --help, -h, help        Show this usage screen.
   tamedtable --version, -v           Print the version and exit.
 
-The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or
-OPENROUTER_API_KEY in env.
+The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY,
+GROQ_API_KEY, OPENROUTER_API_KEY, or PUTER_TOKEN in env.
 `;
 
 export const HELP_TEXT = `TamedTable — interactive table editor. Natural-language requests edit the
@@ -58,6 +58,6 @@ language request — e.g. "normalize phone numbers", "sort by DOB desc".
 Requests are additive; use :undo to revert the last one.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires
-ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or
-OPENROUTER_API_KEY in env.
+ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY,
+OPENROUTER_API_KEY, or PUTER_TOKEN in env.
 `;

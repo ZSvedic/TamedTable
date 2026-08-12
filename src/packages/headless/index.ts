@@ -3,7 +3,10 @@ import type { JSONValue } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { providerFor, acceptsTemperature } from '@tamedtable/model-config';
+import {
+  providerFor, acceptsTemperature, puterEnvelope, PROVIDER_BASE_URL, PUTER_DRIVERS_URL,
+  type EngineProvider,
+} from '@tamedtable/model-config';
 import jsonpatch, { type Operation } from 'fast-json-patch';
 import { readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
@@ -245,6 +248,13 @@ export interface LazyEvalOpts {
 }
 
 export interface HeadlessRunnerOptions {
+  /** Who serves the models. A model id cannot say who hosts it —
+   *  `openai/gpt-oss-120b` is Groq's here, and OpenRouter serves the same
+   *  weights under the same name — so the runner is told rather than left to
+   *  guess. Callers holding only an id (the benchmark sweeping from a command
+   *  line, a CLI with just TAMEDTABLE_MODEL) omit it and get
+   *  `providerFor(model)`. */
+  provider?: EngineProvider;
   model?: string;
   cellModel?: string;
   apiKey?: string;
@@ -310,11 +320,6 @@ export interface HeadlessRunner {
    *  Python script. Returns the script source, and streams it to
    *  `onProgress` on the way (#PyExport). */
   exportPython(opts?: ExportPythonOpts): Promise<string>;
-  /** #ProviderSelect — one minimal call on the cell model with retries off,
-   *  proving the configured key and provider work. Resolves with the model id
-   *  it reached; rejects with the provider's own error. Needs no loaded
-   *  table. */
-  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }>;
   // #LazyExec — web-shell seams. adoptState swaps in a spec + derived rows
   // with no replay and no model call (provider switch keeps evaluated rows);
   // `origins` carries the adopted rows' source origins (see rowOrigins) so
@@ -342,6 +347,8 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   anthropic: 'claude-haiku-4-5',
   openai: 'gpt-5.4-mini',
   cerebras: 'gpt-oss-120b',
+  groq: 'openai/gpt-oss-20b',
+  puter: 'gemini-3.1-flash-lite',
   openrouter: 'cohere/north-mini-code:free',
 };
 
@@ -531,6 +538,8 @@ const LOW_EFFORT: Record<ReturnType<typeof providerFor>, ProviderOptions> = {
   openai:     { openai:    { reasoningEffort: 'low' } },
   openrouter: { openai:    { reasoningEffort: 'low' } },
   cerebras:   { openai:    { reasoningEffort: 'low' } },
+  groq:       { openai:    { reasoningEffort: 'low' } },
+  puter:      { openai:    { reasoningEffort: 'low' } },
   anthropic:  { anthropic: { thinking: { type: 'disabled' } } },
 };
 
@@ -945,6 +954,89 @@ export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]):
 
 // ── Runner ─────────────────────────────────────────────────────────────────
 
+// #PuterGateway
+// Puter takes one endpoint — POST /drivers/call — whose `args` are an OpenAI
+// chat-completions body, and answers `{success, result}` where `result` is an
+// OpenAI choice. That is close enough to translate rather than reimplement:
+// this fetch sits under the ordinary OpenAI client, wrapping the request and
+// unwrapping the reply, so tool calling and retries stay on the tested path.
+//
+// It always calls Puter **non-streaming**. Puter streams newline-delimited
+// JSON rather than SSE, and its streamed frames carry no tool calls — which the
+// patch turn depends on. When the SDK asked for a stream (only the Python
+// export does), the finished answer is replayed as a single SSE frame: the
+// script lands in one piece instead of typing out, and nothing else changes.
+function puterFetch(inner?: typeof globalThis.fetch): typeof globalThis.fetch {
+  const doFetch = inner ?? globalThis.fetch;
+  return (async (input: string | URL | Request, init?: RequestInit) => {
+    const sent = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+    const wantsStream = sent['stream'] === true;
+    delete sent['stream'];
+    delete sent['stream_options'];
+
+    const res = await doFetch(PUTER_DRIVERS_URL, {
+      ...init,
+      method: 'POST',
+      // The envelope shape lives in model-config, shared with the key probe, so
+      // the two cannot disagree about what Puter expects.
+      body: JSON.stringify(puterEnvelope(sent)),
+    } as RequestInit);
+    if (!res.ok) return res;
+
+    const envelope = await res.json() as {
+      success?: boolean;
+      result?: Record<string, unknown>;
+      error?: unknown;
+    };
+    if (envelope.success === false || !envelope.result) {
+      const message = typeof envelope.error === 'string'
+        ? envelope.error
+        : JSON.stringify(envelope.error ?? 'Puter.js refused the request');
+      return new Response(JSON.stringify({ error: { message } }), {
+        status: 502, headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const choice = envelope.result;
+    const u = (choice['usage'] ?? {}) as Record<string, number>;
+    const completion = {
+      id: 'puter', object: 'chat.completion', created: Math.floor(Date.now() / 1000),
+      model: String(sent['model'] ?? ''),
+      choices: [{
+        index: 0,
+        message: choice['message'],
+        finish_reason: choice['finish_reason'] ?? 'stop',
+      }],
+      // Puter names its counters `prompt`/`completion` on a finished call and
+      // `prompt_tokens`/`completion_tokens` in a streamed usage frame.
+      usage: {
+        prompt_tokens: u['prompt_tokens'] ?? u['prompt'] ?? 0,
+        completion_tokens: u['completion_tokens'] ?? u['completion'] ?? 0,
+        total_tokens: (u['prompt_tokens'] ?? u['prompt'] ?? 0)
+          + (u['completion_tokens'] ?? u['completion'] ?? 0),
+      },
+    };
+
+    if (!wantsStream) {
+      return new Response(JSON.stringify(completion), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    // One SSE frame carrying the whole answer, then the usage frame and [DONE].
+    const message = (choice['message'] ?? {}) as { content?: string };
+    const frame = (delta: unknown, extra: Record<string, unknown> = {}): string =>
+      `data: ${JSON.stringify({ ...completion, object: 'chat.completion.chunk', choices: [{ index: 0, delta, finish_reason: null }], ...extra })}\n\n`;
+    const body =
+      frame({ role: 'assistant', content: message.content ?? '' }) +
+      `data: ${JSON.stringify({ ...completion, object: 'chat.completion.chunk', choices: [{ index: 0, delta: {}, finish_reason: completion.choices[0]!.finish_reason }] })}\n\n` +
+      'data: [DONE]\n\n';
+    return new Response(body, {
+      status: 200, headers: { 'content-type': 'text/event-stream' },
+    });
+  }) as typeof globalThis.fetch;
+}
+
 class HeadlessRunnerImpl implements HeadlessRunner {
   private opts: HeadlessRunnerOptions;
   private sourceRows: Row[] = [];
@@ -1047,7 +1139,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const fetchImpl = this.opts.fetch;
     const fetchOpt = fetchImpl ? { fetch: fetchImpl as typeof globalThis.fetch } : {};
     const modelId = this.opts.model ?? DEFAULT_MODEL;
-    const detected = providerFor(modelId);
+    const detected = this.opts.provider ?? providerFor(modelId);
 
     if (detected === 'gemini') {
       const key = apiKey ?? process.env.GEMINI_API_KEY;
@@ -1058,22 +1150,48 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       if (!key) throw new Error('OPENAI_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       // Chat Completions, not the SDK's default Responses API: it is the
       // broadly-compatible endpoint for the GPT models in the catalogue.
-      const openai = createOpenAI({ apiKey: key, ...fetchOpt });
+      const openai = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.openai, ...fetchOpt });
       this.providerCache = (modelId: string) => openai.chat(modelId);
     } else if (detected === 'cerebras') {
       // Bench-only free provider: an OpenAI-compatible endpoint, so the same
       // Chat Completions path as OpenAI, pointed at Cerebras.
       const key = apiKey ?? process.env.CEREBRAS_API_KEY;
       if (!key) throw new Error('CEREBRAS_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      const cerebras = createOpenAI({ apiKey: key, baseURL: 'https://api.cerebras.ai/v1', ...fetchOpt });
+      const cerebras = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.cerebras, ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
+    } else if (detected === 'puter') {
+      // #PuterGateway — Puter is not OpenAI-compatible at the transport level,
+      // but its `ai-chat` driver speaks OpenAI's *payload*: the same messages,
+      // the same `tools`, and `finish_reason: "tool_calls"` with
+      // `message.tool_calls[]` coming back. So rather than a bespoke
+      // LanguageModel implementation, the OpenAI client is pointed at a fetch
+      // that puts the body into Puter's envelope and takes the answer out
+      // again. Everything downstream — tool calling, retries, usage — is the
+      // path the other providers already use.
+      const key = apiKey ?? process.env.PUTER_TOKEN;
+      if (!key) throw new Error('PUTER_TOKEN is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const puter = createOpenAI({
+        apiKey: key,
+        baseURL: PROVIDER_BASE_URL.puter,
+        fetch: puterFetch(fetchImpl as typeof globalThis.fetch | undefined),
+      });
+      this.providerCache = (modelId: string) => puter.chat(modelId);
+    } else if (detected === 'groq') {
+      // Shipped app provider: another OpenAI-compatible endpoint, so the same
+      // Chat Completions path as OpenAI, pointed at Groq. Its ids are
+      // vendor-prefixed (openai/gpt-oss-120b), which is why providerFor reads
+      // the catalogue before it reads prefixes.
+      const key = apiKey ?? process.env.GROQ_API_KEY;
+      if (!key) throw new Error('GROQ_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
+      const groq = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.groq, ...fetchOpt });
+      this.providerCache = (modelId: string) => groq.chat(modelId);
     } else if (detected === 'openrouter') {
       // Shipped app provider (the 4th), same OpenAI-compatible path as
       // Cerebras. :free models 404 unless the account's privacy settings
       // allow free model publication — see benchmarks/README.md.
       const key = apiKey ?? process.env.OPENROUTER_API_KEY;
       if (!key) throw new Error('OPENROUTER_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
-      const openrouter = createOpenAI({ apiKey: key, baseURL: 'https://openrouter.ai/api/v1', ...fetchOpt });
+      const openrouter = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.openrouter, ...fetchOpt });
       this.providerCache = (modelId: string) => openrouter.chat(modelId);
     } else {
       // Anthropic (default)
@@ -1084,7 +1202,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
         ? rawBase.replace(/\/$/, '').endsWith('/v1')
           ? rawBase.replace(/\/$/, '')
           : `${rawBase.replace(/\/$/, '')}/v1`
-        : 'https://api.anthropic.com/v1';
+        : PROVIDER_BASE_URL.anthropic;
       this.providerCache = createAnthropic({ apiKey: key, baseURL, ...fetchOpt });
     }
 
@@ -1167,25 +1285,6 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   // #PyExport
-  // #ProviderSelect — the Settings "Test" button. One tiny call on the cheap
-  // (cell) model to prove the key, the model and the network path all work,
-  // with retries off: the request path's backoff is right for a real
-  // transformation and wrong here, where an empty billing account would keep
-  // the user watching a spinner for a minute to learn what the first response
-  // already said. No rate-limiter wait (a key test must not queue behind a
-  // run) and no usage recorded — a test is not part of any request.
-  async testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }> {
-    const model = this.resolvedCellModelId();
-    await generateText({
-      model: this.cellModel(),
-      prompt: 'Reply with OK.',
-      abortSignal: opts?.signal,
-      ...this.samplingParams(model),
-      maxRetries: 0,
-    });
-    return { model };
-  }
-
   // The call streams (#PyExport): the script is the slowest thing the app
   // asks a model for, and a host that can show it being written turns a blank
   // wait into something to watch. Streaming unconditionally — `onProgress` or

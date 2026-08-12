@@ -147,7 +147,7 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
   if (!opts.apiKey) {
     const cfg = resolveConfig(readConfigFromEnv(), {});
     const envKey = keyFor(cfg);
-    if (envKey) opts = { ...opts, apiKey: envKey };
+    if (envKey) opts = { ...opts, apiKey: envKey, provider: cfg.provider };
   }
   const runner = createHeadlessRunner(opts);
   try { await runner.loadInput(csvPath); } catch (e) { return fail(3, `tamedtable execute: ${(e as Error).message}`); }
@@ -170,11 +170,13 @@ async function resolveFile(p: string): Promise<string | undefined> {
 async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[]): Promise<RunCliResult> {
   const stdin = opts.stdin ?? process.stdin;
   const stdout = opts.stdout ?? process.stdout;
-  // Resolve provider/key/model from env; let opts override (tests inject apiKey/model directly).
+  // Resolve provider/key/model from env; let opts override (tests inject
+  // apiKey/model directly). The provider travels with the key it belongs to —
+  // the engine is told, not left to infer it from the model id.
   if (!opts.apiKey) {
     const cfg = resolveConfig(readConfigFromEnv(), {});
     const envKey = keyFor(cfg);
-    if (envKey) opts = { ...opts, apiKey: envKey };
+    if (envKey) opts = { ...opts, apiKey: envKey, provider: cfg.provider };
     if (!opts.model) opts = { ...opts, model: cfg.model };
     if (!opts.cellModel) opts = { ...opts, cellModel: cfg.cellModel };
   }

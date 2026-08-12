@@ -1,40 +1,25 @@
 // #ModelConfig
-// Settings/config: the resolved provider/key/model, the settings-panel open
-// state and expanded provider card, and the persistence + engine-rebuild that
-// a config change triggers. The config object itself lives on the host (the
-// React panel reads it directly); this owns the transitions.
+// Settings/config: the resolved provider/key/model, the settings-panel state,
+// the connect flow behind the model chooser, and the persistence +
+// engine-rebuild that a config change triggers. The config object itself lives
+// on the host (the React panel reads it directly); this owns the transitions.
 import {
   resolveConfig,
-  keyFor,
+  connectedProviders,
   defaultModel,
   defaultCellModel,
+  detectProvider,
+  keyFor,
+  KEY_FIELD,
+  SUPPORTED_PREFIXES,
   type Provider,
   type ResolvedConfig,
 } from '@tamedtable/model-config';
-import { writeStoredConfig } from '@tamedtable/model-config/storage';
-import { userFacingMessage } from './controller-messages.ts';
+import { writeStoredConfig, writeStoredProbes, connectedOrder } from '@tamedtable/model-config/storage';
+import { verifyKey, measureModel } from '@tamedtable/model-config/probe';
 import { pageSizeFor } from './controller.ts';
+import { userFacingMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
-
-/** The `ResolvedConfig` field each provider's key lives in. */
-const KEY_FIELD = {
-  gemini: 'geminiKey',
-  openai: 'openaiKey',
-  anthropic: 'anthropicKey',
-  openrouter: 'openrouterKey',
-} as const satisfies Record<Provider, keyof ResolvedConfig>;
-
-/** The provider whose key this partial saves, or null. A provider pick alone
- *  is not a save the "✓ Saved" badge should claim — the card's own radio shows
- *  the choice — and neither is clearing a key: a badge beside an empty field
- *  says a key landed when none did. */
-function savedKeyProvider(partial: Partial<ResolvedConfig>): Provider | null {
-  const providers = Object.keys(KEY_FIELD) as Provider[];
-  return providers.find((p) => {
-    const value = partial[KEY_FIELD[p]];
-    return typeof value === 'string' && value.trim() !== '';
-  }) ?? null;
-}
 
 export class ConfigManager {
   private readonly host: ControllerHost;
@@ -42,107 +27,208 @@ export class ConfigManager {
     this.host = host;
   }
 
-  /** Refill every key draft from the saved config — the panel opens showing
-   *  what is stored, not what a previous visit left half-typed. */
-  private resetKeyDrafts(): void {
-    for (const p of Object.keys(KEY_FIELD) as Provider[]) {
-      this.host.keyDrafts[p] = (this.host.config[KEY_FIELD[p]] as string | null) ?? '';
-    }
-  }
-
-  /** The user typed in a key field. Moves the draft only — half a key is not
-   *  a key, and saving each keystroke rebuilds the engine (replaying the whole
-   *  flow) for a value that is not finished. */
-  setKeyDraft(provider: Provider, value: string): void {
-    this.host.keyDrafts[provider] = value;
-    this.host.notify();
-  }
-
-  /** The user finished with a key field — it lost focus, they pressed Enter,
-   *  or they closed the panel. Saves the draft, unless it matches what is
-   *  already stored: leaving a field untouched is not a save. */
-  async commitKeyDraft(provider: Provider): Promise<void> {
-    const draft = (this.host.keyDrafts[provider] ?? '').trim();
-    const stored = ((this.host.config[KEY_FIELD[provider]] as string | null) ?? '').trim();
-    if (draft === stored) return;
-    await this.setConfig({ [KEY_FIELD[provider]]: draft === '' ? null : draft });
-  }
-
   /** Returns the API key for the currently-selected provider, or null. */
   activeApiKey(): string | null {
     return keyFor(this.host.config);
   }
 
-  /** Whether the Settings "Test" button has anything to test: a key for the
-   *  selected provider. An empty field disables the button. */
-  canTestKey(): boolean {
-    return Boolean(this.activeApiKey()?.trim());
+  /** Every provider with a key — the chooser's card list, in the order the
+   *  user added them (the `connectedAt` stamps kept beside the measurements). */
+  connected(): Provider[] {
+    return connectedProviders(this.host.config, connectedOrder(this.host.probes));
   }
 
-  /** #ProviderSelect — prove the selected provider's key works, now, instead
-   *  of leaving the user to find out from a failed transformation. One tiny
-   *  call through the app's own engine (same SDK, same routing, same headers)
-   *  with retries off, so a dead key answers in about a second. */
-  async testKey(): Promise<void> {
-    const provider = this.host.config.provider;
-    if (!this.canTestKey()) {
-      this.host.keyTest = {
-        provider,
-        state: 'error',
-        message: 'Enter an API key first.',
-      };
+  // ── The connect flow ──────────────────────────────────────────────────────
+
+  /** The user typed in the key input. Typing clears the error — they are
+   *  already fixing it. */
+  setKeyInput(value: string): void {
+    this.host.keyInput = value;
+    if (this.host.keyError !== '') this.host.keyError = '';
+    this.host.notify();
+  }
+
+  /**
+   * #ProviderSelect — connect the pasted key. Detect the provider from its
+   * prefix, prove the key works against that provider, and only then store
+   * anything: a key that does not work never becomes a setting the user has to
+   * hunt down and undo. The card appears as soon as the check passes; the two
+   * measurements fill it in afterwards, so a provider that takes twelve seconds
+   * to answer never holds the panel up.
+   */
+  async addKey(): Promise<void> {
+    const key = this.host.keyInput.trim();
+    if (key === '' || this.host.keyBusy) return;
+
+    const provider = detectProvider(key);
+    if (!provider) {
+      this.host.keyError = `Key not recognised. Supported prefixes: ${SUPPORTED_PREFIXES.join(', ')}.`;
       this.host.notify();
       return;
     }
-    this.host.keyTest = { provider, state: 'running', message: 'Testing…' };
+
+    this.host.keyBusy = true;
+    this.host.keyError = '';
     this.host.notify();
-    const started = Date.now();
     try {
-      const { model } = await this.host.engine.testConnection();
-      const seconds = ((Date.now() - started) / 1000).toFixed(1);
-      this.host.keyTest = { provider, state: 'ok', message: `${model} answered in ${seconds}s` };
+      await this.connect(provider, key);
     } catch (e) {
-      this.host.keyTest = { provider, state: 'error', message: userFacingMessage(e, provider) };
+      this.host.keyError = (e as Error).message;
+    } finally {
+      this.host.keyBusy = false;
+      this.host.notify();
     }
+  }
+
+  /**
+   * #PuterGateway — the "No API key?" button. Puter's credential is a session
+   * token, and the only way to mint one is its sign-in popup, so this loads
+   * Puter's SDK, opens it, and then connects the resulting token through the
+   * very same path a pasted one takes.
+   *
+   * The SDK is fetched **on click, never on load**. TamedTable's pages pull in
+   * no third-party scripts, and a user who does not use Puter should keep it
+   * that way — see the FAQ's key-safety answer.
+   */
+  async signInPuter(): Promise<void> {
+    if (this.host.keyBusy) return;
+    this.host.keyBusy = true;
+    // The sign-in happens in a window in front of the panel, so the button
+    // has to show it started — otherwise coming back to an unchanged panel
+    // reads as a click that never registered.
+    this.host.puterBusy = true;
+    this.host.keyError = '';
+    this.host.notify();
+    try {
+      const token = await this.host.opts.puterSignIn!();
+      if (token === null) return;            // The user closed the popup.
+      await this.connect('puter', token);
+    } catch (e) {
+      this.host.keyError = (e as Error).message;
+    } finally {
+      this.host.keyBusy = false;
+      this.host.puterBusy = false;
+      this.host.notify();
+    }
+  }
+
+  /** Check a credential and, if the provider accepts it, store it and select
+   *  that provider. Shared by the pasted-key path and the Puter sign-in. */
+  private async connect(provider: Provider, key: string): Promise<void> {
+    const { tier } = await verifyKey(provider, key, { fetch: this.host.opts.fetch });
+    // Re-adding keeps the original connected time, so fixing an expired key
+    // does not send the card to the bottom of the list.
+    const connectedAt = this.host.probes[provider]?.connectedAt ?? Date.now();
+    this.host.probes = { ...this.host.probes, [provider]: { tier, connectedAt } };
+    this.host.keyInput = '';
+    // A credential for an already-connected provider replaces it in place: the
+    // card has no key field, so the alternative is deleting it to fix a key.
+    await this.setConfig({
+      provider,
+      [KEY_FIELD[provider]]: key,
+      model: defaultModel(provider),
+      cellModel: defaultCellModel(provider),
+    });
+    void this.measure(provider, key);
+  }
+
+  /** Re-run a connected provider's measurements — the card's ⟳ button. A
+   *  number taken while the provider was having a bad minute is one click from
+   *  being replaced. */
+  async refreshProvider(provider: Provider): Promise<void> {
+    const key = (this.host.config[KEY_FIELD[provider]] as string | null) ?? '';
+    if (key === '' || this.host.measuring[provider]) return;
+    // Drop the old readings first, so both rows go back to "measuring…". The
+    // tier and the connected time are not measurements and stay put.
+    this.host.probes = {
+      ...this.host.probes,
+      [provider]: {
+        tier: this.host.probes[provider]?.tier ?? null,
+        connectedAt: this.host.probes[provider]?.connectedAt,
+      },
+    };
+    await this.measure(provider, key);
+  }
+
+  /** Fill in the card's two speed lines. Each row lands on its own, and a
+   *  measurement that fails leaves that row blank rather than the card broken —
+   *  a working key with an unknown price is still a working key. */
+  async measure(provider: Provider, key: string): Promise<void> {
+    this.host.measuring = { ...this.host.measuring, [provider]: true };
+    this.host.notify();
+    for (const role of ['primary', 'secondary'] as const) {
+      const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
+      let measure = null;
+      try {
+        measure = await measureModel(provider, key, modelId, { fetch: this.host.opts.fetch });
+      } catch {
+        // Leave the row blank — see above.
+      }
+      const probe = this.host.probes[provider];
+      if (!probe) return; // Removed while measuring.
+      // Stamped with the model and the moment, so a default change or a week
+      // gone by retires the reading instead of relabelling it.
+      const reading = measure && { ...measure, model: modelId, at: Date.now() };
+      this.host.probes = { ...this.host.probes, [provider]: { ...probe, [role]: reading } };
+      this.host.notify();
+    }
+    this.host.measuring = { ...this.host.measuring, [provider]: false };
+    writeStoredProbes(this.host.probes);
     this.host.notify();
   }
+
+  /** Make a connected provider the default. The user connects a provider, not
+   *  individual models, so this always pins that provider's two fixed
+   *  defaults — even if a stale model from an older build is still stored. */
+  async selectProvider(provider: Provider): Promise<void> {
+    await this.setConfig({
+      provider,
+      model: defaultModel(provider),
+      cellModel: defaultCellModel(provider),
+    });
+  }
+
+  /** Remove a provider and its key. When it was the default, the default falls
+   *  back to the last remaining connected provider — or, with none left, to the
+   *  gemini fallback resolveConfig uses everywhere else. */
+  async removeProvider(provider: Provider): Promise<void> {
+    // #PuterGateway — Puter's credential is a session, not a key the user
+    // holds a copy of, so deleting the card has to end the session as well.
+    // Dropping only our token would leave the SDK's own copy behind, and the
+    // next sign-in would hand back the same account with no way to switch.
+    if (provider === 'puter') this.host.opts.puterSignOut?.();
+    const cleared: Partial<ResolvedConfig> = { [KEY_FIELD[provider]]: null };
+    if (this.host.config.provider === provider) {
+      // "The last remaining card" is the last one on screen, so the fallback
+      // reads the same order the user is looking at.
+      const left = connectedProviders(
+        resolveConfig({}, { ...this.host.config, ...cleared }),
+        connectedOrder(this.host.probes),
+      );
+      const next = left[left.length - 1] ?? 'gemini';
+      cleared.provider = next;
+      cleared.model = defaultModel(next);
+      cleared.cellModel = defaultCellModel(next);
+    }
+    const { [provider]: _dropped, ...rest } = this.host.probes;
+    this.host.probes = rest;
+    writeStoredProbes(this.host.probes);
+    await this.setConfig(cleared);
+  }
+
+  // ── Panel lifecycle ───────────────────────────────────────────────────────
 
   openSettings(): void {
     this.host.settingsOpen = true;
-    // The Saved badge only ever states a save made this visit.
-    this.host.savedProvider = null;
-    // Same for the key-test result: a green tick from an earlier visit would
-    // vouch for a key that may since have been edited or run out of credit.
-    this.host.keyTest = null;
-    this.resetKeyDrafts();
+    // The panel opens on a clean add row: an error from an earlier visit is
+    // about a key the user has since moved on from.
+    this.host.keyInput = '';
+    this.host.keyError = '';
     this.host.notify();
   }
 
-  /** Closing commits whatever is still in the key fields, so a key typed but
-   *  never blurred is not lost to the Close button. */
-  async closeSettings(): Promise<void> {
+  closeSettings(): void {
     this.host.settingsOpen = false;
-    this.host.notify();
-    for (const p of Object.keys(KEY_FIELD) as Provider[]) await this.commitKeyDraft(p);
-  }
-
-  /** Toggle an accordion provider card. Expanding a card also selects that
-   *  provider; collapsing the already-open card does not change the provider. */
-  async clickProviderCard(provider: Provider): Promise<void> {
-    if (this.host.expandedProvider === provider) {
-      // Toggle: collapse without changing provider
-      this.host.expandedProvider = null;
-    } else {
-      this.host.expandedProvider = provider;
-      // The user picks a provider, not individual models — so selecting a card
-      // always pins that provider's fixed primary + secondary defaults, even if
-      // a stale model from an older build is still stored.
-      await this.setConfig({
-        provider,
-        model: defaultModel(provider),
-        cellModel: defaultCellModel(provider),
-      });
-    }
     this.host.notify();
   }
 
@@ -152,8 +238,8 @@ export class ConfigManager {
     const next = resolveConfig({}, { ...this.host.config, ...partial });
     // The engine hands its key to the model clients when it is built, so a key
     // edit has to rebuild exactly like a model switch — otherwise the key the
-    // user just typed sits unused until the page reloads and every request
-    // keeps failing with "Invalid API key" under a "✓ Saved" badge.
+    // user just connected sits unused until the page reloads and every request
+    // keeps failing with "Invalid API key" under a card that looks connected.
     const engineChanged =
       next.model !== this.host.config.model ||
       next.cellModel !== this.host.config.cellModel ||
@@ -170,9 +256,6 @@ export class ConfigManager {
       return;
     }
     this.host.config = next;
-    // The key test vouches for one key on one provider — the moment either
-    // moves, the old verdict is about something else.
-    if (engineChanged || next.provider !== this.host.keyTest?.provider) this.host.keyTest = null;
     // Closing the voice gate (a provider without voice, or its key removed)
     // tears down any live mic or hands-free session along with the controls.
     this.host.voice.enforceGate();
@@ -181,13 +264,6 @@ export class ConfigManager {
     // currentPage() clamps on read, so no page bookkeeping is needed here.
     this.host.pageSize = pageSizeFor(next.provider, this.host.opts);
     writeStoredConfig(next);
-    // Confirm the save on the card whose key it carried. A provider pick is
-    // not confirmed — see savedKeyProvider.
-    const savedFor = savedKeyProvider(partial);
-    if (this.host.settingsOpen && savedFor) {
-      this.host.savedProvider = savedFor;
-      this.host.savedSeq++;
-    }
 
     if (engineChanged && this.host.engine.hasRunner() && this.host.loaded) {
       const spec = structuredClone(this.host.engine.currentSpec());
@@ -217,7 +293,10 @@ export class ConfigManager {
   /** Clear every provider key — "no API key is set" regardless of provider.
    *  @deprecated Use setConfig with explicit null keys instead. */
   clearApiKey(): void {
-    void this.setConfig({ anthropicKey: null, geminiKey: null, openaiKey: null, openrouterKey: null });
+    void this.setConfig({
+      anthropicKey: null, geminiKey: null, openaiKey: null,
+      groqKey: null, openrouterKey: null, puterToken: null,
+    });
   }
 
   /** @deprecated Use setConfig({ model }) instead. */

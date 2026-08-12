@@ -49,6 +49,9 @@ Given(
     const recording = process.env.TAMEDTABLE_CASSETTE === 'record';
     if (provider === 'gemini') partial.geminiKey = (recording && process.env.GEMINI_API_KEY) || key;
     else if (provider === 'openai') partial.openaiKey = (recording && process.env.OPENAI_API_KEY) || key;
+    else if (provider === 'groq') partial.groqKey = (recording && process.env.GROQ_API_KEY) || key;
+    else if (provider === 'openrouter') partial.openrouterKey = (recording && process.env.OPENROUTER_API_KEY) || key;
+    else if (provider === 'puter') partial.puterToken = (recording && process.env.PUTER_TOKEN) || key;
     else partial.anthropicKey = (recording && process.env.ANTHROPIC_API_KEY) || key;
     await controller(this).setConfig(partial);
   },
@@ -76,22 +79,11 @@ Then('no API key is configured', function (this: TamedTableWorld) {
 When(
   'user saves the {string} API key {string}',
   async function (this: TamedTableWorld, provider: string, key: string) {
-    const field = `${provider}Key` as 'geminiKey' | 'openaiKey' | 'anthropicKey' | 'openrouterKey';
+    const field = KEY_FIELD[provider as ModelProvider];
     await controller(this).setConfig({ [field]: key });
   },
 );
 
-/** Typing in a key field: moves the card's draft, saves nothing yet. */
-When(
-  'user types the {string} API key {string}',
-  function (this: TamedTableWorld, provider: string, key: string) {
-    controller(this).setKeyDraft(provider as ModelProvider, key);
-  },
-);
-
-When('the {string} key field loses focus', async function (this: TamedTableWorld, provider: string) {
-  await controller(this).commitKeyDraft(provider as ModelProvider);
-});
 
 Then('the last model call carried the API key {string}', function (this: TamedTableWorld, key: string) {
   assert.equal(ctxOf(this).lastCallApiKey, key);
@@ -605,133 +597,132 @@ Then('loading fails with {string}', function (this: TamedTableWorld, needle: str
   );
 });
 
-// ── Settings panel accordion cards ─────────────────────────────────────────
+// ── Settings panel: the model chooser ──────────────────────────────────────
 
-import { ALL_MODELS, type Provider as ModelProvider } from '@tamedtable/model-config';
-
-Then('the settings panel shows {int} provider cards', function (this: TamedTableWorld, n: number) {
-  // The four providers are always shown: gemini, openai, anthropic, openrouter
-  const providers: ModelProvider[] = ['gemini', 'openai', 'anthropic', 'openrouter'];
-  assert.equal(n, providers.length, `expected ${providers.length} provider cards, got ${n}`);
-  // Verify the catalogue backs every card
-  for (const p of providers) {
-    const models = ALL_MODELS.filter((m) => m.provider === p);
-    assert.ok(models.length > 0, `No models for provider "${p}" in ALL_MODELS`);
-  }
-});
-
-Then('no provider card is expanded', function (this: TamedTableWorld) {
-  const expanded = controller(this).expandedProvider;
-  assert.equal(expanded, null, `expected no card expanded, got "${expanded}"`);
-});
-
-When('user clicks the provider card {string}', async function (this: TamedTableWorld, provider: string) {
-  await controller(this).clickProviderCard(provider as ModelProvider);
-});
-
-Then('the provider card {string} is expanded', function (this: TamedTableWorld, provider: string) {
-  const expanded = controller(this).expandedProvider;
-  assert.equal(expanded, provider, `expected "${provider}" to be expanded, got "${expanded}"`);
-});
-
-Then('the provider card {string} is collapsed', function (this: TamedTableWorld, provider: string) {
-  const expanded = controller(this).expandedProvider;
-  assert.notEqual(expanded, provider, `expected "${provider}" to be collapsed, but it is expanded`);
-});
+import { ALL_MODELS, KEY_FIELD, type Provider as ModelProvider } from '@tamedtable/model-config';
+import { speedOf } from '@tamedtable/model-config/storage';
 
 When('user closes the settings panel', function (this: TamedTableWorld) {
   controller(this).closeSettings();
 });
 
-Then('no provider card shows a Saved badge', function (this: TamedTableWorld) {
-  const saved = controller(this).savedProvider;
-  assert.equal(saved, null, `expected no Saved badge, but "${saved}" shows one`);
+/** Paste a key and press Add — the whole connect flow, prefix detection and
+ *  the provider check included. The scenario's LLM stub answers the check. */
+When('user connects the key {string}', async function (this: TamedTableWorld, key: string) {
+  controller(this).setKeyInput(key);
+  await controller(this).addKey();
 });
 
-Then('the provider card {string} shows the Saved badge', function (this: TamedTableWorld, provider: string) {
-  const saved = controller(this).savedProvider;
-  assert.equal(saved, provider, `expected the Saved badge on "${provider}", got "${saved}"`);
+When('user removes the provider {string}', async function (this: TamedTableWorld, provider: string) {
+  await controller(this).removeProvider(provider as ModelProvider);
 });
 
-Then('the Saved badge has restarted {int} times', function (this: TamedTableWorld, n: number) {
-  const seq = controller(this).savedSeq;
-  assert.equal(seq, n, `expected the badge to have restarted ${n} times, got ${seq}`);
+// ── #PuterGateway — the sign-in window, and the session behind it ──────────
+
+Given(
+  'the Puter sign-in fails with {string}',
+  function (this: TamedTableWorld, message: string) {
+    ctxOf(this).puterSignInError = message;
+  },
+);
+
+Given('the Puter sign-in is closed without signing in', function (this: TamedTableWorld) {
+  ctxOf(this).puterSignInClosed = true;
+});
+
+When('user signs in to Puter', async function (this: TamedTableWorld) {
+  await controller(this).signInPuter();
+});
+
+Then('the Puter session has been signed out', function (this: TamedTableWorld) {
+  assert.equal(ctxOf(this).puterSignedOut, true, 'the Puter session was left signed in');
+});
+
+Then('the Puter session has not been signed out', function (this: TamedTableWorld) {
+  assert.notEqual(ctxOf(this).puterSignedOut, true, 'the Puter session was signed out');
+});
+
+/** The comma list of connected providers, or "" when none is. */
+Then('the connected providers are {string}', function (this: TamedTableWorld, expected: string) {
+  assert.equal(controller(this).connectedProviders().join(', '), expected);
+});
+
+Then('the selected provider is {string}', function (this: TamedTableWorld, provider: string) {
+  assert.equal(controller(this).getConfig().provider, provider);
+});
+
+Then('the connect error is {string}', function (this: TamedTableWorld, expected: string) {
+  assert.equal(controller(this).keyError, expected);
+});
+
+Then('the connect error is empty', function (this: TamedTableWorld) {
+  assert.equal(controller(this).keyError, '', `unexpected connect error: ${controller(this).keyError}`);
+});
+
+Then(
+  'the configured key for {string} is {string}',
+  function (this: TamedTableWorld, provider: string, key: string) {
+    assert.equal(controller(this).getConfig()[KEY_FIELD[provider as ModelProvider]], key);
+  },
+);
+
+Then(
+  "the {string} card's tier is {string}",
+  function (this: TamedTableWorld, provider: string, tier: string) {
+    assert.equal(controller(this).probes[provider as ModelProvider]?.tier, tier);
+  },
+);
+
+Then('the {string} card has no tier', function (this: TamedTableWorld, provider: string) {
+  assert.equal(controller(this).probes[provider as ModelProvider]?.tier, null);
+});
+
+/** What the panel's row would show for speed: `speedOf` is the mapping both
+ *  hosts render through, so asserting it here asserts the row. */
+Then(
+  "the {string} card's {word} speed reads {string}",
+  function (this: TamedTableWorld, provider: string, role: string, expected: string) {
+    const c = controller(this);
+    const p = provider as ModelProvider;
+    const reading = c.probes[p]?.[role as 'primary' | 'secondary'];
+    assert.equal(speedOf(reading, c.measuring[p] ?? false), expected);
+  },
+);
+
+/** Only the selected card renders a body, so an unselected provider's rows are
+ *  the ones the panel does not draw. */
+Then('the {string} card is collapsed', function (this: TamedTableWorld, provider: string) {
+  assert.notEqual(
+    controller(this).getConfig().provider,
+    provider,
+    `expected the ${provider} card to be collapsed, but it is the selected one`,
+  );
 });
 
 Then('the configured provider is {string}', function (this: TamedTableWorld, provider: string) {
   assert.equal(controller(this).getConfig().provider, provider);
 });
 
-Then('the expanded card body shows env hint {string}', function (this: TamedTableWorld, envVar: string) {
-  const expanded = controller(this).expandedProvider;
-  assert.ok(expanded, 'no provider card is expanded');
-  const expectedHint: Record<string, string> = {
-    gemini: 'GEMINI_API_KEY',
-    openai: 'OPENAI_API_KEY',
-    anthropic: 'ANTHROPIC_API_KEY',
-    openrouter: 'OPENROUTER_API_KEY',
-  };
-  assert.equal(
-    expectedHint[expanded],
-    envVar,
-    `expected env hint "${envVar}" for provider "${expanded}", got "${expectedHint[expanded]}"`,
-  );
-});
-
 Then(
   'the model list contains {string} with voice tag {word}',
   function (this: TamedTableWorld, modelId: string, voiceTag: string) {
-    const expanded = controller(this).expandedProvider;
-    assert.ok(expanded, 'no provider card is expanded');
-    const model = ALL_MODELS.find((m) => m.id === modelId && m.provider === expanded);
-    assert.ok(model, `Model "${modelId}" not found for provider "${expanded}"`);
-    const expectedVoice = voiceTag === 'true';
-    assert.equal(
-      model.voiceInput,
-      expectedVoice,
-      `expected model "${modelId}" voiceInput=${expectedVoice}, got ${model.voiceInput}`,
-    );
+    const selected = controller(this).getConfig().provider;
+    const model = ALL_MODELS.find((m) => m.id === modelId && m.provider === selected);
+    assert.ok(model, `Model "${modelId}" not found for provider "${selected}"`);
+    assert.equal(model.voiceInput, voiceTag === 'true');
   },
 );
-
-// ── Settings: the Test button (#ProviderSelect) ─────────────────────────────
-
-When('user tests the API key', async function (this: TamedTableWorld) {
-  await controller(this).testKey();
-});
-
-Then('the key test succeeds', function (this: TamedTableWorld) {
-  const test = controller(this).keyTest;
-  assert.ok(test, 'no key test has run');
-  assert.equal(test.state, 'ok', `key test failed: ${test.message}`);
-});
-
-Then('the key test result names the model {string}', function (this: TamedTableWorld, model: string) {
-  const test = controller(this).keyTest;
-  assert.ok(test, 'no key test has run');
-  assert.ok(test.message.includes(model), `expected "${model}" in "${test.message}"`);
-});
-
-Then('the key test fails with {string}', function (this: TamedTableWorld, expected: string) {
-  const test = controller(this).keyTest;
-  assert.ok(test, 'no key test has run');
-  assert.equal(test.state, 'error', `expected a failed key test, got ${test.state}`);
-  assert.ok(test.message.includes(expected), `expected "${expected}" in "${test.message}"`);
-});
-
-Then('the key test is unavailable', function (this: TamedTableWorld) {
-  assert.equal(controller(this).canTestKey(), false, 'expected the Test button to be unavailable');
-});
 
 Then('the LLM API was called {int} time(s)', function (this: TamedTableWorld, n: number) {
   assert.equal(ctxOf(this).llmCallCount ?? 0, n);
 });
 
 When('user selects the provider {string}', async function (this: TamedTableWorld, provider: string) {
-  // Simulate the user clicking the provider card in the settings panel —
-  // both sets the provider and remembers which card was expanded.
-  await controller(this).clickProviderCard(provider as ModelProvider);
+  // Clicking a card header in the settings panel: makes that provider the
+  // default and pins its two fixed model defaults.
+  await controller(this).selectProvider(provider as ModelProvider);
 });
+
 
 // ── Provider API error simulation ──────────────────────────────────────────
 
@@ -811,11 +802,37 @@ Given('the LLM API answers any completion', function (this: TamedTableWorld) {
         : url.includes('anthropic')
           ? { id: 'msg_1', type: 'message', role: 'assistant', model: 'test', content: [{ type: 'text', text: 'OK' }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }
           : { id: 'c1', object: 'chat.completion', model: 'test', choices: [{ index: 0, message: { role: 'assistant', content: 'OK' }, finish_reason: 'stop' }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } };
-    return Promise.resolve(
-      new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }),
-    );
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    // Google reports the account tier in a response header; the connect flow
+    // reads it, and reads its absence as "no tier reported", so the stub has
+    // to send it wherever the real API would.
+    if (url.includes('generativelanguage')) headers['x-gemini-service-tier'] = 'standard';
+    return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers }));
   };
 });
+
+/** The key check passes and the speed measurement doesn't. Told apart by the
+ *  request body: only the measurement asks for a stream. */
+Given(
+  'the LLM API answers the key check but refuses the measurement',
+  function (this: TamedTableWorld) {
+    ctxOf(this).mockLlmFetch = (input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const streaming = typeof init?.body === 'string' && init.body.includes('"stream"')
+        || url.includes('stream');
+      if (streaming) {
+        return Promise.resolve(new Response(
+          JSON.stringify({ error: { message: 'Rate limit reached', code: 'rate_limit_exceeded' } }),
+          { status: 429, headers: { 'content-type': 'application/json' } },
+        ));
+      }
+      return Promise.resolve(new Response(
+        JSON.stringify({ candidates: [{ content: { parts: [{ text: 'OK' }], role: 'model' }, finishReason: 'STOP' }] }),
+        { status: 200, headers: { 'content-type': 'application/json', 'x-gemini-service-tier': 'standard' } },
+      ));
+    };
+  },
+);
 
 Given('the LLM API returns a 401 unauthorized error', function (this: TamedTableWorld) {
   ctxOf(this).mockLlmFetch = () =>

@@ -255,6 +255,7 @@ registry row.
 function createHeadlessRunner(opts?: HeadlessRunnerOptions): Runner;
 
 interface HeadlessRunnerOptions {
+  provider?: EngineProvider;  // who serves the models; omit to fall back to providerFor(model)
   model?: string;
   cellModel?: string;
   apiKey?: string;
@@ -347,18 +348,20 @@ Env vars:
 | `GEMINI_API_KEY` | — | Google Gemini key. |
 | `OPENAI_API_KEY` | — | OpenAI key. |
 | `CEREBRAS_API_KEY` | — | Cerebras key (free tier). Bench-only: read by the engine when a `zai-*` / `gpt-oss-*` model id routes to Cerebras, and by `bench sweep`/`bench label`. Never resolved by `resolveConfig`, so it can't select the app's provider. |
+| `PUTER_TOKEN` | — | Puter.js session token (a JWT, not an API key). Read by the engine for the Puter gateway and by `resolveConfig` (lowest env priority — a direct provider key always outranks the gateway). A signed-in browser holds it at `localStorage["puter.auth.token.v2"]`. |
+| `GROQ_API_KEY` | — | Groq key. Read by the engine when a catalogued Groq model id (`openai/gpt-oss-120b`) routes to Groq, and by `resolveConfig` (below OpenAI/Anthropic, above OpenRouter). Groq publishes no API signal for which tier a key is on, so the chooser shows it no tier tag. |
 | `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter, by `bench sweep`/`bench label`, and by `resolveConfig` (lowest env priority — any paid key outranks it). The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `openai/gpt-oss-20b` (Groq), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). Must be a positive number; `0`, a negative, or unparsable text falls back to the default — a cap the limiter can never satisfy would wedge every request in its wait loop. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
 
 Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, or `OPENROUTER_API_KEY`. `resolveConfig` picks the provider from whichever is set
-(Gemini > OpenAI > Anthropic > OpenRouter when several are), and `TAMEDTABLE_MODEL` must
+`OPENAI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `PUTER_TOKEN`. `resolveConfig` picks the provider from whichever is set
+(Gemini > OpenAI > Anthropic > Groq > OpenRouter > Puter when several are), and `TAMEDTABLE_MODEL` must
 name a model from that provider — one from another provider is coerced to
 the provider's default model.
 
@@ -1267,23 +1270,6 @@ The `onPlanEdits` callback dispatch in `Runner.request` is wrapped in
 `try/catch`. `diffPlans` and the callback can throw without aborting
 the request — the edit line is dropped, the commit proceeds.
 
-### Test the configured key (#ProviderSelect)
-
-```ts
-interface HeadlessRunner {
-  // …
-  testConnection(opts?: { signal?: AbortSignal }): Promise<{ model: string }>;
-}
-```
-
-One `generateText` call against the runner's cell model with `maxRetries: 0`,
-resolving with the model id it reached and rejecting with the provider's own
-error. It skips the rate limiter (one tiny call must not queue behind a run)
-and records no usage — a key test is not part of any request, so it never
-moves the estimate math or the debug info. The web Settings **Test** button is
-its only caller; `maxRetries: 0` is what makes a dead key answer in a second
-instead of after the SDK's backoff.
-
 ### Export a flow as a Python script (#PyExport)
 
 ```ts
@@ -1358,7 +1344,7 @@ and batching show up in the measurement.
 → [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini" | "openai" | "openrouter";  // app providers — catalogue, chooser, resolveConfig
+type Provider = "anthropic" | "gemini" | "openai" | "groq" | "openrouter" | "puter";  // app providers — catalogue, chooser, resolveConfig
 type EngineProvider = Provider | "cerebras";  // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
@@ -1368,7 +1354,9 @@ interface ResolvedConfig {
   anthropicKey: string | null;
   geminiKey: string | null;
   openaiKey: string | null;
+  groqKey: string | null;
   openrouterKey: string | null;
+  puterToken: string | null;          // a Puter session token, not an API key
   model: string;      // primary — writes the spec patch (and carries voice)
   cellModel: string;  // secondary — fills per-row cells; always same-provider as model
   alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
@@ -1385,37 +1373,150 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
-function providerFor(modelId: string): EngineProvider;
+function priceVariesByPlan(provider: Provider): boolean;  // defaults' flag (groq): an undetectable free tier, so the card names no price
+function providerFor(modelId: string): EngineProvider;   // fallback only; never returns "puter"
+function modelFor(p: Provider, modelId: string): ModelDef | undefined;  // ids are shared — Puter re-serves them — so lookups name the provider
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
-function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider (anthropicKey / geminiKey / openaiKey / openrouterKey)
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
+function connectedProviders(config: ResolvedConfig, order?: Partial<Record<Provider, number>>): Provider[];  // every provider with a key; `order` (connectedAt stamps) sorts the cards, absent = catalogue order
+function detectProvider(key: string): Provider | null;   // the provider a pasted key belongs to, by prefix; null when none matches
+const SUPPORTED_PREFIXES: readonly string[];             // 'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
+const KEY_FIELD: Record<Provider, keyof ResolvedConfig>; // provider → the config field its key lives in
+const PROVIDER_BASE_URL: Record<EngineProvider, string>; // one table the engine and the probe both read, so their endpoints cannot drift
+const PUTER_DRIVERS_URL: string;                         // `${PROVIDER_BASE_URL.puter}/drivers/call` — the gateway's single endpoint
+function puterEnvelope(body: Record<string, unknown>): Record<string, unknown>;  // { interface:'puter-chat-completion', driver:'ai-chat', method:'complete', args: body }
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+
+// probe.ts entry point — the only part of the module that touches the network
+type Tier = 'free' | 'paid' | null;                      // null = the provider reports nothing
+type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+interface ProbeOptions { fetch?: FetchLike; now?: () => number }
+interface ModelMeasure { ttftSec: number; tokPerSec: number }   // speed only — price comes from the catalogue
+function verifyKey(p: Provider, key: string, o?: ProbeOptions): Promise<{ tier: Tier }>;  // one call, no retries; throws a user-facing sentence
+function measureModel(p: Provider, key: string, modelId: string, o?: ProbeOptions): Promise<ModelMeasure>;  // one capped streaming call
+function estimateSecPer1kTok(m: ModelMeasure): number;          // ttftSec + 1000 / tokPerSec — the card's "~Z sec"
+
+// storage.ts entry point — measurements cache under 'tamedtable.probes'
+interface StoredMeasure extends ModelMeasure { model: string; at: number }  // which model, and when — both go stale under the numbers
+interface ProviderProbe {
+  tier: Tier;
+  connectedAt?: number;                    // ms since epoch; what card order sorts by (see connectedProviders)
+  primary?: StoredMeasure | null;          // absent = never measured, null = the measurement failed
+  secondary?: StoredMeasure | null;
+}
+function readStoredProbes(now?: number): Partial<Record<Provider, ProviderProbe>>;  // drops readings whose model is no longer the role's default, or older than 7 days
+function writeStoredProbes(p: Partial<Record<Provider, ProviderProbe>>): void;
+function clearStoredProbes(): void;
+function connectedOrder(p: Partial<Record<Provider, ProviderProbe>>): Partial<Record<Provider, number>>;  // the connectedProviders order map
+type RoleSpeed = ModelMeasure | 'measuring' | 'failed' | null;   // null = never measured
+function speedOf(reading: StoredMeasure | null | undefined, measuring: boolean): RoleSpeed;  // the one place that tells "never measured" from "measured and failed"
 ```
 
 ```ts
 // ModelChooser.tsx entry point — react is a peer dependency
-interface ModelChooserProps {
-  models: readonly ModelDef[];
-  provider: Provider;
-  primaryModel: string;           // provider default, shown read-only
-  secondaryModel: string;         // provider default, shown read-only
-  keys: Record<Provider, string>;
-  expandedProvider: Provider | null;
-  savedProvider?: Provider | null; // card showing the "✓ Saved" badge
-  savedSeq?: number;               // bumped per save — restarts the badge's green phase
-  savedFadeMs?: number;            // badge green-to-grey time; defaults to 3000 ms
-  byokHelpUrl?: string;            // "how to get an API key" link target
-  changeModelsHelpUrl?: string;    // "how to change the default models" link target
-  onProviderClick(p: Provider): void;
-  onKeyChange(p: Provider, value: string): void;
+interface RoleRow {                       // prices are catalogue values per 1000 tokens; speed is measured
+  model: string;
+  inUsdPer1kTok: number | null;           // null = the catalogue doesn't price this model
+  outUsdPer1kTok: number | null;
+  speed: RoleSpeed;                       // 'measuring' → "measuring…", 'failed' → "speed unknown", null → no tail
 }
+interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; priceVariesByPlan?: boolean; primary: RoleRow; secondary: RoleRow }
+interface ModelChooserProps {
+  connected: readonly ConnectedCard[];  // one card per connected provider, in the order added
+  selected: Provider | null;            // the default provider; only its card shows model rows
+  keyInput: string;
+  error: string;
+  busy: boolean;                        // a connect is in flight — input, Add and the Puter button all disabled
+  puterBusy?: boolean;                  // that connect is the Puter sign-in — its button reads "Signing in…"
+  onKeyInputChange(value: string): void;
+  onAdd(): void;
+  onSelect(p: Provider): void;
+  onRemove(p: Provider): void;
+  onRefresh?(p: Provider): void;          // the ⟳ button; omit it and no card shows one
+  onPuterSignIn?(): void;                 // the "No API key?" block; omit it and the whole block is left out
+}
+const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
+interface KeySetup { provider: Provider; label: string; prefix: string; steps: readonly string[]; url: string; action: string }
+const KEY_SETUP: readonly KeySetup[];            // the five pasteable providers in row order, with the panel's short how-to-get; a test asserts each `url` appears in FAQ.html
+                                                 // SUPPORTED_PREFIXES is built from its `prefix` values, plus Puter's `eyJ…`
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
 
-`@tamedtable/model-config` has four entry points: the main `index.ts` (no
+### Model config reference tables
+
+Key prefix → provider, tested **in order** (`detectProvider`); the `sk-` rule is
+last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
+
+| prefix | provider | | prefix | provider |
+|---|---|---|---|---|
+| `sk-proj-` | openai | | `AIza` | gemini |
+| `sk-ant-` | anthropic | | `eyJ` | puter |
+| `sk-or-` | openrouter | | `sk-` | openai |
+| `gsk_` | groq | | | |
+
+Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
+provider pins:
+
+| provider | primary (`model`) | secondary (`cellModel`) |
+|---|---|---|
+| gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
+| openai | `gpt-5.5` | `gpt-5.4-mini` |
+| anthropic | `claude-sonnet-4-6` | `claude-haiku-4-5` |
+| groq | `openai/gpt-oss-120b` | `openai/gpt-oss-20b` |
+| openrouter | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` |
+| puter | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
+
+Each `models` entry: `id` (the provider's exact API id), `name`, `provider`,
+`temperature` (still accepts a sampling parameter — the newest models reject it
+with a 400), `voiceInput` (mirrors the bench row's `audioInput`), and
+`inUsdPerMtok` / `outUsdPerMtok`.
+
+`providerFor(modelId)` reads the catalogue first — an exact match returns that
+entry's provider — then falls back to prefixes, in this order:
+
+| test | provider | why |
+|---|---|---|
+| contains `/` | openrouter | an unknown vendor-prefixed id is a sweep candidate |
+| `claude-` | anthropic | |
+| `gemini-` | gemini | |
+| `zai-`, `gpt-oss-` | cerebras | `gpt-oss-` is tested **before** `gpt-` |
+| `gpt-` | openai | |
+| anything else | anthropic | the catch-all |
+
+`verifyKey` tier sources — only real signals, so an unknown reports `null` and
+the chooser shows no tag:
+
+| provider | tier read from |
+|---|---|
+| gemini | `x-gemini-service-tier`: `free` → free, any other value → paid, **header absent → null** |
+| openrouter | `GET /api/v1/key` → `is_free_tier` |
+| openai, anthropic | always `paid` — neither has a free tier |
+| groq, puter | `null` — neither publishes a signal |
+
+`ModelChooser` theme variables, each with a presentable light default:
+`--mc-ink`, `--mc-ink-on-ink`, `--mc-ink2`, `--mc-ink3`, `--mc-surface`,
+`--mc-surface2`, `--mc-surface3`, `--mc-line`, `--mc-line2`, `--mc-accent`,
+`--mc-accent-soft`, `--mc-ok`, `--mc-ok-soft`, `--mc-err`, `--mc-err-soft`,
+`--mc-font-ui`, `--mc-font-mono`, `--mc-radius`, `--mc-radius-sm`,
+`--mc-radius-lg`.
+
+Test hooks: `data-mc-empty` on the empty row; `data-mc-card`, `data-mc-tier`,
+`data-mc-voice`, `data-mc-refresh` and `data-mc-remove` keyed by provider id;
+`data-mc-role` (`"primary"`/`"secondary"`) and `data-mc-model` (keyed by model
+id) on each role row, with `data-mc-model-id` on the id and `data-mc-cost` on
+the line beneath; `data-mc-keyinput` and `data-mc-add` on the add row;
+`data-mc-error` on the banner; `data-mc-providers` on the footer;
+`data-mc-puter` on the Puter sign-in button; `data-mc-howto` keyed by provider
+on each instructions link, and `data-mc-howto-body` keyed by provider on the
+expanded block.
+
+`@tamedtable/model-config` has five entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads
-`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only), and
-`storage.ts` (the localStorage `StoragePort` implementation — browser only,
-but a safe no-op anywhere without localStorage):
+`process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only),
+`probe.ts` (the only part that touches the network — hosts inject `fetch`), and
+`storage.ts` (the localStorage `StoragePort` implementation plus the
+measurement cache — browser only, but a safe no-op anywhere without
+localStorage):
 
 ```ts
 // storage.ts entry point — implements StoragePort over localStorage
@@ -1553,18 +1654,27 @@ assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` dis
 gated on the selected model's `voiceInput` flag plus a key for the selected
 provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
 mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`) —
-the only provider wired for voice. The engine routes OpenAI models through the
-Chat Completions API (`.chat(...)` on the AI SDK provider) for broad
-compatibility; Cerebras models (`zai-*` / `gpt-oss-*` ids) take the same
-Chat Completions path against `https://api.cerebras.ai/v1` with
-`CEREBRAS_API_KEY`, and OpenRouter models (slash-containing
-`vendor/model:free` ids) against `https://openrouter.ai/api/v1` with
+the only provider wired for voice.
+
+The runner is **told** which provider to call: `createHeadlessRunner({ provider,
+… })`. A model id cannot say who serves it — `openai/gpt-oss-120b` is Groq's in
+this catalogue and OpenRouter serves the same weights under the same name — so
+inferring it from the string is guessing. Callers that hold only an id (the
+benchmark sweeping from a command line, a CLI with just `TAMEDTABLE_MODEL`)
+leave `provider` unset and the runner falls back to `providerFor(model)`.
+
+Each provider's endpoint: OpenAI through the Chat Completions API
+(`.chat(...)` on the AI SDK provider) for broad compatibility; Cerebras the
+same Chat Completions path against `https://api.cerebras.ai/v1` with
+`CEREBRAS_API_KEY`; Groq against `https://api.groq.com/openai/v1` with
+`GROQ_API_KEY`; OpenRouter against `https://openrouter.ai/api/v1` with
 `OPENROUTER_API_KEY`.
 
 Text and voice requests route through the selected provider:
-`ensureHeadless` builds the engine with `config.model` / `config.cellModel`
-and the active provider's key (see [§ Web UI](#web-ui-webui)). Only tutorial
-replay overrides this, pinning the recorded provider's defaults.
+`ensureHeadless` builds the engine with `config.provider`, `config.model` /
+`config.cellModel` and the active provider's key (see
+[§ Web UI](#web-ui-webui)). Only tutorial replay overrides this, pinning the
+recorded provider's defaults.
 
 ## Tutorial mode
 

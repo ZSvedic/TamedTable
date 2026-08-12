@@ -19,12 +19,23 @@
     { "id": "claude-sonnet-4-5",      "name": "Sonnet 4.5",           "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 3,    "outUsdPerMtok": 15   },
     { "id": "claude-haiku-4-5",       "name": "Haiku 4.5",            "provider": "anthropic", "temperature": true , "voiceInput": false, "inUsdPerMtok": 1,    "outUsdPerMtok": 5    },
 
-    { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 }
+    { "id": "openai/gpt-oss-120b",    "name": "GPT-OSS 120B (Groq)", "provider": "groq",      "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.15,  "outUsdPerMtok": 0.6  },
+    { "id": "openai/gpt-oss-20b",     "name": "GPT-OSS 20B (Groq)",  "provider": "groq",      "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.075, "outUsdPerMtok": 0.3  },
+    { "id": "llama-3.3-70b-versatile","name": "Llama 3.3 70B (Groq)","provider": "groq",      "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.59,  "outUsdPerMtok": 0.79 },
+    { "id": "llama-3.1-8b-instant",   "name": "Llama 3.1 8B (Groq)", "provider": "groq",      "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.05,  "outUsdPerMtok": 0.08 },
+
+    { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 },
+
+    { "id": "gemini-3.6-flash",       "name": "Gemini 3.6 Flash (Puter.js)",     "provider": "puter",     "temperature": true , "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 7.5  },
+    { "id": "gemini-3.1-flash-lite",  "name": "Gemini 3.1 Flash-Lite (Puter.js)","provider": "puter",     "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.25, "outUsdPerMtok": 1.5  }
   ],
   "defaults": {
     "gemini":     { "primary": "gemini-3.6-flash",  "secondary": "gemini-3.1-flash-lite" },
     "openai":     { "primary": "gpt-5.5",           "secondary": "gpt-5.4-mini" },
     "anthropic":  { "primary": "claude-sonnet-4-6", "secondary": "claude-haiku-4-5" },
-    "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5 }
+    "groq":       { "primary": "openai/gpt-oss-120b", "secondary": "openai/gpt-oss-20b",
+      "priceVariesByPlan": true },
+    "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5 },
+    "puter":      { "primary": "gemini-3.6-flash", "secondary": "gemini-3.1-flash-lite" }
   }
 }

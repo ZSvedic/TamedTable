@@ -9,6 +9,7 @@
     ".": "./index.ts",
     "./env": "./env.ts",
     "./storage": "./storage.ts",
+    "./probe": "./probe.ts",
     "./audio-wav": "./audio-wav.ts",
     "./ModelChooser": "./ModelChooser.tsx"
   },

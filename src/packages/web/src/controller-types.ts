@@ -47,6 +47,16 @@ export interface WebControllerOptions {
   file: FilePort;
   /** Custom fetch — the Cucumber cassette recorder in tests; unset in the browser. */
   fetch?: FetchLike;
+  /** #PuterGateway — open Puter's sign-in and resolve the session token it
+   *  mints, or null when the user closed it. The browser wires this to Puter's
+   *  SDK, loaded on click; hosts that cannot open a window (tests, the CLI)
+   *  leave it unset and the chooser shows no Puter button. */
+  puterSignIn?: () => Promise<string | null>;
+  /** #PuterGateway — forget the Puter session, wired to the same SDK. Deleting
+   *  the Puter card calls it: dropping only our own token would leave the SDK's
+   *  copy behind, and the next sign-in would silently return the same account
+   *  with no way to switch. */
+  puterSignOut?: () => void;
   /** The running deployment's address for a bundled sample, or null when the
    *  name is no longer bundled. Opening a sample Recent asks this first — a
    *  stored address goes stale when a deployment moves — falling back to the
@@ -150,16 +160,4 @@ export interface RunProgress {
   rowsTotal: number;
   /** Newest-last event feed, capped at the newest 500 lines. */
   log: string[];
-}
-
-// #ProviderSelect
-/** The Settings "Test" button's verdict on one provider's API key, or null
- *  before any test. Cleared whenever the provider or its key moves — the
- *  verdict is about one key on one provider, nothing else. */
-export interface KeyTest {
-  provider: Provider;
-  state: 'running' | 'ok' | 'error';
-  /** What the card shows: "gemini-3.1-flash-lite answered in 0.8s", or the
-   *  same sentence a failed request would have surfaced. */
-  message: string;
 }

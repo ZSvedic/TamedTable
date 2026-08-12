@@ -135,6 +135,7 @@ function defaultPrimaryFor(cellModel: string): string {
   switch (providerFor(cellModel)) {
     case 'gemini':     return 'gemini-3.6-flash';
     case 'openai':     return 'gpt-5.5';
+    case 'groq':       return 'openai/gpt-oss-120b';
     case 'cerebras':   return 'zai-glm-4.7';
     case 'openrouter': return 'cohere/north-mini-code:free';
     default:           return 'claude-sonnet-4-6';

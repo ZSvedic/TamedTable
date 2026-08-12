@@ -48,6 +48,7 @@ const DEFAULT_LABELER = 'claude-fable-5';
 function keyFor(provider: EngineProvider): string | undefined {
   if (provider === 'gemini')     return process.env.GEMINI_API_KEY;
   if (provider === 'openai')     return process.env.OPENAI_API_KEY;
+  if (provider === 'groq')       return process.env.GROQ_API_KEY;
   if (provider === 'cerebras')   return process.env.CEREBRAS_API_KEY;
   if (provider === 'openrouter') return process.env.OPENROUTER_API_KEY;
   return process.env.ANTHROPIC_API_KEY;

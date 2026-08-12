@@ -10,6 +10,7 @@
 import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import type { Provider, ResolvedConfig } from '@tamedtable/model-config';
+import type { ProviderProbe } from '@tamedtable/model-config/storage';
 import type { FilePort } from '@tamedtable/file-io';
 import type { EngineManager } from './controller-engine.ts';
 import type { PatchManager } from './controller-patch.ts';
@@ -25,7 +26,6 @@ import type {
   ChatMessage,
   ContinuousStatus,
   DialogKind,
-  KeyTest,
   RunProgress,
   VoiceStatus,
   WebControllerOptions,
@@ -50,11 +50,15 @@ export interface ControllerHost {
   sampleDialogOpen: boolean;
   errorDialog: string | null;
   settingsOpen: boolean;
-  expandedProvider: Provider | null;
-  savedProvider: Provider | null;
-  savedSeq: number;
-  keyTest: KeyTest | null;
-  keyDrafts: Record<Provider, string>;
+  keyInput: string;
+  keyError: string;
+  keyBusy: boolean;
+  /** The connect in flight is the Puter sign-in, so its button can say so.
+   *  A click that opens a window in front of the panel needs to leave a mark
+   *  on the panel too, or coming back looks like nothing happened. */
+  puterBusy: boolean;
+  probes: Partial<Record<Provider, ProviderProbe>>;
+  measuring: Partial<Record<Provider, boolean>>;
   voiceStatus: VoiceStatus;
   continuousStatus: ContinuousStatus;
   lastDebug: RequestDebugInfo | undefined;

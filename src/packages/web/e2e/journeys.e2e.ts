@@ -285,42 +285,86 @@ test.describe('Grid', () => {
 
 // ── Settings ────────────────────────────────────────────────────────────
 test.describe('Settings', () => {
-  /** Open Settings, pick the Anthropic card, and save a key the way a user
-   *  does: type, then leave the field. Only a key landing earns the badge —
-   *  picking a card does not. */
-  const saveAnthropicKey = async (page: Page, key: string): Promise<void> => {
+  /** Connect a provider the way a user does: open Settings, paste a key,
+   *  press Add. The key names its own provider — there is no list to pick
+   *  from first. A key the provider rejects never becomes a setting, so this
+   *  stubs the check call to succeed. */
+  const connectKey = async (page: Page, key: string): Promise<void> => {
+    await page.route('**/v1/messages', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'msg_1', type: 'message', role: 'assistant', model: 'test',
+          content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn',
+          usage: { input_tokens: 10, output_tokens: 10 },
+        }),
+      }));
     await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByText('Anthropic', { exact: false }).first().click();
-    await page.locator('[data-mc-key="anthropic"]').fill(key);
-    await page.locator('[data-mc-key="anthropic"]').blur();
+    await page.locator('[data-mc-keyinput]').fill(key);
+    await page.locator('[data-mc-add]').click();
   };
 
-  test('picking a provider card shows no Saved badge', async ({ page }) => {
+  test('the panel starts with nothing connected and Add disabled', async ({ page }) => {
     await boot(page);
     await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByText('Anthropic', { exact: false }).first().click();
-    await expect(page.locator('[data-mc-key="anthropic"]')).toBeVisible();
-    await expect(page.getByText(/Saved/)).toHaveCount(0);
+    await expect(page.locator('[data-mc-empty]')).toBeVisible();
+    await expect(page.locator('[data-mc-add]')).toBeDisabled();
+    await page.locator('[data-mc-keyinput]').fill('sk-ant-e2e');
+    await expect(page.locator('[data-mc-add]')).toBeEnabled();
   });
 
-  test('saving a key keeps the table on screen and confirms with a badge', async ({ page }) => {
+  test('a key whose prefix names no provider is refused', async ({ page }) => {
+    await boot(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.locator('[data-mc-keyinput]').fill('hello-there');
+    await page.locator('[data-mc-add]').click();
+    await expect(page.locator('[data-mc-error]')).toContainText('Key not recognised');
+    await expect(page.locator('[data-mc-card]')).toHaveCount(0);
+  });
+
+  test('connecting a key keeps the table on screen and shows its card', async ({ page }) => {
     await boot(page);
     await loadSample(page, 'customers-input.csv');
     await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('USA');
-    await saveAnthropicKey(page, 'sk-ant-e2e');
-    await expect(page.getByText(/Saved/)).toBeVisible();
+    await connectKey(page, 'sk-ant-e2e');
+    await expect(page.locator('[data-mc-card="anthropic"]')).toContainText('Anthropic API');
     await page.getByText('Close', { exact: true }).click();
     // The table is preserved across the key-change rebuild.
     await expect(page.locator('[data-tv-cell="0:Country"]')).toHaveText('USA');
   });
 
-  test('the Saved badge clears when the panel is reopened', async ({ page }) => {
+  test('a connected provider survives closing and reopening the panel', async ({ page }) => {
     await boot(page);
-    await loadSample(page, 'customers-input.csv');
-    await saveAnthropicKey(page, 'sk-ant-e2e');
-    await expect(page.getByText(/Saved/)).toBeVisible();
+    await connectKey(page, 'sk-ant-e2e');
+    await expect(page.locator('[data-mc-card="anthropic"]')).toBeVisible();
     await page.getByText('Close', { exact: true }).click();
     await page.getByRole('button', { name: 'Settings' }).click();
-    await expect(page.getByText(/Saved/)).toHaveCount(0);
+    await expect(page.locator('[data-mc-card="anthropic"]')).toBeVisible();
+    await expect(page.locator('[data-mc-keyinput]')).toHaveValue('');
+  });
+
+  // Puter's credential can only be minted by its popup, so the block is the way
+  // in for a user with no API key at all — and its SDK must not be fetched
+  // until they ask for it.
+  test('the Puter sign-in block renders, and loads no script until pressed', async ({ page }) => {
+    const requested: string[] = [];
+    page.on('request', (r) => requested.push(r.url()));
+    await boot(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByText('No API key?')).toBeVisible();
+    await expect(page.locator('[data-mc-puter]')).toContainText('Sign in / Sign up to Puter.js');
+    await expect(page.locator('[data-mc-puter-logo]')).toBeVisible();
+    // The privacy claim in the FAQ: no third-party script on page load.
+    expect(requested.filter((u) => u.includes('js.puter.com'))).toEqual([]);
+  });
+
+  test('deleting the card removes the provider and the empty row returns', async ({ page }) => {
+    await boot(page);
+    await connectKey(page, 'sk-ant-e2e');
+    await expect(page.locator('[data-mc-card="anthropic"]')).toBeVisible();
+    await page.locator('[data-mc-remove="anthropic"]').click();
+    await expect(page.locator('[data-mc-card]')).toHaveCount(0);
+    await expect(page.locator('[data-mc-empty]')).toBeVisible();
   });
 });

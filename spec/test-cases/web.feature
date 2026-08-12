@@ -28,10 +28,20 @@ Feature: Web front-end
       Then a toast shows "Text requests require a Google API key"
       And the spec has 0 transformations
 
+    @web
+    Scenario: A text request on Groq needs a Groq key
+      Given the TamedTable web app
+      And load "customers-input.csv"
+      And the API key has not been set
+      And user selects the provider "groq"
+      When user sends the chat message "Normalize phone numbers"
+      Then a toast shows "Text requests require a Groq API key"
+      And the spec has 0 transformations
+
     # The engine builds its model clients once, with the key it was handed
-    # (behavior.md § Web UI). A key typed after the first request has to reach
+    # (behavior.md § Web UI). A key added after the first request has to reach
     # the next one — before this rebuild it sat unused until a page reload, so
-    # every call kept failing while the card read "✓ Saved".
+    # every call kept failing while the card sat there looking connected.
     @web @offline
     Scenario: A key saved after the first request reaches the next one
       Given the TamedTable web app
@@ -52,57 +62,183 @@ Feature: Web front-end
       And user saves the API key "sk-ant-example-key"
       Then the configured API key is "sk-ant-example-key"
 
-  # The Test button answers "does this key work?" in a second, instead of
-  # leaving the user to find out from a failed transformation minutes later.
-  Rule: The settings panel tests an API key on demand
+  # A key is checked against its provider as it is added, so a user learns it
+  # works before writing a single transformation — and a key that doesn't work
+  # never becomes a setting they have to hunt down and undo.
+  Rule: The settings panel connects a provider from a pasted key
 
     @web
-    Scenario: Testing a working key reports the model that answered
+    Scenario: Connecting a Google key selects it and pins its models
       Given the TamedTable web app
-      And user clicks the provider card "gemini"
-      And the gemini key is set to "good-key"
+      And the API key has not been set
       And the LLM API answers any completion
-      When user tests the API key
-      Then the key test succeeds
-      And the key test result names the model "gemini-3.1-flash-lite"
+      When user opens the settings panel
+      And user connects the key "AIza-good"
+      Then the connected providers are "gemini"
+      And the selected provider is "gemini"
+      And the configured model is "gemini-3.6-flash"
+      And the configured cellModel is "gemini-3.1-flash-lite"
+      And the connect error is empty
 
     @web
-    Scenario: Testing an invalid key reports it as invalid
+    Scenario: An unrecognised key is refused before any call goes out
       Given the TamedTable web app
-      And user clicks the provider card "gemini"
-      And the gemini key is set to "bad-key"
+      And the API key has not been set
+      When user opens the settings panel
+      And user connects the key "hello-there"
+      Then the connect error is "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
+      And the connected providers are ""
+      And the LLM API was called 0 times
+
+    @web
+    Scenario: A key the provider rejects is not stored
+      Given the TamedTable web app
+      And the API key has not been set
       And the LLM API returns a 401 unauthorized error
-      When user tests the API key
-      Then the key test fails with "Invalid API key"
+      When user opens the settings panel
+      And user connects the key "AIza-bad"
+      Then the connect error is "Key rejected by Google. Check the key and try again."
+      And the connected providers are ""
 
     # The friend's report: an empty OpenAI balance answers 429 with
     # insufficient_quota, and "wait a minute" is a wait that never ends.
     @web
-    Scenario: Testing a key on an account with no credit says so, not "wait a minute"
+    Scenario: Connecting a key on an account with no credit says so, not "wait a minute"
       Given the TamedTable web app
-      And user clicks the provider card "openai"
-      And the openai key is set to "broke-key"
       And the LLM API returns a 429 insufficient-quota error
-      When user tests the API key
-      Then the key test fails with "Your OpenAI account has no credit left"
+      When user opens the settings panel
+      And user connects the key "sk-proj-broke"
+      Then the connect error is "Your OpenAI account has no credit left. Add credit (or a billing method) and try again."
 
-    # Retries are off for a test call, so a dead key answers once — not after
-    # the SDK has slept through its backoff.
+    # Retries are off, so a dead key answers once — not after the SDK has slept
+    # through its backoff.
     @web
-    Scenario: A failing key test makes exactly one model call
+    Scenario: A refused connect makes exactly one model call
       Given the TamedTable web app
-      And user clicks the provider card "openai"
-      And the openai key is set to "broke-key"
       And the LLM API returns a 429 insufficient-quota error
-      When user tests the API key
+      When user opens the settings panel
+      And user connects the key "sk-proj-broke"
       Then the LLM API was called 1 time
 
     @web
-    Scenario: Testing a card with no key is not offered
+    Scenario: A second provider connects alongside the first and becomes the default
       Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
       When user opens the settings panel
-      And user clicks the provider card "openrouter"
-      Then the key test is unavailable
+      And user connects the key "AIza-good"
+      And user connects the key "sk-ant-good"
+      Then the connected providers are "gemini, anthropic"
+      And the selected provider is "anthropic"
+      And the configured model is "claude-sonnet-4-6"
+
+    # The card has no key field, so replacing in place is the only way to fix
+    # an expired key without deleting the card first.
+    @web
+    Scenario: Re-adding a connected provider's key replaces it in place
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "AIza-first"
+      And user connects the key "AIza-second"
+      Then the connected providers are "gemini"
+      And the configured key for "gemini" is "AIza-second"
+
+    @web
+    Scenario: Removing the default falls back to the remaining provider
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "AIza-good"
+      And user connects the key "sk-ant-good"
+      And user removes the provider "anthropic"
+      Then the connected providers are "gemini"
+      And the selected provider is "gemini"
+
+    @web
+    Scenario: Removing the last provider leaves nothing connected
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "AIza-good"
+      And user removes the provider "gemini"
+      Then the connected providers are ""
+
+    @web
+    # Puter is a gateway: the token is pasted like any other credential, and
+    # its whoami proves it without a model call.
+    Scenario: Connecting a Puter token pins its Gemini defaults
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "eyJhbGciOiJIUzI1Ni-demo"
+      Then the connected providers are "puter"
+      And the selected provider is "puter"
+      And the configured model is "gemini-3.6-flash"
+      And the configured cellModel is "gemini-3.1-flash-lite"
+
+    @web
+    # Every other card holds a key the user has their own copy of, so deleting
+    # it only forgets ours. Puter's is a session the SDK also keeps — leave it
+    # behind and the next sign-in silently returns the same account.
+    Scenario: Deleting the Puter card signs out of Puter
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "eyJhbGciOiJIUzI1Ni-demo"
+      And user removes the provider "puter"
+      Then the connected providers are ""
+      And the Puter session has been signed out
+
+    @web
+    # Deleting any other card is not a sign-out — there is no session to end.
+    Scenario: Deleting a Google card does not touch the Puter session
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "AIza-good"
+      And user removes the provider "gemini"
+      Then the Puter session has not been signed out
+
+    @web
+    # The old code returned null for every failure, and null means "the user
+    # closed the window" — so a blocked sign-in looked like a click that never
+    # registered.
+    Scenario: A failed Puter sign-in says so instead of doing nothing
+      Given the TamedTable web app
+      And the API key has not been set
+      And the Puter sign-in fails with "Your browser blocked the Puter.js sign-in window."
+      When user opens the settings panel
+      And user signs in to Puter
+      Then the connect error is "Your browser blocked the Puter.js sign-in window."
+      And the connected providers are ""
+
+    @web
+    Scenario: Closing the Puter sign-in window is not an error
+      Given the TamedTable web app
+      And the API key has not been set
+      And the Puter sign-in is closed without signing in
+      When user opens the settings panel
+      And user signs in to Puter
+      Then the connect error is empty
+      And the connected providers are ""
+
+    @web
+    Scenario: Connecting Groq pins its two open-weight defaults
+      Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
+      When user opens the settings panel
+      And user connects the key "gsk_good"
+      Then the selected provider is "groq"
+      And the configured model is "openai/gpt-oss-120b"
+      And the configured cellModel is "openai/gpt-oss-20b"
 
   Rule: Files move through a dialog handshake
 
@@ -659,171 +795,73 @@ Feature: Web front-end
       And cell at row 1 column "Country" shows "United States"
       And the spec has 1 transformation
 
-  Rule: The settings panel shows accordion provider cards
+  Rule: The chooser shows one card per connected provider
 
     @web
-    Scenario: Settings panel opens with four provider cards
+    Scenario: With nothing connected the chooser shows no cards
       Given the TamedTable web app
+      And the API key has not been set
       When user opens the settings panel
-      Then the settings panel shows 4 provider cards
-      And no provider card is expanded
+      Then the connected providers are ""
 
     @web
-    Scenario: Clicking the Google card expands it and selects Google
+    Scenario: Only the selected provider's card shows its models
       Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
       When user opens the settings panel
-      And user clicks the provider card "gemini"
-      Then the provider card "gemini" is expanded
-      And the configured provider is "gemini"
+      And user connects the key "AIza-good"
+      And user connects the key "sk-proj-good"
+      Then the selected provider is "openai"
+      And the "gemini" card is collapsed
 
     @web
-    Scenario: Clicking the Google card shows the GEMINI_API_KEY env hint
+    Scenario: Clicking a connected card makes it the default
       Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
       When user opens the settings panel
-      And user clicks the provider card "gemini"
-      Then the expanded card body shows env hint "GEMINI_API_KEY"
+      And user connects the key "AIza-good"
+      And user connects the key "sk-proj-good"
+      And user selects the provider "gemini"
+      Then the selected provider is "gemini"
+      And the configured model is "gemini-3.6-flash"
 
     @web
-    Scenario: Clicking a second card collapses the first
+    # The tag is read from the provider, never guessed: Google reports its tier
+    # in a response header, and Groq publishes nothing at all.
+    Scenario: A card shows a tier tag only when the provider reported one
       Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers any completion
       When user opens the settings panel
-      And user clicks the provider card "gemini"
-      And user clicks the provider card "openai"
-      Then the provider card "openai" is expanded
-      And the provider card "gemini" is collapsed
+      And user connects the key "AIza-good"
+      And user connects the key "gsk_good"
+      Then the "gemini" card's tier is "paid"
+      And the "groq" card has no tier
 
     @web
-    Scenario: Clicking the OpenAI card shows GPT models and the env hint
+    # A row that just went blank looked exactly like one still loading, so a
+    # measurement that failed says so and the ⟳ button is the retry.
+    Scenario: A refused measurement leaves the row saying the speed is unknown
       Given the TamedTable web app
+      And the API key has not been set
+      And the LLM API answers the key check but refuses the measurement
       When user opens the settings panel
-      And user clicks the provider card "openai"
-      Then the model list contains "gpt-5.5" with voice tag false
-      And the model list contains "gpt-5.4-mini" with voice tag false
-      And the expanded card body shows env hint "OPENAI_API_KEY"
-
-    @web
-    Scenario: Clicking an already-open card collapses it
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      And user clicks the provider card "gemini"
-      Then no provider card is expanded
-
-    @web
-    Scenario: Clicking the Anthropic card shows the ANTHROPIC_API_KEY env hint
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      Then the expanded card body shows env hint "ANTHROPIC_API_KEY"
-      And the configured provider is "anthropic"
+      And user connects the key "AIza-good"
+      Then the connect error is empty
+      And the connected providers are "gemini"
+      And the "gemini" card's primary speed reads "failed"
+      And the "gemini" card's secondary speed reads "failed"
 
     @web
     # The free tier: OpenRouter's single $0 model fills both roles.
-    Scenario: Clicking the OpenRouter card selects the free provider and models
+    Scenario: Selecting OpenRouter pins the free model in both roles
       Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "openrouter"
-      Then the expanded card body shows env hint "OPENROUTER_API_KEY"
-      And the configured provider is "openrouter"
+      When user selects the provider "openrouter"
+      Then the configured provider is "openrouter"
       And the configured model is "cohere/north-mini-code:free"
       And the configured cellModel is "cohere/north-mini-code:free"
-
-    @web
-    Scenario: Settings panel opens with the currently selected provider card expanded
-      Given the TamedTable web app
-      When user selects the provider "openai"
-      And user opens the settings panel
-      Then the provider card "openai" is expanded
-
-  Rule: Settings changes confirm with a Saved badge on the touched card
-
-    @web
-    Scenario: Opening the settings panel shows no Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      Then no provider card shows a Saved badge
-
-    @web
-    Scenario: Saving an API key shows the Saved badge on that provider's card
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the API key "sk-ant-example-key"
-      Then the provider card "anthropic" shows the Saved badge
-
-    # A provider with no key is not "saved" — the card's own radio already
-    # shows the choice, and the badge beside an empty field claims otherwise.
-    @web
-    Scenario: Picking a provider card shows no Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "gemini"
-      Then no provider card shows a Saved badge
-
-    @web
-    Scenario: Clearing a key shows no Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the "gemini" API key ""
-      Then no provider card shows a Saved badge
-
-    @web
-    Scenario: Each save restarts the badge's green phase
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the API key "sk-ant"
-      And user saves the API key "sk-ant-example-key"
-      Then the provider card "anthropic" shows the Saved badge
-      And the Saved badge has restarted 2 times
-
-  # Half a key is not a key: typing moves a draft, leaving the field saves it.
-  Rule: A key field saves when it loses focus
-
-    @web
-    Scenario: Typing in a key field saves nothing yet
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      And user types the "anthropic" API key "sk-ant-half"
-      Then no API key is configured
-      And no provider card shows a Saved badge
-
-    @web
-    Scenario: Leaving the key field saves it and shows the Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      And user types the "anthropic" API key "sk-ant-whole"
-      And the "anthropic" key field loses focus
-      Then the configured API key is "sk-ant-whole"
-      And the provider card "anthropic" shows the Saved badge
-
-    @web
-    Scenario: Leaving an untouched key field saves nothing
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the "anthropic" API key "sk-ant-already"
-      And user opens the settings panel
-      And the "anthropic" key field loses focus
-      Then no provider card shows a Saved badge
-
-    # A key typed but never blurred must not be lost to the Close button.
-    @web
-    Scenario: Closing the panel commits a key still being typed
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user clicks the provider card "anthropic"
-      And user types the "anthropic" API key "sk-ant-unblurred"
-      And user closes the settings panel
-      Then the configured API key is "sk-ant-unblurred"
-
-    @web
-    Scenario: Reopening the settings panel clears the Saved badge
-      Given the TamedTable web app
-      When user opens the settings panel
-      And user saves the API key "sk-ant-example-key"
-      And user closes the settings panel
-      And user opens the settings panel
-      Then no provider card shows a Saved badge
 
   Rule: Provider API errors surface descriptive messages
 
@@ -831,7 +869,7 @@ Feature: Web front-end
     Scenario: A Gemini request with a wrong key shows a descriptive error
       Given the TamedTable web app
       And load "customers-input.csv"
-      And user clicks the provider card "gemini"
+      And user selects the provider "gemini"
       And the gemini key is set to "bad-key"
       And the LLM API returns a 401 unauthorized error
       When user sends the chat message "norm dob col"
@@ -842,7 +880,7 @@ Feature: Web front-end
     Scenario: An OpenAI request with a wrong key shows a descriptive error
       Given the TamedTable web app
       And load "customers-input.csv"
-      And user clicks the provider card "openai"
+      And user selects the provider "openai"
       And the openai key is set to "bad-key"
       And the LLM API returns a 401 unauthorized error
       When user sends the chat message "norm dob col"
@@ -852,7 +890,7 @@ Feature: Web front-end
     Scenario: A rate-limited request tells the user to wait and retry
       Given the TamedTable web app
       And load "customers-input.csv"
-      And user clicks the provider card "gemini"
+      And user selects the provider "gemini"
       And the gemini key is set to "good-key"
       And the LLM API returns a 429 rate-limit error
       When user sends the chat message "norm dob col"

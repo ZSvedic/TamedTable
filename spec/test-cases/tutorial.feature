@@ -218,7 +218,7 @@ Feature: Tutorial panel
     Scenario: A tour replays key-free with a non-Gemini provider selected
       Given the TamedTable web app
       And the API key has not been set
-      And user clicks the provider card "openrouter"
+      And user selects the provider "openrouter"
       And the tutorial "Clean 25,000 rows for cents" is selected
       When user plays the whole tutorial
       Then the evaluated-rows readout shows "100 of 25000 rows evaluated"

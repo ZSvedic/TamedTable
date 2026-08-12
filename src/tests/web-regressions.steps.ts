@@ -238,7 +238,7 @@ Given('a regression web session with a chat request held mid-flight', async func
 When('the user switches provider before the held reply lands', async function () {
   const { c, inflight, release } = state(this);
   c.openSettings();
-  await c.clickProviderCard('anthropic');
+  await c.selectProvider('anthropic');
   release!();
   await inflight;
 });
