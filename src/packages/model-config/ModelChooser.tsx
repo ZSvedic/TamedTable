@@ -437,7 +437,7 @@ export function ModelChooser({
 
       {/* ── Already have an API key? ───────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        <div style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink }}>
+        <div style={{ fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink }}>
           Already have an API key?
         </div>
 
@@ -518,14 +518,15 @@ export function ModelChooser({
             user who needs them is standing in front of this input, and a new
             tab is a round trip many never come back from. */}
         {/* Inline, not flex: five names and four slashes have to fit on one
-            line in a 400px sheet, so the separators sit tight against the
-            labels rather than carrying a gap. The open one is underlined —
+            line in a 400px sheet, so the separators carry no space of their
+            own — the padding on each button keeps the labels off the slashes
+            without a line break's worth of gap. The open one is underlined —
             the cheapest possible "this is the one you are reading". */}
         <div
           data-mc-providers=""
           style={{ fontFamily: fontUi, fontSize: 12, lineHeight: 1.6, color: ink3 }}
         >
-          {'How to: '}
+          {'Instructions: '}
           {KEY_SETUP.map((setup, i) => (
             <Fragment key={setup.provider}>
               {i > 0 && <span aria-hidden="true">/</span>}
@@ -535,7 +536,7 @@ export function ModelChooser({
                 aria-expanded={howTo === setup.provider}
                 onClick={() => setHowTo(howTo === setup.provider ? null : setup.provider)}
                 style={{
-                  padding: 0,
+                  padding: '0 3px',
                   border: 0,
                   background: 'transparent',
                   fontFamily: fontUi,
@@ -590,68 +591,50 @@ export function ModelChooser({
 
       {/* ── No API key? — sign in to the Puter.js gateway ───────────────── */}
       {onPuterSignIn && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ flex: 1, height: 1, background: surface3 }} />
-            <span
-              style={{
-                fontFamily: fontMono,
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '.1em',
-                color: ink3,
-              }}
-            >
-              OR
-            </span>
-            <span style={{ flex: 1, height: 1, background: surface3 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <div style={{ fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink }}>
+            No API key?
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-            <div style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink }}>
-              No API key?
-            </div>
-            <button
-              type="button"
-              data-mc-puter=""
-              disabled={puterConnected || busy}
-              onClick={() => onPuterSignIn()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 9,
-                width: '100%',
-                padding: '11px 14px',
-                borderRadius: 9,
-                border: `1px solid ${puterConnected ? okSoft : line2}`,
-                background: puterConnected ? okSoft : surface,
-                color: puterConnected ? ok : ink,
-                fontFamily: fontUi,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: puterConnected ? 'default' : 'pointer',
-              }}
-            >
-              <img
-                data-mc-puter-logo=""
-                src={puterLogoUrl}
-                alt=""
-                width={17}
-                height={17}
-                style={{ borderRadius: 5, display: 'block', flex: '0 0 auto' }}
-              />
-              {puterConnected
-                ? 'Connected to Puter.js'
-                : puterBusy ? 'Signing in…' : 'Sign in / Sign up to Puter.js'}
-            </button>
-            {/* Under the button, not above it: it is the reason to press the
-                button, which reads better as a footnote than as a preamble. */}
-            <div style={{ fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 }}>
-              $25 in API credits for <em>any model</em> on Puter.js sign up.
-            </div>
+          <button
+            type="button"
+            data-mc-puter=""
+            disabled={puterConnected || busy}
+            onClick={() => onPuterSignIn()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 9,
+              width: '100%',
+              padding: '11px 14px',
+              borderRadius: 9,
+              border: `1px solid ${puterConnected ? okSoft : line2}`,
+              background: puterConnected ? okSoft : surface,
+              color: puterConnected ? ok : ink,
+              fontFamily: fontUi,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: puterConnected ? 'default' : 'pointer',
+            }}
+          >
+            <img
+              data-mc-puter-logo=""
+              src={puterLogoUrl}
+              alt=""
+              width={17}
+              height={17}
+              style={{ borderRadius: 5, display: 'block', flex: '0 0 auto' }}
+            />
+            {puterConnected
+              ? 'Connected to Puter.js'
+              : puterBusy ? 'Signing in…' : 'Sign in / Sign up to Puter.js'}
+          </button>
+          {/* Under the button, not above it: it is the reason to press the
+              button, which reads better as a footnote than as a preamble. */}
+          <div style={{ fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 }}>
+            $25 in API credits for <em>any model</em> on Puter.js sign up.
           </div>
-        </>
+        </div>
       )}
     </div>
   );

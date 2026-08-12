@@ -307,8 +307,10 @@ footer. There is no provider list to choose from before connecting — the key
 names its own provider.
 
 **Instructions, in the panel.** Under the input sits
-`How to: Google/OpenAI/Anthropic/OpenRouter/Groq` — one line, so the separators
-sit tight against the labels. Each provider is a button that expands a short
+`Instructions: Google/OpenAI/Anthropic/OpenRouter/Groq` — one line, the
+separators carrying no space of their own so five names and four slashes fit,
+with a few pixels of padding on each label to keep it off them. Each provider
+is a button that expands a short
 paragraph and, on its own row, a link straight to that provider's key page. One
 is open at a time, the open one is underlined (and carries `aria-expanded`), and
 clicking it again closes it. The link row ends with `(starts with AIza…)` —
@@ -384,11 +386,13 @@ A key for an **already-connected provider replaces it in place** and
 re-measures, rather than erroring. The card has no key field, so a user whose
 key expired would otherwise have to delete the card to fix it.
 
-**No API key?** Below the instructions row, an `OR` divider and a full-width
+**No API key?** Below the instructions row, a full-width
 **Sign in / Sign up to Puter.js** button carrying Puter's mark, with
 `$25 in API credits for *any model* on Puter.js sign up.` underneath it — it is
 the reason to press the button, which reads better as a footnote than as a
-preamble. Once Puter is connected the button
+preamble. There is no `OR` divider: the host's section heading above the whole
+chooser already separates it from what comes next, and a second separator
+*inside* one section only competed with it. Once Puter is connected the button
 turns green, reads `Connected to Puter.js`, and is inert. The whole block —
 divider included — renders only when `onPuterSignIn` is supplied, so a host
 that cannot open a sign-in window shows no button that would not work.

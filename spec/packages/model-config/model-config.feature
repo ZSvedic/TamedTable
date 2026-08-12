@@ -967,7 +967,7 @@ Feature: Model config
     # below, not from the input this row sits under.
     Scenario: The chooser offers instructions for every provider a key can belong to
       Given the model-config demo page
-      Then the chooser's footer reads "How to"
+      Then the chooser's footer reads "Instructions"
       And the chooser's instructions row lists "Google, OpenAI, Anthropic, OpenRouter, Groq"
 
     @web

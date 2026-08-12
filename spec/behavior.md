@@ -1101,8 +1101,17 @@ view state (it feeds the voice prompt's context); saving is confirmed
 by its toast, and run activity shows in the chat thread, so the table
 carries no separate status readout.
 
-The settings panel opens on a **model chooser** the user connects providers to
-by pasting a key. There is no list of providers to pick from first: the key's
+The settings panel is three sections — **Model config**, **Execution**,
+**Diagnostics** (plus **Add to home screen** on a phone) — each under a heading
+that is deliberately larger and heavier than the questions *inside* a section
+("Already have an API key?", "No API key?"). Without that gap the sub-questions
+read as the structure and the sections as labels on it, which is how it looked
+before. A rule above each heading does the separating, which is why the
+chooser's own `OR` divider is gone: a second separator inside one section only
+competed with the one around it.
+
+The Model config section opens on a **model chooser** the user connects
+providers to by pasting a key. There is no list of providers to pick from first: the key's
 prefix names its own provider, so the panel starts with a single dashed row —
 `No provider or model added.` — an input, and an Add button. The chooser
 component, its layout and its test attributes live in

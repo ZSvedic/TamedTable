@@ -49,6 +49,28 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     secondary: roleRow(p, 'secondary'),
   }));
 
+  // #SettingsCards — the panel's three sections. The heading is deliberately
+  // larger and heavier than the questions inside a section ("Already have an
+  // API key?", "No API key?"): without that the sub-questions read as the
+  // structure and the sections read as labels on it. The rule above each one
+  // does the separating the chooser's OR divider used to.
+  const section = (title: string, first = false): ReactNode => (
+    <div
+      style={{
+        marginTop: first ? 0 : space.px16,
+        paddingTop: first ? 0 : space.px16,
+        borderTop: first ? undefined : `1px solid ${t.line}`,
+        marginBottom: space.px12,
+        fontFamily: typography.ui,
+        fontSize: typography.size.lg,
+        fontWeight: 700,
+        color: t.ink,
+      }}
+    >
+      {title}
+    </div>
+  );
+
   // The app theme, expressed as the chooser's --mc-* variables.
   const chooserTheme = {
     '--mc-ink': t.ink,
@@ -144,6 +166,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
 
         {/* body — scrollable model chooser + the rest of the settings */}
         <div style={{ flex: 1, overflowY: 'auto', padding: space.px16, ...chooserTheme }}>
+          {section('Model config', true)}
           <ModelChooser
             connected={connected}
             selected={connected.length > 0 ? cfg.provider : null}
@@ -163,18 +186,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
 
           {/* #LazyExec — Simple mode: every AI step runs table-wide at once,
               with the estimate dialog gating runs of more than one page. */}
-          <div style={{ marginTop: space.px16 }}>
-            <div
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.sm,
-                fontWeight: 600,
-                color: t.ink,
-                marginBottom: space.px8,
-              }}
-            >
-              Execution
-            </div>
+          {section('Execution')}
+          <div>
             <label
               style={{
                 display: 'flex',
@@ -210,18 +223,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           </div>
 
           {/* #Diagnostics — send the maintainers a redacted bug report */}
-          <div style={{ marginTop: space.px16 }}>
-            <div
-              style={{
-                fontFamily: typography.ui,
-                fontSize: typography.size.sm,
-                fontWeight: 600,
-                color: t.ink,
-                marginBottom: space.px8,
-              }}
-            >
-              Diagnostics
-            </div>
+          {section('Diagnostics')}
+          <div>
             <div
               style={{
                 fontFamily: typography.ui,
@@ -255,18 +258,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               prompt (captured at startup); iOS browsers have no API for it, so
               show the share-menu instruction instead. Desktop hides this. */}
           {isMobile && (
-            <div style={{ marginTop: space.px16 }}>
-              <div
-                style={{
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.sm,
-                  fontWeight: 600,
-                  color: t.ink,
-                  marginBottom: space.px8,
-                }}
-              >
-                Add to home screen
-              </div>
+            <>
+              {section('Add to home screen')}
               <div
                 style={{
                   fontFamily: typography.ui,
@@ -288,7 +281,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
                     : 'In your browser menu: Add to Home screen.'}
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
