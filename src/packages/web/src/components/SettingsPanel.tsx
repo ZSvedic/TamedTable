@@ -10,7 +10,9 @@ import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 import { installPrompt } from '../install-prompt.ts';
-import { modelFor, defaultModel, defaultCellModel, type Provider } from '@tamedtable/model-config';
+import {
+  modelFor, defaultModel, defaultCellModel, priceVariesByPlan, type Provider,
+} from '@tamedtable/model-config';
 import { ModelChooser, type ConnectedCard, type RoleRow } from '@tamedtable/model-config/ModelChooser';
 import { speedOf } from '@tamedtable/model-config/storage';
 
@@ -41,6 +43,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     tier: controller.probes[p]?.tier ?? null,
     // Driven by the catalogue's voiceInput flag, not hardcoded per provider.
     voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    // Groq: a free tier we cannot detect, so its rows name no price.
+    priceVariesByPlan: priceVariesByPlan(p),
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));

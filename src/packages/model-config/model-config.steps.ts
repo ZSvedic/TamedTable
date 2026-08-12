@@ -6,6 +6,7 @@ import {
   defaultModel,
   defaultCellModel,
   defaultBatchSize,
+  priceVariesByPlan,
   detectProvider,
   connectedProviders,
   modelFor,
@@ -425,6 +426,13 @@ Then(
   function (this: ModelConfigWorld, expected: string) {
     const c = ctx(this);
     assert.equal(connectedProviders(c.resolved!, c.order).join(', '), expected);
+  },
+);
+
+Then(
+  'priceVariesByPlan for {string} is {word}',
+  function (this: ModelConfigWorld, provider: string, expected: string) {
+    assert.equal(priceVariesByPlan(provider as Provider), expected === 'true');
   },
 );
 

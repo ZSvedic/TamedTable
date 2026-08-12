@@ -37,6 +37,11 @@ export interface ProviderDefaults {
   primary: string;
   secondary: string;
   batchSize?: number;
+  /** The catalogue price is not necessarily what this provider's user pays.
+   *  Groq's free tier costs nothing and is indistinguishable from a paid key
+   *  over the API — same models, same headers — so quoting the paid price
+   *  would be wrong for most Groq accounts. See `priceVariesByPlan`. */
+  priceVariesByPlan?: boolean;
 }
 
 export interface ResolvedConfig {
@@ -100,6 +105,16 @@ export function modelFor(provider: Provider, modelId: string): ModelDef | undefi
  *  same-provider — cell calls never cross providers. */
 export function defaultCellModel(provider: Provider): string {
   return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
+}
+
+/** Whether this provider's catalogue price might not be the price the user
+ *  pays, because it has a free tier we cannot detect. Groq is the one: its free
+ *  tier is $0 and its API says nothing about which tier a key is on (the
+ *  rate-limit headers imply it, but only against a hardcoded threshold — see
+ *  the 2026-08-11 provider probe). The card then names no price at all rather
+ *  than a number that is wrong for most of its users. */
+export function priceVariesByPlan(provider: Provider): boolean {
+  return DEFAULTS[provider]?.priceVariesByPlan === true;
 }
 
 /** The provider's pinned cell batch size from `defaults`, or undefined when it
@@ -198,6 +213,10 @@ export interface KeySetup {
   provider: Provider;
   /** How the chooser's instructions row names it. */
   label: string;
+  /** What this provider's keys start with, shown beside the link so a user
+   *  can check the thing they just copied. Also the display list
+   *  `SUPPORTED_PREFIXES` is built from. */
+  prefix: string;
   /** Two or three short lines — what the user has to do, and the one gotcha. */
   steps: readonly string[];
   /** Where the key is created. */
@@ -209,6 +228,7 @@ export interface KeySetup {
 export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'gemini',
+    prefix: 'AIza…',
     label: 'Google',
     steps: [
       'Sign in at Google AI Studio and create a key.',
@@ -220,6 +240,7 @@ export const KEY_SETUP: readonly KeySetup[] = [
   },
   {
     provider: 'openai',
+    prefix: 'sk-proj-…',
     label: 'OpenAI',
     steps: [
       'Sign in at the OpenAI platform and create a key.',
@@ -230,6 +251,7 @@ export const KEY_SETUP: readonly KeySetup[] = [
   },
   {
     provider: 'anthropic',
+    prefix: 'sk-ant-…',
     label: 'Anthropic',
     steps: [
       'Sign in to the Anthropic Console and create a key.',
@@ -240,6 +262,7 @@ export const KEY_SETUP: readonly KeySetup[] = [
   },
   {
     provider: 'openrouter',
+    prefix: 'sk-or-…',
     label: 'OpenRouter',
     steps: [
       'One signup, no credit card, reaches free models from many vendors.',
@@ -250,6 +273,7 @@ export const KEY_SETUP: readonly KeySetup[] = [
   },
   {
     provider: 'groq',
+    prefix: 'gsk_…',
     label: 'Groq',
     steps: [
       "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
@@ -261,9 +285,11 @@ export const KEY_SETUP: readonly KeySetup[] = [
 ];
 
 /** The prefixes named in the chooser's "key not recognised" message, in the
- *  order a user reads them — not the order they are matched in. */
+ *  order a user reads them — not the order they are matched in. Built from
+ *  KEY_SETUP so the list is stated once, plus Puter, which has no pasted-key
+ *  instructions of its own (its credential comes from the sign-in button). */
 export const SUPPORTED_PREFIXES: readonly string[] = [
-  'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…',
+  ...KEY_SETUP.map((s) => s.prefix), 'eyJ…',
 ];
 
 /** The provider a pasted key belongs to, or null when no prefix matches. A

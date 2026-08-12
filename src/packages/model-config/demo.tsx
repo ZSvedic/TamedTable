@@ -10,6 +10,7 @@ import { createRoot } from 'react-dom/client';
 import {
   ALL_MODELS, KEY_FIELD, SUPPORTED_PREFIXES, modelFor,
   connectedProviders, defaultModel, defaultCellModel, detectProvider, resolveConfig,
+  priceVariesByPlan,
   type Provider, type ResolvedConfig,
 } from './index.ts';
 import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.tsx';
@@ -195,6 +196,8 @@ function Demo() {
     id: p,
     tier: probes[p]?.tier ?? null,
     voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    // Groq: a free tier we cannot detect, so its rows name no price.
+    priceVariesByPlan: priceVariesByPlan(p),
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));

@@ -1390,6 +1390,7 @@ function resolveConfig(env: Record<string, string | undefined>, stored: Partial<
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
 function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
+function priceVariesByPlan(provider: Provider): boolean;  // defaults' flag (groq): an undetectable free tier, so the card names no price
 function providerFor(modelId: string): EngineProvider;   // fallback only; never returns "puter"
 function modelFor(p: Provider, modelId: string): ModelDef | undefined;  // ids are shared — Puter re-serves them — so lookups name the provider
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
@@ -1437,7 +1438,7 @@ interface RoleRow {                       // prices are catalogue values per 100
   outUsdPer1kTok: number | null;
   speed: RoleSpeed;                       // 'measuring' → "measuring…", 'failed' → "speed unknown", null → no tail
 }
-interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; primary: RoleRow; secondary: RoleRow }
+interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; priceVariesByPlan?: boolean; primary: RoleRow; secondary: RoleRow }
 interface ModelChooserProps {
   connected: readonly ConnectedCard[];  // one card per connected provider, in the order added
   selected: Provider | null;            // the default provider; only its card shows model rows
@@ -1453,8 +1454,9 @@ interface ModelChooserProps {
   onPuterSignIn?(): void;                 // the "No API key?" block; omit it and the whole block is left out
 }
 const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
-interface KeySetup { provider: Provider; label: string; steps: readonly string[]; url: string; action: string }
+interface KeySetup { provider: Provider; label: string; prefix: string; steps: readonly string[]; url: string; action: string }
 const KEY_SETUP: readonly KeySetup[];            // the five pasteable providers in row order, with the panel's short how-to-get; a test asserts each `url` appears in FAQ.html
+                                                 // SUPPORTED_PREFIXES is built from its `prefix` values, plus Puter's `eyJ…`
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties
 ```
 

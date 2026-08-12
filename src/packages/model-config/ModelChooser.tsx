@@ -8,7 +8,7 @@
 // renders standalone and the host injects its theme by setting the variables on
 // a wrapper.
 // Spec: spec/packages/model-config/behavior.md § Model chooser component.
-import { useState, type ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { KEY_SETUP } from './index.ts';
 import type { Provider, Tier } from './index.ts';
 import { estimateSecPer1kTok } from './probe.ts';
@@ -33,6 +33,11 @@ export interface ConnectedCard {
   tier: Tier;
   /** Whether this provider's primary model accepts audio input. */
   voice: boolean;
+  /** The catalogue price is not necessarily what this account pays, because
+   *  the provider has a free tier we cannot detect (Groq). The rows then name
+   *  no price at all — a number that is wrong for most of a provider's users
+   *  is worse than saying we do not know. */
+  priceVariesByPlan?: boolean;
   primary: RoleRow;
   secondary: RoleRow;
 }
@@ -113,13 +118,17 @@ function money(usd: number): string {
  *
  *   $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
  *
- * The prices are always there once the catalogue knows the model; the `~Z sec`
- * tail is the measurement, so it reads `measuring…` while the call is out and
+ * The prices are there once the catalogue knows the model — unless the provider
+ * has a free tier we cannot detect, in which case the catalogue's number is
+ * wrong for most of its users and the line says so instead. The `~Z sec` tail
+ * is the measurement, so it reads `measuring…` while the call is out and
  * `speed unknown` when the call came back an error — a row that simply went
  * blank looked identical to one still loading. */
-function costLine(row: RoleRow): string | null {
+function costLine(row: RoleRow, priceVariesByPlan = false): string | null {
   const parts: string[] = [];
-  if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
+  if (priceVariesByPlan) {
+    parts.push('Price depends on your plan');
+  } else if (row.inUsdPer1kTok !== null && row.outUsdPer1kTok !== null) {
     parts.push(`$${money(row.inUsdPer1kTok)} in / $${money(row.outUsdPer1kTok)} out per 1000 tok`);
   }
   if (row.speed === 'measuring') parts.push('measuring…');
@@ -228,8 +237,10 @@ export function ModelChooser({
   // line under both. The cost line starts at the row's left edge rather than
   // indented under the model id — indented, it had a third of the card to fit
   // a sentence in and got clipped.
-  const roleRow = (role: 'primary' | 'secondary', row: RoleRow): ReactNode => {
-    const cost = costLine(row);
+  const roleRow = (
+    role: 'primary' | 'secondary', row: RoleRow, priceVaries: boolean,
+  ): ReactNode => {
+    const cost = costLine(row, priceVaries);
     return (
       <div data-mc-model={row.model} data-mc-role={role}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -386,8 +397,8 @@ export function ModelChooser({
               gap: 10,
             }}
           >
-            {roleRow('primary', c.primary)}
-            {roleRow('secondary', c.secondary)}
+            {roleRow('primary', c.primary, c.priceVariesByPlan === true)}
+            {roleRow('secondary', c.secondary, c.priceVariesByPlan === true)}
           </div>
         )}
       </div>
@@ -429,20 +440,6 @@ export function ModelChooser({
         <div style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink }}>
           Already have an API key?
         </div>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'baseline',
-            gap: 8,
-            fontFamily: fontUi,
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: ink2,
-          }}
-        >
-          <span>Paste it below, we do the rest.</span>
-        </div>
 
         {error !== '' && (
           <div
@@ -478,7 +475,7 @@ export function ModelChooser({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && canAdd) onAdd();
             }}
-            placeholder="AIza… / sk-proj-… / sk-ant-…"
+            placeholder="Paste an API key here"
             style={{
               flex: 1,
               minWidth: 0,
@@ -520,16 +517,18 @@ export function ModelChooser({
         {/* Instructions live here rather than behind a link to the FAQ: the
             user who needs them is standing in front of this input, and a new
             tab is a round trip many never come back from. */}
+        {/* Inline, not flex: five names and four slashes have to fit on one
+            line in a 400px sheet, so the separators sit tight against the
+            labels rather than carrying a gap. The open one is underlined —
+            the cheapest possible "this is the one you are reading". */}
         <div
           data-mc-providers=""
-          style={{
-            display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 6,
-            fontFamily: fontUi, fontSize: 12, color: ink3,
-          }}
+          style={{ fontFamily: fontUi, fontSize: 12, lineHeight: 1.6, color: ink3 }}
         >
-          <span>Instructions:</span>
+          {'How to: '}
           {KEY_SETUP.map((setup, i) => (
-            <span key={setup.provider} style={{ display: 'flex', gap: 6 }}>
+            <Fragment key={setup.provider}>
+              {i > 0 && <span aria-hidden="true">/</span>}
               <button
                 type="button"
                 data-mc-howto={setup.provider}
@@ -541,15 +540,16 @@ export function ModelChooser({
                   background: 'transparent',
                   fontFamily: fontUi,
                   fontSize: 12,
-                  fontWeight: howTo === setup.provider ? 700 : 600,
+                  fontWeight: 600,
                   color: accent,
                   cursor: 'pointer',
+                  textDecoration: howTo === setup.provider ? 'underline' : 'none',
+                  textUnderlineOffset: 3,
                 }}
               >
                 {setup.label}
               </button>
-              {i < KEY_SETUP.length - 1 && <span aria-hidden="true">/</span>}
-            </span>
+            </Fragment>
           ))}
         </div>
 
@@ -570,15 +570,20 @@ export function ModelChooser({
               color: ink2,
             }}
           >
-            {open.steps.map((step) => <span key={step}>{step}</span>)}
-            <a
-              href={open.url}
-              target="_blank"
-              rel="noopener"
-              style={{ fontWeight: 600, color: accent, textDecoration: 'none' }}
-            >
-              {open.action} ↗
-            </a>
+            {/* One paragraph: the steps read as prose, not as a checklist of
+                three one-line bullets. */}
+            <span>{open.steps.join(' ')}</span>
+            <span>
+              <a
+                href={open.url}
+                target="_blank"
+                rel="noopener"
+                style={{ fontWeight: 600, color: accent, textDecoration: 'none' }}
+              >
+                {open.action} ↗
+              </a>
+              {` (starts with ${open.prefix})`}
+            </span>
           </div>
         )}
       </div>
@@ -605,9 +610,6 @@ export function ModelChooser({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
             <div style={{ fontFamily: fontUi, fontSize: 14, fontWeight: 650, color: ink }}>
               No API key?
-            </div>
-            <div style={{ fontFamily: fontUi, fontSize: 13, lineHeight: 1.5, color: ink2 }}>
-              $25 in API credits for <em>any model</em> on Puter.js sign up.
             </div>
             <button
               type="button"
@@ -643,6 +645,11 @@ export function ModelChooser({
                 ? 'Connected to Puter.js'
                 : puterBusy ? 'Signing in…' : 'Sign in / Sign up to Puter.js'}
             </button>
+            {/* Under the button, not above it: it is the reason to press the
+                button, which reads better as a footnote than as a preamble. */}
+            <div style={{ fontFamily: fontUi, fontSize: 12, lineHeight: 1.5, color: ink3 }}>
+              $25 in API credits for <em>any model</em> on Puter.js sign up.
+            </div>
           </div>
         </>
       )}

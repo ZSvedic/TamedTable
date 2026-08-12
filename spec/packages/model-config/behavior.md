@@ -307,9 +307,13 @@ footer. There is no provider list to choose from before connecting — the key
 names its own provider.
 
 **Instructions, in the panel.** Under the input sits
-`Instructions: Google / OpenAI / Anthropic / OpenRouter / Groq`, each provider a
-button that expands two or three lines and a link straight to that provider's
-key page. One is open at a time; clicking the open one closes it. Puter is
+`How to: Google/OpenAI/Anthropic/OpenRouter/Groq` — one line, so the separators
+sit tight against the labels. Each provider is a button that expands a short
+paragraph and, on its own row, a link straight to that provider's key page. One
+is open at a time, the open one is underlined (and carries `aria-expanded`), and
+clicking it again closes it. The link row ends with `(starts with AIza…)` —
+the prefixes used to live in the input's placeholder, which is exactly where a
+user cannot read them once they have pasted something. Puter is
 deliberately absent even though it is a full provider — its credential comes
 from the sign-in button below, not from this input, so naming it here would
 send users looking for a Puter key to paste.
@@ -348,10 +352,13 @@ Primary model    gemini-3.6-flash
 $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
 ```
 
-The prices are catalogue values per thousand tokens and are always there (a
-model the catalogue doesn't price shows only the tail). The `~Z sec` tail has
-four states, because "blank" was telling the user three different things at
-once:
+The prices are catalogue values per thousand tokens (a model the catalogue
+doesn't price shows only the tail). A provider whose `defaults` row is marked
+`priceVariesByPlan` shows **`Price depends on your plan`** in their place —
+Groq is the one: its free tier costs nothing and its API cannot say which tier
+a key is on, so the catalogue's paid number is wrong for most Groq accounts,
+and a wrong price is worse than an admitted unknown. The `~Z sec` tail has four
+states, because "blank" was telling the user three different things at once:
 
 | state | tail |
 |---|---|
@@ -364,9 +371,10 @@ Both hosts derive that value with `speedOf(reading, measuring)` — an absent
 reading is unmeasured, a null one failed — so only one place has to remember
 which is which.
 
-**Adding a key.** One input and an Add button, enabled as soon as the input is
-non-empty; Enter does the same thing. The host detects, verifies, stores and
-selects — the component only reports the click. Typing clears the error. While
+**Adding a key.** One input reading `Paste an API key here` and an Add button,
+enabled as soon as the input is non-empty; Enter does the same thing. The host
+detects, verifies, stores and selects — the component only reports the click.
+Typing clears the error. While
 an add is in flight the input and button are disabled and the button reads
 `Checking…`, so a slow provider cannot be double-submitted. Errors render as
 one banner above the input: the unrecognised-prefix message, or whatever
@@ -376,9 +384,11 @@ A key for an **already-connected provider replaces it in place** and
 re-measures, rather than erroring. The card has no key field, so a user whose
 key expired would otherwise have to delete the card to fix it.
 
-**No API key?** Below the footer, an `OR` divider, the line `$25 in API credits
-for *any model* on Puter.js sign up.`, and a full-width **Sign in / Sign up to
-Puter.js** button carrying Puter's mark. Once Puter is connected the button
+**No API key?** Below the instructions row, an `OR` divider and a full-width
+**Sign in / Sign up to Puter.js** button carrying Puter's mark, with
+`$25 in API credits for *any model* on Puter.js sign up.` underneath it — it is
+the reason to press the button, which reads better as a footnote than as a
+preamble. Once Puter is connected the button
 turns green, reads `Connected to Puter.js`, and is inert. The whole block —
 divider included — renders only when `onPuterSignIn` is supplied, so a host
 that cannot open a sign-in window shows no button that would not work.

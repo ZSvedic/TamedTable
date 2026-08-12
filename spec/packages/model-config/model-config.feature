@@ -409,6 +409,24 @@ Feature: Model config
     batch 5 and sharply worse at 40+; openrouter is the only provider with a pin.
 
     @headless
+    # Groq's free tier is $0 and its API cannot say which tier a key is on, so
+    # its catalogue price is not the price most of its users pay.
+    Scenario: Groq's price varies by plan
+      Then priceVariesByPlan for "groq" is true
+
+    @headless
+    Scenario Outline: priceVariesByPlan for <provider> is false
+      Then priceVariesByPlan for "<provider>" is false
+
+      Examples:
+        | provider   |
+        | gemini     |
+        | openai     |
+        | anthropic  |
+        | openrouter |
+        | puter      |
+
+    @headless
     Scenario: defaultBatchSize for openrouter returns 5
       When defaultBatchSize is called with "openrouter"
       Then the numeric result is 5
@@ -890,6 +908,22 @@ Feature: Model config
       And the Puter sign-in button is disabled
 
     @web
+    # Groq's free tier is $0 and its API cannot say which tier a key is on, so
+    # the catalogue's paid price is wrong for most Groq users. Better to say we
+    # do not know than to quote a number they will not be charged.
+    Scenario: A provider whose price depends on the plan names no price
+      Given the model-config demo page
+      When the user adds the key "gsk_demo"
+      Then the "groq" card's "primary" cost line matches "Price depends on your plan"
+      And the "groq" card's "primary" cost line matches ", ~"
+
+    @web
+    Scenario: A provider with one price list still shows it
+      Given the model-config demo page
+      When the user adds the key "AIza-demo"
+      Then the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
+
+    @web
     Scenario: The refresh button re-runs that provider's measurements
       Given the model-config demo page
       When the user adds the key "AIza-demo"
@@ -933,7 +967,7 @@ Feature: Model config
     # below, not from the input this row sits under.
     Scenario: The chooser offers instructions for every provider a key can belong to
       Given the model-config demo page
-      Then the chooser's footer reads "Instructions"
+      Then the chooser's footer reads "How to"
       And the chooser's instructions row lists "Google, OpenAI, Anthropic, OpenRouter, Groq"
 
     @web
@@ -944,6 +978,8 @@ Feature: Model config
       Then no provider instructions are shown
       When the user clicks the "groq" instructions link
       Then the "groq" instructions mention "Groq Console"
+      And the "groq" instructions mention "starts with gsk_…"
+      And the "groq" instructions link is marked open
       And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
 
     @web

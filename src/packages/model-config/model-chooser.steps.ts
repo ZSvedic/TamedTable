@@ -217,6 +217,18 @@ When(
   },
 );
 
+// The open link is underlined; aria-expanded is the same fact stated where a
+// screen reader can hear it, and is what this asserts rather than a style.
+Then(
+  'the {string} instructions link is marked open',
+  async function (this: object, provider: string) {
+    assert.equal(
+      await page(this).getAttribute(`[data-mc-howto="${provider}"]`, 'aria-expanded'),
+      'true',
+    );
+  },
+);
+
 Then('no provider instructions are shown', async function (this: object) {
   const open = await page(this).$$('[data-mc-howto-body]');
   assert.equal(open.length, 0, `expected no open instructions, found ${open.length}`);
