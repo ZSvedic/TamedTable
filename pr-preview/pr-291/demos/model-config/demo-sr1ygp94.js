@@ -17141,6 +17141,8 @@ var models_default = {
     { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.59, outUsdPerMtok: 0.79 },
     { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.05, outUsdPerMtok: 0.08 },
     { id: "cohere/north-mini-code:free", name: "North Mini Code (OpenRouter free)", provider: "openrouter", temperature: false, voiceInput: false, inUsdPerMtok: 0, outUsdPerMtok: 0 },
+    { id: "google/gemini-3.6-flash", name: "Gemini 3.6 Flash (OpenRouter)", provider: "openrouter", temperature: true, voiceInput: false, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
+    { id: "google/gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (OpenRouter)", provider: "openrouter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 },
     { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (Puter.js)", provider: "puter", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
     { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (Puter.js)", provider: "puter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 }
   ],
@@ -17154,7 +17156,12 @@ var models_default = {
       batchSize: 20,
       priceVariesByPlan: true
     },
-    openrouter: { primary: "cohere/north-mini-code:free", secondary: "cohere/north-mini-code:free", batchSize: 5 },
+    openrouter: {
+      primary: "cohere/north-mini-code:free",
+      secondary: "cohere/north-mini-code:free",
+      batchSize: 5,
+      paid: { primary: "google/gemini-3.6-flash", secondary: "google/gemini-3.1-flash-lite" }
+    },
     puter: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" }
   }
 };
@@ -17162,14 +17169,23 @@ var models_default = {
 // packages/model-config/index.ts
 var ALL_MODELS = models_default.models;
 var DEFAULTS = models_default.defaults;
-function defaultModel(provider) {
-  return DEFAULTS[provider]?.primary ?? ALL_MODELS.find((m) => m.provider === provider).id;
+function setFor(provider, paid = false) {
+  const d = DEFAULTS[provider];
+  if (!d)
+    return;
+  return paid && d.paid ? { ...d, ...d.paid, batchSize: d.paid.batchSize } : d;
+}
+function defaultModel(provider, paid = false) {
+  return setFor(provider, paid)?.primary ?? ALL_MODELS.find((m) => m.provider === provider).id;
+}
+function hasPaidModelSet(provider) {
+  return DEFAULTS[provider]?.paid !== undefined;
 }
 function modelFor(provider, modelId) {
   return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
 }
-function defaultCellModel(provider) {
-  return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
+function defaultCellModel(provider, paid = false) {
+  return setFor(provider, paid)?.secondary ?? defaultModel(provider, paid);
 }
 function priceVariesByPlan(provider) {
   return DEFAULTS[provider]?.priceVariesByPlan === true;
@@ -17354,13 +17370,14 @@ function resolveConfig(env, stored) {
   } else {
     provider = isProvider(stored.provider) ? stored.provider : "gemini";
   }
-  let model = env["TAMEDTABLE_MODEL"] || stored.model || defaultModel(provider);
+  const openrouterPaid = stored.openrouterPaid ?? false;
+  let model = env["TAMEDTABLE_MODEL"] || stored.model || defaultModel(provider, openrouterPaid);
   if (!modelBelongsTo(provider, model)) {
-    model = defaultModel(provider);
+    model = defaultModel(provider, openrouterPaid);
   }
-  let cellModel = env["TAMEDTABLE_CELL_MODEL"] || stored.cellModel || defaultCellModel(provider);
+  let cellModel = env["TAMEDTABLE_CELL_MODEL"] || stored.cellModel || defaultCellModel(provider, openrouterPaid);
   if (!modelBelongsTo(provider, cellModel)) {
-    cellModel = defaultCellModel(provider);
+    cellModel = defaultCellModel(provider, openrouterPaid);
   }
   return {
     provider,
@@ -17372,6 +17389,7 @@ function resolveConfig(env, stored) {
     puterToken,
     model,
     cellModel,
+    openrouterPaid,
     alwaysRunAll: stored.alwaysRunAll ?? false
   };
 }
@@ -17796,6 +17814,7 @@ function ModelChooser({
   onSelect,
   onRemove,
   onRefresh,
+  onPaidModelSetChange,
   onPuterSignIn
 }) {
   const puterConnected = connected.some((c) => c.id === "puter");
@@ -17973,7 +17992,36 @@ function ModelChooser({
           },
           children: [
             roleRow("primary", c.primary, c.priceVariesByPlan === true),
-            roleRow("secondary", c.secondary, c.priceVariesByPlan === true)
+            roleRow("secondary", c.secondary, c.priceVariesByPlan === true),
+            c.hasPaidModelSet && onPaidModelSetChange && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+              "data-mc-modelset": c.id,
+              style: { display: "flex", alignItems: "center", gap: 6, fontFamily: fontUi, fontSize: 12 },
+              children: [false, true].map((paid) => {
+                const on = c.paidModelSet === true === paid;
+                const locked = paid && c.tier === "free";
+                return /* @__PURE__ */ jsx_dev_runtime.jsxDEV("button", {
+                  type: "button",
+                  "data-mc-modelset-option": paid ? "paid" : "free",
+                  "aria-pressed": on,
+                  disabled: locked,
+                  title: locked ? "This key has no credit, so it can only reach free models." : undefined,
+                  onClick: () => onPaidModelSetChange(c.id, paid),
+                  style: {
+                    padding: "3px 9px",
+                    borderRadius: radiusSm,
+                    border: `1px solid ${on ? accent : line2}`,
+                    background: on ? accentSoft : surface,
+                    color: locked ? ink3 : on ? accent : ink2,
+                    fontFamily: fontUi,
+                    fontSize: 12,
+                    fontWeight: on ? 600 : 400,
+                    cursor: locked ? "not-allowed" : "pointer",
+                    opacity: locked ? 0.55 : 1
+                  },
+                  children: paid ? "Paid models" : "Free models"
+                }, String(paid), false, undefined, this);
+              })
+            }, undefined, false, undefined, this)
           ]
         }, undefined, true, undefined, this)
       ]
@@ -18480,10 +18528,16 @@ function Demo() {
   const [keyInput, setKeyInput] = import_react2.useState("");
   const [error, setError] = import_react2.useState("");
   const [busy, setBusy] = import_react2.useState(false);
+  const paidSet = stored.openrouterPaid ?? false;
+  const setPaid = (p, paid) => {
+    if (p !== "openrouter")
+      return;
+    setStored((prev) => ({ ...prev, openrouterPaid: paid }));
+  };
   const resolved = resolveConfig({}, {
     ...stored,
-    model: defaultModel(stored.provider ?? "gemini"),
-    cellModel: defaultCellModel(stored.provider ?? "gemini")
+    model: defaultModel(stored.provider ?? "gemini", paidSet),
+    cellModel: defaultCellModel(stored.provider ?? "gemini", paidSet)
   });
   const mounted = import_react2.useRef(false);
   import_react2.useEffect(() => {
@@ -18574,7 +18628,8 @@ function Demo() {
     setProbes(({ [p]: _dropped, ...rest }) => rest);
   };
   const roleRow = (p, role) => {
-    const model = role === "primary" ? defaultModel(p) : defaultCellModel(p);
+    const paid = p === "openrouter" && paidSet;
+    const model = role === "primary" ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -18586,8 +18641,10 @@ function Demo() {
   const connected = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    voice: modelFor(p, defaultModel(p, p === "openrouter" && paidSet))?.voiceInput ?? false,
     priceVariesByPlan: priceVariesByPlan(p),
+    hasPaidModelSet: hasPaidModelSet(p),
+    paidModelSet: p === "openrouter" && paidSet,
     primary: roleRow(p, "primary"),
     secondary: roleRow(p, "secondary")
   }));
@@ -18686,6 +18743,7 @@ function Demo() {
           setKeyInput("eyJhbGciOiJIUzI1NiJ9.demo");
           addKeyWith("eyJhbGciOiJIUzI1NiJ9.demo");
         },
+        onPaidModelSetChange: setPaid,
         onRefresh: (p) => {
           const key = resolved[KEY_FIELD[p]] ?? "";
           if (key)
