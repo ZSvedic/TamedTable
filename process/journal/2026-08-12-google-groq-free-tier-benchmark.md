@@ -16,7 +16,7 @@ more per task, and its free tier cannot sustain the workload at all.
 ## Numbers
 
 Groq, run against a genuine free-tier key at `TAMEDTABLE_RPM=5`
-(`results/free-groq.jsonl`):
+(run `free-groq` in `results/sweeps.csv`):
 
 | Cell model | Batch | Accuracy | Cost | Time |
 |---|---|---|---|---|
@@ -28,7 +28,7 @@ Groq, run against a genuine free-tier key at `TAMEDTABLE_RPM=5`
 | `openai/gpt-oss-120b` | 40 | 90% | $0.0055 | 133s |
 
 Google, at `TAMEDTABLE_RPM=10` to imitate free-tier throughput
-(`results/free-gemini.jsonl`):
+(run `free-gemini` in `results/sweeps.csv`):
 
 | Cell model | Batch | Accuracy | Cost | Time |
 |---|---|---|---|---|
@@ -94,6 +94,10 @@ call. It silently gave up on rows rather than failing.
   finished. On a free tier that is half an hour of silence, and one config
   failing at the end discarded every finished config with it. It now reports
   and persists per config.
+- The Pareto frontier on the tradeoff chart was drawn upside down. SVG y grows
+  downward, so the comparison that was meant to keep the best models kept the
+  ones nothing else was worse than — the chart recommended the bottom envelope.
+  Found while regenerating the charts for this run.
 
 ## Reproducing
 
