@@ -17147,7 +17147,11 @@ var models_default = {
     { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (Puter.js)", provider: "puter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 }
   ],
   defaults: {
-    gemini: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" },
+    gemini: {
+      primary: "gemini-3.6-flash",
+      secondary: "gemini-3.1-flash-lite",
+      priceVariesByPlan: true
+    },
     openai: { primary: "gpt-5.5", secondary: "gpt-5.4-mini" },
     anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5", batchSize: 40 },
     groq: {
