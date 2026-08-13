@@ -17147,10 +17147,11 @@ var models_default = {
   defaults: {
     gemini: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" },
     openai: { primary: "gpt-5.5", secondary: "gpt-5.4-mini" },
-    anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5" },
+    anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5", batchSize: 40 },
     groq: {
       primary: "openai/gpt-oss-120b",
       secondary: "openai/gpt-oss-20b",
+      batchSize: 20,
       priceVariesByPlan: true
     },
     openrouter: { primary: "cohere/north-mini-code:free", secondary: "cohere/north-mini-code:free", batchSize: 5 },
