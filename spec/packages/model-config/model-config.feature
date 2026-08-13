@@ -598,24 +598,25 @@ Feature: Model config
     only when the provider actually reports one.
 
     @headless
-    Scenario: A working Gemini key reports the paid tier from the response header
-      Given a stub provider API that accepts the key and returns service tier "standard"
-      When verifyKey is called for provider "gemini" with key "AIza-good"
-      Then the verified tier is "paid"
+    # x-gemini-service-tier is the INFERENCE tier (standard / priority / flex),
+    # not the billing tier. It reads "standard" for an ordinary call whether or
+    # not the project is billed, so a key on a project with billing never set
+    # up was being labelled PAID. Google publishes no billing signal at all.
+    Scenario Outline: A Gemini key reports no tier, whatever the service header says
+      Given a stub provider API that accepts the key and returns service tier "<served>"
+      When verifyKey is called for provider "gemini" with key "AQ.Ab-good"
+      Then the verified tier is unknown
+
+      Examples:
+        | served   |
+        | standard |
+        | priority |
+        | flex     |
 
     @headless
-    Scenario: A Gemini key on the free tier reports it
-      Given a stub provider API that accepts the key and returns service tier "free"
-      When verifyKey is called for provider "gemini" with key "AIza-good"
-      Then the verified tier is "free"
-
-    @headless
-    # Google omits the header where the tier concept doesn't apply. Reading
-    # silence as "paid" is the one word that tells a free-tier user not to
-    # worry about the bill, so silence reports nothing instead.
-    Scenario: A Gemini key with no tier header reports no tier
+    Scenario: A Gemini key with no tier header reports no tier either
       Given a stub provider API that accepts the key
-      When verifyKey is called for provider "gemini" with key "AIza-good"
+      When verifyKey is called for provider "gemini" with key "AQ.Ab-good"
       Then the verified tier is unknown
 
     @headless
@@ -885,12 +886,18 @@ Feature: Model config
       And the demo shows resolved cellModel "gemini-3.1-flash-lite"
 
     @web
+    # Only OpenRouter and the two no-free-tier providers can answer the
+    # question. Google's service-tier header is the inference tier, not a
+    # billing one, so its card says nothing rather than calling a free-tier key
+    # PAID. Groq publishes nothing at all.
     Scenario: The tier tag shows only where the provider reports one
       Given the model-config demo page
-      When the user adds the key "AIza-demo"
+      When the user adds the key "sk-or-demo"
       And the user adds the key "gsk_demo"
-      Then the "gemini" card shows the tag "PAID"
+      And the user adds the key "AQ.Ab-demo"
+      Then the "openrouter" card shows the tag "PAID"
       And the "groq" card shows no tier tag
+      And the "gemini" card shows no tier tag
 
     @web
     # Driven by the catalogue's voiceInput flag, not hardcoded per provider.

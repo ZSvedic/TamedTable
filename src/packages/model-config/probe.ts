@@ -233,15 +233,15 @@ export async function verifyKey(
   const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
   if (!ok(answer)) throw failure(provider, answer);
 
-  if (provider === 'gemini') {
-    // `free` when the key's project has no billing enabled, `standard` (or
-    // `priority`) when it does — and absent where the tier concept doesn't
-    // apply. Silence is not "paid": that is the one word that tells a
-    // free-tier user not to worry about the bill.
-    const served = answer.headers.get('x-gemini-service-tier');
-    if (served === null || served === '') return { tier: null };
-    return { tier: served === 'free' ? 'free' : 'paid' };
-  }
+  // Google publishes no billing signal, so we report none. We used to read
+  // `x-gemini-service-tier` as one, but that header is the *inference* tier —
+  // standard / priority / flex, the latency class a request was served at —
+  // and it reads `standard` for every ordinary call whether the project is
+  // billed or not. A genuinely free-tier key (billing never set up) returns
+  // `standard`, so the card called it PAID. Silence is the honest answer, and
+  // it is the safe one: "paid" is the single word that tells a free-tier user
+  // to worry about a bill they will never get.
+  if (provider === 'gemini') return { tier: null };
   // Neither OpenAI nor Anthropic has a free tier; Groq publishes no signal.
   if (provider === 'groq') return { tier: null };
   return { tier: 'paid' };

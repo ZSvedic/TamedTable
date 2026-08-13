@@ -18,7 +18,7 @@ module what that key is, checks it against the provider, and stores the result:
 
 ```
 detectProvider("AQ.Ab…")            → "gemini"
-await verifyKey("gemini", "AQ.Ab…") → { tier: "free" }
+await verifyKey("gemini", "AQ.Ab…") → { tier: null }   // Google reports none
 ```
 
 The card appears at once, marked as the default, with both model rows still
@@ -208,6 +208,20 @@ see is a price they find out about on their bill. `probe.ts` answers both
 against the live provider; hosts inject `fetch` so tests never do.
 
 **`verifyKey`** makes one small call and returns the account tier, or throws.
+Only two providers can answer that question. OpenRouter's `/key` says
+`is_free_tier` outright; OpenAI and Anthropic have no free tier, so every
+working key is paid. **Google and Groq report nothing**, and the card shows no
+tag rather than a guess.
+
+Google looks like it should be able to answer, and that is the trap. Its
+`x-gemini-service-tier` response header is the *inference* tier — standard,
+priority or flex, the latency class the request was served at — and it reads
+`standard` on an ordinary call whether the project is billed or not. We read it
+as a billing signal, so a key on a project with billing never set up was
+labelled `PAID`. Confirmed on 2026-08-13 against a key AI Studio itself lists as
+"Free tier". Silence is both the honest answer and the safe one: `paid` is the
+single word that tells a free-tier user to worry about a bill they will never
+get.
 It is the gate: no card appears, and nothing is stored, until it resolves. It
 answers in about a second — the cheap cell model, a two-word prompt, no
 retries — because a user whose account is empty should not watch a spinner for
