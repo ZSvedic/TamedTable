@@ -10,12 +10,20 @@ async function boot(page: Page): Promise<void> {
   await page.goto('/TamedTable/app/');
   await page.getByRole('button', { name: 'Tours', exact: true }).waitFor();
 }
-async function loadSample(page: Page, name: string): Promise<void> {
+/** Open the sample picker and click the row for `name`. The picker leads with
+ *  the recommended samples, so expand the full bundle first — that only adds
+ *  rows below, leaving the recommended ones clickable either way. */
+async function pickSample(page: Page, name: string): Promise<void> {
   await page.locator('[data-uk-menubtn]').first().click();
   await page.locator('[data-uk-menu-item="Open sample…"]').click();
   const picker = page.locator('[data-tb-sample-dialog]');
   await picker.waitFor();
+  await picker.locator('[data-tb-sample-more]').click();
   await picker.locator('[data-tb-sample]', { hasText: name }).first().click();
+}
+
+async function loadSample(page: Page, name: string): Promise<void> {
+  await pickSample(page, name);
   await page.locator('[data-tv-cell]').first().waitFor({ timeout: 30_000 });
 }
 async function editCell(page: Page, cell: string, value: string): Promise<void> {
@@ -60,10 +68,7 @@ test.describe('Open', () => {
 
   test('a large file raises the sample dialog and paginates', async ({ page }) => {
     await boot(page);
-    await page.locator('[data-uk-menubtn]').first().click();
-    await page.locator('[data-uk-menu-item="Open sample…"]').click();
-    await page.locator('[data-tb-sample-dialog]').waitFor();
-    await page.locator('[data-tb-sample]', { hasText: 'performance-liked-videos.csv' }).first().click();
+    await pickSample(page, 'performance-liked-videos.csv');
     const lf = page.locator('[data-tt-largefile-dialog]');
     await lf.waitFor();
     await lf.getByRole('button', { name: /original order/i }).click();
@@ -196,10 +201,7 @@ test.describe('Grid', () => {
   // below the table, off screen (spec/packages/table-view/behavior.md).
   test('a full page of rows scrolls inside the grid — the pagination bar stays on screen', async ({ page }) => {
     await boot(page);
-    await page.locator('[data-uk-menubtn]').first().click();
-    await page.locator('[data-uk-menu-item="Open sample…"]').click();
-    await page.locator('[data-tb-sample-dialog]').waitFor();
-    await page.locator('[data-tb-sample]', { hasText: 'performance-liked-videos.csv' }).first().click();
+    await pickSample(page, 'performance-liked-videos.csv');
     const lf = page.locator('[data-tt-largefile-dialog]');
     await lf.waitFor();
     await lf.getByRole('button', { name: /original order/i }).click();

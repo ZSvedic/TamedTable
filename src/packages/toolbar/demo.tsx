@@ -6,8 +6,12 @@ import { useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { typography } from '@tamedtable/ui-kit';
 import { ThemeProvider, useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
-import type { ToolbarSample } from './index.ts';
+import type { RecommendedSample, ToolbarSample } from './index.ts';
 import { Toolbar, OpenUrlDialog, OpenSampleDialog } from './components.tsx';
+
+const RECOMMENDED: RecommendedSample[] = [
+  { title: 'Clean up', name: 'customers-input.csv', url: 'https://example.com/customers-input.csv' },
+];
 
 const SAMPLES: ToolbarSample[] = [
   { name: 'customers-input.csv', url: 'https://example.com/customers-input.csv' },
@@ -90,6 +94,7 @@ function Demo(): ReactNode {
 
       <OpenSampleDialog
         open={sampleOpen}
+        recommended={RECOMMENDED}
         samples={SAMPLES}
         onPick={(url) => report(`open sample ${url}`)}
         onClose={() => setSampleOpen(false)}

@@ -889,6 +889,28 @@ entries under **Data** and the two recipe exports under **Recipe**.
 The empty page stacks the same three open actions as separate buttons
 under the brand mark and the line "What table can I tame?".
 
+The sample picker's two tiers come from two build-time defines, both
+frozen by `vite.config.ts`:
+
+```ts
+// vite.config.ts defines, consumed by src/samples.ts
+declare const __TT_SAMPLE_FILES__: readonly string[];  // every bundled file, minus goldens
+declare const __TT_SHOWCASE_SAMPLES__: ReadonlyArray<{ title: string; file: string }>;
+
+bundledSamples(): ToolbarSample[]          // all of the above, as { name, url }
+recommendedSamples(): RecommendedSample[]  // the showcase set, as { name, url, title }
+```
+
+`__TT_SHOWCASE_SAMPLES__` is derived, never hand-listed:
+`showcaseSamples()` in `src/packages/web/src/showcase-samples.ts` takes the
+`showcase-*.feature` sources, parses each with `parseTours`, and pairs the
+tour's `@cat-…` tag with the filename its first `load-file` step names —
+emitted in `TUTORIAL_CATEGORIES` order, titled with that category's title. A
+category without a showcase tour simply contributes no row.
+`__TT_SAMPLE_FILES__` excludes goldens (`*-expected.*`); the `samples/`
+`staticDirPlugin` still *serves* them, since the tutorial's `loadFixture`
+fetches goldens from there.
+
 ```ts
 // controller surface added by the menu refactor
 interface RecentEntry {

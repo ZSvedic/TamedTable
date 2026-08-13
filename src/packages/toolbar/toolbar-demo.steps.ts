@@ -3,6 +3,7 @@
 // (see tests/demo-harness.ts) and assert through the component's data-tb-*
 // attributes plus the demo's #out event log.
 import { Then, When } from '@cucumber/cucumber';
+import { strict as assert } from 'node:assert';
 import { bindDemoPage, expectText } from '../../tests/demo-harness.ts';
 
 const page = bindDemoPage({ name: 'toolbar', pkgDir: import.meta.dirname });
@@ -68,6 +69,30 @@ When('the user submits the toolbar URL dialog', async function (this: object) {
 When('the user picks the first toolbar sample', async function (this: object) {
   await page(this).click('[data-tb-sample]');
 });
+
+When('the user picks the last toolbar sample', async function (this: object) {
+  await page(this).locator('[data-tb-sample]').last().click();
+});
+
+When('the user shows all bundled samples in the toolbar sample picker', async function (this: object) {
+  await page(this).click('[data-tb-sample-more]');
+});
+
+Then('the toolbar sample picker recommends {string}', async function (this: object, title: string) {
+  await page(this).waitForSelector(`[data-tb-sample-dialog] [data-tb-sample]:has-text("${title}")`);
+});
+
+Then(
+  'the toolbar sample picker shows {int} sample row(s)',
+  async function (this: object, count: number) {
+    const rows = page(this).locator('[data-tb-sample-dialog] [data-tb-sample]');
+    // Poll: the disclosure re-renders the list, so the count settles a tick late.
+    await page(this).waitForFunction(
+      `document.querySelectorAll('[data-tb-sample-dialog] [data-tb-sample]').length === ${count}`,
+    );
+    assert.equal(await rows.count(), count);
+  },
+);
 
 Then('the toolbar URL dialog is closed', async function (this: object) {
   await page(this).waitForSelector('[data-tb-dialog]', { state: 'detached' });

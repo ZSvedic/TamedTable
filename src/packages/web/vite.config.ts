@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, copyFileSync, mkdirSync, statSync } from 'no
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseTours } from '@tamedtable/gherkin-tour';
+import { showcaseSamples } from './src/showcase-samples.ts';
 
 // The engine (@tamedtable/headless) is authored for Bun/Node. It is reused
 // here unmodified; Vite bridges the gap to the browser by aliasing the few
@@ -40,14 +41,27 @@ const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {
     .map((t) => ({ name: t.name, feature, tags: t.tags }));
 });
 
+// The sample picker's recommended rows: the file each showcase tour opens,
+// titled by its homepage section, in homepage order. Derived, never
+// hand-listed — see src/showcase-samples.ts, guarded by
+// src/tests/showcase-samples.test.ts.
+const showcaseSourceNames = tutorialFeatureNames.filter((name) => name.startsWith('showcase-'));
+const showcaseSamplesList = showcaseSamples(
+  showcaseSourceNames.map((feature) => ({ feature, source: readFileSync(join(specTcDir, feature), 'utf8') })),
+);
+
 // Static assets served same-origin: the sample CSV/JSONL files (also the
 // tutorial inputs + goldens), the tutorial feature files, and the recorded
 // cassettes. Each is copied into dist/ at build and served from its source dir
 // by a dev middleware — same pattern, three directories.
 const SAMPLE_EXTS = ['.csv', '.jsonl', '.parquet', '.arrow'];
-const sampleFiles = readdirSync(specTcDir)
+const servedSampleFiles = readdirSync(specTcDir)
   .filter((name) => SAMPLE_EXTS.some((ext) => name.endsWith(ext)))
   .sort();
+// What the picker lists is narrower than what we serve: goldens (`*-expected.*`)
+// are tour *outputs* compared against, never files a user would open — but the
+// tutorial still fetches them from /samples/, so they stay served.
+const sampleFiles = servedSampleFiles.filter((name) => !name.includes('-expected.'));
 // Voice clips for `play-audio` tour steps — served from /samples/ alongside the
 // CSV/JSONL fixtures, but kept out of __TT_SAMPLE_FILES__ (the Open URL dialog's
 // quick-picks are data files only).
@@ -119,7 +133,7 @@ export default defineConfig({
   plugins: [
     parquetEngineShim(),
     react(),
-    staticDirPlugin('samples', specTcDir, [...sampleFiles, ...audioFiles]),
+    staticDirPlugin('samples', specTcDir, [...servedSampleFiles, ...audioFiles]),
     staticDirPlugin('tutorials', specTcDir, tutorialFeatureNames),
     staticDirPlugin('cassettes', cassetteDir, cassetteFiles),
   ],
@@ -132,9 +146,11 @@ export default defineConfig({
     // The system-prompt file the engine reads at module init, inlined. The
     // engine's `process` references are satisfied by a stub in index.html.
     __TT_PROMPT__: JSON.stringify(promptText),
-    // The list of bundled sample files (filenames only) the Open URL dialog
-    // shows as quick-picks. Frozen at build time.
+    // The list of bundled sample files (filenames only) the sample picker
+    // shows behind its "Show all …" disclosure. Frozen at build time.
     __TT_SAMPLE_FILES__: JSON.stringify(sampleFiles),
+    // The picker's recommended rows — { title, file } per showcase tour.
+    __TT_SHOWCASE_SAMPLES__: JSON.stringify(showcaseSamplesList),
     // Lightweight tutorial scenario index — names + tags + source file. The
     // feature source, fixtures, goldens, and cassettes load lazily.
     __TT_TUTORIAL_MANIFEST__: JSON.stringify(tutorialManifest),
