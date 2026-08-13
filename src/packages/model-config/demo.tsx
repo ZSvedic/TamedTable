@@ -11,6 +11,7 @@ import {
   ALL_MODELS, KEY_FIELD, SUPPORTED_PREFIXES, modelFor,
   connectedProviders, defaultModel, defaultCellModel, detectProvider, resolveConfig,
   priceVariesByPlan,
+  hasPaidModelSet,
   type Provider, type ResolvedConfig,
 } from './index.ts';
 import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.tsx';
@@ -69,11 +70,17 @@ function Demo() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // The models follow the provider defaults — they are not user-selectable.
+  // The models follow the provider defaults — they are not user-selectable,
+  // beyond OpenRouter's free/paid model set, which is.
+  const paidSet = stored.openrouterPaid ?? false;
+  const setPaid = (p: Provider, paid: boolean) => {
+    if (p !== 'openrouter') return;
+    setStored((prev) => ({ ...prev, openrouterPaid: paid }));
+  };
   const resolved = resolveConfig({}, {
     ...stored,
-    model: defaultModel(stored.provider ?? 'gemini'),
-    cellModel: defaultCellModel(stored.provider ?? 'gemini'),
+    model: defaultModel(stored.provider ?? 'gemini', paidSet),
+    cellModel: defaultCellModel(stored.provider ?? 'gemini', paidSet),
   });
 
   // Persist every CHANGE to the blob the main app reads (and vice versa) — a
@@ -181,7 +188,8 @@ function Demo() {
   };
 
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
-    const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
+    const paid = p === 'openrouter' && paidSet;
+    const model = role === 'primary' ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -195,9 +203,11 @@ function Demo() {
   const connected: ConnectedCard[] = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    voice: modelFor(p, defaultModel(p, p === 'openrouter' && paidSet))?.voiceInput ?? false,
     // Groq: a free tier we cannot detect, so its rows name no price.
     priceVariesByPlan: priceVariesByPlan(p),
+    hasPaidModelSet: hasPaidModelSet(p),
+    paidModelSet: p === 'openrouter' && paidSet,
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));
@@ -308,6 +318,7 @@ function Demo() {
           setKeyInput('eyJhbGciOiJIUzI1NiJ9.demo');
           void addKeyWith('eyJhbGciOiJIUzI1NiJ9.demo');
         }}
+        onPaidModelSetChange={setPaid}
         onRefresh={(p) => {
           const key = (resolved[KEY_FIELD[p]] as string | null) ?? '';
           if (key) void measureBoth(p, key);

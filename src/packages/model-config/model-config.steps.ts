@@ -6,6 +6,7 @@ import {
   defaultModel,
   defaultCellModel,
   defaultBatchSize,
+  hasPaidModelSet,
   priceVariesByPlan,
   detectProvider,
   connectedProviders,
@@ -307,6 +308,7 @@ function configFor(provider: string, keys: Partial<ResolvedConfig>): ResolvedCon
     puterToken: null,
     model: defaultModel(provider as Provider),
     cellModel: defaultCellModel(provider as Provider),
+    openrouterPaid: false,
     alwaysRunAll: false,
     ...keys,
   };
@@ -759,6 +761,42 @@ When(
   function (this: ModelConfigWorld, provider: string) {
     ctx(this).numberResult = defaultBatchSize(provider as Provider);
     ctx(this).numberResultSet = true;
+  },
+);
+
+When(
+  'defaultBatchSize is called with {string} and paid true',
+  function (this: ModelConfigWorld, provider: string) {
+    ctx(this).numberResult = defaultBatchSize(provider as Provider, true);
+    ctx(this).numberResultSet = true;
+  },
+);
+
+Then(
+  'hasPaidModelSet is {word} for {string}',
+  function (this: ModelConfigWorld, expected: string, provider: string) {
+    assert.equal(hasPaidModelSet(provider as Provider), expected === 'true');
+  },
+);
+
+When(
+  'resolveConfig is called with empty env and stored provider {string} and openrouterKey {string}',
+  function (this: ModelConfigWorld, provider: string, key: string) {
+    ctx(this).resolved = resolveConfig({}, { provider: provider as Provider, openrouterKey: key });
+  },
+);
+
+When(
+  'resolveConfig is called with stored provider {string} and openrouterPaid true',
+  function (this: ModelConfigWorld, provider: string) {
+    ctx(this).resolved = resolveConfig({}, { provider: provider as Provider, openrouterPaid: true });
+  },
+);
+
+Then(
+  'the resolved openrouterPaid is {word}',
+  function (this: ModelConfigWorld, expected: string) {
+    assert.equal(ctx(this).resolved?.openrouterPaid, expected === 'true');
   },
 );
 

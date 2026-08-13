@@ -64,7 +64,36 @@ imported — neither the code nor this spec duplicates the list, because a copy
 here went stale once already. Every id is verified against the provider's
 current docs before it changes; none is ever guessed.
 
-OpenRouter is the free tier: one $0 model fills both roles.
+### OpenRouter serves two model sets
+
+OpenRouter is the one provider whose account tier changes what it should run.
+A $0 account can only reach `:free` models; an account with credits can reach
+everything OpenRouter proxies, including the Gemini models the benchmark rates
+best. So its `defaults` row carries a second set under `paid`, and the config
+remembers which one the user wants in `openrouterPaid`.
+
+| Set | Chat model | Cell model | Batch |
+|---|---|---|---|
+| free (default) | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` | 5 |
+| paid | `google/gemini-3.6-flash` | `google/gemini-3.1-flash-lite` | unpinned |
+
+The paid set is deliberately the same pair the Google card runs, since
+OpenRouter proxies them at Google's own per-token rate.
+
+**The user picks, not the tier.** `verifyKey` already reports whether the key is
+free or paid, and it would be easy to switch on that. We don't, because having
+credits is not the same as wanting to spend them: an account with $13 in it may
+be keeping that for something else, and a run that quietly starts billing
+because a balance exists is the kind of surprise this whole panel exists to
+avoid. So the selected card shows the choice, defaulting to free, and the tier
+only decides whether the paid option is offered at all. A $0 key sees the
+control disabled, because picking paid would only produce 402s.
+
+This also settles a display contradiction. The card's `PAID` tag describes the
+**account**, the price lines describe the **models** — so a paid OpenRouter
+account showed `PAID` above two `$0` rows. It now reads honestly either way:
+free models under a paid account say so, and switching to paid shows real
+prices.
 
 Three providers pin a `batchSize`, and each pin is a measured cliff rather than
 a preference. Batching more rows per call is nearly free on cost and time, so

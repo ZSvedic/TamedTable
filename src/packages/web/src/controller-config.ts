@@ -8,6 +8,7 @@ import {
   connectedProviders,
   defaultModel,
   defaultCellModel,
+  hasPaidModelSet,
   detectProvider,
   keyFor,
   KEY_FIELD,
@@ -185,6 +186,20 @@ export class ConfigManager {
       provider,
       model: defaultModel(provider),
       cellModel: defaultCellModel(provider),
+    });
+  }
+
+  /** Switch a provider between its free and paid model sets. Only OpenRouter
+   *  has two, and the choice is the user's rather than the account's: a key
+   *  with credits still opens on free, because holding a balance is not the
+   *  same as wanting to spend it. Both model ids are re-resolved from the new
+   *  set, so the card and the next run agree. */
+  async setPaidModelSet(provider: Provider, paid: boolean): Promise<void> {
+    if (!hasPaidModelSet(provider)) return;
+    await this.setConfig({
+      openrouterPaid: paid,
+      model: defaultModel(provider, paid),
+      cellModel: defaultCellModel(provider, paid),
     });
   }
 

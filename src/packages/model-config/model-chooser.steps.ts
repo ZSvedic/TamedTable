@@ -124,13 +124,36 @@ Then('the {string} card shows no model rows', async function (this: object, prov
   assert.equal(rows.length, 0, `expected the ${provider} card to be collapsed`);
 });
 
+/** The two roles are "chat" and "cell" in the spec and on screen; the DOM keeps
+ *  `primary`/`secondary`, which is persisted API and not worth churning for a
+ *  wording change. This is the one place the two vocabularies meet. */
+const ROLE_ATTR: Record<string, string> = { chat: 'primary', cell: 'secondary' };
+
 Then(
   "the {string} card's {word} model is {string}",
   async function (this: object, provider: string, role: string, modelId: string) {
+    const attr = ROLE_ATTR[role] ?? role;
     await page(this).waitForSelector(
-      `[data-mc-card="${provider}"] ~ div [data-mc-role="${role}"][data-mc-model="${modelId}"]`,
+      `[data-mc-card="${provider}"] ~ div [data-mc-role="${attr}"][data-mc-model="${modelId}"]`,
       { timeout: 5_000 },
     );
+  },
+);
+
+When(
+  'the user picks the {string} models on the {string} card',
+  async function (this: object, which: string, provider: string) {
+    const sel = `[data-mc-modelset="${provider}"] [data-mc-modelset-option="${which}"]`;
+    await page(this).waitForSelector(sel, { timeout: 5_000 });
+    await page(this).click(sel);
+  },
+);
+
+Then(
+  'the {string} card has no model-set choice',
+  async function (this: object, provider: string) {
+    const found = await page(this).$$(`[data-mc-modelset="${provider}"]`);
+    assert.equal(found.length, 0, `only a provider with two model sets offers the choice, but ${provider} did`);
   },
 );
 

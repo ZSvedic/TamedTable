@@ -406,6 +406,38 @@ Feature: Model config
         | groq       | openai/gpt-oss-20b          |
         | openrouter | cohere/north-mini-code:free |
 
+  Rule: OpenRouter serves a free and a paid model set
+
+    A $0 OpenRouter account can only reach `:free` models; one with credits can
+    reach everything OpenRouter proxies. The user picks which set runs, because
+    holding a balance is not the same as wanting to spend it.
+
+    @headless
+    Scenario: Only OpenRouter offers a paid model set
+      Then hasPaidModelSet is true for "openrouter"
+      And hasPaidModelSet is false for "gemini"
+      And hasPaidModelSet is false for "groq"
+
+    @headless
+    Scenario: An OpenRouter config defaults to the free models
+      When resolveConfig is called with empty env and stored provider "openrouter" and openrouterKey "sk-or-x"
+      Then the resolved model is "cohere/north-mini-code:free"
+      And the resolved cellModel is "cohere/north-mini-code:free"
+      And the resolved openrouterPaid is false
+
+    @headless
+    # A key with credits still opens on free. The tier decides whether paid is
+    # offered, never whether it is chosen.
+    Scenario: Asking for the paid set resolves the paid models
+      When resolveConfig is called with stored provider "openrouter" and openrouterPaid true
+      Then the resolved model is "google/gemini-3.6-flash"
+      And the resolved cellModel is "google/gemini-3.1-flash-lite"
+
+    @headless
+    Scenario: The paid set drops the free set's pinned batch size
+      When defaultBatchSize is called with "openrouter" and paid true
+      Then the numeric result is undefined
+
   Rule: defaultBatchSize pins the benchmarked cell batch
 
     A pin exists where the benchmark found the accuracy curve is not flat, so
@@ -809,8 +841,8 @@ Feature: Model config
     Scenario: The selected card shows its two models with measured cost and speed
       Given the model-config demo page
       When the user adds the key "AIza-demo"
-      Then the "gemini" card's primary model is "gemini-3.6-flash"
-      And the "gemini" card's secondary model is "gemini-3.1-flash-lite"
+      Then the "gemini" card's chat model is "gemini-3.6-flash"
+      And the "gemini" card's cell model is "gemini-3.1-flash-lite"
       And the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
       And the "gemini" card's "primary" cost line matches ", ~"
 
@@ -996,6 +1028,25 @@ Feature: Model config
       And the "groq" instructions mention "starts with gsk_…"
       And the "groq" instructions link is marked open
       And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
+
+    @web
+    # The card's PAID tag describes the account; the price lines describe the
+    # models. A paid OpenRouter account used to show PAID above two $0 rows.
+    Scenario: The OpenRouter card switches between its free and paid models
+      Given the model-config demo page
+      When the user adds the key "sk-or-demo"
+      Then the "openrouter" card's chat model is "cohere/north-mini-code:free"
+      When the user picks the "paid" models on the "openrouter" card
+      Then the "openrouter" card's chat model is "google/gemini-3.6-flash"
+      And the "openrouter" card's cell model is "google/gemini-3.1-flash-lite"
+      When the user picks the "free" models on the "openrouter" card
+      Then the "openrouter" card's chat model is "cohere/north-mini-code:free"
+
+    @web
+    Scenario: Only OpenRouter's card offers the choice
+      Given the model-config demo page
+      When the user adds the key "AQ.Ab-demo"
+      Then the "gemini" card has no model-set choice
 
     @web
     # Five even-handed paragraphs answer "what is OpenRouter?" but never "which

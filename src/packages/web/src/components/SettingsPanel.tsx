@@ -11,7 +11,7 @@ import { useController } from '../hooks/useController.ts';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 import { installPrompt } from '../install-prompt.ts';
 import {
-  modelFor, defaultModel, defaultCellModel, priceVariesByPlan, type Provider,
+  modelFor, defaultModel, defaultCellModel, priceVariesByPlan, hasPaidModelSet, type Provider,
 } from '@tamedtable/model-config';
 import { ModelChooser, type ConnectedCard, type RoleRow } from '@tamedtable/model-config/ModelChooser';
 import { speedOf } from '@tamedtable/model-config/storage';
@@ -27,8 +27,12 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   // One card per connected provider. Everything the card shows beyond the
   // model ids — the tier tag and the two measured lines — comes from the probe
   // the controller ran when the key was connected.
+  // The card shows what a run would actually use, so the OpenRouter rows have
+  // to follow the model set the user picked rather than the plain defaults.
+  const paidSet = controller.config.openrouterPaid;
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
-    const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
+    const paid = p === 'openrouter' && paidSet;
+    const model = role === 'primary' ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -42,9 +46,11 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     id: p,
     tier: controller.probes[p]?.tier ?? null,
     // Driven by the catalogue's voiceInput flag, not hardcoded per provider.
-    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    voice: modelFor(p, defaultModel(p, p === 'openrouter' && paidSet))?.voiceInput ?? false,
     // Groq: a free tier we cannot detect, so its rows name no price.
     priceVariesByPlan: priceVariesByPlan(p),
+    hasPaidModelSet: hasPaidModelSet(p),
+    paidModelSet: p === 'openrouter' && paidSet,
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));
@@ -179,6 +185,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             onSelect={(p) => void controller.selectProvider(p)}
             onRemove={(p) => void controller.removeProvider(p)}
             onRefresh={(p) => void controller.refreshProvider(p)}
+            onPaidModelSetChange={(p, paid) => void controller.setPaidModelSet(p, paid)}
             onPuterSignIn={
               controller.canSignInPuter() ? () => void controller.signInPuter() : undefined
             }

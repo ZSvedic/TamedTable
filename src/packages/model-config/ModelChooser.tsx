@@ -38,6 +38,11 @@ export interface ConnectedCard {
    *  no price at all — a number that is wrong for most of a provider's users
    *  is worse than saying we do not know. */
   priceVariesByPlan?: boolean;
+  /** This provider serves a free and a paid model set, so the card offers the
+   *  choice. OpenRouter is the only one. */
+  hasPaidModelSet?: boolean;
+  /** Which set is running. Meaningless without `hasPaidModelSet`. */
+  paidModelSet?: boolean;
   primary: RoleRow;
   secondary: RoleRow;
 }
@@ -64,6 +69,10 @@ export interface ModelChooserProps {
   /** The ⟳ button — re-run this provider's measurements. Omit it and no card
    *  shows one, so a host with nothing to re-measure gets no dead button. */
   onRefresh?: (p: Provider) => void;
+  /** Switch a card between its free and paid model sets. Omit it and the
+   *  control is not rendered, so a host that cannot persist the choice shows no
+   *  switch that would not stick. */
+  onPaidModelSetChange?: (p: Provider, paid: boolean) => void;
   /** The "No API key?" block's Puter.js sign-in. Omit it and the whole block —
    *  divider included — is left out, so a host that cannot open a sign-in
    *  window (the CLI, the demo page) shows no button that would not work. */
@@ -184,6 +193,7 @@ export function ModelChooser({
   onSelect,
   onRemove,
   onRefresh,
+  onPaidModelSetChange,
   onPuterSignIn,
 }: ModelChooserProps): ReactNode {
   const puterConnected = connected.some((c) => c.id === 'puter');
@@ -396,6 +406,46 @@ export function ModelChooser({
           >
             {roleRow('primary', c.primary, c.priceVariesByPlan === true)}
             {roleRow('secondary', c.secondary, c.priceVariesByPlan === true)}
+            {/* The free/paid choice is the user's, not the account's. A key with
+                credits still opens on free: having a balance is not the same as
+                wanting to spend it. A $0 key cannot pick paid at all, because
+                every call would 402. */}
+            {c.hasPaidModelSet && onPaidModelSetChange && (
+              <div
+                data-mc-modelset={c.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: fontUi, fontSize: 12 }}
+              >
+                {([false, true] as const).map((paid) => {
+                  const on = (c.paidModelSet === true) === paid;
+                  const locked = paid && c.tier === 'free';
+                  return (
+                    <button
+                      key={String(paid)}
+                      type="button"
+                      data-mc-modelset-option={paid ? 'paid' : 'free'}
+                      aria-pressed={on}
+                      disabled={locked}
+                      title={locked ? 'This key has no credit, so it can only reach free models.' : undefined}
+                      onClick={() => onPaidModelSetChange(c.id, paid)}
+                      style={{
+                        padding: '3px 9px',
+                        borderRadius: radiusSm,
+                        border: `1px solid ${on ? accent : line2}`,
+                        background: on ? accentSoft : surface,
+                        color: locked ? ink3 : on ? accent : ink2,
+                        fontFamily: fontUi,
+                        fontSize: 12,
+                        fontWeight: on ? 600 : 400,
+                        cursor: locked ? 'not-allowed' : 'pointer',
+                        opacity: locked ? 0.55 : 1,
+                      }}
+                    >
+                      {paid ? 'Paid models' : 'Free models'}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
