@@ -179,6 +179,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             selected={connected.length > 0 ? cfg.provider : null}
             keyInput={controller.keyInput}
             error={controller.keyError}
+            notice={controller.keyNotice}
             busy={controller.keyBusy}
             puterBusy={controller.puterBusy}
             onKeyInputChange={(value) => controller.setKeyInput(value)}

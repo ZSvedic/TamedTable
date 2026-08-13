@@ -106,6 +106,7 @@ export class WebController implements ControllerHost {
   keyInput = '';
   /** The chooser's error banner, or '' when there is none. */
   keyError = '';
+  keyNotice = '';
   /** Whether a connect is in flight — the input and Add button are disabled. */
   keyBusy = false;
   /** #PuterGateway — the in-flight connect is the Puter sign-in. */

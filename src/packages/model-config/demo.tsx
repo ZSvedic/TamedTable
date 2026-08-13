@@ -12,6 +12,7 @@ import {
   connectedProviders, defaultModel, defaultCellModel, detectProvider, resolveConfig,
   priceVariesByPlan,
   hasPaidModelSet,
+  PROVIDER_NAME,
   supportsVoiceInput,
   type Provider, type ResolvedConfig,
 } from './index.ts';
@@ -69,6 +70,7 @@ function Demo() {
   const [measuring, setMeasuring] = useState<Partial<Record<Provider, boolean>>>({});
   const [keyInput, setKeyInput] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
   // The models follow the provider defaults — they are not user-selectable,
@@ -155,8 +157,13 @@ function Demo() {
     }
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const { tier } = await verifyKey(provider, key, stubProbe());
+      // Replacing a key changes nothing a card can show, so it says so.
+      setNotice(probes[provider] === undefined
+        ? ''
+        : `${PROVIDER_NAME[provider]} key replaced. Re-measuring.`);
       // Re-adding a connected provider replaces its key in place: the card has
       // no key field, so the alternative is deleting the card to fix a key.
       setStored((s) => ({ ...s, provider, [KEY_FIELD[provider]]: key }));
@@ -304,11 +311,13 @@ function Demo() {
         selected={connected.length > 0 ? resolved.provider : null}
         keyInput={keyInput}
         error={error}
+        notice={notice}
         busy={busy}
         onKeyInputChange={(value) => {
           setKeyInput(value);
           // Typing clears the error — the user is already fixing it.
           if (error !== '') setError('');
+          if (notice !== '') setNotice('');
         }}
         onAdd={() => void addKey()}
         onSelect={(p) => setStored((s) => ({ ...s, provider: p }))}

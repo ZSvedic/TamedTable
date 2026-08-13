@@ -1049,6 +1049,19 @@ Feature: Model config
       And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
 
     @web
+    # Same provider, same models, same tag: without a word for it, a working
+    # key reads as a button that did nothing.
+    Scenario: Replacing a connected provider's key says so
+      Given the model-config demo page
+      When the user adds the key "AQ.Ab-first"
+      Then the chooser shows no notice
+      When the user adds the key "AQ.Ab-second"
+      Then the chooser shows the notice "Google key replaced. Re-measuring."
+      And the demo shows resolved geminiKey "AQ.Ab-second"
+      When the user types "x" into the key input
+      Then the chooser shows no notice
+
+    @web
     # The card's PAID tag describes the account; the price lines describe the
     # models. A paid OpenRouter account used to show PAID above two $0 rows.
     Scenario: The OpenRouter card switches between its free and paid models

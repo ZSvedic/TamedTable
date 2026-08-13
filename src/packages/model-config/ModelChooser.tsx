@@ -54,6 +54,11 @@ export interface ModelChooserProps {
   selected: Provider | null;
   keyInput: string;
   error: string;
+  /** A neutral confirmation under the input, for a success the cards cannot
+   *  show on their own. Replacing the key of a connected provider is the case:
+   *  same card, same models, same tag, so without a word the whole thing reads
+   *  as a button that did nothing. */
+  notice?: string;
   /** An add is in flight — the input and button are disabled so a slow
    *  provider cannot be double-submitted. */
   busy: boolean;
@@ -186,6 +191,7 @@ export function ModelChooser({
   selected,
   keyInput,
   error,
+  notice,
   busy,
   puterBusy,
   onKeyInputChange,
@@ -490,6 +496,31 @@ export function ModelChooser({
         <div style={{ fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink }}>
           Already have an API key?
         </div>
+
+        {error === '' && notice !== undefined && notice !== '' && (
+          <div
+            data-mc-notice=""
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+              padding: '10px 11px',
+              borderRadius: radius,
+              background: okSoft,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 6, height: 6, borderRadius: 3, background: ok,
+                flex: '0 0 auto', marginTop: 6,
+              }}
+            />
+            <span style={{ fontFamily: fontUi, fontSize: 12.5, lineHeight: 1.45, color: ok }}>
+              {notice}
+            </span>
+          </div>
+        )}
 
         {error !== '' && (
           <div

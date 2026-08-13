@@ -475,6 +475,15 @@ A key for an **already-connected provider replaces it in place** and
 re-measures, rather than erroring. The card has no key field, so a user whose
 key expired would otherwise have to delete the card to fix it.
 
+That replacement is invisible on the cards: same provider, same models, usually
+the same tier tag. So it says so, in a neutral banner under the input —
+`Google key replaced. Re-measuring.` Without it, pasting a working key looks
+exactly like a button that did nothing, and the next move a user makes is to
+delete the card and add the key again, which is the one flow the in-place
+replace exists to spare them. The banner is not an error and does not look like
+one; it clears on the next keystroke, like the error does, and an error always
+wins the space.
+
 **No API key?** Below the instructions row, a full-width
 **Sign in / Sign up to Puter.js** button carrying Puter's mark, with
 `$0.25 in API credits for any model on Puter.js sign up.` underneath it — it is

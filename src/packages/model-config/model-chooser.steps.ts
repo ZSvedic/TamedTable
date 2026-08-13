@@ -150,6 +150,18 @@ When(
 );
 
 Then(
+  'the chooser shows the notice {string}',
+  async function (this: object, text: string) {
+    await expectText(page(this), '[data-mc-notice]', text);
+  },
+);
+
+Then('the chooser shows no notice', async function (this: object) {
+  const found = await page(this).$$('[data-mc-notice]');
+  assert.equal(found.length, 0, 'expected no notice banner');
+});
+
+Then(
   'the {string} card has no model-set choice',
   async function (this: object, provider: string) {
     const found = await page(this).$$(`[data-mc-modelset="${provider}"]`);
