@@ -151,7 +151,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
       <ul>
         <li><a href="#byok">How to Bring Your Own API Key (BYOK)?</a></li>
         <li><a href="#key-safety">Is it safe to paste my API key into a web app?</a></li>
-        <li><a href="#change-models">How to change primary and secondary models?</a></li>
+        <li><a href="#change-models">How to change the chat and cell models?</a></li>
         <li><a href="#formats">What file formats does TamedTable support?</a></li>
         <li><a href="#privacy">Where is the privacy policy and EULA?</a></li>
         <li><a href="#third-party">But isn't my data sent to third-party AI models?</a></li>
@@ -256,12 +256,12 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     <!-- ---------------------------- Q: Change models ---------------------------- -->
     <section class="faq-q">
       <h2 id="change-models" class="anchored">
-        How to change primary and secondary models?
+        How to change the chat and cell models?
         <button class="copy-link" data-target="change-models" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
         <p>You connect a <strong>provider</strong> (Google, OpenAI, Anthropic, OpenRouter, Groq, or Puter.js) in Settings by pasting its key, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Primary</strong> model that writes each spec patch (and handles voice), and a cheaper <strong>Secondary</strong> model that fills per-row AI cells in bulk. When you add a key we run one call against each and time it, so the card shows both what a thousand tokens cost (input and output, from our price table) and roughly how long they take. The ⟳ button on a card re-runs the timing — a number taken while a provider was having a bad minute is one click from being replaced.</p>
-        <p>To change the Primary or Secondary model, or add new models, edit the <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/model-config/models.json" target="_blank" rel="noopener">models.json file</a> and rebuild. (A rebuild is required: the catalogue is compiled into the app bundle, so editing the file in a deployed directory has no effect.)</p>
+        <p>To change the chat or cell model, or add new models, edit the <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/model-config/models.json" target="_blank" rel="noopener">models.json file</a> and rebuild. (A rebuild is required: the catalogue is compiled into the app bundle, so editing the file in a deployed directory has no effect.)</p>
       </div>
     </section>
 

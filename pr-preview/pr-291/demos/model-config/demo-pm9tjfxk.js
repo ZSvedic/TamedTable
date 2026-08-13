@@ -17849,7 +17849,7 @@ function ModelChooser({
                 whiteSpace: "nowrap",
                 color: ink2
               },
-              children: role === "primary" ? "Primary model" : "Secondary model"
+              children: role === "primary" ? "Chat model" : "Cell model"
             }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
               "data-mc-model-id": row.model,
