@@ -17213,6 +17213,7 @@ var KEY_PREFIXES = [
   ["sk-or-", "openrouter"],
   ["gsk_", "groq"],
   ["AIza", "gemini"],
+  ["AQ.", "gemini"],
   ["eyJ", "puter"],
   ["sk-", "openai"]
 ];
@@ -17227,7 +17228,7 @@ var PROVIDER_NAME = {
 var KEY_SETUP = [
   {
     provider: "gemini",
-    prefix: "AIza…",
+    prefix: "AQ.Ab…",
     steps: [
       "Free and paid plans.",
       "High accuracy, workable free daily quotas.",
@@ -17266,7 +17267,7 @@ var KEY_SETUP = [
       "Free models, no credit card.",
       "Free models are slow and can drop rows on large batches.",
       "The key is shown once, so copy it straight away.",
-      "Allow free model publication in your privacy settings, because free models may train on your prompts."
+      "To use free models at all, you must let them train on your prompts, in OpenRouter privacy settings."
     ],
     url: "https://openrouter.ai/settings/keys",
     action: "Create an OpenRouter API key"
