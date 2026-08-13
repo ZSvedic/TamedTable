@@ -569,8 +569,13 @@ export function ModelChooser({
             }}
           >
             {/* One paragraph: the steps read as prose, not as a checklist of
-                three one-line bullets. */}
-            <span>{open.steps.join(' ')}</span>
+                three one-line bullets. The recommended provider's first line is
+                bold, because it is the answer to the question the user is
+                actually asking here — which of these five do I pick? */}
+            <span>
+              {open.recommended && <strong>{open.steps[0]}{' '}</strong>}
+              {open.steps.slice(open.recommended ? 1 : 0).join(' ')}
+            </span>
             <span>
               <a
                 href={open.url}

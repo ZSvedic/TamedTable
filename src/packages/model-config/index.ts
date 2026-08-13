@@ -233,11 +233,15 @@ export interface KeySetup {
    *  can check the thing they just copied. Also the display list
    *  `SUPPORTED_PREFIXES` is built from. */
   prefix: string;
-  /** Three or four short lines in one fixed order — what it costs, who it
+  /** Three or four short lines in one fixed order: what it costs, who it
    *  suits, whether the key can be re-read later, and the one extra
    *  requirement where a provider has one. Same beats in the same places for
    *  every provider, because this section exists to be compared. */
   steps: readonly string[];
+  /** The provider we steer a new user to. Its first line is the reason why, and
+   *  the chooser sets that line in bold. At most one provider carries this: a
+   *  recommendation that names two things is not a recommendation. */
+  recommended?: true;
   /** Where the key is created. */
   url: string;
   /** The link's text. */
@@ -247,12 +251,15 @@ export interface KeySetup {
 export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'gemini',
+    recommended: true,
     // The shape a user minting a key today gets. Old `AIza…` keys still match
     // in KEY_PREFIXES; they are just not what we tell anyone to look for.
     prefix: 'AQ.Ab…',
     steps: [
+      // Why this one, before anything else: the four things a new user is
+      // choosing between providers on.
+      'Recommended: voice input, a generous free tier, accurate and fast.',
       'Free and paid plans.',
-      'High accuracy, workable free daily quotas.',
       'Keys stay viewable, so you can come back for yours later.',
       'In the EEA, UK or Switzerland you must turn on billing even for the free tier, using the card already on your Google account.',
     ],

@@ -986,10 +986,21 @@ Feature: Model config
       And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
 
     @web
+    # Five even-handed paragraphs answer "what is OpenRouter?" but never "which
+    # do I pick?", which is the question someone opening this section has.
+    Scenario: The recommended provider says so first, in bold
+      Given the model-config demo page
+      When the user clicks the "gemini" instructions link
+      Then the "gemini" instructions mention "Recommended: voice input"
+      And the "gemini" instructions lead with bold text
+      When the user clicks the "groq" instructions link
+      Then the "groq" instructions have no bold text
+
+    @web
     Scenario: Clicking the open provider again closes its instructions
       Given the model-config demo page
       When the user clicks the "gemini" instructions link
-      Then the "gemini" instructions mention "workable free daily quotas"
+      Then the "gemini" instructions mention "Keys stay viewable"
       When the user clicks the "gemini" instructions link
       Then no provider instructions are shown
 

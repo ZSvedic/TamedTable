@@ -250,6 +250,24 @@ Then(
 );
 
 Then(
+  'the {string} instructions lead with bold text',
+  async function (this: object, provider: string) {
+    const strong = `[data-mc-howto-body="${provider}"] strong`;
+    await page(this).waitForSelector(strong, { timeout: 5_000 });
+    const text = (await page(this).textContent(strong))?.trim() ?? '';
+    assert.ok(text.length > 0, `expected the ${provider} instructions to open with bold text`);
+  },
+);
+
+Then(
+  'the {string} instructions have no bold text',
+  async function (this: object, provider: string) {
+    const strong = await page(this).$$(`[data-mc-howto-body="${provider}"] strong`);
+    assert.equal(strong.length, 0, `only the recommended provider is bold, but ${provider} was`);
+  },
+);
+
+Then(
   'the {string} instructions link to {string} in a new tab',
   async function (this: object, provider: string, url: string) {
     const p = page(this);

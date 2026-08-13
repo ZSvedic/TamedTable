@@ -333,7 +333,13 @@ comparing two of them reads the same facts in the same places: what it costs
 suits, whether the key survives the page that mints it, and finally the one
 extra requirement if the provider has one (billing in the EEA/UK/Switzerland for
 Google, the privacy toggle for OpenRouter). Providers without a fourth beat stop
-at three. Before this the five paragraphs each argued their own case in their own
+at three.
+
+Exactly one provider carries `recommended`, and its paragraph opens with one
+extra line naming why — for Google, voice input, a generous free tier, accuracy
+and speed. The chooser sets that line in bold. Five even-handed paragraphs
+answer "what is OpenRouter?" but not "which do I pick?", which is the question
+someone opening this section actually has. Two recommendations would be none. Before this the five paragraphs each argued their own case in their own
 order, which made the section impossible to skim — and the one thing a user is
 doing here *is* comparing providers. Two rules on the prose: no em dashes, and
 the paid-only providers say plainly that an OpenAI or Anthropic *subscription* is
