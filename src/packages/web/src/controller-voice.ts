@@ -5,7 +5,7 @@
 // part — one model call, no separate transcription step.
 import { basename } from 'node:path';
 import type { RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
-import { ALL_MODELS } from '@tamedtable/model-config';
+import { supportsVoiceInput } from '@tamedtable/model-config';
 import {
   buildVoicePrompt,
   type VoiceContext,
@@ -42,15 +42,15 @@ export class VoiceManager {
   }
 
   /** True when the mic button should show: the selected model accepts voice
-   *  input (catalogue voiceInput flag), the selected provider has a key, and
-   *  a recording port is wired. A playing tour is the exception: its voice
+   *  input *and* its provider is one we can send audio to (supportsVoiceInput),
+   *  the selected provider has a key, and a recording port is wired. A playing tour is the exception: its voice
    *  step replays a recorded Gemini turn key-free and spotlights the mic, so
    *  the button shows while the tour is active even with no key. */
   voiceAvailable(): boolean {
     if (this.voice === undefined) return false;
     if (this.host.tutorial.isTutorialActive()) return true;
-    const model = ALL_MODELS.find((m) => m.id === this.host.config.model);
-    return !!model?.voiceInput && !!this.host.settingsMgr.activeApiKey();
+    const { provider, model } = this.host.config;
+    return supportsVoiceInput(provider, model) && !!this.host.settingsMgr.activeApiKey();
   }
 
   /** Press-and-hold start: begin recording, auto-stopping after 30 s. The
@@ -251,8 +251,8 @@ export class VoiceManager {
    *  model, a key for its provider, and a continuous port wired. */
   continuousAvailable(): boolean {
     if (this.continuous === undefined) return false;
-    const model = ALL_MODELS.find((m) => m.id === this.host.config.model);
-    return !!model?.voiceInput && !!this.host.settingsMgr.activeApiKey();
+    const { provider, model } = this.host.config;
+    return supportsVoiceInput(provider, model) && !!this.host.settingsMgr.activeApiKey();
   }
 
   /** One toggle: start listening if idle, stop if already running. A click

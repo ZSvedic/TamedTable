@@ -118,6 +118,25 @@ but it is not the cheapest per task: the
 puts `gemini-2.5-flash-lite` below it on both cost and accuracy, and Groq's free
 tier caps at 8,000 tokens a minute, which a batched cell call exhausts on its own.
 
+### Voice needs the model *and* the transport
+
+The catalogue's `voiceInput` flag says what a model can hear, which stays true
+wherever that model is served. It is not enough to offer a microphone.
+
+Voice rides on the patch turn as a `file` message part, and only the Google
+client converts one. Every other provider goes through the AI SDK's
+OpenAI-compatible client, which refuses before anything reaches the network:
+*"'file part media type audio/wav' functionality not supported"*. Verified
+against OpenRouter on 2026-08-13, where the model accepts audio, OpenRouter's
+own API accepts audio, and the client still will not send it.
+
+So `supportsVoiceInput(provider, modelId)` is the gate, and it ANDs the two: the
+model can hear, and we can send. Both the chooser's `VOICE` tag and the web mic
+button read it, so they cannot disagree with each other or with reality. Keeping
+the two facts separate is what caught the Puter card promising a microphone that
+would have thrown: its Gemini row really is voice-capable, and its transport
+really is not.
+
 Ids are **not unique**. Puter is a gateway that re-serves other providers'
 models under their own names, so `gemini-3.6-flash` appears twice in the
 catalogue — once as Google's, once as Puter's. Anything reading a price, a

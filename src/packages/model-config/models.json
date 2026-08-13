@@ -25,7 +25,7 @@
     { "id": "llama-3.1-8b-instant",   "name": "Llama 3.1 8B (Groq)", "provider": "groq",      "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.05,  "outUsdPerMtok": 0.08 },
 
     { "id": "cohere/north-mini-code:free", "name": "North Mini Code (OpenRouter free)", "provider": "openrouter", "temperature": false, "voiceInput": false, "inUsdPerMtok": 0, "outUsdPerMtok": 0 },
-    { "id": "google/gemini-3.6-flash",      "name": "Gemini 3.6 Flash (OpenRouter)",     "provider": "openrouter", "temperature": true , "voiceInput": false, "inUsdPerMtok": 1.5,  "outUsdPerMtok": 7.5 },
+    { "id": "google/gemini-3.6-flash",      "name": "Gemini 3.6 Flash (OpenRouter)",     "provider": "openrouter", "temperature": true , "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 7.5 },
     { "id": "google/gemini-3.1-flash-lite", "name": "Gemini 3.1 Flash-Lite (OpenRouter)","provider": "openrouter", "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.25, "outUsdPerMtok": 1.5 },
 
     { "id": "gemini-3.6-flash",       "name": "Gemini 3.6 Flash (Puter.js)",     "provider": "puter",     "temperature": true , "voiceInput": true,  "inUsdPerMtok": 1.5,  "outUsdPerMtok": 7.5  },

@@ -12,6 +12,7 @@ import {
   connectedProviders, defaultModel, defaultCellModel, detectProvider, resolveConfig,
   priceVariesByPlan,
   hasPaidModelSet,
+  supportsVoiceInput,
   type Provider, type ResolvedConfig,
 } from './index.ts';
 import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.tsx';
@@ -203,7 +204,7 @@ function Demo() {
   const connected: ConnectedCard[] = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: modelFor(p, defaultModel(p, p === 'openrouter' && paidSet))?.voiceInput ?? false,
+    voice: supportsVoiceInput(p, defaultModel(p, p === 'openrouter' && paidSet)),
     // Groq: a free tier we cannot detect, so its rows name no price.
     priceVariesByPlan: priceVariesByPlan(p),
     hasPaidModelSet: hasPaidModelSet(p),

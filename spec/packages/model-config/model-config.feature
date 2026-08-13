@@ -406,6 +406,25 @@ Feature: Model config
         | groq       | openai/gpt-oss-20b          |
         | openrouter | cohere/north-mini-code:free |
 
+  Rule: voice needs the model and the transport
+
+    A model that can hear is not enough. Audio rides as a file message part, and
+    only the Google client sends one; every OpenAI-compatible provider refuses
+    it before the request leaves. The tag and the mic both read this gate.
+
+    @headless
+    Scenario Outline: supportsVoiceInput for <provider> <model> is <expected>
+      Then supportsVoiceInput for "<provider>" "<model>" is <expected>
+
+      Examples:
+        | provider   | model                        | expected | why                                          |
+        | gemini     | gemini-3.6-flash             | true     | voice-capable model on the Google client     |
+        | gemini     | gemini-3.1-flash-lite        | false    | that model does not take audio               |
+        | puter      | gemini-3.6-flash             | false    | voice-capable model, OpenAI-compatible wire  |
+        | openrouter | google/gemini-3.6-flash      | false    | same model, same wire, same refusal          |
+        | openrouter | cohere/north-mini-code:free  | false    | text-only model as well                      |
+        | groq       | openai/gpt-oss-120b          | false    | neither the model nor the wire               |
+
   Rule: OpenRouter serves a free and a paid model set
 
     A $0 OpenRouter account can only reach `:free` models; one with credits can

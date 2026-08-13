@@ -254,7 +254,10 @@ export function ModelChooser({
           <span
             style={{
               // Fixed, so the two rows' model ids line up under each other.
-              width: 104,
+              // Sized to "Chat model" / "Cell model"; it was 104 when the
+              // labels read "Secondary model", and every pixel it does not
+              // need is a pixel of model id that gets an ellipsis instead.
+              width: 76,
               flex: '0 0 auto',
               fontFamily: fontUi,
               fontSize: 12,

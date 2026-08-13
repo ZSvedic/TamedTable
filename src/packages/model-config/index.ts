@@ -353,6 +353,28 @@ export function detectProvider(key: string): Provider | null {
   return KEY_PREFIXES.find(([prefix]) => k.startsWith(prefix))?.[1] ?? null;
 }
 
+/** Providers we can actually send a recorded clip to. Voice rides on the patch
+ *  turn as a `file` message part, and only the Google client converts one: every
+ *  other provider goes through the AI SDK's OpenAI-compatible client, which
+ *  rejects it outright with *"'file part media type audio/wav' functionality not
+ *  supported"*. Verified against OpenRouter on 2026-08-13, where both the model
+ *  and OpenRouter's own API accept the audio and the client still refuses to
+ *  send it.
+ *
+ *  This is deliberately about the transport, not the model. `voiceInput` in the
+ *  catalogue says what a model can hear, which stays true wherever it is served;
+ *  this says what we can put on the wire. Keeping them apart is what stops a
+ *  card promising a microphone that throws — the Puter card did exactly that,
+ *  because its Gemini row is voice-capable and its transport is not. */
+const AUDIO_CAPABLE_PROVIDERS = new Set<Provider>(['gemini']);
+
+/** Whether the microphone should be offered for this model on this provider:
+ *  the model can hear, and we can send. Both the chooser's VOICE tag and the
+ *  web mic gate read this, so they cannot disagree. */
+export function supportsVoiceInput(provider: Provider, modelId: string): boolean {
+  return AUDIO_CAPABLE_PROVIDERS.has(provider) && (modelFor(provider, modelId)?.voiceInput ?? false);
+}
+
 /** Whether a model accepts a `temperature` (sampling) parameter. The newest
  *  models — Anthropic Opus 4.8/4.7, Fable 5, Sonnet 5; OpenAI GPT-5.4+ / 5.5 —
  *  removed sampling params and reject the request with a 400 ("temperature is

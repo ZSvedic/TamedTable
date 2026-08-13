@@ -7,6 +7,7 @@ import {
   defaultCellModel,
   defaultBatchSize,
   hasPaidModelSet,
+  supportsVoiceInput,
   priceVariesByPlan,
   detectProvider,
   connectedProviders,
@@ -769,6 +770,13 @@ When(
   function (this: ModelConfigWorld, provider: string) {
     ctx(this).numberResult = defaultBatchSize(provider as Provider, true);
     ctx(this).numberResultSet = true;
+  },
+);
+
+Then(
+  'supportsVoiceInput for {string} {string} is {word}',
+  function (this: ModelConfigWorld, provider: string, model: string, expected: string) {
+    assert.equal(supportsVoiceInput(provider as Provider, model), expected === 'true');
   },
 );
 
