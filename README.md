@@ -100,7 +100,7 @@ Optional env vars and defaults if you omit them:
 | Var | Default | What it does |
 |---|---|---|
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `claude-sonnet-4-6` (Anthropic) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the primary model's provider. |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Cell model that fills in per-row LLM cells. Must share the chat model's provider. |
 | `TAMEDTABLE_RPM` | `40` | Per-process request-per-minute cap. Keep it under your provider account's rate limit. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests that fire concurrently. Orthogonal to batch size — total parallel rows = batch × chunk. |

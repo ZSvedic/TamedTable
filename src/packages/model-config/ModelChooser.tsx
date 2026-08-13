@@ -255,7 +255,7 @@ export function ModelChooser({
               color: ink2,
             }}
           >
-            {role === 'primary' ? 'Primary model' : 'Secondary model'}
+            {role === 'primary' ? 'Chat model' : 'Cell model'}
           </span>
           <span
             data-mc-model-id={row.model}

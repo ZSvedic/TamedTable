@@ -140,7 +140,7 @@ Feature: Model config
       When resolveConfig is called with env TAMEDTABLE_MODEL="gemini-3.1-flash-lite" and stored model "gemini-3.5-flash"
       Then the resolved model is "gemini-3.1-flash-lite"
 
-  Rule: resolveConfig resolves the secondary (cell) model
+  Rule: resolveConfig resolves the cell model
 
     @headless
     Scenario: Empty config yields the provider's cell default
@@ -262,7 +262,7 @@ Feature: Model config
       Then the result is "groq"
 
     @headless
-    Scenario: providerFor returns groq for the Groq secondary default
+    Scenario: providerFor returns groq for the Groq cell default
       When providerFor is called with "openai/gpt-oss-20b"
       Then the result is "groq"
 

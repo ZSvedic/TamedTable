@@ -25,9 +25,9 @@ The card appears at once, marked as the default, with both model rows still
 measuring. Two reference calls later the card reads:
 
 ```
-Primary model    gemini-3.6-flash
+Chat model  gemini-3.6-flash
 $0.0015 in / $0.0075 out per 1000 tok, ~9.7 sec
-Secondary model  gemini-3.1-flash-lite
+Cell model  gemini-3.1-flash-lite
 $0.00025 in / $0.0015 out per 1000 tok, ~3.4 sec
 ```
 
@@ -50,8 +50,9 @@ provider itself confirm the key.
 
 One canonical home:
 [`models.json`](../../../src/packages/model-config/models.json) — `models`
-(every model with its per-Mtok prices) and `defaults` (each provider's primary
-+ secondary ids, plus an optional pinned `batchSize`). The user connects a
+(every model with its per-Mtok prices) and `defaults` (each provider's chat and
+cell model ids, under the JSON keys `primary` and `secondary`, plus an optional
+pinned `batchSize`). The user connects a
 **provider**, not individual models; `defaults` decides the two roles.
 
 `models` mirrors [`benchmarks/models.jsonl`](../../../benchmarks/models.jsonl)
@@ -80,8 +81,9 @@ Gemini and OpenAI stay unpinned because their curves are flat: every Gemini
 model sits at 93–97% at every batch size, and `gpt-5.4-mini` is 89% at 5, 10 and
 20 alike. The Anthropic pin rests on a single run, and haiku's curve is the
 noisiest we have measured, so a repeat run should confirm it before anyone
-builds on it. Groq serves open-weight models on its own hardware and answers
-fastest per call ([2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md)),
+builds on it.
+
+Groq serves open-weight models on its own hardware and answers fastest per call ([2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md)),
 but it is not the cheapest per task: the
 [2026-08-12 free-tier run](../../../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
 puts `gemini-2.5-flash-lite` below it on both cost and accuracy, and Groq's free
@@ -159,7 +161,7 @@ against the live provider; hosts inject `fetch` so tests never do.
 
 **`verifyKey`** makes one small call and returns the account tier, or throws.
 It is the gate: no card appears, and nothing is stored, until it resolves. It
-answers in about a second — the cheap secondary model, a two-word prompt, no
+answers in about a second — the cheap cell model, a two-word prompt, no
 retries — because a user whose account is empty should not watch a spinner for
 a minute to learn what the first response already said. Puter is checked with
 `GET /whoami` instead: it proves the token, costs nothing, answers instantly.
@@ -378,15 +380,18 @@ buttons stop the click from also selecting the card, and both carry an
 reader announces "button".
 
 Only the **selected** card shows a body, and the selected card is the default
-provider every run uses. The body has two rows, **Primary model** and
-**Secondary model**, labelled in the same colour — the secondary is not a
-lesser setting, it is the one that runs on every row. Each row puts its label
-and model id on one line and the priced line beneath *both*, starting at the
-row's left edge rather than indented under the id: indented, it had a third of
-the card in which to fit a sentence, and got clipped.
+provider every run uses. The body has two rows, **Chat model** and **Cell
+model**, labelled in the same colour. The names say what each one does: the chat
+model reads the request and edits the table, the cell model fills the cells. They
+used to read *Primary* and *Secondary*, which ranked them, and ranked them
+backwards: the cell model is the one that runs on every row, so it decides both
+the bill and the wait. Each row puts its label and model id on one line and the
+priced line beneath *both*, starting at the row's left edge rather than indented
+under the id: indented, it had a third of the card in which to fit a sentence,
+and got clipped.
 
 ```
-Primary model    gemini-3.6-flash
+Chat model  gemini-3.6-flash
 $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
 ```
 

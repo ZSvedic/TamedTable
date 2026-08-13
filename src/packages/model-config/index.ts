@@ -53,9 +53,10 @@ export interface ResolvedConfig {
   openrouterKey: string | null;
   /** Puter.js session token, not an API key — see § Puter.js. */
   puterToken: string | null;
-  /** Primary model: writes the spec patch each turn (and carries voice input). */
+  /** Chat model: answers the request and writes the spec patch each turn (and
+   *  carries voice input). Named `model` because it is the config's main one. */
   model: string;
-  /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
+  /** Cell model: fills per-row LLM cells. Always same-provider as `model`. */
   cellModel: string;
   /** Simple mode — "Always run on all rows" (#LazyExec): every AI step runs
    *  table-wide immediately, with the estimate dialog gating runs of more
@@ -460,7 +461,7 @@ export function resolveConfig(
     provider = isProvider(stored.provider) ? stored.provider : 'gemini';
   }
 
-  // Primary model: env wins, then stored, then provider default. Truthiness,
+  // Chat model: env wins, then stored, then provider default. Truthiness,
   // like the key vars above — an empty env value (`TAMEDTABLE_MODEL=` in a
   // .env) means unset, never a real model id.
   let model = env['TAMEDTABLE_MODEL'] || stored.model || defaultModel(provider);
