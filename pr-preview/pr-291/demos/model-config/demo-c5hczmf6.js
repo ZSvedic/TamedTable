@@ -17811,6 +17811,7 @@ function ModelChooser({
   selected,
   keyInput,
   error,
+  notice,
   busy,
   puterBusy,
   onKeyInputChange,
@@ -18067,6 +18068,34 @@ function ModelChooser({
             style: { fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink },
             children: "Already have an API key?"
           }, undefined, false, undefined, this),
+          error === "" && notice !== undefined && notice !== "" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
+            "data-mc-notice": "",
+            style: {
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 8,
+              padding: "10px 11px",
+              borderRadius: radius,
+              background: okSoft
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                "aria-hidden": "true",
+                style: {
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  background: ok2,
+                  flex: "0 0 auto",
+                  marginTop: 6
+                }
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
+                style: { fontFamily: fontUi, fontSize: 12.5, lineHeight: 1.45, color: ok2 },
+                children: notice
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
           error !== "" && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
             "data-mc-error": "",
             style: {
@@ -18531,6 +18560,7 @@ function Demo() {
   const [measuring, setMeasuring] = import_react2.useState({});
   const [keyInput, setKeyInput] = import_react2.useState("");
   const [error, setError] = import_react2.useState("");
+  const [notice, setNotice] = import_react2.useState("");
   const [busy, setBusy] = import_react2.useState(false);
   const paidSet = stored.openrouterPaid ?? false;
   const setPaid = (p, paid) => {
@@ -18605,8 +18635,10 @@ function Demo() {
     }
     setBusy(true);
     setError("");
+    setNotice("");
     try {
       const { tier } = await verifyKey(provider, key, stubProbe());
+      setNotice(probes[provider] === undefined ? "" : `${PROVIDER_NAME[provider]} key replaced. Re-measuring.`);
       setStored((s) => ({ ...s, provider, [KEY_FIELD[provider]]: key }));
       setProbes((p) => ({
         ...p,
@@ -18734,11 +18766,14 @@ function Demo() {
         selected: connected.length > 0 ? resolved.provider : null,
         keyInput,
         error,
+        notice,
         busy,
         onKeyInputChange: (value) => {
           setKeyInput(value);
           if (error !== "")
             setError("");
+          if (notice !== "")
+            setNotice("");
         },
         onAdd: () => void addKey(),
         onSelect: (p) => setStored((s) => ({ ...s, provider: p })),
