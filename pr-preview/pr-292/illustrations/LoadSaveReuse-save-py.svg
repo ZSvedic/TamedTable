@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Export to Python — ":save-py tidy.py" -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <!-- prompt chip -->
+  <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
+  <text x="34" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#96BED7">:save-py</text>
+  <text x="108" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">tidy.py</text>
+  <!-- code panel -->
+  <rect x="18" y="72" width="324" height="136" rx="8" fill="#281C60"/>
+  <!-- editor top bar -->
+  <path d="M18 80 q0 -8 8 -8 h308 q8 0 8 8 v14 h-324 Z" fill="#1F1648"/>
+  <circle cx="34" cy="83" r="3.5" fill="#E7F1F8" opacity="0.5"/>
+  <circle cx="46" cy="83" r="3.5" fill="#96BED7"/>
+  <circle cx="58" cy="83" r="3.5" fill="#E7F1F8" opacity="0.5"/>
+  <text x="330" y="87" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#96BED7" text-anchor="end">tidy.py</text>
+  <!-- code lines -->
+  <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="11.5">
+    <text x="34" y="118" fill="#96BED7">import pandas <tspan fill="#C9C2E8">as</tspan> pd</text>
+    <text x="34" y="142" fill="#C9C2E8">df = pd.read_csv(<tspan fill="#9FD3B0">"customers-input.csv"</tspan>)</text>
+    <text x="34" y="166" fill="#C9C2E8">df = normalize_phone(df, <tspan fill="#9FD3B0">"Phone"</tspan>)</text>
+    <text x="34" y="190" fill="#C9C2E8">df.to_csv(<tspan fill="#9FD3B0">"clean.csv"</tspan>)</text>
+  </g>
+</svg>

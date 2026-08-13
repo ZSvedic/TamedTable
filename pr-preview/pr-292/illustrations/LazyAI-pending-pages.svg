@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Lazy AI — the visible page fills, the rest stays pending.
+       The Row # column keeps original row numbers (the view is shuffled); saving keeps that order. -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+  <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>
+  <circle cx="40" cy="36" r="7" fill="#96BED7"/>
+  <path d="M37.5 32.5 L43.5 36 L37.5 39.5 Z" fill="#281C60"/>
+  <text x="56" y="41" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13.5" fill="#281C60">add a Category column</text>
+  <g>
+    <path d="M18 78 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
+    <text x="28" y="91" font-size="11" font-weight="600" fill="#96BED7">Row #</text>
+    <text x="94" y="91" font-size="12" font-weight="600" fill="#FFFFFF">product</text>
+    <text x="210" y="91" font-size="12" font-weight="600" fill="#FFFFFF">category</text>
+    <g font-size="12">
+      <rect x="18" y="104" width="324" height="26" fill="#E7F1F8"/>
+      <text x="28" y="121" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#6A6280">18314</text>
+      <text x="94" y="121" fill="#281C60">Slim Air Fryer</text>
+      <rect x="204" y="108" width="76" height="18" rx="9" fill="#FFFFFF" stroke="#96BED7"/>
+      <text x="212" y="121" font-family="JetBrains Mono, ui-monospace, monospace" fill="#281C60">kitchen</text>
+      <rect x="18" y="130" width="324" height="26" fill="#FFFFFF"/>
+      <text x="28" y="147" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#6A6280">2097</text>
+      <text x="94" y="147" fill="#281C60">Trail Socks S</text>
+      <rect x="204" y="134" width="84" height="18" rx="9" fill="#FFFFFF" stroke="#96BED7"/>
+      <text x="212" y="147" font-family="JetBrains Mono, ui-monospace, monospace" fill="#281C60">clothing</text>
+      <rect x="18" y="156" width="324" height="26" fill="#E7F1F8"/>
+      <text x="28" y="173" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10.5" fill="#6A6280">24611</text>
+      <text x="94" y="173" fill="#281C60">Pro Webcam Max</text>
+      <rect x="204" y="160" width="118" height="18" rx="9" fill="#FFFFFF" stroke="#96BED7"/>
+      <text x="212" y="173" font-family="JetBrains Mono, ui-monospace, monospace" fill="#281C60">electronics</text>
+    </g>
+    <line x1="86" y1="72" x2="86" y2="188" stroke="#DCDCDC"/>
+    <rect x="18" y="72" width="324" height="116" rx="6" fill="none" stroke="#DCDCDC"/>
+  </g>
+  <!-- pager: current page done, later pages pending -->
+  <g font-size="11">
+    <text x="18" y="212" fill="#6A6280">20 of 25,000 rows evaluated</text>
+    <g font-family="JetBrains Mono, ui-monospace, monospace" font-size="11">
+      <rect x="214" y="198" width="20" height="18" rx="5" fill="#281C60"/>
+      <text x="220" y="211" fill="#FFFFFF">1</text>
+      <rect x="238" y="198" width="20" height="18" rx="5" fill="#FFFFFF" stroke="#DCDCDC"/>
+      <text x="244" y="211" fill="#6A6280">2</text>
+      <circle cx="248" cy="199.5" r="2.6" fill="#96BED7"/>
+      <rect x="262" y="198" width="20" height="18" rx="5" fill="#FFFFFF" stroke="#DCDCDC"/>
+      <text x="268" y="211" fill="#6A6280">3</text>
+      <circle cx="272" cy="199.5" r="2.6" fill="#96BED7"/>
+      <text x="286" y="211" fill="#6A6280">…</text>
+      <rect x="298" y="198" width="44" height="18" rx="5" fill="#FFFFFF" stroke="#DCDCDC"/>
+      <text x="303" y="211" fill="#6A6280">1250</text>
+      <circle cx="336" cy="199.5" r="2.6" fill="#96BED7"/>
+    </g>
+  </g>
+</svg>
