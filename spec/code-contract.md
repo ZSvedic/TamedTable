@@ -1380,7 +1380,7 @@ function acceptsTemperature(modelId: string): boolean;   // per-model `temperatu
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
 function connectedProviders(config: ResolvedConfig, order?: Partial<Record<Provider, number>>): Provider[];  // every provider with a key; `order` (connectedAt stamps) sorts the cards, absent = catalogue order
 function detectProvider(key: string): Provider | null;   // the provider a pasted key belongs to, by prefix; null when none matches
-const SUPPORTED_PREFIXES: readonly string[];             // 'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
+const SUPPORTED_PREFIXES: readonly string[];             // 'AQ.Ab…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
 const KEY_FIELD: Record<Provider, keyof ResolvedConfig>; // provider → the config field its key lives in
 const PROVIDER_BASE_URL: Record<EngineProvider, string>; // one table the engine and the probe both read, so their endpoints cannot drift
 const PUTER_DRIVERS_URL: string;                         // `${PROVIDER_BASE_URL.puter}/drivers/call` — the gateway's single endpoint
@@ -1449,10 +1449,10 @@ last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
 
 | prefix | provider | | prefix | provider |
 |---|---|---|---|---|
-| `sk-proj-` | openai | | `AIza` | gemini |
-| `sk-ant-` | anthropic | | `eyJ` | puter |
-| `sk-or-` | openrouter | | `sk-` | openai |
-| `gsk_` | groq | | | |
+| `sk-proj-` | openai | | `AQ.` | gemini |
+| `sk-ant-` | anthropic | | `AIza` | gemini |
+| `sk-or-` | openrouter | | `eyJ` | puter |
+| `gsk_` | groq | | `sk-` | openai |
 
 Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
 provider pins:

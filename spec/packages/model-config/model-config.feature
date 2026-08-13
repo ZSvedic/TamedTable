@@ -14,6 +14,7 @@ Feature: Model config
 
       Examples:
         | prefix    | key                  | provider   |
+        | AQ.       | AQ.Ab8RN6Example     | gemini     |
         | AIza      | AIzaSyExample        | gemini     |
         | sk-proj-  | sk-proj-example      | openai     |
         | sk-ant-   | sk-ant-example       | anthropic  |
@@ -44,8 +45,10 @@ Feature: Model config
       Then no provider is detected
 
     @headless
+    # Google names only the shape AI Studio mints today. Keys minted before the
+    # switch still match, but nobody creating one now will see an `AIza` key.
     Scenario: SUPPORTED_PREFIXES lists every prefix the error message names
-      Then SUPPORTED_PREFIXES is "AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…"
+      Then SUPPORTED_PREFIXES is "AQ.Ab…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…"
 
   Rule: resolveConfig defaults
 
@@ -839,7 +842,7 @@ Feature: Model config
     Scenario: An unrecognised key is refused with the supported prefixes
       Given the model-config demo page
       When the user adds the key "hello-there"
-      Then the chooser shows the error "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
+      Then the chooser shows the error "Key not recognised. Supported prefixes: AQ.Ab…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
       And no provider card is shown
 
     @web

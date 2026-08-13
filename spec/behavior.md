@@ -1121,7 +1121,7 @@ this section covers what the app does with it.
 **Connecting.** Pressing Add (or Enter) hands the key to
 `controller.addKey()`, which detects the provider, checks the key against that
 provider, and only then stores anything. An unrecognised prefix is refused
-before any call goes out — `Key not recognised. Supported prefixes: AIza…,
+before any call goes out — `Key not recognised. Supported prefixes: AQ.Ab…,
 sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ….` A key the provider rejects reports what
 the provider said, in one sentence naming it. Nothing is stored in either case,
 so a bad key never becomes a setting the user has to hunt down and undo. On

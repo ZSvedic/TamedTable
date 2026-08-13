@@ -192,7 +192,12 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
   ['sk-ant-',  'anthropic'],
   ['sk-or-',   'openrouter'],
   ['gsk_',     'groq'],
+  // Google issues two shapes. `AIza…` is the old Standard key; `AQ.Ab…` is the
+  // auth key every new AI Studio key has been since mid-2026, and Google
+  // rejects Standard keys from September 2026. Matching only `AIza` turned
+  // every freshly minted Gemini key into "key not recognised".
   ['AIza',     'gemini'],
+  ['AQ.',      'gemini'],
   // A Puter token is a JWT, so it opens with the base64 of `{"alg":`. Looser
   // than the others — any JWT matches — but no other provider issues one, and
   // verifyKey has Puter confirm it before anything is stored.
@@ -242,7 +247,9 @@ export interface KeySetup {
 export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'gemini',
-    prefix: 'AIza…',
+    // The shape a user minting a key today gets. Old `AIza…` keys still match
+    // in KEY_PREFIXES; they are just not what we tell anyone to look for.
+    prefix: 'AQ.Ab…',
     steps: [
       'Free and paid plans.',
       'High accuracy, workable free daily quotas.',
@@ -281,7 +288,7 @@ export const KEY_SETUP: readonly KeySetup[] = [
       'Free models, no credit card.',
       'Free models are slow and can drop rows on large batches.',
       'The key is shown once, so copy it straight away.',
-      'Allow free model publication in your privacy settings, because free models may train on your prompts.',
+      'To use free models at all, you must let them train on your prompts, in OpenRouter privacy settings.',
     ],
     url: 'https://openrouter.ai/settings/keys',
     action: 'Create an OpenRouter API key',

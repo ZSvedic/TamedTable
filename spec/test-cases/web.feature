@@ -86,7 +86,7 @@ Feature: Web front-end
       And the API key has not been set
       When user opens the settings panel
       And user connects the key "hello-there"
-      Then the connect error is "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
+      Then the connect error is "Key not recognised. Supported prefixes: AQ.Ab…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
       And the connected providers are ""
       And the LLM API was called 0 times
 

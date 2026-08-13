@@ -13,12 +13,12 @@ part that touches the network.
 
 ## Worked example
 
-The user pastes `AIza…` into the chooser and presses Add. The host asks the
+The user pastes `AQ.Ab…` into the chooser and presses Add. The host asks the
 module what that key is, checks it against the provider, and stores the result:
 
 ```
-detectProvider("AIza…")            → "gemini"
-await verifyKey("gemini", "AIza…") → { tier: "paid" }
+detectProvider("AQ.Ab…")            → "gemini"
+await verifyKey("gemini", "AQ.Ab…") → { tier: "free" }
 ```
 
 The card appears at once, marked as the default, with both model rows still
@@ -66,9 +66,12 @@ current docs before it changes; none is ever guessed.
 OpenRouter is the free tier: one $0 model fills both roles. Its `defaults` row
 pins `batchSize: 5` — the [2026-07-17 benchmark](../../../process/journal/2026-07-17-free-model-benchmark-run.md)
 measured `cohere/north-mini-code:free` at 96% accuracy at batch 5 and sharply
-worse at 40+. Groq serves open-weight models on its own hardware and is the
-fastest and cheapest of the paid providers — see the
-[2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md).
+worse at 40+. Groq serves open-weight models on its own hardware and answers
+fastest per call ([2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md)),
+but it is not the cheapest per task: the
+[2026-08-12 free-tier run](../../../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
+puts `gemini-2.5-flash-lite` below it on both cost and accuracy, and Groq's free
+tier caps at 8,000 tokens a minute, which a batched cell call exhausts on its own.
 
 Ids are **not unique**. Puter is a gateway that re-serves other providers'
 models under their own names, so `gemini-3.6-flash` appears twice in the
@@ -313,7 +316,7 @@ with a few pixels of padding on each label to keep it off them. Each provider
 is a button that expands a short
 paragraph and, on its own row, a link straight to that provider's key page. One
 is open at a time, the open one is underlined (and carries `aria-expanded`), and
-clicking it again closes it. The link row ends with `(starts with AIza…)` —
+clicking it again closes it. The link row ends with `(starts with AQ.Ab…)` —
 the prefixes used to live in the input's placeholder, which is exactly where a
 user cannot read them once they have pasted something. Puter is
 deliberately absent even though it is a full provider — its credential comes
