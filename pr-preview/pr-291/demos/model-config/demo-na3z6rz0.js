@@ -17228,10 +17228,11 @@ var PROVIDER_NAME = {
 var KEY_SETUP = [
   {
     provider: "gemini",
+    recommended: true,
     prefix: "AQ.Ab…",
     steps: [
+      "Recommended: voice input, a generous free tier, accurate and fast.",
       "Free and paid plans.",
-      "High accuracy, workable free daily quotas.",
       "Keys stay viewable, so you can come back for yours later.",
       "In the EEA, UK or Switzerland you must turn on billing even for the free tier, using the card already on your Google account."
     ],
@@ -18139,8 +18140,16 @@ function ModelChooser({
             },
             children: [
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
-                children: open.steps.join(" ")
-              }, undefined, false, undefined, this),
+                children: [
+                  open.recommended && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("strong", {
+                    children: [
+                      open.steps[0],
+                      " "
+                    ]
+                  }, undefined, true, undefined, this),
+                  open.steps.slice(open.recommended ? 1 : 0).join(" ")
+                ]
+              }, undefined, true, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
                 children: [
                   /* @__PURE__ */ jsx_dev_runtime.jsxDEV("a", {
