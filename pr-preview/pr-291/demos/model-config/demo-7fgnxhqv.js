@@ -17141,7 +17141,7 @@ var models_default = {
     { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.59, outUsdPerMtok: 0.79 },
     { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B (Groq)", provider: "groq", temperature: true, voiceInput: false, inUsdPerMtok: 0.05, outUsdPerMtok: 0.08 },
     { id: "cohere/north-mini-code:free", name: "North Mini Code (OpenRouter free)", provider: "openrouter", temperature: false, voiceInput: false, inUsdPerMtok: 0, outUsdPerMtok: 0 },
-    { id: "google/gemini-3.6-flash", name: "Gemini 3.6 Flash (OpenRouter)", provider: "openrouter", temperature: true, voiceInput: false, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
+    { id: "google/gemini-3.6-flash", name: "Gemini 3.6 Flash (OpenRouter)", provider: "openrouter", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
     { id: "google/gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (OpenRouter)", provider: "openrouter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 },
     { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (Puter.js)", provider: "puter", temperature: true, voiceInput: true, inUsdPerMtok: 1.5, outUsdPerMtok: 7.5 },
     { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite (Puter.js)", provider: "puter", temperature: true, voiceInput: false, inUsdPerMtok: 0.25, outUsdPerMtok: 1.5 }
@@ -17311,6 +17311,10 @@ function detectProvider(key) {
   if (k === "")
     return null;
   return KEY_PREFIXES.find(([prefix]) => k.startsWith(prefix))?.[1] ?? null;
+}
+var AUDIO_CAPABLE_PROVIDERS = new Set(["gemini"]);
+function supportsVoiceInput(provider, modelId) {
+  return AUDIO_CAPABLE_PROVIDERS.has(provider) && (modelFor(provider, modelId)?.voiceInput ?? false);
 }
 var KEY_FIELD = {
   gemini: "geminiKey",
@@ -17860,7 +17864,7 @@ function ModelChooser({
           children: [
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
               style: {
-                width: 104,
+                width: 76,
                 flex: "0 0 auto",
                 fontFamily: fontUi,
                 fontSize: 12,
@@ -18641,7 +18645,7 @@ function Demo() {
   const connected = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: modelFor(p, defaultModel(p, p === "openrouter" && paidSet))?.voiceInput ?? false,
+    voice: supportsVoiceInput(p, defaultModel(p, p === "openrouter" && paidSet)),
     priceVariesByPlan: priceVariesByPlan(p),
     hasPaidModelSet: hasPaidModelSet(p),
     paidModelSet: p === "openrouter" && paidSet,
