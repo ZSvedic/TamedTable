@@ -657,8 +657,28 @@ export function ModelChooser({
                 bold, because it is the answer to the question the user is
                 actually asking here — which of these five do I pick? */}
             <span>
-              {open.recommended && <strong>{open.steps[0]}{' '}</strong>}
-              {open.steps.slice(open.recommended ? 1 : 0).join(' ')}
+              {open.recommended && typeof open.steps[0] === 'string' && (
+                <strong>{open.steps[0]}{' '}</strong>
+              )}
+              {open.steps.slice(open.recommended ? 1 : 0).map((step, i) => (
+                <Fragment key={i}>
+                  {i > 0 && ' '}
+                  {typeof step === 'string' ? step : (
+                    <>
+                      {step.before}
+                      <a
+                        href={step.href}
+                        target="_blank"
+                        rel="noopener"
+                        style={{ fontWeight: 600, color: accent, textDecoration: 'none' }}
+                      >
+                        {step.text}
+                      </a>
+                      {step.after}
+                    </>
+                  )}
+                </Fragment>
+              ))}
             </span>
             <span>
               <a

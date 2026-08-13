@@ -1458,7 +1458,8 @@ interface ModelChooserProps {
   onPuterSignIn?(): void;                 // the "No API key?" block; omit it and the whole block is left out
 }
 const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
-interface KeySetup { provider: Provider; label: string; prefix: string; steps: readonly string[]; url: string; action: string }
+type Step = string | { before?: string; text: string; href: string; after?: string }; // a how-to line; the object form carries one inline link
+interface KeySetup { provider: Provider; label: string; prefix: string; steps: readonly Step[]; url: string; action: string }
 const KEY_SETUP: readonly KeySetup[];            // the five pasteable providers in row order, with the panel's short how-to-get; a test asserts each `url` appears in FAQ.html
                                                  // SUPPORTED_PREFIXES is built from its `prefix` values, plus Puter's `eyJ…`
 function ModelChooser(props: ModelChooserProps): ReactNode;  // styled via --mc-* CSS custom properties

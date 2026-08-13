@@ -251,6 +251,13 @@ export const PROVIDER_NAME = {
 // asserts each one appears there. The prose is deliberately allowed to differ:
 // the FAQ is the long form, this is the two lines that fit in a 400px panel.
 
+/** One how-to line. Usually plain text; the object form carries a single
+ *  inline link — the text before it, the linked text itself, its href, and the
+ *  text after — for the one beat that points a user off to a tutorial. */
+export type Step =
+  | string
+  | { before?: string; text: string; href: string; after?: string };
+
 export interface KeySetup {
   provider: Provider;
   /** What this provider's keys start with, shown beside the link so a user
@@ -260,8 +267,10 @@ export interface KeySetup {
   /** Three or four short lines in one fixed order: what it costs, who it
    *  suits, whether the key can be re-read later, and the one extra
    *  requirement where a provider has one. Same beats in the same places for
-   *  every provider, because this section exists to be compared. */
-  steps: readonly string[];
+   *  every provider, because this section exists to be compared. Google is the
+   *  exception: its cost beat is an inline link to Puter's key-creation
+   *  tutorial rather than a plan name. */
+  steps: readonly Step[];
   /** The provider we steer a new user to. Its first line is the reason why, and
    *  the chooser sets that line in bold. At most one provider carries this: a
    *  recommendation that names two things is not a recommendation. */
@@ -283,9 +292,13 @@ export const KEY_SETUP: readonly KeySetup[] = [
       // Why this one, before anything else: the four things a new user is
       // choosing between providers on.
       'Recommended: voice input, a generous free tier, accurate and fast.',
-      'Free and paid plans.',
+      {
+        before: 'Puter has a ',
+        text: 'tutorial on how to create a new free API key ↗',
+        href: 'https://developer.puter.com/tutorials/how-to-get-gemini-api-key/',
+        after: '.',
+      },
       'Keys stay viewable, so you can come back for yours later.',
-      'In the EEA, UK or Switzerland you must turn on billing even for the free tier, using the card already on your Google account.',
     ],
     url: 'https://aistudio.google.com/apikey',
     action: 'Create a Gemini API key',
