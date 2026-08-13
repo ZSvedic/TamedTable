@@ -1,47 +1,68 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="528" viewBox="0 0 640 528" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
-<rect width="640" height="528" fill="#ffffff"/>
-<text x="64" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — claude-sonnet-4-5</text>
-<text x="64" y="42" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
-<line x1="64" y1="48" x2="616" y2="48" stroke="#e5e5e5"/>
-<line x1="64" y1="168" x2="616" y2="168" stroke="#e5e5e5"/>
-<text x="56" y="52" font-size="10" text-anchor="end" fill="#222222">100%</text>
-<text x="56" y="172" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,58.0 91.9,56.0 126.9,54.0 196.8,54.0 336.5,55.0 616.0,54.0" fill="none" stroke="#D55E00" stroke-width="2"/>
-<circle cx="64.0" cy="58.0" r="3.5" fill="#D55E00"/>
-<circle cx="91.9" cy="56.0" r="3.5" fill="#D55E00"/>
-<circle cx="126.9" cy="54.0" r="3.5" fill="#D55E00"/>
-<circle cx="196.8" cy="54.0" r="3.5" fill="#D55E00"/>
-<circle cx="336.5" cy="55.0" r="3.5" fill="#D55E00"/>
-<circle cx="616.0" cy="54.0" r="3.5" fill="#D55E00"/>
-<text x="64" y="202" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
-<line x1="64" y1="208" x2="616" y2="208" stroke="#e5e5e5"/>
-<line x1="64" y1="328" x2="616" y2="328" stroke="#e5e5e5"/>
-<text x="56" y="212" font-size="10" text-anchor="end" fill="#222222">$0.1000</text>
-<text x="56" y="332" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,266.9 91.9,271.2 126.9,277.2 196.8,269.3 336.5,271.2 616.0,270.1" fill="none" stroke="#D55E00" stroke-width="2"/>
-<circle cx="64.0" cy="266.9" r="3.5" fill="#D55E00"/>
-<circle cx="91.9" cy="271.2" r="3.5" fill="#D55E00"/>
-<circle cx="126.9" cy="277.2" r="3.5" fill="#D55E00"/>
-<circle cx="196.8" cy="269.3" r="3.5" fill="#D55E00"/>
-<circle cx="336.5" cy="271.2" r="3.5" fill="#D55E00"/>
-<circle cx="616.0" cy="270.1" r="3.5" fill="#D55E00"/>
-<text x="64" y="362" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
-<line x1="64" y1="368" x2="616" y2="368" stroke="#e5e5e5"/>
-<line x1="64" y1="488" x2="616" y2="488" stroke="#e5e5e5"/>
-<text x="56" y="372" font-size="10" text-anchor="end" fill="#222222">200s</text>
-<text x="56" y="492" font-size="10" text-anchor="end" fill="#222222">0</text>
-<polyline points="64.0,396.7 91.9,453.1 126.9,478.8 196.8,473.7 336.5,483.9 616.0,482.3" fill="none" stroke="#D55E00" stroke-width="2"/>
-<circle cx="64.0" cy="396.7" r="3.5" fill="#D55E00"/>
-<circle cx="91.9" cy="453.1" r="3.5" fill="#D55E00"/>
-<circle cx="126.9" cy="478.8" r="3.5" fill="#D55E00"/>
-<circle cx="196.8" cy="473.7" r="3.5" fill="#D55E00"/>
-<circle cx="336.5" cy="483.9" r="3.5" fill="#D55E00"/>
-<circle cx="616.0" cy="482.3" r="3.5" fill="#D55E00"/>
-<text x="64.0" y="508" font-size="11" text-anchor="middle" fill="#222222">1</text>
-<text x="91.9" y="508" font-size="11" text-anchor="middle" fill="#222222">5</text>
-<text x="126.9" y="508" font-size="11" text-anchor="middle" fill="#222222">10</text>
-<text x="196.8" y="508" font-size="11" text-anchor="middle" fill="#222222">20</text>
-<text x="336.5" y="508" font-size="11" text-anchor="middle" fill="#222222">40</text>
-<text x="616.0" y="508" font-size="11" text-anchor="middle" fill="#222222">80</text>
-<text x="340" y="528" font-size="12" text-anchor="middle" fill="#222222">Batch size (rows per model call)</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="582" viewBox="0 0 660 582" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<rect width="660" height="582" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep — claude-sonnet-4-5</text>
+<text x="68" y="42" font-size="11" fill="#888888">run 2026-07-02</text>
+<text x="68" y="58" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
+<line x1="68" y1="74" x2="626" y2="74" stroke="#e5e5e5"/>
+<line x1="68" y1="194" x2="626" y2="194" stroke="#e5e5e5"/>
+<text x="60" y="78" font-size="10" text-anchor="end" fill="#222222">99%</text>
+<text x="60" y="198" font-size="10" text-anchor="end" fill="#222222">60%</text>
+<line x1="68" y1="148.9" x2="626" y2="148.9" stroke="#e5e5e5" stroke-dasharray="3 3"/>
+<text x="60" y="152.9" font-size="10" text-anchor="end" fill="#888888">90%</text>
+<polyline points="68.0,142.8 96.3,135.9 131.6,126.4 202.2,126.4 343.5,131.2 626.0,126.4" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="68.0" cy="142.8" r="3.5" fill="#D55E00"/>
+<text x="68.0" y="133.8" font-size="9.5" text-anchor="start" fill="#222222">92%</text>
+<circle cx="96.3" cy="135.9" r="3.5" fill="#D55E00"/>
+<text x="96.3" y="126.9" font-size="9.5" text-anchor="middle" fill="#222222">93%</text>
+<circle cx="131.6" cy="126.4" r="3.5" fill="#D55E00"/>
+<text x="131.6" y="117.4" font-size="9.5" text-anchor="middle" fill="#222222">95%</text>
+<circle cx="202.2" cy="126.4" r="3.5" fill="#D55E00"/>
+<text x="202.2" y="117.4" font-size="9.5" text-anchor="middle" fill="#222222">95%</text>
+<circle cx="343.5" cy="131.2" r="3.5" fill="#D55E00"/>
+<text x="343.5" y="122.2" font-size="9.5" text-anchor="middle" fill="#222222">94%</text>
+<circle cx="626.0" cy="126.4" r="3.5" fill="#D55E00"/>
+<text x="626.0" y="117.4" font-size="9.5" text-anchor="end" fill="#222222">95%</text>
+<text x="68" y="230" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
+<line x1="68" y1="246" x2="626" y2="246" stroke="#e5e5e5"/>
+<line x1="68" y1="366" x2="626" y2="366" stroke="#e5e5e5"/>
+<text x="60" y="250" font-size="10" text-anchor="end" fill="#222222">$0.0600</text>
+<text x="60" y="370" font-size="10" text-anchor="end" fill="#222222">$0.0000</text>
+<polyline points="68.0,264.2 96.3,271.4 131.6,281.4 202.2,268.1 343.5,271.3 626.0,269.5" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="68.0" cy="264.2" r="3.5" fill="#D55E00"/>
+<text x="68.0" y="255.2" font-size="9.5" text-anchor="start" fill="#222222">$0.0509</text>
+<circle cx="96.3" cy="271.4" r="3.5" fill="#D55E00"/>
+<text x="96.3" y="262.4" font-size="9.5" text-anchor="middle" fill="#222222">$0.0473</text>
+<circle cx="131.6" cy="281.4" r="3.5" fill="#D55E00"/>
+<text x="131.6" y="272.4" font-size="9.5" text-anchor="middle" fill="#222222">$0.0423</text>
+<circle cx="202.2" cy="268.1" r="3.5" fill="#D55E00"/>
+<text x="202.2" y="259.1" font-size="9.5" text-anchor="middle" fill="#222222">$0.0489</text>
+<circle cx="343.5" cy="271.3" r="3.5" fill="#D55E00"/>
+<text x="343.5" y="262.3" font-size="9.5" text-anchor="middle" fill="#222222">$0.0474</text>
+<circle cx="626.0" cy="269.5" r="3.5" fill="#D55E00"/>
+<text x="626.0" y="260.5" font-size="9.5" text-anchor="end" fill="#222222">$0.0482</text>
+<text x="68" y="402" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
+<line x1="68" y1="418" x2="626" y2="418" stroke="#e5e5e5"/>
+<line x1="68" y1="538" x2="626" y2="538" stroke="#e5e5e5"/>
+<text x="60" y="422" font-size="10" text-anchor="end" fill="#222222">200s</text>
+<text x="60" y="542" font-size="10" text-anchor="end" fill="#222222">0s</text>
+<polyline points="68.0,446.7 96.3,503.1 131.6,528.8 202.2,523.7 343.5,533.9 626.0,532.2" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="68.0" cy="446.7" r="3.5" fill="#D55E00"/>
+<text x="68.0" y="437.7" font-size="9.5" text-anchor="start" fill="#222222">152s</text>
+<circle cx="96.3" cy="503.1" r="3.5" fill="#D55E00"/>
+<text x="96.3" y="494.1" font-size="9.5" text-anchor="middle" fill="#222222">58s</text>
+<circle cx="131.6" cy="528.8" r="3.5" fill="#D55E00"/>
+<text x="131.6" y="519.8" font-size="9.5" text-anchor="middle" fill="#222222">15s</text>
+<circle cx="202.2" cy="523.7" r="3.5" fill="#D55E00"/>
+<text x="202.2" y="514.7" font-size="9.5" text-anchor="middle" fill="#222222">24s</text>
+<circle cx="343.5" cy="533.9" r="3.5" fill="#D55E00"/>
+<text x="343.5" y="524.9" font-size="9.5" text-anchor="middle" fill="#222222">7s</text>
+<circle cx="626.0" cy="532.2" r="3.5" fill="#D55E00"/>
+<text x="626.0" y="523.2" font-size="9.5" text-anchor="end" fill="#222222">10s</text>
+<text x="68.0" y="560" font-size="11" text-anchor="middle" fill="#222222">1</text>
+<text x="96.3" y="560" font-size="11" text-anchor="middle" fill="#222222">5</text>
+<text x="131.6" y="560" font-size="11" text-anchor="middle" fill="#222222">10</text>
+<text x="202.2" y="560" font-size="11" text-anchor="middle" fill="#222222">20</text>
+<text x="343.5" y="560" font-size="11" text-anchor="middle" fill="#222222">40</text>
+<text x="626.0" y="560" font-size="11" text-anchor="middle" fill="#222222">80</text>
+<text x="347" y="580" font-size="12" text-anchor="middle" fill="#222222">Batch size (rows per model call)</text>
 </svg>

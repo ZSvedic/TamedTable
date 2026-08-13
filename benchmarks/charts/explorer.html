@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TamedTable benchmark explorer</title>
+<style>
+  :root { --ink:#222; --muted:#777; --grid:#e5e5e5; --line:#d5d9de; }
+  body { font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--ink); margin: 0; padding: 24px; background: #fff; }
+  h1 { font-size: 19px; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 18px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+  .filter { min-width: 120px; }
+  .filter h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
+  label { display: block; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 5px; }
+  .count { color: var(--muted); font-size: 12px; margin: 8px 0 14px; }
+  svg { border: 1px solid var(--line); border-radius: 8px; max-width: 100%; }
+  table { border-collapse: collapse; font-size: 12.5px; margin-top: 18px; width: 100%; }
+  th, td { text-align: left; padding: 5px 9px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { cursor: pointer; user-select: none; background: #fafafa; position: sticky; top: 0; }
+  th:hover { background: #f0f0f0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .wrap { max-height: 460px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+</style>
+</head>
+<body>
+<h1>TamedTable benchmark explorer</h1>
+<div class="sub">Every sweep this benchmark has run. Generated 2026-08-13 from <code>benchmarks/results/sweeps.csv</code>.</div>
+
+<div class="filters">
+  <div class="filter"><h3>Tier</h3><div id="f-tier"></div></div>
+  <div class="filter"><h3>Free tier</h3><div id="f-freeTier"></div></div>
+  <div class="filter"><h3>Provider</h3><div id="f-provider"></div></div>
+  <div class="filter"><h3>Batch size</h3><div id="f-batchSize"></div></div>
+  <div class="filter"><h3>Run date</h3><div id="f-date"></div></div>
+  <div class="filter">
+    <h3>X axis</h3>
+    <select id="axis"><option value="costUsd">Cost per task (USD)</option><option value="timeSec">Time per task (s)</option></select>
+  </div>
+</div>
+
+<div class="count" id="count"></div>
+<div id="chart"></div>
+<div class="wrap"><table id="table"></table></div>
+
+<script>
+const CSV = "date,run,provider,tier,freeTier,cellModel,primaryModel,batchSize,accuracyPct,costUsd,timeSec,rows,scored,missing,calls,inTokens,outTokens\n2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,1,91.7,0.015233,175.2,120,120,0,120,12834,644\n2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,5,89.2,0.017384,43.4,120,120,0,30,15360,567\n2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,10,90.8,0.0155,26.8,120,120,0,13,13866,491\n2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,20,87.5,0.015043,6.9,120,120,0,7,13469,477\n2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,40,94.2,0.015067,5.2,120,120,0,4,13153,547\n2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,80,93.3,0.015893,5.9,120,120,0,3,13067,416\n2026-07-02,phase2-all,anthropic,paid,no,claude-sonnet-4-5,claude-sonnet-4-6,1,91.7,0.050897,152.2,120,120,0,120,12834,644\n2026-07-02,phase2-all,anthropic,paid,no,claude-sonnet-4-5,claude-sonnet-4-6,5,93.3,0.047297,58.1,120,120,0,25,14898,830\n2026-07-02,phase2-all,anthropic,paid,no,claude-sonnet-4-5,claude-sonnet-4-6,10,95,0.042323,15.3,120,120,0,13,13985,681\n2026-07-02,phase2-all,anthropic,paid,no,claude-sonnet-4-5,claude-sonnet-4-6,20,95,0.048937,23.8,120,120,0,7,13350,766\n2026-07-02,phase2-all,anthropic,paid,no,claude-sonnet-4-5,claude-sonnet-4-6,40,94.2,0.04735,6.9,120,120,0,4,13273,679\n2026-07-02,phase2-all,anthropic,paid,no,claude-sonnet-4-5,claude-sonnet-4-6,80,95,0.048245,9.6,120,120,0,3,13067,790\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-flash-lite,gemini-3.5-flash,1,93.3,0.016941,97.7,120,120,0,120,14987,1173\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-flash-lite,gemini-3.5-flash,5,95,0.017948,43.8,120,120,0,25,17597,1409\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-flash-lite,gemini-3.5-flash,10,96.7,0.017712,11.6,120,120,0,13,16660,1408\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-flash-lite,gemini-3.5-flash,20,95.8,0.017607,9.5,120,120,0,7,16240,1408\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-flash-lite,gemini-3.5-flash,40,91.7,0.017581,7.7,120,120,0,4,16126,1410\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-flash-lite,gemini-3.5-flash,80,93.3,0.016646,9.2,120,120,0,3,16056,1410\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-pro-preview,gemini-3.5-flash,1,95.8,0.4505,172.1,120,120,0,120,14987,35425\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-pro-preview,gemini-3.5-flash,5,95,0.143012,34.8,120,120,0,25,17597,9366\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-pro-preview,gemini-3.5-flash,10,95,0.131874,29.9,120,120,0,13,16660,8594\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-pro-preview,gemini-3.5-flash,20,95,0.123498,29.5,120,120,0,7,16240,7966\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-pro-preview,gemini-3.5-flash,40,95.8,0.111438,24.7,120,120,0,4,16126,6980\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.1-pro-preview,gemini-3.5-flash,80,95,0.111574,31.4,120,120,0,3,16056,7003\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.5-flash,gemini-3.5-flash,1,95,0.302569,119.4,120,120,0,120,14987,31121\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.5-flash,gemini-3.5-flash,5,94.2,0.134215,29.6,120,120,0,25,17597,11980\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.5-flash,gemini-3.5-flash,10,94.2,0.126798,25.7,120,120,0,13,16660,11312\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.5-flash,gemini-3.5-flash,20,95,0.129075,26.7,120,120,0,7,16240,11635\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.5-flash,gemini-3.5-flash,40,94.2,0.10509,20.4,120,120,0,4,16126,8989\n2026-07-02,phase2-all,gemini,paid,yes,gemini-3.5-flash,gemini-3.5-flash,80,94.2,0.100178,32.5,120,120,0,3,16056,9064\n2026-07-02,phase2-all,openai,paid,no,gpt-5.4-mini,gpt-5.5,1,88.3,0.05563,198.3,120,120,0,186,31510,1997\n2026-07-02,phase2-all,openai,paid,no,gpt-5.4-mini,gpt-5.5,5,89.2,0.018099,22.8,120,120,0,25,17440,435\n2026-07-02,phase2-all,openai,paid,no,gpt-5.4-mini,gpt-5.5,10,89.2,0.029496,16.3,120,120,0,13,22852,581\n2026-07-02,phase2-all,openai,paid,no,gpt-5.4-mini,gpt-5.5,20,89.2,0.012769,31,120,120,0,7,15892,315\n2026-07-02,phase2-all,openai,paid,no,gpt-5.4-mini,gpt-5.5,40,84.2,0.020001,6.7,120,120,0,4,19426,368\n2026-07-02,phase2-all,openai,paid,no,gpt-5.4-mini,gpt-5.5,80,90.8,0.041573,74.6,120,120,0,83,37671,982\n2026-07-17,free-openrouter,openrouter,free,yes,cohere/north-mini-code:free,cohere/north-mini-code:free,5,95.8,0,181.8,120,120,0,25,14355,31936\n2026-07-17,free-openrouter,openrouter,free,yes,cohere/north-mini-code:free,cohere/north-mini-code:free,10,88.3,0,212,120,120,0,14,19920,35573\n2026-07-17,free-openrouter,openrouter,free,yes,cohere/north-mini-code:free,cohere/north-mini-code:free,20,88.3,0,186.7,120,120,0,7,12582,40647\n2026-07-17,free-openrouter,openrouter,free,yes,cohere/north-mini-code:free,cohere/north-mini-code:free,40,39.2,0,16.7,120,120,0,1,4595,1933\n2026-07-17,free-openrouter,openrouter,free,yes,cohere/north-mini-code:free,cohere/north-mini-code:free,80,60.8,0,560.5,120,120,0,111,45998,68009\n2026-07-17,free-openrouter,openrouter,free,yes,tencent/hy3:free,tencent/hy3:free,1,91.7,0,310.8,120,120,0,120,16350,392\n2026-07-17,free-openrouter,openrouter,free,yes,tencent/hy3:free,tencent/hy3:free,5,85,0,114.9,120,120,0,25,14131,423\n2026-07-17,free-openrouter,openrouter,free,yes,tencent/hy3:free,tencent/hy3:free,10,92.5,0,9.9,120,120,0,13,15538,411\n2026-07-17,free-openrouter,openrouter,free,yes,tencent/hy3:free,tencent/hy3:free,20,92.5,0,52.5,120,120,0,7,12493,363\n2026-07-17,free-openrouter,openrouter,free,yes,tencent/hy3:free,tencent/hy3:free,40,92.5,0,5.8,120,120,0,4,12626,362\n2026-07-17,free-openrouter,openrouter,free,yes,tencent/hy3:free,tencent/hy3:free,80,89.2,0,244.1,120,120,0,83,25080,511\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.5-flash-lite,gemini-3.5-flash,1,90.8,0.018329,160.3,120,120,0,120,14721,1278\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.5-flash-lite,gemini-3.5-flash,5,92.5,0.020059,29.3,120,120,0,25,17331,1657\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.5-flash-lite,gemini-3.5-flash,10,93.3,0.022373,25.1,120,120,0,13,13776,1995\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.5-flash-lite,gemini-3.5-flash,20,94.2,0.022657,33.2,120,120,0,7,13356,2159\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.5-flash-lite,gemini-3.5-flash,40,94.2,0.019672,7,120,120,0,4,15840,1681\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.5-flash-lite,gemini-3.5-flash,80,90.8,0.019851,6.8,120,120,0,3,15770,1761\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.6-flash,gemini-3.5-flash,1,95,0.238631,150.8,120,120,0,120,14721,29007\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.6-flash,gemini-3.5-flash,5,95,0.117558,61.8,120,120,0,25,17331,12342\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.6-flash,gemini-3.5-flash,10,91.7,0.135495,32.1,120,120,0,13,13776,15001\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.6-flash,gemini-3.5-flash,20,91.7,0.089606,21.5,120,120,0,7,13356,9332\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.6-flash,gemini-3.5-flash,40,95,0.070172,13.7,120,120,0,4,15840,6322\n2026-07-22,gemini-new-flash,gemini,paid,yes,gemini-3.6-flash,gemini-3.5-flash,80,95.8,0.087452,26.3,120,120,0,3,15770,8640\n2026-08-12,free-gemini,gemini,paid,yes,gemini-2.5-flash,gemini-2.5-flash,10,93.3,0.035749,75.7,120,120,0,14,20798,11804\n2026-08-12,free-gemini,gemini,paid,yes,gemini-2.5-flash,gemini-2.5-flash,20,93.3,0.034273,64.1,120,120,0,8,20140,11935\n2026-08-12,free-gemini,gemini,paid,yes,gemini-2.5-flash,gemini-2.5-flash,40,94.2,0.026421,39.7,120,120,0,4,14445,8835\n2026-08-12,free-gemini,gemini,paid,yes,gemini-2.5-flash-lite,gemini-2.5-flash,10,93.3,0.008966,69.5,120,120,0,14,20798,2000\n2026-08-12,free-gemini,gemini,paid,yes,gemini-2.5-flash-lite,gemini-2.5-flash,20,96.7,0.004315,51.3,120,120,0,7,14600,1024\n2026-08-12,free-gemini,gemini,paid,yes,gemini-2.5-flash-lite,gemini-2.5-flash,40,94.2,0.002662,9.7,120,120,0,4,14445,949\n2026-08-12,free-groq,groq,free,yes,openai/gpt-oss-120b,openai/gpt-oss-120b,10,93.3,0.006706,170.1,120,120,0,13,14728,7494\n2026-08-12,free-groq,groq,free,yes,openai/gpt-oss-120b,openai/gpt-oss-120b,20,93.3,0.00621,148.7,120,120,0,7,14066,6833\n2026-08-12,free-groq,groq,free,yes,openai/gpt-oss-120b,openai/gpt-oss-120b,40,90,0.00546,132.9,120,120,0,4,12948,5863\n2026-08-12,free-groq,groq,free,yes,openai/gpt-oss-20b,openai/gpt-oss-120b,10,90,0.004068,151.4,120,120,0,13,14264,8153\n2026-08-12,free-groq,groq,free,yes,openai/gpt-oss-20b,openai/gpt-oss-120b,20,90,0.003631,93.7,120,120,0,7,13358,6875\n2026-08-12,free-groq,groq,free,yes,openai/gpt-oss-20b,openai/gpt-oss-120b,40,60.8,0.0011,47.6,120,120,0,1,5838,374\n";
+
+function splitLine(line) {
+  const out = []; let f = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"' && line[i+1] === '"') { f += '"'; i++; } else if (c === '"') q = false; else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { out.push(f); f = ''; }
+    else f += c;
+  }
+  out.push(f); return out;
+}
+const NUMERIC = new Set(['batchSize','accuracyPct','costUsd','timeSec','rows','scored','missing','calls','inTokens','outTokens']);
+const lines = CSV.split('\n').filter(l => l.trim());
+const HEADER = splitLine(lines[0]);
+const ROWS = lines.slice(1).map(l => {
+  const c = splitLine(l), o = {};
+  HEADER.forEach((h, i) => { o[h] = NUMERIC.has(h) ? Number(c[i]) : c[i]; });
+  return o;
+});
+
+const COLOR = { anthropic:'#D55E00', gemini:'#0072B2', openai:'#009E73', cerebras:'#CC79A7', openrouter:'#E69F00', groq:'#56B4E9' };
+// Same log-error accuracy scale as the committed SVGs (see charts.ts), so the
+// page and the files agree on what a gap between two models looks like.
+const ACC_MIN = 60, ERR_MAX = 100 - ACC_MIN, ERR_MIN = 1;
+const ACC_TICKS = [65, 75, 85, 90, 93, 95, 97, 99];
+const accPos = a => (Math.log10(ERR_MAX) - Math.log10(Math.min(ERR_MAX, Math.max(ERR_MIN, 100 - a)))) / (Math.log10(ERR_MAX) - Math.log10(ERR_MIN));
+const FACETS = ['tier','freeTier','provider','batchSize','date'];
+const state = {};
+for (const f of FACETS) state[f] = new Set(uniq(f));
+// Open on one batch size: every batch size at once puts six points on the chart
+// per model, and the first thing anyone wants is one point per model.
+const OPEN_BATCH = mode(ROWS.map(r => r.batchSize));
+state.batchSize = new Set([OPEN_BATCH]);
+function mode(xs) {
+  const c = new Map();
+  for (const x of xs) c.set(x, (c.get(x) || 0) + 1);
+  return [...c.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function uniq(field) {
+  return [...new Set(ROWS.map(r => r[field]))].sort((a,b) => typeof a === 'number' ? a-b : String(a).localeCompare(String(b)));
+}
+function buildFilters() {
+  for (const f of FACETS) {
+    const host = document.getElementById('f-' + f);
+    host.innerHTML = '';
+    for (const v of uniq(f)) {
+      const id = f + '-' + v;
+      const lab = document.createElement('label');
+      lab.innerHTML = '<input type="checkbox"' + (state[f].has(v) ? ' checked' : '') + ' id="' + id + '"> ' + v;
+      lab.querySelector('input').addEventListener('change', e => {
+        if (e.target.checked) state[f].add(v); else state[f].delete(v);
+        render();
+      });
+      host.appendChild(lab);
+    }
+  }
+}
+const visible = () => ROWS.filter(r => FACETS.every(f => state[f].has(r[f])));
+
+// The Pareto frontier of the filtered set: nothing is cheaper/faster AND more
+// accurate than a point on it. y is in SVG pixels, so smaller y is better.
+function pareto(pts) {
+  const sorted = [...pts].sort((a,b) => a.x - b.x || a.y - b.y);
+  const out = []; let best = Infinity;
+  for (const p of sorted) if (p.y < best) { out.push(p); best = p.y; }
+  return out;
+}
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const s of [1,2,2.5,5,10]) if (v <= s*mag) return s*mag;
+  return 10*mag;
+}
+const svgEl = (n, attrs) => {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', n);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+};
+
+function drawChart(rows) {
+  const axis = document.getElementById('axis').value;
+  const W = Math.min(900, document.body.clientWidth - 48), H = 480;
+  const m = { top: 20, right: 28, bottom: 46, left: 62 };
+  const pw = W - m.left - m.right, ph = H - m.top - m.bottom;
+  const host = document.getElementById('chart');
+  host.innerHTML = '';
+  const svg = svgEl('svg', { width: W, height: H, viewBox: '0 0 ' + W + ' ' + H, font_family: 'inherit' });
+  if (!rows.length) { host.appendChild(svg); return; }
+
+  const maxX = niceMax(Math.max(...rows.map(r => r[axis]), 0.0001));
+  const X = v => m.left + (v / maxX) * pw;
+  const Y = a => m.top + (1 - accPos(a)) * ph;
+  const fmtX = v => axis === 'costUsd' ? '$' + v.toFixed(4) : v.toFixed(0) + 's';
+
+  for (const a of ACC_TICKS) {
+    svg.appendChild(svgEl('line', { x1: m.left, y1: Y(a), x2: m.left + pw, y2: Y(a), stroke: '#e5e5e5' }));
+    const t = svgEl('text', { x: m.left - 8, y: Y(a) + 4, 'font-size': 11, 'text-anchor': 'end', fill: '#222' });
+    t.textContent = a + '%'; svg.appendChild(t);
+  }
+  for (let i = 0; i <= 4; i++) {
+    const v = (maxX / 4) * i;
+    svg.appendChild(svgEl('line', { x1: X(v), y1: m.top, x2: X(v), y2: m.top + ph, stroke: '#e5e5e5' }));
+    const t = svgEl('text', { x: X(v), y: m.top + ph + 18, 'font-size': 11, 'text-anchor': 'middle', fill: '#222' });
+    t.textContent = fmtX(v); svg.appendChild(t);
+  }
+  const xl = svgEl('text', { x: m.left + pw/2, y: H - 10, 'font-size': 12, 'text-anchor': 'middle', fill: '#222' });
+  xl.textContent = axis === 'costUsd' ? 'Cost per task (USD)' : 'Time per task (seconds)';
+  svg.appendChild(xl);
+
+  const pts = rows.map(r => ({ x: X(r[axis]), y: Y(r.accuracyPct), r }));
+  const front = pareto(pts);
+  if (front.length > 1) {
+    svg.appendChild(svgEl('polyline', {
+      points: front.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' '),
+      fill: 'none', stroke: '#bbb', 'stroke-width': 1.5, 'stroke-dasharray': '5 4',
+    }));
+  }
+  const onFront = new Set(front.map(p => p.r));
+  for (const p of pts) {
+    const c = svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: onFront.has(p.r) ? 6 : 4, fill: COLOR[p.r.provider] || '#999' });
+    if (onFront.has(p.r)) { c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', 1.5); }
+    const title = svgEl('title', {});
+    title.textContent = p.r.cellModel + ' — batch ' + p.r.batchSize + ', ' + p.r.accuracyPct + '%, $' + p.r.costUsd + ', ' + p.r.timeSec + 's (' + p.r.date + ')';
+    c.appendChild(title);
+    svg.appendChild(c);
+  }
+  // Label only the frontier. Labelling every point is what made the committed
+  // SVGs unreadable; hover carries the rest.
+  const used = [];
+  for (const p of [...front].sort((a,b) => a.y - b.y)) {
+    let y = p.y + 4;
+    while (used.some(u => Math.abs(u - y) < 12)) y += 12;
+    used.push(y);
+    const flip = p.x > m.left + pw * 0.62;
+    const t = svgEl('text', { x: flip ? p.x - 9 : p.x + 9, y, 'font-size': 11, 'text-anchor': flip ? 'end' : 'start', fill: COLOR[p.r.provider] || '#999' });
+    t.textContent = p.r.cellModel + ' (' + p.r.accuracyPct + '%)';
+    svg.appendChild(t);
+  }
+  host.appendChild(svg);
+}
+
+let sortKey = 'accuracyPct', sortDir = -1;
+function drawTable(rows) {
+  const sorted = [...rows].sort((a, b) => {
+    const x = a[sortKey], y = b[sortKey];
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * sortDir;
+  });
+  const t = document.getElementById('table');
+  t.innerHTML = '';
+  const thead = document.createElement('thead'), tr = document.createElement('tr');
+  for (const h of HEADER) {
+    const th = document.createElement('th');
+    th.textContent = h + (h === sortKey ? (sortDir < 0 ? ' ▾' : ' ▴') : '');
+    if (NUMERIC.has(h)) th.className = 'num';
+    th.addEventListener('click', () => {
+      if (sortKey === h) sortDir = -sortDir; else { sortKey = h; sortDir = NUMERIC.has(h) ? -1 : 1; }
+      render();
+    });
+    tr.appendChild(th);
+  }
+  thead.appendChild(tr); t.appendChild(thead);
+  const tb = document.createElement('tbody');
+  for (const r of sorted) {
+    const row = document.createElement('tr');
+    for (const h of HEADER) {
+      const td = document.createElement('td');
+      td.textContent = r[h];
+      if (NUMERIC.has(h)) td.className = 'num';
+      row.appendChild(td);
+    }
+    tb.appendChild(row);
+  }
+  t.appendChild(tb);
+}
+
+function render() {
+  const rows = visible();
+  document.getElementById('count').textContent = rows.length + ' of ' + ROWS.length + ' configs shown';
+  drawChart(rows);
+  drawTable(rows);
+}
+document.getElementById('axis').addEventListener('change', render);
+window.addEventListener('resize', render);
+buildFilters();
+render();
+</script>
+</body>
+</html>

@@ -1,216 +1,161 @@
 # Benchmarks
 
-Research data and outputs for choosing TamedTable's model hyperparameters:
-which model each provider should use for the query (patch-turn) role and the
-cell-update role, and what batch size trades speed, cost, and accuracy best.
+This directory holds the data behind TamedTable's model choices: which model
+each provider should run in the patch-turn and cell roles, and what batch size
+trades speed, cost and accuracy best. It holds **data only** — pricing, ground
+truth, results and charts. The runner is code, so it lives under `src/` where it
+can import the engine: [`src/packages/bench/`](../src/packages/bench/).
 
-This directory holds **data only** — pricing, ground truth, sweep results, and
-generated charts. The runner is code, so it lives under `src/` where it can
-import the engine: [`src/packages/bench/`](../src/packages/bench/) (`@tamedtable/bench`).
-The runner reads the files here by plain path.
+The plain `bun run bench` measures one config's time, tokens and cost. This one
+adds **accuracy**, and without that axis bigger batches always win — the real
+tradeoff, accuracy falling as more rows are packed into a call, never shows up.
 
-## Why a separate benchmark
+## Running it
 
-The standalone [`bun run bench`](../README.md#performance-benchmark) measures one
-config (time / tokens / cost). To pick "best value" and "good enough for cells"
-you also need **accuracy** — otherwise bigger batches always win on cost and
-speed, and the real tradeoff (accuracy degrading as more rows are packed per
-call) never shows up. This benchmark adds that axis.
+All commands run from `src/`. `sample`, `chart` and `report` are offline;
+`label` and `sweep` make live calls and need that provider's key.
+
+```
+bun run bench:sample 150   # draw ~150 rows from the fixture → ground-truth/music-sample.csv
+bun run bench:label        # label them with a strong model → music-labels.jsonl (spot-check!)
+bun run bench:sweep        # run models × batch sizes, score → results/sweeps.csv
+bun run bench:chart        # render charts/*.svg and charts/explorer.html
+bun run bench:report       # print the table (add a run name to print just one)
+```
+
+Defaults: cell models `claude-sonnet-4-5, claude-haiku-4-5,
+gemini-3.1-flash-lite, gpt-5.4-mini`; batches `1, 5, 10, 20, 40, 80`; labeller
+`claude-fable-5`. `sweep` takes `--models=`, `--batches=`, `--out=` (the run
+name), `--retries=`, `--primary=` and `--tier=free|paid`.
+
+## The task
+
+Group C's request — *"Add a boolean column Music that is true for music
+videos"* — makes the cell model classify every row. Accuracy is the fraction of
+labelled rows whose `Music` value matches the ground truth, matched by
+`videoId`. The patch-turn model only writes the "add column" edit and cannot
+affect accuracy, so the sweep pins it and varies the cell model and batch size.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `models.jsonl` | One row per model: pricing, context window, audio input, `runnable`. The benchmark's single source of cost — `@tamedtable/bench` loads it, and the `@perf` Cucumber flow prices through it too. The app's runtime catalogue (`src/packages/model-config/models.json`) is separate; a unit test asserts every shipped model has a row here. |
-| `ground-truth/music-sample.csv` | A subset of the fixture the sweep runs over. |
-| `ground-truth/music-labels.jsonl` | The gold `Music` verdict per `videoId`, scored against. |
-| `results/*.jsonl` | Sweep outputs — one `SweepResult` per line. |
-| `charts/*.svg` | Generated tradeoff charts. |
+| `models.jsonl` | One row per model: pricing, context window, audio input, `runnable`. The single source of cost — the bench loads it, and the `@perf` Cucumber flow prices through it. A unit test asserts every shipped catalogue model has a row. |
+| `results/sweeps.csv` | Every config ever run, one row each. |
+| `ground-truth/music-sample.csv` | The fixture subset the sweep runs over. |
+| `ground-truth/music-labels.jsonl` | The gold `Music` verdict per `videoId`. |
+| `charts/*.svg` | Generated charts. |
+| `charts/explorer.html` | The same data with filters and sorting, in one file. |
 
-`models.jsonl` schema (per line):
-
-```
-{"id","name","provider","inUsdPerMtok","outUsdPerMtok","cacheWriteMult","cacheReadMult","contextWindow","maxOutput","audioInput","runnable","notes"}
-```
-
-`inUsdPerMtok` / `outUsdPerMtok` are USD per million tokens (Standard paid tier;
-Cerebras rows are its free developer tier, so both are 0). `cacheWriteMult` /
-`cacheReadMult` scale the input rate for cached tokens (1.25 / 0.1 on Anthropic;
-providers with implicit caching use 1 / 0.1). A unit test asserts every shipped
-catalogue model has a row here.
-
-## The task
-
-Group C's request — *"Add a boolean column Music that is true for music
-videos"* — makes the cell model classify each row. Accuracy is the fraction of
-labelled rows where the model's `Music` value matches the ground truth, compared
-by `videoId`. The query (patch-turn) model just writes the "add column" edit; it
-doesn't affect accuracy, so the sweep fixes it to the provider default and
-varies the **cell model** and **batch size**.
-
-## Running it
-
-All commands run from `src/`. `sample`, `chart`, and `report` are offline;
-`label` and `sweep` make live calls and need the matching provider key
-(`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` /
-`OPENROUTER_API_KEY` / `CEREBRAS_API_KEY`).
+`models.jsonl`, one JSON object per line:
 
 ```
-bun run bench:sample 150     # draw ~150 rows from the fixture → ground-truth/music-sample.csv
-bun run bench:label          # auto-label them with a strong model → music-labels.jsonl (spot-check!)
-bun run bench:sweep          # run (models × batch sizes), score → results/sweep.jsonl
-bun run bench:chart          # render charts/model-tradeoff.svg + charts/batch-<model>.svg
-bun run bench:report         # print the results table
+{"id","name","provider","inUsdPerMtok","outUsdPerMtok","cacheWriteMult",
+ "cacheReadMult","contextWindow","maxOutput","audioInput","runnable","notes"}
 ```
 
-Defaults: cell models `claude-sonnet-4-5, claude-haiku-4-5, gemini-3.1-flash-lite,
-gpt-5.4-mini`; batch sizes `1, 5, 10, 20, 40, 80`; labeller `claude-fable-5`.
-Override with `--models=…`, `--batches=…`, `--out=name` on `sweep`.
+Rates are USD per million tokens at the paid tier; the cache multipliers scale
+the input rate for cached tokens (1.25 / 0.1 on Anthropic, 1 / 0.1 where caching
+is implicit). Cerebras rows are 0, because that tier is free outright.
 
-## Free providers (Cerebras, OpenRouter, Groq, Google)
+## The results table
 
-Two of them are free-only providers sitting next to the paid three, both
-OpenAI-compatible, both $0 in `models.jsonl`. Cerebras is bench-only;
-OpenRouter graduated to the app's fourth provider (its chooser card defaults to
-`cohere/north-mini-code:free`). Groq and Google are the other shape: paid
-providers whose free developer tier serves the same models under a quota, so
-their `models.jsonl` rows carry the paid rates and a free-tier run prices as if
-it were paid.
+Every run appends to `results/sweeps.csv` under the name `--out` gave it;
+re-running a name replaces its rows rather than doubling them. Open it in a
+spreadsheet, or open `charts/explorer.html` and filter there.
 
-**Which free tier a user should actually pick: Google.** The
-[2026-08-12 run](../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
-swept both (`results/free-gemini.jsonl`, `results/free-groq.jsonl`).
-`gemini-2.5-flash-lite` at batch 20 scores 97%, the highest accuracy in this
-benchmark from any model, at $0.0043 per 120-row task. Groq's best,
-`openai/gpt-oss-120b`, reaches 93% and costs $0.0062. Groq's free tier is also
-the only one of the four whose limit is *tokens per minute* (8,000) rather than
-requests per day, and a single batch-10 cell call asks for ~6,700 of them — the
-engine exhausts its seven internal retries and the config fails outright. Sweep
-Groq's free tier at `TAMEDTABLE_RPM=5` and expect to re-run configs.
+Two columns exist to make filtering work, and they differ:
 
-Times in both files are throttled on purpose to imitate free-tier throughput,
-so read them as a floor rather than as model speed; accuracy and cost compare
-fairly.
+- **`tier`** — what this run cost: `free` on a free tier, `paid` otherwise.
+- **`freeTier`** — whether a user with no money can reach that model at all.
 
-**Cerebras** ([cloud.cerebras.ai](https://cloud.cerebras.ai)) — `zai-glm-4.7`
-(primary/patch role) and `gpt-oss-120b` (cell role). The highest free limits
-(30 req/min, 14,400 req/day, ~1M tokens/day as of 2026-07): the only free tier
-that fits both the full sweep (~170 calls per model) and real app use. Sign up
-(no credit card), export `CEREBRAS_API_KEY`, then:
-
-```
-bun run bench:sweep --models=zai-glm-4.7,gpt-oss-120b --out=free-models
-bun run bench:report free-models
-```
-
-**OpenRouter** ([openrouter.ai](https://openrouter.ai)) — one no-credit-card
-signup unlocks ~25 `:free` models from many vendors; ids look like
-`cohere/north-mini-code:free` (the pick for both roles — 96% cell accuracy at
-batch 5 in the [2026-07-17 run](../process/journal/2026-07-17-free-model-benchmark-run.md),
-and the app's OpenRouter default). The run overturned the on-paper picks:
-`qwen/qwen3-coder:free` and `meta-llama/llama-3.3-70b-instruct:free` never
-completed a call (single saturated host), and `tencent/hy3:free`, the best
-performer, lost its free route on 2026-07-21. The
-[2026-08-05 run](../process/journal/2026-08-05-openrouter-gemma-nemotron-run.md)
-added `google/gemma-4-31b-it:free` and `nvidia/nemotron-3-super-120b-a12b:free`
-and neither could produce a scored row (gemma's single free host was 429-saturated
-upstream; nemotron's reasoning output breaks the JSON cell protocol). Gotchas:
-
-1. **Privacy toggle.** `:free` endpoints return 404 (`No endpoints found
-   matching your data policy`) until the account's
-   [privacy settings](https://openrouter.ai/settings/privacy) allow free model
-   publication — free models may train on your prompts.
-2. **20 req/min.** The engine's default is 40, so cap it with `TAMEDTABLE_RPM=20`.
-   A single-host `:free` model (e.g. gemma-4-31b via Google AI Studio) shares one
-   upstream pool with every other free user — lower it further (`TAMEDTABLE_RPM=6`)
-   and still expect `429 … upstream_provider_shared_pool` when that pool is busy.
-3. **~50 req/day on a $0 account** (1,000/day after a one-time $10 credit
-   purchase that never expires). The full grid won't fit in 50 — drop batch
-   size 1 (alone 120 calls).
-4. **Flaky patch turn.** Free models sometimes return the `apply_spec_patch`
-   tool call as plain text; the run then throws. `--retries=N` re-attempts a
-   config (the patch turn runs before any cell call, so a retry is cheap), and
-   `--primary=<id>` overrides the patch model (it must share the cell model's
-   provider — the runner is single-provider). For a self-contained free sweep,
-   point `--primary` at the cell model itself.
-
-```
-TAMEDTABLE_RPM=20 bun run bench:sweep \
-  --models=cohere/north-mini-code:free \
-  --batches=10,20,40,80 --retries=5 --out=free-openrouter
-```
-
-**Running from a proxied sandbox (Claude Code on the web).** Bun's built-in
-`fetch` does not tunnel TLS through the environment's CONNECT proxy — the proxy
-returns `200 Connection Established`, then the socket closes and every call fails
-with *"The socket connection was closed unexpectedly"* (`curl` through the same
-proxy works). Prepend the [`process/proxy-fetch.ts`](../process/proxy-fetch.ts)
-shim, which routes provider calls through `curl`:
-
-```
-TAMEDTABLE_RPM=20 bun --preload ../process/proxy-fetch.ts \
-  packages/bench/cli.ts sweep --models=… --batches=10,20,40,80 --retries=5 --out=free-openrouter
-```
-
-A machine with direct egress needs none of this. See the
-[2026-08-05 run](../process/journal/2026-08-05-openrouter-gemma-nemotron-run.md).
-
-Caveat for both: free lineups rotate without notice (Cerebras went from ~12
-free models to 2 in May 2026; OpenRouter `:free` models come and go weekly) —
-if a model id 404s, check the provider's current list
-([inference-docs.cerebras.ai](https://inference-docs.cerebras.ai),
-[openrouter.ai/models](https://openrouter.ai/models)) and update
-`models.jsonl` + the `providerFor` rules together.
-
-## Ground truth
-
-`bench label` uses a strong model (default `claude-fable-5`) as the labeller,
-then **spot-check by hand** before trusting the labels. The committed
-`music-sample.csv` / `music-labels.jsonl` is a 120-row set auto-labelled by
-`gemini-2.5-pro` and hand spot-checked (47 music / 69 non-music), so the
-pipeline runs offline out of the box; regenerate with `bench sample` +
-`bench label`.
+The Gemini rows are `paid` and `freeTier: yes`, because they were billed on a
+paid key but Google serves those same models free under a quota. Costs are
+always priced at the paid rates, including for free runs, so the column stays
+comparable across providers.
 
 ## Charts
 
-Two views, both slices of the same `SweepResult[]`:
+Accuracy is plotted on a **log scale of the error rate**, identical on every
+chart. Results cluster between 88% and 97%, where a linear axis stacks them on
+one line and hides the thing that matters: 93% to 97% is more than halving the
+mistakes. Every point also carries its own number, so nothing has to be read off
+a pixel position. Colours are Okabe-Ito, keyed by provider.
 
-1. **`model-tradeoff.svg`** — accuracy (y) vs average cost per task (x), one
-   point per cell model at a reference batch size. The Pareto view.
-2. **`batch-<model>.svg`** — accuracy / cost / time vs batch size for one cell
-   model. Small multiples; the knee is where accuracy starts to fall.
+- **`tradeoff-paid-cost.svg`** — paid models, accuracy vs cost.
+- **`tradeoff-paid-time.svg`** — paid models, accuracy vs time.
+- **`tradeoff-free-time.svg`** — free-tier models, accuracy vs time. Cost is
+  zero for all of them, so time is the only axis left.
+- **`batch-<model>.svg`** — accuracy, cost and time vs batch size for one model.
+  The knee is where accuracy starts to fall.
 
-Colours are the Okabe-Ito colourblind-safe palette, keyed by provider.
+The dashed line on the tradeoff charts is the Pareto frontier: the models
+nothing else beats on both axes at once.
 
-## Results so far
+## Ground truth
 
-Real runs committed in `results/phase2-all.jsonl` (the three paid providers,
-six cell models × six batch sizes) and `results/free-openrouter.jsonl` (the
-OpenRouter `:free` sweep — what the free batch charts render from). Findings +
-per-config tables:
-[`process/journal/2026-07-02-model-batch-sweep.md`](../process/journal/2026-07-02-model-batch-sweep.md)
-and [`process/journal/2026-07-17-free-model-benchmark-run.md`](../process/journal/2026-07-17-free-model-benchmark-run.md).
+`bench label` runs a strong model at batch size 1 and keeps its verdicts, so
+**spot-check by hand before trusting them**. The committed set is 120 rows
+labelled by `gemini-2.5-pro` and checked (47 music, 69 not), which is why the
+pipeline runs offline out of the box.
 
-- **Gemini** (3 cell models): accuracy flat 93–97% across every model and batch
-  size, so `gemini-3.1-flash-lite` wins on value (~10× cheaper, same accuracy).
-- **Anthropic**: `claude-sonnet-4-5` hits 95% but at ~3× flash-lite's cost;
-  `claude-haiku-4-5` lands 88–94% at flash-lite prices.
-- **OpenAI** (`gpt-5.4-mini`): 84–91% — cheapest overall but a few points behind
-  Gemini (partly labeller affinity; the labels are from `gemini-2.5-pro`).
-- **Batching ≥10** cuts cost/time sharply for free on every provider — the
-  app's default batch of 20 is in the sweet spot.
+## Free tiers
 
-A 2026-07-22 follow-up run (`results/gemini-new-flash.jsonl`) benchmarked the
-newly released `gemini-3.6-flash` and `gemini-3.5-flash-lite`: no accuracy
-gain over the lineup above; 3.6 Flash matches 3.5 Flash at a 17% lower output
-price, 3.5 Flash-Lite loses to 3.1 Flash-Lite on both accuracy and price.
-Findings + recommendation:
-[`process/journal/2026-07-22-gemini-new-flash-benchmark.md`](../process/journal/2026-07-22-gemini-new-flash-benchmark.md).
+Four providers give something away, and they are not the same shape. Cerebras is
+free-only and bench-only. OpenRouter's `:free` models are free-only but it is a
+full app provider. Google and Groq bill by default and serve the same models
+free under a quota.
 
-A 2026-08-12 run (`results/free-gemini.jsonl`, `results/free-groq.jsonl`) asked
-which free tier serves a free user best, and overturned two standing calls:
-`gemini-2.5-flash-lite` beats `gemini-3.1-flash-lite` on both axes ($0.0043 vs
-$0.0176 per task, 97% vs 96% at batch 20), so the "flash-lite wins on value"
-line above now points at the wrong flash-lite; and Groq is not the cheapest
-provider per task, only per token. Findings:
-[`process/journal/2026-08-12-google-groq-free-tier-benchmark.md`](../process/journal/2026-08-12-google-groq-free-tier-benchmark.md).
+**Pick Google.** The
+[2026-08-12 run](../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
+swept both: `gemini-2.5-flash-lite` at batch 20 scores 97%, the best accuracy in
+this benchmark from any model at any price, for $0.0043 a task. Groq's best is
+`openai/gpt-oss-120b` at 93% and $0.0062.
+
+Gotchas, per provider:
+
+- **Groq** — limited by *tokens per minute* (8,000), not requests per day, and
+  one batch-10 cell call asks for ~6,700. The engine burns its seven internal
+  retries and the config fails. Sweep at `TAMEDTABLE_RPM=5` and expect re-runs.
+- **OpenRouter** — 20 req/min, ~50 req/day on a $0 account (1,000 after a
+  one-time $10 top-up), so the full grid does not fit; drop batch size 1, which
+  costs 120 calls by itself. `:free` endpoints 404 until
+  [privacy settings](https://openrouter.ai/settings/privacy) allow free-model
+  publication, which means letting them train on your prompts. Free models also
+  return the patch-turn tool call as plain text now and then, so pass
+  `--retries=5` and point `--primary` at the cell model itself.
+- **Cerebras** — the highest free limits anywhere (30 req/min, 14,400 req/day,
+  ~1M tokens/day), the only tier that fits a full sweep. Bench-only.
+- **All of them** — free lineups rotate without notice. Cerebras went from ~12
+  free models to 2 in May 2026; `tencent/hy3:free` was the best OpenRouter
+  performer until it lost its free route four days after we measured it. When an
+  id 404s, check the provider's current list and update `models.jsonl` and the
+  `providerFor` rules together.
+
+Times from a free-tier run are throttled on purpose to imitate free throughput,
+so read them as a floor rather than as model speed. Accuracy and cost compare
+fairly.
+
+**From a proxied sandbox** (Claude Code on the web), bun's `fetch` cannot tunnel
+TLS through the CONNECT proxy: every call dies with *"The socket connection was
+closed unexpectedly"*. Prepend the
+[`process/proxy-fetch.ts`](../process/proxy-fetch.ts) shim, which routes provider
+calls through `curl`. A machine with direct egress needs none of it.
+
+```
+TAMEDTABLE_RPM=20 bun --preload ../process/proxy-fetch.ts \
+  packages/bench/cli.ts sweep --models=… --batches=10,20,40 --retries=5 --out=name
+```
+
+## What the runs have shown
+
+| Run | Date | Finding | Journal |
+|---|---|---|---|
+| `phase2-all` | 2026-07-02 | Gemini flat at 93–97% across models and batches; `claude-sonnet-4-5` 95% at ~3× the cost; `gpt-5.4-mini` 84–91%. Batching ≥10 cuts cost and time for free. | [entry](../process/journal/2026-07-02-model-batch-sweep.md) |
+| `free-openrouter` | 2026-07-17 | `cohere/north-mini-code:free` 96% at batch 5, collapsing past 40. Two on-paper picks never completed a call. | [entry](../process/journal/2026-07-17-free-model-benchmark-run.md) |
+| `gemini-new-flash` | 2026-07-22 | No accuracy gain from 3.6 Flash or 3.5 Flash-Lite over the lineup. | [entry](../process/journal/2026-07-22-gemini-new-flash-benchmark.md) |
+| `free-groq`, `free-gemini` | 2026-08-12 | `gemini-2.5-flash-lite` wins outright: 97% at $0.0043, against `gemini-3.1-flash-lite`'s 96% at $0.0176. Groq is cheapest per token, not per task. | [entry](../process/journal/2026-08-12-google-groq-free-tier-benchmark.md) |
+
+The standing recommendation is `gemini-2.5-flash-lite` at batch 20 for the cell
+role. The app still defaults to `gemini-3.1-flash-lite`, which this data says is
+4× dearer for no accuracy gain.

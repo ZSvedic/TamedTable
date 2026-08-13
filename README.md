@@ -43,8 +43,8 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 ├── benchmarks/              Model & batch-size benchmark data + outputs (no code, runner is @tamedtable/bench).
 │   ├── models.jsonl         The benchmark's model pricing/specs (the app's catalogue is model-config's models.json).
 │   ├── ground-truth/        Labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl).
-│   ├── results/             Sweep outputs (JSONL).
-│   └── charts/              Generated SVG tradeoff charts.
+│   ├── results/             sweeps.csv — every config ever run, one row each.
+│   └── charts/              Generated SVG charts + explorer.html (filterable).
 ├── cassettes/               Recorded LLM responses the test suite replays — committed data, one JSON per feature.
 ├── marketing/               Everything the public sees + the shared design base.
 │   ├── tokens.json          Design token master: colors, typography, spacing.
@@ -299,7 +299,7 @@ the CLI (all from `src/`) is:
 bun run bench:sample 150     # draw a labelling subset from the fixture
 bun run bench:label          # auto-label it with a strong model (needs a key)
 bun run bench:sweep          # run the grid, score vs labels → benchmarks/results/
-bun run bench:chart          # render the tradeoff SVGs → benchmarks/charts/
+bun run bench:chart          # render the SVGs + explorer.html → benchmarks/charts/
 bun run bench:report         # print the results table
 ```
 
