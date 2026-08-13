@@ -17523,12 +17523,8 @@ async function verifyKey(provider, key, opts = {}) {
   const answer = await call(provider, key, defaultCellModel(provider), VERIFY_PROMPT, opts);
   if (!ok(answer))
     throw failure(provider, answer);
-  if (provider === "gemini") {
-    const served = answer.headers.get("x-gemini-service-tier");
-    if (served === null || served === "")
-      return { tier: null };
-    return { tier: served === "free" ? "free" : "paid" };
-  }
+  if (provider === "gemini")
+    return { tier: null };
   if (provider === "groq")
     return { tier: null };
   return { tier: "paid" };
