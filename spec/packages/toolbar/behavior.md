@@ -39,7 +39,9 @@ The web app's wrapper binds `WebController`:
   onOpenTutorial={() => controller.openTutorial()}
 />
 <OpenSampleDialog
-  open={controller.sampleDialogOpen} samples={samples}
+  open={controller.sampleDialogOpen}
+  recommended={recommended}     // one per showcase tour, homepage order
+  samples={samples}
   onPick={(url) => controller.loadFromUrl(url)}
   onClose={() => controller.closeSampleDialog()}
 />
@@ -55,6 +57,10 @@ The web app's wrapper binds `WebController`:
 `ToolbarSample` is `{ name, url }`. `sampleKind(name)` returns `"CSV"` or
 `"JSONL"` from the filename extension (anything not ending in `.csv` is
 treated as JSONL) — the badge the dialog shows beside each sample row.
+
+`RecommendedSample` is a `ToolbarSample` plus a `title` — the human label a
+recommended row leads with (the host supplies it; the package neither knows
+nor cares that titles come from the homepage's feature sections).
 
 ## Toolbar component (`./components` entry, react peer dependency)
 
@@ -83,13 +89,23 @@ unencrypted-note. It carries no sample list — samples live in their own picker
 
 ## OpenSampleDialog component
 
-`OpenSampleDialog({ open, samples, onPick, onClose })` — a modal listing the
-bundled sample files (each row shows its `sampleKind` badge and name). Clicking
-a row calls `onPick(sample.url)` and closes the dialog — picking a sample loads
-it straight away, no extra confirm step. Escape or the backdrop closes it.
+`OpenSampleDialog({ open, recommended, samples, onPick, onClose })` — a modal
+in two tiers. `recommended` (a `RecommendedSample[]`) renders first, in the
+order given: one row per entry, its `title` on the leading line and its
+filename below. Then a **Show all N bundled files** disclosure expands
+`samples` (a `ToolbarSample[]`) as a flat list — each row its `sampleKind`
+badge and name, the shape the dialog used to have. Collapsed is the default;
+with `recommended` empty the full list shows expanded, there being nothing
+else to show.
+
+Clicking any row in either tier calls `onPick(sample.url)` and closes the
+dialog — picking a sample loads it straight away, no extra confirm step.
+Escape or the backdrop closes it.
 
 Stable attributes: `data-tb-toolbar`, `data-tb-info`, `data-tb-dialog`,
-`data-tb-url-input`, `data-tb-sample-dialog`, `data-tb-sample`.
+`data-tb-url-input`, `data-tb-sample-dialog`, `data-tb-sample` (every
+clickable sample row, recommended rows first), `data-tb-sample-more` (the
+disclosure).
 
 ## Demo page
 
@@ -97,5 +113,6 @@ The demo (`demo.html` + `demo.tsx`, deployed under `/demos/toolbar/`) mounts
 the toolbar and dialog over plain React state: every button appends to the
 `#out` event log (non-empty on load — the smoke test's ready signal), the
 theme toggle flips the wrapper, and the URL dialog's submit logs the loaded URL
-and closes. Sample rows are seeded in the sample picker so the pick-to-load
-flow is exercised.
+and closes. Both sample tiers are seeded in the picker — a recommended row and
+a longer all-files list — so the pick-to-load flow and the disclosure are both
+exercised.

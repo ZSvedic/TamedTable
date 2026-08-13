@@ -10,6 +10,13 @@ export interface ToolbarSample {
   url: string;
 }
 
+/** A sample the picker recommends: a bundled file plus the human `title` its
+ *  row leads with. The host supplies the title — the package neither knows nor
+ *  cares that titles come from the homepage's feature sections. */
+export interface RecommendedSample extends ToolbarSample {
+  title: string;
+}
+
 /** The badge shown beside a sample row: CSV for `.csv`, JSONL for everything
  *  else (the app only bundles CSV and JSONL). */
 export function sampleKind(name: string): 'CSV' | 'JSONL' {

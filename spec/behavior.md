@@ -1070,6 +1070,28 @@ directory; their list is frozen at build time by the Vite config and
 surfaced in the **Open sample…** picker dialog — one click loads the
 sample. The URL dialog stays URL-only.
 
+The picker leads with a **recommended** set rather than the whole
+bundle: a first-time visitor opening it should meet a handful of files
+worth opening, not sixty test fixtures. The recommended rows are the
+sample each **showcase tour** loads — one per homepage feature section,
+listed in homepage order and labelled with that section's title
+(`Lazy AI execution`, `Clean up`, `Enrich & extract`, …), with the
+filename underneath as the secondary line. The picker, the Tours panel,
+and the homepage therefore tell one story: the file the tour opens is
+the file the picker recommends. Nothing is hand-maintained — the list
+is derived at build time by reading each showcase tour's `@cat-…` tag
+and the file its `load "…"` step names, so renaming a fixture or adding
+a section moves the picker with it.
+
+Below the recommended rows sits **Show all N bundled files** — a
+disclosure that expands the complete bundled list (today's flat,
+filename-only listing, sorted). It stays collapsed until asked for: the
+full bundle is a developer's testing surface, not a first impression.
+Goldens (`*-expected.*` — the *outputs* tours compare against, never
+inputs a user would open) are left out of the picker entirely, in both
+tiers; they are still served under `samples/` because the tours fetch
+them to show expected output.
+
 The web shell uses the existing `Runner` interface unmodified.
 Streaming chunks fire the same callback; the front-end debounces
 them into table updates. A web session does not share state with a

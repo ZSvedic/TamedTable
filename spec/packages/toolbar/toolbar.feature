@@ -71,3 +71,24 @@ Feature: Toolbar package
       And the user picks the first toolbar sample
       Then the toolbar event log shows "open sample https://example.com/customers-input.csv"
       And the toolbar sample picker is closed
+
+    # The picker leads with the recommended rows — a first-time visitor meets a
+    # handful of titled files, not the whole bundle. The rest hide behind a
+    # disclosure until asked for.
+    @web
+    Scenario: The picker leads with recommended samples and hides the rest
+      Given the toolbar demo page
+      When the user opens the toolbar sample picker
+      Then the toolbar sample picker recommends "Clean up"
+      And the toolbar sample picker shows 1 sample row
+      When the user shows all bundled samples in the toolbar sample picker
+      Then the toolbar sample picker shows 3 sample rows
+
+    @web
+    Scenario: Picking from the full list loads it too
+      Given the toolbar demo page
+      When the user opens the toolbar sample picker
+      And the user shows all bundled samples in the toolbar sample picker
+      And the user picks the last toolbar sample
+      Then the toolbar event log shows "open sample https://example.com/customers.jsonl"
+      And the toolbar sample picker is closed
