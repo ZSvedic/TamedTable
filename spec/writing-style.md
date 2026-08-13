@@ -9,7 +9,9 @@ Conventions for every markdown file in this repo — specs, READMEs, ops docs, p
 - **No em dashes.** They read as machine-written, and every one of them is a
   colon, a comma, a full stop or a pair of brackets wearing a costume. Pick the
   one you meant. This applies to prose we ship to a user (UI copy, marketing,
-  docs) at least as hard as to specs.
+  docs) at least as hard as to specs. The rule binds what you write from now on;
+  the ~3,700 already in the repo are a separate sweep, not a reason to add one
+  more.
 - Cut metaphors that don't earn their keep. No *"in flight,"* *"resolves cleanly,"* *"side channel,"* *"facade,"* *"surface,"* *"primitive,"* *"emits,"* unless the precise meaning matters and a plain word can't carry it.
 - Read each paragraph out loud. If it sounds like a press release or a CEO email, rewrite it.
 

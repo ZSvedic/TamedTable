@@ -1,5 +1,5 @@
 // #BenchSweep
-// Generates benchmarks/charts/explorer.html — the whole results table, plus
+// Generates benchmarks/charts/explorer.html: the whole results table, plus
 // filters and a scatter plot, in one file you open by double-clicking it.
 //
 // The CSV is embedded rather than fetched. A page opened from disk cannot fetch
@@ -181,7 +181,7 @@ function drawChart(rows) {
     const c = svgEl('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: onFront.has(p.r) ? 6 : 4, fill: COLOR[p.r.provider] || '#999' });
     if (onFront.has(p.r)) { c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', 1.5); }
     const title = svgEl('title', {});
-    title.textContent = p.r.cellModel + ' — batch ' + p.r.batchSize + ', ' + p.r.accuracyPct + '%, $' + p.r.costUsd + ', ' + p.r.timeSec + 's (' + p.r.date + ')';
+    title.textContent = p.r.cellModel + ' at batch ' + p.r.batchSize + ', ' + p.r.accuracyPct + '%, $' + p.r.costUsd + ', ' + p.r.timeSec + 's (' + p.r.date + ')';
     c.appendChild(title);
     svg.appendChild(c);
   }

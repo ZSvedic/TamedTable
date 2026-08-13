@@ -2,13 +2,13 @@
 
 This directory holds the data behind TamedTable's model choices: which model
 each provider should run in the patch-turn and cell roles, and what batch size
-trades speed, cost and accuracy best. It holds **data only** — pricing, ground
+trades speed, cost and accuracy best. It holds **data only**: pricing, ground
 truth, results and charts. The runner is code, so it lives under `src/` where it
 can import the engine: [`src/packages/bench/`](../src/packages/bench/).
 
 The plain `bun run bench` measures one config's time, tokens and cost. This one
-adds **accuracy**, and without that axis bigger batches always win — the real
-tradeoff, accuracy falling as more rows are packed into a call, never shows up.
+adds **accuracy**. Without that axis bigger batches always win, and the real
+tradeoff never shows up: accuracy falls as more rows are packed into a call.
 
 ## Running it
 
@@ -30,8 +30,8 @@ name), `--retries=`, `--primary=` and `--tier=free|paid`.
 
 ## The task
 
-Group C's request — *"Add a boolean column Music that is true for music
-videos"* — makes the cell model classify every row. Accuracy is the fraction of
+Group C's request, *"Add a boolean column Music that is true for music
+videos"*, makes the cell model classify every row. Accuracy is the fraction of
 labelled rows whose `Music` value matches the ground truth, matched by
 `videoId`. The patch-turn model only writes the "add column" edit and cannot
 affect accuracy, so the sweep pins it and varies the cell model and batch size.
@@ -40,7 +40,7 @@ affect accuracy, so the sweep pins it and varies the cell model and batch size.
 
 | Path | What |
 |---|---|
-| `models.jsonl` | One row per model: pricing, context window, audio input, `runnable`. The single source of cost — the bench loads it, and the `@perf` Cucumber flow prices through it. A unit test asserts every shipped catalogue model has a row. |
+| `models.jsonl` | One row per model: pricing, context window, audio input, `runnable`. The single source of cost: the bench loads it, and the `@perf` Cucumber flow prices through it. A unit test asserts every shipped catalogue model has a row. |
 | `results/sweeps.csv` | Every config ever run, one row each. |
 | `ground-truth/music-sample.csv` | The fixture subset the sweep runs over. |
 | `ground-truth/music-labels.jsonl` | The gold `Music` verdict per `videoId`. |
@@ -66,8 +66,8 @@ spreadsheet, or open `charts/explorer.html` and filter there.
 
 Two columns exist to make filtering work, and they differ:
 
-- **`tier`** — what this run cost: `free` on a free tier, `paid` otherwise.
-- **`freeTier`** — whether a user with no money can reach that model at all.
+- **`tier`** is what this run cost: `free` on a free tier, `paid` otherwise.
+- **`freeTier`** is whether a user with no money can reach that model at all.
 
 The Gemini rows are `paid` and `freeTier: yes`, because they were billed on a
 paid key but Google serves those same models free under a quota. Costs are
@@ -82,11 +82,11 @@ one line and hides the thing that matters: 93% to 97% is more than halving the
 mistakes. Every point also carries its own number, so nothing has to be read off
 a pixel position. Colours are Okabe-Ito, keyed by provider.
 
-- **`tradeoff-paid-cost.svg`** — paid models, accuracy vs cost.
-- **`tradeoff-paid-time.svg`** — paid models, accuracy vs time.
-- **`tradeoff-free-time.svg`** — free-tier models, accuracy vs time. Cost is
+- **`tradeoff-paid-cost.svg`**: paid models, accuracy vs cost.
+- **`tradeoff-paid-time.svg`**: paid models, accuracy vs time.
+- **`tradeoff-free-time.svg`**: free-tier models, accuracy vs time. Cost is
   zero for all of them, so time is the only axis left.
-- **`batch-<model>.svg`** — accuracy, cost and time vs batch size for one model.
+- **`batch-<model>.svg`**: accuracy, cost and time vs batch size for one model.
   The knee is where accuracy starts to fall.
 
 The dashed line on the tradeoff charts is the Pareto frontier: the models
@@ -114,19 +114,19 @@ this benchmark from any model at any price, for $0.0043 a task. Groq's best is
 
 Gotchas, per provider:
 
-- **Groq** — limited by *tokens per minute* (8,000), not requests per day, and
+- **Groq**: limited by *tokens per minute* (8,000), not requests per day, and
   one batch-10 cell call asks for ~6,700. The engine burns its seven internal
   retries and the config fails. Sweep at `TAMEDTABLE_RPM=5` and expect re-runs.
-- **OpenRouter** — 20 req/min, ~50 req/day on a $0 account (1,000 after a
+- **OpenRouter**: 20 req/min, ~50 req/day on a $0 account (1,000 after a
   one-time $10 top-up), so the full grid does not fit; drop batch size 1, which
   costs 120 calls by itself. `:free` endpoints 404 until
   [privacy settings](https://openrouter.ai/settings/privacy) allow free-model
   publication, which means letting them train on your prompts. Free models also
   return the patch-turn tool call as plain text now and then, so pass
   `--retries=5` and point `--primary` at the cell model itself.
-- **Cerebras** — the highest free limits anywhere (30 req/min, 14,400 req/day,
+- **Cerebras**: the highest free limits anywhere (30 req/min, 14,400 req/day,
   ~1M tokens/day), the only tier that fits a full sweep. Bench-only.
-- **All of them** — free lineups rotate without notice. Cerebras went from ~12
+- **All of them**: free lineups rotate without notice. Cerebras went from ~12
   free models to 2 in May 2026; `tencent/hy3:free` was the best OpenRouter
   performer until it lost its free route four days after we measured it. When an
   id 404s, check the provider's current list and update `models.jsonl` and the

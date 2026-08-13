@@ -1,15 +1,15 @@
 // #BenchSweep
 // Static SVG generators, from the flat results table:
-//   1. tradeoff — accuracy vs cost or time, one point per model, Pareto line
-//   2. batch    — accuracy / cost / time vs batch size, for one cell model
+//   1. tradeoff: accuracy vs cost or time, one point per model, Pareto line
+//   2. batch:    accuracy / cost / time vs batch size, for one cell model
 // Pure string templating, no runtime dependency; output committed under
 // benchmarks/charts/. Colours are the Okabe-Ito colourblind-safe palette.
 //
 // Two decisions drive how these read. Accuracy is plotted on a **log scale of
 // the error** (100% minus accuracy), fixed identically on every chart: real
 // results land between 61% and 97%, so a linear 0..100% axis stacked almost all
-// of them on one line, and the interesting distance — 93% to 97% is more than
-// halving the mistakes — was invisible. Log error spreads exactly that end, and
+// of them on one line, and the interesting distance (93% to 97% is more than
+// halving the mistakes) was invisible. Log error spreads exactly that end, and
 // fixing the range means two charts side by side are directly comparable. Every
 // point also carries its own value as text, because what a reader wants off
 // these charts is a number, not a pixel position.
@@ -83,7 +83,7 @@ function stackLabels(items: Array<{ y: number; i: number }>, minGap: number): Ma
 /** The Pareto frontier: the points nothing else beats on both axes. Cheaper and
  *  faster are both better, so we walk left to right and keep every point more
  *  accurate than everything cheaper than it. Coordinates are SVG pixels, where
- *  **smaller y is more accurate** — getting that backwards traces the bottom
+ *  **smaller y is more accurate**. Getting that backwards traces the bottom
  *  envelope, which is the exact opposite of the answer. */
 function paretoFront(pts: Array<{ x: number; y: number; i: number }>): number[] {
   const sorted = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
@@ -103,11 +103,11 @@ export interface TradeoffOpts {
   batchSize?: number;
   width?: number;
   height?: number;
-  /** Provenance line under the title — the run dates go here. */
+  /** Provenance line under the title. The run dates go here. */
   subtitle?: string;
 }
 
-/** Chart 1 — accuracy (y) vs cost or time (x), one point per model, with the
+/** Chart 1: accuracy (y) vs cost or time (x), one point per model, with the
  *  Pareto frontier drawn through the points nothing beats on both axes. */
 export function tradeoffChart(results: readonly ResultRow[], opts: TradeoffOpts): string {
   const W = opts.width ?? 820, H = opts.height ?? 520;
@@ -151,7 +151,7 @@ export function tradeoffChart(results: readonly ResultRow[], opts: TradeoffOpts)
   // Labels are laid out left of the plot's right edge where a point sits far
   // right, so a late point's text cannot run off the canvas.
   // Each label is two lines, so it needs the height of two to clear its
-  // neighbour — and the left- and right-anchored labels never collide with each
+  // neighbour, and the left- and right-anchored labels never collide with each
   // other, so they stack separately or the two sides push each other around.
   const side = (p: { x: number }) => p.x > m.left + plotW * 0.62;
   const labelY = new Map<number, number>([
@@ -184,7 +184,7 @@ export function tradeoffChart(results: readonly ResultRow[], opts: TradeoffOpts)
   return parts.join('\n');
 }
 
-/** Chart 2 — three stacked panels (accuracy, cost, time) vs batch size for one
+/** Chart 2: three stacked panels (accuracy, cost, time) vs batch size for one
  *  cell model. Accuracy uses the shared fixed log-error scale, so a knee here is
  *  the same size as a knee on any other model's chart; cost and time scale to
  *  their own data, which has no comparable ceiling. */
@@ -204,7 +204,7 @@ export function batchSweepChart(results: readonly ResultRow[], cellModel: string
   const parts: string[] = [];
   parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}">`);
   parts.push(`<rect width="${W}" height="${H}" fill="#ffffff"/>`);
-  parts.push(`<text x="${left}" y="24" font-size="15" font-weight="600" fill="${INK}">Batch-size sweep — ${esc(cellModel)}</text>`);
+  parts.push(`<text x="${left}" y="24" font-size="15" font-weight="600" fill="${INK}">Batch-size sweep: ${esc(cellModel)}</text>`);
   if (opts.subtitle) parts.push(`<text x="${left}" y="42" font-size="11" fill="${MUTED}">${esc(opts.subtitle)}</text>`);
 
   const panel = (

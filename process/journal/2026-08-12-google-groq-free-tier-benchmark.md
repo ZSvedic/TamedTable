@@ -87,7 +87,7 @@ call. It silently gave up on rows rather than failing.
 ## Two repo bugs found on the way
 
 - `process/proxy-fetch.ts` listed five provider hosts and neither
-  `api.groq.com` nor `api.puter.com` — both providers postdate the shim. Every
+  `api.groq.com` nor `api.puter.com`, both of which postdate the shim. Every
   live Groq or Puter call from a proxied sandbox died with `ECONNRESET`, which
   reads like a network fault rather than a missing entry.
 - `bench sweep` printed nothing and wrote nothing until the whole grid
@@ -96,7 +96,7 @@ call. It silently gave up on rows rather than failing.
   and persists per config.
 - The Pareto frontier on the tradeoff chart was drawn upside down. SVG y grows
   downward, so the comparison that was meant to keep the best models kept the
-  ones nothing else was worse than — the chart recommended the bottom envelope.
+  ones nothing else was worse than, so the chart recommended the bottom envelope.
   Found while regenerating the charts for this run.
 
 ## Reproducing

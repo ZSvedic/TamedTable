@@ -6,7 +6,7 @@
 // CSV rather than JSONL because the audience opens it in a spreadsheet, sorts
 // by accuracy and filters by provider. Two columns exist only to make that
 // filtering work: `tier` is what the run itself cost, and `freeTier` is whether
-// a free user could reach that model at all. They differ — the Gemini rows were
+// a free user could reach that model at all. They differ: the Gemini rows were
 // billed on a paid key, but every Gemini model here is also served free under a
 // quota.
 import type { SweepResult } from './sweep.ts';
