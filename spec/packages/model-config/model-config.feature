@@ -464,10 +464,15 @@ Feature: Model config
     badly. Three providers have one; gemini and openai are flat enough not to.
 
     @headless
-    # Groq's free tier is $0 and its API cannot say which tier a key is on, so
-    # its catalogue price is not the price most of its users pay.
-    Scenario: Groq's price varies by plan
-      Then priceVariesByPlan for "groq" is true
+    # Both have a $0 tier their API cannot report, so the catalogue price is not
+    # the price a great many of their users pay.
+    Scenario Outline: <provider>'s price varies by plan
+      Then priceVariesByPlan for "<provider>" is true
+
+      Examples:
+        | provider |
+        | groq     |
+        | gemini   |
 
     @headless
     Scenario Outline: priceVariesByPlan for <provider> is false
@@ -475,7 +480,6 @@ Feature: Model config
 
       Examples:
         | provider   |
-        | gemini     |
         | openai     |
         | anthropic  |
         | openrouter |
@@ -863,7 +867,7 @@ Feature: Model config
       When the user adds the key "AIza-demo"
       Then the "gemini" card's chat model is "gemini-3.6-flash"
       And the "gemini" card's cell model is "gemini-3.1-flash-lite"
-      And the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
+      And the "gemini" card's "primary" cost line matches "Price depends on your plan"
       And the "gemini" card's "primary" cost line matches ", ~"
 
     @web
@@ -981,20 +985,25 @@ Feature: Model config
       And the Puter sign-in button is disabled
 
     @web
-    # Groq's free tier is $0 and its API cannot say which tier a key is on, so
-    # the catalogue's paid price is wrong for most Groq users. Better to say we
-    # do not know than to quote a number they will not be charged.
-    Scenario: A provider whose price depends on the plan names no price
+    # Groq and Google both run a $0 tier their API will not report, so the
+    # catalogue's paid price is wrong for a great many of their users. Better to
+    # say we do not know than to quote a number they will not be charged.
+    Scenario Outline: A provider whose price depends on the plan names no price
       Given the model-config demo page
-      When the user adds the key "gsk_demo"
-      Then the "groq" card's "primary" cost line matches "Price depends on your plan"
-      And the "groq" card's "primary" cost line matches ", ~"
+      When the user adds the key "<key>"
+      Then the "<provider>" card's "primary" cost line matches "Price depends on your plan"
+      And the "<provider>" card's "primary" cost line matches ", ~"
+
+      Examples:
+        | provider | key         |
+        | groq     | gsk_demo    |
+        | gemini   | AQ.Ab-demo  |
 
     @web
     Scenario: A provider with one price list still shows it
       Given the model-config demo page
-      When the user adds the key "AIza-demo"
-      Then the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
+      When the user adds the key "sk-proj-demo"
+      Then the "openai" card's "primary" cost line matches "$0.005 in / $0.03 out per 1000 tok"
 
     @web
     Scenario: The refresh button re-runs that provider's measurements

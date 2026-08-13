@@ -26,13 +26,14 @@ measuring. Two reference calls later the card reads:
 
 ```
 Chat model  gemini-3.6-flash
-$0.0015 in / $0.0075 out per 1000 tok, ~9.7 sec
+Price depends on your plan, ~9.7 sec
 Cell model  gemini-3.1-flash-lite
-$0.00025 in / $0.0015 out per 1000 tok, ~3.4 sec
+Price depends on your plan, ~3.4 sec
 ```
 
-The prices are the catalogue's, divided by a thousand. Only the seconds are
-measured.
+Only the seconds are measured. Google names no price here because it has a free
+tier we cannot detect — see *Checking a key*. Where the price is shown, it is
+the catalogue's, divided by a thousand.
 
 ## Detecting the provider from the key
 
@@ -212,6 +213,12 @@ Only two providers can answer that question. OpenRouter's `/key` says
 `is_free_tier` outright; OpenAI and Anthropic have no free tier, so every
 working key is paid. **Google and Groq report nothing**, and the card shows no
 tag rather than a guess.
+
+The same silence applies to the price. A provider whose tier we cannot read is
+a provider whose *price* we cannot quote, so Google joins Groq under
+`priceVariesByPlan` and its rows read `Price depends on your plan`. Quoting
+$0.0015 per thousand tokens to someone on the free tier is the same mistake as
+the `PAID` tag, one decimal place further down.
 
 Google looks like it should be able to answer, and that is the trap. Its
 `x-gemini-service-tier` response header is the *inference* tier — standard,

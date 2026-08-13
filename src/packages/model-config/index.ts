@@ -131,11 +131,12 @@ export function defaultCellModel(provider: Provider, paid = false): string {
 }
 
 /** Whether this provider's catalogue price might not be the price the user
- *  pays, because it has a free tier we cannot detect. Groq is the one: its free
- *  tier is $0 and its API says nothing about which tier a key is on (the
- *  rate-limit headers imply it, but only against a hardcoded threshold — see
- *  the 2026-08-11 provider probe). The card then names no price at all rather
- *  than a number that is wrong for most of its users. */
+ *  pays, because it has a free tier we cannot detect. Two qualify, for the same
+ *  reason: Groq's free tier is $0 and its API says nothing about which tier a
+ *  key is on, and Google's is the same once you know that
+ *  `x-gemini-service-tier` reports the inference tier rather than a billing one
+ *  (see § Checking a key). Quoting the paid rate to a free-tier user is a
+ *  number that is wrong for a great many of them, so the card names none. */
 export function priceVariesByPlan(provider: Provider): boolean {
   return DEFAULTS[provider]?.priceVariesByPlan === true;
 }
