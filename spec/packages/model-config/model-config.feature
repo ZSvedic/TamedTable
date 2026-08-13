@@ -408,8 +408,9 @@ Feature: Model config
 
   Rule: defaultBatchSize pins the benchmarked cell batch
 
-    The 2026-07-17 free-model benchmark measured north-mini at 96% accuracy at
-    batch 5 and sharply worse at 40+; openrouter is the only provider with a pin.
+    A pin exists where the benchmark found the accuracy curve is not flat, so
+    inheriting the engine default would land a provider somewhere it scores
+    badly. Three providers have one; gemini and openai are flat enough not to.
 
     @headless
     # Groq's free tier is $0 and its API cannot say which tier a key is on, so
@@ -430,14 +431,25 @@ Feature: Model config
         | puter      |
 
     @headless
-    Scenario: defaultBatchSize for openrouter returns 5
-      When defaultBatchSize is called with "openrouter"
-      Then the numeric result is 5
+    Scenario Outline: defaultBatchSize for <provider> is <batch>
+      When defaultBatchSize is called with "<provider>"
+      Then the numeric result is <batch>
+
+      Examples:
+        | provider   | batch | why                                                        |
+        | openrouter | 5     | north-mini 96% at 5, 88% at 10, 39% at 40                  |
+        | groq       | 20    | gpt-oss-20b holds 90% to batch 20, then falls off to 61%   |
+        | anthropic  | 40    | claude-haiku 94% at 40 against 88% at 20, at the same cost |
 
     @headless
-    Scenario: defaultBatchSize for gemini is undefined
-      When defaultBatchSize is called with "gemini"
+    Scenario Outline: defaultBatchSize for <provider> is undefined
+      When defaultBatchSize is called with "<provider>"
       Then the numeric result is undefined
+
+      Examples:
+        | provider |
+        | gemini   |
+        | openai   |
 
   Rule: ALL_MODELS catalogue
 

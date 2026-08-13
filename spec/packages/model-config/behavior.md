@@ -63,10 +63,24 @@ imported — neither the code nor this spec duplicates the list, because a copy
 here went stale once already. Every id is verified against the provider's
 current docs before it changes; none is ever guessed.
 
-OpenRouter is the free tier: one $0 model fills both roles. Its `defaults` row
-pins `batchSize: 5` — the [2026-07-17 benchmark](../../../process/journal/2026-07-17-free-model-benchmark-run.md)
-measured `cohere/north-mini-code:free` at 96% accuracy at batch 5 and sharply
-worse at 40+. Groq serves open-weight models on its own hardware and answers
+OpenRouter is the free tier: one $0 model fills both roles.
+
+Three providers pin a `batchSize`, and each pin is a measured cliff rather than
+a preference. Batching more rows per call is nearly free on cost and time, so
+without a pin a provider inherits the engine default and can sit somewhere its
+accuracy has already fallen over.
+
+| Provider | Pin | Why |
+|---|---|---|
+| `openrouter` | 5 | `cohere/north-mini-code:free` scores 96% at 5, 88% at 10 and 39% at 40 ([2026-07-17](../../../process/journal/2026-07-17-free-model-benchmark-run.md)) |
+| `groq` | 20 | `openai/gpt-oss-20b` holds 90% through batch 20 and collapses to 61% at 40, silently dropping rows ([2026-08-12](../../../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)) |
+| `anthropic` | 40 | `claude-haiku-4-5` scores 94% at 40 against 88% at 20, for the same cost and less time ([2026-07-02](../../../process/journal/2026-07-02-model-batch-sweep.md)) |
+
+Gemini and OpenAI stay unpinned because their curves are flat: every Gemini
+model sits at 93–97% at every batch size, and `gpt-5.4-mini` is 89% at 5, 10 and
+20 alike. The Anthropic pin rests on a single run, and haiku's curve is the
+noisiest we have measured, so a repeat run should confirm it before anyone
+builds on it. Groq serves open-weight models on its own hardware and answers
 fastest per call ([2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md)),
 but it is not the cheapest per task: the
 [2026-08-12 free-tier run](../../../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
