@@ -70,8 +70,8 @@ test('a row that was never measured shows the price and nothing else', () => {
 
 test('both role labels read the same weight and name the role', () => {
   const html = render(null);
-  assert.ok(html.includes('Primary model'), 'expected the "Primary model" label');
-  assert.ok(html.includes('Secondary model'), 'expected the "Secondary model" label');
+  assert.ok(html.includes('Chat model'), 'expected the "Chat model" label');
+  assert.ok(html.includes('Cell model'), 'expected the "Cell model" label');
 });
 
 test('the icon buttons carry an accessible name, not just a tooltip', () => {

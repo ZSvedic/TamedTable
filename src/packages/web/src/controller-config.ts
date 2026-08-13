@@ -8,9 +8,11 @@ import {
   connectedProviders,
   defaultModel,
   defaultCellModel,
+  hasPaidModelSet,
   detectProvider,
   keyFor,
   KEY_FIELD,
+  PROVIDER_NAME,
   SUPPORTED_PREFIXES,
   type Provider,
   type ResolvedConfig,
@@ -45,6 +47,7 @@ export class ConfigManager {
   setKeyInput(value: string): void {
     this.host.keyInput = value;
     if (this.host.keyError !== '') this.host.keyError = '';
+    if (this.host.keyNotice !== '') this.host.keyNotice = '';
     this.host.notify();
   }
 
@@ -69,6 +72,7 @@ export class ConfigManager {
 
     this.host.keyBusy = true;
     this.host.keyError = '';
+    this.host.keyNotice = '';
     this.host.notify();
     try {
       await this.connect(provider, key);
@@ -118,7 +122,15 @@ export class ConfigManager {
     const { tier } = await verifyKey(provider, key, { fetch: this.host.opts.fetch });
     // Re-adding keeps the original connected time, so fixing an expired key
     // does not send the card to the bottom of the list.
-    const connectedAt = this.host.probes[provider]?.connectedAt ?? Date.now();
+    const existing = this.host.probes[provider]?.connectedAt;
+    const connectedAt = existing ?? Date.now();
+    // Replacing a connected provider's key changes nothing a card can show:
+    // same provider, same models, usually the same tier tag. Without a word
+    // for it, a user who has just pasted a working key sees a button that did
+    // nothing, and goes off to delete the card to force it through.
+    this.host.keyNotice = existing === undefined
+      ? ''
+      : `${PROVIDER_NAME[provider]} key replaced. Re-measuring.`;
     this.host.probes = { ...this.host.probes, [provider]: { tier, connectedAt } };
     this.host.keyInput = '';
     // A credential for an already-connected provider replaces it in place: the
@@ -185,6 +197,20 @@ export class ConfigManager {
       provider,
       model: defaultModel(provider),
       cellModel: defaultCellModel(provider),
+    });
+  }
+
+  /** Switch a provider between its free and paid model sets. Only OpenRouter
+   *  has two, and the choice is the user's rather than the account's: a key
+   *  with credits still opens on free, because holding a balance is not the
+   *  same as wanting to spend it. Both model ids are re-resolved from the new
+   *  set, so the card and the next run agree. */
+  async setPaidModelSet(provider: Provider, paid: boolean): Promise<void> {
+    if (!hasPaidModelSet(provider)) return;
+    await this.setConfig({
+      openrouterPaid: paid,
+      model: defaultModel(provider, paid),
+      cellModel: defaultCellModel(provider, paid),
     });
   }
 

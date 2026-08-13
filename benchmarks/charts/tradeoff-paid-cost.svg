@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="520" viewBox="0 0 820 520" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<rect width="820" height="520" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#222222">Paid models: accuracy vs cost (batch 10)</text>
+<text x="68" y="42" font-size="11" fill="#888888">runs 2026-07-02 to 2026-08-12 · dashed line is the Pareto frontier</text>
+<line x1="68" y1="449.5" x2="788" y2="449.5" stroke="#e5e5e5"/>
+<text x="60" y="453.5" font-size="11" text-anchor="end" fill="#222222">65%</text>
+<line x1="68" y1="413.0" x2="788" y2="413.0" stroke="#e5e5e5"/>
+<text x="60" y="417.0" font-size="11" text-anchor="end" fill="#222222">75%</text>
+<line x1="68" y1="357.6" x2="788" y2="357.6" stroke="#e5e5e5"/>
+<text x="60" y="361.6" font-size="11" text-anchor="end" fill="#222222">85%</text>
+<line x1="68" y1="313.7" x2="788" y2="313.7" stroke="#e5e5e5"/>
+<text x="60" y="317.7" font-size="11" text-anchor="end" fill="#222222">90%</text>
+<line x1="68" y1="275.0" x2="788" y2="275.0" stroke="#e5e5e5"/>
+<text x="60" y="279.0" font-size="11" text-anchor="end" fill="#222222">93%</text>
+<line x1="68" y1="238.5" x2="788" y2="238.5" stroke="#e5e5e5"/>
+<text x="60" y="242.5" font-size="11" text-anchor="end" fill="#222222">95%</text>
+<line x1="68" y1="183.1" x2="788" y2="183.1" stroke="#e5e5e5"/>
+<text x="60" y="187.1" font-size="11" text-anchor="end" fill="#222222">97%</text>
+<line x1="68" y1="64.0" x2="788" y2="64.0" stroke="#e5e5e5"/>
+<text x="60" y="68.0" font-size="11" text-anchor="end" fill="#222222">99%</text>
+<line x1="68.0" y1="64" x2="68.0" y2="464" stroke="#e5e5e5"/>
+<text x="68.0" y="482" font-size="11" text-anchor="middle" fill="#222222">$0.0000</text>
+<line x1="248.0" y1="64" x2="248.0" y2="464" stroke="#e5e5e5"/>
+<text x="248.0" y="482" font-size="11" text-anchor="middle" fill="#222222">$0.0375</text>
+<line x1="428.0" y1="64" x2="428.0" y2="464" stroke="#e5e5e5"/>
+<text x="428.0" y="482" font-size="11" text-anchor="middle" fill="#222222">$0.0750</text>
+<line x1="608.0" y1="64" x2="608.0" y2="464" stroke="#e5e5e5"/>
+<text x="608.0" y="482" font-size="11" text-anchor="middle" fill="#222222">$0.1125</text>
+<line x1="788.0" y1="64" x2="788.0" y2="464" stroke="#e5e5e5"/>
+<text x="788.0" y="482" font-size="11" text-anchor="middle" fill="#222222">$0.1500</text>
+<text x="428" y="508" font-size="12" text-anchor="middle" fill="#222222">Cost per task (USD)</text>
+<text x="14" y="264" font-size="12" text-anchor="middle" fill="#222222" transform="rotate(-90 14 264)">Accuracy</text>
+<polyline points="111.0,270.3 153.0,193.5" fill="none" stroke="#bbbbbb" stroke-width="1.5" stroke-dasharray="5 4"/>
+<circle cx="142.4" cy="304.6" r="4.5" fill="#D55E00"/>
+<circle cx="271.2" cy="238.5" r="4.5" fill="#D55E00"/>
+<circle cx="153.0" cy="193.5" r="6" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<circle cx="701.0" cy="238.5" r="4.5" fill="#0072B2"/>
+<circle cx="676.6" cy="254.6" r="4.5" fill="#0072B2"/>
+<circle cx="209.6" cy="322.0" r="4.5" fill="#009E73"/>
+<circle cx="175.4" cy="270.3" r="4.5" fill="#0072B2"/>
+<circle cx="718.4" cy="293.5" r="4.5" fill="#0072B2"/>
+<circle cx="239.6" cy="270.3" r="4.5" fill="#0072B2"/>
+<circle cx="111.0" cy="270.3" r="6" fill="#0072B2" stroke="#ffffff" stroke-width="1.5"/>
+<line x1="142.4" y1="304.6" x2="152.4" y2="341.3" stroke="#D55E00" stroke-width="0.75" opacity="0.5"/>
+<text x="152.4" y="345.3" font-size="11" text-anchor="start" fill="#D55E00">claude-haiku-4-5</text>
+<text x="152.4" y="356.3" font-size="9.5" text-anchor="start" fill="#888888">90.8% · $0.0155</text>
+<text x="281.2" y="238.5" font-size="11" text-anchor="start" fill="#D55E00">claude-sonnet-4-5</text>
+<text x="281.2" y="249.5" font-size="9.5" text-anchor="start" fill="#888888">95.0% · $0.0423</text>
+<text x="163.0" y="193.5" font-size="11" text-anchor="start" fill="#0072B2">gemini-3.1-flash-lite</text>
+<text x="163.0" y="204.5" font-size="9.5" text-anchor="start" fill="#888888">96.7% · $0.0177</text>
+<text x="691.0" y="238.5" font-size="11" text-anchor="end" fill="#0072B2">gemini-3.1-pro-preview</text>
+<text x="691.0" y="249.5" font-size="9.5" text-anchor="end" fill="#888888">95.0% · $0.1319</text>
+<line x1="676.6" y1="254.6" x2="666.6" y2="259.5" stroke="#0072B2" stroke-width="0.75" opacity="0.5"/>
+<text x="666.6" y="263.5" font-size="11" text-anchor="end" fill="#0072B2">gemini-3.5-flash</text>
+<text x="666.6" y="274.5" font-size="9.5" text-anchor="end" fill="#888888">94.2% · $0.1268</text>
+<line x1="209.6" y1="322.0" x2="219.6" y2="366.3" stroke="#009E73" stroke-width="0.75" opacity="0.5"/>
+<text x="219.6" y="370.3" font-size="11" text-anchor="start" fill="#009E73">gpt-5.4-mini</text>
+<text x="219.6" y="381.3" font-size="9.5" text-anchor="start" fill="#888888">89.2% · $0.0295</text>
+<text x="185.4" y="270.3" font-size="11" text-anchor="start" fill="#0072B2">gemini-3.5-flash-lite</text>
+<text x="185.4" y="281.3" font-size="9.5" text-anchor="start" fill="#888888">93.3% · $0.0224</text>
+<text x="708.4" y="293.5" font-size="11" text-anchor="end" fill="#0072B2">gemini-3.6-flash</text>
+<text x="708.4" y="304.5" font-size="9.5" text-anchor="end" fill="#888888">91.7% · $0.1355</text>
+<line x1="239.6" y1="270.3" x2="249.6" y2="291.3" stroke="#0072B2" stroke-width="0.75" opacity="0.5"/>
+<text x="249.6" y="295.3" font-size="11" text-anchor="start" fill="#0072B2">gemini-2.5-flash</text>
+<text x="249.6" y="306.3" font-size="9.5" text-anchor="start" fill="#888888">93.3% · $0.0357</text>
+<line x1="111.0" y1="270.3" x2="121.0" y2="316.3" stroke="#0072B2" stroke-width="0.75" opacity="0.5"/>
+<text x="121.0" y="320.3" font-size="11" text-anchor="start" fill="#0072B2">gemini-2.5-flash-lite</text>
+<text x="121.0" y="331.3" font-size="9.5" text-anchor="start" fill="#888888">93.3% · $0.0090</text>
+</svg>

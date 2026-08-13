@@ -5,12 +5,14 @@ import { loadModels, priceFor, specFor, costFor, FALLBACK_SPEC, type Provider } 
 test('loadModels parses benchmarks/models.jsonl', () => {
   const models = loadModels();
   expect(models.length).toBeGreaterThan(0);
-  const freeProviders = new Set(['cerebras', 'openrouter']);
   for (const m of models) {
     expect(typeof m.id).toBe('string');
     expect(['anthropic', 'gemini', 'openai', 'groq', 'cerebras', 'openrouter']).toContain(m.provider);
-    // Free-tier rows (Cerebras, OpenRouter) are priced 0/0; every other row must be positive.
-    if (freeProviders.has(m.provider)) {
+    // What makes a row free is the model, not the provider. Cerebras is free
+    // outright, and OpenRouter's `:free` ids are; the paid models OpenRouter
+    // proxies carry the same rates as going direct.
+    const free = m.provider === 'cerebras' || m.id.endsWith(':free');
+    if (free) {
       expect(m.inUsdPerMtok).toBe(0);
       expect(m.outUsdPerMtok).toBe(0);
     } else {

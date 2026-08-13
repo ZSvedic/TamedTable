@@ -6,6 +6,12 @@ Conventions for every markdown file in this repo — specs, READMEs, ops docs, p
 - Active voice. *"The runner replays transformations,"* not *"transformations are replayed by the runner."*
 - Short concrete words. *"While a request is running"* beats *"in flight."* *"Half-succeeds"* beats *"resolves with partial application."* *"Cancel a running request"* beats *"the only legal concurrent operation is the surface-specific cancel signal."*
 - Direct subject-verb-object. Skip noun stacks like *"the surface-agnostic facade step definitions drive."*
+- **No em dashes.** They read as machine-written, and every one of them is a
+  colon, a comma, a full stop or a pair of brackets wearing a costume. Pick the
+  one you meant. This applies to prose we ship to a user (UI copy, marketing,
+  docs) at least as hard as to specs. The rule binds what you write from now on;
+  the ~3,700 already in the repo are a separate sweep, not a reason to add one
+  more.
 - Cut metaphors that don't earn their keep. No *"in flight,"* *"resolves cleanly,"* *"side channel,"* *"facade,"* *"surface,"* *"primitive,"* *"emits,"* unless the precise meaning matters and a plain word can't carry it.
 - Read each paragraph out loud. If it sounds like a press release or a CEO email, rewrite it.
 

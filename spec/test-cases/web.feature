@@ -86,7 +86,7 @@ Feature: Web front-end
       And the API key has not been set
       When user opens the settings panel
       And user connects the key "hello-there"
-      Then the connect error is "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
+      Then the connect error is "Key not recognised. Supported prefixes: AQ.Ab…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
       And the connected providers are ""
       And the LLM API was called 0 times
 
@@ -828,17 +828,21 @@ Feature: Web front-end
       And the configured model is "gemini-3.6-flash"
 
     @web
-    # The tag is read from the provider, never guessed: Google reports its tier
-    # in a response header, and Groq publishes nothing at all.
+    # The tag is read from the provider, never guessed. Anthropic has no free
+    # tier so every key is paid; Groq publishes nothing; and Google's only
+    # tier-ish header is the inference tier, not a billing one, so it reports
+    # nothing either rather than calling a free-tier key PAID.
     Scenario: A card shows a tier tag only when the provider reported one
       Given the TamedTable web app
       And the API key has not been set
       And the LLM API answers any completion
       When user opens the settings panel
-      And user connects the key "AIza-good"
+      And user connects the key "sk-ant-good"
       And user connects the key "gsk_good"
-      Then the "gemini" card's tier is "paid"
+      And user connects the key "AIza-good"
+      Then the "anthropic" card's tier is "paid"
       And the "groq" card has no tier
+      And the "gemini" card has no tier
 
     @web
     # A row that just went blank looked exactly like one still loading, so a

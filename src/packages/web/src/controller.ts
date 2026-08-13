@@ -106,6 +106,7 @@ export class WebController implements ControllerHost {
   keyInput = '';
   /** The chooser's error banner, or '' when there is none. */
   keyError = '';
+  keyNotice = '';
   /** Whether a connect is in flight — the input and Add button are disabled. */
   keyBusy = false;
   /** #PuterGateway — the in-flight connect is the Puter sign-in. */
@@ -619,6 +620,10 @@ export class WebController implements ControllerHost {
   removeProvider(provider: Provider): Promise<void> { return this.settingsMgr.removeProvider(provider); }
   /** Re-run a connected provider's measurements (the card's ⟳ button). */
   refreshProvider(provider: Provider): Promise<void> { return this.settingsMgr.refreshProvider(provider); }
+  /** Switch a provider between its free and paid model sets (OpenRouter only). */
+  setPaidModelSet(provider: Provider, paid: boolean): Promise<void> {
+    return this.settingsMgr.setPaidModelSet(provider, paid);
+  }
   /** #PuterGateway — sign in to Puter.js and connect the token it returns. */
   signInPuter(): Promise<void> { return this.settingsMgr.signInPuter(); }
   /** Whether this build can open the Puter sign-in (the host supplied a port). */

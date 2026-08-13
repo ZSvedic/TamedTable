@@ -11,6 +11,9 @@ import {
   ALL_MODELS, KEY_FIELD, SUPPORTED_PREFIXES, modelFor,
   connectedProviders, defaultModel, defaultCellModel, detectProvider, resolveConfig,
   priceVariesByPlan,
+  hasPaidModelSet,
+  PROVIDER_NAME,
+  supportsVoiceInput,
   type Provider, type ResolvedConfig,
 } from './index.ts';
 import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.tsx';
@@ -67,13 +70,20 @@ function Demo() {
   const [measuring, setMeasuring] = useState<Partial<Record<Provider, boolean>>>({});
   const [keyInput, setKeyInput] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // The models follow the provider defaults — they are not user-selectable.
+  // The models follow the provider defaults — they are not user-selectable,
+  // beyond OpenRouter's free/paid model set, which is.
+  const paidSet = stored.openrouterPaid ?? false;
+  const setPaid = (p: Provider, paid: boolean) => {
+    if (p !== 'openrouter') return;
+    setStored((prev) => ({ ...prev, openrouterPaid: paid }));
+  };
   const resolved = resolveConfig({}, {
     ...stored,
-    model: defaultModel(stored.provider ?? 'gemini'),
-    cellModel: defaultCellModel(stored.provider ?? 'gemini'),
+    model: defaultModel(stored.provider ?? 'gemini', paidSet),
+    cellModel: defaultCellModel(stored.provider ?? 'gemini', paidSet),
   });
 
   // Persist every CHANGE to the blob the main app reads (and vice versa) — a
@@ -147,8 +157,13 @@ function Demo() {
     }
     setBusy(true);
     setError('');
+    setNotice('');
     try {
       const { tier } = await verifyKey(provider, key, stubProbe());
+      // Replacing a key changes nothing a card can show, so it says so.
+      setNotice(probes[provider] === undefined
+        ? ''
+        : `${PROVIDER_NAME[provider]} key replaced. Re-measuring.`);
       // Re-adding a connected provider replaces its key in place: the card has
       // no key field, so the alternative is deleting the card to fix a key.
       setStored((s) => ({ ...s, provider, [KEY_FIELD[provider]]: key }));
@@ -181,7 +196,8 @@ function Demo() {
   };
 
   const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
-    const model = role === 'primary' ? defaultModel(p) : defaultCellModel(p);
+    const paid = p === 'openrouter' && paidSet;
+    const model = role === 'primary' ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -195,9 +211,11 @@ function Demo() {
   const connected: ConnectedCard[] = connectedProviders(resolved, connectedOrder(probes)).map((p) => ({
     id: p,
     tier: probes[p]?.tier ?? null,
-    voice: modelFor(p, defaultModel(p))?.voiceInput ?? false,
+    voice: supportsVoiceInput(p, defaultModel(p, p === 'openrouter' && paidSet)),
     // Groq: a free tier we cannot detect, so its rows name no price.
     priceVariesByPlan: priceVariesByPlan(p),
+    hasPaidModelSet: hasPaidModelSet(p),
+    paidModelSet: p === 'openrouter' && paidSet,
     primary: roleRow(p, 'primary'),
     secondary: roleRow(p, 'secondary'),
   }));
@@ -293,11 +311,13 @@ function Demo() {
         selected={connected.length > 0 ? resolved.provider : null}
         keyInput={keyInput}
         error={error}
+        notice={notice}
         busy={busy}
         onKeyInputChange={(value) => {
           setKeyInput(value);
           // Typing clears the error — the user is already fixing it.
           if (error !== '') setError('');
+          if (notice !== '') setNotice('');
         }}
         onAdd={() => void addKey()}
         onSelect={(p) => setStored((s) => ({ ...s, provider: p }))}
@@ -308,6 +328,7 @@ function Demo() {
           setKeyInput('eyJhbGciOiJIUzI1NiJ9.demo');
           void addKeyWith('eyJhbGciOiJIUzI1NiJ9.demo');
         }}
+        onPaidModelSetChange={setPaid}
         onRefresh={(p) => {
           const key = (resolved[KEY_FIELD[p]] as string | null) ?? '';
           if (key) void measureBoth(p, key);

@@ -30,13 +30,17 @@ export interface ModelDef {
   outUsdPerMtok: number;
 }
 
-/** The primary + secondary (cell) model ids chosen as a provider's defaults,
- *  plus an optional pinned cell batch size where the benchmark found a sweet
- *  spot (openrouter: 5). */
+/** The chat + cell model ids chosen as a provider's defaults (the JSON keys are
+ *  `primary` and `secondary`), plus an optional pinned cell batch size where the
+ *  benchmark found a cliff. */
 export interface ProviderDefaults {
   primary: string;
   secondary: string;
   batchSize?: number;
+  /** A second model set for a provider that serves both free and paid models.
+   *  OpenRouter is the only one: its `:free` ids are all a $0 account can
+   *  reach, while an account with credits can reach everything it proxies. */
+  paid?: { primary: string; secondary: string; batchSize?: number };
   /** The catalogue price is not necessarily what this provider's user pays.
    *  Groq's free tier costs nothing and is indistinguishable from a paid key
    *  over the API — same models, same headers — so quoting the paid price
@@ -53,10 +57,15 @@ export interface ResolvedConfig {
   openrouterKey: string | null;
   /** Puter.js session token, not an API key — see § Puter.js. */
   puterToken: string | null;
-  /** Primary model: writes the spec patch each turn (and carries voice input). */
+  /** Chat model: answers the request and writes the spec patch each turn (and
+   *  carries voice input). Named `model` because it is the config's main one. */
   model: string;
-  /** Secondary model: fills per-row LLM cells. Always same-provider as model. */
+  /** Cell model: fills per-row LLM cells. Always same-provider as `model`. */
   cellModel: string;
+  /** Run OpenRouter's paid model set rather than its `:free` one. Off by
+   *  default: having credits is not the same as wanting to spend them, so the
+   *  user asks for this on the card. Ignored for every other provider. */
+  openrouterPaid: boolean;
   /** Simple mode — "Always run on all rows" (#LazyExec): every AI step runs
    *  table-wide immediately, with the estimate dialog gating runs of more
    *  than one page. Off by default. */
@@ -85,11 +94,25 @@ export const DEFAULTS: Readonly<Record<Provider, ProviderDefaults>> =
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-/** Default patch-turn (primary) model for a provider: the `defaults` entry for
+/** The model set in force for a provider: its paid set when one exists and the
+ *  caller asked for it, otherwise the plain defaults. */
+function setFor(provider: Provider, paid = false): ProviderDefaults | undefined {
+  const d = DEFAULTS[provider];
+  if (!d) return undefined;
+  return paid && d.paid ? { ...d, ...d.paid, batchSize: d.paid.batchSize } : d;
+}
+
+/** Default chat (patch-turn) model for a provider: the `defaults` entry for
  *  that provider, falling back to the provider's first catalogue entry. */
-export function defaultModel(provider: Provider): string {
-  return DEFAULTS[provider]?.primary
+export function defaultModel(provider: Provider, paid = false): string {
+  return setFor(provider, paid)?.primary
     ?? ALL_MODELS.find((m) => m.provider === provider)!.id;
+}
+
+/** Whether this provider offers a paid model set as well as a free one, which
+ *  is what puts the free/paid choice on its card. OpenRouter is the only one. */
+export function hasPaidModelSet(provider: Provider): boolean {
+  return DEFAULTS[provider]?.paid !== undefined;
 }
 
 /** The catalogue entry for one model **as served by one provider**. Ids are not
@@ -100,19 +123,20 @@ export function modelFor(provider: Provider, modelId: string): ModelDef | undefi
   return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
 }
 
-/** Default per-row cell (secondary) model for a provider: the `defaults` entry
- *  for that provider, falling back to that provider's primary default. Always
- *  same-provider — cell calls never cross providers. */
-export function defaultCellModel(provider: Provider): string {
-  return DEFAULTS[provider]?.secondary ?? defaultModel(provider);
+/** Default per-row cell model for a provider: the `defaults` entry for that
+ *  provider, falling back to that provider's chat default. Always same-provider
+ *  — cell calls never cross providers. */
+export function defaultCellModel(provider: Provider, paid = false): string {
+  return setFor(provider, paid)?.secondary ?? defaultModel(provider, paid);
 }
 
 /** Whether this provider's catalogue price might not be the price the user
- *  pays, because it has a free tier we cannot detect. Groq is the one: its free
- *  tier is $0 and its API says nothing about which tier a key is on (the
- *  rate-limit headers imply it, but only against a hardcoded threshold — see
- *  the 2026-08-11 provider probe). The card then names no price at all rather
- *  than a number that is wrong for most of its users. */
+ *  pays, because it has a free tier we cannot detect. Two qualify, for the same
+ *  reason: Groq's free tier is $0 and its API says nothing about which tier a
+ *  key is on, and Google's is the same once you know that
+ *  `x-gemini-service-tier` reports the inference tier rather than a billing one
+ *  (see § Checking a key). Quoting the paid rate to a free-tier user is a
+ *  number that is wrong for a great many of them, so the card names none. */
 export function priceVariesByPlan(provider: Provider): boolean {
   return DEFAULTS[provider]?.priceVariesByPlan === true;
 }
@@ -120,8 +144,8 @@ export function priceVariesByPlan(provider: Provider): boolean {
 /** The provider's pinned cell batch size from `defaults`, or undefined when it
  *  has none (the engine then keeps its own default). Openrouter pins 5 — the
  *  2026-07-17 benchmark's north-mini sweet spot. */
-export function defaultBatchSize(provider: Provider): number | undefined {
-  return DEFAULTS[provider]?.batchSize;
+export function defaultBatchSize(provider: Provider, paid = false): number | undefined {
+  return setFor(provider, paid)?.batchSize;
 }
 
 /** The provider that serves a model id. The catalogue is asked first: an exact
@@ -192,7 +216,12 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
   ['sk-ant-',  'anthropic'],
   ['sk-or-',   'openrouter'],
   ['gsk_',     'groq'],
+  // Google issues two shapes. `AIza…` is the old Standard key; `AQ.Ab…` is the
+  // auth key every new AI Studio key has been since mid-2026, and Google
+  // rejects Standard keys from September 2026. Matching only `AIza` turned
+  // every freshly minted Gemini key into "key not recognised".
   ['AIza',     'gemini'],
+  ['AQ.',      'gemini'],
   // A Puter token is a JWT, so it opens with the base64 of `{"alg":`. Looser
   // than the others — any JWT matches — but no other provider issues one, and
   // verifyKey has Puter confirm it before anything is stored.
@@ -228,8 +257,15 @@ export interface KeySetup {
    *  can check the thing they just copied. Also the display list
    *  `SUPPORTED_PREFIXES` is built from. */
   prefix: string;
-  /** Two or three short lines — what the user has to do, and the one gotcha. */
+  /** Three or four short lines in one fixed order: what it costs, who it
+   *  suits, whether the key can be re-read later, and the one extra
+   *  requirement where a provider has one. Same beats in the same places for
+   *  every provider, because this section exists to be compared. */
   steps: readonly string[];
+  /** The provider we steer a new user to. Its first line is the reason why, and
+   *  the chooser sets that line in bold. At most one provider carries this: a
+   *  recommendation that names two things is not a recommendation. */
+  recommended?: true;
   /** Where the key is created. */
   url: string;
   /** The link's text. */
@@ -239,11 +275,17 @@ export interface KeySetup {
 export const KEY_SETUP: readonly KeySetup[] = [
   {
     provider: 'gemini',
-    prefix: 'AIza…',
+    recommended: true,
+    // The shape a user minting a key today gets. Old `AIza…` keys still match
+    // in KEY_PREFIXES; they are just not what we tell anyone to look for.
+    prefix: 'AQ.Ab…',
     steps: [
-      'Sign in at Google AI Studio and create a key.',
-      'Gemini keys stay viewable, so you can come back for one later.',
-      'In the EEA, UK or Switzerland you must enable billing even for the free tier.',
+      // Why this one, before anything else: the four things a new user is
+      // choosing between providers on.
+      'Recommended: voice input, a generous free tier, accurate and fast.',
+      'Free and paid plans.',
+      'Keys stay viewable, so you can come back for yours later.',
+      'In the EEA, UK or Switzerland you must turn on billing even for the free tier, using the card already on your Google account.',
     ],
     url: 'https://aistudio.google.com/apikey',
     action: 'Create a Gemini API key',
@@ -252,8 +294,9 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'openai',
     prefix: 'sk-proj-…',
     steps: [
-      'Sign in at the OpenAI platform and create a key.',
-      'It is shown once — copy it straight away.',
+      'Paid only.',
+      'Best if you already buy OpenAI API credits (separate from a ChatGPT subscription).',
+      'The key is shown once, so copy it straight away.',
     ],
     url: 'https://platform.openai.com/api-keys',
     action: 'Create an OpenAI API key',
@@ -262,8 +305,9 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'anthropic',
     prefix: 'sk-ant-…',
     steps: [
-      'Sign in to the Anthropic Console and create a key.',
-      'It is shown once — copy it straight away.',
+      'Paid only.',
+      'Best if you already buy Anthropic API credits (separate from a Claude subscription).',
+      'The key is shown once, so copy it straight away.',
     ],
     url: 'https://console.anthropic.com/settings/keys',
     action: 'Create an Anthropic API key',
@@ -272,8 +316,10 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'openrouter',
     prefix: 'sk-or-…',
     steps: [
-      'One signup, no credit card, reaches free models from many vendors.',
-      'Allow free-model publication in your privacy settings — free models may train on your prompts.',
+      'Free models, no credit card.',
+      'Free models are slow and can drop rows on large batches.',
+      'The key is shown once, so copy it straight away.',
+      'To use free models at all, you must let them train on your prompts, in OpenRouter privacy settings.',
     ],
     url: 'https://openrouter.ai/settings/keys',
     action: 'Create an OpenRouter API key',
@@ -282,8 +328,9 @@ export const KEY_SETUP: readonly KeySetup[] = [
     provider: 'groq',
     prefix: 'gsk_…',
     steps: [
-      "Open-weight models on Groq's own hardware — the fastest and cheapest here.",
-      'Sign in to the Groq Console and create a key; it is shown once.',
+      'Free and paid plans.',
+      "Open weight models on Groq's own hardware, fast per call. The free tier allows 8,000 tokens a minute, which stalls on larger tables.",
+      'The key is shown once, so copy it straight away.',
     ],
     url: 'https://console.groq.com/keys',
     action: 'Create a Groq API key',
@@ -305,6 +352,28 @@ export function detectProvider(key: string): Provider | null {
   const k = key.trim();
   if (k === '') return null;
   return KEY_PREFIXES.find(([prefix]) => k.startsWith(prefix))?.[1] ?? null;
+}
+
+/** Providers we can actually send a recorded clip to. Voice rides on the patch
+ *  turn as a `file` message part, and only the Google client converts one: every
+ *  other provider goes through the AI SDK's OpenAI-compatible client, which
+ *  rejects it outright with *"'file part media type audio/wav' functionality not
+ *  supported"*. Verified against OpenRouter on 2026-08-13, where both the model
+ *  and OpenRouter's own API accept the audio and the client still refuses to
+ *  send it.
+ *
+ *  This is deliberately about the transport, not the model. `voiceInput` in the
+ *  catalogue says what a model can hear, which stays true wherever it is served;
+ *  this says what we can put on the wire. Keeping them apart is what stops a
+ *  card promising a microphone that throws — the Puter card did exactly that,
+ *  because its Gemini row is voice-capable and its transport is not. */
+const AUDIO_CAPABLE_PROVIDERS = new Set<Provider>(['gemini']);
+
+/** Whether the microphone should be offered for this model on this provider:
+ *  the model can hear, and we can send. Both the chooser's VOICE tag and the
+ *  web mic gate read this, so they cannot disagree. */
+export function supportsVoiceInput(provider: Provider, modelId: string): boolean {
+  return AUDIO_CAPABLE_PROVIDERS.has(provider) && (modelFor(provider, modelId)?.voiceInput ?? false);
 }
 
 /** Whether a model accepts a `temperature` (sampling) parameter. The newest
@@ -437,27 +506,31 @@ export function resolveConfig(
     provider = isProvider(stored.provider) ? stored.provider : 'gemini';
   }
 
-  // Primary model: env wins, then stored, then provider default. Truthiness,
+  // Chat model: env wins, then stored, then provider default. Truthiness,
   // like the key vars above — an empty env value (`TAMEDTABLE_MODEL=` in a
   // .env) means unset, never a real model id.
-  let model = env['TAMEDTABLE_MODEL'] || stored.model || defaultModel(provider);
+  // Which OpenRouter model set the user asked for. Read before the models,
+  // because it decides what "the default" even is.
+  const openrouterPaid = stored.openrouterPaid ?? false;
+
+  let model = env['TAMEDTABLE_MODEL'] || stored.model || defaultModel(provider, openrouterPaid);
 
   // Guard: model must belong to resolved provider
   if (!modelBelongsTo(provider, model)) {
-    model = defaultModel(provider);
+    model = defaultModel(provider, openrouterPaid);
   }
 
-  // Secondary (cell) model: env wins, then stored, then provider cell default.
+  // Cell model: env wins, then stored, then provider cell default.
   // Same-provider invariant — a stored cell model from another provider is
   // coerced to this provider's cell default.
-  let cellModel = env['TAMEDTABLE_CELL_MODEL'] || stored.cellModel || defaultCellModel(provider);
+  let cellModel = env['TAMEDTABLE_CELL_MODEL'] || stored.cellModel || defaultCellModel(provider, openrouterPaid);
   if (!modelBelongsTo(provider, cellModel)) {
-    cellModel = defaultCellModel(provider);
+    cellModel = defaultCellModel(provider, openrouterPaid);
   }
 
   return {
     provider, anthropicKey, geminiKey, openaiKey, groqKey, openrouterKey, puterToken,
-    model, cellModel,
+    model, cellModel, openrouterPaid,
     alwaysRunAll: stored.alwaysRunAll ?? false,
   };
 }

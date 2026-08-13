@@ -4,14 +4,20 @@
 //   sample [count]                 draw a subset of the fixture → ground-truth/music-sample.csv
 //   label  [model]                 auto-label the subset with a strong model → music-labels.jsonl
 //   sweep  [--models=…] [--batches=…] [--out=name] [--retries=N] [--primary=id]
-//                                  run the (model × batch) grid, score vs labels → results/<name>.jsonl
+//          [--tier=free|paid]
+//                                  run the (model × batch) grid, score vs labels,
+//                                  append the rows to results/sweeps.csv under the
+//                                  run name --out gives them.
 //                                  --retries re-tries a config that throws (free
 //                                  models sometimes flub the patch-turn tool call).
 //                                  --primary overrides the patch-turn model (must
 //                                  share the cell model's provider); default is the
-//                                  provider's mid-tier model.
-//   chart  [name] [--batch=N]      render SVGs from results/<name>.jsonl → charts/
-//   report [name]                  print the results table
+//                                  provider's mid-tier model. --tier records
+//                                  whether the run was billed; costs are always
+//                                  priced at the paid rates either way.
+//   chart  [--batch=N]             render the SVGs and explorer.html from the whole
+//                                  table → charts/
+//   report [run]                   print the table, all runs or just one
 //
 // sample/chart/report run offline. label/sweep make live calls and need the
 // matching provider key (ANTHROPIC_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY /
@@ -22,9 +28,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHeadlessRunner } from '@tamedtable/headless';
 import { providerFor, type EngineProvider } from '@tamedtable/model-config';
-import { runSweep, grid, type SweepResult } from './sweep.ts';
+import { runSweep, grid } from './sweep.ts';
 import { scoreAccuracy, canonical, type Label } from './score.ts';
-import { modelTradeoffChart, batchSweepChart, fileSlug } from './charts.ts';
+import { tradeoffChart, batchSweepChart, fileSlug } from './charts.ts';
+import { toCsv, parseCsv, mergeRuns, hasFreeTier, type ResultRow } from './results.ts';
+import { explorerPage } from './explorer.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const BENCH = join(ROOT, 'benchmarks');
@@ -33,6 +41,8 @@ const GT_DIR = join(BENCH, 'ground-truth');
 const SAMPLE_CSV = join(GT_DIR, 'music-sample.csv');
 const LABELS_FILE = join(GT_DIR, 'music-labels.jsonl');
 const RESULTS_DIR = join(BENCH, 'results');
+// One table for every run this benchmark has ever made — see results.ts.
+const RESULTS_CSV = join(RESULTS_DIR, 'sweeps.csv');
 const CHARTS_DIR = join(BENCH, 'charts');
 
 // The group-C task under test. The target column is a boolean the model fills
@@ -108,7 +118,7 @@ function readLabels(): Label[] {
 }
 
 // ── sweep ────────────────────────────────────────────────────────────────────
-async function cmdSweep(models: string[], batches: number[], out: string, retries: number, primary?: string): Promise<void> {
+async function cmdSweep(models: string[], batches: number[], out: string, retries: number, tier: 'free' | 'paid', primary?: string): Promise<void> {
   if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample — run "bench sample" then "bench label" first.`);
   const labels = readLabels();
   // The patch turn shares the cell model's provider (one runner, one provider),
@@ -130,45 +140,85 @@ async function cmdSweep(models: string[], batches: number[], out: string, retrie
   // undefined lets each runner resolve its own provider's key from env
   // (GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY), which bun loads from
   // .env. The pre-flight check above guarantees each is present.
-  const results: SweepResult[] = await runSweep(configs, {
-    inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels, retries,
-  });
   mkdirSync(RESULTS_DIR, { recursive: true });
-  const file = join(RESULTS_DIR, `${out}.jsonl`);
-  writeFileSync(file, results.map((r) => JSON.stringify(r)).join('\n') + '\n');
-  console.log(`Wrote ${results.length} results → ${rel(file)}`);
-  printReport(results);
+  const date = new Date().toISOString().slice(0, 10);
+  const before = readTable();
+  // Report and save per config rather than only at the end: a free-tier grid
+  // spends most of its wall clock waiting out a tokens-per-minute cap, and a
+  // config that throws after an hour must not take the finished ones with it.
+  const done: ResultRow[] = [];
+  const save = () => writeFileSync(RESULTS_CSV, toCsv(mergeRuns(before, done)));
+  const results = await runSweep(configs, {
+    inputCsv: SAMPLE_CSV, request: REQUEST, idColumn: ID_COL, targetColumn: TARGET, labels, retries,
+    onResult: (r, n, total) => {
+      done.push({ ...r, date, run: out, tier, freeTier: hasFreeTier(r.provider) });
+      save();
+      console.log(`  [${n}/${total}] ${r.cellModel} @ batch ${r.batchSize}: acc ${(r.accuracy * 100).toFixed(0)}%, ${(r.timeMs / 1000).toFixed(1)}s, $${r.costUsd.toFixed(4)}, ${r.calls} calls`);
+    },
+  });
+  save();
+  console.log(`Wrote ${results.length} results as run "${out}" → ${rel(RESULTS_CSV)}`);
+  printReport(done);
 }
 
 // ── chart ────────────────────────────────────────────────────────────────────
-function cmdChart(name: string, batch: number | undefined, subtitle: string | undefined): void {
-  const results = readResults(name);
+// Three tradeoff views, because one chart cannot answer both questions a reader
+// has. A paying user trades accuracy against cost; a free user's cost is zero,
+// so the only axis left is time. Splitting them also stops the free models —
+// which cluster far from the paid ones on cost — from squashing the paid scale.
+function cmdChart(batch: number | undefined, subtitle: string | undefined): void {
+  const all = readTable();
   mkdirSync(CHARTS_DIR, { recursive: true });
-  const refBatch = batch ?? mode(results.map((r) => r.batchSize));
-  writeFileSync(join(CHARTS_DIR, 'model-tradeoff.svg'),
-    modelTradeoffChart(results, { batchSize: refBatch, title: `Accuracy vs cost per task (batch ${refBatch})`, subtitle }));
-  console.log(`Wrote ${rel(join(CHARTS_DIR, 'model-tradeoff.svg'))} (batch ${refBatch})`);
-  for (const cellModel of [...new Set(results.map((r) => r.cellModel))]) {
-    const file = join(CHARTS_DIR, `batch-${fileSlug(cellModel)}.svg`);
-    writeFileSync(file, batchSweepChart(results, cellModel, { subtitle }));
+  const refBatch = batch ?? mode(all.map((r) => r.batchSize));
+  const span = (rows: readonly ResultRow[]) => {
+    const dates = [...new Set(rows.map((r) => r.date))].sort();
+    return dates.length > 1 ? `runs ${dates[0]} to ${dates.at(-1)}` : `run ${dates[0] ?? 'n/a'}`;
+  };
+
+  const views = [
+    { file: 'tradeoff-paid-cost.svg', axis: 'cost' as const, rows: all.filter((r) => r.tier === 'paid'), what: 'Paid models: accuracy vs cost' },
+    { file: 'tradeoff-paid-time.svg', axis: 'time' as const, rows: all.filter((r) => r.tier === 'paid'), what: 'Paid models: accuracy vs time' },
+    { file: 'tradeoff-free-time.svg', axis: 'time' as const, rows: all.filter((r) => r.freeTier), what: 'Free-tier models: accuracy vs time' },
+  ];
+  for (const v of views) {
+    const rows = v.rows.filter((r) => r.batchSize === refBatch);
+    if (!rows.length) continue;
+    const file = join(CHARTS_DIR, v.file);
+    writeFileSync(file, tradeoffChart(rows, {
+      axis: v.axis,
+      title: `${v.what} (batch ${refBatch})`,
+      subtitle: subtitle ?? `${span(rows)} · dashed line is the Pareto frontier`,
+    }));
     console.log(`Wrote ${rel(file)}`);
   }
+
+  for (const cellModel of [...new Set(all.map((r) => r.cellModel))]) {
+    const rows = all.filter((r) => r.cellModel === cellModel);
+    const file = join(CHARTS_DIR, `batch-${fileSlug(cellModel)}.svg`);
+    writeFileSync(file, batchSweepChart(all, cellModel, { subtitle: subtitle ?? span(rows) }));
+    console.log(`Wrote ${rel(file)}`);
+  }
+
+  const page = join(CHARTS_DIR, 'explorer.html');
+  writeFileSync(page, explorerPage(toCsv(all), new Date().toISOString().slice(0, 10)));
+  console.log(`Wrote ${rel(page)} (open it directly — filters, sorting, every run)`);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────
-function cmdReport(name: string): void {
-  printReport(readResults(name));
+function cmdReport(run: string | undefined): void {
+  const all = readTable();
+  printReport(run ? all.filter((r) => r.run === run) : all);
 }
 
-function readResults(name: string): SweepResult[] {
-  const file = join(RESULTS_DIR, `${name}.jsonl`);
-  if (!existsSync(file)) throw new Error(`No results file ${rel(file)} — run "bench sweep" first.`);
-  return readFileSync(file, 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l) as SweepResult);
+function readTable(): ResultRow[] {
+  if (!existsSync(RESULTS_CSV)) return [];
+  return parseCsv(readFileSync(RESULTS_CSV, 'utf8'));
 }
 
-function printReport(results: SweepResult[]): void {
-  const headers = ['Cell model', 'Batch', 'Acc', 'Cost', 'Time', 'Calls', 'Scored'];
+function printReport(results: readonly ResultRow[]): void {
+  const headers = ['Date', 'Run', 'Cell model', 'Batch', 'Acc', 'Cost', 'Time', 'Calls', 'Scored'];
   const rows = results.map((r) => [
+    r.date, r.run,
     r.cellModel, String(r.batchSize), `${(r.accuracy * 100).toFixed(0)}%`,
     `$${r.costUsd.toFixed(4)}`, `${(r.timeMs / 1000).toFixed(1)}s`, String(r.calls), `${r.scored}${r.missing ? ` (-${r.missing})` : ''}`,
   ]);
@@ -195,9 +245,9 @@ async function main(): Promise<void> {
   switch (cmd) {
     case 'sample': return cmdSample(Number(positional[0] ?? 150));
     case 'label':  return cmdLabel(positional[0] ?? DEFAULT_LABELER);
-    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep', flags.retries ? Number(flags.retries) : 0, flags.primary);
-    case 'chart':  return cmdChart(positional[0] ?? 'sweep', flags.batch ? Number(flags.batch) : undefined, flags.subtitle);
-    case 'report': return cmdReport(positional[0] ?? 'sweep');
+    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep', flags.retries ? Number(flags.retries) : 0, flags.tier === 'free' ? 'free' : 'paid', flags.primary);
+    case 'chart':  return cmdChart(flags.batch ? Number(flags.batch) : undefined, flags.subtitle);
+    case 'report': return cmdReport(positional[0]);
     default:
       console.log('Usage: bench <sample|label|sweep|chart|report> [args]\n  See src/packages/bench/cli.ts header for options.');
       process.exitCode = cmd ? 1 : 0;

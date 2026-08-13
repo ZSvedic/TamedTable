@@ -52,6 +52,8 @@ export interface ControllerHost {
   settingsOpen: boolean;
   keyInput: string;
   keyError: string;
+  /** Neutral confirmation under the key input (a replaced key). */
+  keyNotice: string;
   keyBusy: boolean;
   /** The connect in flight is the Puter sign-in, so its button can say so.
    *  A click that opens a window in front of the panel needs to leave a mark

@@ -353,7 +353,7 @@ Env vars:
 | `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter, by `bench sweep`/`bench label`, and by `resolveConfig` (lowest env priority — any paid key outranks it). The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `openai/gpt-oss-20b` (Groq), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Cell model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `openai/gpt-oss-20b` (Groq), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
 | `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). Must be a positive number; `0`, a negative, or unparsable text falls back to the default — a cap the limiter can never satisfy would wedge every request in its wait loop. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
@@ -1358,7 +1358,7 @@ interface ResolvedConfig {
   openrouterKey: string | null;
   puterToken: string | null;          // a Puter session token, not an API key
   model: string;      // primary — writes the spec patch (and carries voice)
-  cellModel: string;  // secondary — fills per-row cells; always same-provider as model
+  cellModel: string;  // the cell model — fills per-row cells; always same-provider as model
   alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
 }
 
@@ -1371,7 +1371,7 @@ interface StoragePort {
 const ALL_MODELS: readonly ModelDef[];  // imported from models.json — the catalogue's single source
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
 function defaultModel(provider: Provider): string;      // primary (patch-turn) default
-function defaultCellModel(provider: Provider): string;  // secondary (per-row cell) default
+function defaultCellModel(provider: Provider): string;  // the cell-model default
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
 function priceVariesByPlan(provider: Provider): boolean;  // defaults' flag (groq): an undetectable free tier, so the card names no price
 function providerFor(modelId: string): EngineProvider;   // fallback only; never returns "puter"
@@ -1380,7 +1380,7 @@ function acceptsTemperature(modelId: string): boolean;   // per-model `temperatu
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
 function connectedProviders(config: ResolvedConfig, order?: Partial<Record<Provider, number>>): Provider[];  // every provider with a key; `order` (connectedAt stamps) sorts the cards, absent = catalogue order
 function detectProvider(key: string): Provider | null;   // the provider a pasted key belongs to, by prefix; null when none matches
-const SUPPORTED_PREFIXES: readonly string[];             // 'AIza…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
+const SUPPORTED_PREFIXES: readonly string[];             // 'AQ.Ab…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
 const KEY_FIELD: Record<Provider, keyof ResolvedConfig>; // provider → the config field its key lives in
 const PROVIDER_BASE_URL: Record<EngineProvider, string>; // one table the engine and the probe both read, so their endpoints cannot drift
 const PUTER_DRIVERS_URL: string;                         // `${PROVIDER_BASE_URL.puter}/drivers/call` — the gateway's single endpoint
@@ -1449,10 +1449,10 @@ last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
 
 | prefix | provider | | prefix | provider |
 |---|---|---|---|---|
-| `sk-proj-` | openai | | `AIza` | gemini |
-| `sk-ant-` | anthropic | | `eyJ` | puter |
-| `sk-or-` | openrouter | | `sk-` | openai |
-| `gsk_` | groq | | | |
+| `sk-proj-` | openai | | `AQ.` | gemini |
+| `sk-ant-` | anthropic | | `AIza` | gemini |
+| `sk-or-` | openrouter | | `eyJ` | puter |
+| `gsk_` | groq | | `sk-` | openai |
 
 Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
 provider pins:

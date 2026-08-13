@@ -38,6 +38,11 @@ export interface ConnectedCard {
    *  no price at all — a number that is wrong for most of a provider's users
    *  is worse than saying we do not know. */
   priceVariesByPlan?: boolean;
+  /** This provider serves a free and a paid model set, so the card offers the
+   *  choice. OpenRouter is the only one. */
+  hasPaidModelSet?: boolean;
+  /** Which set is running. Meaningless without `hasPaidModelSet`. */
+  paidModelSet?: boolean;
   primary: RoleRow;
   secondary: RoleRow;
 }
@@ -49,6 +54,11 @@ export interface ModelChooserProps {
   selected: Provider | null;
   keyInput: string;
   error: string;
+  /** A neutral confirmation under the input, for a success the cards cannot
+   *  show on their own. Replacing the key of a connected provider is the case:
+   *  same card, same models, same tag, so without a word the whole thing reads
+   *  as a button that did nothing. */
+  notice?: string;
   /** An add is in flight — the input and button are disabled so a slow
    *  provider cannot be double-submitted. */
   busy: boolean;
@@ -64,6 +74,10 @@ export interface ModelChooserProps {
   /** The ⟳ button — re-run this provider's measurements. Omit it and no card
    *  shows one, so a host with nothing to re-measure gets no dead button. */
   onRefresh?: (p: Provider) => void;
+  /** Switch a card between its free and paid model sets. Omit it and the
+   *  control is not rendered, so a host that cannot persist the choice shows no
+   *  switch that would not stick. */
+  onPaidModelSetChange?: (p: Provider, paid: boolean) => void;
   /** The "No API key?" block's Puter.js sign-in. Omit it and the whole block —
    *  divider included — is left out, so a host that cannot open a sign-in
    *  window (the CLI, the demo page) shows no button that would not work. */
@@ -177,6 +191,7 @@ export function ModelChooser({
   selected,
   keyInput,
   error,
+  notice,
   busy,
   puterBusy,
   onKeyInputChange,
@@ -184,6 +199,7 @@ export function ModelChooser({
   onSelect,
   onRemove,
   onRefresh,
+  onPaidModelSetChange,
   onPuterSignIn,
 }: ModelChooserProps): ReactNode {
   const puterConnected = connected.some((c) => c.id === 'puter');
@@ -244,7 +260,10 @@ export function ModelChooser({
           <span
             style={{
               // Fixed, so the two rows' model ids line up under each other.
-              width: 104,
+              // Sized to "Chat model" / "Cell model"; it was 104 when the
+              // labels read "Secondary model", and every pixel it does not
+              // need is a pixel of model id that gets an ellipsis instead.
+              width: 76,
               flex: '0 0 auto',
               fontFamily: fontUi,
               fontSize: 12,
@@ -255,7 +274,7 @@ export function ModelChooser({
               color: ink2,
             }}
           >
-            {role === 'primary' ? 'Primary model' : 'Secondary model'}
+            {role === 'primary' ? 'Chat model' : 'Cell model'}
           </span>
           <span
             data-mc-model-id={row.model}
@@ -396,6 +415,46 @@ export function ModelChooser({
           >
             {roleRow('primary', c.primary, c.priceVariesByPlan === true)}
             {roleRow('secondary', c.secondary, c.priceVariesByPlan === true)}
+            {/* The free/paid choice is the user's, not the account's. A key with
+                credits still opens on free: having a balance is not the same as
+                wanting to spend it. A $0 key cannot pick paid at all, because
+                every call would 402. */}
+            {c.hasPaidModelSet && onPaidModelSetChange && (
+              <div
+                data-mc-modelset={c.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: fontUi, fontSize: 12 }}
+              >
+                {([false, true] as const).map((paid) => {
+                  const on = (c.paidModelSet === true) === paid;
+                  const locked = paid && c.tier === 'free';
+                  return (
+                    <button
+                      key={String(paid)}
+                      type="button"
+                      data-mc-modelset-option={paid ? 'paid' : 'free'}
+                      aria-pressed={on}
+                      disabled={locked}
+                      title={locked ? 'This key has no credit, so it can only reach free models.' : undefined}
+                      onClick={() => onPaidModelSetChange(c.id, paid)}
+                      style={{
+                        padding: '3px 9px',
+                        borderRadius: radiusSm,
+                        border: `1px solid ${on ? accent : line2}`,
+                        background: on ? accentSoft : surface,
+                        color: locked ? ink3 : on ? accent : ink2,
+                        fontFamily: fontUi,
+                        fontSize: 12,
+                        fontWeight: on ? 600 : 400,
+                        cursor: locked ? 'not-allowed' : 'pointer',
+                        opacity: locked ? 0.55 : 1,
+                      }}
+                    >
+                      {paid ? 'Paid models' : 'Free models'}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -437,6 +496,31 @@ export function ModelChooser({
         <div style={{ fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink }}>
           Already have an API key?
         </div>
+
+        {error === '' && notice !== undefined && notice !== '' && (
+          <div
+            data-mc-notice=""
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 8,
+              padding: '10px 11px',
+              borderRadius: radius,
+              background: okSoft,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 6, height: 6, borderRadius: 3, background: ok,
+                flex: '0 0 auto', marginTop: 6,
+              }}
+            />
+            <span style={{ fontFamily: fontUi, fontSize: 12.5, lineHeight: 1.45, color: ok }}>
+              {notice}
+            </span>
+          </div>
+        )}
 
         {error !== '' && (
           <div
@@ -569,8 +653,13 @@ export function ModelChooser({
             }}
           >
             {/* One paragraph: the steps read as prose, not as a checklist of
-                three one-line bullets. */}
-            <span>{open.steps.join(' ')}</span>
+                three one-line bullets. The recommended provider's first line is
+                bold, because it is the answer to the question the user is
+                actually asking here — which of these five do I pick? */}
+            <span>
+              {open.recommended && <strong>{open.steps[0]}{' '}</strong>}
+              {open.steps.slice(open.recommended ? 1 : 0).join(' ')}
+            </span>
             <span>
               <a
                 href={open.url}

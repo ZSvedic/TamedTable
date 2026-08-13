@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="582" viewBox="0 0 660 582" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<rect width="660" height="582" fill="#ffffff"/>
+<text x="68" y="24" font-size="15" font-weight="600" fill="#222222">Batch-size sweep: openai/gpt-oss-20b</text>
+<text x="68" y="42" font-size="11" fill="#888888">run 2026-08-12</text>
+<text x="68" y="58" font-size="12" font-weight="600" fill="#222222">Accuracy</text>
+<line x1="68" y1="74" x2="626" y2="74" stroke="#e5e5e5"/>
+<line x1="68" y1="194" x2="626" y2="194" stroke="#e5e5e5"/>
+<text x="60" y="78" font-size="10" text-anchor="end" fill="#222222">99%</text>
+<text x="60" y="198" font-size="10" text-anchor="end" fill="#222222">60%</text>
+<line x1="68" y1="148.9" x2="626" y2="148.9" stroke="#e5e5e5" stroke-dasharray="3 3"/>
+<text x="60" y="152.9" font-size="10" text-anchor="end" fill="#888888">90%</text>
+<polyline points="68.0,148.9 254.0,148.9 626.0,193.3" fill="none" stroke="#56B4E9" stroke-width="2"/>
+<circle cx="68.0" cy="148.9" r="3.5" fill="#56B4E9"/>
+<text x="68.0" y="139.9" font-size="9.5" text-anchor="start" fill="#222222">90%</text>
+<circle cx="254.0" cy="148.9" r="3.5" fill="#56B4E9"/>
+<text x="254.0" y="139.9" font-size="9.5" text-anchor="middle" fill="#222222">90%</text>
+<circle cx="626.0" cy="193.3" r="3.5" fill="#56B4E9"/>
+<text x="626.0" y="184.3" font-size="9.5" text-anchor="end" fill="#222222">61%</text>
+<text x="68" y="230" font-size="12" font-weight="600" fill="#222222">Cost (USD)</text>
+<line x1="68" y1="246" x2="626" y2="246" stroke="#e5e5e5"/>
+<line x1="68" y1="366" x2="626" y2="366" stroke="#e5e5e5"/>
+<text x="60" y="250" font-size="10" text-anchor="end" fill="#222222">$0.0050</text>
+<text x="60" y="370" font-size="10" text-anchor="end" fill="#222222">$0.0000</text>
+<polyline points="68.0,268.4 254.0,278.9 626.0,339.6" fill="none" stroke="#56B4E9" stroke-width="2"/>
+<circle cx="68.0" cy="268.4" r="3.5" fill="#56B4E9"/>
+<text x="68.0" y="259.4" font-size="9.5" text-anchor="start" fill="#222222">$0.0041</text>
+<circle cx="254.0" cy="278.9" r="3.5" fill="#56B4E9"/>
+<text x="254.0" y="269.9" font-size="9.5" text-anchor="middle" fill="#222222">$0.0036</text>
+<circle cx="626.0" cy="339.6" r="3.5" fill="#56B4E9"/>
+<text x="626.0" y="330.6" font-size="9.5" text-anchor="end" fill="#222222">$0.0011</text>
+<text x="68" y="402" font-size="12" font-weight="600" fill="#222222">Time (s)</text>
+<line x1="68" y1="418" x2="626" y2="418" stroke="#e5e5e5"/>
+<line x1="68" y1="538" x2="626" y2="538" stroke="#e5e5e5"/>
+<text x="60" y="422" font-size="10" text-anchor="end" fill="#222222">200s</text>
+<text x="60" y="542" font-size="10" text-anchor="end" fill="#222222">0s</text>
+<polyline points="68.0,447.2 254.0,481.8 626.0,509.4" fill="none" stroke="#56B4E9" stroke-width="2"/>
+<circle cx="68.0" cy="447.2" r="3.5" fill="#56B4E9"/>
+<text x="68.0" y="438.2" font-size="9.5" text-anchor="start" fill="#222222">151s</text>
+<circle cx="254.0" cy="481.8" r="3.5" fill="#56B4E9"/>
+<text x="254.0" y="472.8" font-size="9.5" text-anchor="middle" fill="#222222">94s</text>
+<circle cx="626.0" cy="509.4" r="3.5" fill="#56B4E9"/>
+<text x="626.0" y="500.4" font-size="9.5" text-anchor="end" fill="#222222">48s</text>
+<text x="68.0" y="560" font-size="11" text-anchor="middle" fill="#222222">10</text>
+<text x="254.0" y="560" font-size="11" text-anchor="middle" fill="#222222">20</text>
+<text x="626.0" y="560" font-size="11" text-anchor="middle" fill="#222222">40</text>
+<text x="347" y="580" font-size="12" text-anchor="middle" fill="#222222">Batch size (rows per model call)</text>
+</svg>

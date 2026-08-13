@@ -43,8 +43,8 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 ├── benchmarks/              Model & batch-size benchmark data + outputs (no code, runner is @tamedtable/bench).
 │   ├── models.jsonl         The benchmark's model pricing/specs (the app's catalogue is model-config's models.json).
 │   ├── ground-truth/        Labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl).
-│   ├── results/             Sweep outputs (JSONL).
-│   └── charts/              Generated SVG tradeoff charts.
+│   ├── results/             sweeps.csv — every config ever run, one row each.
+│   └── charts/              Generated SVG charts + explorer.html (filterable).
 ├── cassettes/               Recorded LLM responses the test suite replays — committed data, one JSON per feature.
 ├── marketing/               Everything the public sees + the shared design base.
 │   ├── tokens.json          Design token master: colors, typography, spacing.
@@ -100,7 +100,7 @@ Optional env vars and defaults if you omit them:
 | Var | Default | What it does |
 |---|---|---|
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Its id also selects the provider — e.g. `claude-sonnet-4-6` (Anthropic) or `gpt-5.5` (OpenAI) — so it must match the key you set above. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Secondary model that fills in per-row LLM cells. Must share the primary model's provider. |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Cell model that fills in per-row LLM cells. Must share the chat model's provider. |
 | `TAMEDTABLE_RPM` | `40` | Per-process request-per-minute cap. Keep it under your provider account's rate limit. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests that fire concurrently. Orthogonal to batch size — total parallel rows = batch × chunk. |
@@ -299,7 +299,7 @@ the CLI (all from `src/`) is:
 bun run bench:sample 150     # draw a labelling subset from the fixture
 bun run bench:label          # auto-label it with a strong model (needs a key)
 bun run bench:sweep          # run the grid, score vs labels → benchmarks/results/
-bun run bench:chart          # render the tradeoff SVGs → benchmarks/charts/
+bun run bench:chart          # render the SVGs + explorer.html → benchmarks/charts/
 bun run bench:report         # print the results table
 ```
 

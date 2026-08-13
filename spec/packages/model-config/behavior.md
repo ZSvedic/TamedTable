@@ -13,26 +13,27 @@ part that touches the network.
 
 ## Worked example
 
-The user pastes `AIza…` into the chooser and presses Add. The host asks the
+The user pastes `AQ.Ab…` into the chooser and presses Add. The host asks the
 module what that key is, checks it against the provider, and stores the result:
 
 ```
-detectProvider("AIza…")            → "gemini"
-await verifyKey("gemini", "AIza…") → { tier: "paid" }
+detectProvider("AQ.Ab…")            → "gemini"
+await verifyKey("gemini", "AQ.Ab…") → { tier: null }   // Google reports none
 ```
 
 The card appears at once, marked as the default, with both model rows still
 measuring. Two reference calls later the card reads:
 
 ```
-Primary model    gemini-3.6-flash
-$0.0015 in / $0.0075 out per 1000 tok, ~9.7 sec
-Secondary model  gemini-3.1-flash-lite
-$0.00025 in / $0.0015 out per 1000 tok, ~3.4 sec
+Chat model  gemini-3.6-flash
+Price depends on your plan, ~9.7 sec
+Cell model  gemini-3.1-flash-lite
+Price depends on your plan, ~3.4 sec
 ```
 
-The prices are the catalogue's, divided by a thousand. Only the seconds are
-measured.
+Only the seconds are measured. Google names no price here because it has a free
+tier we cannot detect — see *Checking a key*. Where the price is shown, it is
+the catalogue's, divided by a thousand.
 
 ## Detecting the provider from the key
 
@@ -50,8 +51,9 @@ provider itself confirm the key.
 
 One canonical home:
 [`models.json`](../../../src/packages/model-config/models.json) — `models`
-(every model with its per-Mtok prices) and `defaults` (each provider's primary
-+ secondary ids, plus an optional pinned `batchSize`). The user connects a
+(every model with its per-Mtok prices) and `defaults` (each provider's chat and
+cell model ids, under the JSON keys `primary` and `secondary`, plus an optional
+pinned `batchSize`). The user connects a
 **provider**, not individual models; `defaults` decides the two roles.
 
 `models` mirrors [`benchmarks/models.jsonl`](../../../benchmarks/models.jsonl)
@@ -63,12 +65,78 @@ imported — neither the code nor this spec duplicates the list, because a copy
 here went stale once already. Every id is verified against the provider's
 current docs before it changes; none is ever guessed.
 
-OpenRouter is the free tier: one $0 model fills both roles. Its `defaults` row
-pins `batchSize: 5` — the [2026-07-17 benchmark](../../../process/journal/2026-07-17-free-model-benchmark-run.md)
-measured `cohere/north-mini-code:free` at 96% accuracy at batch 5 and sharply
-worse at 40+. Groq serves open-weight models on its own hardware and is the
-fastest and cheapest of the paid providers — see the
-[2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md).
+### OpenRouter serves two model sets
+
+OpenRouter is the one provider whose account tier changes what it should run.
+A $0 account can only reach `:free` models; an account with credits can reach
+everything OpenRouter proxies, including the Gemini models the benchmark rates
+best. So its `defaults` row carries a second set under `paid`, and the config
+remembers which one the user wants in `openrouterPaid`.
+
+| Set | Chat model | Cell model | Batch |
+|---|---|---|---|
+| free (default) | `cohere/north-mini-code:free` | `cohere/north-mini-code:free` | 5 |
+| paid | `google/gemini-3.6-flash` | `google/gemini-3.1-flash-lite` | unpinned |
+
+The paid set is deliberately the same pair the Google card runs, since
+OpenRouter proxies them at Google's own per-token rate.
+
+**The user picks, not the tier.** `verifyKey` already reports whether the key is
+free or paid, and it would be easy to switch on that. We don't, because having
+credits is not the same as wanting to spend them: an account with $13 in it may
+be keeping that for something else, and a run that quietly starts billing
+because a balance exists is the kind of surprise this whole panel exists to
+avoid. So the selected card shows the choice, defaulting to free, and the tier
+only decides whether the paid option is offered at all. A $0 key sees the
+control disabled, because picking paid would only produce 402s.
+
+This also settles a display contradiction. The card's `PAID` tag describes the
+**account**, the price lines describe the **models** — so a paid OpenRouter
+account showed `PAID` above two `$0` rows. It now reads honestly either way:
+free models under a paid account say so, and switching to paid shows real
+prices.
+
+Three providers pin a `batchSize`, and each pin is a measured cliff rather than
+a preference. Batching more rows per call is nearly free on cost and time, so
+without a pin a provider inherits the engine default and can sit somewhere its
+accuracy has already fallen over.
+
+| Provider | Pin | Why |
+|---|---|---|
+| `openrouter` | 5 | `cohere/north-mini-code:free` scores 96% at 5, 88% at 10 and 39% at 40 ([2026-07-17](../../../process/journal/2026-07-17-free-model-benchmark-run.md)) |
+| `groq` | 20 | `openai/gpt-oss-20b` holds 90% through batch 20 and collapses to 61% at 40, silently dropping rows ([2026-08-12](../../../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)) |
+| `anthropic` | 40 | `claude-haiku-4-5` scores 94% at 40 against 88% at 20, for the same cost and less time ([2026-07-02](../../../process/journal/2026-07-02-model-batch-sweep.md)) |
+
+Gemini and OpenAI stay unpinned because their curves are flat: every Gemini
+model sits at 93–97% at every batch size, and `gpt-5.4-mini` is 89% at 5, 10 and
+20 alike. The Anthropic pin rests on a single run, and haiku's curve is the
+noisiest we have measured, so a repeat run should confirm it before anyone
+builds on it.
+
+Groq serves open-weight models on its own hardware and answers fastest per call ([2026-08-11 provider probe](../../../process/journal/2026-08-11-model-chooser-provider-probe.md)),
+but it is not the cheapest per task: the
+[2026-08-12 free-tier run](../../../process/journal/2026-08-12-google-groq-free-tier-benchmark.md)
+puts `gemini-2.5-flash-lite` below it on both cost and accuracy, and Groq's free
+tier caps at 8,000 tokens a minute, which a batched cell call exhausts on its own.
+
+### Voice needs the model *and* the transport
+
+The catalogue's `voiceInput` flag says what a model can hear, which stays true
+wherever that model is served. It is not enough to offer a microphone.
+
+Voice rides on the patch turn as a `file` message part, and only the Google
+client converts one. Every other provider goes through the AI SDK's
+OpenAI-compatible client, which refuses before anything reaches the network:
+*"'file part media type audio/wav' functionality not supported"*. Verified
+against OpenRouter on 2026-08-13, where the model accepts audio, OpenRouter's
+own API accepts audio, and the client still will not send it.
+
+So `supportsVoiceInput(provider, modelId)` is the gate, and it ANDs the two: the
+model can hear, and we can send. Both the chooser's `VOICE` tag and the web mic
+button read it, so they cannot disagree with each other or with reality. Keeping
+the two facts separate is what caught the Puter card promising a microphone that
+would have thrown: its Gemini row really is voice-capable, and its transport
+really is not.
 
 Ids are **not unique**. Puter is a gateway that re-serves other providers'
 models under their own names, so `gemini-3.6-flash` appears twice in the
@@ -141,8 +209,28 @@ see is a price they find out about on their bill. `probe.ts` answers both
 against the live provider; hosts inject `fetch` so tests never do.
 
 **`verifyKey`** makes one small call and returns the account tier, or throws.
+Only two providers can answer that question. OpenRouter's `/key` says
+`is_free_tier` outright; OpenAI and Anthropic have no free tier, so every
+working key is paid. **Google and Groq report nothing**, and the card shows no
+tag rather than a guess.
+
+The same silence applies to the price. A provider whose tier we cannot read is
+a provider whose *price* we cannot quote, so Google joins Groq under
+`priceVariesByPlan` and its rows read `Price depends on your plan`. Quoting
+$0.0015 per thousand tokens to someone on the free tier is the same mistake as
+the `PAID` tag, one decimal place further down.
+
+Google looks like it should be able to answer, and that is the trap. Its
+`x-gemini-service-tier` response header is the *inference* tier — standard,
+priority or flex, the latency class the request was served at — and it reads
+`standard` on an ordinary call whether the project is billed or not. We read it
+as a billing signal, so a key on a project with billing never set up was
+labelled `PAID`. Confirmed on 2026-08-13 against a key AI Studio itself lists as
+"Free tier". Silence is both the honest answer and the safe one: `paid` is the
+single word that tells a free-tier user to worry about a bill they will never
+get.
 It is the gate: no card appears, and nothing is stored, until it resolves. It
-answers in about a second — the cheap secondary model, a two-word prompt, no
+answers in about a second — the cheap cell model, a two-word prompt, no
 retries — because a user whose account is empty should not watch a spinner for
 a minute to learn what the first response already said. Puter is checked with
 `GET /whoami` instead: it proves the token, costs nothing, answers instantly.
@@ -313,7 +401,7 @@ with a few pixels of padding on each label to keep it off them. Each provider
 is a button that expands a short
 paragraph and, on its own row, a link straight to that provider's key page. One
 is open at a time, the open one is underlined (and carries `aria-expanded`), and
-clicking it again closes it. The link row ends with `(starts with AIza…)` —
+clicking it again closes it. The link row ends with `(starts with AQ.Ab…)` —
 the prefixes used to live in the input's placeholder, which is exactly where a
 user cannot read them once they have pasted something. Puter is
 deliberately absent even though it is a full provider — its credential comes
@@ -323,6 +411,25 @@ send users looking for a Puter key to paste.
 This replaces a `How to get ↗` link to the FAQ. The user who needs the
 instructions is standing in front of this input, and a new tab onto a page
 covering six providers is a round trip many never come back from.
+
+Every provider's paragraph follows the **same four-beat shape**, so a user
+comparing two of them reads the same facts in the same places: what it costs
+(`Free and paid plans.` / `Paid only.` / `Free models, no credit card.`), who it
+suits, whether the key survives the page that mints it, and finally the one
+extra requirement if the provider has one (billing in the EEA/UK/Switzerland for
+Google, the privacy toggle for OpenRouter). Providers without a fourth beat stop
+at three.
+
+Exactly one provider carries `recommended`, and its paragraph opens with one
+extra line naming why — for Google, voice input, a generous free tier, accuracy
+and speed. The chooser sets that line in bold. Five even-handed paragraphs
+answer "what is OpenRouter?" but not "which do I pick?", which is the question
+someone opening this section actually has. Two recommendations would be none. Before this the five paragraphs each argued their own case in their own
+order, which made the section impossible to skim — and the one thing a user is
+doing here *is* comparing providers. Two rules on the prose: no em dashes, and
+the paid-only providers say plainly that an OpenAI or Anthropic *subscription* is
+not the same thing as API credits, because assuming it is costs a user the whole
+setup before they find out.
 
 The text comes from `KEY_SETUP` in the package — one ordered table of
 `{ provider, label, steps, url, action }`, which also supplies the row's
@@ -342,15 +449,18 @@ buttons stop the click from also selecting the card, and both carry an
 reader announces "button".
 
 Only the **selected** card shows a body, and the selected card is the default
-provider every run uses. The body has two rows, **Primary model** and
-**Secondary model**, labelled in the same colour — the secondary is not a
-lesser setting, it is the one that runs on every row. Each row puts its label
-and model id on one line and the priced line beneath *both*, starting at the
-row's left edge rather than indented under the id: indented, it had a third of
-the card in which to fit a sentence, and got clipped.
+provider every run uses. The body has two rows, **Chat model** and **Cell
+model**, labelled in the same colour. The names say what each one does: the chat
+model reads the request and edits the table, the cell model fills the cells. They
+used to read *Primary* and *Secondary*, which ranked them, and ranked them
+backwards: the cell model is the one that runs on every row, so it decides both
+the bill and the wait. Each row puts its label and model id on one line and the
+priced line beneath *both*, starting at the row's left edge rather than indented
+under the id: indented, it had a third of the card in which to fit a sentence,
+and got clipped.
 
 ```
-Primary model    gemini-3.6-flash
+Chat model  gemini-3.6-flash
 $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
 ```
 
@@ -385,6 +495,15 @@ one banner above the input: the unrecognised-prefix message, or whatever
 A key for an **already-connected provider replaces it in place** and
 re-measures, rather than erroring. The card has no key field, so a user whose
 key expired would otherwise have to delete the card to fix it.
+
+That replacement is invisible on the cards: same provider, same models, usually
+the same tier tag. So it says so, in a neutral banner under the input —
+`Google key replaced. Re-measuring.` Without it, pasting a working key looks
+exactly like a button that did nothing, and the next move a user makes is to
+delete the card and add the key again, which is the one flow the in-place
+replace exists to spare them. The banner is not an error and does not look like
+one; it clears on the next keystroke, like the error does, and an error always
+wins the space.
 
 **No API key?** Below the instructions row, a full-width
 **Sign in / Sign up to Puter.js** button carrying Puter's mark, with

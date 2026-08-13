@@ -30,6 +30,8 @@ const HOSTS = [
   'api.anthropic.com',
   'api.openai.com',
   'api.cerebras.ai',
+  'api.groq.com',
+  'api.puter.com',
   ...(process.env.TAMEDTABLE_PROXY_FETCH_HOSTS?.split(',').map((h) => h.trim()).filter(Boolean) ?? []),
 ];
 

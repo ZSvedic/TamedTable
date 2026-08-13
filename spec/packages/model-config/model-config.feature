@@ -14,6 +14,7 @@ Feature: Model config
 
       Examples:
         | prefix    | key                  | provider   |
+        | AQ.       | AQ.Ab8RN6Example     | gemini     |
         | AIza      | AIzaSyExample        | gemini     |
         | sk-proj-  | sk-proj-example      | openai     |
         | sk-ant-   | sk-ant-example       | anthropic  |
@@ -44,8 +45,10 @@ Feature: Model config
       Then no provider is detected
 
     @headless
+    # Google names only the shape AI Studio mints today. Keys minted before the
+    # switch still match, but nobody creating one now will see an `AIza` key.
     Scenario: SUPPORTED_PREFIXES lists every prefix the error message names
-      Then SUPPORTED_PREFIXES is "AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…"
+      Then SUPPORTED_PREFIXES is "AQ.Ab…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…"
 
   Rule: resolveConfig defaults
 
@@ -137,7 +140,7 @@ Feature: Model config
       When resolveConfig is called with env TAMEDTABLE_MODEL="gemini-3.1-flash-lite" and stored model "gemini-3.5-flash"
       Then the resolved model is "gemini-3.1-flash-lite"
 
-  Rule: resolveConfig resolves the secondary (cell) model
+  Rule: resolveConfig resolves the cell model
 
     @headless
     Scenario: Empty config yields the provider's cell default
@@ -259,7 +262,7 @@ Feature: Model config
       Then the result is "groq"
 
     @headless
-    Scenario: providerFor returns groq for the Groq secondary default
+    Scenario: providerFor returns groq for the Groq cell default
       When providerFor is called with "openai/gpt-oss-20b"
       Then the result is "groq"
 
@@ -403,16 +406,73 @@ Feature: Model config
         | groq       | openai/gpt-oss-20b          |
         | openrouter | cohere/north-mini-code:free |
 
-  Rule: defaultBatchSize pins the benchmarked cell batch
+  Rule: voice needs the model and the transport
 
-    The 2026-07-17 free-model benchmark measured north-mini at 96% accuracy at
-    batch 5 and sharply worse at 40+; openrouter is the only provider with a pin.
+    A model that can hear is not enough. Audio rides as a file message part, and
+    only the Google client sends one; every OpenAI-compatible provider refuses
+    it before the request leaves. The tag and the mic both read this gate.
 
     @headless
-    # Groq's free tier is $0 and its API cannot say which tier a key is on, so
-    # its catalogue price is not the price most of its users pay.
-    Scenario: Groq's price varies by plan
-      Then priceVariesByPlan for "groq" is true
+    Scenario Outline: supportsVoiceInput for <provider> <model> is <expected>
+      Then supportsVoiceInput for "<provider>" "<model>" is <expected>
+
+      Examples:
+        | provider   | model                        | expected | why                                          |
+        | gemini     | gemini-3.6-flash             | true     | voice-capable model on the Google client     |
+        | gemini     | gemini-3.1-flash-lite        | false    | that model does not take audio               |
+        | puter      | gemini-3.6-flash             | false    | voice-capable model, OpenAI-compatible wire  |
+        | openrouter | google/gemini-3.6-flash      | false    | same model, same wire, same refusal          |
+        | openrouter | cohere/north-mini-code:free  | false    | text-only model as well                      |
+        | groq       | openai/gpt-oss-120b          | false    | neither the model nor the wire               |
+
+  Rule: OpenRouter serves a free and a paid model set
+
+    A $0 OpenRouter account can only reach `:free` models; one with credits can
+    reach everything OpenRouter proxies. The user picks which set runs, because
+    holding a balance is not the same as wanting to spend it.
+
+    @headless
+    Scenario: Only OpenRouter offers a paid model set
+      Then hasPaidModelSet is true for "openrouter"
+      And hasPaidModelSet is false for "gemini"
+      And hasPaidModelSet is false for "groq"
+
+    @headless
+    Scenario: An OpenRouter config defaults to the free models
+      When resolveConfig is called with empty env and stored provider "openrouter" and openrouterKey "sk-or-x"
+      Then the resolved model is "cohere/north-mini-code:free"
+      And the resolved cellModel is "cohere/north-mini-code:free"
+      And the resolved openrouterPaid is false
+
+    @headless
+    # A key with credits still opens on free. The tier decides whether paid is
+    # offered, never whether it is chosen.
+    Scenario: Asking for the paid set resolves the paid models
+      When resolveConfig is called with stored provider "openrouter" and openrouterPaid true
+      Then the resolved model is "google/gemini-3.6-flash"
+      And the resolved cellModel is "google/gemini-3.1-flash-lite"
+
+    @headless
+    Scenario: The paid set drops the free set's pinned batch size
+      When defaultBatchSize is called with "openrouter" and paid true
+      Then the numeric result is undefined
+
+  Rule: defaultBatchSize pins the benchmarked cell batch
+
+    A pin exists where the benchmark found the accuracy curve is not flat, so
+    inheriting the engine default would land a provider somewhere it scores
+    badly. Three providers have one; gemini and openai are flat enough not to.
+
+    @headless
+    # Both have a $0 tier their API cannot report, so the catalogue price is not
+    # the price a great many of their users pay.
+    Scenario Outline: <provider>'s price varies by plan
+      Then priceVariesByPlan for "<provider>" is true
+
+      Examples:
+        | provider |
+        | groq     |
+        | gemini   |
 
     @headless
     Scenario Outline: priceVariesByPlan for <provider> is false
@@ -420,21 +480,31 @@ Feature: Model config
 
       Examples:
         | provider   |
-        | gemini     |
         | openai     |
         | anthropic  |
         | openrouter |
         | puter      |
 
     @headless
-    Scenario: defaultBatchSize for openrouter returns 5
-      When defaultBatchSize is called with "openrouter"
-      Then the numeric result is 5
+    Scenario Outline: defaultBatchSize for <provider> is <batch>
+      When defaultBatchSize is called with "<provider>"
+      Then the numeric result is <batch>
+
+      Examples:
+        | provider   | batch | why                                                        |
+        | openrouter | 5     | north-mini 96% at 5, 88% at 10, 39% at 40                  |
+        | groq       | 20    | gpt-oss-20b holds 90% to batch 20, then falls off to 61%   |
+        | anthropic  | 40    | claude-haiku 94% at 40 against 88% at 20, at the same cost |
 
     @headless
-    Scenario: defaultBatchSize for gemini is undefined
-      When defaultBatchSize is called with "gemini"
+    Scenario Outline: defaultBatchSize for <provider> is undefined
+      When defaultBatchSize is called with "<provider>"
       Then the numeric result is undefined
+
+      Examples:
+        | provider |
+        | gemini   |
+        | openai   |
 
   Rule: ALL_MODELS catalogue
 
@@ -532,24 +602,25 @@ Feature: Model config
     only when the provider actually reports one.
 
     @headless
-    Scenario: A working Gemini key reports the paid tier from the response header
-      Given a stub provider API that accepts the key and returns service tier "standard"
-      When verifyKey is called for provider "gemini" with key "AIza-good"
-      Then the verified tier is "paid"
+    # x-gemini-service-tier is the INFERENCE tier (standard / priority / flex),
+    # not the billing tier. It reads "standard" for an ordinary call whether or
+    # not the project is billed, so a key on a project with billing never set
+    # up was being labelled PAID. Google publishes no billing signal at all.
+    Scenario Outline: A Gemini key reports no tier, whatever the service header says
+      Given a stub provider API that accepts the key and returns service tier "<served>"
+      When verifyKey is called for provider "gemini" with key "AQ.Ab-good"
+      Then the verified tier is unknown
+
+      Examples:
+        | served   |
+        | standard |
+        | priority |
+        | flex     |
 
     @headless
-    Scenario: A Gemini key on the free tier reports it
-      Given a stub provider API that accepts the key and returns service tier "free"
-      When verifyKey is called for provider "gemini" with key "AIza-good"
-      Then the verified tier is "free"
-
-    @headless
-    # Google omits the header where the tier concept doesn't apply. Reading
-    # silence as "paid" is the one word that tells a free-tier user not to
-    # worry about the bill, so silence reports nothing instead.
-    Scenario: A Gemini key with no tier header reports no tier
+    Scenario: A Gemini key with no tier header reports no tier either
       Given a stub provider API that accepts the key
-      When verifyKey is called for provider "gemini" with key "AIza-good"
+      When verifyKey is called for provider "gemini" with key "AQ.Ab-good"
       Then the verified tier is unknown
 
     @headless
@@ -794,9 +865,9 @@ Feature: Model config
     Scenario: The selected card shows its two models with measured cost and speed
       Given the model-config demo page
       When the user adds the key "AIza-demo"
-      Then the "gemini" card's primary model is "gemini-3.6-flash"
-      And the "gemini" card's secondary model is "gemini-3.1-flash-lite"
-      And the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
+      Then the "gemini" card's chat model is "gemini-3.6-flash"
+      And the "gemini" card's cell model is "gemini-3.1-flash-lite"
+      And the "gemini" card's "primary" cost line matches "Price depends on your plan"
       And the "gemini" card's "primary" cost line matches ", ~"
 
     @web
@@ -819,12 +890,18 @@ Feature: Model config
       And the demo shows resolved cellModel "gemini-3.1-flash-lite"
 
     @web
+    # Only OpenRouter and the two no-free-tier providers can answer the
+    # question. Google's service-tier header is the inference tier, not a
+    # billing one, so its card says nothing rather than calling a free-tier key
+    # PAID. Groq publishes nothing at all.
     Scenario: The tier tag shows only where the provider reports one
       Given the model-config demo page
-      When the user adds the key "AIza-demo"
+      When the user adds the key "sk-or-demo"
       And the user adds the key "gsk_demo"
-      Then the "gemini" card shows the tag "PAID"
+      And the user adds the key "AQ.Ab-demo"
+      Then the "openrouter" card shows the tag "PAID"
       And the "groq" card shows no tier tag
+      And the "gemini" card shows no tier tag
 
     @web
     # Driven by the catalogue's voiceInput flag, not hardcoded per provider.
@@ -839,7 +916,7 @@ Feature: Model config
     Scenario: An unrecognised key is refused with the supported prefixes
       Given the model-config demo page
       When the user adds the key "hello-there"
-      Then the chooser shows the error "Key not recognised. Supported prefixes: AIza…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
+      Then the chooser shows the error "Key not recognised. Supported prefixes: AQ.Ab…, sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ…."
       And no provider card is shown
 
     @web
@@ -908,20 +985,25 @@ Feature: Model config
       And the Puter sign-in button is disabled
 
     @web
-    # Groq's free tier is $0 and its API cannot say which tier a key is on, so
-    # the catalogue's paid price is wrong for most Groq users. Better to say we
-    # do not know than to quote a number they will not be charged.
-    Scenario: A provider whose price depends on the plan names no price
+    # Groq and Google both run a $0 tier their API will not report, so the
+    # catalogue's paid price is wrong for a great many of their users. Better to
+    # say we do not know than to quote a number they will not be charged.
+    Scenario Outline: A provider whose price depends on the plan names no price
       Given the model-config demo page
-      When the user adds the key "gsk_demo"
-      Then the "groq" card's "primary" cost line matches "Price depends on your plan"
-      And the "groq" card's "primary" cost line matches ", ~"
+      When the user adds the key "<key>"
+      Then the "<provider>" card's "primary" cost line matches "Price depends on your plan"
+      And the "<provider>" card's "primary" cost line matches ", ~"
+
+      Examples:
+        | provider | key         |
+        | groq     | gsk_demo    |
+        | gemini   | AQ.Ab-demo  |
 
     @web
     Scenario: A provider with one price list still shows it
       Given the model-config demo page
-      When the user adds the key "AIza-demo"
-      Then the "gemini" card's "primary" cost line matches "$0.0015 in / $0.0075 out per 1000 tok"
+      When the user adds the key "sk-proj-demo"
+      Then the "openai" card's "primary" cost line matches "$0.005 in / $0.03 out per 1000 tok"
 
     @web
     Scenario: The refresh button re-runs that provider's measurements
@@ -972,21 +1054,64 @@ Feature: Model config
 
     @web
     # The instructions arrive where the blocker is. A link to the FAQ opened a
-    # tab covering six providers; this opens the two lines for the one asked for.
+    # tab covering six providers; this opens the few lines for the one asked for.
     Scenario: Clicking a provider opens its instructions in place
       Given the model-config demo page
       Then no provider instructions are shown
       When the user clicks the "groq" instructions link
-      Then the "groq" instructions mention "Groq Console"
+      Then the "groq" instructions mention "Groq's own hardware"
       And the "groq" instructions mention "starts with gsk_…"
       And the "groq" instructions link is marked open
       And the "groq" instructions link to "https://console.groq.com/keys" in a new tab
 
     @web
+    # Same provider, same models, same tag: without a word for it, a working
+    # key reads as a button that did nothing.
+    Scenario: Replacing a connected provider's key says so
+      Given the model-config demo page
+      When the user adds the key "AQ.Ab-first"
+      Then the chooser shows no notice
+      When the user adds the key "AQ.Ab-second"
+      Then the chooser shows the notice "Google key replaced. Re-measuring."
+      And the demo shows resolved geminiKey "AQ.Ab-second"
+      When the user types "x" into the key input
+      Then the chooser shows no notice
+
+    @web
+    # The card's PAID tag describes the account; the price lines describe the
+    # models. A paid OpenRouter account used to show PAID above two $0 rows.
+    Scenario: The OpenRouter card switches between its free and paid models
+      Given the model-config demo page
+      When the user adds the key "sk-or-demo"
+      Then the "openrouter" card's chat model is "cohere/north-mini-code:free"
+      When the user picks the "paid" models on the "openrouter" card
+      Then the "openrouter" card's chat model is "google/gemini-3.6-flash"
+      And the "openrouter" card's cell model is "google/gemini-3.1-flash-lite"
+      When the user picks the "free" models on the "openrouter" card
+      Then the "openrouter" card's chat model is "cohere/north-mini-code:free"
+
+    @web
+    Scenario: Only OpenRouter's card offers the choice
+      Given the model-config demo page
+      When the user adds the key "AQ.Ab-demo"
+      Then the "gemini" card has no model-set choice
+
+    @web
+    # Five even-handed paragraphs answer "what is OpenRouter?" but never "which
+    # do I pick?", which is the question someone opening this section has.
+    Scenario: The recommended provider says so first, in bold
+      Given the model-config demo page
+      When the user clicks the "gemini" instructions link
+      Then the "gemini" instructions mention "Recommended: voice input"
+      And the "gemini" instructions lead with bold text
+      When the user clicks the "groq" instructions link
+      Then the "groq" instructions have no bold text
+
+    @web
     Scenario: Clicking the open provider again closes its instructions
       Given the model-config demo page
       When the user clicks the "gemini" instructions link
-      Then the "gemini" instructions mention "Google AI Studio"
+      Then the "gemini" instructions mention "Keys stay viewable"
       When the user clicks the "gemini" instructions link
       Then no provider instructions are shown
 
@@ -996,5 +1121,5 @@ Feature: Model config
       Given the model-config demo page
       When the user clicks the "gemini" instructions link
       And the user clicks the "openai" instructions link
-      Then the "openai" instructions mention "OpenAI platform"
+      Then the "openai" instructions mention "OpenAI API credits"
       And the "gemini" instructions are closed
