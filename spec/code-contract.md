@@ -1159,8 +1159,8 @@ inject the same script from `marketing/web/main.js`. Both entry points and
 fire only after a file is actually written (a cancelled picker sends
 nothing); open events fire after the load succeeds. The event list is
 mirrored, in plain language, on the public `/analytics` page
-(`marketing/web/analytics.html`), which also embeds the Umami share
-dashboard once its share URL is set there.
+(`marketing/web/analytics.html`), which embeds the live Umami share
+dashboard and links it directly for ad-blocked frames.
 
 ## Lazy AI execution (#LazyExec)
 

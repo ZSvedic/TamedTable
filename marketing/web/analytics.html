@@ -39,27 +39,27 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   .guide section > p { color: var(--ink); margin-top: 14px; }
   .guide a { color: var(--accent); }
 
-  /* Event table: monospace event names, plain-language descriptions. */
+  /* Event table: monospace event names, plain-language descriptions. Code
+     spans keep the ink color: this page's blue is for links only. */
   .ev-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 15px; }
   .ev-table th, .ev-table td {
     text-align: left; padding: 9px 12px; vertical-align: top;
     border-bottom: 1px solid var(--silver); color: var(--ink);
   }
   .ev-table th { font-weight: 600; }
-  .ev-table code { font-family: var(--font-mono); font-size: 13.5px; color: var(--accent); }
+  .ev-table code { font-family: var(--font-mono); font-size: 13.5px; color: var(--ink); font-weight: 600; }
   .ev-scroll { overflow-x: auto; }
 
-  /* Live dashboard embed. */
+  /* Live dashboard: the embedded share page, with a direct-link button as
+     the fallback (ad blockers often hide third-party frames). */
   .dash-frame {
-    width: 100%; height: 640px; margin-top: 16px;
+    width: 100%; height: 640px; margin-top: 16px; display: block;
     border: 1px solid var(--silver); border-radius: var(--radius);
     background: var(--paper);
   }
-  .dash-pending {
-    margin-top: 16px; padding: 18px 20px;
-    background: var(--paper); border: 1px solid var(--silver);
-    border-radius: var(--radius); color: var(--muted);
-  }
+  .dash-cta { margin-top: 14px; }
+  .dash-cta .btn { text-decoration: none; }
+  .dash-note { color: var(--muted); font-size: 14px; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -106,26 +106,14 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         dashboard for www.tamedtable.com is public: the same page views and
         event counts the maintainers see, live, for anyone who opens it.
       </p>
-      <!-- Set to the Umami share URL (Umami → Settings → Share URL) to embed
-           the live dashboard and swap away the pending note. -->
-      <div id="dashSlot">
-        <div class="dash-pending">
-          The public share link is being set up: check back shortly. Until
-          then, the tables below still list everything that is tracked.
-        </div>
-      </div>
-      <script>
-        (function () {
-          var UMAMI_SHARE_URL = 'https://cloud.umami.is/share/tv44m6vB3TJF0uA0';
-          if (!UMAMI_SHARE_URL) return;
-          var slot = document.getElementById('dashSlot');
-          slot.innerHTML =
-            '<iframe class="dash-frame" loading="lazy" title="Live TamedTable analytics dashboard"></iframe>' +
-            '<p style="margin-top:10px;"><a target="_blank" rel="noopener">Open the full dashboard →</a></p>';
-          slot.querySelector('iframe').src = UMAMI_SHARE_URL;
-          slot.querySelector('a').href = UMAMI_SHARE_URL;
-        })();
-      </script>
+      <iframe class="dash-frame" src="https://cloud.umami.is/share/tv44m6vB3TJF0uA0" loading="lazy" title="Live TamedTable analytics dashboard"></iframe>
+      <p class="dash-cta">
+        <a class="btn btn-dprimary" href="https://cloud.umami.is/share/tv44m6vB3TJF0uA0" target="_blank" rel="noopener">Open the live dashboard <span class="arrow">→</span></a>
+      </p>
+      <p class="dash-note">
+        An ad blocker may hide the embedded view above; the button opens the
+        same dashboard directly.
+      </p>
     </section>
 
     <section>
@@ -134,9 +122,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         Page views only: the page path, the referrer, and the coarse
         browser/OS/device class and country Umami derives on its servers.
         Umami sets no cookies and stores no identifier that could follow you
-        across visits or sites. The site also carries Cloudflare's cookie-less
-        <a href="https://developers.cloudflare.com/web-analytics/about/" target="_blank" rel="noopener">Web
-        Analytics</a> beacon, which records the same page-view level and nothing more.
+        across visits or sites.
       </p>
     </section>
 
@@ -198,7 +184,5 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 
 <!-- Shared nav behavior (mobile menu toggle) + the Umami loader. -->
 <script src="main.js"></script>
-
-<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6c98efef9e034b45840e0518efb24a6d"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>

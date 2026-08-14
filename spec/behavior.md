@@ -1531,7 +1531,7 @@ The report lists events newest first.
 The web app counts feature use with cookie-less Umami analytics, and the
 whole scheme is public: the page at `/analytics`
 (`marketing/web/analytics.html`) lists every event and embeds the live
-dashboard anyone can open. The marketing pages load the same tracker for
+dashboard anyone can open (with a direct link for ad-blocked frames). The marketing pages load the same tracker for
 page views only.
 
 Three rules bound what analytics may do:
