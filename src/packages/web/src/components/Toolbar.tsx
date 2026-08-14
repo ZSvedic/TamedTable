@@ -11,6 +11,7 @@ import {
 import type { FormatId } from '@tamedtable/file-io';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
+import { trackAction } from '../analytics.ts';
 
 // The formats the Save menu offers, in toolbar order. The label is what the
 // menu shows; the id picks the codec the controller serializes through.
@@ -30,7 +31,11 @@ export function saveMenus(controller: WebController): {
   return {
     saveDataMenu: SAVE_FORMATS.map((f) => ({
       label: `Save ${f.label}…`,
-      onClick: () => void controller.saveDataAs(f.id),
+      onClick: () => {
+        // One button wired for Cloudflare action tracking, as a probe.
+        if (f.id === 'csv') trackAction('csv-exported');
+        void controller.saveDataAs(f.id);
+      },
     })),
     // The recipe can be saved as a replayable .flow or translated to a Python
     // script (model-backed — the controller guards on key / AI cells).

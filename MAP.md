@@ -40,6 +40,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | Tabular format output | [#FormatOut](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23FormatOut&type=code) | ✓ | ✓ | ✓ | [convert.feature](spec/test-cases/convert.feature) + [formats.feature](spec/test-cases/formats.feature) (round-trip matrix) |
 | Tutorial panel | [#TutorialMode](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TutorialMode&type=code) | - | - | ✓ | [tutorial.feature](spec/test-cases/tutorial.feature) |
 | Voice input (hold-or-tap + hands-free) | [#VoiceInput](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23VoiceInput&type=code) | - | - | ✓ | [voice.feature](spec/test-cases/voice.feature) |
+| Web analytics action tracking | [#WebAnalytics](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebAnalytics&type=code) | - | - | ✓ | - |
 | Web UI | [#WebUI](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebUI&type=code) | - | - | ✓ | [web.feature](spec/test-cases/web.feature) |
 
 ## Library packages
