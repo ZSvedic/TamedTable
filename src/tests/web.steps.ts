@@ -678,17 +678,13 @@ Then('the {string} card has no tier', function (this: TamedTableWorld, provider:
 });
 
 /** What the panel's row would show for speed: `speedOf` is the mapping both
- *  hosts render through, so asserting it here asserts the row. The two roles
- *  are "chat" and "cell" in the spec and on screen; the stored probe keeps
- *  `primary`/`secondary`, which is persisted API and not worth churning for a
- *  wording change. */
-const PROBE_ROLE: Record<string, 'primary' | 'secondary'> = { chat: 'primary', cell: 'secondary' };
+ *  hosts render through, so asserting it here asserts the row. */
 Then(
   "the {string} card's {word} speed reads {string}",
   function (this: TamedTableWorld, provider: string, role: string, expected: string) {
     const c = controller(this);
     const p = provider as ModelProvider;
-    const reading = c.probes[p]?.[PROBE_ROLE[role] ?? (role as 'primary' | 'secondary')];
+    const reading = c.probes[p]?.[role as 'chat' | 'cell'];
     assert.equal(speedOf(reading, c.measuring[p] ?? false), expected);
   },
 );

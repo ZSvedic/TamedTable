@@ -1237,7 +1237,7 @@ optional seams, all invisible to the CLI and the batch path:
   values, no call is made.
 
 `onUsage` (per-call token usage) feeds the estimate accumulators; each
-report carries the call's `role` — `'primary'` (patch turn) or `'cell'` —
+report carries the call's `role` — `'chat'` (patch turn) or `'cell'` —
 so the host attributes usage even when one model id serves both roles (a
 model-id comparison would drop every cell call then). `setSpec`'s `fresh`
 flag forces a full replay from the source, so a widened `cellFilter` can
@@ -1423,8 +1423,8 @@ interface StoredMeasure extends ModelMeasure { model: string; at: number }  // w
 interface ProviderProbe {
   tier: Tier;
   connectedAt?: number;                    // ms since epoch; what card order sorts by (see connectedProviders)
-  primary?: StoredMeasure | null;          // absent = never measured, null = the measurement failed
-  secondary?: StoredMeasure | null;
+  chat?: StoredMeasure | null;             // absent = never measured, null = the measurement failed
+  cell?: StoredMeasure | null;
 }
 function readStoredProbes(now?: number): Partial<Record<Provider, ProviderProbe>>;  // drops readings whose model is no longer the role's default, or older than 7 days
 function writeStoredProbes(p: Partial<Record<Provider, ProviderProbe>>): void;
@@ -1442,7 +1442,7 @@ interface RoleRow {                       // prices are catalogue values per 100
   outUsdPer1kTok: number | null;
   speed: RoleSpeed;                       // 'measuring' → "measuring…", 'failed' → "speed unknown", null → no tail
 }
-interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; priceVariesByPlan?: boolean; primary: RoleRow; secondary: RoleRow }
+interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; priceVariesByPlan?: boolean; chat: RoleRow; cell: RoleRow }
 interface ModelChooserProps {
   connected: readonly ConnectedCard[];  // one card per connected provider, in the order added
   selected: Provider | null;            // the default provider; only its card shows model rows
@@ -1480,7 +1480,7 @@ last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
 Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
 provider pins:
 
-| provider | chat model (`model`, JSON `primary`) | cell model (`cellModel`, JSON `secondary`) |
+| provider | chat model (`model`, JSON `chat`) | cell model (`cellModel`, JSON `cell`) |
 |---|---|---|
 | gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 | openai | `gpt-5.5` | `gpt-5.4-mini` |
@@ -1525,7 +1525,7 @@ the chooser shows no tag:
 
 Test hooks: `data-mc-empty` on the empty row; `data-mc-card`, `data-mc-tier`,
 `data-mc-voice`, `data-mc-refresh` and `data-mc-remove` keyed by provider id;
-`data-mc-role` (`"primary"`/`"secondary"`) and `data-mc-model` (keyed by model
+`data-mc-role` (`"chat"`/`"cell"`) and `data-mc-model` (keyed by model
 id) on each role row, with `data-mc-model-id` on the id and `data-mc-cost` on
 the line beneath; `data-mc-keyinput` and `data-mc-add` on the add row;
 `data-mc-error` on the banner; `data-mc-providers` on the footer;

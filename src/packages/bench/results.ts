@@ -31,7 +31,7 @@ export interface ResultRow extends SweepResult {
  *  the measurement, then the raw counters nobody sorts by. */
 const COLUMNS = [
   'date', 'run', 'provider', 'tier', 'freeTier',
-  'cellModel', 'primaryModel', 'batchSize',
+  'cellModel', 'chatModel', 'batchSize',
   'accuracyPct', 'costUsd', 'timeSec',
   'rows', 'scored', 'missing', 'calls', 'inTokens', 'outTokens',
 ] as const;
@@ -47,7 +47,7 @@ function toCells(r: ResultRow): Record<(typeof COLUMNS)[number], string | number
     tier: r.tier,
     freeTier: r.freeTier ? 'yes' : 'no',
     cellModel: r.cellModel,
-    primaryModel: r.primaryModel,
+    chatModel: r.chatModel,
     batchSize: r.batchSize,
     accuracyPct: +(r.accuracy * 100).toFixed(1),
     costUsd: +r.costUsd.toFixed(6),
@@ -102,7 +102,7 @@ export function parseCsv(text: string): ResultRow[] {
       tier: (c[idx('tier')] === 'free' ? 'free' : 'paid') as 'free' | 'paid',
       freeTier: c[idx('freeTier')] === 'yes',
       cellModel: c[idx('cellModel')] ?? '',
-      primaryModel: c[idx('primaryModel')] ?? '',
+      chatModel: c[idx('chatModel')] ?? '',
       batchSize: num(c, 'batchSize'),
       accuracy: num(c, 'accuracyPct') / 100,
       costUsd: num(c, 'costUsd'),

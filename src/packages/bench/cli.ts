@@ -3,14 +3,14 @@
 // CLI for the model & batch-size benchmark. Subcommands:
 //   sample [count]                 draw a subset of the fixture → ground-truth/music-sample.csv
 //   label  [model]                 auto-label the subset with a strong model → music-labels.jsonl
-//   sweep  [--models=…] [--batches=…] [--out=name] [--retries=N] [--primary=id]
+//   sweep  [--models=…] [--batches=…] [--out=name] [--retries=N] [--chat=id]
 //          [--tier=free|paid]
 //                                  run the (model × batch) grid, score vs labels,
 //                                  append the rows to results/sweeps.csv under the
 //                                  run name --out gives them.
 //                                  --retries re-tries a config that throws (free
 //                                  models sometimes flub the patch-turn tool call).
-//                                  --primary overrides the patch-turn model (must
+//                                  --chat overrides the chat model (must
 //                                  share the cell model's provider); default is the
 //                                  provider's mid-tier model. --tier records
 //                                  whether the run was billed; costs are always
@@ -118,15 +118,15 @@ function readLabels(): Label[] {
 }
 
 // ── sweep ────────────────────────────────────────────────────────────────────
-async function cmdSweep(models: string[], batches: number[], out: string, retries: number, tier: 'free' | 'paid', primary?: string): Promise<void> {
+async function cmdSweep(models: string[], batches: number[], out: string, retries: number, tier: 'free' | 'paid', chat?: string): Promise<void> {
   if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample — run "bench sample" then "bench label" first.`);
   const labels = readLabels();
   // The patch turn shares the cell model's provider (one runner, one provider),
-  // so an explicit --primary must sit on that provider.
-  if (primary) {
+  // so an explicit --chat must sit on that provider.
+  if (chat) {
     for (const m of models) {
-      if (providerFor(primary) !== providerFor(m)) {
-        throw new Error(`--primary ${primary} is provider ${providerFor(primary)}, but cell model ${m} is ${providerFor(m)} — the patch turn shares the cell model's provider.`);
+      if (providerFor(chat) !== providerFor(m)) {
+        throw new Error(`--chat ${chat} is provider ${providerFor(chat)}, but cell model ${m} is ${providerFor(m)}: the patch turn shares the cell model's provider.`);
       }
     }
   }
@@ -134,7 +134,7 @@ async function cmdSweep(models: string[], batches: number[], out: string, retrie
   for (const provider of new Set(models.map(providerFor))) {
     if (!keyFor(provider)) throw new Error(`${provider} key not set — needed for ${models.filter((m) => providerFor(m) === provider).join(', ')}.`);
   }
-  const configs = grid(models, batches).map((c) => (primary ? { ...c, primaryModel: primary } : c));
+  const configs = grid(models, batches).map((c) => (chat ? { ...c, chatModel: chat } : c));
   console.log(`Running ${configs.length} configs (${models.length} models × ${batches.length} batch sizes)${retries ? `, up to ${retries} retries each` : ''}…`);
   // Do NOT pin a single apiKey — a sweep can span providers. Leaving apiKey
   // undefined lets each runner resolve its own provider's key from env
@@ -245,7 +245,7 @@ async function main(): Promise<void> {
   switch (cmd) {
     case 'sample': return cmdSample(Number(positional[0] ?? 150));
     case 'label':  return cmdLabel(positional[0] ?? DEFAULT_LABELER);
-    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep', flags.retries ? Number(flags.retries) : 0, flags.tier === 'free' ? 'free' : 'paid', flags.primary);
+    case 'sweep':  return cmdSweep(list(flags.models, DEFAULT_MODELS), nums(flags.batches, DEFAULT_BATCHES), flags.out ?? 'sweep', flags.retries ? Number(flags.retries) : 0, flags.tier === 'free' ? 'free' : 'paid', flags.chat);
     case 'chart':  return cmdChart(flags.batch ? Number(flags.batch) : undefined, flags.subtitle);
     case 'report': return cmdReport(positional[0]);
     default:

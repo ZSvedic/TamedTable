@@ -26,7 +26,7 @@ bun run bench:report       # print the table (add a run name to print just one)
 Defaults: cell models `claude-sonnet-4-5, claude-haiku-4-5,
 gemini-3.1-flash-lite, gpt-5.4-mini`; batches `1, 5, 10, 20, 40, 80`; labeller
 `claude-fable-5`. `sweep` takes `--models=`, `--batches=`, `--out=` (the run
-name), `--retries=`, `--primary=` and `--tier=free|paid`.
+name), `--retries=`, `--chat=` and `--tier=free|paid`.
 
 ## The task
 
@@ -123,7 +123,7 @@ Gotchas, per provider:
   [privacy settings](https://openrouter.ai/settings/privacy) allow free-model
   publication, which means letting them train on your prompts. Free models also
   return the patch-turn tool call as plain text now and then, so pass
-  `--retries=5` and point `--primary` at the cell model itself.
+  `--retries=5` and point `--chat` at the cell model itself.
 - **Cerebras**: the highest free limits anywhere (30 req/min, 14,400 req/day,
   ~1M tokens/day), the only tier that fits a full sweep. Bench-only.
 - **All of them**: free lineups rotate without notice. Cerebras went from ~12

@@ -111,8 +111,8 @@ export interface ProviderProbe {
   /** Milliseconds-since-epoch the key was connected — what the card order is
    *  sorted by. Absent in blobs written before card order was tracked. */
   connectedAt?: number;
-  primary?: StoredMeasure | null;
-  secondary?: StoredMeasure | null;
+  chat?: StoredMeasure | null;
+  cell?: StoredMeasure | null;
 }
 
 export type StoredProbes = Partial<Record<Provider, ProviderProbe>>;
@@ -148,8 +148,8 @@ export function readStoredProbes(now: number = Date.now()): StoredProbes {
       if (!probe || !(id in DEFAULTS)) continue;
       kept[id] = {
         ...probe,
-        primary: stillTrue(probe.primary, defaultModel(id), now),
-        secondary: stillTrue(probe.secondary, defaultCellModel(id), now),
+        chat: stillTrue(probe.chat, defaultModel(id), now),
+        cell: stillTrue(probe.cell, defaultCellModel(id), now),
       };
     }
     return kept;

@@ -883,7 +883,7 @@ const PROVIDERS = [
 ];
 
 function ModelChooser({
-  t, provider = 'gemini', primaryModel = 'gemini-3.5-flash', secondaryModel = 'gemini-3.5-flash',
+  t, provider = 'gemini', chatModel = 'gemini-3.5-flash', cellModel = 'gemini-3.5-flash',
   keys = { gemini: '', openai: '', anthropic: '' }, expandedProvider = 'gemini', revealed: revealedProp,
   onProviderClick, onKeyChange, onSelectModel,
 }) {
@@ -986,15 +986,15 @@ function ModelChooser({
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {providerModels.map((m) => {
-                      const isPrimary = m.id === primaryModel;
-                      const isSecondary = m.id === secondaryModel;
+                      const isChat = m.id === chatModel;
+                      const isCell = m.id === cellModel;
                       return (
                         <div key={m.id} style={{
                           display: 'flex', alignItems: 'center', gap: TT_S.px8, padding: '7px 6px',
-                          borderRadius: TT_S.radiusSm, background: isPrimary ? t.accentSoft : 'transparent',
+                          borderRadius: TT_S.radiusSm, background: isChat ? t.accentSoft : 'transparent',
                         }}>
-                          {roleCell('primary', m.id, isPrimary)}
-                          {roleCell('secondary', m.id, isSecondary)}
+                          {roleCell('chat', m.id, isChat)}
+                          {roleCell('cell', m.id, isCell)}
                           <span style={{ fontFamily: TT_TYPE.mono, fontSize: TT_TYPE.sm, color: t.ink, flex: 1 }}>{m.id}</span>
                           {voiceTag(m.voiceInput)}
                         </div>
@@ -1274,7 +1274,7 @@ function AppScreen({ theme = 'light', state = 'loaded', showSettings = false, sh
       </div>
       {showSettings && (
         <SettingsSheet t={t} inline expandedProvider="gemini" provider="gemini"
-          primaryModel="gemini-3.5-flash" secondaryModel="gemini-3.5-flash"
+          chatModel="gemini-3.5-flash" cellModel="gemini-3.5-flash"
           keys={{ gemini: 'AIzaSyD8eXampleKey', openai: '', anthropic: '' }} />
       )}
       {showTutorial && <TutorialSheet t={t} inline />}

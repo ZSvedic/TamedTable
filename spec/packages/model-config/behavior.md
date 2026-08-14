@@ -52,7 +52,7 @@ provider itself confirm the key.
 One canonical home:
 [`models.json`](../../../src/packages/model-config/models.json) — `models`
 (every model with its per-Mtok prices) and `defaults` (each provider's chat and
-cell model ids, under the JSON keys `primary` and `secondary`, plus an optional
+cell model ids, under the JSON keys `chat` and `cell`, plus an optional
 pinned `batchSize`). The user connects a
 **provider**, not individual models; `defaults` decides the two roles.
 
@@ -379,6 +379,11 @@ reading leaves the row without its `~Z sec` tail rather than with a wrong one,
 and ⟳ puts a fresh number there. Nothing re-measures on its own — a panel that
 opens should not spend the user's money without a click.
 
+The two readings are keyed `chat` and `cell`, matching the rows they feed. A
+blob written under the old `primary`/`secondary` keys simply reads as never
+measured: no migration, because the whole blob is a cache that expires in a week
+and costs one click to refill.
+
 ## Reading from env, and the CLI
 
 `readConfigFromEnv()` (in `env.ts`, Node/Bun only) reads the provider key vars
@@ -453,10 +458,10 @@ reader announces "button".
 Only the **selected** card shows a body, and the selected card is the default
 provider every run uses. The body has two rows, **Chat model** and **Cell
 model**, labelled in the same colour. The names say what each one does: the chat
-model reads the request and edits the table, the cell model fills the cells. They
-used to read *Primary* and *Secondary*, which ranked them, and ranked them
-backwards: the cell model is the one that runs on every row, so it decides both
-the bill and the wait. Each row puts its label and model id on one line and the
+model reads the request and edits the table, the cell model fills the cells.
+Neither name ranks the other, because a ranking would get it backwards: the cell
+model is the one that runs on every row, so it decides both the bill and the
+wait. Each row puts its label and model id on one line and the
 priced line beneath *both*, starting at the row's left edge rather than indented
 under the id: indented, it had a third of the card in which to fit a sentence,
 and got clipped.

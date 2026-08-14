@@ -50,7 +50,7 @@ test('runConfig scores accuracy against labels and prices the tally', async () =
     },
   );
   expect(r.provider).toBe('anthropic');
-  expect(r.primaryModel).toBe('claude-sonnet-4-6'); // same-provider patch default
+  expect(r.chatModel).toBe('claude-sonnet-4-6'); // same-provider patch default
   expect(r.scored).toBe(3);
   expect(r.accuracy).toBeCloseTo(2 / 3, 6);
   expect(r.calls).toBe(1);
@@ -71,7 +71,7 @@ test('runConfig maps a Cerebras cell model to the cerebras provider and its patc
     },
   );
   expect(r.provider).toBe('cerebras');
-  expect(r.primaryModel).toBe('zai-glm-4.7');
+  expect(r.chatModel).toBe('zai-glm-4.7');
   expect(r.costUsd).toBe(0); // free tier — both models priced 0/0
 });
 
@@ -89,7 +89,7 @@ test('runConfig maps an OpenRouter cell model to the openrouter provider and its
     },
   );
   expect(r.provider).toBe('openrouter');
-  expect(r.primaryModel).toBe('cohere/north-mini-code:free');
+  expect(r.chatModel).toBe('cohere/north-mini-code:free');
   expect(r.costUsd).toBe(0); // free plan — both models priced 0/0
 });
 

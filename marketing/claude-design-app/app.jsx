@@ -405,8 +405,8 @@ function ChooserBoard({ theme, expanded = 'gemini' }) {
     <Stage theme={theme} width={430} height={620}>
       <StageLabel t={t}>ModelChooser — provider accordion · {expanded} expanded</StageLabel>
       <ModelChooser t={t} expandedProvider={expanded} provider={expanded}
-        primaryModel={expanded === 'anthropic' ? 'claude-sonnet-4-6' : expanded === 'openai' ? 'gpt-5.5' : 'gemini-3.5-flash'}
-        secondaryModel={expanded === 'anthropic' ? 'claude-sonnet-4-5' : expanded === 'openai' ? 'gpt-5.4-mini' : 'gemini-3.5-flash'}
+        chatModel={expanded === 'anthropic' ? 'claude-sonnet-4-6' : expanded === 'openai' ? 'gpt-5.5' : 'gemini-3.5-flash'}
+        cellModel={expanded === 'anthropic' ? 'claude-sonnet-4-5' : expanded === 'openai' ? 'gpt-5.4-mini' : 'gemini-3.5-flash'}
         keys={{ gemini: 'AIzaSyD8eXampleKey', openai: '', anthropic: 'sk-ant-api03-example' }} />
     </Stage>
   );

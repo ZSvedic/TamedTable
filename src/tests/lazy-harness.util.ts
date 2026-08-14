@@ -21,7 +21,7 @@ export interface FakeBackend {
   patchQueue: Array<unknown[]>;
   cellAnswer: (prompt: string) => string;
   cellPrompts: string[];
-  primaryCalls: number;
+  chatCalls: number;
   cellCalls: number;
   /** Tokens reported per single prompt (batches multiply). */
   cellUsage: { in: number; out: number };
@@ -30,7 +30,7 @@ export interface FakeBackend {
 }
 
 export function makeBackend(cellAnswer: (p: string) => string): FakeBackend {
-  return { patchQueue: [], cellAnswer, cellPrompts: [], primaryCalls: 0, cellCalls: 0, cellUsage: { in: 50, out: 5 } };
+  return { patchQueue: [], cellAnswer, cellPrompts: [], chatCalls: 0, cellCalls: 0, cellUsage: { in: 50, out: 5 } };
 }
 
 /** Lift the requests-per-minute cap so unbatched cell fan-outs never sleep on
@@ -77,12 +77,12 @@ export function makeFetch(backend: FakeBackend) {
     // can serve both roles, so discriminate on the request shape, not the URL.)
     const isPatchTurn = Boolean(body.tools);
     if (isPatchTurn) {
-      backend.primaryCalls++;
+      backend.chatCalls++;
       const ops = backend.patchQueue.shift();
       if (!ops) throw new Error('lazy-regressions fake backend: patch queue empty');
       return new Response(
         geminiBody(
-          [{ functionCall: { name: 'apply_spec_patch', args: { operations: ops }, id: `c${backend.primaryCalls}` } }],
+          [{ functionCall: { name: 'apply_spec_patch', args: { operations: ops }, id: `c${backend.chatCalls}` } }],
           { in: 500, out: 50 },
         ),
         { status: 200, headers },

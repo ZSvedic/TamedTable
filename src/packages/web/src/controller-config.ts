@@ -168,8 +168,8 @@ export class ConfigManager {
   async measure(provider: Provider, key: string): Promise<void> {
     this.host.measuring = { ...this.host.measuring, [provider]: true };
     this.host.notify();
-    for (const role of ['primary', 'secondary'] as const) {
-      const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
+    for (const role of ['chat', 'cell'] as const) {
+      const modelId = role === 'chat' ? defaultModel(provider) : defaultCellModel(provider);
       let measure = null;
       try {
         measure = await measureModel(provider, key, modelId, { fetch: this.host.opts.fetch });

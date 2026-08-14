@@ -586,10 +586,10 @@ Feature: Model config
 
     @headless
     Scenario Outline: DEFAULTS for <provider>
-      Then DEFAULTS names the <provider> primary "<primary>" and secondary "<secondary>"
+      Then DEFAULTS names the <provider> chat model "<chat>" and cell model "<cell>"
 
       Examples:
-        | provider   | primary                     | secondary                   |
+        | provider   | chat                        | cell                        |
         | gemini     | gemini-3.6-flash            | gemini-3.1-flash-lite       |
         | openai     | gpt-5.5                     | gpt-5.4-mini                |
         | anthropic  | claude-sonnet-4-6           | claude-haiku-4-5            |
@@ -798,7 +798,7 @@ Feature: Model config
     Scenario: A reading from today's default model survives
       Given a fake localStorage
       When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 1 day ago
-      Then readStoredProbes returns a primary reading for "gemini"
+      Then readStoredProbes returns a chat reading for "gemini"
 
     @headless
     # models.json picking a new default would otherwise show yesterday's model's
@@ -806,7 +806,7 @@ Feature: Model config
     Scenario: A reading from a model that is no longer the default is dropped
       Given a fake localStorage
       When writeStoredProbes is called for provider "gemini" measured from "gemini-2-retired" 1 day ago
-      Then readStoredProbes returns no primary reading for "gemini"
+      Then readStoredProbes returns no chat reading for "gemini"
       And readStoredProbes returns a measurement for "gemini"
 
     @headless
@@ -814,7 +814,7 @@ Feature: Model config
     Scenario: A reading older than a week is dropped
       Given a fake localStorage
       When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 8 days ago
-      Then readStoredProbes returns no primary reading for "gemini"
+      Then readStoredProbes returns no chat reading for "gemini"
 
     @headless
     # Dropping the reading must not drop the card: the tier and the time the

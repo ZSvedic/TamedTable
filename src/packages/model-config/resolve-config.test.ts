@@ -101,7 +101,7 @@ test('RED-MC-4: a model id belonging to no provider is coerced to the provider d
   // through whenever the resolved provider is anthropic. behavior.md's
   // providerFor rules (:134-144) grant anthropic only ids starting with
   // 'claude-'; 'mistral-large-3' belongs to no provider, and rule 8 (:113)
-  // says the final primary model must belong to the resolved provider or be
+  // says the final chat model must belong to the resolved provider or be
   // replaced with defaultModel(provider).
   const cfg = resolveConfig({ ANTHROPIC_API_KEY: 'sk-ant' }, { model: 'mistral-large-3' });
   assert.equal(

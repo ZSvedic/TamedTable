@@ -31,7 +31,7 @@ export interface RoleRow {
 export interface ConnectedCard {
   id: Provider;
   tier: Tier;
-  /** Whether this provider's primary model accepts audio input. */
+  /** Whether this provider's chat model accepts audio input. */
   voice: boolean;
   /** The catalogue price is not necessarily what this account pays, because
    *  the provider has a free tier we cannot detect (Groq). The rows then name
@@ -43,8 +43,8 @@ export interface ConnectedCard {
   hasPaidModelSet?: boolean;
   /** Which set is running. Meaningless without `hasPaidModelSet`. */
   paidModelSet?: boolean;
-  primary: RoleRow;
-  secondary: RoleRow;
+  chat: RoleRow;
+  cell: RoleRow;
 }
 
 export interface ModelChooserProps {
@@ -251,7 +251,7 @@ export function ModelChooser({
   // indented under the model id — indented, it had a third of the card to fit
   // a sentence in and got clipped.
   const roleRow = (
-    role: 'primary' | 'secondary', row: RoleRow, priceVaries: boolean,
+    role: 'chat' | 'cell', row: RoleRow, priceVaries: boolean,
   ): ReactNode => {
     const cost = costLine(row, priceVaries);
     return (
@@ -261,8 +261,9 @@ export function ModelChooser({
             style={{
               // Fixed, so the two rows' model ids line up under each other.
               // Sized to "Chat model" / "Cell model"; it was 104 when the
-              // labels read "Secondary model", and every pixel it does not
-              // need is a pixel of model id that gets an ellipsis instead.
+              // labels ranked the two roles instead of naming them, and every
+              // pixel it does not need is a pixel of model id that gets an
+              // ellipsis instead.
               width: 76,
               flex: '0 0 auto',
               fontFamily: fontUi,
@@ -274,7 +275,7 @@ export function ModelChooser({
               color: ink2,
             }}
           >
-            {role === 'primary' ? 'Chat model' : 'Cell model'}
+            {role === 'chat' ? 'Chat model' : 'Cell model'}
           </span>
           <span
             data-mc-model-id={row.model}
@@ -413,8 +414,8 @@ export function ModelChooser({
               gap: 10,
             }}
           >
-            {roleRow('primary', c.primary, c.priceVariesByPlan === true)}
-            {roleRow('secondary', c.secondary, c.priceVariesByPlan === true)}
+            {roleRow('chat', c.chat, c.priceVariesByPlan === true)}
+            {roleRow('cell', c.cell, c.priceVariesByPlan === true)}
             {/* The free/paid choice is the user's, not the account's. A key with
                 credits still opens on free: having a balance is not the same as
                 wanting to spend it. A $0 key cannot pick paid at all, because

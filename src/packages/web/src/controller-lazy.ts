@@ -216,7 +216,7 @@ export class LazyManager {
     this.callRows += rows;
   }
 
-  recordUsage(u: { model: string; inputTokens: number; outputTokens: number; role?: 'primary' | 'cell' }): void {
+  recordUsage(u: { model: string; inputTokens: number; outputTokens: number; role?: 'chat' | 'cell' }): void {
     // Only cell work feeds the estimate. The engine says which slot made the
     // call — a model-id comparison would drop every cell call whenever the
     // same model serves both roles. Role-less records (direct callers) keep

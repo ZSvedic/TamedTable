@@ -18,7 +18,7 @@ liftRpm();
 
 // ── RED-LAZY-3: estimate pricing prefix-matches the cell model ──────────────
 // gpt-5.4-mini is the OpenAI provider's DEFAULT cell model (models.json
-// defaults.openai.secondary), so every OpenAI user's estimate is mispriced.
+// defaults.openai.cell), so every OpenAI user's estimate is mispriced.
 
 test('RED-LAZY-3: runEstimate prices gpt-5.4-mini (the OpenAI default cell model) at gpt-5.4 rates', () => {
   // Minimal host: 246 rows, 146 still holding the pending sentinel, and a
@@ -51,7 +51,7 @@ test('RED-LAZY-3: runEstimate prices gpt-5.4-mini (the OpenAI default cell model
 
 // ── RED-LAZY-4: same model in both roles zeroes the estimate ────────────────
 
-test('RED-LAZY-4: same model as primary and cell model makes the estimate read 0 tokens / $0 / 0 s after a real preview', async () => {
+test('RED-LAZY-4: same model as chat and cell model makes the estimate read 0 tokens / $0 / 0 s after a real preview', async () => {
   const be = makeBackend(() => 'consumer');
   const app = makeApp(be, { model: 'gemini-3.5-flash', cellModel: 'gemini-3.5-flash' });
   await loadFixture(app, 'paginate-input.csv');
@@ -69,7 +69,7 @@ test('RED-LAZY-4: same model as primary and cell model makes the estimate read 0
   const honest = (50 + 5) * est.rowsRemaining; // 55 tokens/row observed in the preview
   assert.ok(
     est.estTokens > 0 && est.estUsd > 0,
-    `RED-LAZY-4 (spec/behavior.md:1455-1459; code-contract.md:1049): the estimate is an "honest extrapolation of the preview" — a page was previewed (${readout.done} rows, ${be.cellCalls} cell HTTP calls at 55 tokens/row, honest estTokens ≈ ${honest}) yet the estimate reads ${JSON.stringify(est)}; recordUsage discards every usage record whose model equals the primary model id (controller-lazy.ts:218-222), so with the same model in both roles ALL cell usage is dropped and the run-all/save dialog quotes $0.00 for a run that will bill thousands of tokens`,
+    `RED-LAZY-4 (spec/behavior.md:1455-1459; code-contract.md:1049): the estimate is an "honest extrapolation of the preview" — a page was previewed (${readout.done} rows, ${be.cellCalls} cell HTTP calls at 55 tokens/row, honest estTokens ≈ ${honest}) yet the estimate reads ${JSON.stringify(est)}; recordUsage discards every usage record whose model equals the chat model id (controller-lazy.ts:218-222), so with the same model in both roles ALL cell usage is dropped and the run-all/save dialog quotes $0.00 for a run that will bill thousands of tokens`,
   );
 });
 

@@ -31,9 +31,9 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   // The card shows what a run would actually use, so the OpenRouter rows have
   // to follow the model set the user picked rather than the plain defaults.
   const paidSet = controller.config.openrouterPaid;
-  const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
+  const roleRow = (p: Provider, role: 'chat' | 'cell'): RoleRow => {
     const paid = p === 'openrouter' && paidSet;
-    const model = role === 'primary' ? defaultModel(p, paid) : defaultCellModel(p, paid);
+    const model = role === 'chat' ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -52,8 +52,8 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     priceVariesByPlan: priceVariesByPlan(p),
     hasPaidModelSet: hasPaidModelSet(p),
     paidModelSet: p === 'openrouter' && paidSet,
-    primary: roleRow(p, 'primary'),
-    secondary: roleRow(p, 'secondary'),
+    chat: roleRow(p, 'chat'),
+    cell: roleRow(p, 'cell'),
   }));
 
   // #SettingsCards — the panel's three sections. The heading is deliberately

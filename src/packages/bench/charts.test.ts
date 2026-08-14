@@ -5,7 +5,7 @@ import type { ResultRow } from './results.ts';
 function res(partial: Partial<ResultRow>): ResultRow {
   return {
     date: '2026-08-12', run: 'test', tier: 'paid', freeTier: false,
-    cellModel: 'm', primaryModel: 'p', provider: 'anthropic', batchSize: 20,
+    cellModel: 'm', chatModel: 'p', provider: 'anthropic', batchSize: 20,
     rows: 100, timeMs: 1000, calls: 5, inTokens: 1000, outTokens: 100,
     costUsd: 0.1, accuracy: 0.6, scored: 100, missing: 0, ...partial,
   };

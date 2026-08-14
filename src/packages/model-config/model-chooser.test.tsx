@@ -12,7 +12,7 @@ import { renderToString } from 'react-dom/server';
 import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.tsx';
 import { speedOf } from './storage.ts';
 
-/** One selected Google card, its primary row in the state under test. */
+/** One selected Google card, its chat row in the state under test. */
 function render(speed: RoleRow['speed']): string {
   const row = (s: RoleRow['speed']): RoleRow => ({
     model: 'gemini-3.6-flash',
@@ -22,8 +22,8 @@ function render(speed: RoleRow['speed']): string {
   });
   const card: ConnectedCard = {
     id: 'gemini', tier: 'paid', voice: true,
-    primary: row(speed),
-    secondary: row(null),
+    chat: row(speed),
+    cell: row(null),
   };
   return renderToString(h(ModelChooser, {
     connected: [card],

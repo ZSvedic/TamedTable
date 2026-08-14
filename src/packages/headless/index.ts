@@ -269,9 +269,9 @@ export interface HeadlessRunnerOptions {
   onDebug?: (info: RequestDebugInfo) => void;
   /** Fires once per model call with its token usage — the web shell's
    *  estimate math accumulates these (#LazyExec). `role` says which slot made
-   *  the call ('primary' = patch turn, 'cell' = cell work), so the host can
+   *  the call ('chat' = patch turn, 'cell' = cell work), so the host can
    *  attribute usage even when one model id serves both roles. */
-  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number; role: 'primary' | 'cell' }) => void;
+  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number; role: 'chat' | 'cell' }) => void;
   signal?: AbortSignal;
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
@@ -1089,7 +1089,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private recordCall(
     model: string,
     usage: { inputTokens?: number; outputTokens?: number } | undefined,
-    role: 'primary' | 'cell' = 'cell',
+    role: 'chat' | 'cell' = 'cell',
   ): void {
     const entry = {
       model,
@@ -1585,7 +1585,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
-    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage, 'primary');
+    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage, 'chat');
     if (!captured) {
       const direct = result.toolCalls?.find((c) => c.toolName === 'apply_spec_patch');
       const input = direct?.input as { operations?: unknown[]; transcript?: string } | undefined;

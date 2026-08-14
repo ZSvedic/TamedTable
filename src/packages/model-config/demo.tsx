@@ -129,8 +129,8 @@ function Demo() {
       [provider]: { tier: p[provider]?.tier ?? null, connectedAt: p[provider]?.connectedAt },
     }));
     const stub = stubProbe();
-    for (const role of ['primary', 'secondary'] as const) {
-      const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
+    for (const role of ['chat', 'cell'] as const) {
+      const modelId = role === 'chat' ? defaultModel(provider) : defaultCellModel(provider);
       try {
         const measure = await measureModel(provider, key, modelId, stub);
         // Stamped with the model and the moment, so a default change or a week
@@ -195,9 +195,9 @@ function Demo() {
     setProbes(({ [p]: _dropped, ...rest }) => rest);
   };
 
-  const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
+  const roleRow = (p: Provider, role: 'chat' | 'cell'): RoleRow => {
     const paid = p === 'openrouter' && paidSet;
-    const model = role === 'primary' ? defaultModel(p, paid) : defaultCellModel(p, paid);
+    const model = role === 'chat' ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -216,8 +216,8 @@ function Demo() {
     priceVariesByPlan: priceVariesByPlan(p),
     hasPaidModelSet: hasPaidModelSet(p),
     paidModelSet: p === 'openrouter' && paidSet,
-    primary: roleRow(p, 'primary'),
-    secondary: roleRow(p, 'secondary'),
+    chat: roleRow(p, 'chat'),
+    cell: roleRow(p, 'cell'),
   }));
 
   // ── Test call state ───────────────────────────────────────────────────────

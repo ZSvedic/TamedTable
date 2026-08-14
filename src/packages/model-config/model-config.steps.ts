@@ -910,12 +910,12 @@ Then(
 // ── DEFAULTS steps ───────────────────────────────────────────────────────────
 
 Then(
-  'DEFAULTS names the {word} primary {string} and secondary {string}',
-  function (this: ModelConfigWorld, provider: string, primary: string, secondary: string) {
+  'DEFAULTS names the {word} chat model {string} and cell model {string}',
+  function (this: ModelConfigWorld, provider: string, chat: string, cell: string) {
     const d = DEFAULTS[provider as Provider];
     assert.ok(d, `No DEFAULTS entry for provider "${provider}"`);
-    assert.equal(d.primary, primary);
-    assert.equal(d.secondary, secondary);
+    assert.equal(d.chat, chat);
+    assert.equal(d.cell, cell);
   },
 );
 
@@ -1055,8 +1055,8 @@ function storeProbe(provider: Provider, model: string, at: number): void {
     [provider]: {
       tier: 'paid',
       connectedAt: at,
-      primary: { ttftSec: 0.4, tokPerSec: 150, model, at },
-      secondary: { ttftSec: 0.2, tokPerSec: 400, model, at },
+      chat: { ttftSec: 0.4, tokPerSec: 150, model, at },
+      cell: { ttftSec: 0.2, tokPerSec: 400, model, at },
     },
   });
 }
@@ -1092,19 +1092,19 @@ Then('readStoredProbes returns nothing', function (this: ModelConfigWorld) {
 });
 
 Then(
-  'readStoredProbes returns a primary reading for {string}',
+  'readStoredProbes returns a chat reading for {string}',
   function (this: ModelConfigWorld, provider: string) {
     assert.ok(
-      readStoredProbes()[provider as Provider]?.primary,
-      `expected a primary reading for "${provider}"`,
+      readStoredProbes()[provider as Provider]?.chat,
+      `expected a chat reading for "${provider}"`,
     );
   },
 );
 
 Then(
-  'readStoredProbes returns no primary reading for {string}',
+  'readStoredProbes returns no chat reading for {string}',
   function (this: ModelConfigWorld, provider: string) {
-    assert.equal(readStoredProbes()[provider as Provider]?.primary, undefined);
+    assert.equal(readStoredProbes()[provider as Provider]?.chat, undefined);
   },
 );
 

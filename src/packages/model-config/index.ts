@@ -30,17 +30,16 @@ export interface ModelDef {
   outUsdPerMtok: number;
 }
 
-/** The chat + cell model ids chosen as a provider's defaults (the JSON keys are
- *  `primary` and `secondary`), plus an optional pinned cell batch size where the
- *  benchmark found a cliff. */
+/** The chat + cell model ids chosen as a provider's defaults, plus an optional
+ *  pinned cell batch size where the benchmark found a cliff. */
 export interface ProviderDefaults {
-  primary: string;
-  secondary: string;
+  chat: string;
+  cell: string;
   batchSize?: number;
   /** A second model set for a provider that serves both free and paid models.
    *  OpenRouter is the only one: its `:free` ids are all a $0 account can
    *  reach, while an account with credits can reach everything it proxies. */
-  paid?: { primary: string; secondary: string; batchSize?: number };
+  paid?: { chat: string; cell: string; batchSize?: number };
   /** The catalogue price is not necessarily what this provider's user pays.
    *  Groq's free tier costs nothing and is indistinguishable from a paid key
    *  over the API — same models, same headers — so quoting the paid price
@@ -81,8 +80,7 @@ export interface StoragePort {
 // ── Model catalogue ────────────────────────────────────────────────────────
 // One canonical home: models.json — two sections. `models` lists every
 // available model with its per-Mtok prices (mirrors benchmarks/models.jsonl);
-// `defaults` maps each provider to its chat + cell model ids (JSON keys
-// `primary` and `secondary`).
+// `defaults` maps each provider to its chat + cell model ids.
 // The user no longer picks individual models — they pick a provider, and the
 // defaults below decide the two roles. Every id must be verified against the
 // provider's current docs before changing — never guess an id.
@@ -106,7 +104,7 @@ function setFor(provider: Provider, paid = false): ProviderDefaults | undefined 
 /** Default chat (patch-turn) model for a provider: the `defaults` entry for
  *  that provider, falling back to the provider's first catalogue entry. */
 export function defaultModel(provider: Provider, paid = false): string {
-  return setFor(provider, paid)?.primary
+  return setFor(provider, paid)?.chat
     ?? ALL_MODELS.find((m) => m.provider === provider)!.id;
 }
 
@@ -128,7 +126,7 @@ export function modelFor(provider: Provider, modelId: string): ModelDef | undefi
  *  provider, falling back to that provider's chat default. Always same-provider
  *  — cell calls never cross providers. */
 export function defaultCellModel(provider: Provider, paid = false): string {
-  return setFor(provider, paid)?.secondary ?? defaultModel(provider, paid);
+  return setFor(provider, paid)?.cell ?? defaultModel(provider, paid);
 }
 
 /** Whether this provider's catalogue price might not be the price the user
