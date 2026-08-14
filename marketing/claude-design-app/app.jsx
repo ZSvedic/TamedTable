@@ -440,7 +440,7 @@ function OverviewBoard() {
         {li('Toolbar', 'Brand lockup, file readout, Open URL/local split button, Save data / Save flow, undo/redo, theme toggle, Settings, Tutorial.')}
         {li('TableView', 'Silver grid · 28px rows · 32px header. Selection, inline edit, header drag-reorder, pagination footer. LLM cells flash cellHi → cellHi2; pending cells pulse.')}
         {li('ChatSidebar', 'Request list with collapsible request-detail strips, input row with send/stop and the press-and-hold MicButton (rec red + pulsing ring).')}
-        {li('Settings & Tutorial', 'Provider accordion (Google / OpenAI / Anthropic / OpenRouter) with masked keys and a Primary/Secondary model matrix; guided tutorial scenarios.')}
+        {li('Settings & Tutorial', 'Provider accordion (Google / OpenAI / Anthropic / OpenRouter) with masked keys and a chat/cell model matrix; guided tutorial scenarios.')}
       </div>
       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Mark height={16} />
@@ -615,7 +615,7 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="settings" title="Settings · ModelChooser" subtitle="Provider accordion — masked API key (eye reveal) + Primary/Secondary model matrix; voice-capable models carry the 🎙 badge.">
+      <DCSection id="settings" title="Settings · ModelChooser" subtitle="Provider accordion — masked API key (eye reveal) + chat/cell model matrix; voice-capable models carry the 🎙 badge.">
         <DCArtboard id="chooser-gemini" label="Google expanded · light" width={430} height={620}>
           <ChooserBoard theme="light" expanded="gemini" />
         </DCArtboard>

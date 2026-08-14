@@ -158,7 +158,7 @@ Feature: Model config
       Then the resolved cellModel is "gpt-5.4-mini"
 
     @headless
-    # Rule 9: the final primary model must belong to the resolved provider.
+    # Rule 9: the final chat model must belong to the resolved provider.
     Scenario: A cross-provider stored model is coerced to the provider default
       When resolveConfig is called with stored provider "openai" and model "claude-sonnet-4-6"
       Then the resolved model is "gpt-5.5"
@@ -379,10 +379,10 @@ Feature: Model config
     @headless
     Scenario Outline: defaultModel for <provider>
       When defaultModel is called with "<provider>"
-      Then the result is "<primary>"
+      Then the result is "<chat>"
 
       Examples:
-        | provider   | primary                     |
+        | provider   | chat                        |
         | puter      | gemini-3.6-flash            |
         | anthropic  | claude-sonnet-4-6           |
         | gemini     | gemini-3.6-flash            |
@@ -395,10 +395,10 @@ Feature: Model config
     @headless
     Scenario Outline: defaultCellModel for <provider>
       When defaultCellModel is called with "<provider>"
-      Then the result is "<secondary>"
+      Then the result is "<cell>"
 
       Examples:
-        | provider   | secondary                   |
+        | provider   | cell                        |
         | puter      | gemini-3.1-flash-lite       |
         | anthropic  | claude-haiku-4-5            |
         | openai     | gpt-5.4-mini                |
@@ -867,8 +867,8 @@ Feature: Model config
       When the user adds the key "AIza-demo"
       Then the "gemini" card's chat model is "gemini-3.6-flash"
       And the "gemini" card's cell model is "gemini-3.1-flash-lite"
-      And the "gemini" card's "primary" cost line matches "Price depends on your plan"
-      And the "gemini" card's "primary" cost line matches ", ~"
+      And the "gemini" card's "chat" cost line matches "Price depends on your plan"
+      And the "gemini" card's "chat" cost line matches ", ~"
 
     @web
     Scenario: An unselected card shows no model rows
@@ -905,7 +905,7 @@ Feature: Model config
 
     @web
     # Driven by the catalogue's voiceInput flag, not hardcoded per provider.
-    Scenario: The VOICE tag follows the primary model's audio support
+    Scenario: The VOICE tag follows the chat model's audio support
       Given the model-config demo page
       When the user adds the key "AIza-demo"
       And the user adds the key "sk-proj-demo"
@@ -991,8 +991,8 @@ Feature: Model config
     Scenario Outline: A provider whose price depends on the plan names no price
       Given the model-config demo page
       When the user adds the key "<key>"
-      Then the "<provider>" card's "primary" cost line matches "Price depends on your plan"
-      And the "<provider>" card's "primary" cost line matches ", ~"
+      Then the "<provider>" card's "chat" cost line matches "Price depends on your plan"
+      And the "<provider>" card's "chat" cost line matches ", ~"
 
       Examples:
         | provider | key         |
@@ -1003,14 +1003,14 @@ Feature: Model config
     Scenario: A provider with one price list still shows it
       Given the model-config demo page
       When the user adds the key "sk-proj-demo"
-      Then the "openai" card's "primary" cost line matches "$0.005 in / $0.03 out per 1000 tok"
+      Then the "openai" card's "chat" cost line matches "$0.005 in / $0.03 out per 1000 tok"
 
     @web
     Scenario: The refresh button re-runs that provider's measurements
       Given the model-config demo page
       When the user adds the key "AIza-demo"
       And the user refreshes the "gemini" card
-      Then the "gemini" card's "primary" cost line matches ", ~"
+      Then the "gemini" card's "chat" cost line matches ", ~"
 
     @web
     Scenario: Every card carries its own refresh and delete buttons

@@ -174,7 +174,7 @@ Then(
   async function (this: object, provider: string, role: string, expected: string) {
     await expectText(
       page(this),
-      `[data-mc-card="${provider}"] ~ div [data-mc-role="${role}"] [data-mc-cost]`,
+      `[data-mc-card="${provider}"] ~ div [data-mc-role="${ROLE_ATTR[role] ?? role}"] [data-mc-cost]`,
       expected,
     );
   },

@@ -1037,7 +1037,7 @@ disabled until a table is loaded. Its menu is grouped the same way:
   translates the flow into a standalone Python script.
 
 The Python export is
-model-backed — the selected provider's primary (patch-turn) model does the
+model-backed — the selected provider's chat model does the
 translation — so unlike every other save it needs a key for the selected
 provider, and a missing key fails fast with a provider-named toast such as
 `Exporting to Python requires a Google API key — open Settings and add one.`

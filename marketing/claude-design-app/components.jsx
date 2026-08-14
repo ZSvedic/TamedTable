@@ -862,7 +862,10 @@ function ChatSidebar({
   );
 }
 
-// ── ModelChooser — provider accordion: masked key + primary/secondary matrix ──
+// ── ModelChooser — provider accordion: masked key + chat/cell model matrix ──
+// Historical: this board is the pre-redesign matrix (one radio per model per
+// role). The shipped panel is the connected-provider card — see
+// marketing/design_handoff_model_chooser/ and spec/packages/model-config/.
 const MODELS = [
   { id: 'gemini-3.5-flash', provider: 'gemini', voiceInput: true },
   { id: 'gemini-3.1-pro-preview', provider: 'gemini', voiceInput: true },
@@ -925,9 +928,9 @@ function ModelChooser({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: TT_S.px8 }}>
       <p style={{ margin: 0, fontFamily: TT_TYPE.ui, fontSize: TT_TYPE.xs, lineHeight: 1.45, color: t.ink3 }}>
-        <b style={{ color: t.ink }}>Primary</b> writes the spec patch each turn and handles voice input.{' '}
-        <b style={{ color: t.ink }}>Secondary</b> fills per-row AI cells — pick a cheaper model there for
-        bulk work. Both use the selected provider.
+        The <b style={{ color: t.ink }}>chat model</b> reads the request and writes the spec patch each
+        turn, and handles voice input.{' '} The <b style={{ color: t.ink }}>cell model</b> fills per-row AI
+        cells — pick a cheaper model there for bulk work. Both use the selected provider.
       </p>
       {PROVIDERS.map((meta) => {
         const isSelected = provider === meta.id;
@@ -977,8 +980,8 @@ function ModelChooser({
                 </div>
                 <div style={{ marginTop: TT_S.px8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: TT_S.px8, padding: '0 6px 4px' }}>
-                    {roleHead('Primary')}
-                    {roleHead('Secondary')}
+                    {roleHead('Chat')}
+                    {roleHead('Cell')}
                     <span style={{ flex: 1 }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

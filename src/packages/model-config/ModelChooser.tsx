@@ -269,7 +269,7 @@ export function ModelChooser({
               fontSize: 12,
               fontWeight: 650,
               whiteSpace: 'nowrap',
-              // Both roles read the same: the secondary model is not a lesser
+              // Both roles read the same: the cell model is not a lesser
               // setting, it is the one that runs on every row.
               color: ink2,
             }}

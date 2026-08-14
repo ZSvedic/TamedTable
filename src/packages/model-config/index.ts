@@ -81,7 +81,8 @@ export interface StoragePort {
 // ── Model catalogue ────────────────────────────────────────────────────────
 // One canonical home: models.json — two sections. `models` lists every
 // available model with its per-Mtok prices (mirrors benchmarks/models.jsonl);
-// `defaults` maps each provider to its primary + secondary (cell) model ids.
+// `defaults` maps each provider to its chat + cell model ids (JSON keys
+// `primary` and `secondary`).
 // The user no longer picks individual models — they pick a provider, and the
 // defaults below decide the two roles. Every id must be verified against the
 // provider's current docs before changing — never guess an id.

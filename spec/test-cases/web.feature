@@ -773,7 +773,7 @@ Feature: Web front-end
   Rule: The settings panel selects the engine model
 
     @web
-    Scenario: The web app defaults to the Gemini primary and flash-lite cell model
+    Scenario: The web app defaults to the Gemini chat model and flash-lite cell model
       Given the TamedTable web app
       Then the configured model is "gemini-3.6-flash"
       And the configured cellModel is "gemini-3.1-flash-lite"
@@ -855,8 +855,8 @@ Feature: Web front-end
       And user connects the key "AIza-good"
       Then the connect error is empty
       And the connected providers are "gemini"
-      And the "gemini" card's primary speed reads "failed"
-      And the "gemini" card's secondary speed reads "failed"
+      And the "gemini" card's chat speed reads "failed"
+      And the "gemini" card's cell speed reads "failed"
 
     @web
     # The free tier: OpenRouter's single $0 model fills both roles.

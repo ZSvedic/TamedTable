@@ -564,7 +564,7 @@ test.describe('phone — the page is the table scroller', () => {
     await page.goto('/TamedTable/app/');
     await page.locator('[data-mob-dock="menu"]').click();
     await page.locator('[data-mob-menu-item="Settings…"]').click();
-    // Connect a provider so the selected card renders its Primary/Secondary rows.
+    // Connect a provider so the selected card renders its Chat/Cell model rows.
     await page.locator('[data-mc-keyinput]').fill('AIza-mobile-e2e');
     await page.locator('[data-mc-add]').click();
     const id = page.locator('[data-mc-model-id]').first();

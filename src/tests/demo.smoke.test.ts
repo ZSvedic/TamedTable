@@ -237,7 +237,7 @@ describe.skipIf(skip)('demo smoke', () => {
     expect(await page.isVisible('#tc-input')).toBe(true);
     expect(await page.isVisible('#tc-send')).toBe(true);
     expect(await page.isVisible('#tc-response')).toBe(true);
-    // The key-free default resolves to Gemini, whose primary takes audio.
+    // The key-free default resolves to Gemini, whose chat model takes audio.
     await page.waitForSelector('#tc-mic');
 
     // Connecting Anthropic makes it the default; its models are text-only.

@@ -1379,7 +1379,7 @@ interface ResolvedConfig {
   groqKey: string | null;
   openrouterKey: string | null;
   puterToken: string | null;          // a Puter session token, not an API key
-  model: string;      // primary — writes the spec patch (and carries voice)
+  model: string;      // the chat model — writes the spec patch (and carries voice)
   cellModel: string;  // the cell model — fills per-row cells; always same-provider as model
   alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
 }
@@ -1392,7 +1392,7 @@ interface StoragePort {
 
 const ALL_MODELS: readonly ModelDef[];  // imported from models.json — the catalogue's single source
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
-function defaultModel(provider: Provider): string;      // primary (patch-turn) default
+function defaultModel(provider: Provider): string;      // the chat-model default
 function defaultCellModel(provider: Provider): string;  // the cell-model default
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
 function priceVariesByPlan(provider: Provider): boolean;  // defaults' flag (groq): an undetectable free tier, so the card names no price
@@ -1480,7 +1480,7 @@ last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
 Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
 provider pins:
 
-| provider | primary (`model`) | secondary (`cellModel`) |
+| provider | chat model (`model`, JSON `primary`) | cell model (`cellModel`, JSON `secondary`) |
 |---|---|---|
 | gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 | openai | `gpt-5.5` | `gpt-5.4-mini` |

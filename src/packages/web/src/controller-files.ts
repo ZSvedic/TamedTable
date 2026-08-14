@@ -462,7 +462,7 @@ export class FilesManager {
 
   /** Export the current flow as a standalone Python script — the "Save as
    *  Python…" entry. Unlike the other saves this is model-backed (the selected
-   *  provider's primary model translates the flow), so it mirrors :save-py: it
+   *  provider's chat model translates the flow), so it mirrors :save-py: it
    *  needs that provider's key and refuses a flow with an {llm} cell, which has
    *  no deterministic Python form. */
   // #SaveGate — the model call outlives the click that started it, so the

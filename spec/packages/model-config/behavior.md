@@ -444,7 +444,7 @@ moves would otherwise leave one of the two pointing at nothing.
 passes them (see *Card order*). The header — the whole row is the click target
 — carries a radio knob, the provider's display name, its tags, a ⟳ refresh
 button and a delete button. Tags are `FREE`/`PAID` when the provider reported a
-tier and nothing when it didn't, plus `VOICE` when that provider's primary
+tier and nothing when it didn't, plus `VOICE` when that provider's chat
 model accepts audio input, read from the catalogue rather than hardcoded. Both
 buttons stop the click from also selecting the card, and both carry an
 `aria-label` as well as a tooltip — they are icon-only, so without one a screen

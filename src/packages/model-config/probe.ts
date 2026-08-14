@@ -181,7 +181,7 @@ function ok(answer: Answer): boolean {
 /**
  * Check a key against its provider and report the account tier. The gate before
  * anything is stored: no card appears until this resolves. One cheap call to the
- * secondary model with a two-word prompt and no retries, so a dead key answers
+ * cell model with a two-word prompt and no retries, so a dead key answers
  * in about a second instead of after a backoff a user has no reason to wait out.
  *
  * The tier is only ever a real signal. Google returns it in a response header
