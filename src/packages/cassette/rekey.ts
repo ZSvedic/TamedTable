@@ -1,6 +1,6 @@
 // #Cassettes
-// Re-key committed cassettes after a *small* SYSTEM_PROMPT edit — one that
-// would not change what the model answers — so the suite keeps replaying
+// Re-key committed cassettes after a *small* SYSTEM_PROMPT edit, one that
+// would not change what the model answers, so the suite keeps replaying
 // offline without a live re-record (spec/code-contract.md § Recording model
 // calls). For every entry whose stored request body embeds the previous
 // prompt (git HEAD's spec/prompt-app-edit.md), the current prompt is spliced
@@ -45,7 +45,7 @@ const oldPrompt = systemPromptSection(
 );
 const newPrompt = systemPromptSection(readFileSync(PROMPT_FILE, 'utf8'));
 if (oldPrompt === newPrompt) {
-  console.log('SYSTEM_PROMPT is unchanged vs git HEAD — nothing to re-key.');
+  console.log('SYSTEM_PROMPT is unchanged vs git HEAD: nothing to re-key.');
   process.exit(0);
 }
 const oldEsc = escaped(oldPrompt);
@@ -75,4 +75,4 @@ for (const file of readdirSync(CASSETTE_DIR).filter((f) => f.endsWith('.json')))
   rekeyed += touched;
   console.log(`${file}: ${touched} entr${touched === 1 ? 'y' : 'ies'} re-keyed`);
 }
-console.log(`done — ${rekeyed} re-keyed total${unreadable ? `, ${unreadable} old-format entries left as-is` : ''}`);
+console.log(`done: ${rekeyed} re-keyed total${unreadable ? `, ${unreadable} old-format entries left as-is` : ''}`);

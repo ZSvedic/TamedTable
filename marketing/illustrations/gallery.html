@@ -13,11 +13,11 @@
   .tag.new{background:#281C60}
   .tag.old{background:#96BED7;color:#281C60}
 </style>
-<h1>TamedTable — feature illustrations</h1>
+<h1>TamedTable: feature illustrations</h1>
 <p style="color:#6A6280;font-size:12px">Same order as the marketing list. <b>NEW</b> = freshly drawn, <b>OLD</b> = reused tile renamed to <code>{category}-{name}.svg</code>.</p>
 <div class="grid" id="g"></div>
 <script>
-  // [file, caption, status]  — order matches marketing/marketing-brief.md
+  // [file, caption, status]: order matches marketing/marketing-brief.md
   const files=[
     ["LazyAI-shuffle.svg","a big file opens as a shuffled sample","new"],
     ["LazyAI-pending-pages.svg","the visible page fills; the rest stays pending","new"],
@@ -38,7 +38,7 @@
     ["Validate-impossible-date.svg","\"flag any impossible birth date\"","new"],
     ["Validate-city-country.svg","\"check the city matches the country\"","new"],
     ["Validate-wrong-prices.svg","\"flag prices that seem wrong\"","new"],
-    ["Language-voice.svg","tap the mic — speak instead of type","old"],
+    ["Language-voice.svg","tap the mic: speak instead of type","old"],
     ["Language-summarize.svg","\"summarize each review in one line\"","new"],
     ["Language-translate.svg","\"translate the comments to English\"","new"],
     ["Language-detect-language.svg","\"tag the language of every comment\"","new"],
@@ -57,6 +57,6 @@
   const g=document.getElementById("g");
   for(const [f,c,s] of files){
     g.insertAdjacentHTML("beforeend",
-      `<figure><img src="${f}" width="360" height="230"><span class="tag ${s}">${s.toUpperCase()}</span><figcaption>${f} — ${c}</figcaption></figure>`);
+      `<figure><img src="${f}" width="360" height="230"><span class="tag ${s}">${s.toUpperCase()}</span><figcaption>${f}: ${c}</figcaption></figure>`);
   }
 </script>

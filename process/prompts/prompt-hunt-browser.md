@@ -1,8 +1,8 @@
-# BROWSER HUNTER — find bugs by being a user
+# BROWSER HUNTER: find bugs by being a user
 
 Read `AGENTS.md` and `README.md` first, then `MAP.md`, `spec/behavior.md`, and
 `spec/code-contract.md`. Work for **at least five hours**. Spawn as many
-subagents as the work supports — one per feature area, plus separate
+subagents as the work supports: one per feature area, plus separate
 verification agents. Deliver **one PR**.
 
 Your job is to **find bugs, not fix them**. Every product bug you find is
@@ -15,35 +15,35 @@ The suite has 550+ scenarios and three basic features were still broken in the
 deployed app (PR #259): a tour died because the production bundle tree-shook
 Zod's locale away, an API key saved mid-session never reached the engine, and
 joins were unreachable in the browser because only a test could stage a lookup
-table. Root cause: the `@web` Cucumber profile drives `WebController` directly
-— no DOM, no bundler, no clicks — and the four Playwright specs that do drive
+table. Root cause: the `@web` Cucumber profile drives `WebController` directly,
+no DOM, no bundler, no clicks, and the four Playwright specs that do drive
 a browser run against the **dev** server and are not in CI.
 
 You close that gap and then use it to hunt.
 
-## Phase 1 — make the harness test the thing we ship
+## Phase 1: make the harness test the thing we ship
 
 This is the one place you are allowed to change non-test code, and only these:
 
-1. `src/packages/web/playwright.config.ts` — serve the **production build**
+1. `src/packages/web/playwright.config.ts`: serve the **production build**
    (`bun run build && bun run preview`), not `bun run dev`. Dev does not
    tree-shake or minify, which is exactly the class of bug that escaped.
    Keep a dev-server option for local iteration if you like, but CI must use
    the build.
-2. `.github/workflows/ci.yml` — run the e2e suite. It must gate PRs.
-3. `src/tests/` — a unit test asserting no step definition reaches past the
+2. `.github/workflows/ci.yml`: run the e2e suite. It must gate PRs.
+3. `src/tests/`: a unit test asserting no step definition reaches past the
    public controller surface: no `.engine.`, `.lazy.`, `.patch.`, or
    `.settingsMgr.` access under `src/tests/**` and `src/packages/**/*.steps.ts`.
    Today there is exactly one violation, `src/tests/v2.steps.ts:198`
-   (`engine.registerLookup`) — and PR #259 gave that seam a real UI, so if that
+   (`engine.registerLookup`), and PR #259 gave that seam a real UI, so if that
    PR has merged, rewrite the step to use it; if it has not, allowlist that one
    line with a comment pointing at #259 and let the test guard everything else.
 
 Get Phase 1 green and **commit it** before hunting. If the production build
-turns out to break something the dev server hid, that is your first finding —
+turns out to break something the dev server hid, that is your first finding:
 record it and keep going.
 
-## Phase 2 — drive the app as a person, in a real browser
+## Phase 2: drive the app as a person in a real browser
 
 Then write browser-driven user journeys under `src/packages/web/e2e/`, in new
 `*.e2e.ts` files grouped by area. Real clicks, real typing, real drags, real
@@ -53,23 +53,23 @@ viewport changes. The existing specs (`tutorial.e2e.ts`, `mobile.e2e.ts`,
 
 Cover, at minimum:
 
-- **Open** — sample picker, URL dialog, local file, drag-and-drop on the empty
+- **Open**: sample picker, URL dialog, local file, drag-and-drop on the empty
   page, Recent entries, unsupported extension, empty file, a file bigger than
   one page (the large-file dialog).
-- **Save** — every format, the source-name default, the download fallback,
+- **Save**: every format, the source-name default, the download fallback,
   save after a run (the save-ready click), Save as Python's refusals.
-- **Grid** — inline edit, column drag-reorder, column resize, paging, sort and
+- **Grid**: inline edit, column drag-reorder, column resize, paging, sort and
   filter menus, selection, changed-cell tint, the reveal scroll.
-- **Undo/redo/history** — after each of the above, and interleaved.
-- **Settings** — pasting a key, the connected-provider cards, the model rows,
+- **Undo/redo/history**, after each of the above, and interleaved.
+- **Settings**: pasting a key, the connected-provider cards, the model rows,
   and what a change does to a table already on screen.
-- **Tours** — every tour in the panel, start to finish, including deep links,
+- **Tours**: every tour in the panel, start to finish, including deep links,
   staying in a finished tour, and exiting mid-tour. Tours replay committed
-  cassettes and need **no API key** — they are your only route to exercising
+  cassettes and need **no API key**: they are your only route to exercising
   real model-driven behavior, so lean on them hard.
-- **Mobile** — the ≤768px layout: app bar, dock, sheets, drawer, pinch zoom,
+- **Mobile**: the ≤768px layout: app bar, dock, sheets, drawer, pinch zoom,
   frozen header.
-- **Chat** — sending, the run progress block, Stop, request detail, Report bug,
+- **Chat**: sending, the run progress block, Stop, request detail, Report bug,
   the thread's scroll behavior.
 
 Then push past the happy path, because that is where the bugs are:
@@ -94,7 +94,7 @@ A finding is a **reproducible failure**, not an opinion. For each one:
 1. A test that fails, on the production build, for the stated reason.
 2. The actual failure output, pasted into the report.
 3. One sentence on what a user loses.
-4. Your best guess at the cause as `file.ts:line` — a guess is fine, say it is.
+4. Your best guess at the cause as `file.ts:line`: a guess is fine, say it is.
 
 Not findings: wording you would phrase differently, missing features, styling
 preferences, CLI-vs-web differences the spec describes, or anything you cannot
@@ -102,7 +102,7 @@ make fail.
 
 ## Where red tests go
 
-Keep `bun run test` and the green e2e suite **green** — a reviewer must be able
+Keep `bun run test` and the green e2e suite **green**: a reviewer must be able
 to see that your PR broke nothing. The bug inventory lives apart:
 
 - Browser findings: `src/packages/web/e2e/red/<area>.e2e.ts`, run by a separate
@@ -143,11 +143,11 @@ scroll is **minor**.
   offline from committed recordings.
 - Never edit product code under `src/packages/*/` except the Phase 1 list.
 - Never edit an existing green scenario to make room for a finding.
-- Commit every hour or so, with the findings file updated — a five-hour session
+- Commit every hour or so, with the findings file updated, a five-hour session
   that loses its work at hour four is worth nothing.
 - Deduplicate before you report: three symptoms of one cause are one finding.
 - Ten or more verified findings is the bar. If you are under it at hour four,
-  you are testing too politely — go break something.
+  you are testing too politely: go break something.
 
 Open the PR when the timebox is up. Title it as a bug inventory, not a fix, and
 lead the body with the findings table. Do not merge.

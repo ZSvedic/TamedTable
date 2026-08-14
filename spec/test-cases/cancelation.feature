@@ -28,7 +28,7 @@ Feature: Cancel long-running LLM transformation
     Then Phone column still shows normalized values
     And Country column shows pre-transformation values
 
-  # #OpenFlow — the chat thread's live run progress fronts a chat request:
+  # #OpenFlow: the chat thread's live run progress fronts a chat request:
   # published when the run starts, row counts ticking as AI cells stream,
   # cleared when the run ends.
   @web

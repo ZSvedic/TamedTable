@@ -1,4 +1,4 @@
-// #Diagnostics — step definitions for spec/test-cases/diagnostics.feature
+// #Diagnostics: step definitions for spec/test-cases/diagnostics.feature
 import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { TamedTableWorld } from './world.ts';
@@ -73,7 +73,7 @@ Then(
 /** The newest assistant chat message, or undefined. */
 function lastAssistant(world: TamedTableWorld): { id: number; text: string; reportable?: boolean; undone?: boolean } | undefined {
   // displayMessages, not messages: replies render with undo state applied
-  // (the Executed/Undone heading swap — behavior.md § Web UI).
+  // (the Executed/Undone heading swap: behavior.md § Web UI).
   return controller(world)
     .displayMessages()
     .filter((m) => m.role === 'assistant')
@@ -148,7 +148,7 @@ Then('the diagnostics report drops the provider key fields', function (this: Tam
 
 Given('the diagnostics log is filled with long events', function (this: TamedTableWorld) {
   // Enough long toasts to overflow any URL budget, with the punctuation a real
-  // report carries (quotes, slashes, arrows) — percent-encoding inflates those
+  // report carries (quotes, slashes, arrows): percent-encoding inflates those
   // ~3×, which is exactly what pushed real links past GitHub's limit.
   for (let i = 0; i < 25; i++) {
     controller(this).pushToast(

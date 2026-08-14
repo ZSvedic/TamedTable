@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
 # Run this to refresh repo-size tracking.
-#   1. Writes temp/commit-sizes.csv — per-commit byte sizes of the git-tracked
+#   1. Writes temp/commit-sizes.csv: per-commit byte sizes of the git-tracked
 #      files under process/ (formerly ops/), spec/, src/, plus the tracked TOTAL.
 #   2. Invokes _chart.py to render temp/commit-sizes.png.
-# Both outputs land in temp/ and are gitignored — disposable artifacts,
+# Both outputs land in temp/ and are gitignored: disposable artifacts,
 # fully regenerable from git history by re-running this script.
 #
 set -euo pipefail
@@ -38,5 +38,5 @@ done
 
 echo "Saved $OUT"
 
-# Render the chart. _chart.py is a helper — invoked here, not run by hand.
+# Render the chart. _chart.py is a helper: invoked here, not run by hand.
 uv run _chart.py

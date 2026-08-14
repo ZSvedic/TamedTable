@@ -5,7 +5,7 @@ import type { Row, TablePlan } from '@tamedtable/core';
 // The path-free load seam (#IoFormats): the web parses a picked file through
 // the file-io codec registry and hands the rows straight to loadParsed, so the
 // browser never needs a filesystem.
-describe('loadParsed — load already-parsed rows without a path', () => {
+describe('loadParsed: load already-parsed rows without a path', () => {
   const rows: Row[] = [
     { Name: 'Ada', Country: 'uk' },
     { Name: 'Grace', Country: 'usa' },
@@ -36,7 +36,7 @@ describe('loadParsed — load already-parsed rows without a path', () => {
 });
 
 // A staged lookup lets a join resolve by name with no filesystem (browser).
-describe('registerLookup — join against staged rows', () => {
+describe('registerLookup: join against staged rows', () => {
   it('resolves join.with from the registry instead of reading a file', async () => {
     const runner = createHeadlessRunner({});
     await runner.loadParsed(

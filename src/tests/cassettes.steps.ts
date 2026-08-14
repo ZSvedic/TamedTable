@@ -78,7 +78,7 @@ Then('the fetch stub logged the model API call', function (this: TamedTableWorld
   const s = st(this);
   assert.ok(
     (s.fetchStubCalls?.length ?? 0) > 0,
-    'expected the caller-supplied fetch to receive the model API call, but it was never invoked — the runner did not forward opts.fetch to the SDK',
+    'expected the caller-supplied fetch to receive the model API call, but it was never invoked: the runner did not forward opts.fetch to the SDK',
   );
 });
 

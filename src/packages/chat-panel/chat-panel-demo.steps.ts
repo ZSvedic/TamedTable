@@ -57,7 +57,7 @@ Then('the chat thread is scrolled to its newest message', async function (this: 
 Then('the chat thread stays where the user scrolled it', async function (this: object) {
   const p = page(this);
   // The new message has to have landed before "it did not scroll" means
-  // anything — wait for the reply, then assert the offset is unchanged.
+  // anything: wait for the reply, then assert the offset is unchanged.
   await p.waitForSelector('[data-cp-error]');
   assert.equal(await p.$eval('[data-cp-messages]', (el: Element) => el.scrollTop), 0);
 });
@@ -172,7 +172,7 @@ When('the user releases the held mic button', async function (this: object) {
 });
 
 When('the user taps the mic button', async function (this: object) {
-  // Down then straight back up — under the hold threshold, so it latches.
+  // Down then straight back up: under the hold threshold, so it latches.
   await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerdown');
   await page(this).dispatchEvent('[data-testid="mic-button"]', 'pointerup');
 });

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- #GherkinTour demo — a self-touring page: the tour drives this page's own
+<!-- #GherkinTour demo: a self-touring page: the tour drives this page's own
      UI (no TamedTable engine, no cassette), proving the package runs against a
      non-TamedTable host. Run: bun packages/gherkin-tour/demo.html -->
 <html lang="en">
@@ -17,7 +17,7 @@
     .cols { display: flex; gap: 1rem; align-items: stretch; }
     pre, #feature { flex: 1; margin: 0; padding: .6rem; background: #f4f4f4; border-radius: 6px; overflow: auto; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
     /* Short and scrollable on purpose: the tour's scroll-through (wheel and
-       touch pass the overlay) is demonstrated — and tested — on this box. */
+       touch pass the overlay) is demonstrated, and tested, on this box. */
     #table-view { border: 1px solid #ddd; border-radius: 6px; padding: .6rem; min-height: 6rem; max-height: 8rem; overflow: auto; }
     table { border-collapse: collapse; width: 100%; font-family: monospace; font-size: 12px; }
     th, td { padding: 3px 8px; border-bottom: 1px solid #eee; text-align: left; white-space: nowrap; }
@@ -26,10 +26,10 @@
   </style>
 </head>
 <body>
-  <h1>gherkin-tour — a page that tours itself</h1>
+  <h1>gherkin-tour: a page that tours itself</h1>
   <p>
     The same <code>parseTours → TourDriver → ./ui</code> pipeline the app uses,
-    here driving this demo's own buttons and table — no TamedTable engine. Press
+    here driving this demo's own buttons and table, no TamedTable engine. Press
     <strong>Start tour</strong> to walk through it.
   </p>
 

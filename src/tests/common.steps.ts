@@ -10,7 +10,7 @@ import { runCli } from '@tamedtable/cli';
 import { TamedTableWorld, SPEC_TC_DIR, TEMP_DIR, fixturePath } from './world.ts';
 import { webController } from './web-file-port.ts';
 
-// Fixture resolution lives in world.ts (fixturePath) — shared with the
+// Fixture resolution lives in world.ts (fixturePath): shared with the
 // flow-replay steps so `user-data/…` names resolve everywhere.
 const fixture = fixturePath;
 
@@ -20,7 +20,7 @@ const output = (name: string) => join(TEMP_DIR, basename(name));
 
 Given('load {string}', async function (this: TamedTableWorld, filename: string) {
   this.inputPath = fixture(filename);
-  // #LazyExec — on the @web surface the load goes through the real browser
+  // #LazyExec: on the @web surface the load goes through the real browser
   // parse path (the same loadFromPicked funnel a picked/dropped file takes),
   // so a file bigger than one page raises the large-file dialog in tests
   // exactly as in the app; the scenario resolves it with an explicit step.
@@ -93,7 +93,7 @@ When('user runs {string}', async function (this: TamedTableWorld, command: strin
     i > 0 && arr[i - 1] === '--output' ? output(tok) : tok
   );
   // Capture stdout so later "stdout contains …" steps can assert against it;
-  // do NOT throw on non-zero exit — rejection scenarios assert exit 2.
+  // do NOT throw on non-zero exit: rejection scenarios assert exit 2.
   const chunks: string[] = [];
   const stream = {
     write: (s: string | Buffer) => { chunks.push(s.toString()); return true; },
@@ -128,7 +128,7 @@ Then('{string} matches the expected output', async function (this: TamedTableWor
 // a saved .flow carries the stamps inside the spec verbatim.
 
 /** The transformations the last committed request added or changed, in spec
- *  order — the set stampQueries stamped. */
+ *  order: the set stampQueries stamped. */
 function addedByLastRequest(world: TamedTableWorld): Transformation[] {
   const outcome = world.lastRequestOutcome;
   assert.ok(outcome?.ok && outcome.specAfter, 'expected a committed request');
@@ -171,12 +171,12 @@ Given('the table is filtered to USA customers', async function (this: TamedTable
 
 // Scenarios that drive a REPL session via `user enters the REPL` end with the
 // session's runner inaccessible. Fall back to scanning the captured stdout's
-// last table reprint header — the column appears iff the spec listed it.
+// last table reprint header: the column appears iff the spec listed it.
 function lastTableHeader(stdout: string): string {
   const lines = stdout.split('\n');
   for (let i = lines.length - 1; i >= 0; i--) {
     if (/ \| /.test(lines[i] ?? '')) {
-      // Walk up to the first table line of this block — the header.
+      // Walk up to the first table line of this block, the header.
       let top = i;
       while (top > 0 && / \| /.test(lines[top - 1] ?? '')) top--;
       return lines[top] ?? '';
@@ -207,7 +207,7 @@ function assertColumnExists(world: TamedTableWorld, column: string): void {
     }
   }
   // Default page is only 5 cols wide so the column may be in the hidden tail
-  // of the table — scan plan-emitted "add column 'X'" lines and the schema
+  // of the table: scan plan-emitted "add column 'X'" lines and the schema
   // command output too, in addition to the last header.
   const stdout = world.lastInvocation?.stdout ?? '';
   const inHeader = lastTableHeader(stdout).includes(column);
@@ -228,10 +228,10 @@ Then(/^columns exist in the spec: (.+)$/, function (this: TamedTableWorld, list:
 });
 
 // Negative spec-columns form: the column may well exist on the rows (an
-// internal helper a mutate computed) — this asserts only that the spec does
+// internal helper a mutate computed): this asserts only that the spec does
 // not display it. Compare `is absent from the current rows`, which checks data.
 Then('column {string} is not in the spec columns', function (this: TamedTableWorld, column: string) {
-  if (!this.runner) throw new Error('no runner — this step needs an in-process surface');
+  if (!this.runner) throw new Error('no runner: this step needs an in-process surface');
   const ids = this.runner.currentSpec().columns.map((c) => c.id);
   assert.ok(!ids.includes(column), `expected column "${column}" NOT in spec.columns. Got: ${ids.join(', ')}`);
 });

@@ -1,4 +1,4 @@
-// Binds WebController to the generic Open-URL dialog — the dialog itself lives
+// Binds WebController to the generic Open-URL dialog: the dialog itself lives
 // in @tamedtable/toolbar. URL-only now; samples have their own picker
 // (OpenSampleDialog).
 import type { ReactNode } from 'react';

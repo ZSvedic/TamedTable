@@ -6,11 +6,11 @@ passes the load state, the file readout, and the undo/redo flags as props, and
 hears about every button press through callbacks (`onOpenSample`,
 `onOpenLocal`, `onOpenUrl`, `onOpenFlow`, `onUndo`, `onRedo`,
 `onToggleTheme`, `onOpenSettings`, `onOpenTutorial`). The menu entries are app
-data too — the host passes `saveDataMenu` and `saveFlowMenu` (each a list of
-`{ label, onClick }` items — the package knows nothing about file formats or
+data too: the host passes `saveDataMenu` and `saveFlowMenu` (each a list of
+`{ label, onClick }` items: the package knows nothing about file formats or
 flow/Python exports) and `recentMenu` (a list of `{ label, tag, onClick }`
-items, newest first — the package knows nothing about how recents are stored).
-The sample-file list and their URLs are app data, passed in — the package
+items, newest first: the package knows nothing about how recents are stored).
+The sample-file list and their URLs are app data, passed in, the package
 never reaches for `import.meta.env` or `window.location`.
 
 The `Brand` mark/wordmark/lockup lives inside this package: the toolbar is its
@@ -56,9 +56,9 @@ The web app's wrapper binds `WebController`:
 
 `ToolbarSample` is `{ name, url }`. `sampleKind(name)` returns `"CSV"` or
 `"JSONL"` from the filename extension (anything not ending in `.csv` is
-treated as JSONL) — the badge the dialog shows beside each sample row.
+treated as JSONL): the badge the dialog shows beside each sample row.
 
-`RecommendedSample` is a `ToolbarSample` plus a `title` — the human label a
+`RecommendedSample` is a `ToolbarSample` plus a `title`: the human label a
 recommended row leads with (the host supplies it; the package neither knows
 nor cares that titles come from the homepage's feature sections).
 
@@ -67,11 +67,11 @@ nor cares that titles come from the homepage's feature sections).
 - Left: the brand lockup (reverse mark on a dark theme), then a monospace
   readout of `fileName · {rowCount} rows × {colCount} cols` once `loaded`.
 - Right: an "Open" menu button (ui-kit `MenuButton`; its `openButtonId` is the
-  Driver.js tutorial target) — a document icon, the label, a chevron, and a
+  Driver.js tutorial target): a document icon, the label, a chevron, and a
   plain grouped dropdown: the "Recent" submenu entry (from `recentMenu`;
   disabled while the list is empty), then a "Data" section with "Open sample…",
   "Open local…", and "Open URL…", then a "Recipe" section with
-  "Open .flow & run on current data…" (disabled until `loaded` — the flow
+  "Open .flow & run on current data…" (disabled until `loaded`, the flow
   runs on the open table). A "Save" menu button (the disk icon; disabled until
   `loaded`) groups `saveDataMenu` under "Data" and `saveFlowMenu` under
   "Recipe". Then a divider; "Undo" / "Redo" (gated on `canUndo` / `canRedo`);
@@ -81,25 +81,25 @@ nor cares that titles come from the homepage's feature sections).
 
 ## OpenUrlDialog component
 
-`OpenUrlDialog({ open, onSubmit, onClose })` — a modal over a single URL
+`OpenUrlDialog({ open, onSubmit, onClose })`: a modal over a single URL
 field. The "Load" action submits the typed address: `onSubmit(url)` resolves
 to close the dialog, or rejects to show the error and stay open. Escape or the
 backdrop closes it unless a load is in flight. An `http://` URL draws an
-unencrypted-note. It carries no sample list — samples live in their own picker.
+unencrypted-note. It carries no sample list: samples live in their own picker.
 
 ## OpenSampleDialog component
 
-`OpenSampleDialog({ open, recommended, samples, onPick, onClose })` — a modal
+`OpenSampleDialog({ open, recommended, samples, onPick, onClose })`, a modal
 in two tiers. `recommended` (a `RecommendedSample[]`) renders first, in the
 order given: one row per entry, its `title` on the leading line and its
 filename below. Then a **Show all N bundled files** disclosure expands
-`samples` (a `ToolbarSample[]`) as a flat list — each row its `sampleKind`
+`samples` (a `ToolbarSample[]`) as a flat list, each row its `sampleKind`
 badge and name, the shape the dialog used to have. Collapsed is the default;
 with `recommended` empty the full list shows expanded, there being nothing
 else to show.
 
 Clicking any row in either tier calls `onPick(sample.url)` and closes the
-dialog — picking a sample loads it straight away, no extra confirm step.
+dialog: picking a sample loads it straight away, no extra confirm step.
 Escape or the backdrop closes it.
 
 Stable attributes: `data-tb-toolbar`, `data-tb-info`, `data-tb-dialog`,
@@ -111,8 +111,8 @@ disclosure).
 
 The demo (`demo.html` + `demo.tsx`, deployed under `/demos/toolbar/`) mounts
 the toolbar and dialog over plain React state: every button appends to the
-`#out` event log (non-empty on load — the smoke test's ready signal), the
+`#out` event log (non-empty on load: the smoke test's ready signal), the
 theme toggle flips the wrapper, and the URL dialog's submit logs the loaded URL
-and closes. Both sample tiers are seeded in the picker — a recommended row and
-a longer all-files list — so the pick-to-load flow and the disclosure are both
+and closes. Both sample tiers are seeded in the picker: a recommended row and
+a longer all-files list, so the pick-to-load flow and the disclosure are both
 exercised.

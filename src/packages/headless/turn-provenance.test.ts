@@ -1,7 +1,7 @@
 // The commit-time bookkeeping of one request turn: the no-op guard and the
 // provenance stamps (#Patch), plus the patch-turn column guards (#Validate).
-// All three read the spec the way the MODEL sees it — provenance-stripped, and
-// with the loaded source's real column list — which is what these regressions
+// All three read the spec the way the MODEL sees it: provenance-stripped, and
+// with the loaded source's real column list, which is what these regressions
 // (the RED-HL-1a/1b/4/9 bug inventory, now fixed and pinned green) got wrong.
 // Every model turn is offline: a fake Anthropic Messages `fetch` is injected
 // through HeadlessRunnerOptions.fetch.
@@ -54,7 +54,7 @@ test('a model echo of the stripped spec view is rejected as a no-op, not committ
   const fetch = makeFetch([
     { tool: [addOp(filterStep)] },
     // Request 2: the model replies with exactly the transformations it was
-    // shown (the provenance-stripped view) — a semantic no-op. Repeated for
+    // shown (the provenance-stripped view): a semantic no-op. Repeated for
     // every recovery turn the guard grants.
     { tool: [{ op: 'replace', path: '/transformations', value: JSON.stringify([filterStep]) }] },
     { tool: [{ op: 'replace', path: '/transformations', value: JSON.stringify([filterStep]) }] },
@@ -72,7 +72,7 @@ test('a model echo of the stripped spec view is rejected as a no-op, not committ
   assert.equal(
     outcome,
     'rejected',
-    'spec/behavior.md § Headless: a patch that applies cleanly but leaves the spec identical to before must be rejected — the guard compares the model patch and the current spec with provenance stripped from both, so a do-nothing echo can never commit as success',
+    'spec/behavior.md § Headless: a patch that applies cleanly but leaves the spec identical to before must be rejected, the guard compares the model patch and the current spec with provenance stripped from both, so a do-nothing echo can never commit as success',
   );
 });
 
@@ -94,7 +94,7 @@ test('a whole-array replace does not restamp untouched steps with the new reques
   assert.equal(
     steps[0]?.query,
     'keep all rows',
-    `spec/code-contract.md § provenance: provenance is stripped from the model's view "so the model neither sees nor edits them" — a whole-array replace re-emits the untouched filter step without its stamps, and it must get its OWN earlier stamps back, not the new request's text; got query=${JSON.stringify(steps[0]?.query)}`,
+    `spec/code-contract.md § provenance: provenance is stripped from the model's view "so the model neither sees nor edits them", a whole-array replace re-emits the untouched filter step without its stamps, and it must get its OWN earlier stamps back, not the new request's text; got query=${JSON.stringify(steps[0]?.query)}`,
   );
   assert.equal(steps[1]?.query, 'sort by name', 'the step the turn added carries the new request text');
 });
@@ -106,12 +106,12 @@ test('a turn appending a duplicate of an existing identical step still stamps th
   await r.loadInput(csvFile('hl9.csv', 'name\n Ada \n Bev \n'));
   // Flow-opened spec (setSpec = unstamped) already contains the trim step.
   await r.setSpec({ columns: [{ id: 'name' }], transformations: [trim] } as never);
-  // The request appends an identical duplicate — the turn ADDED a step.
+  // The request appends an identical duplicate, the turn ADDED a step.
   await r.request('trim the names once more');
   const steps = r.currentSpec().transformations as Array<Record<string, unknown>>;
   assert.ok(
     steps.some((t) => t.query === 'trim the names once more'),
-    `spec/code-contract.md § provenance: "The request's text … lands verbatim as \`query\` on the first such transformation" the turn added — the diff counts multiplicity, so an appended duplicate is an added step; stamps = ${JSON.stringify(steps.map((t) => ({ query: t.query, name: t.name })))}`,
+    `spec/code-contract.md § provenance: "The request's text … lands verbatim as \`query\` on the first such transformation" the turn added: the diff counts multiplicity, so an appended duplicate is an added step; stamps = ${JSON.stringify(steps.map((t) => ({ query: t.query, name: t.name })))}`,
   );
 });
 
@@ -135,7 +135,7 @@ test('a valid validate on a sparse-first-row JSONL source commits', async () => 
   assert.equal(
     err,
     undefined,
-    `spec/code-contract.md § core (union-of-keys columns) + spec/behavior.md § Headless (rejects only a column "no step before it provides"): "b" is a source column, so the validate must commit on the first turn — the guards read the loaded spec's column list, never row 0's keys; the request took ${fetch.log.length} model calls and failed: ${err?.message}`,
+    `spec/code-contract.md § core (union-of-keys columns) + spec/behavior.md § Headless (rejects only a column "no step before it provides"): "b" is a source column, so the validate must commit on the first turn, the guards read the loaded spec's column list, never row 0's keys; the request took ${fetch.log.length} model calls and failed: ${err?.message}`,
   );
-  assert.equal(fetch.log.length, 1, 'one model call — no recovery turn is burnt on a correct patch');
+  assert.equal(fetch.log.length, 1, 'one model call, no recovery turn is burnt on a correct patch');
 });

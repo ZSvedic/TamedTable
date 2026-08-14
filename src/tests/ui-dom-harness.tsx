@@ -1,14 +1,14 @@
-// Shared DOM harness for the UI-package regression unit tests — real React
+// Shared DOM harness for the UI-package regression unit tests: real React
 // 19 client renders inside happy-dom, no browser. Only *.test.tsx files load
 // it (cucumber's import glob, `tests/**/!(*.test).ts`, matches .ts only, so
 // no cucumber profile sees it). Importing it plants the DOM globals for the
-// whole `bun test` process — tests that need a DOM-free environment must run
+// whole `bun test` process: tests that need a DOM-free environment must run
 // before any UI test file, which bun's alphabetical file order provides
 // today (tests/ sorts after packages/, and nothing in tests/ branches on
 // `typeof document`).
 //
 // Bun's isolated installs put react inside each package's node_modules, not
-// at the src root — so each UI test file imports its own package-resolved
+// at the src root, so each UI test file imports its own package-resolved
 // `react` / `react-dom/client` and hands them to `setupReact()` before
 // calling `mount()`. That also guarantees the test renders with the exact
 // React instance the component under test resolves.
@@ -75,7 +75,7 @@ export function mount(node: unknown): { el: Element } {
   return { el: domEl };
 }
 
-/** Unmount everything this file mounted — call in afterAll so document-level
+/** Unmount everything this file mounted: call in afterAll so document-level
  *  listeners (e.g. TableView's copy handler) never leak into the next file. */
 export function unmountAll(): void {
   for (const { el, root } of mounted.splice(0)) {

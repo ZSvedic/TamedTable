@@ -1,4 +1,4 @@
-// #ChatPanel demo logic — mounts the real ChatPanel over plain React state.
+// #ChatPanel demo logic: mounts the real ChatPanel over plain React state.
 // Sending echoes an assistant reply; buttons inject canned replies, toggle
 // streaming, and prefill the draft; the demo MicButton cycles
 // recording → sending → idle. Every callback appends to the #out event log;
@@ -17,9 +17,9 @@ const SAMPLE_PROGRESS: ChatRunProgress = {
   rowsDone: 300,
   rowsTotal: 424,
   log: [
-    'step 1/5 — filter (js) · 424 rows',
+    'step 1/5: filter (js) · 424 rows',
     "  pred: row.FED === 'CRO'",
-    'step 2/5 — mutate Country (AI) · 424 rows',
+    'step 2/5: mutate Country (AI) · 424 rows',
     '  value: Normalize this country name to its English short form…',
     'Country · row 299: "USA" → "United States"',
     'Country · row 300: "UK" → "United Kingdom"',
@@ -86,7 +86,7 @@ function Demo(): ReactNode {
         onReportBug={(m) => report(`report bug #${m.id}`)}
         emptyState={
           <p style={{ margin: 0, color: t.ink3, fontFamily: typography.ui, fontSize: 13 }}>
-            No messages yet — send one below, or use the buttons on the right.
+            No messages yet: send one below, or use the buttons on the right.
           </p>
         }
         helpLines={HELP_LINES}
@@ -119,7 +119,7 @@ function Demo(): ReactNode {
           <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Error: Something broke while applying the change.' })}>
             Add error reply
           </Button>
-          <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Error: Something unexpected broke — this looks like a bug.', reportable: true })}>
+          <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Error: Something unexpected broke, this looks like a bug.', reportable: true })}>
             Add app-error reply
           </Button>
           <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Normalized 12 phone numbers.', debug: SAMPLE_DETAIL, reportable: true })}>

@@ -1,5 +1,5 @@
 // #Toolbar
-// The "Open from URL" modal — pure props in, callbacks out. URL-only: samples
+// The "Open from URL" modal: pure props in, callbacks out. URL-only: samples
 // have their own picker (OpenSampleDialog), so this dialog owns just its draft
 // URL plus the in-flight/error state.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -64,7 +64,7 @@ export function OpenUrlDialog({ open, onSubmit, onClose }: OpenUrlDialogProps): 
     }
   };
 
-  // Soft warning for http (we don't refuse it — just flag the unencrypted
+  // Soft warning for http (we don't refuse it, just flag the unencrypted
   // connection).
   const httpWarning =
     url.trim().toLowerCase().startsWith('http://') ? 'Note: http:// is unencrypted.' : null;

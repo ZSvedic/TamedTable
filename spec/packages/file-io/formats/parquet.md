@@ -12,17 +12,17 @@ implementations; the web build aliases the Node one to the browser one:
 - **Node (CLI / headless):** `@duckdb/node-api`. Bytes are written to a
   short-lived temp file and read with `read_parquet`; writing is `COPY … TO …
   (FORMAT PARQUET)` to a temp file, then read back. node-api is a native addon,
-  so it loads through a computed-specifier dynamic import — bundlers never
+  so it loads through a computed-specifier dynamic import: bundlers never
   follow it into the browser. Reads and writes Parquet offline.
 - **Browser:** [hyparquet](https://github.com/hyparam/hyparquet) reads and
-  [hyparquet-writer](https://github.com/hyparam/hyparquet-writer) writes — both
+  [hyparquet-writer](https://github.com/hyparam/hyparquet-writer) writes, both
   pure JS. duckdb-wasm is *not* used for Parquet because its Parquet support
   autoloads an extension from `extensions.duckdb.org` at runtime, which fails in
   offline / locked-down environments (including the test and preview builds).
   hyparquet has no such dependency, so the web app's "Save data" can write
   Parquet client-side.
 
-The codec itself is therefore runtime-agnostic — it just calls the engine.
+The codec itself is therefore runtime-agnostic, it just calls the engine.
 
 ## Parse
 
@@ -30,8 +30,8 @@ The codec itself is therefore runtime-agnostic — it just calls the engine.
 DuckDB infers the schema. `BIGINT`/`Int64` columns arrive as JS `bigint`, and
 `DATE`/`TIMESTAMP`/`DECIMAL` (and other typed) columns as DuckDB value-wrapper
 objects; the codec normalizes each cell the same way the engine's `{sql}` path
-does — a safe-range bigint becomes a Number, anything larger a string, and a
-wrapper object its canonical string form — so every loaded cell is a plain
+does: a safe-range bigint becomes a Number, anything larger a string, and a
+wrapper object its canonical string form, so every loaded cell is a plain
 scalar that saves cleanly. Very large inputs (multi-GB) log a warning rather
 than failing silently.
 

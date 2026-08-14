@@ -18,7 +18,7 @@ describe('tryParseBatchResponse', () => {
   });
 
   // spec/behavior.md § LLM cells: only the literal *lowercased* word null is
-  // the sentinel — "NULL" and "Null" are answers a cell may legitimately give
+  // the sentinel: "NULL" and "Null" are answers a cell may legitimately give
   // (a database keyword, an acronym) and must survive as strings.
   it('keeps "NULL" and "Null" as real strings', () => {
     expect(tryParseBatchResponse('["NULL", "Null", "ok"]', 3)).toEqual(['NULL', 'Null', 'ok']);

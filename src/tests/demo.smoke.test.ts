@@ -1,7 +1,7 @@
 // Smoke tests for the module demos (#GherkinTour, #ModelConfig). Each demo is
 // built with the exact `bun build` flags .github/scripts/build-site.sh uses, served under the
 // same /TamedTable/ base path as GitHub Pages, and driven with headless
-// Chromium — so a bundle that 404s or renders nothing (the PR #79 regression)
+// Chromium, so a bundle that 404s or renders nothing (the PR #79 regression)
 // fails here instead of on the live site.
 //
 // Not part of `bun run test`: needs a Chromium binary. Run via
@@ -26,7 +26,7 @@ if (smoke && !chromePath) {
   const msg =
     'demo smoke: no Chromium found under $PLAYWRIGHT_BROWSERS_PATH, /opt/pw-browsers, ' +
     'or ~/.cache/ms-playwright. Install one with `bunx playwright install chromium`.';
-  // A silent skip in CI is a false green — the deploy gate must fail loudly.
+  // A silent skip in CI is a false green: the deploy gate must fail loudly.
   if (process.env.CI) throw new Error(msg);
   console.warn(`${msg} Skipping.`);
 }
@@ -170,7 +170,7 @@ describe.skipIf(skip)('demo smoke', () => {
     // elements, proving parseTours → TourDriver → ./ui drives a non-TamedTable host.
     await page.click('#start-tour');
     await page.waitForSelector('.driver-popover');
-    // Driver.js's own footer shows progress ("1 of N") and a Next button — the
+    // Driver.js's own footer shows progress ("1 of N") and a Next button: the
     // package no longer renders a custom "Step N of N" title or button row.
     const popover = (await page.textContent('.driver-popover'))!;
     expect(popover).toContain('1 of 4');

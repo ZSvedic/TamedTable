@@ -1,5 +1,5 @@
 // #ChatPanel
-// Microphone button for the chat input row, with two ways to record — matching
+// Microphone button for the chat input row, with two ways to record: matching
 // the pattern voice chat apps use, so users who hold AND users who tap both work:
 //
 //  • Press and hold → records while held, sends on release (push-to-talk).
@@ -18,7 +18,7 @@ import type { VoiceButtonStatus } from './index.ts';
 const HOLD_MS = 250;
 
 // The pulsing record ring is built from the theme's `rec` token so the red
-// lives in one place (ui-kit) — color-mix fades the same token to transparent.
+// lives in one place (ui-kit): color-mix fades the same token to transparent.
 const micCss = (rec: string): string =>
   `@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 55%, transparent); }` +
   ` 70% { box-shadow: 0 0 0 7px color-mix(in srgb, ${rec} 0%, transparent); }` +
@@ -48,7 +48,7 @@ export function MicButton({
 }: {
   status: VoiceButtonStatus;
   onStart: () => void;
-  /** A quick tap released this recording hands-free — keep recording, show the
+  /** A quick tap released this recording hands-free: keep recording, show the
    *  cancel/send controls. */
   onLatch: () => void;
   onStop: () => void;
@@ -106,7 +106,7 @@ export function MicButton({
     onCancel();
   };
 
-  // Latched: the press-and-hold mic gives way to explicit controls — cancel (✕)
+  // Latched: the press-and-hold mic gives way to explicit controls, cancel (✕)
   // discards, send (✓) stops and sends. A pulsing dot signals it is still live.
   if (latched) {
     return (

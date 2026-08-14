@@ -2,7 +2,7 @@
 // Message shapes the chat panel renders. This entry is React-free; the
 // components live in ./components. Spec: spec/packages/chat-panel/behavior.md.
 
-/** What an expandable "request detail" panel shows — a structural subset of
+/** What an expandable "request detail" panel shows: a structural subset of
  *  the engine's RequestDebugInfo, so the app's debug objects fit without a
  *  headless dependency. */
 export interface ChatRequestDetail {
@@ -17,9 +17,9 @@ export interface ChatRequestDetail {
 
 /** One chat message. Assistant text starting with `Error:` renders in error
  *  style with the prefix stripped. `reportable: true` marks a message the user
- *  can flag as a bug — the host classifies (app error vs guidance error); the
+ *  can flag as a bug: the host classifies (app error vs guidance error); the
  *  panel only renders the Report bug action. `undone: true` marks a reply
- *  whose step the host has undone — it renders with a hollow circle instead
+ *  whose step the host has undone: it renders with a hollow circle instead
  *  of the solid ok dot (any heading swap is the host's job). */
 export interface ChatPanelMessage {
   id: number;
@@ -30,7 +30,7 @@ export interface ChatPanelMessage {
   undone?: boolean;
 }
 
-/** Live progress of the streaming run — the host owns and mutates the state
+/** Live progress of the streaming run, the host owns and mutates the state
  *  (step/row counts from the engine's step/chunk callbacks); the panel renders
  *  a status line, a thin progress bar, and a live "request detail" log. */
 export interface ChatRunProgress {
@@ -47,13 +47,13 @@ export interface ChatRunProgress {
   log: string[];
 }
 
-/** Mic button state — drives the red ring (recording while held), the
+/** Mic button state: drives the red ring (recording while held), the
  *  cancel/send controls (`latched`, after a quick tap), and the spinner
  *  (sending). `starting` (the permission prompt is up, nothing live yet)
  *  renders like idle. */
 export type VoiceButtonStatus = 'idle' | 'starting' | 'recording' | 'latched' | 'sending';
 
-/** Continuous (hands-free) voice button state — drives the pulsing bars
+/** Continuous (hands-free) voice button state: drives the pulsing bars
  *  (listening) and spinner (a detected turn is being sent). `starting` (the
  *  VAD is loading) renders like idle. */
 export type ContinuousButtonStatus = 'idle' | 'starting' | 'listening' | 'sending';

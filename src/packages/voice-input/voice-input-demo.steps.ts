@@ -31,7 +31,7 @@ When('the user starts recording', { timeout: 30_000 }, async function (this: obj
   const p = page(this);
   await p.click('#vi-start');
   // Reaching the 'recording' state means getUserMedia resolved and the
-  // MediaRecorder started — slow to spin up the first time under a full-suite
+  // MediaRecorder started: slow to spin up the first time under a full-suite
   // load, so allow more than the 10s page default (matches the stop/result
   // steps below). The work succeeds; it is just not instant on a busy machine.
   await p.waitForFunction(

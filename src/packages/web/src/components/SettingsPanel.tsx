@@ -1,4 +1,4 @@
-// #WebUI #SettingsCards — Settings panel: the sheet/overlay shell around the
+// #WebUI #SettingsCards: Settings panel: the sheet/overlay shell around the
 // generic ModelChooser (from @tamedtable/model-config), where a user connects
 // providers by pasting a key. The panel binds the chooser's props/callbacks to
 // WebController and injects the app theme via the --mc-* CSS custom properties
@@ -26,7 +26,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   if (!controller.settingsOpen) return null;
 
   // One card per connected provider. Everything the card shows beyond the
-  // model ids — the tier tag and the two measured lines — comes from the probe
+  // model ids, the tier tag and the two measured lines, comes from the probe
   // the controller ran when the key was connected.
   // The card shows what a run would actually use, so the OpenRouter rows have
   // to follow the model set the user picked rather than the plain defaults.
@@ -37,7 +37,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     const priced = modelFor(p, model);
     return {
       model,
-      // Price is the catalogue's, per thousand tokens — never measured.
+      // Price is the catalogue's, per thousand tokens, never measured.
       inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
       outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
       speed: speedOf(controller.probes[p]?.[role], controller.measuring[p] ?? false),
@@ -56,7 +56,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
     cell: roleRow(p, 'cell'),
   }));
 
-  // #SettingsCards — the panel's three sections. The heading is deliberately
+  // #SettingsCards: the panel's three sections. The heading is deliberately
   // larger and heavier than the questions inside a section ("Already have an
   // API key?", "No API key?"): without that the sub-questions read as the
   // structure and the sections read as labels on it. The rule above each one
@@ -103,7 +103,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
   } as CSSProperties;
 
   return (
-    // A backdrop click closes the panel — except mid-connect. The Puter
+    // A backdrop click closes the panel: except mid-connect. The Puter
     // sign-in puts a window in front of this one, and the click that brings the
     // tab back would otherwise dismiss the panel just as the new card was about
     // to appear on it.
@@ -171,7 +171,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           </button>
         </div>
 
-        {/* body — scrollable model chooser + the rest of the settings */}
+        {/* body: scrollable model chooser + the rest of the settings */}
         <div style={{ flex: 1, overflowY: 'auto', padding: space.px16, ...chooserTheme }}>
           {section('Model config', true)}
           <ModelChooser
@@ -193,7 +193,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             }
           />
 
-          {/* #LazyExec — Simple mode: every AI step runs table-wide at once,
+          {/* #LazyExec: Simple mode: every AI step runs table-wide at once,
               with the estimate dialog gating runs of more than one page. */}
           {section('Execution')}
           <div>
@@ -231,7 +231,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             </label>
           </div>
 
-          {/* #Diagnostics — send the maintainers a redacted bug report */}
+          {/* #Diagnostics: send the maintainers a redacted bug report */}
           {section('Diagnostics')}
           <div>
             <div
@@ -245,7 +245,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
               Hit a bug? Send the TamedTable maintainers a redacted report (no API keys) so they can
               reproduce it.
             </div>
-            {/* One row, short labels — the section heading above already says
+            {/* One row, short labels: the section heading above already says
                 these are about diagnostics, so the buttons need not repeat it.
                 chrome, not ghost, on the two secondary actions: a borderless
                 text action beside a real button reads as a label. */}
@@ -262,7 +262,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
             </div>
           </div>
 
-          {/* #MobileShell — opened from a home-screen icon the app runs
+          {/* #MobileShell: opened from a home-screen icon the app runs
               full-screen, no browser bars. Android Chrome hands us its install
               prompt (captured at startup); iOS browsers have no API for it, so
               show the share-menu instruction instead. Desktop hides this. */}
@@ -277,7 +277,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
                   marginBottom: space.px8,
                 }}
               >
-                Opened from a home-screen icon, TamedTable runs full-screen — no browser bars.
+                Opened from a home-screen icon, TamedTable runs full-screen, no browser bars.
               </div>
               {installPrompt() ? (
                 <Button variant="primary" onClick={() => void installPrompt()!.prompt()}>
@@ -294,7 +294,7 @@ export function SettingsPanel({ controller }: { controller: WebController }): Re
           )}
         </div>
 
-        {/* footer — Close only; changes are live, and a connected key shows as
+        {/* footer: Close only; changes are live, and a connected key shows as
             its own card, so there is nothing to confirm separately */}
         <div
           style={{

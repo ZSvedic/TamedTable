@@ -1,7 +1,7 @@
 // #Cassettes
 // The readable-request acceptance property: for every committed cassette entry
 // that carries a `request`, `fingerprint(method, url, prefix + suffix)` must
-// equal the entry key — i.e. the human-readable record reconstructs the exact
+// equal the entry key: i.e. the human-readable record reconstructs the exact
 // bytes the fingerprint hashed. Entries recorded before the format carried
 // requests have none and are skipped (they upgrade on re-record).
 // See spec/code-contract.md § Headless ("Recording model calls for tests").

@@ -19,7 +19,7 @@ const CANVAS_JSX = '../marketing/claude-design-app/tokens.jsx';
 
 /**
  * The TT_* globals the Babel canvas (index.html) loads,
- * generated 1:1 from tokens.json — TT_TYPE flattens typography.size up so the
+ * generated 1:1 from tokens.json, TT_TYPE flattens typography.size up so the
  * canvas reads TT_TYPE.base etc., matching the rest of the canvas files.
  */
 export function renderTokensJsx(tokens: Tokens): string {
@@ -31,7 +31,7 @@ export function renderTokensJsx(tokens: Tokens): string {
     ...typography.size,
   };
   const lit = (o: unknown): string => JSON.stringify(o, null, 2);
-  return `// GENERATED from tokens.json by \`bun run sync:tokens\` — do not edit by hand.
+  return `// GENERATED from tokens.json by \`bun run sync:tokens\`, do not edit by hand.
 // marketing/tokens.json is the canonical source of truth.
 const TT_BRAND = ${lit(brand)};
 const TT_LIGHT = ${lit(themes.light)};
@@ -46,7 +46,7 @@ Object.assign(window, { TT_LIGHT, TT_DARK, TT_TYPE, TT_S, TT_BRAND });
 async function main(): Promise<void> {
   const masterText = await Bun.file(MASTER).text();
   const tokens = JSON.parse(masterText) as Tokens;
-  await Bun.write(UIKIT_COPY, masterText); // exact bytes — keeps the JSON copy identical
+  await Bun.write(UIKIT_COPY, masterText); // exact bytes: keeps the JSON copy identical
   await Bun.write(CANVAS_JSX, renderTokensJsx(tokens));
   console.log(`synced ${UIKIT_COPY} and ${CANVAS_JSX} from ${MASTER}`);
 }

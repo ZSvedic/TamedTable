@@ -1,5 +1,5 @@
 // #TableView
-// The paged table grid — pure props in, callbacks out. The host owns the rows
+// The paged table grid: pure props in, callbacks out. The host owns the rows
 // and the current page and passes in just the visible slice; gestures (select,
 // inline edit, header drag-reorder, paging) report back through callbacks.
 // The pulse and grip-reveal animations ship inside the component so the grid
@@ -27,7 +27,7 @@ export interface TableViewProps {
   /** DOM id forwarded to the root element (e.g. for Driver.js highlights). */
   id?: string;
   columns: string[];
-  /** The visible page's rows only — the host slices. */
+  /** The visible page's rows only: the host slices. */
   rows: TableRow[];
   /** Absolute index of the first visible row. */
   pageStart: number;
@@ -41,7 +41,7 @@ export interface TableViewProps {
   onEditCell: (row: number, column: string, value: string) => void;
   onReorderColumns: (order: string[]) => void;
   streaming?: boolean;
-  // ── Grid upgrades (#LazyExec — spec/packages/table-view/behavior.md) ──────
+  // ── Grid upgrades (#LazyExec: spec/packages/table-view/behavior.md) ──────
   /** Display numbers for each visible row (1-based). The host passes original
    *  row numbers while its view is shuffled; default is pageStart + i + 1. */
   rowNumbers?: number[];
@@ -55,20 +55,20 @@ export interface TableViewProps {
   changedCells?: Record<string, unknown>;
   /** Column the host wants on screen (the first changed column after a
    *  request commits, and again on undo/redo). Each new `seq` scrolls that
-   *  column's header into view with a minimal nearest-edge scroll — a column
+   *  column's header into view with a minimal nearest-edge scroll, a column
    *  already visible doesn't move. */
   reveal?: { column: string; seq: number } | null;
   /** The active column-menu sort, shown as ▲/▼ in the header (host state). */
   sort?: { column: string; dir: 'asc' | 'desc' } | null;
   /** Per-column contains-match filters, shown as a funnel mark (host state). */
   filters?: Record<string, string>;
-  /** Column-menu callbacks — when any is present, every data header ends in
+  /** Column-menu callbacks: when any is present, every data header ends in
    *  a ⋮ menu. Sort and filter are view state the host applies; Delete
    *  column's meaning is the host's call (in the app, a spec step). */
   onSortChange?: (column: string, dir: 'asc' | 'desc' | null) => void;
   onFilterChange?: (column: string, text: string) => void;
   onDeleteColumn?: (column: string) => void;
-  /** 1-based pages carrying pending rows — small dot marks in the pager. */
+  /** 1-based pages carrying pending rows: small dot marks in the pager. */
   markedPages?: number[];
   /** Left slot in the pagination bar, after the range readout (the app's
    *  "N of M rows evaluated" readout + retry action). */
@@ -83,7 +83,7 @@ function cellText(value: unknown): string {
   return value === null || value === undefined ? '' : String(value);
 }
 
-/** Floor for a resized column — keeps the resize handle grabbable. */
+/** Floor for a resized column: keeps the resize handle grabbable. */
 const MIN_COL_W = 48;
 
 const TV_CSS =
@@ -129,7 +129,7 @@ function CellEditor({
     const cell = ta.parentElement?.getBoundingClientRect();
     const width = Math.min(EDITOR_MAX_W, Math.max(cell?.width ?? 0, EDITOR_MIN_W));
     ta.style.width = `${width}px`;
-    // A cell near the right edge would push the box off screen — anchor it to
+    // A cell near the right edge would push the box off screen: anchor it to
     // the cell's right instead, so it grows inwards.
     const limit = ta.closest('[data-tv-scroll]')?.getBoundingClientRect().right;
     if (cell && limit !== undefined && cell.left + width > limit) {
@@ -155,7 +155,7 @@ function CellEditor({
       }}
       onBlur={onCommit}
       onKeyDown={(e) => {
-        // Enter commits and Shift+Enter types a newline — the same chord the
+        // Enter commits and Shift+Enter types a newline: the same chord the
         // chat composer uses, and a cell may legitimately hold a newline.
         if (e.key === 'Enter' && !e.shiftKey && !isImeComposingEvent(e)) {
           e.preventDefault();
@@ -205,7 +205,7 @@ export function TableView({
   // Column widths in px, keyed by column id ('#' is the row-number column).
   // null until the first resize; then the table switches to fixed layout.
   const [widths, setWidths] = useState<Record<string, number> | null>(null);
-  // The open ⋮ column menu (anchored at the button's screen position — the
+  // The open ⋮ column menu (anchored at the button's screen position: the
   // sticky header cells clip overflow, so the popover renders at the root),
   // and whether its Filter… input is showing.
   const [menu, setMenu] = useState<{ col: string; x: number; y: number } | null>(null);
@@ -223,7 +223,7 @@ export function TableView({
     onEditCell(row, col, draft);
   };
 
-  // Cmd/Ctrl+C copies the selected cell's text — without entering edit mode.
+  // Cmd/Ctrl+C copies the selected cell's text, without entering edit mode.
   // A live text selection anywhere on the page wins (never hijack the
   // browser's own copy), and editing keeps the textarea's native copy.
   useEffect(() => {
@@ -287,7 +287,7 @@ export function TableView({
     return snap;
   };
 
-  // Autofit: size the column to its widest cell on the current page — the
+  // Autofit: size the column to its widest cell on the current page, the
   // menu's Autofit width, and double-click on a separator. Content is
   // measured with an off-DOM probe (a stretched cell's own box never shrinks
   // below its assigned width), then padded; same fixed-layout snapshot as a
@@ -302,7 +302,7 @@ export function TableView({
       `position:absolute;visibility:hidden;white-space:nowrap;` +
       `font-family:${typography.mono};font-size:${typography.size.sm}px;`;
     document.body.appendChild(probe);
-    // Body cells — measured in the grid's mono font.
+    // Body cells: measured in the grid's mono font.
     let dataMax = 0;
     table.querySelectorAll('tbody tr').forEach((tr) => {
       const cell = tr.children[colIdx] as HTMLElement | undefined;
@@ -311,7 +311,7 @@ export function TableView({
       dataMax = Math.max(dataMax, probe.getBoundingClientRect().width);
     });
     const dataW = Math.ceil(dataMax) + 2 * space.px10 + 4;
-    // The header — measured in its own (heavier UI) font, plus its chrome: the
+    // The header: measured in its own (heavier UI) font, plus its chrome: the
     // drag grip, any sort/filter mark, and the reserved ⋮ button. Autofit must
     // keep the column's own name readable, not just its data (#LazyExec).
     probe.style.fontFamily = typography.ui;
@@ -391,7 +391,7 @@ export function TableView({
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
-        // A column-flex host must be able to shrink the grid to its box —
+        // A column-flex host must be able to shrink the grid to its box,
         // without this a full page of rows grows the page and pushes the
         // pagination bar off screen (spec/packages/table-view/behavior.md).
         minHeight: 0,
@@ -491,7 +491,7 @@ export function TableView({
                       // ellipsizes ("Cat…") instead of running under it.
                       paddingRight: hasMenu ? 30 : undefined,
                       // The title ellipsizes in its own inner box, so the cell
-                      // itself need not clip — letting the resize handle straddle
+                      // itself need not clip: letting the resize handle straddle
                       // the column border instead of sitting just left of it.
                       overflow: 'visible',
                     }}
@@ -500,7 +500,7 @@ export function TableView({
                       <span className="tv-grip" style={{ flex: '0 0 auto', color: t.ink4 }}>
                         <Icon name="grip" size={12} />
                       </span>
-                      {/* The title gets its own ellipsizing box — text-overflow
+                      {/* The title gets its own ellipsizing box: text-overflow
                           on the th cannot reach inside the flex row. */}
                       <span data-tv-title={col} style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {col}
@@ -582,7 +582,7 @@ export function TableView({
                         // Straddle the column border (the cell's right edge)
                         // instead of sitting just inside it, so the resize
                         // cursor appears when the pointer is on the visible
-                        // boundary — not ~5px to its left.
+                        // boundary, not ~5px to its left.
                         right: -3,
                         width: 10,
                         height: '100%',
@@ -602,8 +602,8 @@ export function TableView({
                     <td
                       data-tv-rowstatus={status}
                       title={
-                        status === 'pending' ? 'Pending — AI steps have not reached this row yet'
-                        : status === 'failed' ? 'Failed — retry from the readout below'
+                        status === 'pending' ? 'Pending: AI steps have not reached this row yet'
+                        : status === 'failed' ? 'Failed: retry from the readout below'
                         : undefined
                       }
                       style={{
@@ -687,7 +687,7 @@ export function TableView({
                           ) : (
                             (() => {
                               // Strict URL cells render as links; everything
-                              // else — including bare domains — stays text.
+                              // else, including bare domains, stays text.
                               const href = urlHref(row?.[col]);
                               return href ? (
                                 <a
@@ -896,7 +896,7 @@ function ColumnMenu({
             />
           </span>
         )}
-        {/* Only when a filter is set — the affordance to clear it. */}
+        {/* Only when a filter is set: the affordance to clear it. */}
         {filterText && (
           <button type="button" data-tv-menu-item="remove-filter" style={item} onClick={() => onFilter('')}>
             Remove filter

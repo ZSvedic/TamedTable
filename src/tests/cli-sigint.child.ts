@@ -1,4 +1,4 @@
-// Helper — the REPL child process for the PTY test in cli-sigint.test.ts. Runs
+// Helper: the REPL child process for the PTY test in cli-sigint.test.ts. Runs
 // the real runCli over the committed customers fixture with a cassette-replay
 // fetch delayed 3 s per call, so an NL request stays in flight long enough for
 // a Ctrl-C to land mid-request.

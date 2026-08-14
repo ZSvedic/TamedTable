@@ -1,6 +1,6 @@
 // #WebUI
 // Sync guard: the sample picker's recommended rows are derived from the
-// showcase tours — one per homepage feature section, in homepage order. This
+// showcase tours: one per homepage feature section, in homepage order. This
 // test runs the same derivation vite.config.ts runs, against the real
 // spec/test-cases/ sources, so a renamed fixture, a retagged tour, or a
 // reordered category shows up here instead of silently emptying the picker.
@@ -43,7 +43,7 @@ describe('showcase samples', () => {
     }
   });
 
-  it('recommend no goldens — a golden is a tour output, never an input', () => {
+  it('recommend no goldens: a golden is a tour output, never an input', () => {
     expect(derived.filter((s) => s.file.includes('-expected.'))).toEqual([]);
   });
 });

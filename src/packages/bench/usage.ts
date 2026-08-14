@@ -79,7 +79,7 @@ export interface TallySummary {
   inTokens: number;
   outTokens: number;
   costUsd: number;
-  /** e.g. "claude-sonnet-4-5×93" — which models ran and how many calls each. */
+  /** e.g. "claude-sonnet-4-5×93", which models ran and how many calls each. */
   models: string;
 }
 
@@ -94,7 +94,7 @@ export function summarise(tally: Tally): TallySummary {
     costUsd += costFor(model, t);
     models.push(`${model}×${t.calls}`);
   }
-  return { calls, inTokens, outTokens, costUsd, models: models.join(', ') || '—' };
+  return { calls, inTokens, outTokens, costUsd, models: models.join(', ') || ', ' };
 }
 
 /** Wrap a fetch so every model response is tallied. Returns the wrapped fetch;
@@ -114,7 +114,7 @@ export function tallyingFetch(
         ?? url?.match(/models\/([^:?/]+)/)?.[1];
       const usage = normalizeUsage(await res.clone().json());
       if (model && usage) addUsage(tally, model, usage);
-    } catch { /* non-JSON or non-message endpoint — ignore */ }
+    } catch { /* non-JSON or non-message endpoint: ignore */ }
     return res;
   };
 }

@@ -1,4 +1,4 @@
-// #Diagnostics — unit tests for the pure redaction + ring-buffer helpers.
+// #Diagnostics: unit tests for the pure redaction + ring-buffer helpers.
 import { describe, it, expect, afterEach } from 'bun:test';
 import {
   redactString,
@@ -82,7 +82,7 @@ describe('evictEvents', () => {
     const events = Array.from({ length: 20 }, (_, i) => big(i));
     const kept = evictEvents(events, 50, 1024);
     expect(kept.length).toBeLessThan(20);
-    // Whatever survives is the newest tail — the last event is always kept.
+    // Whatever survives is the newest tail: the last event is always kept.
     expect(kept[kept.length - 1]!.message).toBe('e19');
     expect(JSON.stringify(kept).length).toBeLessThanOrEqual(1024);
   });
@@ -93,7 +93,7 @@ describe('evictEvents', () => {
   });
 });
 
-// A localStorage double so two managers can share one persisted log — the
+// A localStorage double so two managers can share one persisted log: the
 // real cross-tab situation (the live app and a pr-preview build share the
 // tamedtable.com origin, so one localStorage key).
 function installLocalStorage(): { store: Map<string, string>; restore: () => void } {
@@ -116,7 +116,7 @@ function installLocalStorage(): { store: Map<string, string>; restore: () => voi
   };
 }
 
-/** A minimal host — the diagnostics manager only reads config/tutorial/engine
+/** A minimal host: the diagnostics manager only reads config/tutorial/engine
  *  context and never mutates anything else. */
 function fakeHost(): ControllerHost {
   return {
@@ -142,7 +142,7 @@ describe('DiagnosticsManager cross-tab sync', () => {
     const tabA = new DiagnosticsManager(fakeHost());
     // Tab B (the "work" tab) records the recent action.
     const tabB = new DiagnosticsManager(fakeHost());
-    tabB.recordToast('info', 'Loaded paginate-input.csv — 246 rows, 3 columns.');
+    tabB.recordToast('info', 'Loaded paginate-input.csv: 246 rows, 3 columns.');
     // Copying the report from Tab A must show B's event, not a stale blank.
     expect(tabA.report()).toContain('Loaded paginate-input.csv');
     expect(tabA.list().some((e) => e.message.includes('Loaded paginate-input.csv'))).toBe(true);

@@ -1,5 +1,5 @@
 # #FormatOut
-# CSV output — JSONL ↔ CSV via :save and tamedtable execute.
+# CSV output: JSONL ↔ CSV via :save and tamedtable execute.
 Feature: Tabular format output
 
   Rule: :save dispatches on extension
@@ -29,7 +29,7 @@ Feature: Tabular format output
       Then REPL exit code is 0
       And "../temp/customers-output.jsonl" exists
 
-    # #FormatOut — :save dispatches through the codec registry, so all four
+    # #FormatOut: :save dispatches through the codec registry, so all four
     # registered formats work (behavior.md:594-598), not just .csv/.jsonl.
     @cli @offline
     Scenario: :save writes Parquet and Arrow through the codec registry
@@ -56,7 +56,7 @@ Feature: Tabular format output
 
   Rule: :load accepts any registered format
 
-    # #FormatOut — :load dispatches through the same codec registry as :save,
+    # #FormatOut: :load dispatches through the same codec registry as :save,
     # so .csv, .jsonl, .parquet, and .arrow all load (behavior.md:405-407).
     @cli @offline
     Scenario: :load accepts a Parquet source
@@ -119,7 +119,7 @@ Feature: Tabular format output
   Rule: :reorder sets the output column order
 
     # The REPL :reorder command exposes CSV/JSONL column order without a
-    # new spec field — named columns move to the front, the rest follow.
+    # new spec field: named columns move to the front, the rest follow.
     @cli @offline
     Scenario: :reorder changes the CSV header order
       When user enters the REPL with "customers-input.csv" and types:

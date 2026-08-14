@@ -1,7 +1,7 @@
-// #WebUI — browser-driven happy-path journeys against the PRODUCTION build.
+// #WebUI: browser-driven happy-path journeys against the PRODUCTION build.
 // These complement the tutorial/mobile/formats/sql specs by covering the
 // Open / Save / Grid / Undo-redo / Settings surfaces end to end with real
-// clicks, typing, and drags — the layer the DOM-less @web Cucumber profile
+// clicks, typing, and drags: the layer the DOM-less @web Cucumber profile
 // cannot exercise. Everything here is expected to PASS; the bug inventory
 // lives under e2e/red/.
 import { test, expect, type Page } from '@playwright/test';
@@ -11,7 +11,7 @@ async function boot(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Tours', exact: true }).waitFor();
 }
 /** Open the sample picker and click the row for `name`. The picker leads with
- *  the recommended samples, so expand the full bundle first — that only adds
+ *  the recommended samples, so expand the full bundle first: that only adds
  *  rows below, leaving the recommended ones clickable either way. */
 async function pickSample(page: Page, name: string): Promise<void> {
   await page.locator('[data-uk-menubtn]').first().click();
@@ -53,7 +53,7 @@ test.describe('Open', () => {
   test('a sample loads and starts a fresh thread', async ({ page }) => {
     await boot(page);
     await loadSample(page, 'customers-input.csv');
-    await expect(page.locator('[data-cp-message]')).toHaveText(/Loaded customers-input\.csv — 20 rows, 6 columns\./);
+    await expect(page.locator('[data-cp-message]')).toHaveText(/Loaded customers-input\.csv: 20 rows, 6 columns\./);
   });
 
   test('opening a second table replaces the first and resets the thread', async ({ page }) => {
@@ -129,7 +129,7 @@ test.describe('Flow replay', () => {
     const reply = page.locator('[data-cp-message="assistant"]', { hasText: 'Executed steps:' });
     await expect(reply).toBeVisible({ timeout: 15_000 });
     // A replay is a completed request, so its reply offers Report bug. The
-    // action row sits beside the bubble, not inside it — scope to the block.
+    // action row sits beside the bubble, not inside it, scope to the block.
     await expect(reply.locator('xpath=..').locator('[data-cp-report]')).toBeVisible();
   });
 });
@@ -197,9 +197,9 @@ test.describe('Grid', () => {
 
   // Regression 2026-07-31: the drop-target wrapper made the grid a
   // column-flex item, and without min-height: 0 a full page of rows grew the
-  // document instead of scrolling inside the grid — the pagination bar sat
+  // document instead of scrolling inside the grid: the pagination bar sat
   // below the table, off screen (spec/packages/table-view/behavior.md).
-  test('a full page of rows scrolls inside the grid — the pagination bar stays on screen', async ({ page }) => {
+  test('a full page of rows scrolls inside the grid: the pagination bar stays on screen', async ({ page }) => {
     await boot(page);
     await pickSample(page, 'performance-liked-videos.csv');
     const lf = page.locator('[data-tt-largefile-dialog]');
@@ -260,7 +260,7 @@ test.describe('Grid', () => {
     await fi.press('Enter');
     await expect(countryCells).toHaveCount(3);
     await expect(page.locator('[data-tv-filter-mark="Country"]')).toBeVisible();
-    // Edit a still-visible cell, then undo — the view filter must persist.
+    // Edit a still-visible cell, then undo: the view filter must persist.
     const firstPhone = (await page.locator('[data-tv-cell$=":Phone"]').first().getAttribute('data-tv-cell'))!;
     await editCell(page, firstPhone, '000');
     await undo(page).click();
@@ -288,7 +288,7 @@ test.describe('Grid', () => {
 // ── Settings ────────────────────────────────────────────────────────────
 test.describe('Settings', () => {
   /** Connect a provider the way a user does: open Settings, paste a key,
-   *  press Add. The key names its own provider — there is no list to pick
+   *  press Add. The key names its own provider: there is no list to pick
    *  from first. A key the provider rejects never becomes a setting, so this
    *  stubs the check call to succeed. */
   const connectKey = async (page: Page, key: string): Promise<void> => {
@@ -347,7 +347,7 @@ test.describe('Settings', () => {
   });
 
   // Puter's credential can only be minted by its popup, so the block is the way
-  // in for a user with no API key at all — and its SDK must not be fetched
+  // in for a user with no API key at all, and its SDK must not be fetched
   // until they ask for it.
   test('the Puter sign-in block renders, and loads no script until pressed', async ({ page }) => {
     const requested: string[] = [];

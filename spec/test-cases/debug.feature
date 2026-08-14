@@ -1,6 +1,6 @@
 # #DebugOut
-# Debug block — the [debug] output the REPL prints after a
-# natural-language request — plus the step-line progress the REPL
+# Debug block: the [debug] output the REPL prints after a
+# natural-language request, plus the step-line progress the REPL
 # narrates while the request runs. See spec/behavior.md § CLI/REPL.
 Feature: Debug and progress output
 
@@ -34,7 +34,7 @@ Feature: Debug and progress output
         exit
         """
       Then REPL exit code is 0
-      And REPL stdout contains "step 1/1 — validate (js)"
+      And REPL stdout contains "step 1/1: validate (js)"
 
   Rule: Surfaces that make no model call print no debug block
 

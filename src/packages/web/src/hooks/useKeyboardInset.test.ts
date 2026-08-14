@@ -1,4 +1,4 @@
-// #MobileShell — the visual-viewport arithmetic behind useKeyboardInset.
+// #MobileShell: the visual-viewport arithmetic behind useKeyboardInset.
 import { describe, expect, test } from 'bun:test';
 import { keyboardInset, bottomInset } from './useKeyboardInset.ts';
 
@@ -36,7 +36,7 @@ describe('bottomInset', () => {
 
   // The dock and the Speak/History sheets stay pinned: a transient
   // visual-viewport shift while scrolling (address bar, overscroll) reports
-  // a stray inset, but it must never move them — the scroll-to-bottom jitter.
+  // a stray inset, but it must never move them: the scroll-to-bottom jitter.
   test('composer closed: the region stays pinned regardless of the inset', () => {
     expect(bottomInset(false, 137)).toBe(0);
     expect(bottomInset(false, 336)).toBe(0);

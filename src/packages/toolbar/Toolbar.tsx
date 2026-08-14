@@ -1,5 +1,5 @@
 // #Toolbar
-// The top bar — pure props in, callbacks out. The host owns the load state,
+// The top bar: pure props in, callbacks out. The host owns the load state,
 // the file readout, and the undo/redo flags; the toolbar knows nothing about
 // engines or files. The brand lockup at the left lives in ./Brand.
 import type { ReactNode } from 'react';
@@ -13,7 +13,7 @@ import {
 } from '@tamedtable/ui-kit/components';
 import { Lockup } from './Brand.tsx';
 
-/** One "Save …" dropdown entry. The host owns the targets — the package
+/** One "Save …" dropdown entry. The host owns the targets, the package
  *  knows nothing about CSV/JSONL/Parquet/Arrow formats or flow/Python exports. */
 export interface SaveMenuItem {
   label: string;
@@ -21,7 +21,7 @@ export interface SaveMenuItem {
 }
 
 /** One entry of the Open menu's "Recent" submenu. The host owns the
- *  storage and the reload behavior — the package only renders the rows. */
+ *  storage and the reload behavior: the package only renders the rows. */
 export interface RecentMenuItem {
   label: string;
   /** The entry's kind badge: "sample", "URL", "local", or "flow". */
@@ -30,9 +30,9 @@ export interface RecentMenuItem {
 }
 
 export interface ToolbarProps {
-  /** A table is loaded — enables the save menu and shows the readout. */
+  /** A table is loaded: enables the save menu and shows the readout. */
   loaded: boolean;
-  /** A request is running — disables the loading/saving/history actions. */
+  /** A request is running: disables the loading/saving/history actions. */
   busy: boolean;
   /** File-name part of the readout (null hides it, e.g. an in-memory table). */
   fileName?: string | null;
@@ -40,7 +40,7 @@ export interface ToolbarProps {
   colCount?: number;
   canUndo: boolean;
   canRedo: boolean;
-  /** DOM id for the Open menu button — the Driver.js tutorial spotlight. */
+  /** DOM id for the Open menu button: the Driver.js tutorial spotlight. */
   openButtonId?: string;
   /** Medium width: hide the file readout and drop button labels to icons
    *  (tooltips retained) so the row fits instead of overflowing. */
@@ -48,7 +48,7 @@ export interface ToolbarProps {
   onOpenSample: () => void;
   onOpenUrl: () => void;
   onOpenLocal: () => void;
-  /** "Open .flow & run on current data…" — pick a saved flow and replay it. */
+  /** "Open .flow & run on current data…": pick a saved flow and replay it. */
   onOpenFlow: () => void;
   /** Last-loaded files, newest first (at most 5); empty greys the Recent entry. */
   recentMenu: RecentMenuItem[];
@@ -63,7 +63,7 @@ export interface ToolbarProps {
   onOpenTutorial: () => void;
 }
 
-/** The Open menu's grouped sections — shared by the desktop toolbar and the
+/** The Open menu's grouped sections: shared by the desktop toolbar and the
  *  mobile Menu drawer so both render the identical menu model. */
 export function openMenuSections(opts: {
   onOpenSample: () => void;
@@ -71,7 +71,7 @@ export function openMenuSections(opts: {
   onOpenUrl: () => void;
   onOpenFlow: () => void;
   recentMenu: RecentMenuItem[];
-  /** A table is loaded — enables "Open .flow & run on current data…". */
+  /** A table is loaded: enables "Open .flow & run on current data…". */
   loaded: boolean;
 }): MenuButtonSection[] {
   const sections: MenuButtonSection[] = [
@@ -80,7 +80,7 @@ export function openMenuSections(opts: {
         {
           label: 'Recent',
           icon: 'clock',
-          // Greyed until something has been loaded — the entry stays visible
+          // Greyed until something has been loaded: the entry stays visible
           // so the feature is discoverable from the first open.
           disabled: opts.recentMenu.length === 0,
           submenu: opts.recentMenu.map((r) => ({ label: r.label, tag: r.tag, onClick: r.onClick })),
@@ -113,7 +113,7 @@ export function openMenuSections(opts: {
   return sections;
 }
 
-/** The Save menu's grouped sections — shared by desktop and mobile. */
+/** The Save menu's grouped sections: shared by desktop and mobile. */
 export function saveMenuSections(opts: {
   saveDataMenu: SaveMenuItem[];
   saveFlowMenu: SaveMenuItem[];
@@ -236,7 +236,7 @@ export function Toolbar({
         <Icon name="wrench" />
         {!condensed && 'Settings'}
       </Button>
-      <Button onClick={onOpenTutorial} title="Interactive tours — no API key required">
+      <Button onClick={onOpenTutorial} title="Interactive tours, no API key required">
         {condensed ? <Icon name="tour" /> : 'Tours'}
       </Button>
     </header>

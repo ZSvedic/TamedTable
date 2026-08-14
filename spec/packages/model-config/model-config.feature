@@ -5,7 +5,7 @@ Feature: Model config
 
   Rule: detectProvider names the provider from the key's prefix
 
-    The user never picks a provider from a list — the key they paste names it.
+    The user never picks a provider from a list: the key they paste names it.
 
     @headless
     Scenario Outline: <prefix> is a <provider> key
@@ -103,11 +103,11 @@ Feature: Model config
       And the resolved cellModel is "openai/gpt-oss-20b"
 
     # Precedence: when several provider keys are present, Gemini beats OpenAI
-    # beats Anthropic beats Groq beats OpenRouter — a paid key always outranks
+    # beats Anthropic beats Groq beats OpenRouter: a paid key always outranks
     # the free tier. Anthropic is present (and loses) in the first rows, so its
     # key is nulled each time. Single-key resolution is covered above.
     @headless
-    Scenario Outline: <present> in env — <winner> wins
+    Scenario Outline: <present> in env, <winner> wins
       When resolveConfig is called with env keys "<keys>"
       Then the resolved provider is "<winner>"
       And the resolved <winnerKey> is set
@@ -294,7 +294,7 @@ Feature: Model config
       Then the boolean result is false
 
     @headless
-    # Verified live against api.groq.com — the open-weight models still sample.
+    # Verified live against api.groq.com: the open-weight models still sample.
     Scenario: Groq's gpt-oss models accept temperature
       When acceptsTemperature is called with "openai/gpt-oss-120b"
       Then the boolean result is true
@@ -339,7 +339,7 @@ Feature: Model config
 
   Rule: connectedProviders lists the providers that have a key
 
-    A connected provider is a provider with a key — connecting stores nothing
+    A connected provider is a provider with a key: connecting stores nothing
     of its own, so the card list is derived from the config.
 
     @headless
@@ -348,14 +348,14 @@ Feature: Model config
       Then connectedProviders returns ""
 
     @headless
-    # No order map — what the CLI and the delete-fallback pick ask for.
+    # No order map: what the CLI and the delete-fallback pick ask for.
     Scenario: Two stored keys make two connected providers, in catalogue order
       Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
       Then connectedProviders returns "gemini, groq"
 
     @headless
     # The design orders cards as they were added, which the config alone cannot
-    # say — hence the order map. Here it reverses the catalogue order.
+    # say: hence the order map. Here it reverses the catalogue order.
     Scenario: An order map puts the providers in the order they were added
       Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
       And groq was connected at 1000
@@ -630,13 +630,13 @@ Feature: Model config
       Then the verified tier is "free"
 
     @headless
-    Scenario: OpenAI is always paid — it has no free tier
+    Scenario: OpenAI is always paid: it has no free tier
       Given a stub provider API that accepts the key
       When verifyKey is called for provider "openai" with key "sk-proj-good"
       Then the verified tier is "paid"
 
     @headless
-    Scenario: Anthropic is always paid — it has no free tier
+    Scenario: Anthropic is always paid: it has no free tier
       Given a stub provider API that accepts the key
       When verifyKey is called for provider "anthropic" with key "sk-ant-good"
       Then the verified tier is "paid"
@@ -661,8 +661,8 @@ Feature: Model config
       Then verifyKey fails with "OpenAI rate-limited the check. Wait a minute and try again."
 
     @headless
-    # An empty balance arrives as a 429 too, so the quota case is checked first
-    # — "wait a minute" would send that user into a wait that never ends.
+    # An empty balance arrives as a 429 too, so the quota case is checked first:
+    # "wait a minute" would send that user into a wait that never ends.
     Scenario: An account with no credit says so, not "wait a minute"
       Given a stub provider API that rejects the key with HTTP 429 and code "insufficient_quota"
       When verifyKey is called for provider "openai" with key "sk-proj-broke"
@@ -706,7 +706,7 @@ Feature: Model config
       And the estimated seconds for 1000 tokens is 9.3
 
     @headless
-    # Under a fifth of the call spent streaming is buffering by another name —
+    # Under a fifth of the call spent streaming is buffering by another name:
     # gemini-3.6-flash streams its thinking silently, then flushes.
     Scenario: A last-moment flush counts as buffered, not as a fast rate
       Given a stub provider API that streams 300 output tokens, first chunk at 2.77s, last at 2.79s
@@ -715,7 +715,7 @@ Feature: Model config
       And the estimated seconds for 1000 tokens is 9.3
 
     @headless
-    # A stream opens with frames that carry no output — a role header, a ping,
+    # A stream opens with frames that carry no output, a role header, a ping,
     # and on a thinking model however many reasoning deltas it needs before it
     # says anything. Stopping the clock on the first of those would time the
     # cheapest byte on the wire and make a slow thinker look instant.
@@ -774,7 +774,7 @@ Feature: Model config
 
   Rule: storage.ts keeps measurements in their own blob
 
-    Measurements are a display cache, not config — the engine never reads them,
+    Measurements are a display cache, not config: the engine never reads them,
     so they stay out of the blob the engine's input is built from.
 
     @headless
@@ -1033,7 +1033,7 @@ Feature: Model config
 
     @web
     # The card appearing is the observable "the connect finished" checkpoint.
-    # Reloading straight after the click races the demo's persistence effect —
+    # Reloading straight after the click races the demo's persistence effect:
     # locally it always won, on a slower CI runner it did not.
     Scenario: Connected providers persist across a demo page reload
       Given the model-config demo page
@@ -1116,7 +1116,7 @@ Feature: Model config
       Then no provider instructions are shown
 
     @web
-    # One at a time — the panel is 400px wide and five open blocks is a wall.
+    # One at a time: the panel is 400px wide and five open blocks is a wall.
     Scenario: Opening another provider closes the one before it
       Given the model-config demo page
       When the user clicks the "gemini" instructions link

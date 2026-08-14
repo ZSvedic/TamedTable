@@ -13,7 +13,7 @@
     />
     <title>TamedTable</title>
     <meta name="theme-color" content="#281C60" />
-    <!-- Added to the home screen, the app runs full-screen — no browser bars.
+    <!-- Added to the home screen, the app runs full-screen, no browser bars.
          In a normal tab, the phone layout lets the page itself scroll the
          table, so a swipe hides the bars (see MobileShell). The manifest makes
          Android's install open standalone; Settings offers the prompt. -->
@@ -37,7 +37,7 @@
     <div id="root"></div>
     <!-- The reused engine and its CSV libraries are authored for Node and
          expect two globals the browser lacks. Both are installed here, before
-         main.tsx runs. `process` is a small stub — the engine only reads a few
+         main.tsx runs. `process` is a small stub, the engine only reads a few
          env vars at init. `Buffer` must be the real implementation, because
          csv-parse builds buffers the moment it loads; it comes from the
          `buffer` polyfill package. -->

@@ -1,20 +1,20 @@
 // #ModelConfig
 // Provider/key/model catalogue and config resolution.
-// Zero runtime dependencies — no process, no DOM references.
+// Zero runtime dependencies, no process, no DOM references.
 
 import catalogue from './models.json' with { type: 'json' };
 
 export type Provider = 'anthropic' | 'gemini' | 'openai' | 'groq' | 'openrouter' | 'puter';
 
 /** What a provider says about the account behind a key. `null` means the
- *  provider reports nothing — the chooser then shows no tag rather than a
+ *  provider reports nothing: the chooser then shows no tag rather than a
  *  guess. See spec § Checking a key. */
 export type Tier = 'free' | 'paid' | null;
 
 /** Providers the engine can route a model id to. Cerebras is bench-only: the
  *  engine calls its OpenAI-compatible endpoint (free tier), the benchmark
  *  sweeps its models, but it has no catalogue entry, no defaults row, and no
- *  chooser card — `resolveConfig` never resolves it. */
+ *  chooser card: `resolveConfig` never resolves it. */
 export type EngineProvider = Provider | 'cerebras';
 
 export interface ModelDef {
@@ -42,7 +42,7 @@ export interface ProviderDefaults {
   paid?: { chat: string; cell: string; batchSize?: number };
   /** The catalogue price is not necessarily what this provider's user pays.
    *  Groq's free tier costs nothing and is indistinguishable from a paid key
-   *  over the API — same models, same headers — so quoting the paid price
+   *  over the API (same models, same headers) so quoting the paid price
    *  would be wrong for most Groq accounts. See `priceVariesByPlan`. */
   priceVariesByPlan?: boolean;
 }
@@ -54,7 +54,7 @@ export interface ResolvedConfig {
   openaiKey: string | null;
   groqKey: string | null;
   openrouterKey: string | null;
-  /** Puter.js session token, not an API key — see § Puter.js. */
+  /** Puter.js session token, not an API key: see § Puter.js. */
   puterToken: string | null;
   /** Chat model: answers the request and writes the spec patch each turn (and
    *  carries voice input). Named `model` because it is the config's main one. */
@@ -65,7 +65,7 @@ export interface ResolvedConfig {
    *  default: having credits is not the same as wanting to spend them, so the
    *  user asks for this on the card. Ignored for every other provider. */
   openrouterPaid: boolean;
-  /** Simple mode — "Always run on all rows" (#LazyExec): every AI step runs
+  /** Simple mode: "Always run on all rows" (#LazyExec): every AI step runs
    *  table-wide immediately, with the estimate dialog gating runs of more
    *  than one page. Off by default. */
   alwaysRunAll: boolean;
@@ -78,12 +78,12 @@ export interface StoragePort {
 }
 
 // ── Model catalogue ────────────────────────────────────────────────────────
-// One canonical home: models.json — two sections. `models` lists every
+// One canonical home: models.json, two sections. `models` lists every
 // available model with its per-Mtok prices (mirrors benchmarks/models.jsonl);
 // `defaults` maps each provider to its chat + cell model ids.
-// The user no longer picks individual models — they pick a provider, and the
+// The user no longer picks individual models: they pick a provider, and the
 // defaults below decide the two roles. Every id must be verified against the
-// provider's current docs before changing — never guess an id.
+// provider's current docs before changing, never guess an id.
 
 export const ALL_MODELS: readonly ModelDef[] =
   (catalogue as { models: ModelDef[] }).models;
@@ -115,16 +115,16 @@ export function hasPaidModelSet(provider: Provider): boolean {
 }
 
 /** The catalogue entry for one model **as served by one provider**. Ids are not
- *  unique on their own — Puter re-serves `gemini-3.6-flash` under that exact
- *  name — so anything reading a model's price, voice support or temperature
+ *  unique on their own: Puter re-serves `gemini-3.6-flash` under that exact
+ *  name, so anything reading a model's price, voice support or temperature
  *  flag has to say who is serving it. */
 export function modelFor(provider: Provider, modelId: string): ModelDef | undefined {
   return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
 }
 
 /** Default per-row cell model for a provider: the `defaults` entry for that
- *  provider, falling back to that provider's chat default. Always same-provider
- *  — cell calls never cross providers. */
+ *  provider, falling back to that provider's chat default. Always same-provider:
+ *  cell calls never cross providers. */
 export function defaultCellModel(provider: Provider, paid = false): string {
   return setFor(provider, paid)?.cell ?? defaultModel(provider, paid);
 }
@@ -141,7 +141,7 @@ export function priceVariesByPlan(provider: Provider): boolean {
 }
 
 /** The provider's pinned cell batch size from `defaults`, or undefined when it
- *  has none (the engine then keeps its own default). Openrouter pins 5 — the
+ *  has none (the engine then keeps its own default). Openrouter pins 5: the
  *  2026-07-17 benchmark's north-mini sweet spot. */
 export function defaultBatchSize(provider: Provider, paid = false): number | undefined {
   return setFor(provider, paid)?.batchSize;
@@ -150,8 +150,8 @@ export function defaultBatchSize(provider: Provider, paid = false): number | und
 /** The provider that serves a model id. The catalogue is asked first: an exact
  *  match returns its own `provider`, which is what keeps Groq's vendor-prefixed
  *  ids (`openai/gpt-oss-120b`) off OpenRouter and makes the next provider a
- *  data change rather than a new prefix rule. Ids the catalogue doesn't know —
- *  bench-only sweep candidates, dated aliases, anything new — fall back to
+ *  data change rather than a new prefix rule. Ids the catalogue doesn't know:
+ *  bench-only sweep candidates, dated aliases, anything new: fall back to
  *  prefixes: a slash means an OpenRouter vendor/model id, and `gpt-oss-` is
  *  checked before `gpt-` so the open-weight OpenAI models served by Cerebras
  *  never land on the OpenAI provider. Unknown ids end on 'anthropic'. */
@@ -172,7 +172,7 @@ export function providerFor(modelId: string): EngineProvider {
 // ── Where each provider lives ──────────────────────────────────────────────
 // Two things reach these hosts: the engine (via the AI SDK clients) and the
 // probe that checks a pasted key. They used to carry their own copies of the
-// URLs, which is a drift waiting to happen — a provider that moves its
+// URLs, which is a drift waiting to happen: a provider that moves its
 // endpoint would have left the chooser measuring one host while the engine
 // called another. One table instead.
 
@@ -190,7 +190,7 @@ export const PROVIDER_BASE_URL = {
   puter:      'https://api.puter.com',
 } as const satisfies Record<EngineProvider, string>;
 
-/** Puter's single endpoint — see `puterEnvelope`. */
+/** Puter's single endpoint: see `puterEnvelope`. */
 export const PUTER_DRIVERS_URL = `${PROVIDER_BASE_URL.puter}/drivers/call`;
 
 /** Wrap an OpenAI-shaped request body in Puter's driver envelope. Shared by the
@@ -206,7 +206,7 @@ export function puterEnvelope(body: Record<string, unknown>): Record<string, unk
 }
 
 // ── Detecting a provider from a pasted key ─────────────────────────────────
-// The user never picks a provider from a list — the key names it. Order
+// The user never picks a provider from a list: the key names it. Order
 // matters here: sk-proj-, sk-ant- and sk-or- all start with sk-, so the
 // generic OpenAI rule is tested last or it would swallow all three.
 
@@ -222,13 +222,13 @@ const KEY_PREFIXES: ReadonlyArray<readonly [string, Provider]> = [
   ['AIza',     'gemini'],
   ['AQ.',      'gemini'],
   // A Puter token is a JWT, so it opens with the base64 of `{"alg":`. Looser
-  // than the others — any JWT matches — but no other provider issues one, and
+  // than the others, any JWT matches, but no other provider issues one, and
   // verifyKey has Puter confirm it before anything is stored.
   ['eyJ',      'puter'],
   ['sk-',      'openai'],
 ];
 
-/** What each provider is called in prose — the probe's error sentences, the
+/** What each provider is called in prose: the probe's error sentences, the
  *  chooser's card headers and its instructions row all read from here. It used
  *  to be spelled out in three places, which is three chances to rename Groq
  *  everywhere but one. */
@@ -246,13 +246,13 @@ export const PROVIDER_NAME = {
 // them, each with the short version of the FAQ's instructions. Puter is absent:
 // its credential comes from the sign-in button, not from the key input.
 //
-// The console URLs are the part that must not drift from the FAQ — a test
+// The console URLs are the part that must not drift from the FAQ, a test
 // asserts each one appears there. The prose is deliberately allowed to differ:
 // the FAQ is the long form, this is the two lines that fit in a 400px panel.
 
 /** One how-to line. Usually plain text; the object form carries a single
- *  inline link — the text before it, the linked text itself, its href, and the
- *  text after — for the one beat that points a user off to a tutorial. */
+ *  inline link: the text before it, the linked text itself, its href, and the
+ *  text after: for the one beat that points a user off to a tutorial. */
 export type Step =
   | string
   | { before?: string; text: string; href: string; after?: string };
@@ -350,7 +350,7 @@ export const KEY_SETUP: readonly KeySetup[] = [
 ];
 
 /** The prefixes named in the chooser's "key not recognised" message, in the
- *  order a user reads them — not the order they are matched in. Built from
+ *  order a user reads them, not the order they are matched in. Built from
  *  KEY_SETUP so the list is stated once, plus Puter, which has no pasted-key
  *  instructions of its own (its credential comes from the sign-in button). */
 export const SUPPORTED_PREFIXES: readonly string[] = [
@@ -358,7 +358,7 @@ export const SUPPORTED_PREFIXES: readonly string[] = [
 ];
 
 /** The provider a pasted key belongs to, or null when no prefix matches. A
- *  prefix is a guess, not proof — `verifyKey` (probe.ts) is what confirms it
+ *  prefix is a guess, not proof: `verifyKey` (probe.ts) is what confirms it
  *  against the provider before anything is stored. */
 export function detectProvider(key: string): Provider | null {
   const k = key.trim();
@@ -377,7 +377,7 @@ export function detectProvider(key: string): Provider | null {
  *  This is deliberately about the transport, not the model. `voiceInput` in the
  *  catalogue says what a model can hear, which stays true wherever it is served;
  *  this says what we can put on the wire. Keeping them apart is what stops a
- *  card promising a microphone that throws — the Puter card did exactly that,
+ *  card promising a microphone that throws: the Puter card did exactly that,
  *  because its Gemini row is voice-capable and its transport is not. */
 const AUDIO_CAPABLE_PROVIDERS = new Set<Provider>(['gemini']);
 
@@ -389,7 +389,7 @@ export function supportsVoiceInput(provider: Provider, modelId: string): boolean
 }
 
 /** Whether a model accepts a `temperature` (sampling) parameter. The newest
- *  models — Anthropic Opus 4.8/4.7, Fable 5, Sonnet 5; OpenAI GPT-5.4+ / 5.5 —
+ *  models: Anthropic Opus 4.8/4.7, Fable 5, Sonnet 5; OpenAI GPT-5.4+ / 5.5:
  *  removed sampling params and reject the request with a 400 ("temperature is
  *  deprecated for this model"). The flag lives per model in models.json; we
  *  only send `temperature` for models marked true, and omit it (the safe
@@ -418,15 +418,15 @@ export const KEY_FIELD = {
 } as const satisfies Record<Provider, keyof ResolvedConfig>;
 
 /** Every provider whose key is set. A connected provider *is* a provider with
- *  a key — connecting stores nothing of its own, so the chooser's card list is
+ *  a key: connecting stores nothing of its own, so the chooser's card list is
  *  derived from the config rather than tracked beside it.
  *
  *  The design orders cards by when they were added, which the config alone
  *  cannot say, so `order` is an optional `Provider → timestamp` map (the
- *  `connectedAt` values from the probe blob — see storage.ts `connectedOrder`).
+ *  `connectedAt` values from the probe blob: see storage.ts `connectedOrder`).
  *  A provider missing from it sorts as 0, and `sort` is stable, so untimed
  *  providers keep catalogue order among themselves and sit ahead of the timed
- *  ones — which is what a config written before the timestamps existed needs.
+ *  ones, which is what a config written before the timestamps existed needs.
  *  Callers that only want "which providers have a key" pass no map. */
 export function connectedProviders(
   config: ResolvedConfig,
@@ -446,9 +446,9 @@ export function connectedProviders(
  *   2. OPENAI_API_KEY in env → provider=openai, openaiKey=value
  *   3. ANTHROPIC_API_KEY in env → provider=anthropic, anthropicKey=value
  *   4. GROQ_API_KEY in env → provider=groq, groqKey=value
- *   5. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value —
+ *   5. OPENROUTER_API_KEY in env → provider=openrouter, openrouterKey=value:
  *      last, so a paid key always outranks the free tier
- *   6. stored.provider (fallback: "gemini" — the provider every committed
+ *   6. stored.provider (fallback: "gemini", the provider every committed
  *      cassette records with, so key-free replay resolves the taped models)
  *   7. TAMEDTABLE_MODEL in env overrides stored model
  *   8. Final model must belong to resolved provider; if not, use defaultModel
@@ -460,14 +460,14 @@ function isProvider(p: unknown): p is Provider {
   return typeof p === 'string' && p in KEY_FIELD;
 }
 
-/** Whether a model id belongs to a provider — the same-provider guard's test.
+/** Whether a model id belongs to a provider: the same-provider guard's test.
  *  `providerFor` must route the id there, and for anthropic (providerFor's
  *  catch-all) the id must actually carry the `claude-` prefix: an id that
  *  belongs to no provider is treated as not belonging, so it is coerced to
  *  the provider default instead of being sent to the API to 404. */
 function modelBelongsTo(provider: Provider, modelId: string): boolean {
   // A provider that re-serves other providers' ids (Puter) can only be checked
-  // against the catalogue — `providerFor` deliberately never returns it.
+  // against the catalogue: `providerFor` deliberately never returns it.
   if (modelFor(provider, modelId)) return true;
   if (provider === 'puter') return false;
   if (provider === 'anthropic') return modelId.startsWith('claude-');
@@ -514,12 +514,12 @@ export function resolveConfig(
   } else {
     // The stored blob is written by whatever build last ran on the origin
     // (production and pr-preview share one blob), so an unknown provider
-    // value must resolve to the gemini fallback — never throw at boot.
+    // value must resolve to the gemini fallback, never throw at boot.
     provider = isProvider(stored.provider) ? stored.provider : 'gemini';
   }
 
   // Chat model: env wins, then stored, then provider default. Truthiness,
-  // like the key vars above — an empty env value (`TAMEDTABLE_MODEL=` in a
+  // like the key vars above: an empty env value (`TAMEDTABLE_MODEL=` in a
   // .env) means unset, never a real model id.
   // Which OpenRouter model set the user asked for. Read before the models,
   // because it decides what "the default" even is.
@@ -533,7 +533,7 @@ export function resolveConfig(
   }
 
   // Cell model: env wins, then stored, then provider cell default.
-  // Same-provider invariant — a stored cell model from another provider is
+  // Same-provider invariant: a stored cell model from another provider is
   // coerced to this provider's cell default.
   let cellModel = env['TAMEDTABLE_CELL_MODEL'] || stored.cellModel || defaultCellModel(provider, openrouterPaid);
   if (!modelBelongsTo(provider, cellModel)) {

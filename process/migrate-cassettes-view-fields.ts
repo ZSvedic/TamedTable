@@ -1,13 +1,13 @@
 // One-off migration (2026-07, remove-view-fields PR), parked for the record.
 // The SYSTEM_PROMPT in spec/prompt-app-edit.md dropped the view fields
 // (filter/sort/page/summary) from its "Spec shape" line and the /filter,
-// /sort, /page patchable paths — which orphans every cassette entry whose
+// /sort, /page patchable paths, which orphans every cassette entry whose
 // fingerprint covers a request body embedding the prompt. This script
 // re-keyed them offline: rebuild each body as prefix + suffix, apply the
 // identical textual edit, recompute the fingerprint, re-key the entry, and
 // edit `_prefixes` in place. Responses stayed byte-identical. Entries with no
-// `request` field were untouched (their bodies never embedded SYSTEM_PROMPT —
-// batch cell evaluations — so their fingerprints survived).
+// `request` field were untouched (their bodies never embedded SYSTEM_PROMPT:
+// batch cell evaluations, so their fingerprints survived).
 //
 // Run from the repo root: `bun process/migrate-cassettes-view-fields.ts`
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';

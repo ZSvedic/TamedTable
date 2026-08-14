@@ -1,8 +1,8 @@
-# BOUNTY HUNTER — find bugs by reading everything
+# BOUNTY HUNTER: find bugs by reading everything
 
 Read `AGENTS.md` and `README.md` first, then `MAP.md`, `spec/behavior.md`,
 `spec/code-contract.md`, and every `spec/packages/*/behavior.md`. Work for **at
-least five hours**. Spawn as many subagents as the work supports — finders fan
+least five hours**. Spawn as many subagents as the work supports: finders fan
 out by area, then separate agents try to **refute** what the finders claim.
 Deliver **one PR**.
 
@@ -24,7 +24,7 @@ here that the author was not picturing?
 
 ## Method
 
-**Fan out.** One finder per area — `core`/`headless` engine, CLI + REPL,
+**Fan out.** One finder per area: `core`/`headless` engine, CLI + REPL,
 `file-io` and the codecs, `web` controller and its managers, lazy execution,
 tutorial/cassette replay, voice, `model-config`, `table-view`, `chat-panel`,
 `toolbar`, `gherkin-tour`, the Python export. Each finder reads its area's spec
@@ -46,8 +46,8 @@ The shapes that produced real bugs here, and their neighbours:
   switch, a tour exit, an undo past the beginning, a cancelled run? The chat
   thread outliving its own history entries was exactly this.
 - **State captured at construction.** Anything read once into a long-lived
-  object — keys, models, page size, batch size, a `fetch`, a codec, a cached
-  spec — and then changed underneath it. The API-key bug was exactly this.
+  object: keys, models, page size, batch size, a `fetch`, a codec, a cached
+  spec, and then changed underneath it. The API-key bug was exactly this.
 - **Capabilities with no way in.** Engine features no UI can reach on some
   surface, or that only a test can set up. Browser joins were exactly this.
   Grep the step definitions for setup no user action can produce.
@@ -69,7 +69,7 @@ The shapes that produced real bugs here, and their neighbours:
   and quotes in CSV, unicode and RTL, very wide rows, nulls vs empty strings,
   numbers that look like dates, dates in several formats, values that survive
   a round trip through every codec.
-- **Persistence.** `localStorage` shapes across versions — an old stored config
+- **Persistence.** `localStorage` shapes across versions: an old stored config
   or recents list meeting new code.
 - **The spec against itself.** Two documents that describe the same behavior
   differently; a `spec/packages/*` claim the package does not honor. Those are
@@ -79,22 +79,22 @@ The shapes that produced real bugs here, and their neighbours:
 
 A finding is a **reproducible failure**, not a code-reading opinion. For each:
 
-1. A test that fails for the stated reason — a Gherkin scenario where the
+1. A test that fails for the stated reason: a Gherkin scenario where the
    behavior is reachable through a surface, a bun unit test where it is not.
 2. The actual failure output, pasted into the report.
 3. One sentence on what a user loses.
-4. The cause as `file.ts:line`, and the spec line it contradicts (or "unspecified"
-   — an unspecified gap is still a finding if the behavior is plainly wrong).
+4. The cause as `file.ts:line`, and the spec line it contradicts (or "unspecified":
+   an unspecified gap is still a finding if the behavior is plainly wrong).
 
 Not findings: refactors you would prefer, missing features, naming, anything
 the spec explicitly allows, and anything you cannot make fail. If you are
 confident in a defect but cannot reach it from any surface, that is itself
-worth reporting — put it in a short "unreachable but real" appendix, capped at
+worth reporting: put it in a short "unreachable but real" appendix, capped at
 five, each with the reason it cannot be reached.
 
 ## Where red tests go
 
-Keep `bun run test` **green** — a reviewer must be able to see your PR broke
+Keep `bun run test` **green**: a reviewer must be able to see your PR broke
 nothing. The bug inventory lives apart, in `spec/test-cases/red/`: one
 `red-<area>.feature` per area, every scenario tagged `@red` **and** its surface
 tag. Step definitions for them go in `src/tests/red/*.steps.ts`. Wire it
@@ -118,7 +118,7 @@ and confirm each failure message names the defect.
 
 `spec/test-cases/red/README.md`, as a table: ID, severity (critical / major /
 minor), one-line symptom, the test that proves it, the cause, and the spec line
-it contradicts. Below the table, a paragraph per critical and major finding —
+it contradicts. Below the table, a paragraph per critical and major finding:
 what happens, why the code does it, and what the fix would have to consider.
 No fixes, but a fix hint saves the human an hour.
 
@@ -133,7 +133,7 @@ discards user work, is **major**; a wrong label is **minor**.
 - Never change product code under `src/packages/*/`. The only non-test edits
   allowed are the red-harness wiring above.
 - Never edit an existing green scenario to make room for a finding.
-- Commit every hour or so, with the findings file updated — a five-hour session
+- Commit every hour or so, with the findings file updated, a five-hour session
   that loses its work at hour four is worth nothing.
 - Ten or more verified findings is the bar. A finder that reports nothing has
   not looked hard enough; a finder that reports twenty unverified guesses has

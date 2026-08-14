@@ -22,23 +22,23 @@ Win the people who can judge the output, and the rest follow.
 
 ## The problem
 
-Cleaning real data is still either tedious or technical. Every powerful tool — SQL, regex, Pandas — is a language you have to learn first. So most people fall back to Excel: easy, but limited. AI can write the code, but if you're not a programmer you can't check it, fix it, or keep it running.
+Cleaning real data is still either tedious or technical. Every powerful tool (SQL, regex, Pandas) is a language you have to learn first. So most people fall back to Excel: easy, but limited. AI can write the code, but if you're not a programmer you can't check it, fix it, or keep it running.
 
 You can *describe* the change you want long before you can *write* it.
 
 ## What TamedTable does
 
-You see your data on screen and say what to do — in plain language, English or
+You see your data on screen and say what to do: in plain language, English or
 your own. It makes the change, shows you every row before and after, and saves
-the steps so you can run them again later — on new data, with no AI call. Use it
+the steps so you can run them again later: on new data, with no AI call. Use it
 as a web app you click or a command you script; both run on the same engine.
 
 ## Why it's different
 
 - **You keep the steps.** Save them, run them again tomorrow, even turn them into a Python script.
-- **Preview for cents, run for real when you're sure.** An AI step first runs on the page you are looking at — see it work on twenty rows before you spend on 100,000. One click runs the rest, with the price and time shown before you commit; replaying saved steps costs nothing at all.
+- **Preview for cents, run for real when you're sure.** An AI step first runs on the page you are looking at: see it work on twenty rows before you spend on 100,000. One click runs the rest, with the price and time shown before you commit; replaying saved steps costs nothing at all.
 - **Nothing is hidden.** You see exactly what changed, row by row, so you can trust it.
-- **It speaks your language.** Ask in English, Spanish, German, French, Croatian, Chinese — by voice or text. It understands the request, not just keywords.
+- **It speaks your language.** Ask in English, Spanish, German, French, Croatian, Chinese: by voice or text. It understands the request, not just keywords.
 - **It's source-available (BUSL).** No lock-in, no proprietary format.
 
 # New AI feature list
@@ -46,7 +46,7 @@ as a web app you click or a command you script; both run on the same engine.
 A reworked "What you can do" menu for the marketing brief, leading with the
 killer feature: the LLM reads each row's context the way a person would, so it
 does things no Excel formula or feature can. The everyday spreadsheet operations
-are still here, but they no longer headline — the AI rows do.
+are still here, but they no longer headline: the AI rows do.
 
 Three columns: a category, the plain-language request a user types or says, and a
 short note on the context the LLM uses to answer it.
@@ -84,10 +84,10 @@ no signup**. The rows below follow each tour's step order.
 | Language | *"normaliza los números de teléfono"* | Ask in any language, voice or text |
 | Deterministic | *"remove the duplicate rows"* | Dedupe |
 | Deterministic | *"join the country codes from a second table"* | Join two tables |
-| Deterministic | *"show only customers in Europe"* | Filter rows — on the column the join just added |
+| Deterministic | *"show only customers in Europe"* | Filter rows: on the column the join just added |
 | Deterministic | *"pivot Quarter into columns"* | Reshape tall to wide |
 | Deterministic | *"sort by Q4, descending"* | Sort or top-N |
-| Load, save & reuse | a file or a URL | Loads CSV, JSONL, Parquet, Arrow — web or CLI |
+| Load, save & reuse | a file or a URL | Loads CSV, JSONL, Parquet, Arrow: web or CLI |
 | Load, save & reuse | `:save clean.csv` | Save data to CSV, JSONL, Parquet, or Arrow |
 | Load, save & reuse | `:save-flow tidy.flow` | Save transformations as a TamedTable script |
 | Load, save & reuse | `:save-py tidy.py` | Save transformations as a Python script |

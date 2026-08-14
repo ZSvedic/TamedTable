@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
-  <!-- TamedTable feature illustration: Lazy AI — a big file opens as a shuffled sample.
+  <!-- TamedTable feature illustration: Lazy AI. A big file opens as a shuffled sample.
        Text sizes leave slack: inside an <img> the SVG renders with fallback fonts,
        which run wider than Inter. -->
   <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
@@ -24,7 +24,7 @@
   <!-- the large-file dialog: one click either way, Load shuffled is the primary default -->
   <g>
     <rect x="30" y="88" width="300" height="120" rx="12" fill="#FFFFFF" stroke="#281C60"/>
-    <text x="48" y="114" font-size="13" font-weight="700" fill="#281C60">25,000 rows — sample it?</text>
+    <text x="48" y="114" font-size="13" font-weight="700" fill="#281C60">25,000 rows: sample it?</text>
     <text x="48" y="133" font-size="10.5" fill="#6A6280">Work page by page; saving preserves</text>
     <text x="48" y="147" font-size="10.5" fill="#6A6280">original row order.</text>
     <!-- secondary: original order -->

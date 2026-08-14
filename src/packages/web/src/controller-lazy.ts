@@ -1,5 +1,5 @@
 // #LazyExec
-// Page-first AI execution — the web shell's scheduling policy over the
+// Page-first AI execution: the web shell's scheduling policy over the
 // eager engine (spec/behavior.md § Lazy AI execution, code-contract.md §
 // Lazy AI execution). The engine leaves skipped {llm} cells holding pending
 // sentinels and failed calls holding failed sentinels; row state derives
@@ -23,7 +23,7 @@ import { ALL_MODELS } from '@tamedtable/model-config';
 import type { ControllerHost } from './controller-context.ts';
 import type { RunProgress } from './controller-types.ts';
 
-// Estimates — honest extrapolations of the evaluated preview
+// Estimates: honest extrapolations of the evaluated preview
 // (code-contract.md § Lazy AI execution).
 export interface RunEstimate {
   rowsRemaining: number;
@@ -32,7 +32,7 @@ export interface RunEstimate {
   estSeconds: number;
 }
 
-// Row state — one entry per derived row (code-contract.md § Lazy AI
+// Row state: one entry per derived row (code-contract.md § Lazy AI
 // execution). Derived from the pending/failed cell sentinels, so it survives
 // deterministic reshaping and engine rebuilds.
 export type RowStatus = 'evaluated' | 'pending' | 'failed';
@@ -42,7 +42,7 @@ export interface RowState {
   error?: string;
 }
 
-/** Why the run-all confirmation is showing — picks the dialog's copy. */
+/** Why the run-all confirmation is showing: picks the dialog's copy. */
 export type RunAllReason = 'run-all' | 'save' | 'dependency' | 'sort' | 'filter';
 
 /** How the dialog resolved: run everything, apply over the evaluated rows
@@ -69,12 +69,12 @@ export class LazyManager {
     this.host = host;
   }
 
-  // Failed rows the manager knows about beyond the sentinels — re-marked
+  // Failed rows the manager knows about beyond the sentinels: re-marked
   // after a pass that excluded them (their cells would otherwise read
   // pending). Cleared whenever the spec changes.
   private failedInfo = new Map<number, { column: string; error: string }>();
 
-  // Serialized evaluation queue — page opens never overlap.
+  // Serialized evaluation queue: page opens never overlap.
   private queue: Promise<void> = Promise.resolve();
   private runAbort: AbortController | null = null;
 
@@ -85,7 +85,7 @@ export class LazyManager {
   private callMs = 0;
   private callRows = 0;
 
-  // One-shot widening of the cell filter — set when the user confirms a
+  // One-shot widening of the cell filter: set when the user confirms a
   // dependency-rule run-all, read by the request's cellFilter.
   private allowAllOnce = false;
 
@@ -93,7 +93,7 @@ export class LazyManager {
 
   private scanCache: Scan | null = null;
 
-  // ── Row state (derived from sentinels — see the header) ──────────────────
+  // ── Row state (derived from sentinels: see the header) ──────────────────
 
   private scan(): Omit<Scan, 'rowsRef'> {
     if (!this.host.loaded) return EMPTY_SCAN;
@@ -134,7 +134,7 @@ export class LazyManager {
     return this.scan().failed.size;
   }
 
-  /** The pagination-bar readout — null hides it (no AI step, or nothing
+  /** The pagination-bar readout: null hides it (no AI step, or nothing
    *  pending and nothing failed). */
   evaluatedReadout(): { done: number; total: number; failed: number } | null {
     if (!this.host.loaded || !specHasLlmCell(this.host.engine.displaySpec())) return null;
@@ -144,7 +144,7 @@ export class LazyManager {
     return { done: total - pending.size - failed.size, total, failed: failed.size };
   }
 
-  /** 1-based view pages that contain pending (or failed) rows — pager dots. */
+  /** 1-based view pages that contain pending (or failed) rows: pager dots. */
   pendingPages(): number[] {
     const { pending, failed } = this.scan();
     if (pending.size === 0 && failed.size === 0) return [];
@@ -179,13 +179,13 @@ export class LazyManager {
   }
 
   /** Evaluate exactly these derived rows' lagging cells (code-contract §
-   *  Lazy AI execution) — cached cells refill free, the rest spend calls. */
+   *  Lazy AI execution): cached cells refill free, the rest spend calls. */
   async evaluateRows(indices: number[], signal?: AbortSignal): Promise<void> {
     await this.settle();
     await this.evaluatePass(new Set(indices), { signal });
   }
 
-  /** Status of one derived row — drives the grid's Row # cell marks. */
+  /** Status of one derived row: drives the grid's Row # cell marks. */
   rowStatus(derivedIndex: number): 'pending' | 'failed' | 'evaluated' {
     const { pending, failed } = this.scan();
     if (failed.has(derivedIndex)) return 'failed';
@@ -200,7 +200,7 @@ export class LazyManager {
 
   // ── Usage accounting (EngineManager forwards the runner's onUsage) ───────
 
-  /** Total cell-model calls made so far — tests assert redo/resume make none. */
+  /** Total cell-model calls made so far: tests assert redo/resume make none. */
   cellCallCount(): number {
     return this.cellCalls;
   }
@@ -208,7 +208,7 @@ export class LazyManager {
   /** Fold one call-making evaluation window into the throughput observation
    *  (the estimate's rows-per-second). The engine reports the request
    *  preview's window; evaluation passes report their own. `chunks` is the
-   *  raw chunk count — divided by the spec's per-row chunk factor here. */
+   *  raw chunk count: divided by the spec's per-row chunk factor here. */
   recordTiming(elapsedMs: number, chunks: number): void {
     const rows = chunks / this.chunkFactor();
     if (rows <= 0 || elapsedMs <= 0) return;
@@ -218,7 +218,7 @@ export class LazyManager {
 
   recordUsage(u: { model: string; inputTokens: number; outputTokens: number; role?: 'chat' | 'cell' }): void {
     // Only cell work feeds the estimate. The engine says which slot made the
-    // call — a model-id comparison would drop every cell call whenever the
+    // call: a model-id comparison would drop every cell call whenever the
     // same model serves both roles. Role-less records (direct callers) keep
     // the id heuristic as a fallback.
     if (u.role ? u.role !== 'cell' : u.model === this.host.config.model) return;
@@ -229,9 +229,9 @@ export class LazyManager {
 
   /** Drop the estimate accumulators. Called when a patch changes the spec's
    *  {llm} cell steps: recorded usage extrapolates the OLD columns' cost, and
-   *  rows already banked in the cell cache re-run free — keeping the tally
+   *  rows already banked in the cell cache re-run free, keeping the tally
    *  would price the new column's remaining rows at the whole session's
-   *  spend (~3.5x observed). `cellCalls` stays monotonic — tests diff it. */
+   *  spend (~3.5x observed). `cellCalls` stays monotonic: tests diff it. */
   private resetEstimateAccumulators(): void {
     this.cellTokensIn = 0;
     this.cellTokensOut = 0;
@@ -270,7 +270,7 @@ export class LazyManager {
 
   // ── The chat request's lazy window + the dependency rule ─────────────────
 
-  /** Simple mode ("Always run on all rows") — unless a tour is replaying:
+  /** Simple mode ("Always run on all rows"), unless a tour is replaying:
    *  the cassette taped a page-window run, so table-wide evaluation would be
    *  thousands of unrecorded requests (spec/behavior.md § Key-free playback). */
   private alwaysRunAll(): boolean {
@@ -295,11 +295,11 @@ export class LazyManager {
     return new Set(order.slice(start, start + this.host.pageSize));
   }
 
-  // #LazyExec — the index-mapping layer between derived rows and a step's
+  // #LazyExec: the index-mapping layer between derived rows and a step's
   // input rows. A cellFilter is consulted with STEP-INPUT indices, but the
   // manager targets DERIVED rows; after any reordering or filtering step
   // between the AI step and the view (a sort, say) the two index spaces
-  // disagree, and a positional filter evaluates — and bills — the wrong
+  // disagree, and a positional filter evaluates, and bills, the wrong
   // rows. The engine records each derived row's source-row origin
   // (`rowOrigins`), so a target set of derived indices translates to a set
   // of origins, and the filter matches a step's input row by ITS origin
@@ -316,7 +316,7 @@ export class LazyManager {
   /** The gates at patch commit. Simple mode ("Always run on all rows"): a
    *  new AI step that would run more than one page shows the estimate dialog
    *  first. Lazy mode gates table-wide {llm} work (a sort key, a group
-   *  aggregate — nothing page-sized about those) the same way. Otherwise the
+   *  aggregate: nothing page-sized about those) the same way. Otherwise the
    *  dependency rule: a new step that reads an AI-made column across all
    *  rows while rows are pending raises the run-all confirmation. Confirm →
    *  this replay runs on all rows; decline → the runner throws DECLINED and
@@ -334,7 +334,7 @@ export class LazyManager {
       }
       return true;
     }
-    // Table-wide {llm} work has no page to preview on — every row evaluates
+    // Table-wide {llm} work has no page to preview on: every row evaluates
     // at once, so it gets the estimate gate even in lazy mode (Simple mode
     // gates the identical request). Tours are exempt like alwaysRunAll: the
     // cassette taped an ungated run. Confirming also widens this replay, so
@@ -409,7 +409,7 @@ export class LazyManager {
   ): Promise<void> {
     const runner = this.host.engine.ensureHeadless();
     const spec = structuredClone(runner.currentSpec());
-    // #LazyExec — snapshot the rows this pass starts from, so recordFilled can
+    // #LazyExec: snapshot the rows this pass starts from, so recordFilled can
     // diff exactly what it filled once it settles (below).
     const before = this.host.engine.snapshotRows();
     const failures: Array<{ rowIndex: number; column: string; error: string; origin?: number }> = [];
@@ -432,7 +432,7 @@ export class LazyManager {
         this.host.notify();
       }
     };
-    // Translate the derived-row target into origins BEFORE the replay — the
+    // Translate the derived-row target into origins BEFORE the replay: the
     // pass replays fresh, so step-input rows are new objects whose origins,
     // not positions, identify them (see targetOrigins).
     const origins = this.targetOrigins(target);
@@ -445,7 +445,7 @@ export class LazyManager {
         onChunk,
       });
     } finally {
-      // Failures report STEP-INPUT indices; failedInfo keys DERIVED rows —
+      // Failures report STEP-INPUT indices; failedInfo keys DERIVED rows:
       // translate through the origin tags (same mapping as the cell filter).
       const originToDerived = new Map<number, number>();
       const rowsNow = this.host.engine.rawRows();
@@ -458,7 +458,7 @@ export class LazyManager {
         this.failedInfo.set(derived, { column: f.column, error: f.error });
       }
       this.remarkFailures();
-      // #LazyExec — opening a page evaluates exactly that page's rows. The
+      // #LazyExec: opening a page evaluates exactly that page's rows. The
       // engine's fresh replay also refills every OTHER pending row whose prompt
       // is already cached (repeated data seeds them from an earlier page), which
       // would silently complete the whole table and drop the pager marks and the
@@ -466,15 +466,15 @@ export class LazyManager {
       // off-target row that was pending before the pass. The value stays in the
       // cell cache, so opening that page later refills it free. An empty-target
       // pass is the cancel-path refill, whose whole job is to pull finished rows
-      // back from the cache — it must keep them, so it is exempt.
+      // back from the cache: it must keep them, so it is exempt.
       if (target.size > 0) this.remarkPending(before, target);
-      // #LazyExec — a page-open / run-all / retry pass belongs to the current
+      // #LazyExec: a page-open / run-all / retry pass belongs to the current
       // request's turn, so it accumulates its fills into the changed-cell tint
       // (reset=false) rather than resetting to just the page it touched. An
       // empty-target pass (the cache-only refill after a cancel) changes
       // nothing new, so it never re-marks.
       if (target.size > 0) this.host.engine.recordFilled(before, false);
-      // #LazyExec — the page streamed in under the pinned order (rows filled in
+      // #LazyExec: the page streamed in under the pinned order (rows filled in
       // place); now that it has settled, fold the newly evaluated rows into the
       // sort so the page reads sorted. Pending rows sink to the end.
       this.host.view.refreshSortOrder();
@@ -490,7 +490,7 @@ export class LazyManager {
   /** Restore the pending sentinel on off-target rows the engine free-refilled
    *  from cache, so a page-open pass fills exactly its page and the rest stay
    *  pending (see the caller). Only rows that were pending before the pass are
-   *  touched — already-evaluated rows keep their value, failed rows keep their
+   *  touched: already-evaluated rows keep their value, failed rows keep their
    *  failure. */
   private remarkPending(before: Row[], target: Set<number>): void {
     const aiCols = aiMadeColumns(this.host.engine.displaySpec());
@@ -507,7 +507,7 @@ export class LazyManager {
     }
   }
 
-  /** Restore failed sentinels for rows a pass left pending — the row keeps
+  /** Restore failed sentinels for rows a pass left pending: the row keeps
    *  its error until an explicit retry re-calls it. */
   private remarkFailures(): void {
     if (this.failedInfo.size === 0) return;
@@ -526,7 +526,7 @@ export class LazyManager {
    *  more than one page is remaining. Resolves 'complete' when every row
    *  evaluated, 'declined' when the estimate dialog was dismissed (nothing
    *  ran), and 'incomplete' when a confirmed run ended with failed rows or
-   *  was cancelled — callers that started the run for a purpose (Save) must
+   *  was cancelled: callers that started the run for a purpose (Save) must
    *  tell the user rather than vanish. `reason` picks the dialog copy
    *  ('run-all' from the button, 'save' from Save, 'sort'/'filter' from the
    *  column menu's dependency gate). */
@@ -544,7 +544,7 @@ export class LazyManager {
 
   /** The column-menu gate for sort/filter on an AI-made column: 'proceed'
    *  (nothing pending, not an AI column, or everything just evaluated),
-   *  'partial' (apply over the evaluated rows only — missing values sink or
+   *  'partial' (apply over the evaluated rows only: missing values sink or
    *  hide), or 'skip' (leave the view unchanged). */
   async gateViewApply(column: string, reason: RunAllReason): Promise<'proceed' | 'partial' | 'skip'> {
     await this.settle();
@@ -553,7 +553,7 @@ export class LazyManager {
     if (remaining === 0) return 'proceed';
     const aiCols = aiMadeColumns(this.host.engine.displaySpec());
     if (!aiCols.has(column)) return 'proceed';
-    // One page or less just runs, without ceremony — same as run-all.
+    // One page or less just runs, without ceremony: same as run-all.
     if (remaining <= this.host.pageSize) {
       await this.runAll();
       return 'proceed';
@@ -561,14 +561,14 @@ export class LazyManager {
     const choice = await this.askRunAll(reason);
     if (choice === 'run') {
       await this.runAll();
-      // A cancelled run still applied everything that finished — the view
+      // A cancelled run still applied everything that finished, the view
       // then behaves like the evaluated-only choice.
       return 'proceed';
     }
     return choice === 'partial' ? 'partial' : 'skip';
   }
 
-  /** The readout's "Retry N failed rows" — re-calls exactly the failed rows. */
+  /** The readout's "Retry N failed rows": re-calls exactly the failed rows. */
   async retryFailedRows(): Promise<void> {
     await this.settle();
     const { failed } = this.scan();
@@ -579,12 +579,12 @@ export class LazyManager {
   }
 
   /** Cancel the in-flight run-all (the progress dialog's Cancel). Finished
-   *  rows are kept — their results are already in the cell cache. */
+   *  rows are kept: their results are already in the cell cache. */
   cancelRun(): void {
     this.runAbort?.abort();
   }
 
-  /** Whether a run-all is streaming — the dialog swaps to its progress body. */
+  /** Whether a run-all is streaming: the dialog swaps to its progress body. */
   runAllActive(): boolean {
     return this.runAbort !== null;
   }
@@ -612,7 +612,7 @@ export class LazyManager {
       return this.failedCount() === 0;
     } catch {
       // Cancelled (or failed) mid-run: everything finished is in the cell
-      // cache — a filterless-target pass refills those cells with no calls,
+      // cache: a filterless-target pass refills those cells with no calls,
       // so finished rows are kept and the rest stay pending.
       await this.evaluatePass(new Set());
       return false;
@@ -687,7 +687,7 @@ export function aiMadeColumns(spec: TablePlan): Set<string> {
 }
 
 // Canonical step identity: key order normalized, provenance metadata
-// (`query`/`name` — stamped by the runner at commit) stripped, so an old
+// (`query`/`name`: stamped by the runner at commit) stripped, so an old
 // step restamped this turn never reads as new.
 function canonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
@@ -703,7 +703,7 @@ function stepKey(t: unknown): string {
   return canonical(rest);
 }
 
-/** The transformations `next` carries that `prev` does not — a CONTENT
+/** The transformations `next` carries that `prev` does not, a CONTENT
  *  multiset diff, never a positional slice. The additive rule usually makes
  *  prev a prefix of next, but the patch prompt licenses replace/remove ops
  *  too; a length-based diff would let a replace patch smuggle a new step in
@@ -726,7 +726,7 @@ export function addedTransformations(prev: TablePlan, next: TablePlan): Transfor
 }
 
 /** Whether the multiset of per-row {llm} cell steps ({llm} mutates and
- *  splits) differs between two specs — the estimate-accumulator reset's
+ *  splits) differs between two specs: the estimate-accumulator reset's
  *  trigger (see resetEstimateAccumulators). */
 function llmCellStepsChanged(prev: TablePlan, next: TablePlan): boolean {
   const key = (spec: TablePlan): string =>
@@ -743,7 +743,7 @@ function llmCellStepsChanged(prev: TablePlan, next: TablePlan): boolean {
 }
 
 /** Table-wide {llm} work: a sort key or group aggregate evaluates every row
- *  in one pass — there is no page for it, so it takes the estimate gate. */
+ *  in one pass: there is no page for it, so it takes the estimate gate. */
 function stepsHaveTableWideLlm(steps: Transformation[]): boolean {
   return steps.some(
     (t) =>
@@ -752,8 +752,8 @@ function stepsHaveTableWideLlm(steps: Transformation[]): boolean {
   );
 }
 
-/** Columns the steps in `next` beyond `prev` write — a mutate's targets, a
- *  split's parts, a validate's flag pair, group agg keys — plus any row key
+/** Columns the steps in `next` beyond `prev` write: a mutate's targets, a
+ *  split's parts, a validate's flag pair, group agg keys, plus any row key
  *  that newly appeared (join and pivot bring in columns only the data names).
  *  These structural fills tint and reveal exactly like AI ones; steps that
  *  write no columns (filter, sort, select) contribute nothing
@@ -803,7 +803,7 @@ function exprBody(e: Expr | string | undefined | null): string {
   return '';
 }
 
-/** Whether transformation `t` reads any of `aiCols` across all rows — sort
+/** Whether transformation `t` reads any of `aiCols` across all rows: sort
  *  keys, filter/validate predicates, {js}/{sql} references, group/pivot
  *  keys, join predicates, split sources. {llm} templates are row-local and
  *  exempt (each row's cell evaluates lazily with the row). */
@@ -824,7 +824,7 @@ function readsAiColumns(t: Transformation, aiCols: Set<string>): boolean {
         : false;
     case 'group':
       // An {llm} aggregate reads whole rows: `{*}` serializes each group's
-      // slice — AI columns (and their pending sentinels) included — and a
+      // slice, AI columns (and their pending sentinels) included, and a
       // template can name an AI column directly. Only a template that
       // touches neither is row-key-free.
       return t.by.some((b) => (typeof b === 'string' ? aiCols.has(b) : bodyRefs(exprBody(b))))
@@ -839,7 +839,7 @@ function readsAiColumns(t: Transformation, aiCols: Set<string>): boolean {
 
 /** Whether the steps `next` adds beyond `prev` read AI-made columns across
  *  all rows (the dependency rule's trigger). Added steps are the content
- *  multiset diff — a replace patch gates like an append. */
+ *  multiset diff: a replace patch gates like an append. */
 export function newStepsReadAiColumns(prev: TablePlan, next: TablePlan): boolean {
   const aiCols = aiMadeColumns(prev);
   return addedTransformations(prev, next).some((t) => readsAiColumns(t, aiCols));

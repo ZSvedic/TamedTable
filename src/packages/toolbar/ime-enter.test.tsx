@@ -1,9 +1,9 @@
-// RED-UI-1 (OpenUrlDialog site) — regression test (red inventory): Enter
+// RED-UI-1 (OpenUrlDialog site): regression test (red inventory): Enter
 // pressed to confirm an IME composition (KeyboardEvent.isComposing === true,
 // the keystroke a Japanese/Chinese/Korean user types to accept a conversion)
 // submits the Open-from-URL dialog with the half-composed URL. The dialog's
 // onKeyDown (OpenUrlDialog.tsx:57-65) checks only `e.key === 'Enter'` and
-// never reads `e.nativeEvent.isComposing` — the standard composer guard
+// never reads `e.nativeEvent.isComposing`: the standard composer guard
 // (`e.isComposing || e.keyCode === 229`) is missing, so typing an
 // international domain (e.g. https://例え.jp/…) fires the load mid-word.
 // import { afterAll, test } from 'bun:test';
@@ -43,8 +43,8 @@ test('RED-UI-1: Enter during IME composition submits the URL dialog with the hal
     throw new Error(`harness broken (not RED-UI-1): plain Enter should have submitted once, got ${JSON.stringify(control)}`);
   }
 
-  // The bug: the same Enter with isComposing:true — an IME conversion
-  // confirm — must not submit.
+  // The bug: the same Enter with isComposing:true, an IME conversion
+  // confirm: must not submit.
   const submitted: string[] = [];
   const input = mountDialog(submitted).querySelector('[data-tb-url-input]')!;
   setValue(input, 'https://例え.jp/デ', win.HTMLInputElement.prototype);

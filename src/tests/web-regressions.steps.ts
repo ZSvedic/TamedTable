@@ -1,5 +1,5 @@
 // Step defs for the web-controller regression scenarios in
-// spec/test-cases/web.feature — the 2026-07-29 hunt findings RED-WEB-1..6,
+// spec/test-cases/web.feature: the 2026-07-29 hunt findings RED-WEB-1..6,
 // fixed and moved green. Self-contained: each scenario builds its own WebController
 // with a minimal in-memory FilePort and an injected fetch; no worldParameters,
 // no Before-hook coupling, no network, no API key.
@@ -39,7 +39,7 @@ const S = new WeakMap<object, RedWebState>();
 
 function state(world: object): RedWebState {
   const s = S.get(world);
-  if (!s) throw new Error('web-regressions state missing — did the Given step run?');
+  if (!s) throw new Error('web-regressions state missing: did the Given step run?');
   return s;
 }
 
@@ -87,7 +87,7 @@ Then('the flow reply shows at most 7 numbered lines plus an overflow line', func
   const hasOverflow = /… and \d+ more/.test(reply.text);
   assert.ok(
     numbered <= 7 && hasOverflow,
-    `RED-WEB-1 (spec/behavior.md:1126-1131): a flow replay's reply takes the same shape as a chat reply — up to 7 numbered lines with overflow rendered as "… and N more"; got ${numbered} numbered lines and overflow line present: ${hasOverflow}`,
+    `RED-WEB-1 (spec/behavior.md:1126-1131): a flow replay's reply takes the same shape as a chat reply, up to 7 numbered lines with overflow rendered as "… and N more"; got ${numbered} numbered lines and overflow line present: ${hasOverflow}`,
   );
 });
 
@@ -178,7 +178,7 @@ Then('the diagnostics log still lists both error events', function () {
   assert.equal(
     hits,
     2,
-    `RED-WEB-3 (spec/behavior.md:1333-1335): where the browser hides storage the log must keep working in memory — expected both error toasts in the diagnostics log, got ${hits} of 2 (total events: ${events.length})`,
+    `RED-WEB-3 (spec/behavior.md:1333-1335): where the browser hides storage the log must keep working in memory, expected both error toasts in the diagnostics log, got ${hits} of 2 (total events: ${events.length})`,
   );
 });
 
@@ -251,7 +251,7 @@ Then('the table shows the step the chat reply claims was executed', function () 
   const rows = c.currentRows().length;
   assert.ok(
     claimed && applied === 1 && rows === 2,
-    `RED-WEB-4 (spec/behavior.md:1058-1060, 1139-1141): a provider switch rebuilds the engine "so the table on screen is preserved" and the thread never claims a step the table doesn't show — chat claims Executed steps: ${claimed}, but the visible spec has ${applied} transformation(s) and ${rows} row(s) (the committed filter should leave 2)`,
+    `RED-WEB-4 (spec/behavior.md:1058-1060, 1139-1141): a provider switch rebuilds the engine "so the table on screen is preserved" and the thread never claims a step the table doesn't show, chat claims Executed steps: ${claimed}, but the visible spec has ${applied} transformation(s) and ${rows} row(s) (the committed filter should leave 2)`,
   );
 });
 
@@ -302,7 +302,7 @@ Given('a regression web session sorted descending on a numeric column', async fu
   await c.setViewSort('a', 'desc');
   const col = c.viewRows().map((r) => String(r.a));
   if (col.join(',') !== '40,20,5') {
-    throw new Error(`precondition: descending sort should read 40,20,5 — got ${col.join(',')}`);
+    throw new Error(`precondition: descending sort should read 40,20,5, got ${col.join(',')}`);
   }
   S.set(this, { port, c });
 });

@@ -11,7 +11,7 @@ const DEFAULT_INPUT = join(SPEC_TC_DIR, 'customers-input.csv');
 
 setDefaultTimeout(600_000);
 
-// Shared with sql.steps.ts — the SQL-cancellation scenarios reuse the same
+// Shared with sql.steps.ts: the SQL-cancellation scenarios reuse the same
 // in-flight context and the Then-assertions below.
 export type CancellableRunner = {
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void }): Promise<void>;
@@ -68,7 +68,7 @@ When('user cancels the operation after at least one chunk has completed', async 
   ctx.cancelLatencyMs = Date.now() - cancelAt;
 });
 
-// #OpenFlow — the chat thread's live run progress on a chat request:
+// #OpenFlow: the chat thread's live run progress on a chat request:
 // published when the run starts, gone when the run ends.
 Then('the run progress reports at least {int} row(s) done', function (this: TamedTableWorld, n: number) {
   const run = webController(this).runProgress;

@@ -200,14 +200,14 @@ class CliRunnerImpl implements CliRunner {
     });
   }
 
-  /** One line as each transformation starts — the same step labels the web
+  /** One line as each transformation starts, the same step labels the web
    *  chat's live progress shows. */
   private printStep(u: StepUpdate): void {
     if (this.quiet) return;
     this.closeProgressLine();
     this.stepRowsTotal = u.rows;
     this.rowsDone = 0;
-    this.stdout.write(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows\n`);
+    this.stdout.write(`step ${u.index + 1}/${u.total}: ${u.label} · ${u.rows} rows\n`);
   }
 
   /** Streamed-row counter for an AI-cell step. Interactive runs rewrite one
@@ -236,7 +236,7 @@ class CliRunnerImpl implements CliRunner {
 
   private printDebug(info: RequestDebugInfo): void {
     if (this.quiet) return;
-    // onDebug fires on success and failure — either way the in-place counter
+    // onDebug fires on success and failure: either way the in-place counter
     // line must end before the next block starts.
     this.closeProgressLine();
     // The success-path block prints here, before the table reprint. A failed
@@ -307,7 +307,7 @@ class CliRunnerImpl implements CliRunner {
     this.stdout.write(out + '\n');
     // The :find highlight is NOT cleared here: it lives until the next
     // viewport- or state-changing event (spec/behavior.md § REPL, `:find`), so
-    // a bare :show — which is neither — reprints it still highlighted. The
+    // a bare :show, which is neither, reprints it still highlighted. The
     // events that do end it clear it themselves (resetViewport, a cursor move,
     // a page-size change, :reorder).
   }
@@ -357,7 +357,7 @@ class CliRunnerImpl implements CliRunner {
 
   /** `:reorder` is not journaled, so a journal snapshot carries whatever column
    *  order was current when it was taken. Restoring it wholesale would silently
-   *  revert a `:reorder` the undo message never mentions — so keep the order the
+   *  revert a `:reorder` the undo message never mentions, so keep the order the
    *  session is showing now and take only the snapshot's own column set
    *  (spec/behavior.md § REPL, `:undo`). Columns the snapshot has and the
    *  current spec doesn't (the turn added them) keep their snapshot order at the
@@ -408,7 +408,7 @@ class CliRunnerImpl implements CliRunner {
 
   // Viewport navigation. Returns true if the call should reprint.
   showCmd(arg: string): boolean {
-    // Bare :show changes neither viewport nor state — it reprints exactly what
+    // Bare :show changes neither viewport nor state, it reprints exactly what
     // is on screen, highlight included.
     if (arg === '') return true;
     const tokens = arg.split(/\s+/);
@@ -506,7 +506,7 @@ class CliRunnerImpl implements CliRunner {
     const newOrder = [...wanted, ...existing.filter((id) => !named.has(id))];
     const byId = new Map(spec.columns.map((c) => [c.id, c]));
     await this.headless.setSpec({ ...spec, columns: newOrder.map((id) => byId.get(id)!) });
-    // The cursor stays where the user left it — :reorder is not one of the four
+    // The cursor stays where the user left it, :reorder is not one of the four
     // reset events (spec/behavior.md § REPL viewport). The :find highlight does
     // end here: reordering columns is a state change.
     this.highlight = undefined;
@@ -595,8 +595,8 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
   async ':load'(arg, runner, stdout) {
     if (!arg) { stdout.write(':load: missing path\n'); return; }
     // Delegate to the codec registry (#FormatOut) instead of a hardcoded
-    // extension list, so every registered format — .csv, .jsonl, .parquet,
-    // .arrow — loads the same way `loadInput`/`exportAs` already dispatch.
+    // extension list, so every registered format: .csv, .jsonl, .parquet,
+    // .arrow: loads the same way `loadInput`/`exportAs` already dispatch.
     if (!formatForExtension(arg)) { stdout.write(':load: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       // Try the literal path first, then a spec/test-cases/ fallback so feature files can name
@@ -613,7 +613,7 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
   async ':save'(arg, runner, stdout) {
     if (!arg) { stdout.write(':save: missing path. Usage: :save <output.csv|.jsonl|.parquet|.arrow>\n'); return; }
     // Dispatch through the codec registry (#FormatOut): .csv, .jsonl, .parquet,
-    // and .arrow all work — exportAs already writes any of them.
+    // and .arrow all work: exportAs already writes any of them.
     if (!formatForExtension(arg)) { stdout.write(':save: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       await runner.exportAs(arg);
@@ -701,7 +701,7 @@ async function resolveLoadPath(p: string): Promise<string | undefined> {
  * Handle REPL colon commands and bare-word aliases. Returns:
  *  - `'exit'` for `exit` / `:exit` (caller should break out of the loop).
  *  - `'handled'` for any recognized command (caller reprints prompt and continues).
- *  - `'handled'` for a mistyped `:` command too — it reports the typo locally.
+ *  - `'handled'` for a mistyped `:` command too: it reports the typo locally.
  *  - `'unhandled'` for any other input (caller passes it through to the LLM).
  * Exported so tests can drive it directly without standing up the readline loop.
  */
@@ -714,7 +714,7 @@ export async function handleColonCommand(
   const { cmd, arg } = splitCmd(text);
   const handler = COLON_COMMANDS[cmd];
   if (!handler) {
-    // A `:`-prefixed line is a command, so a typo is a typo — never a natural-
+    // A `:`-prefixed line is a command, so a typo is a typo, never a natural-
     // language request. Answering locally costs no model call and no wait
     // (spec/behavior.md § REPL).
     if (cmd.startsWith(':')) {

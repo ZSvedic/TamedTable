@@ -1,4 +1,4 @@
-// Interactive Ctrl-C, under a real terminal. spec/behavior.md § REPL —
+// Interactive Ctrl-C, under a real terminal. spec/behavior.md § REPL:
 // "Ctrl-C while a request runs cancels it and rolls back the half-applied
 // transformation … the session survives the cancel. Ctrl-C while idle closes
 // the REPL. This holds in a real terminal, where the keypress never reaches
@@ -8,7 +8,7 @@
 // terminal:true, which puts stdin in raw mode, so ^C never becomes a process
 // SIGINT: with only `process.on('SIGINT')` wired (the RED-CLI-1 bug inventory,
 // now fixed) readline saw the keypress, closed its interface, and the input
-// loop — the whole session — died without the abort controller ever being
+// loop, the whole session, died without the abort controller ever being
 // touched. The fix registers `rl.on('SIGINT')` too; see the CLI section of
 // spec/code-contract.md.
 //
@@ -17,7 +17,7 @@
 // (cli-sigint.pty.py) forks `bun cli-sigint.child.ts` with pty.fork, types an
 // NL request replayed from cassettes/repl-commands.json (each response delayed
 // 3 s so the request stays in flight), sends \x03 mid-flight, then queues
-// ":history" + "exit" — which only run if the loop survived.
+// ":history" + "exit", which only run if the loop survived.
 import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { join } from 'node:path';
@@ -51,7 +51,7 @@ test('interactive Ctrl-C cancels the in-flight request and the session stays ali
     `PTY harness: the REPL never reached its startup banner.\ntranscript:\n${stdout}`);
 
   assert.ok(result.cancelledLine && !result.requestCompleted,
-    'spec/behavior.md § REPL: "Ctrl-C while a request runs cancels it and rolls back the half-applied transformation" — in a real terminal the ^C keypress must reach the abort controller through the readline SIGINT listener ' +
+    'spec/behavior.md § REPL: "Ctrl-C while a request runs cancels it and rolls back the half-applied transformation". In a real terminal the ^C keypress must reach the abort controller through the readline SIGINT listener ' +
     `(cancelledLine=${result.cancelledLine}, requestCompleted=${result.requestCompleted}).\ntranscript:\n${stdout}`);
 
   assert.ok(result.historyProcessed,

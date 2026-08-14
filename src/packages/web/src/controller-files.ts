@@ -24,9 +24,9 @@ import { RecentsStore, type RecentEntry } from './recents.ts';
 /** The data formats the Open picker accepts. */
 const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 
-// #SaveGate — browsers open a file picker only from a live user gesture, so a
+// #SaveGate: browsers open a file picker only from a live user gesture, so a
 // save whose work outlives the starting click cannot reach its own picker. Both
-// such saves — after a run on all rows, and the model-backed Python export —
+// such saves, after a run on all rows, and the model-backed Python export:
 // park on this one gate, which shows the wait and collects the fresh click.
 // spec/behavior.md § The save gate.
 export interface SaveGateState {
@@ -36,7 +36,7 @@ export interface SaveGateState {
   body: string;
   /** Work still running: the waiting bar shows and "Save file…" is disabled. */
   busy: boolean;
-  /** Text the wait has produced so far — the Python export streams its script
+  /** Text the wait has produced so far, the Python export streams its script
    *  here, and the dialog shows it being written. Absent when the wait has
    *  nothing to show. */
   preview?: string;
@@ -61,14 +61,14 @@ export const SAVE_GATE_COPY = {
 
 // #LookupJoin
 /** A join `spec` cannot run without asking: its step index, and the file it
- *  names — or null for a join the model emitted without a filename (the user
+ *  names, or null for a join the model emitted without a filename (the user
  *  named none; the picked file's name is written into the step). */
 export type MissingLookup = { index: number; name: string | null };
 
 /** The lookup files `spec` joins against and the session has not staged, in
  *  step order, each name asked once (every null join is its own ask). Every
  *  join is checked, not only a new one: each request replays the whole spec
- *  from the source, so any unstaged join would stop the run — and a join that
+ *  from the source, so any unstaged join would stop the run, and a join that
  *  ran before was staged to get that far, so it never asks twice. */
 export function missingLookups(spec: TablePlan, staged: ReadonlySet<string>): MissingLookup[] {
   const missing: MissingLookup[] = [];
@@ -93,14 +93,14 @@ export class FilesManager {
     this.host = host;
   }
 
-  /** The Open menu's Recent entries — newest first, at most 5. */
+  /** The Open menu's Recent entries: newest first, at most 5. */
   recents(): RecentEntry[] {
     return this.recentsStore.list();
   }
 
   /** Re-open a Recent entry: samples and URLs reload their address; local
    *  files and flows re-open the matching picker (the browser cannot reopen
-   *  a local file silently — the entry's name is the reminder). A sample's
+   *  a local file silently: the entry's name is the reminder). A sample's
    *  stored address goes stale when a deployment moves, so it re-resolves by
    *  name against the running deployment first; an entry whose reload fails
    *  anyway is removed so it never lingers to fail twice (spec/behavior.md
@@ -111,14 +111,14 @@ export class FilesManager {
         (entry.kind === 'sample' ? this.host.opts.resolveSampleUrl?.(entry.label) : null) ?? entry.url;
       try {
         await this.loadFromUrl(url, entry.kind);
-        // The load recorded a fresh entry — drop the stale-address one it
+        // The load recorded a fresh entry, drop the stale-address one it
         // would otherwise sit above (dedup is by kind + label + url).
         if (url !== entry.url) this.recentsStore.remove(entry);
       } catch (e) {
         this.recentsStore.remove(entry);
         this.host.pushToast(
           'error',
-          `Could not open ${entry.label}: ${(e as Error).message} — removed from Recent.`,
+          `Could not open ${entry.label}: ${(e as Error).message}, removed from Recent.`,
         );
       }
       this.host.notify();
@@ -148,14 +148,14 @@ export class FilesManager {
   }
 
   // #OpenFlow
-  /** "Open .flow & run on current data…" — pick a saved `.flow` and replay
+  /** "Open .flow & run on current data…": pick a saved `.flow` and replay
    *  its transformations onto the currently-loaded table's source as one
    *  history entry (a single undo restores the previous spec). The run posts
    *  a `Run <flow>` user bubble, then replays behind the chat's live run
    *  progress (engine.applySpec): step/row progress, an event log, and the
-   *  Stop button, which leaves the table untouched. Failures — an unreadable
+   *  Stop button, which leaves the table untouched. Failures, an unreadable
    *  flow, a flow reading columns the table lacks, AI cells with no provider
-   *  key — raise the modal error dialog, not a fading toast. */
+   *  key: raise the modal error dialog, not a fading toast. */
   async openFlow(): Promise<void> {
     if (!this.host.loaded) {
       this.host.pushToast('error', 'Load a file before running a flow.');
@@ -180,7 +180,7 @@ export class FilesManager {
         );
         return;
       }
-      // #LookupJoin — cancelling leaves before the run posts anything.
+      // #LookupJoin: cancelling leaves before the run posts anything.
       if (!(await this.ensureLookups(spec))) return;
       const prevSpec = structuredClone(this.host.engine.currentSpec());
       started = picked.name;
@@ -193,26 +193,26 @@ export class FilesManager {
       });
       this.recentsStore.record({ kind: 'flow', label: picked.name });
       // A numbered line per step (the same labels the live progress showed),
-      // then the summary — the reply mirrors a chat request's per-step reply,
+      // then the summary: the reply mirrors a chat request's per-step reply,
       // linked to its journal entry so it tracks undo state. A replay is a
       // completed request, so the reply carries Report bug like a chat reply
       // does; it makes no model call, so there is no debug detail to expand.
       this.host.pushMessage('assistant', [
         'Executed steps:',
         ...numberedStepLines(spec.transformations.map((t) => describeStep(t as Transformation))),
-        `Ran ${picked.name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
+        `Ran ${picked.name}: ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`,
       ].join('\n'), undefined, true, historyId);
     } catch (e) {
-      // Stop is a deliberate cancel, not a failure — the replay left the
+      // Stop is a deliberate cancel, not a failure: the replay left the
       // table untouched, so a quiet toast plus a chat line closing the
       // `Run <flow>` bubble is enough.
       if (isCancelled(e)) {
-        this.host.pushToast('info', 'Flow cancelled — table unchanged.');
-        this.host.pushMessage('assistant', 'Flow cancelled — table unchanged.');
+        this.host.pushToast('info', 'Flow cancelled: table unchanged.');
+        this.host.pushMessage('assistant', 'Flow cancelled: table unchanged.');
       } else {
         this.host.errorDialog = `Could not run flow: ${(e as Error).message}`;
         // A run that had already started leaves its `Run <flow>` bubble in
-        // the thread — close it with the same error the dialog shows. An
+        // the thread: close it with the same error the dialog shows. An
         // unclassified mid-run failure is an app error, so the reply carries
         // Report bug like any other app-error reply.
         if (started) this.host.pushMessage('assistant', `Error: Could not run flow: ${(e as Error).message}`, undefined, true);
@@ -223,7 +223,7 @@ export class FilesManager {
     }
   }
 
-  // #LookupJoin — the lookup gate, shared by the two paths that can introduce
+  // #LookupJoin: the lookup gate, shared by the two paths that can introduce
   // a join: a chat request's patch (through the runner's confirmSpec hook) and
   // a replayed flow. Each missing file raises the dialog in turn and blocks
   // until the user picks it or cancels; cancelling answers false, and the
@@ -242,21 +242,21 @@ export class FilesManager {
     return true;
   }
 
-  /** The dialog's "Choose file…" click — a fresh user gesture, which is the
+  /** The dialog's "Choose file…" click: a fresh user gesture, which is the
    *  only thing a file picker opens from. The picked rows stage under the name
    *  the join asked for, so a file renamed on disk still satisfies the step.
    *  A join that named no file (`with: null`) takes the picked file's own
-   *  name instead — written into the step, so the executed-steps reply and a
+   *  name instead: written into the step, so the executed-steps reply and a
    *  saved flow show the real file. */
   async chooseLookupFile(): Promise<void> {
     const pending = this.pendingLookup;
     if (!pending) return;
     try {
       // A null join takes the picked file's name into `with`, and the schema
-      // only admits .csv/.jsonl there — so offer only those. A named join
+      // only admits .csv/.jsonl there, so offer only those. A named join
       // keeps its own (already valid) name whatever format stands in for it.
       const picked = await this.host.file.pickOpen(pending.name === null ? ['.csv', '.jsonl'] : OPEN_EXTENSIONS);
-      if (!picked) return; // picker dismissed — the dialog stays up
+      if (!picked) return; // picker dismissed: the dialog stays up
       const { rows } = await parseTable(picked.name, picked.bytes);
       if (pending.name === null) {
         // The runner replays and commits this same spec object, so the name
@@ -297,11 +297,11 @@ export class FilesManager {
     }
   }
 
-  /** A dropped file waiting on the replace-table confirmation — the drop
+  /** A dropped file waiting on the replace-table confirmation, the drop
    *  already delivered the bytes, so confirming needs no second picker. */
   private pendingDrop: { name: string; bytes: Uint8Array } | null = null;
 
-  /** Load a dropped file — the drag-and-drop counterpart of openCsv, minus
+  /** Load a dropped file: the drag-and-drop counterpart of openCsv, minus
    *  the picker dialog. Same formats, same toasts. With a table loaded a drop
    *  never replaces it silently: the replace-table confirmation asks first
    *  (spec/behavior.md § Web UI). */
@@ -340,23 +340,23 @@ export class FilesManager {
     }
   }
 
-  // #LazyExec — the table parsed but not yet committed while the large-file
+  // #LazyExec: the table parsed but not yet committed while the large-file
   // dialog awaits its one-click choice.
   private pendingLargeFile: { name: string; rows: Row[]; spec: TablePlan } | null = null;
 
   private async loadFromPicked(picked: PickedFile, format?: FormatId): Promise<void> {
     // Opening a file is one of the two exits from a stayed tour (behavior.md
     // § Staying in the tour): leave replay mode first, so the new table gets
-    // a live engine instead of the tour's cassette. Every open path — picker,
-    // drop, URL, sample, scripted load — funnels through here. A *playing*
+    // a live engine instead of the tour's cassette. Every open path: picker,
+    // drop, URL, sample, scripted load: funnels through here. A *playing*
     // tour's own load-file steps also pass through, but those run while the
     // tour is active, never while stayed, so this guard cannot fire on them.
     if (this.host.tutorial.isTutorialStayed()) this.host.tutorial.cancelTutorial();
     // Parse the raw bytes through the file-io codec registry and load the rows
-    // directly — no filesystem, no path round-trip. `format`, when set, is a
+    // directly, no filesystem, no path round-trip. `format`, when set, is a
     // fetch's Content-Type fallback for an extension-less URL.
     const { rows, spec } = await parseTable(picked.name, picked.bytes, format);
-    // #LazyExec — a file bigger than one page raises the large-file dialog:
+    // #LazyExec: a file bigger than one page raises the large-file dialog:
     // one click on "Load shuffled" (the primary default) or "Load in
     // original order". A one-page file loads exactly as today.
     if (rows.length > this.host.pageSize) {
@@ -377,7 +377,7 @@ export class FilesManager {
   }
 
   /** Resolve the large-file dialog: commit the stashed table, shuffled (a
-   *  seeded view — saving keeps original order) or in original order. */
+   *  seeded view: saving keeps original order) or in original order. */
   async resolveLargeFile(shuffled: boolean): Promise<void> {
     const pending = this.pendingLargeFile;
     if (!pending) return;
@@ -391,14 +391,14 @@ export class FilesManager {
   private async commitParsed(name: string, rows: Row[], spec: TablePlan): Promise<void> {
     await this.host.engine.loadParsed(rows, spec);
     // A new table is a new conversation: loadParsed just cleared the undo
-    // journal, and the thread's replies point at those entries — left in place
+    // journal, and the thread's replies point at those entries: left in place
     // they would read as undone steps against a table they never touched. The
     // "Loaded …" line below starts the fresh thread. Running a .flow keeps the
     // thread: it transforms the table already open, it does not replace it.
     this.host.clearMessages();
-    const loaded = `Loaded ${name} — ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`;
+    const loaded = `Loaded ${name}: ${this.host.engine.currentRows().length} rows, ${this.host.engine.currentSpec().columns.length} columns.`;
     this.host.pushMessage('assistant', loaded);
-    // #Diagnostics — a load fires no toast; log it so a report names the file
+    // #Diagnostics: a load fires no toast; log it so a report names the file
     // the user was working on.
     this.host.diagnostics.recordActivity(loaded);
   }
@@ -430,13 +430,13 @@ export class FilesManager {
   /** Fetch a CSV or JSONL from `url` and render it like a local-file open.
    *  Throws on any failure so the dialog can keep itself open with an
    *  inline error; success closes the dialog at the caller. `kind` labels
-   *  the Recent entry — the sample picker passes 'sample'. */
+   *  the Recent entry: the sample picker passes 'sample'. */
   async loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> {
     const { name, bytes, format } = await fetchTable(url, this.host.opts.fetch);
     await this.loadFromPicked({ name, bytes }, format);
     this.recentsStore.record({ kind, label: name, url });
     // The record lands after loadFromPicked fired its last notify, so the menu
-    // needs one more render to list it — the sample picker calls this
+    // needs one more render to list it: the sample picker calls this
     // fire-and-forget and closes before the record, so it has none of its own.
     this.host.notify();
   }
@@ -460,12 +460,12 @@ export class FilesManager {
     }
   }
 
-  /** Export the current flow as a standalone Python script — the "Save as
+  /** Export the current flow as a standalone Python script: the "Save as
    *  Python…" entry. Unlike the other saves this is model-backed (the selected
    *  provider's chat model translates the flow), so it mirrors :save-py: it
    *  needs that provider's key and refuses a flow with an {llm} cell, which has
    *  no deterministic Python form. */
-  // #SaveGate — the model call outlives the click that started it, so the
+  // #SaveGate: the model call outlives the click that started it, so the
   // picker cannot open here (browsers throw "Must be handling a user gesture").
   // The gate opens on the click instead: waiting while the model writes the
   // script, then ready for the click that opens the picker.
@@ -484,7 +484,7 @@ export class FilesManager {
     if (specHasLlmCell(this.host.engine.currentSpec())) {
       this.host.pushToast(
         'error',
-        'This flow has AI cells, which have no Python form — save it as a flow instead.',
+        'This flow has AI cells, which have no Python form: save it as a flow instead.',
       );
       return;
     }
@@ -536,9 +536,9 @@ export class FilesManager {
   }
 
   /** Save the current rows via the Save dialog, in the format the table was
-   *  loaded as — CSV, JSONL, Parquet, or Arrow — so you get back what you
+   *  loaded as (CSV, JSONL, Parquet, or Arrow) so you get back what you
    *  opened. Falls back to JSONL when the source format is unknown. */
-  // #SaveGate — what the gate will write when its click arrives: rows to
+  // #SaveGate: what the gate will write when its click arrives: rows to
   // serialize, or a script the model already wrote.
   private pendingSave:
     | { kind: 'data'; format: FormatId; keepSourceName: boolean }
@@ -573,10 +573,10 @@ export class FilesManager {
     await this.saveGated(format, { keepSourceName: true });
   }
 
-  /** #LazyExec — the evaluated-rows gate shared by Save and Save as: rows
+  /** #LazyExec: the evaluated-rows gate shared by Save and Save as: rows
    *  still pending raise the estimate/confirmation flow first (one page or
    *  less just runs); declining cancels the save. When a run happened, the
-   *  file picker would fall outside the original click's user gesture — the
+   *  file picker would fall outside the original click's user gesture: the
    *  #SaveGate collects a fresh click instead of erroring, opening straight
    *  into its ready phase because the run had its own progress dialog. With
    *  nothing pending, Save skips straight to writing the file. */
@@ -584,9 +584,9 @@ export class FilesManager {
     const hadWork =
       this.host.lazy.pendingCount() + this.host.lazy.failedCount() > 0;
     const outcome = await this.host.lazy.runOnAllRows('save');
-    // Declining the estimate is an explicit "not now" — the save cancels
-    // silently. A confirmed (and paid) run that ends short — failed rows, a
-    // cancel — must never vanish: say what happened and what unblocks the
+    // Declining the estimate is an explicit "not now": the save cancels
+    // silently. A confirmed (and paid) run that ends short: failed rows, a
+    // cancel: must never vanish: say what happened and what unblocks the
     // save (spec/behavior.md § Run on all rows and Save).
     if (outcome === 'declined') return;
     if (outcome === 'incomplete') {
@@ -595,8 +595,8 @@ export class FilesManager {
       this.host.pushToast(
         'error',
         failed > 0
-          ? `Save cancelled — ${failed} row${failed === 1 ? '' : 's'} failed to evaluate. Retry the failed rows, then save again.`
-          : `Save cancelled — ${pending} row${pending === 1 ? '' : 's'} still pending. Run on all rows, then save again.`,
+          ? `Save cancelled: ${failed} row${failed === 1 ? '' : 's'} failed to evaluate. Retry the failed rows, then save again.`
+          : `Save cancelled, ${pending} row${pending === 1 ? '' : 's'} still pending. Run on all rows, then save again.`,
       );
       return;
     }
@@ -608,7 +608,7 @@ export class FilesManager {
     await this.writeData(format, opts);
   }
 
-  /** The gate's "Save file…" click — the fresh user gesture the picker opens
+  /** The gate's "Save file…" click: the fresh user gesture the picker opens
    *  from, so the picker must be reached from inside this call. */
   async confirmSaveGate(): Promise<void> {
     // Nothing to write yet: the button is disabled while the gate is busy, and
@@ -626,7 +626,7 @@ export class FilesManager {
     this.closeGate();
   }
 
-  /** Save a copy of the current rows in a chosen format — the "Save as <format>"
+  /** Save a copy of the current rows in a chosen format: the "Save as <format>"
    *  menu. Same dialog, but the format is the caller's pick, not the source's,
    *  and the suggested name carries that format's extension so the user gets a
    *  sensible default they can still rename. */
@@ -635,7 +635,7 @@ export class FilesManager {
       this.host.pushToast('error', 'Load a file before saving data.');
       return;
     }
-    // #LazyExec — same evaluated-rows gate as the default Save.
+    // #LazyExec: same evaluated-rows gate as the default Save.
     await this.saveGated(format, { keepSourceName: false });
   }
 
@@ -685,7 +685,7 @@ export class FilesManager {
     await this.loadFromBytes(name, new TextEncoder().encode(text));
   }
 
-  /** Byte-level sibling of loadFromText — the seam the @web test profile's
+  /** Byte-level sibling of loadFromText: the seam the @web test profile's
    *  `load "<file>"` step uses, so every scripted load takes the same
    *  loadFromPicked path (and large-file gate) a picked or dropped file does. */
   async loadFromBytes(name: string, bytes: Uint8Array): Promise<void> {

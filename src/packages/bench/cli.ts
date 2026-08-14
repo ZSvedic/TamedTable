@@ -21,7 +21,7 @@
 //
 // sample/chart/report run offline. label/sweep make live calls and need the
 // matching provider key (ANTHROPIC_API_KEY / GEMINI_API_KEY / OPENAI_API_KEY /
-// CEREBRAS_API_KEY / OPENROUTER_API_KEY — the last two are free tiers).
+// CEREBRAS_API_KEY / OPENROUTER_API_KEY: the last two are free tiers).
 // This is the Phase-2 entry point; Phase 1 ships it ready to run.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -41,7 +41,7 @@ const GT_DIR = join(BENCH, 'ground-truth');
 const SAMPLE_CSV = join(GT_DIR, 'music-sample.csv');
 const LABELS_FILE = join(GT_DIR, 'music-labels.jsonl');
 const RESULTS_DIR = join(BENCH, 'results');
-// One table for every run this benchmark has ever made — see results.ts.
+// One table for every run this benchmark has ever made: see results.ts.
 const RESULTS_CSV = join(RESULTS_DIR, 'sweeps.csv');
 const CHARTS_DIR = join(BENCH, 'charts');
 
@@ -95,10 +95,10 @@ function cmdSample(count: number): void {
 // size 1 (highest fidelity), then dump its Music verdicts as ground truth.
 // Spot-check the output by hand before trusting it.
 async function cmdLabel(labeler: string): Promise<void> {
-  if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample yet — run "bench sample" first (${rel(SAMPLE_CSV)} missing).`);
+  if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample yet: run "bench sample" first (${rel(SAMPLE_CSV)} missing).`);
   const provider = providerFor(labeler);
   const apiKey = keyFor(provider);
-  if (!apiKey) throw new Error(`${provider} key not set — export the matching *_API_KEY to label with ${labeler}.`);
+  if (!apiKey) throw new Error(`${provider} key not set: export the matching *_API_KEY to label with ${labeler}.`);
   const runner = createHeadlessRunner({ model: labeler, cellModel: labeler, batchSize: 1, apiKey });
   await runner.loadInput(SAMPLE_CSV);
   await runner.request(REQUEST);
@@ -111,7 +111,7 @@ async function cmdLabel(labeler: string): Promise<void> {
 }
 
 function readLabels(): Label[] {
-  if (!existsSync(LABELS_FILE)) throw new Error(`No labels yet — run "bench label" first (${rel(LABELS_FILE)} missing).`);
+  if (!existsSync(LABELS_FILE)) throw new Error(`No labels yet: run "bench label" first (${rel(LABELS_FILE)} missing).`);
   return readFileSync(LABELS_FILE, 'utf8').split('\n').filter((l) => l.trim())
     .map((l) => JSON.parse(l) as { videoId: string; music: unknown })
     .map((o) => ({ id: o.videoId, expected: o.music }));
@@ -119,7 +119,7 @@ function readLabels(): Label[] {
 
 // ── sweep ────────────────────────────────────────────────────────────────────
 async function cmdSweep(models: string[], batches: number[], out: string, retries: number, tier: 'free' | 'paid', chat?: string): Promise<void> {
-  if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample — run "bench sample" then "bench label" first.`);
+  if (!existsSync(SAMPLE_CSV)) throw new Error(`No sample: run "bench sample" then "bench label" first.`);
   const labels = readLabels();
   // The patch turn shares the cell model's provider (one runner, one provider),
   // so an explicit --chat must sit on that provider.
@@ -132,11 +132,11 @@ async function cmdSweep(models: string[], batches: number[], out: string, retrie
   }
   // Fail fast if a key is missing for any provider in the model set.
   for (const provider of new Set(models.map(providerFor))) {
-    if (!keyFor(provider)) throw new Error(`${provider} key not set — needed for ${models.filter((m) => providerFor(m) === provider).join(', ')}.`);
+    if (!keyFor(provider)) throw new Error(`${provider} key not set: needed for ${models.filter((m) => providerFor(m) === provider).join(', ')}.`);
   }
   const configs = grid(models, batches).map((c) => (chat ? { ...c, chatModel: chat } : c));
   console.log(`Running ${configs.length} configs (${models.length} models × ${batches.length} batch sizes)${retries ? `, up to ${retries} retries each` : ''}…`);
-  // Do NOT pin a single apiKey — a sweep can span providers. Leaving apiKey
+  // Do NOT pin a single apiKey: a sweep can span providers. Leaving apiKey
   // undefined lets each runner resolve its own provider's key from env
   // (GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY), which bun loads from
   // .env. The pre-flight check above guarantees each is present.
@@ -164,8 +164,8 @@ async function cmdSweep(models: string[], batches: number[], out: string, retrie
 // ── chart ────────────────────────────────────────────────────────────────────
 // Three tradeoff views, because one chart cannot answer both questions a reader
 // has. A paying user trades accuracy against cost; a free user's cost is zero,
-// so the only axis left is time. Splitting them also stops the free models —
-// which cluster far from the paid ones on cost — from squashing the paid scale.
+// so the only axis left is time. Splitting them also stops the free models,
+// which cluster far from the paid ones on cost: from squashing the paid scale.
 function cmdChart(batch: number | undefined, subtitle: string | undefined): void {
   const all = readTable();
   mkdirSync(CHARTS_DIR, { recursive: true });
@@ -201,7 +201,7 @@ function cmdChart(batch: number | undefined, subtitle: string | undefined): void
 
   const page = join(CHARTS_DIR, 'explorer.html');
   writeFileSync(page, explorerPage(toCsv(all), new Date().toISOString().slice(0, 10)));
-  console.log(`Wrote ${rel(page)} (open it directly — filters, sorting, every run)`);
+  console.log(`Wrote ${rel(page)} (open it directly: filters, sorting, every run)`);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────

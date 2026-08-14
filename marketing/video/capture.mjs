@@ -2,7 +2,7 @@
 // Uses Playwright's built-in VP8 recorder; window.seek(ms) is driven on a wall
 // clock so the recording plays at real speed, then the font-load pre-roll is
 // trimmed with the bundled (video-only) ffmpeg. gemini-tts.mjs adds the voiceover.
-// Usage: node capture.mjs  (run `cd src && bun install` first — playwright
+// Usage: node capture.mjs  (run `cd src && bun install` first, playwright
 // resolves from src/node_modules, the repo's only dependency root)
 import { chromium } from '../../src/node_modules/playwright/index.mjs';
 import { execFileSync, spawnSync } from 'node:child_process';

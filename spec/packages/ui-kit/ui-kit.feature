@@ -1,6 +1,6 @@
 # #UiKit
 # The design system: brand tokens (theme objects, typography, spacing) plus
-# the primitive React components — Button, Icon, MenuButton, Toasts, and the
+# the primitive React components: Button, Icon, MenuButton, Toasts, and the
 # light/dark ThemeProvider.
 Feature: UI kit package
 
@@ -34,7 +34,7 @@ Feature: UI kit package
 
     @headless
     Scenario: Every on-color is readable on its surface in both themes
-      # inkOnInk on ink (primary button), inkOnAcc on accent — a mistuned token
+      # inkOnInk on ink (primary button), inkOnAcc on accent: a mistuned token
       # (e.g. an on-color left equal to its surface in dark mode) reads as
       # white-on-white.
       Then every on-color clearly contrasts with its surface in both themes

@@ -34,11 +34,11 @@ const MAX_BYTES = 64 * 1024;
 /** Request bodies are truncated to this many characters before logging. */
 const MAX_BODY = 2048;
 
-/** Where a "Send a bug report" lands — the maintainers' issue tracker. */
+/** Where a "Send a bug report" lands: the maintainers' issue tracker. */
 const ISSUE_URL = 'https://github.com/ZSvedic/TamedTable/issues/new';
 /** How much raw report rides in the prefilled issue URL. GitHub rejects
  *  URLs past ~8 KB ("Whoa there! Your request URL is too long."), and
- *  percent-encoding inflates the report's JSON-heavy markdown ~3× — so the
+ *  percent-encoding inflates the report's JSON-heavy markdown ~3×, so the
  *  raw budget is kept small enough that the encoded URL stays well under
  *  the limit. The full copy goes to the clipboard regardless. */
 const URL_REPORT_BUDGET = 2000;
@@ -80,7 +80,7 @@ export function redactValue(value: unknown): unknown {
 }
 
 /** The newest `maxEvents` events that also fit within `maxBytes` of serialized
- *  JSON — the oldest are dropped first when either cap is exceeded. */
+ *  JSON: the oldest are dropped first when either cap is exceeded. */
 export function evictEvents(events: DiagEvent[], maxEvents: number, maxBytes: number): DiagEvent[] {
   let out = events.slice(-maxEvents);
   while (out.length > 1 && JSON.stringify(out).length > maxBytes) {
@@ -131,7 +131,7 @@ function appVersion(): string {
 // ── Manager ─────────────────────────────────────────────────────────────────
 
 export class DiagnosticsManager {
-  /** In-memory mirror of the persisted log — the source of truth so reads work
+  /** In-memory mirror of the persisted log: the source of truth so reads work
    *  even when localStorage is unavailable (private mode, headless, SSR). */
   private events: DiagEvent[] = [];
   private readonly host: ControllerHost;
@@ -162,10 +162,10 @@ export class DiagnosticsManager {
     try {
       fp = await fingerprint(opts.method, opts.url, opts.body);
     } catch {
-      /* hashing unavailable — log the event without a fingerprint */
+      /* hashing unavailable: log the event without a fingerprint */
     }
     const message = opts.replayMiss
-      ? 'Tutorial replay miss — no recording for this request'
+      ? 'Tutorial replay miss, no recording for this request'
       : `Model request failed${opts.status ? ` (HTTP ${opts.status})` : ' (network error)'}`;
     this.record('error', message, {
       source: opts.replayMiss ? 'replay-miss' : 'request',
@@ -178,14 +178,14 @@ export class DiagnosticsManager {
     });
   }
 
-  /** Record an ordinary successful action that never surfaces as a toast — a
-   *  file load, a completed chat request — so a report copied after normal work
+  /** Record an ordinary successful action that never surfaces as a toast: a
+   *  file load, a completed chat request, so a report copied after normal work
    *  reflects what the user did instead of coming up empty. */
   recordActivity(message: string): void {
     this.record('info', message.slice(0, MAX_BODY), { source: 'activity' });
   }
 
-  /** Record a chat reply the user flagged with Report bug — the reply's text
+  /** Record a chat reply the user flagged with Report bug: the reply's text
    *  plus the request that produced it, both truncated like request bodies. */
   recordUserReport(messageText: string, userRequest?: string): void {
     this.record('info', 'User flagged a chat reply with Report bug', {
@@ -222,25 +222,25 @@ export class DiagnosticsManager {
     } catch {
       /* fall through to the failure toast */
     }
-    this.host.pushToast('error', 'Could not copy the report — clipboard access was blocked.');
+    this.host.pushToast('error', 'Could not copy the report: clipboard access was blocked.');
   }
 
   /** The prefilled "new issue" URL for the maintainers' tracker: a friendly
-   *  intro plus the redacted report (truncated to fit the URL). Pure — safe to
+   *  intro plus the redacted report (truncated to fit the URL). Pure: safe to
    *  call from a test without a browser. */
   bugReportUrl(): string {
     const report = this.report();
     const intro = [
       '<!-- Describe what you were doing when the bug hit, above this line. -->',
       '',
-      'Diagnostics (auto-generated, redacted — contains no API keys):',
+      'Diagnostics (auto-generated, redacted: contains no API keys):',
       '',
     ].join('\n');
     const truncated = report.length > URL_REPORT_BUDGET;
     const body =
       intro +
       (truncated ? report.slice(0, URL_REPORT_BUDGET) : report) +
-      (truncated ? '\n\n_(Report truncated — the full report is on your clipboard; paste it here.)_' : '');
+      (truncated ? '\n\n_(Report truncated: the full report is on your clipboard; paste it here.)_' : '');
     const params = new URLSearchParams({ title: 'Bug report', body });
     return `${ISSUE_URL}?${params.toString()}`;
   }
@@ -256,12 +256,12 @@ export class DiagnosticsManager {
         copied = true;
       }
     } catch {
-      /* clipboard blocked — the URL still carries a (possibly truncated) copy */
+      /* clipboard blocked: the URL still carries a (possibly truncated) copy */
     }
     const url = this.bugReportUrl();
     // Note: `window.open(url, '_blank', 'noopener')` returns null even on
     // success, so we can't tell a real open from a blocked popup. Open without
-    // that flag and null the opener by hand — same security, a usable handle.
+    // that flag and null the opener by hand: same security, a usable handle.
     const win =
       typeof window !== 'undefined' && typeof window.open === 'function'
         ? window.open(url, '_blank')
@@ -270,14 +270,14 @@ export class DiagnosticsManager {
       try {
         win.opener = null;
       } catch {
-        /* cross-origin handle — opener already isolated */
+        /* cross-origin handle: opener already isolated */
       }
     } else {
       this.host.pushToast(
         'info',
         copied
-          ? 'Could not open GitHub — the report is on your clipboard. Open a new issue and paste it.'
-          : 'Could not open GitHub — copy the report and open a new issue manually.',
+          ? 'Could not open GitHub: the report is on your clipboard. Open a new issue and paste it.'
+          : 'Could not open GitHub, copy the report and open a new issue manually.',
       );
     }
   }
@@ -304,13 +304,13 @@ export class DiagnosticsManager {
     };
     // Append onto the latest persisted log, not this tab's frozen mirror, so a
     // second tab on the origin (a pr-preview build) never clobbers the other's
-    // events — every tab appends to the shared key.
+    // events: every tab appends to the shared key.
     this.sync();
     this.events = evictEvents([...this.events, event], MAX_EVENTS, MAX_BYTES);
     this.persist();
   }
 
-  /** Whatever context is available where the event fires — never the data. */
+  /** Whatever context is available where the event fires, never the data. */
   private gatherContext(): Record<string, unknown> {
     const host = this.host;
     const ctx: Record<string, unknown> = {
@@ -325,7 +325,7 @@ export class DiagnosticsManager {
     try {
       ctx.transformationCount = host.engine.displaySpec().transformations.length;
     } catch {
-      /* engine not ready — omit the count */
+      /* engine not ready: omit the count */
     }
     ctx.recentMessages = host.messages.slice(-3).map((m) => m.text);
     if (typeof navigator !== 'undefined') ctx.userAgent = navigator.userAgent;
@@ -343,7 +343,7 @@ export class DiagnosticsManager {
 
   /** Merge the persisted log into the in-memory buffer. Storage is shared by
    *  every tab on the origin (the live app and any pr-preview build), so
-   *  reads and appends fold in what other tabs stored — but the in-memory
+   *  reads and appends fold in what other tabs stored, but the in-memory
    *  buffer stays authoritative and persistence stays best-effort: where the
    *  browser allows reads but rejects writes (legacy private modes, a full
    *  quota), this tab's never-persisted events must survive every sync, not
@@ -360,7 +360,7 @@ export class DiagnosticsManager {
       merged.sort((a, b) => a.ts.localeCompare(b.ts));
       this.events = evictEvents(merged, MAX_EVENTS, MAX_BYTES);
     } catch {
-      /* corrupt or unavailable storage — keep the in-memory buffer */
+      /* corrupt or unavailable storage: keep the in-memory buffer */
     }
   }
 
@@ -373,7 +373,7 @@ export class DiagnosticsManager {
       if (typeof localStorage === 'undefined') return;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.events));
     } catch {
-      /* quota or private mode — the in-memory mirror still works */
+      /* quota or private mode: the in-memory mirror still works */
     }
   }
 }

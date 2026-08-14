@@ -1,4 +1,4 @@
-# Helper for cli-sigint.test.ts — forks the REPL child (cli-sigint.child.ts) in a real
+# Helper for cli-sigint.test.ts: forks the REPL child (cli-sigint.child.ts) in a real
 # PTY, types an NL request, sends Ctrl-C (0x03) while the request is in
 # flight, then queues ":history" + "exit" to see whether the session is still
 # alive. Prints the raw transcript followed by one machine-readable JSON line
@@ -48,7 +48,7 @@ def drain(timeout):
 drain(3.0)  # startup table + prompt
 os.write(fd, b"Normalize country names\n")
 drain(1.5)  # request now in flight (first model call sits in its 3 s delay)
-os.write(fd, b"\x03")  # Ctrl-C — spec: cancel the in-flight request
+os.write(fd, b"\x03")  # Ctrl-C: spec: cancel the in-flight request
 time.sleep(0.3)
 os.write(fd, b":history\nexit\n")  # only processed if the loop survives
 drain(15.0)

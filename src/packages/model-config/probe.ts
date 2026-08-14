@@ -3,7 +3,7 @@
 // against its provider, and measure what its models cost and how fast they are.
 // Hosts inject `fetch` (and, for measurement, a clock), so tests never reach a
 // real API. Kept in its own entry point so the main entry stays offline.
-// Spec: spec/packages/model-config/behavior.md § Checking a key — the probe.
+// Spec: spec/packages/model-config/behavior.md § Checking a key, the probe.
 
 import {
   defaultCellModel, puterEnvelope, PROVIDER_BASE_URL, PROVIDER_NAME, PUTER_DRIVERS_URL,
@@ -23,7 +23,7 @@ export interface ProbeOptions {
 }
 
 /** How fast a model is, split into the two things a call actually spends time
- *  on. Price is never measured — it comes from the catalogue. */
+ *  on. Price is never measured: it comes from the catalogue. */
 export interface ModelMeasure {
   /** Seconds until the first streamed frame carrying text: getting the model
    *  going. 0 when the provider buffered the whole reply and there was nothing
@@ -58,8 +58,8 @@ const VERIFY_PROMPT = 'Reply with the single word: ok';
 /** Output-token cap for the measurement. Small enough to be cheap, big enough
  *  that a thinking model still streams: at 100, `gemini-3.6-flash` spent the
  *  whole budget reasoning and returned 96 tokens in a single frame. Turning
- *  thinking off is not the alternative — Gemini 3.6 rejects
- *  `thinkingBudget: 0` — so the probe sends no reasoning options at all and
+ *  thinking off is not the alternative: Gemini 3.6 rejects
+ *  `thinkingBudget: 0`, so the probe sends no reasoning options at all and
  *  stays provider-neutral. See the 2026-08-11 provider probe. */
 const MEASURE_MAX_TOKENS = 300;
 
@@ -158,7 +158,7 @@ function failure(provider: Provider, answer: Answer): Error {
   const err = (typeof raw === 'string' ? { message: raw } : raw) as
     { message?: string; type?: string; code?: string } | undefined;
   if (answer.status === 429) {
-    // An account with no money left arrives as a 429 too — OpenAI answers an
+    // An account with no money left arrives as a 429 too: OpenAI answers an
     // empty balance with `insufficient_quota`. Checked first: telling that user
     // to wait a minute sends them into a wait that never ends.
     const quota = `${err?.code ?? ''} ${err?.type ?? ''} ${err?.message ?? ''}`;
@@ -212,7 +212,7 @@ export async function verifyKey(
     return { tier: data?.is_free_tier ? 'free' : 'paid' };
   }
 
-  // Puter's whoami proves the token without spending anything — no model call
+  // Puter's whoami proves the token without spending anything, no model call
   // needed at all, so connecting is free as well as fast.
   if (provider === 'puter') {
     const doFetch: FetchLike = opts.fetch ?? ((u, i) => globalThis.fetch(u, i));
@@ -234,8 +234,8 @@ export async function verifyKey(
   if (!ok(answer)) throw failure(provider, answer);
 
   // Google publishes no billing signal, so we report none. We used to read
-  // `x-gemini-service-tier` as one, but that header is the *inference* tier —
-  // standard / priority / flex, the latency class a request was served at —
+  // `x-gemini-service-tier` as one, but that header is the *inference* tier:
+  // standard / priority / flex, the latency class a request was served at:
   // and it reads `standard` for every ordinary call whether the project is
   // billed or not. A genuinely free-tier key (billing never set up) returns
   // `standard`, so the card called it PAID. Silence is the honest answer, and
@@ -251,9 +251,9 @@ export async function verifyKey(
 function usageOf(provider: Provider, body: Record<string, unknown>): { inTok: number; outTok: number } {
   if (provider === 'puter') {
     // Streaming: a {"type":"usage","usage":{…}} frame. Non-streaming: the same
-    // object under result.usage. The two spell the counters differently —
+    // object under result.usage. The two spell the counters differently:
     // `prompt_tokens`/`completion_tokens` when streamed, `prompt`/`completion`
-    // when not — so read whichever is there.
+    // when not, so read whichever is there.
     const result = (body['result'] ?? {}) as Record<string, unknown>;
     const u = (body['usage'] ?? result['usage'] ?? {}) as Record<string, number>;
     return {
@@ -342,7 +342,7 @@ function streamRequest(
 }
 
 /** Read a nested field out of a streamed frame. Every hop is an `unknown` that
- *  may not be there — frames are provider-shaped JSON, not a type we own. */
+ *  may not be there: frames are provider-shaped JSON, not a type we own. */
 function dig(value: unknown, ...path: (string | number)[]): unknown {
   let cur = value;
   for (const step of path) {
@@ -359,7 +359,7 @@ function textAt(value: unknown, ...path: (string | number)[]): string {
 }
 
 /**
- * Whether a streamed frame carries generated text — which is what the
+ * Whether a streamed frame carries generated text, which is what the
  * first-token clock is timing. A stream opens with frames that are not output:
  * a role header, a `message_start`, a keep-alive ping, a usage report, and on
  * a thinking model however many reasoning deltas it needs before it says
@@ -378,7 +378,7 @@ function frameHasContent(provider: Provider, f: Record<string, unknown>): boolea
     return f['type'] === 'content_block_delta' && textAt(f, 'delta', 'text') !== '';
   }
   // Puter streams NDJSON `{"type":"text","text":"…"}`; every OpenAI-compatible
-  // host streams `choices[].delta.content`. Accept either — the shapes don't
+  // host streams `choices[].delta.content`. Accept either: the shapes don't
   // collide, so one branch serves both.
   return textAt(f, 'text') !== '' || textAt(f, 'choices', 0, 'delta', 'content') !== '';
 }
@@ -404,8 +404,8 @@ function parseFrame(line: string): Record<string, unknown> | undefined {
  * parsed **as they arrive** rather than from the finished buffer, because the
  * first of those two moments cannot be recovered afterwards.
  *
- * A body that arrives in one piece — a buffering provider, or a stubbed
- * Response in a test — yields its frames with `streamed` false or with the two
+ * A body that arrives in one piece, a buffering provider, or a stubbed
+ * Response in a test: yields its frames with `streamed` false or with the two
  * times equal, and the caller falls back to a plain average.
  */
 async function readStream(
@@ -425,7 +425,7 @@ async function readStream(
     buffer += text;
     pending += text;
     const lines = pending.split('\n');
-    // Hold the trailing partial line back for the next chunk — a frame split
+    // Hold the trailing partial line back for the next chunk: a frame split
     // across a chunk boundary parses as nothing, and the last one to arrive is
     // usually the usage report.
     pending = final ? '' : lines.pop() ?? '';
@@ -459,7 +459,7 @@ async function readStream(
     try {
       frames.push(JSON.parse(buffer) as Record<string, unknown>);
     } catch {
-      // Not JSON at all — no usage to read, handled by the caller.
+      // Not JSON at all, no usage to read, handled by the caller.
     }
   }
   return { frames, firstMs, lastMs, streamed };
@@ -467,7 +467,7 @@ async function readStream(
 
 /**
  * Measure one model's speed with a single capped streaming call. Price is not
- * measured — it comes from the catalogue.
+ * measured: it comes from the catalogue.
  *
  *   ttftSec   = seconds until the first frame carrying text  (getting going)
  *   tokPerSec = outTok / (totalSec − ttftSec)               (generating)
@@ -477,8 +477,8 @@ async function readStream(
  * per-token average makes short answers look slow. Measured against live
  * providers, dividing a whole round trip by its tokens inverted the ranking.
  *
- * When the reply arrives buffered — no frame carried text, or under a fifth of
- * the call was spent streaming — there is no separable first-token time, so the
+ * When the reply arrives buffered, no frame carried text, or under a fifth of
+ * the call was spent streaming: there is no separable first-token time, so the
  * whole call counts as generation and the estimate becomes a plain average.
  */
 export async function measureModel(

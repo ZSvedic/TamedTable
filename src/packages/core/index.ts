@@ -10,7 +10,7 @@ import { formatForExtension, loadCodec } from '@tamedtable/file-io';
 // `from '@tamedtable/core'` import keeps working unchanged.
 export * from '@tamedtable/table-plan';
 
-// #FormatOut — re-exported so REPL/CLI callers can gate on the codec registry
+// #FormatOut: re-exported so REPL/CLI callers can gate on the codec registry
 // (`:load`/`:save` extension checks) without a direct file-io dependency.
 export { formatForExtension, loadCodec, type FormatId } from '@tamedtable/file-io';
 

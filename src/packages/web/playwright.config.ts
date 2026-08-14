@@ -1,11 +1,11 @@
 import { defineConfig } from '@playwright/test';
 
-// CI tests the PRODUCTION build — `bun run build` then `bun run preview` — not
+// CI tests the PRODUCTION build, `bun run build` then `bun run preview`, not
 // the dev server. Dev doesn't tree-shake or minify, which is exactly the class
 // of bug that shipped in PR 259 (Vite's prod build tree-shook Zod's locale
 // away and a tour died). Local runs default to the faster dev server; set
 // PW_MODE=preview to reproduce CI locally. Preview reuses the dev port so the
-// baseURL — and specs that build absolute sample URLs from it — never change.
+// baseURL, and specs that build absolute sample URLs from it, never change.
 const preview = !!process.env.CI || process.env.PW_MODE === 'preview';
 const PORT = 5173;
 
@@ -26,7 +26,7 @@ export default defineConfig({
     timeout: 180_000,
   },
   projects: [
-    // The green suite a reviewer must see pass — everything except the bug
+    // The green suite a reviewer must see pass, everything except the bug
     // inventory under e2e/red/.
     { name: 'chromium', testIgnore: '**/e2e/red/**' },
     // The bug inventory: browser findings that fail on purpose. CI does NOT

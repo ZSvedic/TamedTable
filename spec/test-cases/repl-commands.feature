@@ -226,7 +226,7 @@ Feature: REPL commands
     And REPL stdout contains ":find: missing pattern"
 
   # The highlight lives until the next viewport- or state-changing event, not
-  # for one reprint — and a bare :show is neither kind of event.
+  # for one reprint, and a bare :show is neither kind of event.
   @cli @offline
   Scenario: the :find highlight survives a bare :show reprint
     When user enters the REPL with "customers-input.csv" and types:
@@ -238,8 +238,8 @@ Feature: REPL commands
     Then REPL exit code is 0
     And the last REPL table reprint contains "*USA*"
 
-  # The cursor resets after :load, a successful NL request, :undo, or :redo —
-  # an exhaustive list that does not include :reorder.
+  # The cursor resets after :load, a successful NL request, :undo, or :redo.
+  # An exhaustive list that does not include :reorder.
   @cli @offline
   Scenario: :reorder reprints at the current viewport cursor
     When user enters the REPL with "customers-input.csv" and types:

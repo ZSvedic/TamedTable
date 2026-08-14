@@ -5,7 +5,7 @@
 #   "matplotlib",
 # ]
 # ///
-"""Helper for commit-sizes.sh — not meant to be run by hand.
+"""Helper for commit-sizes.sh, not meant to be run by hand.
 
 Reads temp/commit-sizes.csv and renders temp/commit-sizes.png: two vertically
 stacked subplots.  Chart 1 shows the full commit history with index-number
@@ -13,7 +13,7 @@ x-axis ticks (every 10).  Chart 2 zooms in on the last 20 commits with full
 short-hash + message labels at 45°.  Both charts use a stacked area for
 process/ spec/ src/ byte sizes and overlay the tracked TOTAL as a line.  The gap
 between the stack top and the TOTAL line is everything outside those three
-dirs — root files plus benchmarks/, cassettes/, and marketing/."""
+dirs: root files plus benchmarks/, cassettes/, and marketing/."""
 
 import os
 import pandas as pd
@@ -48,7 +48,7 @@ tick_positions = list(range(0, len(df), 10))
 ax1.set_xticks(tick_positions)
 ax1.set_xticklabels(tick_positions)
 ax1.set_ylabel("Tracked file size (KB)")
-ax1.set_title("Git Project Size — All Commits")
+ax1.set_title("Git Project Size: All Commits")
 ax1.legend(loc="upper left")
 
 # --- Chart 2: last 20 commits, full labels ---
@@ -62,7 +62,7 @@ ax2.plot(x_recent, kb_recent("total"), color="black", linewidth=1.5, marker="o",
 ax2.set_xticks(list(x_recent))
 ax2.set_xticklabels(recent_labels, rotation=45, ha="right", fontsize=8)
 ax2.set_ylabel("Tracked file size (KB)")
-ax2.set_title("Git Project Size — Last 20 Commits")
+ax2.set_title("Git Project Size: Last 20 Commits")
 ax2.legend(loc="upper left")
 
 fig.tight_layout()

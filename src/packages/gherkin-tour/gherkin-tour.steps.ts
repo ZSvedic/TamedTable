@@ -15,7 +15,7 @@ interface GherkinTourCtx {
   tours: TourScenario[];
 }
 
-// The only shape these steps need from the cucumber World — state hangs off
+// The only shape these steps need from the cucumber World: state hangs off
 // one private property, keeping the package independent of the app harness.
 interface TourWorld {
   _tourCtx?: GherkinTourCtx;
@@ -145,7 +145,7 @@ interface DriverWorld {
 }
 
 function dctx(world: DriverWorld): DriverCtx {
-  assert.ok(world._driverCtx, 'no tour driver set up — call "a tour with steps" first');
+  assert.ok(world._driverCtx, 'no tour driver set up: call "a tour with steps" first');
   return world._driverCtx;
 }
 

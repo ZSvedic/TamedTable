@@ -1,6 +1,6 @@
 // #FileIO
 // The replace-table confirmation (spec/behavior.md § Web UI): a file dropped
-// with a table loaded never replaces it silently — this dialog names the
+// with a table loaded never replaces it silently: this dialog names the
 // dropped file and warns the current table and its steps would be discarded.
 // Confirming loads the stashed bytes; the button, Escape, or the backdrop
 // cancels and leaves everything untouched.

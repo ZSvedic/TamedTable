@@ -11,9 +11,9 @@
 //   row 4: .█.███.█.          lower cross-bar
 //
 // Rendering modes:
-//   crisp   (≤ 80 px) — cells touch, no gaps, empty cells white
-//   grid    (> 80 px) — 4-unit silver gap between every cell + outer edge
-//   reverse (dark UI) — ink cells go white, no icon bg, no grid lines
+//   crisp   (≤ 80 px): cells touch, no gaps, empty cells white
+//   grid    (> 80 px): 4-unit silver gap between every cell + outer edge
+//   reverse (dark UI): ink cells go white, no icon bg, no grid lines
 
 import type { CSSProperties, ReactNode } from 'react';
 import { brand, typography } from '@tamedtable/ui-kit';
@@ -101,7 +101,7 @@ interface WordmarkProps {
   style?: CSSProperties;
 }
 
-/** "TamedTable" — Outfit 500, small caps, +0.005em tracking. */
+/** "TamedTable": Outfit 500, small caps, +0.005em tracking. */
 export function Wordmark({ size = 14, color, style }: WordmarkProps): ReactNode {
   return (
     <span

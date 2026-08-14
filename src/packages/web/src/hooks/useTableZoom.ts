@@ -1,8 +1,8 @@
-// #MobileShell — pinch-to-zoom for the phone table only. The browser's own
+// #MobileShell: pinch-to-zoom for the phone table only. The browser's own
 // page zoom scales the fixed chrome (app bar, dock, sheets) along with the
-// cells, so the phone layout suppresses it — the viewport meta locks the page
+// cells, so the phone layout suppresses it, the viewport meta locks the page
 // scale where honored (Android), and the proprietary gesture events are the
-// off-switch where it is not (iOS Safari ignores the viewport lock) — and this
+// off-switch where it is not (iOS Safari ignores the viewport lock), and this
 // hook handles the pinch itself: a two-finger gesture that starts over the
 // table scales a zoom factor the table applies via the CSS `zoom` property,
 // anchored at the fingers' midpoint by re-aiming the document scroll.
@@ -54,7 +54,7 @@ export function useTableZoom(resetKey: string): number {
       if (e.touches.length !== 2) return;
       const table = (e.target as Element | null)?.closest?.('[data-mob-table]');
       if (!table) return;
-      // The table's document origin — constant through the gesture (only the
+      // The table's document origin: constant through the gesture (only the
       // fixed-height app-bar padding sits above it).
       const rect = table.getBoundingClientRect();
       start = {
@@ -67,7 +67,7 @@ export function useTableZoom(resetKey: string): number {
 
     const onTouchMove = (e: TouchEvent): void => {
       if (!start || e.touches.length !== 2) return;
-      e.preventDefault(); // the pinch is ours — no page pan/zoom underneath
+      e.preventDefault(); // the pinch is ours, no page pan/zoom underneath
       const next = pinchedZoom(start.zoom, start.dist, dist(e.touches));
       const ratio = next / zoomRef.current;
       zoomRef.current = next;

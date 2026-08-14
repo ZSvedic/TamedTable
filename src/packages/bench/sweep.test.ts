@@ -72,7 +72,7 @@ test('runConfig maps a Cerebras cell model to the cerebras provider and its patc
   );
   expect(r.provider).toBe('cerebras');
   expect(r.chatModel).toBe('zai-glm-4.7');
-  expect(r.costUsd).toBe(0); // free tier — both models priced 0/0
+  expect(r.costUsd).toBe(0); // free tier: both models priced 0/0
 });
 
 test('runConfig maps an OpenRouter cell model to the openrouter provider and its patch default', async () => {
@@ -90,7 +90,7 @@ test('runConfig maps an OpenRouter cell model to the openrouter provider and its
   );
   expect(r.provider).toBe('openrouter');
   expect(r.chatModel).toBe('cohere/north-mini-code:free');
-  expect(r.costUsd).toBe(0); // free plan — both models priced 0/0
+  expect(r.costUsd).toBe(0); // free plan: both models priced 0/0
 });
 
 test('runSweep runs every config; grid expands the cross product', async () => {
@@ -106,7 +106,7 @@ test('runSweep runs every config; grid expands the cross product', async () => {
   expect(results.map((r) => r.batchSize)).toEqual([10, 40, 10, 40]);
 });
 
-// A runner whose request() throws the first `failFirst` times it is called —
+// A runner whose request() throws the first `failFirst` times it is called:
 // stands in for a free model that returns the patch turn as text on some
 // attempts. Shared counter across runnerFactory calls simulates per-config retry.
 function flakyRunner(failFirst: { n: number }): HeadlessRunner {

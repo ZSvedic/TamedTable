@@ -1,4 +1,4 @@
-// TamedTable — brand mark + wordmark + lockup.
+// TamedTable: brand mark + wordmark + lockup.
 //
 // The mark is a 9 × 5 pixel grid:
 //   row 0: ████◆████          ← top bar (◆ = accent at col 4)
@@ -8,9 +8,9 @@
 //   row 4: .█.███.█.          ← lower cross-bar
 //
 // Three rendering modes:
-//   crisp   (≤ 80 px height) — cells touch, no gaps, empty cells are white
-//   grid    (> 80 px height) — 4-unit silver gap between every cell + outer
-//   reverse (on dark surfaces) — ink cells go white, no icon bg, no grid
+//   crisp   (≤ 80 px height): cells touch, no gaps, empty cells are white
+//   grid    (> 80 px height): 4-unit silver gap between every cell + outer
+//   reverse (on dark surfaces): ink cells go white, no icon bg, no grid
 
 const MARK_GRID = [
   ['i', 'i', 'i', 'i', 'a', 'i', 'i', 'i', 'i'],
@@ -28,7 +28,7 @@ function Mark({ height = 18, mode, style, title }) {
   const isRev  = m === 'reverse';
   const isGrid = m === 'grid';
 
-  // Geometry — unit cell = 100.
+  // Geometry: unit cell = 100.
   // grid mode adds a 4-unit silver strip on every edge AND between cells;
   // crisp + reverse render cells touching.
   const off = isGrid ? 4 : 0;
@@ -78,7 +78,7 @@ function Mark({ height = 18, mode, style, title }) {
   );
 }
 
-// Wordmark — "TamedTable", Outfit 500, small caps, +0.005em tracking.
+// Wordmark: "TamedTable", Outfit 500, small caps, +0.005em tracking.
 // Both T's stay full-size capitals; the lowercase letters render as small caps.
 function Wordmark({ size = 14, color, style }) {
   return (
@@ -97,10 +97,10 @@ function Wordmark({ size = 14, color, style }) {
   );
 }
 
-// Lockup — single row by default ([icon] TamedTable). twoRow stacks the wordmark
+// Lockup: single row by default ([icon] TamedTable). twoRow stacks the wordmark
 // into Tamed / Table with a taller icon.
 //
-// Icon sizing: cap-height aligned — the mark's top/bottom line up with the
+// Icon sizing: cap-height aligned, the mark's top/bottom line up with the
 // top/baseline of the T's in the wordmark (≈ 0.72em for Outfit 500).
 function Lockup({ size = 14, color, dark = false, twoRow = false, style }) {
   const iconH = twoRow ? size * 1.65 : size * 0.72;

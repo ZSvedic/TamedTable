@@ -1,7 +1,7 @@
 // Shared offline harness for the lazy-execution regression suites (Gherkin
 // steps in lazy-regressions.steps.ts, unit tests in lazy-estimates.test.ts).
-// Builds a WebController the way src/tests/web.hooks.ts does — fake FilePort,
-// injected fetch — but with a scriptable fake Gemini backend instead of a cassette:
+// Builds a WebController the way src/tests/web.hooks.ts does: fake FilePort,
+// injected fetch, but with a scriptable fake Gemini backend instead of a cassette:
 // patch turns answer from a queue of apply_spec_patch operations, cell calls
 // answer per prompt with real usageMetadata. Fully offline, no key, no timers.
 //
@@ -34,13 +34,13 @@ export function makeBackend(cellAnswer: (p: string) => string): FakeBackend {
 }
 
 /** Lift the requests-per-minute cap so unbatched cell fan-outs never sleep on
- *  real timers. Called from regression steps/tests only — never at module
+ *  real timers. Called from regression steps/tests only, never at module
  *  scope, so importing this file under another profile changes nothing. */
 export function liftRpm(): void {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
-/** One macrotask hop — lets settled promise chains flush without real time. */
+/** One macrotask hop: lets settled promise chains flush without real time. */
 export function tick(): Promise<void> {
   return new Promise((r) => setImmediate(r));
 }
@@ -89,14 +89,14 @@ export function makeFetch(backend: FakeBackend) {
       );
     }
 
-    // Cell call — single prompt or a numbered batch.
+    // Cell call: single prompt or a numbered batch.
     backend.cellCalls++;
     const isBatch = text.startsWith('[1]\n');
     const prompts = isBatch
       ? text.split('\n\n---\n\n').map((s) => s.replace(/^\[\d+\]\n/, ''))
       : [text];
     if (backend.failCells && prompts.some((p) => backend.failCells!(p))) {
-      // 401 — not retried by the AI SDK, so failures land fast (same trick as
+      // 401, not retried by the AI SDK, so failures land fast (same trick as
       // the suite's mockLlmFetch steps).
       return new Response(JSON.stringify({ error: { code: 401, message: 'boom', status: 'UNAUTHENTICATED' } }), { status: 401, headers });
     }

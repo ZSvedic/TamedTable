@@ -1,4 +1,4 @@
-// Browser shim for `node:path` (POSIX semantics) — the engine only ever
+// Browser shim for `node:path` (POSIX semantics): the engine only ever
 // joins, splits, and resolves virtual paths inside the in-memory fs shim.
 
 function normalize(parts: string[]): string {

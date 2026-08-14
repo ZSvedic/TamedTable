@@ -1,6 +1,6 @@
 // #IoFormats
 // Browser Parquet engine. The Vite build redirects file-io's parquet-engine.ts
-// (node-api + temp file) to this module. Reading uses hyparquet — a pure-JS
+// (node-api + temp file) to this module. Reading uses hyparquet, a pure-JS
 // Parquet reader that works offline, unlike duckdb-wasm's Parquet support, which
 // autoloads an extension from extensions.duckdb.org (blocked offline, and in the
 // preview build). Writing Parquet from the browser isn't wired (the web "Save
@@ -24,7 +24,7 @@ export async function readParquetBytes(bytes: Uint8Array): Promise<RawTable> {
 }
 
 export function writeParquetBytes(rows: Row[], columns: string[]): Promise<Uint8Array> {
-  // Every column as STRING — string in, string out — matching the Node engine
+  // Every column as STRING (string in, string out) matching the Node engine
   // and the CSV/JSONL/Arrow codecs, so a load→save→load round-trip is stable.
   const cell = (v: unknown): string | null =>
     v === null || v === undefined ? null : typeof v === 'object' ? JSON.stringify(v) : String(v);

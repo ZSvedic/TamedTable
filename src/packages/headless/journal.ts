@@ -1,26 +1,26 @@
 // #Patch
 // Surface-agnostic undo/redo journal over whole-TablePlan snapshots. One entry per
 // spec-changing turn holds the spec before and after, plus a human label. It
-// holds no DOM and no engine reference — applying an entry's spec back to a
-// runner is the caller's job — so any surface (web today, the CLI tomorrow)
+// holds no DOM and no engine reference: applying an entry's spec back to a
+// runner is the caller's job, so any surface (web today, the CLI tomorrow)
 // can reuse it.
 import type { TablePlan } from '@tamedtable/core';
 
 export interface JournalEntry {
   /** Human-readable description of the change (chat text, "reorder columns"). */
   label: string;
-  /** TablePlan before the change — what undo restores. */
+  /** TablePlan before the change: what undo restores. */
   prevSpec: TablePlan;
-  /** TablePlan after the change — what redo restores. */
+  /** TablePlan after the change: what redo restores. */
   nextSpec: TablePlan;
   /** When the change landed (epoch ms). Stamped at record time if omitted. */
   time?: number;
-  /** Stable monotonic id, stamped by `record` — lets a caller track an entry
+  /** Stable monotonic id, stamped by `record`, lets a caller track an entry
    *  across undo/redo (a chat reply's undo state, per-entry side data). */
   id?: number;
 }
 
-/** One row of the history timeline — what the mobile History sheet shows. */
+/** One row of the history timeline: what the mobile History sheet shows. */
 export interface TimelineStep {
   label: string;
   time: number;
@@ -32,7 +32,7 @@ export class SpecJournal {
   private idSeq = 0;
 
   /** Record a committed change and return its stable id. Clears the redo
-   *  stack — a new edit forks the timeline, so previously-undone steps are no
+   *  stack: a new edit forks the timeline, so previously-undone steps are no
    *  longer reachable. */
   record(entry: JournalEntry): number {
     const id = ++this.idSeq;
@@ -41,14 +41,14 @@ export class SpecJournal {
     return id;
   }
 
-  /** The applied step — the top of the undo stack — or undefined before the
+  /** The applied step, the top of the undo stack, or undefined before the
    *  first step (or after every step is undone). */
   current(): JournalEntry | undefined {
     return this.undoStack[this.undoStack.length - 1];
   }
 
   /** Whether the entry with this id is currently applied (on the undo stack).
-   *  False while it is undone — and false forever once a new edit forked it
+   *  False while it is undone, and false forever once a new edit forked it
    *  off the timeline. */
   isApplied(id: number): boolean {
     return this.undoStack.some((e) => e.id === id);
@@ -85,13 +85,13 @@ export class SpecJournal {
     if (top) top.label = label;
   }
 
-  /** Recorded changes, oldest first — the history readout. */
+  /** Recorded changes, oldest first: the history readout. */
   entries(): Array<{ label: string }> {
     return this.undoStack.map((e) => ({ label: e.label }));
   }
 
-  /** The full timeline, oldest first — the undo stack, then the undone (redo)
-   *  steps in chronological order — plus the cursor index of the current step
+  /** The full timeline, oldest first, the undo stack, then the undone (redo)
+   *  steps in chronological order, plus the cursor index of the current step
    *  (`-1` when every step has been undone). Drives the mobile History sheet. */
   timeline(): { steps: TimelineStep[]; cursor: number } {
     const steps: TimelineStep[] = [
@@ -101,8 +101,8 @@ export class SpecJournal {
     return { steps, cursor: this.undoStack.length - 1 };
   }
 
-  /** Move the cursor to `index` in timeline space — walking the undo/redo
-   *  stacks so they stay consistent — and return the whole-spec snapshot to
+  /** Move the cursor to `index` in timeline space, walking the undo/redo
+   *  stacks so they stay consistent, and return the whole-spec snapshot to
    *  apply. `index = -1` returns the pre-first-step state. Undefined on an
    *  empty journal. */
   jumpTo(index: number): TablePlan | undefined {
@@ -118,7 +118,7 @@ export class SpecJournal {
     return this.redoStack[this.redoStack.length - 1]?.prevSpec;
   }
 
-  /** Drop all history — a fresh file load starts clean. */
+  /** Drop all history: a fresh file load starts clean. */
   clear(): void {
     this.undoStack = [];
     this.redoStack = [];

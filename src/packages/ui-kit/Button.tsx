@@ -13,7 +13,7 @@ interface ButtonProps {
   title?: string;
 }
 
-// Primary is Ink (Aubergine) — the Pale Sky accent is reserved for the mark
+// Primary is Ink (Aubergine): the Pale Sky accent is reserved for the mark
 // and focus rings, never a button fill.
 export function Button({
   children,

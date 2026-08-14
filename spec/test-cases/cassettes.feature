@@ -4,7 +4,7 @@
 Feature: Record and replay model API calls
 
   The test suite records each model API response to a cassette file the
-  first time it runs, then replays it from disk afterward — so the suite
+  first time it runs, then replays it from disk afterward, so the suite
   finishes in seconds and needs no API key. The recorder is a
   fetch-shaped wrapper handed to the headless runner; it runs in record
   or replay mode. These scenarios pin the recorder's contract: faithful

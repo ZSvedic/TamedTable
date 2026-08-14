@@ -1,4 +1,4 @@
-// #DataNorm #VoiceInput — step defs for spec/test-cases/multilingual.feature
+// #DataNorm #VoiceInput: step defs for spec/test-cases/multilingual.feature
 import { Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import type { Transformation } from '@tamedtable/core';
@@ -6,7 +6,7 @@ import { TamedTableWorld } from './world.ts';
 
 /** Robust, language-independent property: the model understood the request as
  *  a phone-number normalization, i.e. it appended a mutate targeting the Phone
- *  column. Surface-agnostic — reads the spec from whichever runner is bound. */
+ *  column. Surface-agnostic: reads the spec from whichever runner is bound. */
 function targetsPhone(t: Transformation): boolean {
   if (t.kind !== 'mutate') return false;
   const cols = Array.isArray(t.columns) ? t.columns : [t.columns];

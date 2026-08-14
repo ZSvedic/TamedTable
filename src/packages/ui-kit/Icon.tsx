@@ -1,5 +1,5 @@
 // #UiKit
-// Inline SVG icons — a 16×16 viewBox, 1.5 stroke, currentColor. The glyph
+// Inline SVG icons: a 16×16 viewBox, 1.5 stroke, currentColor. The glyph
 // artwork is canonical in marketing/icons/ (one SVG per name); icons.ts is
 // generated from it by `bun run sync:icons`. Use as <Icon name="folder" />
 // inside any element that sets a text color.

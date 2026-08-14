@@ -1,13 +1,13 @@
 // #SaveGate
-// The modal chrome every app dialog shares — a dimmed overlay, a card that
-// becomes a bottom sheet on the phone — plus GateDialog, the one dialog shape
+// The modal chrome every app dialog shares: a dimmed overlay, a card that
+// becomes a bottom sheet on the phone, plus GateDialog, the one dialog shape
 // used wherever the app has to collect a *fresh* click before it may call a
 // browser API that only opens from a user gesture (a file picker).
 //
 // Three flows need that click, and all three render through GateDialog:
-//   - Save after a run on all rows (#LazyExec) — the run spent the click.
-//   - Save recipe as Python (#PyExport) — the model call spent the click.
-//   - The lookup-file dialog (#LookupJoin) — the chat request spent the click.
+//   - Save after a run on all rows (#LazyExec), the run spent the click.
+//   - Save recipe as Python (#PyExport), the model call spent the click.
+//   - The lookup-file dialog (#LookupJoin), the chat request spent the click.
 // See spec/behavior.md § The save gate.
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
@@ -90,7 +90,7 @@ export function DialogButtons({ isMobile, children }: { isMobile: boolean; child
   );
 }
 
-/** A waiting bar for work with no countable units — one model call has no
+/** A waiting bar for work with no countable units: one model call has no
  *  `done / total`, so the stripe sweeps instead of filling. The run-on-all
  *  dialog keeps its own determinate bar: it does have rows to count. */
 export function WaitingBar(): ReactNode {
@@ -117,7 +117,7 @@ export function WaitingBar(): ReactNode {
 }
 
 /** A live text panel: what the wait has produced so far, pinned to its own
- *  tail so a streaming script scrolls itself. Monospace and small — it is
+ *  tail so a streaming script scrolls itself. Monospace and small: it is
  *  something to watch, not something to read closely. */
 function PreviewPane({ text }: { text: string }): ReactNode {
   const t = useTheme();
@@ -150,7 +150,7 @@ function PreviewPane({ text }: { text: string }): ReactNode {
 }
 
 /** The shared "work first, then your click" dialog. `busy` holds the confirm
- *  button until the work lands — the click that enables is the gesture the
+ *  button until the work lands: the click that enables is the gesture the
  *  picker opens from, so it must never fire early. Cancel stays live: waiting
  *  is not a trap. `preview` is whatever the wait has written so far. */
 export function GateDialog({
@@ -192,7 +192,7 @@ export function GateDialog({
         {preview ? <PreviewPane text={preview} /> : null}
         <DialogButtons isMobile={isMobile}>
           {/* ui-kit's Button renders only the props it declares, so the test
-              hooks ride on `display: contents` spans — in the DOM for a
+              hooks ride on `display: contents` spans: in the DOM for a
               selector, invisible to layout. */}
           <span {...{ [`data-tt-${testId}-cancel`]: '' }} style={{ display: 'contents' }}>
             <Button variant="chrome" onClick={onCancel}>

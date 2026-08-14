@@ -4,7 +4,7 @@
 # serialization. "\n" in quoted step arguments means a newline.
 Feature: File IO package
 
-  Rule: Format detection — the extension wins, Content-Type breaks ties
+  Rule: Format detection, the extension wins, Content-Type breaks ties
 
     @headless
     Scenario: A .csv path is detected as csv even against a contradicting header
@@ -113,7 +113,7 @@ Feature: File IO package
       When the size guard checks a 3 GB file named "big.parquet"
       Then a console warning mentions "big.parquet is 3.0 GB"
 
-  Rule: Only a real cancel counts as cancelled — other picker errors surface
+  Rule: Only a real cancel counts as cancelled, other picker errors surface
 
     @headless
     Scenario: Dismissing the open dialog resolves to no file

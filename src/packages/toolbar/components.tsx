@@ -1,5 +1,5 @@
 // #Toolbar
-// React entry point — kept separate so the main entry (sample-file types)
+// React entry point: kept separate so the main entry (sample-file types)
 // stays React-free; `react` is a peer dependency of this entry only.
 
 export {

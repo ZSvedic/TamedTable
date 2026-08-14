@@ -10,7 +10,7 @@ import { applyValidateJs, validateColumns } from './engine.ts';
 import type { RequestDebugInfo } from './index.ts';
 import type { Row, TablePlan, Transformation } from '@tamedtable/core';
 
-// Bypass the rate limiter — same trick the cassette replay profile uses.
+// Bypass the rate limiter: same trick the cassette replay profile uses.
 process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 
 const FIXTURES = join(import.meta.dirname, '..', '..', '..', 'spec', 'test-cases');
@@ -169,7 +169,7 @@ describe('request() feeds the ordering rejection through the recovery loop', () 
     const runner = createHeadlessRunner({
       apiKey: 'test-key',
       // The mock responses below are Anthropic-shaped, so pin an Anthropic
-      // model — the default is Gemini, whose wire format differs.
+      // model: the default is Gemini, whose wire format differs.
       model: 'claude-sonnet-4-6',
       onDebug: (info) => { debugInfo = info; },
       fetch: async () => {
@@ -191,7 +191,7 @@ describe('request() feeds the ordering rejection through the recovery loop', () 
     expect(debugInfo!.turns[1]!.outcome).toBe('committed');
 
     const rows = runner.currentRows();
-    expect(rows[0]!._valid).toBe(true);   // row 01 — USA
-    expect(rows[1]!._valid).toBe(false);  // row 02 — Canada
+    expect(rows[0]!._valid).toBe(true);   // row 01: USA
+    expect(rows[1]!._valid).toBe(false);  // row 02: Canada
   });
 });

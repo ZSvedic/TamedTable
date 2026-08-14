@@ -1,5 +1,5 @@
 // #Cassettes
-// Record/replay recorder for model API calls — test infrastructure. The
+// Record/replay recorder for model API calls: test infrastructure. The
 // fingerprint, entry shape, and replay lookup live in @tamedtable/cassette so
 // the browser web shell can replay the same recordings; this file keeps the
 // Node-only file layer (read/write the cassette JSON on disk, record on a miss).
@@ -38,7 +38,7 @@ export interface CassetteOptions {
 /** A `fetch`-shaped wrapper that records to / replays from the cassette file. */
 export function cassetteFetch(opts: CassetteOptions): FetchLike {
   const { mode, file } = opts;
-  // Record mode defaults to curl (see curl-fetch.ts) — Bun's fetch cannot
+  // Record mode defaults to curl (see curl-fetch.ts): Bun's fetch cannot
   // traverse the Claude sandbox's proxy. Replay never touches the upstream.
   const upstream: FetchLike = opts.upstream ?? (mode === 'record' ? curlFetch() : globalThis.fetch);
   let tape: Cassette | undefined;
@@ -74,8 +74,8 @@ export function cassetteFetch(opts: CassetteOptions): FetchLike {
     const res = await upstream(input, init);
     const entry = entryFromResponse(res, await res.text());
     // Only cache a success. A retryable error (429, 5xx) is returned unsaved so
-    // the SDK's own retry reaches the live API and the eventual success — not
-    // the transient error — is what lands in the cassette.
+    // the SDK's own retry reaches the live API and the eventual success: not
+    // the transient error, is what lands in the cassette.
     if (res.status >= 200 && res.status < 300) {
       // The readable-request record: dedupe the boilerplate the body shares
       // with other recordings into the tape's prefixes, keep only the part

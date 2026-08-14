@@ -77,7 +77,7 @@ Then(
   },
 );
 
-// Cards in DOM order, by provider id — the design orders them by when they
+// Cards in DOM order, by provider id: the design orders them by when they
 // were added, which is not the catalogue's order.
 Then(
   "the chooser's cards read {string}",
@@ -228,7 +228,7 @@ Then("the chooser's footer reads {string}", async function (this: object, text: 
 // ── how-to-get-a-key instructions ────────────────────────────────────────────
 
 // The link labels in DOM order. Asserted as a list rather than as the row's
-// text, because the row's spacing is flex gap — its textContent runs the
+// text, because the row's spacing is flex gap: its textContent runs the
 // labels together.
 Then(
   "the chooser's instructions row lists {string}",

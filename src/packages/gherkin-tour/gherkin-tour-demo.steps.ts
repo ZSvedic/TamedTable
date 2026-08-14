@@ -1,7 +1,7 @@
 // #GherkinTour
 // Step defs for the @web gherkin-tour scenarios: they drive the package's
 // self-touring demo page (see tests/demo-harness.ts) through Driver.js's own
-// popover controls, and assert the scroll-through behavior — the overlay
+// popover controls, and assert the scroll-through behavior, the overlay
 // blocks clicks, not scrolling (spec/packages/gherkin-tour/behavior.md).
 import { Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
@@ -17,7 +17,7 @@ When('the demo tour starts', async function (this: object) {
   await p.waitForSelector('.driver-popover');
 });
 
-// Click Driver's Next and wait for the popover's progress line to move on —
+// Click Driver's Next and wait for the popover's progress line to move on:
 // a step's side effect (the demo's chime clip) can take a moment.
 async function advance(p: ReturnType<typeof page>): Promise<void> {
   const before = await p.textContent('.driver-popover-progress-text');

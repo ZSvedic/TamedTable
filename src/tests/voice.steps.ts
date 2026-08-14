@@ -33,7 +33,7 @@ Given('a stub microphone that records {string}', function (this: TamedTableWorld
 
 // A stub continuous (hands-free) port: start() captures the segment handler and
 // parks an emitter on the scenario context, so a later step can fire one
-// "detected turn" with a committed clip — same bytes the mic stub plays, so the
+// "detected turn" with a committed clip: same bytes the mic stub plays, so the
 // patch turn fingerprints identically and the same cassette replays it.
 function stubContinuousPort(world: TamedTableWorld, clip: string): ContinuousVoicePort {
   return {
@@ -59,7 +59,7 @@ Given('a stub continuous mic', function (this: TamedTableWorld) {
 
 Given('a stub microphone that returns recorded audio', function (this: TamedTableWorld) {
   // Scenarios that never fire a request (visibility, cancel, error) don't
-  // care what the clip says — any committed fixture works.
+  // care what the clip says: any committed fixture works.
   ctxOf(this).voicePort = stubVoicePort('voice-validate-dob.m4a');
 });
 
@@ -103,18 +103,18 @@ When('user taps the mic button', async function (this: TamedTableWorld) {
   controller(this).latchVoice();
 });
 
-// The send (✓) control on a latched recording — stops and sends, same path as a
+// The send (✓) control on a latched recording: stops and sends, same path as a
 // hold-release.
 When('user sends the latched recording', async function (this: TamedTableWorld) {
   await controller(this).stopVoice();
 });
 
 // The 30 s cap elapsing: the web hook's injected voiceSchedule captured the
-// auto-stop callback instead of arming a real timer — firing it here IS the
+// auto-stop callback instead of arming a real timer: firing it here IS the
 // timeout, so the scenario needs no 30-second wait.
 When('30 seconds pass without a release', async function (this: TamedTableWorld) {
   const pending = ctxOf(this).voiceAutoStop;
-  if (!pending) throw new Error('no auto-stop scheduled — is a recording live?');
+  if (!pending) throw new Error('no auto-stop scheduled: is a recording live?');
   assert.equal(pending.ms, 30_000, 'the auto-stop must be armed for 30 s');
   await pending.fn();
 });
@@ -133,7 +133,7 @@ When('user turns continuous voice off', async function (this: TamedTableWorld) {
 
 When('a voice turn is detected', async function (this: TamedTableWorld) {
   const emit = ctxOf(this).continuousEmit;
-  if (!emit) throw new Error('continuous voice is not listening — turn it on first');
+  if (!emit) throw new Error('continuous voice is not listening: turn it on first');
   await emit();
 });
 
@@ -182,7 +182,7 @@ Then('an assistant bubble is shown', function (this: TamedTableWorld) {
 });
 
 // A cancelled or unsent recording posts no user bubble. The chat is not empty
-// here — the unified load path posts its "Loaded …" assistant confirmation —
+// here: the unified load path posts its "Loaded …" assistant confirmation,
 // so the assertion pins the user side, where a voice send would appear first.
 Then('no user message is shown', function (this: TamedTableWorld) {
   const users = controller(this).messages.filter((m) => m.role === 'user');

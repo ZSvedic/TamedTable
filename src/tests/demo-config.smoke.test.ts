@@ -1,16 +1,16 @@
 // RED-MC-3 regression (2026-07-29 hunt, fixed and moved green): merely
 // loading the model-config demo page must leave the stored config blob
-// byte-for-byte untouched — a page load is not a change, and the persisted
+// byte-for-byte untouched: a page load is not a change, and the persisted
 // alwaysRunAll:true must survive it. The demo's persist effect now skips its
 // mount run and merges changed fields over the stored blob.
 //
 // Spec: spec/packages/model-config/behavior.md § Demo page;
-// spec/code-contract.md — alwaysRunAll is "persisted alongside the provider
+// spec/code-contract.md: alwaysRunAll is "persisted alongside the provider
 // settings".
 //
 // This drives the real built demo in headless Chromium (same build + serve
 // shape as tests/demo.smoke.test.ts) because the demo mounts React at module
-// scope — there is no browser-free way to exercise its mount effect. Like
+// scope: there is no browser-free way to exercise its mount effect. Like
 // the smoke suite it is gated on SMOKE=1 (`bun run test:smoke`), so plain
 // `bun test` stays offline and browser-free.
 //
@@ -39,11 +39,11 @@ beforeAll(async () => {
   const { chromium } = await import('playwright');
   const chromePath = findChromium(chromium);
   if (!chromePath) {
-    // Environment failure, not the bug — fail loudly so it is never mistaken
+    // Environment failure, not the bug: fail loudly so it is never mistaken
     // for RED-MC-3 itself.
     throw new Error(
       'RED-MC-3 harness: no Chromium found under $PLAYWRIGHT_BROWSERS_PATH, /opt/pw-browsers, ' +
-        'or ~/.cache/ms-playwright — install one with `bunx playwright install chromium`.',
+        'or ~/.cache/ms-playwright: install one with `bunx playwright install chromium`.',
     );
   }
 
@@ -107,6 +107,6 @@ test.skipIf(!smoke)('RED-MC-3: merely loading the demo page leaves the stored co
   assert.deepEqual(
     JSON.parse(blobAfter),
     seed,
-    'RED-MC-3 (spec/packages/model-config/behavior.md:278-281 § Demo page; spec/code-contract.md:1076-1077): loading the demo with no user interaction must leave the stored config unchanged — a load is not a change, yet the mount effect rewrote the blob and reset the persisted alwaysRunAll:true to false (demo.tsx:35-48)',
+    'RED-MC-3 (spec/packages/model-config/behavior.md:278-281 § Demo page; spec/code-contract.md:1076-1077): loading the demo with no user interaction must leave the stored config unchanged. A load is not a change, yet the mount effect rewrote the blob and reset the persisted alwaysRunAll:true to false (demo.tsx:35-48)',
   );
 }, 30_000);

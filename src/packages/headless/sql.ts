@@ -1,5 +1,5 @@
 // #DuckDB #SqlExpr
-// The runner's DuckDB session — lazy connection, relation registration, and
+// The runner's DuckDB session: lazy connection, relation registration, and
 // {sql} scalar/aggregate evaluation with interruptible cancellation. One
 // SqlSession per runner; the runner loop (index.ts) owns the instance.
 
@@ -10,7 +10,7 @@ import { CANCELLED, abortIf, isCancelled } from './engine.ts';
 // #CancelOp
 // SQL cancel give-up: if `conn.interrupt()` hasn't taken effect this long
 // after the abort, signal cancelled anyway (inside the 2-second cancel budget,
-// spec/code-contract.md § {sql}) and let the query drain in the background —
+// spec/code-contract.md § {sql}) and let the query drain in the background:
 // `lingeringSql` blocks the next request until it settles.
 const SQL_CANCEL_GIVE_UP_MS = 1500;
 
@@ -18,7 +18,7 @@ const SQL_CANCEL_GIVE_UP_MS = 1500;
 // (e.g. from try_cast/try_strptime) as wrapper objects. Downstream consumers
 // (JSON.stringify in writeJsonl, the cell-update onChunk listener, test
 // assertions) can't handle either, so `normalizeDbCell` coerces both to plain
-// scalars — shared with the Parquet/Arrow load path (file-io values.ts).
+// scalars: shared with the Parquet/Arrow load path (file-io values.ts).
 function normalizeSqlValue(v: unknown): unknown {
   return normalizeDbCell(v);
 }
@@ -29,7 +29,7 @@ export class SqlSession {
   // the latest committed rows.
   private duckInstance: DuckDBInstance | undefined;
   private duckConn: DuckDBConnection | undefined;
-  // A cancelled SQL query that ignored `conn.interrupt()` — still executing
+  // A cancelled SQL query that ignored `conn.interrupt()`: still executing
   // after the give-up window. Set until it settles; blocks the next request.
   private lingeringSql: Promise<unknown> | undefined;
 
@@ -64,7 +64,7 @@ export class SqlSession {
     const conn = await this.duck();
     // DuckDB's `DROP X IF EXISTS y` still errors if y exists as a different
     // kind (e.g. dropping a VIEW when y is a TABLE). Try both and swallow
-    // the type-mismatch error — only one DROP can succeed but that's fine.
+    // the type-mismatch error: only one DROP can succeed but that's fine.
     try { await conn.run(`DROP TABLE IF EXISTS ${name}`); } catch {}
     try { await conn.run(`DROP VIEW IF EXISTS ${name}`); } catch {}
     if (rows.length === 0) {
@@ -80,7 +80,7 @@ export class SqlSession {
     // needed. Identifiers ARE quoted in DDL (embedded `"` doubled): a column
     // named after a reserved word (`do`) or carrying punctuation
     // (`Organizator(i)`) must register cleanly. Safe for the LLM's
-    // `lower(Country)` style usage because DuckDB — unlike Postgres — matches
+    // `lower(Country)` style usage because DuckDB, unlike Postgres, matches
     // identifiers case-insensitively even when they were created quoted.
     const quoteId = (c: string) => `"${c.replace(/"/g, '""')}"`;
     const colDefs = cols.map((c) => `${quoteId(c)} VARCHAR`).join(', ');
@@ -164,10 +164,10 @@ export class SqlSession {
     }
   }
 
-  /** Evaluates a {sql} aggregate over one group's row slice — the slice is
+  /** Evaluates a {sql} aggregate over one group's row slice: the slice is
    *  registered as relation `g` and the fragment wrapped in SELECT … FROM g.
    *  The slice is also registered as `t` so an aggregate fragment that
-   *  references the table by name still resolves — natural for an empty-`by`
+   *  references the table by name still resolves, natural for an empty-`by`
    *  group, where the group's slice is the whole table. */
   async evalSqlAgg(slice: Row[], sqlFragment: string, signal?: AbortSignal): Promise<unknown> {
     try {

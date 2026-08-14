@@ -1,5 +1,5 @@
 // #VoicePort
-// Step defs for the @headless voice-input scenarios — pure prompt assembly,
+// Step defs for the @headless voice-input scenarios: pure prompt assembly,
 // no browser. The package's own steps live next to the code (see
 // spec/packages/README.md); they import nothing from the app harness.
 import { Given, Then, When } from '@cucumber/cucumber';
@@ -44,7 +44,7 @@ Then('the prompt does not contain {string}', function (this: VoiceWorld, text: s
 
 // ── Capability guards ────────────────────────────────────────────────────────
 // The Node test runtime genuinely lacks getUserMedia/MediaRecorder/AudioContext
-// — the very APIs the guards check — so calling the real factories here IS the
+// - the very APIs the guards check, so calling the real factories here IS the
 // no-capture case. Dynamic imports keep the browser entry points out of the
 // module graph of the prompt-only scenarios above.
 

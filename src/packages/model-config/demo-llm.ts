@@ -1,4 +1,4 @@
-// #ModelConfig demo-only LLM calls — used by demo.tsx, not exported from the
+// #ModelConfig demo-only LLM calls: used by demo.tsx, not exported from the
 // package. One text completion call and one spoken-query call per provider,
 // issued straight from the browser with raw fetch (no SDK). The
 // Anthropic call needs the `anthropic-dangerous-direct-browser-access` header;
@@ -9,7 +9,7 @@ import { blobToWavBytes } from './audio-wav.ts';
 
 const VOICE_PROMPT =
   "The user's query is spoken in the attached audio. Reply with ONLY a JSON " +
-  'object — no markdown fences, no other text — of the shape ' +
+  'object (no markdown fences, no other text) of the shape ' +
   '{"transcript": "<verbatim transcript of the audio>", ' +
   '"answer": "<your answer to the query>"}.';
 

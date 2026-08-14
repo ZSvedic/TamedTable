@@ -57,7 +57,7 @@ Then('the demo event log shows {string}', async function (this: object, expected
 When(
   'the user drags the {string} header onto the {string} header',
   async function (this: object, from: string, to: string) {
-    // HTML5 drag-and-drop: dispatch the events the component listens for —
+    // HTML5 drag-and-drop: dispatch the events the component listens for;
     // Playwright's mouse-based dragTo doesn't produce dragstart/drop.
     const p = page(this);
     await p.dispatchEvent(`[data-tv-header="${from}"]`, 'dragstart');
@@ -164,7 +164,7 @@ Then(
 Then('the {string} header carries a funnel mark', async function (this: object, col: string) {
   const found = await page(this).$(`[data-tv-header="${col}"][data-tv-filtered="${col}"]`);
   assert.ok(found, `expected the header "${col}" to be marked filtered`);
-  // The mark is a funnel icon (an SVG), not a look-alike text glyph — so it
+  // The mark is a funnel icon (an SVG), not a look-alike text glyph, so it
   // reads as "filter", distinct from the ▲/▼ sort arrows.
   const funnel = await page(this).$(`[data-tv-filter-mark="${col}"] svg`);
   assert.ok(funnel, `expected a funnel icon on "${col}"`);
@@ -176,7 +176,7 @@ Then('the {string} header carries no funnel mark', async function (this: object,
 });
 
 Then('the {string} header title is fully visible', async function (this: object, col: string) {
-  // The title span ellipsizes when the column is too narrow — so scrollWidth
+  // The title span ellipsizes when the column is too narrow, so scrollWidth
   // exceeds clientWidth exactly when the name is clipped.
   const clipped = await page(this).$eval(
     `[data-tv-title="${col}"]`,

@@ -19,12 +19,12 @@ When('the user clicks the toolbar theme toggle', async function (this: object) {
 });
 
 When('the user opens the toolbar open menu', async function (this: object) {
-  // Two menu buttons — Open then Save; Open is the first.
+  // Two menu buttons, Open then Save; Open is the first.
   await page(this).locator('[data-tb-toolbar] [data-uk-menubtn]').nth(0).click();
 });
 
 When('the user opens the toolbar save menu', async function (this: object) {
-  // Two menu buttons — Open then Save; Save is the second.
+  // Two menu buttons, Open then Save; Save is the second.
   await page(this).locator('[data-tb-toolbar] [data-uk-menubtn]').nth(1).click();
 });
 

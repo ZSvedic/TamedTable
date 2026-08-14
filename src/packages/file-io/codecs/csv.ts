@@ -21,7 +21,7 @@ export const csvCodec: FormatCodec = {
     const text = new TextDecoder().decode(bytes);
     // Parse as arrays, not keyed records: the header is the first *record*, so a
     // quoted newline inside a header field stays one record (RFC 4180), and the
-    // same `skip_empty_lines` covers both header and rows — a leading blank line
+    // same `skip_empty_lines` covers both header and rows: a leading blank line
     // no longer yields a phantom `[""]` header. csv-parse still rejects ragged
     // rows (Invalid Record Length) in array mode. Rows are built with `setCell`
     // so a column literally named `__proto__` lands as an own property.
@@ -40,7 +40,7 @@ export const csvCodec: FormatCodec = {
     const records = rows.map((row) => columns.map((col) => csvCellString(cellAt(row, col))));
     // csv-stringify handles RFC 4180 quoting (commas, quotes, newlines); a lone
     // CR is outside RFC 4180 TEXTDATA, so `quoted_match` forces quotes on any
-    // CR-bearing field — otherwise it emits bare and the record-delimiter
+    // CR-bearing field: otherwise it emits bare and the record-delimiter
     // auto-detection swallows a trailing CR on re-parse (silent data loss).
     // The header row uses `headers` (labels) when given, else the ids.
     return new TextEncoder().encode(

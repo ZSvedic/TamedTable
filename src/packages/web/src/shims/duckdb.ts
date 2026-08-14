@@ -7,8 +7,8 @@
 //
 // The multi-MB wasm payload is pulled through a dynamic `import()` of
 // ./duckdb-wasm-impl.ts, which Vite code-splits into its own chunk. Nothing
-// here statically imports duckdb-wasm, so the CSV/JSON golden path — which
-// never constructs a connection — never loads it. Spec:
+// here statically imports duckdb-wasm, so the CSV/JSON golden path: which
+// never constructs a connection, never loads it. Spec:
 // spec/code-contract.md § {sql} expression shape.
 
 /** One result set, as the engine reads it: a plain row-object per row, with
@@ -24,7 +24,7 @@ export interface DuckDBConnection {
   interrupt(): void;
 }
 
-/** What ./duckdb-wasm-impl.ts returns from createWasmInstance — kept as an
+/** What ./duckdb-wasm-impl.ts returns from createWasmInstance: kept as an
  *  interface so this module names no duckdb-wasm type and stays in the eager
  *  bundle. */
 export interface WasmInstance {
@@ -38,7 +38,7 @@ export class DuckDBInstance {
   private constructor(private readonly impl: WasmInstance) {}
 
   /** Lazily instantiate duckdb-wasm. The `path` argument (`:memory:` in the
-   *  browser) is ignored — the wasm build is always in-memory. */
+   *  browser) is ignored: the wasm build is always in-memory. */
   static async create(_path?: string): Promise<DuckDBInstance> {
     const { createWasmInstance } = await import('./duckdb-wasm-impl.ts');
     return new DuckDBInstance(await createWasmInstance());

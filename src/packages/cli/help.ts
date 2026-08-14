@@ -1,7 +1,7 @@
 // The two usage screens: CLI_USAGE_TEXT for `--help`/`-h`/`help`, HELP_TEXT
 // for the REPL's `:help`. See behavior.md §CLI/Discovery.
 
-export const CLI_USAGE_TEXT = `tamedtable — work tables in your terminal with natural-language requests.
+export const CLI_USAGE_TEXT = `tamedtable: work tables in your terminal with natural-language requests.
 
 Usage:
   tamedtable <input>                 Open <input> in the interactive REPL.
@@ -21,7 +21,7 @@ The REPL needs ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY,
 GROQ_API_KEY, OPENROUTER_API_KEY, or PUTER_TOKEN in env.
 `;
 
-export const HELP_TEXT = `TamedTable — interactive table editor. Natural-language requests edit the
+export const HELP_TEXT = `TamedTable: interactive table editor. Natural-language requests edit the
 spec; results stream in. The table reprints after any state or viewport
 change.
 
@@ -54,7 +54,7 @@ Inspection / session:
   :exit              Quit (also: bare "exit").
 
 Anything not starting with ":" is sent to the spec editor as a natural-
-language request — e.g. "normalize phone numbers", "sort by DOB desc".
+language request: e.g. "normalize phone numbers", "sort by DOB desc".
 Requests are additive; use :undo to revert the last one.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires

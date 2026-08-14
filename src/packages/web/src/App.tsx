@@ -58,7 +58,7 @@ function DesktopShell({ controller }: { controller: WebController }): ReactNode 
       document.body.style.cursor = '';
       try {
         localStorage.setItem(CHAT_W_KEY, String(widthAt(ev)));
-      } catch { /* storage full or unavailable — the width just won't persist */ }
+      } catch { /* storage full or unavailable: the width just won't persist */ }
     };
     document.body.style.cursor = 'col-resize';
     window.addEventListener('mousemove', move);
@@ -111,7 +111,7 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
       ) : (
         <DesktopShell controller={controller} />
       )}
-      {/* Shared overlays — fixed-position modals, identical on both layouts. */}
+      {/* Shared overlays: fixed-position modals, identical on both layouts. */}
       <SettingsPanel controller={controller} />
       <TutorialPanel controller={controller} />
       <OpenSampleDialog controller={controller} />
@@ -127,7 +127,7 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
   );
 }
 
-// Theme persistence is the app's job — ui-kit's provider owns no storage.
+// Theme persistence is the app's job: ui-kit's provider owns no storage.
 const MODE_STORAGE = 'tamedtable.theme';
 
 export function App({ controller }: { controller: WebController }): ReactNode {

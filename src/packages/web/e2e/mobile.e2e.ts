@@ -1,4 +1,4 @@
-// #MobileShell — browser-level E2E for the phone-width dock layout. At ≤768px
+// #MobileShell: browser-level E2E for the phone-width dock layout. At ≤768px
 // the app drops the desktop toolbar+sidebar for an app bar, a frozen-header
 // table, and a five-action bottom dock (Menu · Undo · History · Type · Speak).
 // The Cucumber @web suite drives WebController with no DOM, so the responsive
@@ -10,7 +10,7 @@ import { NARROW_MAX_WIDTH } from '../src/hooks/useIsNarrow.ts';
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
 
-/** How far the document (or an element) scrolls past its own width — > 0 means
+/** How far the document (or an element) scrolls past its own width: > 0 means
  *  horizontal overflow, which a mobile-friendly layout must never have. */
 async function overflow(page: import('@playwright/test').Page): Promise<{ doc: number; bar: number }> {
   return page.evaluate(() => {
@@ -53,7 +53,7 @@ test.describe('phone width', () => {
     await expect(page.locator('[data-mob-menu-item="Save CSV…"]')).toBeDisabled();
     await expect(page.locator('[data-mob-menu-item="Settings…"]')).toBeVisible();
     await expect(page.locator('[data-mob-menu-item="Tours…"]')).toBeVisible();
-    // The app bar carries no menu buttons — they were too small to tap.
+    // The app bar carries no menu buttons: they were too small to tap.
     await expect(page.locator('[data-uk-menubtn]')).toHaveCount(0);
     // Picking "Open sample…" closes the drawer and raises the sample picker.
     await page.locator('[data-mob-menu-item="Open sample…"]').click();
@@ -83,7 +83,7 @@ test.describe('phone width', () => {
     await expect(sheet).toBeVisible();
     await expect(page.locator('#tutorial-chat-input')).toBeVisible();
 
-    // The composer hugs its input row — no fixed-height whitespace under it
+    // The composer hugs its input row, no fixed-height whitespace under it
     // (the OS keyboard sits right below the sheet on a real phone).
     const h = await sheet.evaluate((el) => el.getBoundingClientRect().height);
     expect(h, 'composer sheet must be content-sized, not the 300px pane').toBeLessThan(120);
@@ -98,7 +98,7 @@ test.describe('phone width', () => {
 
     // The page scrolls the table sideways; the cells' backgrounds are
     // transparent, so the wrapper that paints the table's surface must be as
-    // wide as the table itself — otherwise the page background (body, a
+    // wide as the table itself: otherwise the page background (body, a
     // tinted color) shows through beside the columns once the user scrolls
     // right.
     const w = await page.evaluate(() => {
@@ -121,7 +121,7 @@ test.describe('phone width', () => {
     await page.locator('[data-mob-dock="menu"]').click();
     await page.locator('[data-mob-menu-item="Tours…"]').click();
 
-    // The shared TutorialPanel — same overlay as desktop. Clicking a tour starts it.
+    // The shared TutorialPanel: same overlay as desktop. Clicking a tour starts it.
     await page.getByTestId('tutorial-panel').getByRole('option', { name: 'Clean up a messy customer list' }).click();
 
     const progress = page.locator('.driver-popover-progress-text');
@@ -137,7 +137,7 @@ test.describe('phone width', () => {
     await expect(page.locator('[data-mob-sheet="keyboard"]')).toBeVisible();
     await expect(page.locator('#tutorial-chat-input')).not.toHaveValue('');
 
-    // The terminal "Voilà" step spotlights the table — clamped to the table's
+    // The terminal "Voilà" step spotlights the table, clamped to the table's
     // visible top region, because a cutout as tall as the full-height table
     // leaves the popover nowhere to sit and breaks the layout. Scroll the page
     // right first: the spotlight must still cover the visible table, not just
@@ -158,7 +158,7 @@ test.describe('phone width', () => {
       const pop = document.querySelector('.driver-popover')!.getBoundingClientRect();
       const table = document.getElementById('tutorial-table-view')!.getBoundingClientRect();
       // The wrapper can lie about its width (it once ended at the viewport
-      // edge while the table overflowed it) — measure the inner <table>, the
+      // edge while the table overflowed it): measure the inner <table>, the
       // honest content box, for the width check.
       const grid = document.querySelector('#tutorial-table-view table')!.getBoundingClientRect();
       return {
@@ -170,7 +170,7 @@ test.describe('phone width', () => {
         coversTable: spot.top >= table.top - 1 && spot.left >= table.left - 1,
         // How much of the viewport the cutout spans horizontally: the table is
         // wider than the screen and the page is scrolled right, so the cutout
-        // must run edge to edge — a cutout stuck at the un-scrolled region
+        // must run edge to edge: a cutout stuck at the un-scrolled region
         // reads as a broken half-highlight.
         coversWidth: spot.left <= 1 && spot.right >= Math.min(grid.right, window.innerWidth) - 1,
         vh: window.innerHeight,
@@ -192,7 +192,7 @@ test.describe('phone width', () => {
 
   // Grid upgrades on the phone (behavior.md § Narrow viewport): the changed
   // cells a chat step filled tint like on desktop, and the reveal scroll pans
-  // the page to the first new column — which the enrich split appends beyond
+  // the page to the first new column, which the enrich split appends beyond
   // the phone viewport.
   test('a chat step tints the cells it changed and reveals the first new column', async ({
     page,
@@ -246,7 +246,7 @@ test.describe('phone width', () => {
     await page.locator('.driver-popover-prev-btn').click(); // "Stay here"
     await expect(page.locator('.driver-popover')).toHaveCount(0);
 
-    // Speak can't be served from the cassette — disabled; Undo stays live.
+    // Speak can't be served from the cassette: disabled; Undo stays live.
     await expect(page.locator('[data-mob-dock="speak"]')).toBeDisabled();
     await expect(page.locator('[data-mob-dock="undo"]')).toBeEnabled();
 
@@ -296,7 +296,7 @@ test.describe('desktop width', () => {
     await expect(page.getByText('Add to home screen', { exact: true })).toHaveCount(0);
   });
 
-  test('nothing scrolls the page — panels scroll internally, even with a table loaded', async ({
+  test('nothing scrolls the page: panels scroll internally, even with a table loaded', async ({
     page,
   }) => {
     await page.goto('/TamedTable/app/');
@@ -314,9 +314,9 @@ test.describe('desktop width', () => {
   });
 });
 
-// #Toolbar — the medium band between the phone breakpoint and full desktop
+// #Toolbar: the medium band between the phone breakpoint and full desktop
 // width: the toolbar must condense so the page never scrolls sideways.
-test.describe('medium width — the toolbar condenses instead of overflowing', () => {
+test.describe('medium width: the toolbar condenses instead of overflowing', () => {
   // Every width above the phone breakpoint up to the condense threshold shows
   // the (condensed) desktop toolbar and must not overflow.
   for (const width of [780, 850, 940, 1024, NARROW_MAX_WIDTH]) {
@@ -331,7 +331,7 @@ test.describe('medium width — the toolbar condenses instead of overflowing', (
   }
 
   // Rule out an overflow band *above* the threshold: at threshold+1px the
-  // toolbar first shows full labels (condensed turns off) — it must still fit.
+  // toolbar first shows full labels (condensed turns off): it must still fit.
   // If this fails, the full-label toolbar needs more room: raise NARROW_MAX_WIDTH.
   test(`no overflow just above the threshold at ${NARROW_MAX_WIDTH + 1}px (full labels)`, async ({
     page,
@@ -347,7 +347,7 @@ test.describe('medium width — the toolbar condenses instead of overflowing', (
   // With a file loaded the toolbar also shows the file readout (which the
   // condensed bar hides). The readout shrinks/truncates rather than spilling, so
   // the toolbar itself never overflows at any width.
-  // (The desktop table's own horizontal scroll is a separate concern — a wide
+  // (The desktop table's own horizontal scroll is a separate concern, a wide
   // table scrolls the content area, not tracked by this toolbar test.)
   test('the toolbar never overflows across the band with a file loaded', async ({ page }) => {
     await page.setViewportSize({ width: DESKTOP.width, height: 800 });
@@ -371,13 +371,13 @@ test.describe('medium width — the toolbar condenses instead of overflowing', (
   });
 });
 
-// #MobileShell — document-scroll layout. On phones the page itself is the
+// #MobileShell: document-scroll layout. On phones the page itself is the
 // table's scroller (the app bar and dock are fixed to the screen), so a
 // natural swipe hides the phone browser's bars and the browser scrollbar
 // shows the true position in the table. The page always keeps ≥1px of scroll
 // room past the large viewport, so even the empty page can be swiped.
 // Headless has no browser bars; these tests pin the mechanics.
-test.describe('phone — the page is the table scroller', () => {
+test.describe('phone: the page is the table scroller', () => {
   test.use({ viewport: PHONE, hasTouch: true });
 
   test('the empty page has scroll room and the app bar and dock are fixed', async ({ page }) => {
@@ -408,7 +408,7 @@ test.describe('phone — the page is the table scroller', () => {
       .click();
     await expect(page.locator('[data-mob-cell]').first()).toBeVisible({ timeout: 30_000 });
 
-    // No inner vertical scroller — the document is the scroller.
+    // No inner vertical scroller, the document is the scroller.
     const layout = await page.evaluate(() => ({
       tableOverflow: getComputedStyle(document.querySelector('[data-mob-table]')!).overflowY,
       slack: document.documentElement.scrollHeight - window.innerHeight,
@@ -432,7 +432,7 @@ test.describe('phone — the page is the table scroller', () => {
     expect(Math.abs(m.gap), 'the sticky header must sit right under the app bar').toBeLessThanOrEqual(1);
   });
 
-  test('pinch-to-zoom scales the table only — the app bar and dock keep their size', async ({
+  test('pinch-to-zoom scales the table only: the app bar and dock keep their size', async ({
     page,
   }) => {
     await page.goto('/TamedTable/app/');
@@ -527,7 +527,7 @@ test.describe('phone — the page is the table scroller', () => {
     await expect.poll(height, { message: 'the field must grow with the draft' }).toBeGreaterThan(oneLine + 30);
     const threeLines = await height();
 
-    // Twelve lines: capped at the five-line ceiling — the extra scrolls inside.
+    // Twelve lines: capped at the five-line ceiling, the extra scrolls inside.
     await input.fill(Array.from({ length: 12 }, (_, i) => `line ${i + 1}`).join('\n'));
     await expect
       .poll(() => input.evaluate((el) => el.scrollHeight > el.clientHeight + 1), {
@@ -548,7 +548,7 @@ test.describe('phone — the page is the table scroller', () => {
     await expect(page.getByText('Add to home screen', { exact: true })).toBeVisible();
   });
 
-  // H — the provider card's model rows must not squeeze the model id into a
+  // H: the provider card's model rows must not squeeze the model id into a
   // ragged multi-line column on a phone; the id stays one line and the
   // cost/speed line sits below it.
   test('Settings model rows keep the model id on one line', async ({ page }) => {
@@ -574,8 +574,8 @@ test.describe('phone — the page is the table scroller', () => {
     expect(height, 'the model id must stay on a single line').toBeLessThan(28);
   });
 
-  // I — the phone column menu offers Remove filter (like the desktop menu) so a
-  // filter can be cleared in one tap. (Autofit has no phone equivalent — mobile
+  // I: the phone column menu offers Remove filter (like the desktop menu) so a
+  // filter can be cleared in one tap. (Autofit has no phone equivalent: mobile
   // columns auto-size to content and are not resizable.)
   test('the column menu clears an active filter', async ({ page }) => {
     await page.goto('/TamedTable/app/');

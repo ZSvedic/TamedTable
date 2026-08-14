@@ -1,4 +1,4 @@
-// Binds WebController to the generic Open-sample picker — the dialog itself
+// Binds WebController to the generic Open-sample picker: the dialog itself
 // lives in @tamedtable/toolbar. The bundled sample list (frozen at build time)
 // is app data, composed in ../samples.ts.
 import { useMemo, type ReactNode } from 'react';

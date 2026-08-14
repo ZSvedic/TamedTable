@@ -1,9 +1,9 @@
 // #BenchSweep
-// Pricing + model specs — the single source of truth for benchmark cost.
+// Pricing + model specs: the single source of truth for benchmark cost.
 // Reads benchmarks/models.jsonl at the repo root (data lives outside src/, code
 // lives here; a plain file read crosses the boundary, an import would not).
 // Everything that needs a per-model price (the sweep, the reporter, and the
-// standalone #BenchPerf Cucumber flow) goes through here — never duplicate a
+// standalone #BenchPerf Cucumber flow) goes through here, never duplicate a
 // price literal in a step-def again.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -20,7 +20,7 @@ export interface ModelSpec {
   /** USD per million output tokens. */
   outUsdPerMtok: number;
   /** Multiplier on the input rate for a cache write (Anthropic 1.25; providers
-   *  with implicit caching use 1 — there is no separate write charge). */
+   *  with implicit caching use 1: there is no separate write charge). */
   cacheWriteMult: number;
   /** Multiplier on the input rate for a cache read (0.1 on all three). */
   cacheReadMult: number;

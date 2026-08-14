@@ -54,7 +54,7 @@ interface ModelConfigCtx {
   measured?: ModelMeasure;
 }
 
-// The only shape these steps need from the cucumber World — state hangs off
+// The only shape these steps need from the cucumber World: state hangs off
 // one private property, keeping the package independent of the app harness.
 interface ModelConfigWorld {
   _mcCtx?: ModelConfigCtx;
@@ -116,7 +116,7 @@ When(
   },
 );
 
-// Set an arbitrary subset of provider keys at once — the comma list names the
+// Set an arbitrary subset of provider keys at once: the comma list names the
 // env vars; each gets a placeholder value. Drives the provider-precedence
 // outline, which only asserts which provider wins, not the literal key string.
 When(
@@ -421,7 +421,7 @@ Given(
   },
 );
 
-// The empty string means "no providers connected" — a comma list otherwise.
+// The empty string means "no providers connected": a comma list otherwise.
 // With no `was connected at` step the order map is empty, which is the
 // catalogue-order case.
 Then(
@@ -464,14 +464,14 @@ interface StubSpec {
   code?: string;
   /** Streaming script: how many SSE frames, when the first and last land, and
    *  how many leading frames carry no text (a role header, a ping, thinking
-   *  deltas) — the ones the first-token clock has to see through. */
+   *  deltas): the ones the first-token clock has to see through. */
   stream?: {
     frames: number; firstSec: number; lastSec: number; outTok: number; silent?: number;
   };
 }
 
-/** A frame carrying generated text, spelled every way at once — Gemini's
- *  parts, Anthropic's content_block_delta, and the OpenAI-compatible delta —
+/** A frame carrying generated text, spelled every way at once: Gemini's
+ *  parts, Anthropic's content_block_delta, and the OpenAI-compatible delta,
  *  so one stub serves whichever parser the provider under test uses. */
 const TEXT_FRAME = {
   candidates: [{ content: { parts: [{ text: 'x' }] } }],
@@ -481,7 +481,7 @@ const TEXT_FRAME = {
 };
 
 /** A frame carrying no output: a ping, an opening role header, and a Gemini
- *  reasoning part — which is text on the wire and not output on the screen. */
+ *  reasoning part, which is text on the wire and not output on the screen. */
 const SILENT_FRAME = {
   candidates: [{ content: { parts: [{ text: 'hmm', thought: true }] } }],
   type: 'ping',
@@ -503,7 +503,7 @@ function stubApi(spec: StubSpec): StubApi {
       api.calls++;
       if (spec.unreachable) throw new TypeError('Failed to fetch');
       // Streaming mode: the body is delivered as scripted SSE chunks, and the
-      // clock advances as each one is read — so a scenario controls exactly
+      // clock advances as each one is read, so a scenario controls exactly
       // when the first and last tokens land without waiting for real time.
       if (spec.stream && status < 400) {
         const { frames, firstSec, lastSec, outTok: streamOut, silent = 0 } = spec.stream;
@@ -522,7 +522,7 @@ function stubApi(spec: StubSpec): StubApi {
           `data: ${JSON.stringify(frameAt(i))}\n\n`);
         let read = 0;
         const encoder = new TextEncoder();
-        // highWaterMark 0 so `pull` only runs when a read is waiting — with the
+        // highWaterMark 0 so `pull` only runs when a read is waiting, with the
         // default of 1 the stream fills a chunk ahead, and the clock would run
         // one chunk in front of the reader.
         const body = new ReadableStream<Uint8Array>({

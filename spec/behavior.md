@@ -1,28 +1,28 @@
 # TamedTable behavior
 
 What the user sees and what the system does. No types, no method names, no
-library names, no env-var names — those live in [code-contract.md](code-contract.md),
+library names, no env-var names: those live in [code-contract.md](code-contract.md),
 section by matching section.
 
 ## Data model
 
 TamedTable separates the *spec* (what the table should look like) from the
 *data* (the rows themselves). The spec is a small JSON document; the data is
-large and never reaches the LLM. Each user turn produces a *patch* — a JSON
+large and never reaches the LLM. Each user turn produces a *patch*, a JSON
 Patch (RFC 6902) for array ops, a JSON Merge Patch (RFC 7396) for shallow
-edits — that the runtime applies, validates, and replays against the
+edits: that the runtime applies, validates, and replays against the
 immutable source rows.
 
 The spec describes the *data*: the source table, the visible columns, and an
 ordered list of *transformations* that mutate rows. How the result is
-*viewed* — page size, pagination — is UI state the spec never carries; each
+*viewed* (page size, pagination) is UI state the spec never carries; each
 surface owns its own view knobs. Four core transformation kinds cover the
 row-and-column basics:
 
-- **filter** — keep rows where a predicate is truthy. <!-- #FilterRows -->
-- **mutate** — set one or more columns from a value expression. <!-- #DataNorm -->
-- **select** — keep only these columns. <!-- #ColSelect -->
-- **sort** — by one or more keys, ascending or descending. <!-- #SortRows -->
+- **filter**: keep rows where a predicate is truthy. <!-- #FilterRows -->
+- **mutate**: set one or more columns from a value expression. <!-- #DataNorm -->
+- **select**: keep only these columns. <!-- #ColSelect -->
+- **sort**: by one or more keys, ascending or descending. <!-- #SortRows -->
 
 Each carries an *expression*: either deterministic (a JS arrow-function body,
 signature `(row, index, allRows)`) or LLM-backed (a prompt template with
@@ -30,22 +30,22 @@ signature `(row, index, allRows)`) or LLM-backed (a prompt template with
 
 A new request is *additive*: it appends; nothing prior is removed or replaced
 unless the user explicitly says undo or replace. "Undo" pops the last
-applied patch — reversing every transformation and column change the most
-recent user turn introduced, as a single unit — and replays the rest
+applied patch: reversing every transformation and column change the most
+recent user turn introduced, as a single unit, and replays the rest
 against the source. No LLM call.
 
 Every transformation remembers the request that produced it. When a request
-commits, its text — for a spoken request, the transcript — is stamped
+commits, its text (for a spoken request, the transcript) is stamped
 verbatim as `query` metadata onto the **first** transformation the turn
 added or changed, and every added-or-changed transformation gets a short
 human `name` (its step label, e.g. `mutate _event_group (AI)`). Reading a
 saved file top-down, a `query` opens a request's group of steps and the
-`name`s identify each step — the request is written once, not repeated on
+`name`s identify each step: the request is written once, not repeated on
 every step. The stamps are provenance only: the engine ignores them, and
 the patch model never sees them (they are stripped from the spec before
 every model turn). Because they live inside the spec, a saved `.flow`
 carries them, so the file records not just what each step does but what
-the user asked for — in the user's own words and language. Undo removes a
+the user asked for: in the user's own words and language. Undo removes a
 transformation and its stamps together; a step later changed by another
 request carries that later request.
 
@@ -57,9 +57,9 @@ rows.
 
 The renderer receives `(spec, row_stream)`: the spec drives column layout,
 formatters, and header order; rows stream in. The renderer is an
-implementation detail — the spec is the wire protocol.
+implementation detail: the spec is the wire protocol.
 
-→ [code-contract.md — Data model](code-contract.md#data-model)
+→ [code-contract.md: Data model](code-contract.md#data-model)
 
 ## Core / runner
 
@@ -77,24 +77,24 @@ loaded. Input arrives one of two ways: by path (the CLI reads a file off disk)
 or as already-parsed rows (the browser parses a picked or fetched file through
 the file-io codec registry and loads the rows directly, with no filesystem).
 Either way the loaded state is the same. Once loaded, the runner handles one
-request at a time — a second request while one is running throws.
+request at a time: a second request while one is running throws.
 
 On a successful request the runner:
 
 1. Applies the LLM's patch to the current spec.
 2. Validates the new spec.
 3. Re-runs the transformations against the source.
-4. Commits — the new spec and rows become visible.
+4. Commits: the new spec and rows become visible.
 
 On commit the displayed columns realign to the rows the replay produced:
 a column whose key no longer appears in any row drops out, and keys the
 transformations introduced append in first-seen order. The exception is
-keys starting with `_` — those are internal unless the patch lists them
+keys starting with `_`: those are internal unless the patch lists them
 in `columns` explicitly. So a yes/no helper column a mutate computes
 only for a later validate stays on the rows but off the table, and the
 legacy `_valid`/`_validation` pair displays only when a replayed flow
 declares it. A validate's named `into` pair (`Email_ok`, `Email_ok_note`)
-has no underscore — it is data, not plumbing — and the few-shots insert
+has no underscore (it is data, not plumbing) and the few-shots insert
 it into `columns` right after the column the check is about.
 
 If any step throws, the patch rolls back and the error goes to the LLM as the
@@ -104,7 +104,7 @@ or throws; the spec is never left halfway between two states.
 The runner tolerates a model reply that is *almost* well-formed: a patch
 value the model JSON-encoded but with a stray invalid escape (an apostrophe
 written `\'`, say) is repaired and applied rather than dead-ending. This keeps
-a recoverable model slip from forcing a recovery turn — which, in a key-free
+a recoverable model slip from forcing a recovery turn, which, in a key-free
 tour replay, would hit a request that was never recorded.
 
 Loading the same input twice resets the transformations, filter/sort, and
@@ -115,14 +115,14 @@ The runner caches the result of replaying. When a new spec adds to the tail
 of the previous list (the prefix is unchanged), the runner reuses the cached
 derived rows and runs only the new tail.
 
-CSV or JSONL in, JSONL out. Every CSV value stays a string — the runtime
+CSV or JSONL in, JSONL out. Every CSV value stays a string, the runtime
 doesn't guess whether something is a number or a date; type inference is
 the LLM's job via a `mutate` transformation. Leading and trailing
 whitespace around each unquoted CSV field is trimmed before the value
 becomes the cell string; quoted fields are preserved verbatim, including
 whitespace inside the quotes. JSONL inputs keep their native JSON types.
 
-→ [code-contract.md — Core / runner](code-contract.md#core--runner)
+→ [code-contract.md: Core / runner](code-contract.md#core--runner)
 
 ## Headless
 
@@ -131,19 +131,19 @@ transformations, and lets the caller watch progress chunk by chunk and
 cancel. It doesn't print to a terminal or own any I/O beyond what the runner
 needs.
 
-The LLM only changes the spec through one tool — call it the *patch tool* —
+The LLM only changes the spec through one tool: call it the *patch tool*:
 that takes a list of RFC 6902 operations. The harness rejects five LLM
 mistakes and feeds them back through the recovery loop:
 
 - an empty operations list;
 - a patch that applies cleanly but leaves the spec identical to before;
 - a patch that writes a top-level key outside the spec shape (`table`,
-  `columns`, `transformations`) — the spec describes data, never the view,
+  `columns`, `transformations`): the spec describes data, never the view,
   so the schema rejects the unrecognized key and the message steers the
   model back to the transformation list;
 - a patch that leaves a `validate` reading a column no step before it
-  provides. The predicate would test a value that doesn't exist yet — every
-  row would fail — so the rejection names the missing column and tells the
+  provides. The predicate would test a value that doesn't exist yet: every
+  row would fail, so the rejection names the missing column and tells the
   model to order the step that computes it before the `validate`;
 - a patch that applies and evaluates but leaves the table with **0 rows**
   when the source has rows. In practice that is a predicate mis-parsing
@@ -151,7 +151,7 @@ mistakes and feeds them back through the recovery loop:
   different casing), so instead of silently emptying the table the
   rejection names the row counts and asks for a more tolerant patch. A
   request that keeps failing this way exhausts the recovery budget and
-  fails loudly — the table is never replaced by an empty one.
+  fails loudly: the table is never replaced by an empty one.
 
 <!-- #LLMCells -->
 LLM-backed transformations evaluate a prompt template per row. The runtime:
@@ -159,12 +159,12 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
 - Renders each row's prompt by substituting `{Column}` placeholders. A
   placeholder that doesn't match any column is an error and feeds back
   through the recovery loop. The special placeholder `{*}` expands to a
-  compact JSON object of the row's columns — excluding the target column
+  compact JSON object of the row's columns: excluding the target column
   when the template is a `mutate` value, all columns included in any other
   position. Use `{*}` when the cell value alone may be ambiguous and a
   same-row column could disambiguate (locale-dependent dates, units,
   addresses). Templates that use `{*}` lose cross-row cache reuse within a
-  table — each row's rendered prompt embeds different sibling values — so
+  table, each row's rendered prompt embeds different sibling values, so
   reserve it for cases where context actually matters.
 - Packs several rendered prompts into one batch request (default 20 rows per
   batch). The model replies with a JSON array of strings or nulls in input
@@ -172,7 +172,7 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
   dispatcher falls back to per-row calls for that batch.
 - Runs several batches concurrently (default 5 in flight).
 - Uses that same packing and concurrency at **every** place an `{llm}`
-  expression produces one value per row or per group — a `mutate` value, a
+  expression produces one value per row or per group: a `mutate` value, a
   `sort` key, a `group` aggregate. A table larger than one batch is never
   sent as a single request, whichever slot the expression sits in.
 - Caches results keyed by `(model, rendered prompt)` so duplicate inputs
@@ -183,11 +183,11 @@ LLM-backed transformations evaluate a prompt template per row. The runtime:
 
 While an LLM transformation runs, each completed chunk fires a progress
 callback with the rows it just produced. The committed spec and rows don't
-change until the whole transformation finishes — the callback is how
+change until the whole transformation finishes: the callback is how
 progress reaches the CLI and the web UI.
 
 <!-- #DebugOut -->
-Once per request — on success and on failure — headless reports a debug
+Once per request, on success and on failure, headless reports a debug
 summary: the patch attempt of each recovery turn, the primary
 expression and the human step label of each transformation a successful
 request appended, the model calls made, the input and output token
@@ -221,12 +221,12 @@ calls; with none supplied, headless talks straight to the service. The
 test suite uses this to **replay recorded model responses**: each
 response is saved to disk once, keyed by a fingerprint of the request,
 then read back on later runs instead of calling the service. The
-recordings are committed, so the suite replays in seconds — no API key,
-no rate-limit wait — and that is how it runs by default.
+recordings are committed, so the suite replays in seconds, no API key,
+no rate-limit wait, and that is how it runs by default.
 
 Three settings decide what happens. **Replay**, the default, serves
 every response from disk and fails loudly on any request it has no
-recording for — it never silently falls back to the network. **Record**
+recording for: it never silently falls back to the network. **Record**
 calls the real service and saves each response, refreshing the
 recordings. **Off** ignores the recordings and calls the real service,
 the way every run worked before.
@@ -239,13 +239,13 @@ without a key.
 
 Each recording also keeps a readable copy of the request that produced
 it, so a reviewer can see what was asked without reversing a hash. The
-boilerplate every request repeats — the system prompt — is stored once
+boilerplate every request repeats, the system prompt, is stored once
 per file and each recording keeps only the part that varies. When a
 request has no recording, the failure doesn't just say "miss": it names
 the closest recording and shows where the two first differ, so a
 changed prompt is diagnosable at a glance.
 
-→ [code-contract.md — Headless](code-contract.md#headless)
+→ [code-contract.md: Headless](code-contract.md#headless)
 
 ## CLI
 
@@ -266,7 +266,7 @@ error and does not reprint the table.
 After every natural-language request the REPL prints a compact debug
 block, on by default and disableable. It is indented, dimmed, every
 line prefixed `[debug]`, and capped at twenty lines. A block that
-overruns the cap loses lines from the *middle* — an `… (+N more lines)`
+overruns the cap loses lines from the *middle*: an `… (+N more lines)`
 marker stands in for them and the summary line below keeps its place as
 the block's last line. On a successful
 request it prints just before the reprinted table; on a failed request
@@ -274,15 +274,15 @@ just after the error line. `:` commands and `tamedtable execute` make
 no model call and print no debug block.
 
 A successful request's block lists the primary expression of each
-transformation it appended — the predicate of a filter or validate, the
-value of a mutate, and so on — shown exactly as it will be evaluated.
+transformation it appended: the predicate of a filter or validate, the
+value of a mutate, and so on: shown exactly as it will be evaluated.
 Secondary fields, such as a validate `message`, are not shown. A failed
 request's block instead lists the patch attempt of each recovery turn
 and the error fed back into the next.
 
 Either way the block's last line summarises the request: the model
-calls it made — each distinct model as `<name> ×<count>`, always in
-that form even for a single call — then the total input and output
+calls it made: each distinct model as `<name> ×<count>`, always in
+that form even for a single call, then the total input and output
 tokens and the wall-clock time. For `validate dob is non-empty`:
 
 ```
@@ -305,7 +305,7 @@ the same way the web chat does. As each transformation starts it prints
 one step line:
 
 ```
-step 1/2 — mutate Country (AI) · 424 rows
+step 1/2: mutate Country (AI) · 424 rows
 ```
 
 While an AI-cell step streams, a `<rows done>/<total> rows` counter
@@ -318,13 +318,13 @@ Quiet programmatic runners print no progress.
 The REPL runs in one of two modes, chosen automatically from whether stdin
 is a TTY:
 
-- **Interactive mode** (stdin is a TTY — the user runs `tamedtable` in a
+- **Interactive mode** (stdin is a TTY: the user runs `tamedtable` in a
   terminal). The line editor is in cooked terminal mode: ↑/↓ cycle
   through command history within the session, ←/→ move the cursor inside
   the current line, ⌃A/⌃E jump to line start/end, ⌃U clears the line,
   ⌃R reverse-searches history. The session's input lines accumulate into
   an in-memory history that is *not* persisted across REPL invocations.
-- **Batch mode** (stdin is not a TTY — piped from a file or from the
+- **Batch mode** (stdin is not a TTY: piped from a file or from the
   Gherkin step harness). The line editor is off: every byte that arrives
   is interpreted as part of an input line, escape sequences pass through
   unchanged, no history navigation. Output is byte-identical to what
@@ -333,7 +333,7 @@ is a TTY:
 
 The mode is detected once at REPL start; it never switches mid-session.
 Page-size autodetect (described below) follows the same TTY check on
-stdout — interactive runs auto-fit to the terminal, batch runs use the
+stdout: interactive runs auto-fit to the terminal, batch runs use the
 deterministic 10 × 5 fallback.
 
 The REPL holds a viewport cursor `(rowOffset, colOffset)` over the
@@ -345,19 +345,19 @@ after reserving a few lines for chrome (header, separator, truncation
 markers, prompt); `pageCols` is the greedy fit, walking columns in
 display order and packing them by rendered width until the next one
 would overflow the terminal width. When the terminal size is
-unavailable — typically when stdout is piped, not a TTY — the page
+unavailable (typically when stdout is piped, not a TTY) the page
 size falls back to **10 rows × 5 cols**, keeping non-interactive runs
 deterministic. The user can pin either axis to a manual value with
 `:viewport`; a pinned axis survives terminal resize until cleared with
 `auto`. Both viewport cursors reset to `(0, 0)` after `:load`, a
 successful NL request, `:undo`, or `:redo`; viewport pins do **not**
-reset on those events — they persist until `:viewport auto` or REPL
+reset on those events: they persist until `:viewport auto` or REPL
 exit. `:show` moves the cursor explicitly; `:find` snaps it to the
 first match. When rows fall outside the current page, the truncated
-edge renders a marker row `...{N} more rows.` — above when rows are
+edge renders a marker row `...{N} more rows.`: above when rows are
 hidden above the page, below when hidden below. Columns hidden to the
 left or right render a symmetric marker column `...{N} more cols.` at
-the edge. No terminal control codes — think `sqlite3` or `jq`, not
+the edge. No terminal control codes: think `sqlite3` or `jq`, not
 `vim`. Long LLM transformations print a few sample row changes per
 chunk while they run.
 
@@ -365,11 +365,11 @@ REPL commands use a `:` prefix (chosen over `/` because `/` is intercepted
 by Claude Code and other CLI agents; `:` passes through to the runtime).
 They are handled locally without any LLM round-trip:
 
-- `:help` prints the usage screen — the verbatim text below this bullet
-  list — inline.
-- `:undo` pops the last applied patch — reversing every transformation
+- `:help` prints the usage screen, the verbatim text below this bullet
+  list: inline.
+- `:undo` pops the last applied patch: reversing every transformation
   and column change the most recent user turn introduced, as a single
-  unit — and pushes it onto the redo stack. On an empty history, prints
+  unit, and pushes it onto the redo stack. On an empty history, prints
   `nothing to undo.` It reverses that turn and nothing else: a
   `:reorder` issued afterwards is not part of the journal, so the column
   order on screen survives the undo untouched.
@@ -396,8 +396,8 @@ They are handled locally without any LLM round-trip:
   `:load`/`:undo`/`:redo`/NL requests); the keyword `auto` clears any
   prior pin on that axis and resumes terminal-derived sizing. A single
   `auto` argument is shorthand for `auto auto`. With no arguments,
-  prints one line — `viewport: <R> rows (<source>) × <C> cols
-  (<source>)` where each `<source>` is `auto` or `manual` — and does
+  prints one line: `viewport: <R> rows (<source>) × <C> cols
+  (<source>)` where each `<source>` is `auto` or `manual`, and does
   not reprint the table. Any size change reprints the table at the new
   page size; if the resulting page is smaller than the cursor's
   position, the cursor clamps to the last valid page on that axis.
@@ -410,17 +410,17 @@ They are handled locally without any LLM round-trip:
   containing the first match (and the column containing it if it's
   outside the current column page), and the reprint wraps each matched
   substring in that view with asterisks (`*USA*`). The highlight clears
-  on the next viewport- or state-changing event — it lives until then,
+  on the next viewport- or state-changing event: it lives until then,
   not for one reprint, so a bare `:show` (which changes neither) reprints
   it still highlighted. No match prints
   `no match` and does not reprint. Missing pattern prints
   `:find: missing pattern`. Not recorded in the undo journal.
 - `:load <path>` reads a table file as the new input source (file
-  type inferred from extension; any registered format — `.csv`,
-  `.jsonl`, `.parquet`, `.arrow` — accepted;
-  `<path>` is taken literally — a leading `@` is part of the filename,
+  type inferred from extension; any registered format: `.csv`,
+  `.jsonl`, `.parquet`, `.arrow`: accepted;
+  `<path>` is taken literally, a leading `@` is part of the filename,
   not a Claude-Code-style file reference). A relative path that does
-  not exist is retried under `../spec/test-cases/` — a dev convenience
+  not exist is retried under `../spec/test-cases/`: a dev convenience
   so feature files can name a fixture by bare filename; `execute`
   resolves `--input` the same way. Resets transformations,
   filter/sort, and cached LLM cell results just like loading at startup.
@@ -429,7 +429,7 @@ They are handled locally without any LLM round-trip:
   `Loaded <path> (N rows, M cols)` (no column names) followed by the
   table.
 - `:save <path>` writes the current rows, dispatching on extension
-  through the format-codec registry (#FormatOut) — `.csv`, `.jsonl`,
+  through the format-codec registry (#FormatOut): `.csv`, `.jsonl`,
   `.parquet`, or `.arrow` (path resolved relative to the working
   directory). Missing path prints `:save: missing path`; an unknown
   extension prints `:save: unknown file type`; success prints a `saved`
@@ -446,14 +446,14 @@ They are handled locally without any LLM round-trip:
   extension prints `:save-py: output must be a .py file`; a flow with an
   `{llm}` cell prints `:save-py: flow contains LLM cells; cannot export
   to Python`; success prints `saved Python script`.
-- `:reorder <cols>` reorders the column list — `<cols>` is a comma- or
+- `:reorder <cols>` reorders the column list: `<cols>` is a comma- or
   space-separated list of column names. The named columns move to the
   front in that order; columns not named keep their relative order
   after them. The new order drives the table view and the column order
   of a saved CSV or JSONL file, so column order needs no spec field. A
   missing list prints `:reorder: missing column list`; an unknown column
   prints `:reorder: unknown column "<name>"`; success reprints the
-  table where the viewport cursor already sits — `:reorder` is not one of
+  table where the viewport cursor already sits, `:reorder` is not one of
   the cursor-reset events listed above. Not recorded in the undo journal.
 - `:exit` and bare `exit` both close the REPL with exit code 0.
 - Any other `:`-prefixed word is a typo, not a request: it prints
@@ -464,7 +464,7 @@ They are handled locally without any LLM round-trip:
 The `:help` usage screen, verbatim:
 
 ```
-TamedTable — interactive table editor. Natural-language requests edit the
+TamedTable: interactive table editor. Natural-language requests edit the
 spec; results stream in. The table reprints after any state or viewport
 change.
 
@@ -497,7 +497,7 @@ Inspection / session:
   :exit              Quit (also: bare "exit").
 
 Anything not starting with ":" is sent to the spec editor as a natural-
-language request — e.g. "normalize phone numbers", "sort by DOB desc".
+language request: e.g. "normalize phone numbers", "sort by DOB desc".
 Requests are additive; use :undo to revert the last one.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires
@@ -507,7 +507,7 @@ OPENROUTER_API_KEY in env.
 
 Ctrl-C while a request runs cancels it and rolls back the half-applied
 transformation: the REPL prints `error: Cancelled.` and comes back to a
-live prompt ready for the next line — the session survives the cancel.
+live prompt ready for the next line, the session survives the cancel.
 Ctrl-C while idle closes the REPL. This holds in a real terminal, where
 the keypress never reaches the process as a signal, exactly as it does
 for a piped run.
@@ -524,16 +524,16 @@ happens on this path.
 The CLI exposes two help screens. They cover disjoint surface:
 
 - `tamedtable --help` / `-h` / bare `help` print the *CLI usage screen*
-  below — binary invocations only: the bare-input REPL launch, the
+  below: binary invocations only: the bare-input REPL launch, the
   `execute` batch form with its flags, the discovery flags themselves,
   and the API-key requirement. It does NOT list the REPL's `:`
   commands.
-- `:help` inside the REPL prints the *REPL usage screen* above —
+- `:help` inside the REPL prints the *REPL usage screen* above:
   every `:` command, the natural-language request convention, and the
   Ctrl-C behavior. It does NOT mention `execute`, `--input`, or
   `--output`.
-- `tamedtable --version` / `-v` prints the version — the line
-  `tamedtable <version>`, sourced from the CLI package manifest — and
+- `tamedtable --version` / `-v` prints the version, the line
+  `tamedtable <version>`, sourced from the CLI package manifest: and
   exits 0. Like `--help` it runs offline, never starts the REPL, and
   never lists the `:` commands.
 
@@ -545,7 +545,7 @@ one answers.
 The CLI usage screen, verbatim:
 
 ```
-tamedtable — work tables in your terminal with natural-language requests.
+tamedtable: work tables in your terminal with natural-language requests.
 
 Usage:
   tamedtable <input>                 Open <input> in the interactive REPL.
@@ -574,15 +574,15 @@ Other invocations:
 - An unknown flag fails with a pointer to `--help`.
 
 Exit-code numbers and their meanings live in
-[code-contract.md — CLI](code-contract.md#cli).
+[code-contract.md: CLI](code-contract.md#cli).
 
-→ [code-contract.md — CLI](code-contract.md#cli)
+→ [code-contract.md: CLI](code-contract.md#cli)
 
 ## System prompts
 
-The three LLM prompts — the *patch* prompt for the spec-editor turn, the
+The three LLM prompts: the *patch* prompt for the spec-editor turn, the
 *batch* prompt for multi-row cell evaluation, and the *cell format
-constraint* every `{llm:…}` cell prompt must end with — live in
+constraint* every `{llm:…}` cell prompt must end with: live in
 [prompt-app-edit.md](prompt-app-edit.md). That file is the source of truth;
 the runtime loads it at module init.
 
@@ -593,9 +593,9 @@ patchable paths (`/transformations/-` for append; `/columns` for add/remove/
 reorder, with a two-op pattern for "add column X with computed value Y"),
 the transformation grammar, the three expression shapes, and a few-shot
 per common task. The few-shots also carry the hard-won ordering and shape
-rules: a computing mutate before the validate that reads it — with the
+rules: a computing mutate before the validate that reads it, with the
 computed yes/no column kept out of the displayed columns, so a semantic
-check surfaces only its named `<into>` flag pair — a fresh `into` per
+check surfaces only its named `<into>` flag pair: a fresh `into` per
 check so audits stack instead of overwriting, one mutate per
 target column, `{llm}` (never a regex or range check) for semantic
 judgments, per-part `{llm}` extraction for delimiter-free text, a
@@ -609,7 +609,7 @@ The cell format constraint is the trailing instruction every `{llm:…}` cell
 prompt must end with: reply with only the result, or the literal word
 `null` if the input can't be processed.
 
-→ [code-contract.md — System prompts](code-contract.md#system-prompts)
+→ [code-contract.md: System prompts](code-contract.md#system-prompts)
 
 ## Extended transformations, SQL, and the web UI
 
@@ -617,7 +617,7 @@ Beyond the four core verbs and the terminal CLI, the spec carries six more
 transformation verbs (`group`, `join`, `split`, `validate`, `pivot`,
 `unpivot`), a SQL expression shape, tabular (CSV) output, and a browser
 front-end. The behavior contract for undo, cancellation, recovery, and the
-streaming chunk callback is unchanged — each surface plugs into existing
+streaming chunk callback is unchanged: each surface plugs into existing
 seams rather than replacing them.
 
 ### CSV (and other tabular) output (#FormatOut)
@@ -625,7 +625,7 @@ seams rather than replacing them.
 `:save <path>` and `tamedtable execute --output <path>` both dispatch on
 extension, the same way `:load` already does for input. The dispatch goes
 through the format-codec registry, so `.csv`, `.jsonl`, `.parquet`, and
-`.arrow` all work — see
+`.arrow` all work: see
 [spec/packages/file-io/formats/](packages/file-io/formats/) for the
 per-format rules.
 
@@ -638,8 +638,8 @@ double-quotes with embedded quotes doubled (RFC 4180). The writer
 never invents quoting or escaping beyond what RFC 4180 requires.
 
 Unknown output extensions print `:save: unknown file type` (REPL) or
-exit non-zero with the same line on stderr (batch). Mixed-format flows
-— JSONL in, CSV out — work because the renderer reads the committed
+exit non-zero with the same line on stderr (batch). Mixed-format flows:
+JSONL in, CSV out: work because the renderer reads the committed
 spec, not the source format.
 
 ### `group` transformation (#Aggregate)
@@ -647,14 +647,14 @@ spec, not the source format.
 `group` collapses input rows into one output row per distinct
 `by`-value tuple. Shape: `{ kind: "group", by: [<expr|column>...],
 agg: { <outColumn>: <expr> } }`. The by-keys and the aggregate output
-columns *replace* the prior column list — only those columns survive
+columns *replace* the prior column list: only those columns survive
 into the rows downstream. Aggregate expressions evaluate over the
 group's row slice (an array of rows accessible to the expression as
 the bound name described in code-contract); typical uses are `count`,
 `sum`, `avg`, `min`, `max`, and `{llm:…}` summaries.
 
 An empty `by` list collapses the whole table into a single output
-row — the natural shape for a grand total, such as summing one column
+row: the natural shape for a grand total, such as summing one column
 across every row.
 
 Empty input produces zero output rows. A by-expression that throws on
@@ -663,7 +663,7 @@ filter or mutate uses. Sort order of output rows is the first-seen
 order of each group's by-tuple in the input.
 
 The by-keys are written first and an aggregate whose output name collides
-with one of them is renamed `<name>_2` — the same collision rule a `join`
+with one of them is renamed `<name>_2`, the same collision rule a `join`
 follows. "Count the rows per category, call it category" keeps the category
 keys and writes the counts to `category_2`; the group key that identifies
 the row is never overwritten.
@@ -677,9 +677,9 @@ resolved relative to the spec's working directory; the right table is
 loaded once at transformation-evaluation time and held for the join.
 `on` is a predicate expression evaluated for each `(leftRow,
 rightRow)` pair; truthy means match. A left row that matches several
-right rows emits **one output row per match** — the left values repeat,
+right rows emits **one output row per match**: the left values repeat,
 SQL style; the join is not a first-match lookup. Default `how` is
-`"left"` — left rows survive even without a right match, with
+`"left"`: left rows survive even without a right match, with
 right-side columns set to `null`. `"inner"` drops left rows that have
 no match.
 
@@ -688,19 +688,19 @@ When right and left columns collide, the right column is renamed
 another. The rename target must be free on *both* sides: joining a right
 table that already has a real `code_2` next to its `code` renames the
 colliding `code` to `code_3`, never onto the neighbour. Both column lists
-are the union over every row, not the first row's keys — a sparse column
+are the union over every row, not the first row's keys: a sparse column
 that only appears on row 500 is still a column, and the right table must
 not overwrite it. The right file is read with the same dispatch as `:load`
 (unknown extension throws the *"unknown file type"* error). A
 join's right table is *not* re-read on `:undo`/`:redo`; it is read once and
-held for the session, so undoing some *later* step — which replays the
-join — works even after the lookup file has been renamed or deleted on
+held for the session, so undoing some *later* step, which replays the
+join: works even after the lookup file has been renamed or deleted on
 disk. The transformation removal reverses the column-shape change and
 that's enough.
 
 The browser has no working directory to resolve `with` against, so it
 resolves the name against the **lookup tables staged for the session**
-instead, and asks for the file when the name is not among them — see
+instead, and asks for the file when the name is not among them: see
 [Web UI](#web-ui-webui).
 
 ### `split` transformation (#ColSplit)
@@ -720,12 +720,12 @@ transformation, in which case `from` is removed after the split. Empty
 input cells produce `null` in every output column.
 
 This is ergonomically what a `mutate` with `columns: string[]` and a
-JS array-returning body already does — that body's array fills the target
+JS array-returning body already does, that body's array fills the target
 columns **positionally**, under the same too-few-pads / too-many-concatenate
 rules, while a body returning an *object* is read by column name; `split`
 exists so the LLM can patch
 the structure without writing JS, and so regex/delimiter splits don't need
-an expression at all. An `{llm}` `on` is also allowed — the cell model is
+an expression at all. An `{llm}` `on` is also allowed: the cell model is
 asked to break each cell into the parts.
 
 ### `validate` transformation (#Validate)
@@ -737,8 +737,8 @@ into?: <string> }`. The predicate is evaluated per row; truthy means
 "row passes." The transformation adds two columns to every row, named
 by `into`: `<into>` (boolean) and `<into>_note` (the rendered
 `message` for failing rows, otherwise `null`). `into` is a short name
-for the check itself (`Email_ok`, `City_Country_ok`) — not one fixed
-reserved pair — so several checks annotate the same table side by
+for the check itself (`Email_ok`, `City_Country_ok`), not one fixed
+reserved pair, so several checks annotate the same table side by
 side. Without `into`, the legacy names `_valid` and `_validation`
 apply, so a version-1 flow replays unchanged. The column list is
 otherwise unchanged.
@@ -747,12 +747,12 @@ When `threshold` is set, the transformation also computes the failure
 rate over the whole row stream. If `failures / total > threshold`, the
 transformation aborts the whole request through the recovery loop with
 the error `validation failed: <rate>% > <threshold>%`. Both percentages
-carry as many decimals as it takes for the printed inequality to be *true* —
+carry as many decimals as it takes for the printed inequality to be *true*:
 a 20.4% rate over a 20% threshold reads "20.4% > 20%", never the
 whole-percent nonsense "20% > 20%", since that same sentence is what the
 recovery model reads. Without
 `threshold`, validation is purely additive: rows are annotated, never
-dropped — the user follows up with a `filter` if they want to drop the
+dropped: the user follows up with a `filter` if they want to drop the
 bad rows.
 
 A check's columns persist across subsequent transformations the way
@@ -761,14 +761,14 @@ check with a different `into` adds its own pair next to the first,
 and only a `validate` that reuses the same `into` (or the legacy
 default pair) overwrites it. A follow-up request that doesn't name a
 check ("drop the bad rows") targets the most recent `validate`'s flag
-column; "rows failing any check" combines every flag column — both
+column; "rows failing any check" combines every flag column: both
 are patch-prompt rules, not engine behavior.
 
 A `validate` may only read columns that exist when it runs: source
 columns, columns created by transformations ordered before it, and the
 legacy `_valid` / `_validation` pair. A patch that orders a `validate`
-before the step that computes its input — or that reads a column nothing
-creates — is rejected before anything runs and fed back through the
+before the step that computes its input, or that reads a column nothing
+creates: is rejected before anything runs and fed back through the
 recovery loop, naming the missing column. Steps whose output columns
 can't be known without running them (`join`, `pivot`) suspend the check
 for the transformations after them.
@@ -776,11 +776,11 @@ for the transformations after them.
 The mirror-image guard: a patch that **declares** a new column in
 `columns` that no transformation writes (no `mutate`/`split`/`validate`
 targets it, it is not a source key, and no reshaping step could produce
-it) is rejected the same way — declaring a column never fills it, so
+it) is rejected the same way: declaring a column never fills it, so
 committing would be a silent no-op. The no-op is silent because the
 committed `columns` are reconciled against the derived rows' actual keys
 (`syncColumnsToRows`): a declared column that no row carries is dropped,
-so the grid — which renders exactly the reconciled `columns` — shows
+so the grid, which renders exactly the reconciled `columns`, shows
 nothing, not even an empty header. That reconciliation is deliberate
 (the grid only shows data-backed columns); the fix belongs at the patch,
 not the grid. Weak models produce exactly this shape ("add a Country
@@ -796,7 +796,7 @@ tuple; the distinct values in `on` become new columns, each filled
 with the corresponding `values` cell aggregated by `agg` (default
 `first`). Missing combinations render as `null`. The column list
 shrinks from `index + on + values + everything else` down to `index +
-<one column per distinct on-value>` — non-index, non-on, non-values
+<one column per distinct on-value>`: non-index, non-on, non-values
 columns are dropped.
 
 `unpivot` reshapes wide → long. Shape: `{ kind: "unpivot", id:
@@ -809,9 +809,9 @@ values_to]`.
 Both transformations fail fast on a zero-row group (empty input) by
 producing zero output rows.
 
-Both derive output column names — a pivot's from the *data* in `on`, an
-unpivot's from `names_to`/`values_to`, which usually come from the defaults
-— so either can land on a name the step's own key columns already use. The
+Both derive output column names: a pivot's from the *data* in `on`, an
+unpivot's from `names_to`/`values_to`, which usually come from the defaults,
+so either can land on a name the step's own key columns already use. The
 key columns win and the derived name is renamed `<name>_2`, the same
 collision rule a `join` follows: a `metric` cell whose value is literally
 `region` becomes the column `region_2` next to the `region` index, and
@@ -827,7 +827,7 @@ the current table registered as a relation named `t`. A
 one value per row; inside `filter.pred` it is a boolean predicate;
 inside `sort.by[].key` a scalar sort key; inside `group.agg` an
 aggregate expression. `{sql}` does not appear inside `{llm}` or
-`{js}` and vice versa — each transformation slot takes exactly one
+`{js}` and vice versa: each transformation slot takes exactly one
 expression shape.
 
 Parse failures, type mismatches, and runtime SQL errors flow through
@@ -844,38 +844,38 @@ signal cancelled) run unchanged. If DuckDB has already returned its
 result rows and the runtime is still applying them when the cancel
 arrives, the post-query apply phase is interrupted between rows the
 same way an LLM chunk apply is. Cancelling a SQL transformation
-leaves the DuckDB relation `t` registered and intact — only the
+leaves the DuckDB relation `t` registered and intact: only the
 half-applied spec change reverts.
 
 ### Web UI (#WebUI)
 
-The browser front-end mirrors the CLI's interaction shape
-— a chat sidebar for natural-language requests and the table view to
+The browser front-end mirrors the CLI's interaction shape:
+a chat sidebar for natural-language requests and the table view to
 the right of it. The boundary between the two is a drag handle: hovering
 it shows the column-resize cursor, dragging it resizes the sidebar
 (clamped to a sensible range), and the width persists like a setting.
 
-Closing or refreshing the tab with **work in progress** — any committed
-transformation, or an undoable step — first raises the browser's own
+Closing or refreshing the tab with **work in progress**: any committed
+transformation, or an undoable step: first raises the browser's own
 are-you-sure confirmation, so a stray refresh cannot silently discard
 evaluated rows or edits. A tab with nothing to lose closes freely.
 Cell editing and column-reorder happen through normal
-browser gestures but ultimately produce spec patches — the same shape
-the LLM produces — so undo/redo, history, and replay against the source
+browser gestures but ultimately produce spec patches: the same shape
+the LLM produces, so undo/redo, history, and replay against the source
 all work unchanged. Scrolling and column-resize (dragging the boundary
 between two column headers) are view-only gestures: they change what's
 on screen but touch no spec and leave no history entry.
 
 A table can be loaded from three sources, and each is its own
 first-class action: **Open sample…**, **Open local…**, and **Open
-URL…**. Samples are no longer buried inside the URL dialog — a user
+URL…**. Samples are no longer buried inside the URL dialog, a user
 looking for a bundled file should not have to guess it lives behind
-"URL". The toolbar surfaces them under one **Open** menu button — a
+"URL". The toolbar surfaces them under one **Open** menu button: a
 document icon, the word "Open", and a chevron; clicking anywhere on it
 drops a plain menu (there is no split default action). The menu is
 grouped under small headers:
 
-- **Recent** — a submenu entry at the top, greyed (disabled) until
+- **Recent**: a submenu entry at the top, greyed (disabled) until
   something has been loaded. Hovering or tapping it opens a side panel
   beside the menu listing the last 5 successful loads,
   newest first, each tagged with its kind (`sample`, `URL`, `local`,
@@ -883,18 +883,18 @@ grouped under small headers:
   local or flow entry re-opens the matching file picker (a browser
   cannot silently reopen a local file), with the name serving as the
   reminder of what to pick. The list persists across reloads
-  (localStorage, best-effort). A stored sample address can go stale —
-  each deployment serves its samples under its own base path — so
+  (localStorage, best-effort). A stored sample address can go stale:
+  each deployment serves its samples under its own base path: so
   clicking a sample entry re-resolves the address by name against the
   samples bundled in the running app, falling back to the stored
   address only when the name is no longer bundled. An entry whose
-  reload fails anyway (say, HTTP 404 — the file is gone) is removed
-  from the list, and the error toast ends with "removed from Recent" —
+  reload fails anyway (say, HTTP 404: the file is gone) is removed
+  from the list, and the error toast ends with "removed from Recent":
   a dead entry never lingers to fail twice.
-- **Data** — **Open sample…** (raises the sample picker; clicking a
+- **Data**: **Open sample…** (raises the sample picker; clicking a
   sample loads it straight away), **Open local…** (the native file
   picker), and **Open URL…** (the URL dialog).
-- **Recipe** — **Open .flow & run on current data…** (below), greyed
+- **Recipe**: **Open .flow & run on current data…** (below), greyed
   until a table is loaded.
 
 The URL dialog is URL-only: it accepts a typed address and no longer
@@ -902,9 +902,9 @@ lists samples.
 
 Opening a table is a **fresh start**. The load already clears the undo
 history, the changed-cell marks, the page, and the selection; it clears
-the **chat thread** with them, so `Loaded <name> — N rows, M columns.`
+the **chat thread** with them, so `Loaded <name>: N rows, M columns.`
 is the new thread's first message. Keeping the old conversation would
-strand it — its replies point at history entries the load just threw
+strand it: its replies point at history entries the load just threw
 away, so they would render as undone steps against a table they never
 touched. Every route in resets the same way: the Open menu, a Recent
 entry, a URL, a sample, a file dropped on the empty page, and a tour's
@@ -912,12 +912,12 @@ own load step. Replaying a `.flow` is not a new table and never clears
 the thread.
 
 **Open .flow & run on current data…** replays a saved recipe onto the
-table already open in the UI — one picker, for the `.flow` file only
+table already open in the UI: one picker, for the `.flow` file only
 (the data is the current table's source, so no second file is asked
 for; the entry is disabled until a table is loaded). The flow is
 validated (version 1 or 2, a well-formed spec), then checked against
 the current table: a flow that reads a column the current data does
-not have is refused with a **flow error dialog** — a modal that names
+not have is refused with a **flow error dialog**, a modal that names
 the missing column and the current columns, dismissed with OK (a
 modal, not a toast, so it can't be missed, and it renders on the
 phone layout the same way). The same dialog surfaces an unreadable or
@@ -930,20 +930,20 @@ the thread records what was asked the same way a typed request does.
 The replay replaces the spec as one history entry, so a single undo
 returns to the table as it was, and the assistant reply reports the
 result: an `Executed steps:` numbered list (the step labels below)
-followed by `Ran <flow> — N rows, M columns.`. Sample files to try
+followed by `Ran <flow>: N rows, M columns.`. Sample files to try
 this with live in `spec/user-data/`.
 
 A **join needs its second file**, and in the browser that file has to be
-handed over — there is no working directory for `with` to resolve
+handed over: there is no working directory for `with` to resolve
 against. <!-- #LookupJoin --> So the app asks for it, whether the join
 came from a typed request ("Join with country-codes.csv on Country") or
-from a replayed `.flow`: a modal asks for the join's second file — one
-fixed wording, whatever the step names — and offers **Choose file…**,
+from a replayed `.flow`: a modal asks for the join's second file, one
+fixed wording, whatever the step names, and offers **Choose file…**,
 which opens the normal file picker. When the join names a file, the
 picked one is staged under the *name the join asked for*, so a file
 renamed on disk still satisfies the step. When the user named no file
 ("Join with a .csv on Country"), the model emits the join with
-`with: null` — it never invents a filename — and the picked file's own
+`with: null`, it never invents a filename, and the picked file's own
 name is written into the step, so the executed-steps reply and a saved
 flow show the real file. Then the run continues and the join finds its
 rows.
@@ -951,7 +951,7 @@ rows.
 Two details follow from the browser, not from taste. The modal exists
 because a picker may only open from a click: a typed request's own click
 is long spent by the time the model answers, so the modal collects a
-fresh one — the same reason the post-run save asks for one more click.
+fresh one: the same reason the post-run save asks for one more click.
 And **Cancel** drops the whole step rather than half-running it: a
 cancelled chat request leaves the spec untouched (no history entry, no
 error), and a cancelled flow leaves the table exactly as it was.
@@ -959,65 +959,65 @@ error), and a cancelled flow leaves the table exactly as it was.
 Staged lookups last for the session. A second join against the same
 name reuses the staged rows without asking again, and switching models
 keeps them; a reload does not, because a browser cannot silently reopen
-a local file. Loading a new table keeps them too — a lookup is a file of
+a local file. Loading a new table keeps them too: a lookup is a file of
 its own, not part of the table.
 
-While a run streams — a replayed flow or a chat request — the chat
+While a run streams, a replayed flow or a chat request, the chat
 thread itself shows **live run progress** <!-- #OpenFlow --> in place
 of a modal, the way coding agents narrate their work inline. A large
 file with AI cells can take minutes, so the run gets progress, a log,
 and a way out:
 
-- Under the pulsing `Running…` line, a status line —
-  `Step i of N — <step label>`, plus `rows done / total` while an
-  AI-cell step streams — over a thin progress bar that advances step by
+- Under the pulsing `Running…` line, a status line:
+  `Step i of N: <step label>`, plus `rows done / total` while an
+  AI-cell step streams: over a thin progress bar that advances step by
   step (fractionally within a streaming step). The label is derived from
-  the step itself — kind, target columns/keys, and an expression marker,
+  the step itself: kind, target columns/keys, and an expression marker,
   e.g. `mutate EventGroup (AI)`, `filter (js)`,
-  `group by EventGroup → total_players, sections, …` — so a step that
+  `group by EventGroup → total_players, sections, …`, so a step that
   calls the per-row model is recognizable by its `(AI)` marker.
 - A **request detail** toggle, collapsed by default, that expands a
   read-only box feeding one line per event as the run progresses: each
-  step as it starts — followed by the step's expression lines
+  step as it starts: followed by the step's expression lines
   (`pred: row.Country === 'USA'`, an AI cell's prompt), truncated, so
   the detail shows the exact code behind the label rather than
-  repeating the status line — and each streamed cell
+  repeating the status line, and each streamed cell
   (`<column> · row <n>: <before> → <after>`), pinned to the newest
-  line. Only the newest 500 lines are kept — a bound, not a transcript.
+  line. Only the newest 500 lines are kept, a bound, not a transcript.
 - The chat input's **Stop** button (send swaps to stop while a request
   streams) cancels either kind of run. Cancelling aborts the replay and
-  leaves the table exactly as it was — nothing half-applied — with an
-  info toast (`Flow cancelled — table unchanged.`, plus a matching chat
+  leaves the table exactly as it was, nothing half-applied, with an
+  info toast (`Flow cancelled: table unchanged.`, plus a matching chat
   line) for a flow, and the usual cancelled-request handling for a chat
   request.
 
 The progress state is published as soon as the run starts, for flows
-and chat requests alike — a deterministic (JS/SQL) request just flashes
+and chat requests alike: a deterministic (JS/SQL) request just flashes
 its steps briefly. On the phone layout, where no chat sidebar is
 visible, the table's streaming banner carries the same status line and
 a stop icon (see the narrow-viewport section).
 
 Before any file is loaded the table area shows an **empty page**: the
 TamedTable mark, the line **"What table can I tame?"**, and the same
-three open actions stacked as buttons — **Open sample…**, **Open
-local…**, **Open URL…** — so the first run and the toolbar offer the
+three open actions stacked as buttons: **Open sample…**, **Open
+local…**, **Open URL…**, so the first run and the toolbar offer the
 identical choices. A quiet line directly under the buttons reads
 **"…or drop a file here"**. A gap below that, a line in the same style
-as the heading reads **"New here? Check Tours."** — the link opens the
+as the heading reads **"New here? Check Tours."**: the link opens the
 Tours panel, so a first-time visitor finds the guided path without
 hunting for the toolbar button. The same line appears on the phone's
 empty page.
 
 The empty page is also a drop target: dragging a file from the desktop
 onto it highlights the page (a tint plus a dashed border), and dropping
-loads the file exactly like **Open local…** — same four formats, same
+loads the file exactly like **Open local…**: same four formats, same
 "Loaded …" message. A file whose extension isn't a supported format
 surfaces the standard "Could not open file …" error toast. With a table
-loaded the table area stays a drop target — same drag highlight — but a
+loaded the table area stays a drop target, same drag highlight, but a
 drop never replaces the table silently: a **replace-table confirmation**
 names the dropped file and warns that loading it discards the current
 table and its steps. Confirming loads the dropped file exactly like the
-empty-page drop — a fresh start, thread and history cleared by the load;
+empty-page drop: a fresh start, thread and history cleared by the load;
 cancelling (the button, Escape, or the backdrop) leaves the table,
 thread, and history untouched. The file's bytes are read at drop time,
 so confirming needs no second picker.
@@ -1026,36 +1026,36 @@ Saving mirrors that shape: one **Save** menu button (the disk icon,
 the word "Save", a chevron; plain dropdown, no default click),
 disabled until a table is loaded. Its menu is grouped the same way:
 
-- **Data** — one **Save <format>…** entry per supported format (CSV,
+- **Data**: one **Save <format>…** entry per supported format (CSV,
   JSONL, Parquet, Arrow). Each serializes the current rows in that
   format and opens the Save dialog with a matching suggested name
-  (the source file's stem plus the format's extension — the source's
+  (the source file's stem plus the format's extension, the source's
   own format entry suggests the original name back), so the user can
   keep the format they opened, switch formats, or rename.
-- **Recipe** — **Save recipe as .flow…** (the replayable `.flow`
+- **Recipe**: **Save recipe as .flow…** (the replayable `.flow`
   file) and **Save recipe as Python…**, which
   translates the flow into a standalone Python script.
 
 The Python export is
-model-backed — the selected provider's chat model does the
-translation — so unlike every other save it needs a key for the selected
+model-backed: the selected provider's chat model does the
+translation, so unlike every other save it needs a key for the selected
 provider, and a missing key fails fast with a provider-named toast such as
-`Exporting to Python requires a Google API key — open Settings and add one.`
+`Exporting to Python requires a Google API key: open Settings and add one.`
 (or `an OpenAI` / `an Anthropic`). It also refuses a flow that carries an AI
 cell (which has no deterministic Python form), surfacing a toast that points
 the user to save it as a flow instead. Because that model call takes time, the
 export runs behind the [save gate](#the-save-gate-savegate): the dialog opens
 on the click, names what it is doing ("Writing the Python script"), streams the
 script into the dialog as the model writes it, and only then enables
-**Save file…** — the
+**Save file…**: the
 fresh click the picker needs. This is the browser's counterpart to the CLI's
 `:save-py`.
 
 A save (or any other) notification toast does not wait to be clicked
 shut: it fades on its own after roughly the time it takes to read it,
 so a routine "Saved …" note clears itself. Hovering a toast pauses that
-countdown — long enough to read a longer message or to click an error
-toast's **Copy report** action — and the dismiss button still closes one
+countdown: long enough to read a longer message or to click an error
+toast's **Copy report** action, and the dismiss button still closes one
 at once.
 
 A URL load is a plain `GET` against the entered address; the format is
@@ -1064,30 +1064,30 @@ header as a fallback. Only `http://` and `https://` URLs are accepted;
 `http://` shows a soft "unencrypted" hint but is not refused. Network
 or CORS failures, non-2xx responses, and unrecognized formats surface
 as inline errors inside the dialog, which stays open so the user can
-correct the URL — the dialog does not produce a toast for these.
+correct the URL: the dialog does not produce a toast for these.
 Bundled sample files live under the deployed site's `samples/`
 directory; their list is frozen at build time by the Vite config and
-surfaced in the **Open sample…** picker dialog — one click loads the
+surfaced in the **Open sample…** picker dialog: one click loads the
 sample. The URL dialog stays URL-only.
 
 The picker leads with a **recommended** set rather than the whole
 bundle: a first-time visitor opening it should meet a handful of files
 worth opening, not sixty test fixtures. The recommended rows are the
-sample each **showcase tour** loads — one per homepage feature section,
+sample each **showcase tour** loads: one per homepage feature section,
 listed in homepage order and labelled with that section's title
 (`Lazy AI execution`, `Clean up`, `Enrich & extract`, …), with the
 filename underneath as the secondary line. The picker, the Tours panel,
 and the homepage therefore tell one story: the file the tour opens is
-the file the picker recommends. Nothing is hand-maintained — the list
+the file the picker recommends. Nothing is hand-maintained, the list
 is derived at build time by reading each showcase tour's `@cat-…` tag
 and the file its `load "…"` step names, so renaming a fixture or adding
 a section moves the picker with it.
 
-Below the recommended rows sits **Show all N bundled files** — a
+Below the recommended rows sits **Show all N bundled files**: a
 disclosure that expands the complete bundled list (today's flat,
 filename-only listing, sorted). It stays collapsed until asked for: the
 full bundle is a developer's testing surface, not a first impression.
-Goldens (`*-expected.*` — the *outputs* tours compare against, never
+Goldens (`*-expected.*`: the *outputs* tours compare against, never
 inputs a user would open) are left out of the picker entirely, in both
 tiers; they are still served under `samples/` because the tours fetch
 them to show expected output.
@@ -1099,32 +1099,32 @@ CLI session; the file dialog handshake takes the place of `:load`,
 and the in-browser tab IS the session.
 
 `{sql}` transformations work in the browser exactly as they do in the
-CLI — the same SQL engine runs client-side. It loads on the first SQL
+CLI: the same SQL engine runs client-side. It loads on the first SQL
 request of a session, so a session that only ever loads a CSV or JSONL
 and runs plain transformations never pays for it.
 
 The table view paginates. Rows display one fixed-size page at a time
 with a pager that jumps to the first, previous, next, last, or a
 numbered page. The page size is a view setting the web shell owns,
-sized to one AI-cell **concurrency wave** — rows per batch × batches in
+sized to one AI-cell **concurrency wave**: rows per batch × batches in
 flight (100 rows with the defaults; see the env vars in
-[code-contract.md](code-contract.md#headless)) — so while an AI
+[code-contract.md](code-contract.md#headless)), so while an AI
 step streams, the visible page fills in as each wave of concurrent
 batches lands. When the active provider's defaults pin a cell batch
-size (OpenRouter's 5), the wave — and so the page — shrinks with it:
+size (OpenRouter's 5), the wave, and so the page, shrinks with it:
 5 × 5 = 25 rows. Switching provider re-derives the page size and clamps
 the current page into range. Paging is a view concern, like the CLI's
 viewport: it never touches the spec, so it survives requests, undo, and
 redo. Loading a file opens page one; a request that shortens the table
 clamps the current page back into range.
 
-Clicking a cell selects it — the cell tints and outlines. Selection is
+Clicking a cell selects it: the cell tints and outlines. Selection is
 view state (it feeds the voice prompt's context); saving is confirmed
 by its toast, and run activity shows in the chat thread, so the table
 carries no separate status readout.
 
-The settings panel is three sections — **Model config**, **Execution**,
-**Diagnostics** (plus **Add to home screen** on a phone) — each under a heading
+The settings panel is three sections: **Model config**, **Execution**,
+**Diagnostics** (plus **Add to home screen** on a phone), each under a heading
 that is deliberately larger and heavier than the questions *inside* a section
 ("Already have an API key?", "No API key?"). Without that gap the sub-questions
 read as the structure and the sections as labels on it, which is how it looked
@@ -1134,8 +1134,8 @@ competed with the one around it.
 
 The Model config section opens on a **model chooser** the user connects
 providers to by pasting a key. There is no list of providers to pick from first: the key's
-prefix names its own provider, so the panel starts with a single dashed row —
-`No provider or model added.` — an input, and an Add button. The chooser
+prefix names its own provider, so the panel starts with a single dashed row:
+`No provider or model added.`: an input, and an Add button. The chooser
 component, its layout and its test attributes live in
 [spec/packages/model-config/behavior.md](packages/model-config/behavior.md);
 this section covers what the app does with it.
@@ -1143,13 +1143,13 @@ this section covers what the app does with it.
 **Connecting.** Pressing Add (or Enter) hands the key to
 `controller.addKey()`, which detects the provider, checks the key against that
 provider, and only then stores anything. An unrecognised prefix is refused
-before any call goes out — `Key not recognised. Supported prefixes: AQ.Ab…,
+before any call goes out: `Key not recognised. Supported prefixes: AQ.Ab…,
 sk-proj-…, sk-ant-…, sk-or-…, gsk_…, eyJ….` A key the provider rejects reports what
 the provider said, in one sentence naming it. Nothing is stored in either case,
 so a bad key never becomes a setting the user has to hunt down and undo. On
 success the key is saved, that provider becomes the default, and its two fixed
 defaults are pinned (`setConfig({ provider, model, cellModel })`). The card
-appears straight away and its two model rows fill in as the measurements land —
+appears straight away and its two model rows fill in as the measurements land:
 a provider that takes twelve seconds to answer never holds the panel up. The
 numbers are cached under `tamedtable.probes`, so reopening the panel shows them
 without paying for the calls again.
@@ -1157,7 +1157,7 @@ without paying for the calls again.
 The check runs through the app's own fetch, so it obeys the same routing and
 headers a real request does. It makes **exactly one call, with no retries**: the
 normal request path retries a 429 with backoff, which is right for a real
-transformation and wrong here — a user whose billing account is empty would sit
+transformation and wrong here: a user whose billing account is empty would sit
 watching a spinner for a minute to learn what the first response already said.
 An empty OpenAI balance answers 429 with `insufficient_quota`, which is why the
 no-credit case is recognised ahead of the rate-limit one and reads `Your OpenAI
@@ -1168,13 +1168,13 @@ re-measures. The card carries no key field, so a user whose key expired would
 otherwise have to delete the card to fix it.
 
 **No API key at all?** Below the add row sits an `OR` divider and a **Sign in /
-Sign up to Puter.js** button. Puter is a gateway — one account reaches models
-from every vendor — and its credential is a session token only its popup can
+Sign up to Puter.js** button. Puter is a gateway: one account reaches models
+from every vendor, and its credential is a session token only its popup can
 mint, so this is the one provider that cannot be typed in. Clicking calls
 `controller.signInPuter()`, which loads Puter's SDK **at that moment**, opens
 the popup, and connects the token it returns through the same check-then-store
 path a pasted key takes. While that window is open the button reads
-`Signing in…`, and a click on the panel's backdrop no longer closes the panel —
+`Signing in…`, and a click on the panel's backdrop no longer closes the panel:
 the sign-in happens in front of it, and a panel that looks untouched (or is
 gone) when the user comes back reads as a click that never registered.
 Dismissing the window does nothing; any *other* failure, a browser-blocked
@@ -1196,17 +1196,17 @@ default (`controller.selectProvider(p)`); only the selected card shows its two
 model rows, since it is the one that runs. The trash button removes the provider
 and clears its key (`controller.removeProvider(p)`); if it was the default, the
 default falls back to the last remaining connected provider, or to none, and the
-empty row returns. Changes apply immediately — the footer has only a "Close"
+empty row returns. Changes apply immediately, the footer has only a "Close"
 button, and there is no separate "Save" button.
 
-Text requests route through the selected provider — connect Google and a text
+Text requests route through the selected provider, connect Google and a text
 request goes to Gemini, connect OpenAI and it goes to OpenAI. A natural-language
 chat request therefore needs a key for the selected provider: when that
 provider's key is missing the request never fires and a toast names the provider
-it needs, e.g. `Text requests require a Google API key — open Settings and add
+it needs, e.g. `Text requests require a Google API key: open Settings and add
 one.` (or `an OpenAI` / `an Anthropic` / `a Groq` / `an OpenRouter` / `a
 Puter.js`). A key for
-a different provider does not satisfy the requirement — selecting Google still
+a different provider does not satisfy the requirement: selecting Google still
 needs a Google key even when an Anthropic key is set. This is the same provider
 the voice mic already uses, so text and voice share one key per provider.
 
@@ -1215,13 +1215,13 @@ current transformations against the source, so the table on screen is preserved
 and the new models drive the next request. **Connecting a key rebuilds it too.**
 The engine builds its model clients once, with the key it was handed, so a key
 added after the first request would otherwise sit unused until the page was
-reloaded — every call still failing `Invalid API key` while the card sat there
+reloaded: every call still failing `Invalid API key` while the card sat there
 looking connected. The rebuild keeps the table exactly as the model-switch
 rebuild does, and the next request, typed or spoken, carries the new key.
 
 While a request or flow replay is still running, any change that would
-rebuild the engine — switching provider, or editing the selected provider's
-key — is refused with an error toast (`A request is running — stop it or let
+rebuild the engine: switching provider, or editing the selected provider's
+key, is refused with an error toast (`A request is running, stop it or let
 it finish before switching the provider, model, or key.`). Rebuilding
 mid-run would orphan the committing engine: the chat reply would claim the
 executed step while the rebuilt engine's table never had it. Stop the run
@@ -1230,14 +1230,14 @@ executed step while the rebuilt engine's table never had it. Stop the run
 When a request fails because the API key is wrong or missing, the web shell
 surfaces a toast with a sentence the user can act on: "Invalid API key. Open
 Settings to update your Google key." (or OpenAI / Anthropic). For Google the
-toast adds a second sentence — "If the key is correct, Google now blocks
-unrestricted keys — add an application restriction in Google AI Studio." —
+toast adds a second sentence: "If the key is correct, Google now blocks
+unrestricted keys: add an application restriction in Google AI Studio.",
 because [Google rejects unrestricted keys](https://ai.google.dev/gemini-api/docs/api-key#secure-unrestricted-keys)
 and the symptom is an indistinguishable "API key not valid" response, so a user
 whose key is genuinely fine is told the real fix rather than re-entering the same
 key. A model-not-found error reads "Model not found. The selected model may be
 unavailable." A rate-limit rejection (HTTP 429) reads "Rate limited by the
-Google API. Wait a minute and try again." (or OpenAI / Anthropic) — the request
+Google API. Wait a minute and try again." (or OpenAI / Anthropic), the request
 did not fail because of anything the user wrote, so the message says to retry
 rather than rephrase. An account with no money left is checked **before** the
 rate-limit rule, because it arrives as a 429 too: OpenAI answers an empty
@@ -1249,18 +1249,18 @@ Google API." (or OpenAI / Anthropic). Errors that don't match a known pattern pa
 information is lost. The provider name in the message matches whichever provider
 card is selected.
 
-Every error also lands in the chat as a red `Error:` assistant message — the
+Every error also lands in the chat as a red `Error:` assistant message: the
 toast is ephemeral, the chat entry stays on screen and selectable. Errors come
 in two kinds, decided where the error is raised. **Guidance errors** mean the
 request could not run as asked and the message already says what to do next:
 no file loaded, a missing or invalid API key, model not found, rate limiting,
 a network failure, a cancelled request, or a request already in progress.
-**App errors** are everything else — the recovery budget exhausting after 3
+**App errors** are everything else: the recovery budget exhausting after 3
 attempts, or any failure that matches no known pattern. An app-error chat
 message carries a **Report bug** action (see the request-detail section
 below); a guidance error never does, so a user who simply hasn't loaded a
 file yet is not invited to file an issue. When a new error path is added and
-not classified, it counts as an app error — the safe default costs one extra
+not classified, it counts as an app error, the safe default costs one extra
 button, never a lost bug report.
 
 Toolbar action buttons carry tooltips: Undo names its CLI command
@@ -1274,7 +1274,7 @@ popover listing three gesture hints: double-click to edit a cell, drag a
 column divider to resize columns, and drag a column header to reorder.
 Hovering over the button opens the
 popover; moving the cursor away closes it; clicking toggles it. The web
-chat does not parse colon commands — undo/redo and the saves are toolbar
+chat does not parse colon commands: undo/redo and the saves are toolbar
 actions (the dock's Undo and the app bar's Save menu on mobile), and a
 typed `:undo` goes to the model as plain text.
 
@@ -1282,29 +1282,29 @@ The thread **follows the newest message**. Sending scrolls the sidebar
 down to the bubble just posted and the reply forming under it, and
 anything that lands while the thread already sits at the bottom keeps
 it there. Scrolling up to re-read an earlier reply stops the
-following — the thread stays where it was put, so a long run cannot
-yank it away mid-sentence — until the next send pins it back to the
+following: the thread stays where it was put, so a long run cannot
+yank it away mid-sentence, until the next send pins it back to the
 bottom. A tour that types a query into the input box sends through the
 same path and scrolls the same way.
 
 After a successful request, the assistant chat bubble replies with an
-`Executed steps:` heading and a numbered line per appended step — the
+`Executed steps:` heading and a numbered line per appended step: the
 same human step labels the live progress uses (`1. mutate EventGroup
-(AI)`, `2. filter (js)`), not the generated code — up to 7 numbered
+(AI)`, `2. filter (js)`), not the generated code: up to 7 numbered
 lines, with overflow rendered as `… and N more`. A request that
 appended no step (say, one that only removed a transformation) replies
 `Done.`. A flow replay's reply takes the same shape, with
-`Ran <flow> — N rows, M columns.` as its closing line. The generated
+`Ran <flow>: N rows, M columns.` as its closing line. The generated
 expressions, model, token, and elapsed-time stats are not shown in the
 bubble; they appear only in the expandable detail panel.
 
 The reply **tracks the undo state of the step it reports**. While the
 request's history entry is undone, the bubble's heading reads
 `Undone steps:` and its marker swaps from the solid ok dot to a hollow
-circle — so the thread never claims a step is applied when the table no
+circle, so the thread never claims a step is applied when the table no
 longer shows it. Redo (or a history jump forward) restores the
 `Executed steps:` heading and the solid dot. A reply whose entry was
-dropped from history entirely — undone, then forked away by a new edit —
+dropped from history entirely: undone, then forked away by a new edit:
 stays marked undone for good.
 
 Clicking **request detail** below an assistant message expands an
@@ -1312,21 +1312,21 @@ inline panel with three sections. A small copy icon to the right of the
 toggle copies the panel's full text to the clipboard (it turns green
 briefly to confirm). Next to the copy icon, a **Report bug** action (a
 bug icon) starts the same send-a-bug-report flow the Settings panel
-offers — it first records the flagged reply and the request text that
+offers: it first records the flagged reply and the request text that
 produced it as a diagnostics event, so the prefilled GitHub issue leads
 with the exchange being reported. Every reply to a completed request
 carries the action (a wrong answer is a bug even when nothing turned
 red), and an app-error message carries it even without a request detail;
 guidance errors never do. A flow replay's reply counts as a completed
-request and carries the action too — it makes no model call, so it has
+request and carries the action too: it makes no model call, so it has
 no request detail to expand, but a replayed recipe can still land a
 wrong table and that is worth reporting. The **request** section shows the
 user's original text and one summary line: model name(s), call count,
 total token count, and elapsed seconds. The **response** section lists
 each turn with its outcome label (`committed`, `rejected`, or an
 evaluation error) followed by the RFC 6902 patch ops JSON for that
-turn. The **cell samples** section — shown only when at least one
-`{llm}` mutate transformation ran — lists up to 3 before→after pairs
+turn. The **cell samples** section: shown only when at least one
+`{llm}` mutate transformation ran: lists up to 3 before→after pairs
 per column, formatted as `column: "before" → "after"`.
 
 #### Condensed toolbar (medium width)
@@ -1337,13 +1337,13 @@ bar overflow the viewport, the toolbar **condenses**: the file readout is
 hidden and every action button drops its text for an icon (the tooltip still
 names it), so Open, Save, Undo, Redo, the theme toggle,
 Settings, and Tours stay on one line that fits. Mobile-friendliness means the
-app never scrolls sideways at any width — the row condenses instead of spilling.
+app never scrolls sideways at any width: the row condenses instead of spilling.
 
 #### Narrow viewport (mobile)
 
 At a phone-width viewport (768 px and below) the side-by-side
 sidebar-and-table layout does not fit, so the app switches to a
-table-first **dock layout**. The same controller drives both — only the
+table-first **dock layout**. The same controller drives both: only the
 chrome differs; nothing about loading, transforming, saving, undo/redo,
 or the engine changes.
 
@@ -1351,42 +1351,42 @@ or the engine changes.
   name and a `‹ page / total ›` pager with prev/next buttons when the
   table spans more than one page (the same paging the desktop
   pagination bar drives). The open and save actions live in the Menu
-  drawer, not the app bar — corner icons are too small to tap.
+  drawer, not the app bar: corner icons are too small to tap.
 - The table fills the screen below the app bar. The **page itself**
-  scrolls the table (both directions — the app bar and dock stay
+  scrolls the table (both directions: the app bar and dock stay
   pinned to the screen), so the browser's own scrollbar shows the true
   position in the table. The header row and row-index column stay
   frozen: the header sticks below the app bar, the index column to the
   left edge. The table's surface spans the whole scrollable width, so
   scrolling right never exposes the tinted page background behind the
-  cells — and a tour spotlight anchored to the table covers the visible
+  cells, and a tour spotlight anchored to the table covers the visible
   columns wherever the page is scrolled.
 - **Pinch-to-zoom zooms the table, not the chrome.** The browser's own
   page zoom would shrink the app bar, dock, and sheets along with the
   cells (fixed elements scale with the page), so the phone layout
   suppresses it and handles the pinch itself: a two-finger pinch over
-  the table scales just the table — cells, header, and index column
-  together — between 0.5× and 2×, anchored at the fingers' midpoint.
+  the table scales just the table: cells, header, and index column
+  together: between 0.5× and 2×, anchored at the fingers' midpoint.
   The app bar, dock, and sheets keep their natural size at any zoom,
   the frozen header still sticks right under the app bar, and the
   zoomed table still scrolls as the page. The zoom resets to 1× when a
   new file is opened.
 - While a run streams, the table's sticky banner is the phone's stand-in
   for the chat thread's live progress (no sidebar is visible): it shows
-  the same `Step i of N — <step label> · rows done / total` status line
+  the same `Step i of N: <step label> · rows done / total` status line
   and a stop icon that cancels the run like the desktop Stop button.
-  Before the first step lands — the model is still writing the patch —
+  Before the first step lands, the model is still writing the patch:
   it reads `Running…`. The status line and stop icon stay pinned to the
   visible left edge while the page scrolls sideways (the banner spans
   the whole table width; its content must not scroll off screen).
-- A persistent **bottom dock** carries five buttons — **Menu**,
-  **Undo**, **History**, **Type**, and **Speak** — a dark bar with white
+- A persistent **bottom dock** carries five buttons: **Menu**,
+  **Undo**, **History**, **Type**, and **Speak**: a dark bar with white
   icons in both themes. Undo is a one-tap button (it greys when there is
   nothing to undo). Undo, History, Type, and Speak are disabled until a
   table is loaded; **Menu stays live** so the open actions, Settings,
   and Tours are reachable even before a file is loaded.
 - **Menu** opens a left **drawer** carrying the desktop toolbar's Open
-  and Save menus expanded in full — the same menu model the desktop
+  and Save menus expanded in full, the same menu model the desktop
   dropdowns render (identical items, icons, order, and disabled
   states), listed under **Open** and **Save** headings with separator
   lines between the groups instead of nested dropdowns. **Recent**
@@ -1394,9 +1394,9 @@ or the engine changes.
   entries). Below them: a dark-mode toggle, Settings, and Tours.
 - **Type**, **Speak**, and **History** each raise a **sheet** that takes
   the dock's place at the bottom, so the table stays in view above it:
-  - **Type** is a composer — a field with a send button, in a sheet
+  - **Type** is a composer, a field with a send button, in a sheet
     only as tall as the field itself. The field starts one line tall
-    and **grows with the draft** — a pasted or typed long text wraps
+    and **grows with the draft**: a pasted or typed long text wraps
     and the field expands line by line up to five lines, then scrolls
     inside (the way phone messaging apps behave); it shrinks back as
     text is deleted and returns to one line when the draft clears. The
@@ -1405,7 +1405,7 @@ or the engine changes.
     does the typing, and the sheet rides on top of it: phone browsers
     slide the keyboard over the page without moving `fixed` elements,
     so the composer sheet tracks the visual viewport and rises by the
-    keyboard's height — the field always stays visible, with no dead
+    keyboard's height: the field always stays visible, with no dead
     space between it and the keys. Only the composer follows the
     keyboard this way; the dock and the Speak/History sheets stay pinned
     to the screen bottom, so a transient visual-viewport shift (the
@@ -1415,9 +1415,9 @@ or the engine changes.
   - **Speak** records (a live waveform, nothing recognized yet); the send
     button stops recording, transcribes, runs the request, and lowers the
     sheet on its own. Cancel discards.
-  - **History** shows the undo timeline — newest at the top, each step
+  - **History** shows the undo timeline: newest at the top, each step
     carrying the same status marker the chat panel's replies use (a solid
-    ok dot for an applied step, a hollow circle for an undone one — one
+    ok dot for an applied step, a hollow circle for an undone one: one
     visual language for step state, not a second icon logic), the current
     point highlighted, already-undone steps dimmed below it, a relative
     time per step. Tapping a step jumps straight to it; **Undo** / **Redo**
@@ -1429,7 +1429,7 @@ or the engine changes.
   step changed tint exactly as on desktop (the tint is the signal; the
   hover `was:` tooltip is a pointer affordance the phone does without),
   the marks survive undo/redo the same way, and the **reveal scroll**
-  pans the page to the first changed column — corrected for the frozen
+  pans the page to the first changed column, corrected for the frozen
   row-number column, so a revealed column never hides under it at the
   left edge.
 - **Staying in a finished tour** on the phone shows the same replay
@@ -1444,15 +1444,15 @@ or the engine changes.
   lands on the visible composer; the load step (narrated as **"Opening the
   sample …"**) points at the empty page's **Open sample…** button, and a
   table step points at the grid. The closing **"Voilà"** step highlights
-  the table — the same anchor the desktop tour uses.
+  the table, the same anchor the desktop tour uses.
 
-In a normal browser tab the phone browser draws its own bars — the
-address bar on top, on some browsers a navigation bar at the bottom —
+In a normal browser tab the phone browser draws its own bars: the
+address bar on top, on some browsers a navigation bar at the bottom,
 which shrink the app, and it slides them away only when the page
 really scrolls under a finger. Because the page is the table's
 scroller, swiping through the table hides the bars naturally. The page
-always keeps at least a bar's worth of scroll room — so even the empty
-page or a short table page can be swiped to dismiss the bars — and the
+always keeps at least a bar's worth of scroll room, so even the empty
+page or a short table page can be swiped to dismiss the bars, and the
 layout grows into the reclaimed space, so the dock is never covered by
 the bottom bar. On desktop nothing scrolls; the layout is fixed to the
 window as before.
@@ -1469,12 +1469,12 @@ identically to the desktop app; the dock layout is purely a
 presentation choice keyed off viewport width and flips live as the
 window (or device) is resized.
 
-→ [code-contract.md — Extended transformations, SQL, and the web UI](code-contract.md#extended-transformations-sql-and-the-web-ui)
+→ [code-contract.md: Extended transformations, SQL, and the web UI](code-contract.md#extended-transformations-sql-and-the-web-ui)
 
 ### Diagnostics log (#Diagnostics)
 
 When a bug bites in the browser, the user clicks one action and gets a
-self-contained report to paste into a Claude chat — no DOM spelunking, no
+self-contained report to paste into a Claude chat, no DOM spelunking, no
 console digging. The app keeps a small rolling log of recent events; the
 report is that log plus the app version and a key-free config snapshot,
 written as a markdown doc.
@@ -1483,12 +1483,12 @@ The app records an event at four moments, each carrying the context that
 explains it:
 
 - every toast the user sees (an error or an info note);
-- every model request that fails — its method, URL, the SHA-256 request
+- every model request that fails: its method, URL, the SHA-256 request
   fingerprint, and the first 2 KB of the request body;
-- a tutorial replay miss ("no recording for this request") — the active
+- a tutorial replay miss ("no recording for this request"), the active
   tour and scenario plus the missing fingerprint, the exact pair that
   turns a long debugging session into a two-minute diagnosis;
-- a chat reply the user flags with **Report bug** — the flagged reply's
+- a chat reply the user flags with **Report bug**: the flagged reply's
   text and the request that produced it, so the report leads with the
   exchange being reported.
 
@@ -1497,7 +1497,7 @@ tutorial feature and scenario, the provider, model, and cell model, how
 many transformations the current spec holds (a count, never the data),
 the last few chat messages, the app version, and the browser's user-agent.
 
-The log is bounded — the newest 20 events and roughly 64 KB, whichever
+The log is bounded: the newest 20 events and roughly 64 KB, whichever
 bites first, evicting the oldest. It lives in the browser under
 `tamedtable.diagnostics` and persists across file loads and sessions, so a
 report gathered after a bug still carries the events that led up to it. Where
@@ -1510,9 +1510,9 @@ shaped like an API key (`sk-…`, `AIza…`) or an auth header
 the per-provider key fields outright. A pasted report is safe to share.
 
 Three actions live in Settings, in one row under the Diagnostics
-heading — which already says what they are about, so the labels need
+heading, which already says what they are about, so the labels need
 not repeat it. **Report a bug** (the primary button) copies the full report to the clipboard and opens a prefilled
-GitHub issue on the maintainers' tracker — the report rides in the issue
+GitHub issue on the maintainers' tracker, the report rides in the issue
 body, truncated to a raw budget small enough (2,000 chars) that even
 percent-encoded (~3× for JSON-heavy markdown) the URL stays well under
 GitHub's ~8 KB limit, with the clipboard copy as the backstop for a long
@@ -1524,13 +1524,13 @@ request-detail row or an app-error reply (see the Web UI section)
 records the flagged exchange, then runs the same send-a-bug-report flow.
 The report lists events newest first.
 
-→ [code-contract.md — Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
+→ [code-contract.md: Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
 
 ## Lazy AI execution (#LazyExec)
 
 An AI step runs on the page you are looking at, not on the whole table:
-preview the result on a screenful of rows for cents, then run the rest — with
-the price and time shown first — only when it looks right. This section owns
+preview the result on a screenful of rows for cents, then run the rest: with
+the price and time shown first: only when it looks right. This section owns
 the web app's page-first execution: row state, the large-file dialog and the
 shuffled view, the progress indicators, the run-on-all and save confirmation,
 and Simple mode. Deterministic steps and the batch CLI keep their eager
@@ -1538,16 +1538,16 @@ behavior unchanged.
 
 ### Worked example
 
-1. Open a 25,000-row file. The **large-file dialog** asks once — one click
+1. Open a 25,000-row file. The **large-file dialog** asks once, one click
    on **Load shuffled** (the primary default) or **Load in original order**.
 2. Type *"add a Category column"*. The visible page fills within one
    concurrency wave; the readout says **100 of 25,000 rows evaluated** and
    the pager marks every other page as pending.
-3. Page around. Opening a page evaluates exactly that page's lagging rows —
+3. Page around. Opening a page evaluates exactly that page's lagging rows,
    never more than one page of AI calls is in flight at a time.
 4. Click **Run on all rows**. The estimate dialog shows rows remaining,
    estimated tokens, cost, and time; confirm and a progress bar with a
-   cancel button takes over. Cancelling keeps every finished row — a re-run
+   cancel button takes over. Cancelling keeps every finished row, a re-run
    touches only pending and failed rows.
 5. **Save.** Nothing pending → the file writes immediately, in the original
    row order. Rows still pending → the same estimate dialog first, because a
@@ -1556,25 +1556,25 @@ behavior unchanged.
 ### The page is the unit of AI work
 
 Only steps with `{llm}` cells are lazy. A new AI step evaluates the rows in
-view immediately — that preview is the point — and leaves the rest pending.
+view immediately (that preview is the point) and leaves the rest pending.
 Opening a pending page then evaluates **exactly that page's** lagging rows:
 progress climbs one page at a time (100 → 200 → …), and the other pages stay
 pending with their pager marks until the reader opens them. That holds even
 when repeated data means a page's answers are already cached from an earlier
-page — the cache makes filling that page free when it opens, but it never
+page: the cache makes filling that page free when it opens, but it never
 silently completes pages the reader hasn't looked at, which would drop the
 marks and the readout mid-review. Deterministic steps (`{js}`, `{sql}`,
 filter, sort, dedupe, group, join, pivot, split) run on all rows at once,
 exactly as today: they are effectively free. The batch CLI (`execute`) stays
-fully eager — no pages, no dialogs — so a saved flow's output is
+fully eager (no pages, no dialogs) so a saved flow's output is
 byte-identical to today's.
 
 ### Row state
 
 Each row tracks the spec-step prefix already applied to it; a row is
 **evaluated** (caught up with the spec), **pending** (an AI step hasn't
-reached it), or **failed** (its cell call errored — the row keeps the error).
-Every indicator derives from row state, never from stored pages — the page
+reached it), or **failed** (its cell call errored, the row keeps the error).
+Every indicator derives from row state, never from stored pages, the page
 size changes with the provider, row state doesn't. Undo lowers a row's mark;
 redo restores it from the cell cache with no new AI calls; cancelling a run
 keeps whatever finished. Failed rows are retried together from the readout's
@@ -1584,21 +1584,21 @@ keeps whatever finished. Failed rows are retried together from the readout's
 
 Loading a file bigger than one page raises the large-file dialog: one
 sentence ("Work page by page; saving preserves original row order.") and two
-one-click choices — **Load shuffled**, the primary default, and **Load in
+one-click choices: **Load shuffled**, the primary default, and **Load in
 original order**. A file that fits one page never sees the dialog and
 behaves exactly as today.
 
 Shuffle is a **view**: a seeded permutation over the source rows. The grid's
-**Row #** column — the usual first, frozen row-number column, shown shuffled
-or not — keeps the original row numbers, and its header carries a hover hint
-while the view is shuffled ("Original row numbers — the view is shuffled;
+**Row #** column: the usual first, frozen row-number column, shown shuffled
+or not: keeps the original row numbers, and its header carries a hover hint
+while the view is shuffled ("Original row numbers: the view is shuffled;
 saving keeps this order."). Saving always writes the original order. The
 seed derives from the file, so reopening the same file reproduces the same
 shuffle.
 
 The shuffle samples the table **as loaded**, so the flow outranks it: while
-the spec carries a step that decides row order — `sort` — or that replaces
-the rows with computed ones — `group`, `pivot`, `unpivot` — the grid shows
+the spec carries a step that decides row order, `sort`, or that replaces
+the rows with computed ones (`group`, `pivot`, `unpivot`) the grid shows
 the order the engine produced, not the sample. Asking for "sort by title"
 and getting the shuffle back would answer a different question than the one
 asked. Undoing that step restores the shuffled sample; the seed is unchanged
@@ -1610,22 +1610,22 @@ grid is showing.
 
 ### Progress indicators
 
-- The pagination bar gains a readout on its left — **N of M rows
-  evaluated** — visible whenever an AI step has pending rows, followed by a
+- The pagination bar gains a readout on its left: **N of M rows
+  evaluated**: visible whenever an AI step has pending rows, followed by a
   **Retry N failed rows** action when any row has failed.
 - Opening a page with lagging rows shows the same **Streaming results…**
   banner a chat request shows, and the page's cells fill in live as each
-  batch lands — never a silent, frozen page.
+  batch lands, never a silent, frozen page.
 - Pager buttons for pages with pending rows carry a small dot mark.
 - Pending rows are subtly marked (a muted wash on the Row # cell); failed
   rows are distinctly marked (a red Row # cell).
 - On the phone, the app-bar pager carries the same dot mark, and a slim
   banner under the app bar carries the readout, the retry action, and a
-  compact **Run all** button; the estimate and large-file dialogs — and the
-  grid's column menu — open as bottom sheets, like every other phone dialog.
+  compact **Run all** button; the estimate and large-file dialogs, and the
+  grid's column menu: open as bottom sheets, like every other phone dialog.
   The phone column menu (a header tap opens it) carries Sort ascending /
   descending, a contains-match Filter row, **Remove filter** when a filter is
-  set, and Delete column. It has no Autofit — phone columns auto-size to their
+  set, and Delete column. It has no Autofit: phone columns auto-size to their
   content and are not resizable, so there is nothing to fit.
 
 ### Run on all rows and Save
@@ -1637,32 +1637,32 @@ rows remaining, estimated tokens, estimated cost, and estimated time before
 anything runs; one page or less just runs without ceremony. The estimates
 are honest extrapolations of the preview: mean tokens per evaluated row ×
 rows remaining, priced at the selected cell model's catalogue rates, and
-timed from the observed rows-per-second so far — previewing a page is what
+timed from the observed rows-per-second so far: previewing a page is what
 makes the estimate possible.
 
 Confirming swaps the dialog body for a progress bar with a live `rows done /
-total` count, a **Cancel** button, and a **Show log** expander — collapsed
+total` count, a **Cancel** button, and a **Show log** expander: collapsed
 by default, the same bounded event feed the chat's request detail shows
 (each step, then each streamed cell as `column · row n: before → after`,
-newest pinned, newest 500 lines kept) — so the user can sample transformed
+newest pinned, newest 500 lines kept), so the user can sample transformed
 data while the run streams. Finished rows are always kept: cancel stops the
 queue, and the next run touches only pending and failed rows. The progress
-counts **rows**, never cells — a spec with two AI columns still tops out at
+counts **rows**, never cells: a spec with two AI columns still tops out at
 the table's row count. When the run was started from **Save**, the
 [save gate](#the-save-gate-savegate) follows the run and collects the click
 that opens the picker. With nothing pending, Save
-skips straight to writing the file. A Save whose confirmed run ends short —
-failed rows, a cancel — never vanishes silently: a toast says the save was
+skips straight to writing the file. A Save whose confirmed run ends short:
+failed rows, a cancel, never vanishes silently: a toast says the save was
 cancelled, how many rows stand in the way, and what unblocks it (retry the
 failed rows, or run on all rows). Declining the estimate cancels the save
-quietly — that "not now" was the user's own click.
+quietly: that "not now" was the user's own click.
 
 ### The save gate (#SaveGate)
 
 Browsers open a file picker only from a live user gesture: work that takes
 real time spends the click that started it, and the picker then refuses to
 open at all. Every save that cannot reach its picker inside the starting
-click therefore goes through one **save gate** — the same dialog, the same
+click therefore goes through one **save gate**, the same dialog, the same
 two buttons, whatever the wait was:
 
 - It names the wait in its title, and says what it is doing beneath.
@@ -1673,14 +1673,14 @@ two buttons, whatever the wait was:
   the wait is something to watch rather than a blank dialog. A wait with
   nothing to show yet shows nothing.
 - When the bytes are in hand, the body swaps to the ready wording and
-  **Save file…** enables. That click — a fresh gesture — opens the picker
+  **Save file…** enables. That click, a fresh gesture, opens the picker
   and writes the file.
 - Cancelling drops the result; nothing is written and no picker opens. A
   cancelled Python export has still spent its model call, so re-exporting
   runs a new one.
 
 Two waits use it today: **Save** after a run on all rows (which opens
-already ready — the run had its own estimate dialog and progress bar), and
+already ready: the run had its own estimate dialog and progress bar), and
 **Save recipe as Python…**, which opens waiting on its model call. The
 lookup-file dialog (§ `join`) is the same idea for an *open* picker: a
 typed request's click is long spent by the time the model answers with a
@@ -1688,23 +1688,23 @@ join, so that dialog collects the fresh click instead.
 
 ### The dependency rule
 
-A step that *reads* an AI-made column across all rows — sort by it, filter
-by it, reference it in a `{js}`/`{sql}` expression, group or pivot on it —
+A step that *reads* an AI-made column across all rows: sort by it, filter
+by it, reference it in a `{js}`/`{sql}` expression, group or pivot on it:
 needs every row evaluated first, so it raises the same run-all confirmation
 before it applies. Declining leaves the step out entirely: not in the spec,
 not in the table, not in history. Chat requests that only add or transform
 other columns never trigger it. The rule looks at what a patch *adds by
-content*, never at list positions — a patch that replaces or removes steps
+content*, never at list positions: a patch that replaces or removes steps
 gates exactly like an append, so pending rows survive any patch shape.
 
 Table-wide `{llm}` work gets the same gate: an `{llm}` sort key or group
-aggregate has no page to preview on — every row evaluates at once — so on a
+aggregate has no page to preview on, every row evaluates at once, so on a
 table bigger than one page it shows the estimate dialog first, exactly as
 Simple mode would. Confirming also evaluates the pending prerequisite cells
 in the same run (a `{*}` aggregate or whole-row sort key reads full rows),
 so no prompt ever carries a half-evaluated row.
 
-The column menu's sort and filter offer a third, middle choice — **Sort
+The column menu's sort and filter offer a third, middle choice: **Sort
 evaluated rows** / **Filter evaluated rows**: apply the view over what is
 already computed, free. Sorting sinks unevaluated rows to the end (both
 directions); filtering never matches them. With one page previewed this is
@@ -1712,8 +1712,8 @@ directions); filtering never matches them. With one page previewed this is
 
 ### Simple mode
 
-A settings toggle — **Always run on all rows**, under an **Execution**
-heading below the provider cards — restores table-wide execution: each AI
+A settings toggle: **Always run on all rows**, under an **Execution**
+heading below the provider cards: restores table-wide execution: each AI
 step runs on every row immediately, with the estimate dialog appearing first
 whenever more than one page of rows would run. Off by default; persisted
 like every other setting.
@@ -1723,12 +1723,12 @@ like every other setting.
 The table grid grows these behaviors, specified in
 [spec/packages/table-view/behavior.md](packages/table-view/behavior.md).
 Cells the current chat request filled highlight. A new chat request resets
-the marker; the lazy passes that finish that request's AI columns — a
-page-open evaluation, a run-all, a retry — each **add** the cells they fill,
+the marker; the lazy passes that finish that request's AI columns: a
+page-open evaluation, a run-all, a retry: each **add** the cells they fill,
 so a column tints uniformly as the reader pages through it rather than
 showing only the last page touched. A cell counts as filled when its shown
 value changes: a blank pending cell becomes a value (from a live call *or* a
-free cache refill — a page-open seeds the cache, so opening one page can
+free cache refill: a page-open seeds the cache, so opening one page can
 quietly fill the rest), or an existing value is overwritten. Marking the
 data's actual change, not just the cells a live call streamed, is what keeps
 a shuffled or sorted view from tinting one block and leaving an identically
@@ -1736,8 +1736,8 @@ filled block below it bare. Hovering a changed cell shows the previous
 value.
 
 Filled is not an AI-only notion. The columns a request's own new steps
-write — a `{js}`/`{sql}` mutate's targets, a split's parts, a validate's
-flag pair, the columns a join or reshape brings in — mark the same way,
+write: a `{js}`/`{sql}` mutate's targets, a split's parts, a validate's
+flag pair, the columns a join or reshape brings in: mark the same way,
 so a request that adds a plain computed column tints and reveals exactly
 like an AI one. Steps that write no columns (filter, sort, select) mark
 nothing: reordering or dropping rows is not a fill, and a
@@ -1745,65 +1745,65 @@ structural-only request sets no reveal target.
 
 When a request commits with changed cells, the grid **scrolls the start of
 the changed block into view**: it scrolls horizontally just far enough to
-bring the leftmost changed column on screen (a minimal scroll — nothing
+bring the leftmost changed column on screen (a minimal scroll: nothing
 moves when the column is already visible). A request that appends columns
 would otherwise change the table invisibly, off the right edge; the minimal
 scroll shows the first new column while keeping the columns it was derived
-from beside it for comparison. The reveal is view-only — no spec change, no
+from beside it for comparison. The reveal is view-only, no spec change, no
 history entry.
 
 The changed-cell marks **survive undo and redo**. Each history entry
 records the marks its step carried when it committed; undo, redo, and a
-history jump restore the marks of the step they land on — and re-run the
-reveal scroll to that step's first changed column — so stepping through
+history jump restore the marks of the step they land on, and re-run the
+reveal scroll to that step's first changed column, so stepping through
 history always shows *which cells that step changed*, not a bare table.
 Landing before the first step shows no marks. (Lazy passes that later add
-marks to a step's columns — a page-open, a run-all — extend the live view;
+marks to a step's columns (a page-open, a run-all) extend the live view;
 the entry keeps the marks recorded at commit time.)
 
 Every column header ends in a **⋮ column menu**, grouped by hairline
-separators — Sort ascending / Sort descending · Filter… / Remove filter (the
-latter only when a filter is set) · Autofit width · Delete column — with
+separators: Sort ascending / Sort descending · Filter… / Remove filter (the
+latter only when a filter is set) · Autofit width · Delete column: with
 the state shown in the header itself: a ▲/▼ sort indicator and a funnel
 mark when a filter is active. Autofit sizes the column to the wider of its
 data and its own header, so a short value never hides the column name. Sort and filter live behind the menu rather
 than a bare header click because on an AI-made column they can trigger a
-table-wide run (the dependency rule) — the menu makes them a deliberate act,
+table-wide run (the dependency rule): the menu makes them a deliberate act,
 and it keeps the header clean and tappable on the phone. They stay **view
 state**, like paging and shuffle: no spec change, no history entry. They are
 view state over the columns the spec has *now*: a spec change that removes a
-column — undo, redo, a history jump, Delete column, a chat request — also
+column (undo, redo, a history jump, Delete column, a chat request) also
 drops any view filter or sort on that column. A filter on a vanished column
 has no header left to show its funnel mark or offer Remove filter, and it
 would match nothing (every row now "misses" the column), silently emptying
-the table — so the filter goes with the column. Delete
-column is the exception — it is a spec step, the same patch asking in chat
+the table, so the filter goes with the column. Delete
+column is the exception: it is a spec step, the same patch asking in chat
 would produce. Column separators are visible; hovering one shows the resize
 cursor and double-clicking it (or the menu's Autofit width) fits the column
 to its content on the current page. A chat request ("sort by revenue")
 stays a spec step, exactly as today.
 
-Applying a view sort or filter — or clearing one — changes which rows the
+Applying a view sort or filter, or clearing one, changes which rows the
 current page shows, and the rows it brings into view evaluate exactly as if
 the reader had opened the page: sorting a plain column while an AI column is
 still pending fills the sorted page's lagging cells without paging away and
-back. The one exception is the gates' evaluated-rows choice above — that
+back. The one exception is the gates' evaluated-rows choice above: that
 click explicitly declined the spend, so the view applies over what is
 computed and nothing evaluates.
 
-The view sort **holds a page still while its rows stream in** — they fill in
-place, not re-sort out from under the reader — and then **folds them into the
+The view sort **holds a page still while its rows stream in**: they fill in
+place, not re-sort out from under the reader, and then **folds them into the
 order once the page settles**, so every page opened is sorted as far as it is
 evaluated. Newly evaluated rows join the sorted block; rows still pending sink
 to the end behind their pager marks. (A page's rows can shift position as they
-join the order — that is what a sorted view of a growing evaluated set means.)
+join the order: that is what a sorted view of a growing evaluated set means.)
 A complete sort of a not-yet-evaluated column still needs every value, which
 the gate's "Run all & sort" computes at once.
 
 The reviewed phase-2 mockup of every element above is
 [spec/mockups/lazy-ai.html](mockups/lazy-ai.html).
 
-→ [code-contract.md — Lazy AI execution](code-contract.md#lazy-ai-execution-lazyexec)
+→ [code-contract.md: Lazy AI execution](code-contract.md#lazy-ai-execution-lazyexec)
 
 ## Voice input (#VoiceInput)
 
@@ -1811,7 +1811,7 @@ Voice input lets the user speak a request instead of typing it. It is a
 web-only convenience over the existing chat flow: the spoken audio rides
 along on the ordinary patch turn. The recorded audio, the current table's
 context, and the spec-editing instructions go to the selected model in the
-**same single call** a typed request makes — the model hears the request and emits the spec
+**same single call** a typed request makes: the model hears the request and emits the spec
 patch directly. There is no transcription step and no extra round trip, so a
 voice request costs exactly as many model calls as a typed one. That single
 call returns two things: the spec patch and a verbatim transcript of the
@@ -1819,11 +1819,11 @@ spoken request.
 
 A microphone button sits in the chat sidebar, next to the send control. It is
 shown whenever the selected model accepts voice input (the catalogue's
-`voiceInput` flag — every Gemini model) **and** the
+`voiceInput` flag: every Gemini model) **and** the
 selected provider's API key is set. With a text-only model selected, or with
 no key for the provider, the button is hidden. On a browser missing the
 capture APIs (`getUserMedia` / `MediaRecorder`) no recording port is wired,
-so the button is hidden there too — it never appears and then fails on the
+so the button is hidden there too: it never appears and then fails on the
 first press. The recording is converted to
 WAV in the browser before sending, the one audio format every voice-capable
 provider accepts.
@@ -1831,16 +1831,16 @@ provider accepts.
 The mic supports both ways people use a voice button, so no one has to know
 which it is up front:
 
-- **Press and hold** — hold the button to record (a red ring animates while the
+- **Press and hold**: hold the button to record (a red ring animates while the
   microphone is live) and release to send. This is the push-to-talk feel.
-- **Quick tap** — a quick click latches recording hands-free: the button gives
+- **Quick tap**: a quick click latches recording hands-free: the button gives
   way to a cancel (✕) and a send (✓) control with a pulsing dot, and recording
   keeps going until the user picks one. This is what saves the common
-  first-time mistake of clicking once and releasing — instead of sending an
+  first-time mistake of clicking once and releasing: instead of sending an
   empty clip, the recording simply waits for the explicit send.
 
 A recording that reaches thirty seconds stops and sends on its own. Pressing
-Escape while recording (held or latched) cancels it — nothing is sent and the
+Escape while recording (held or latched) cancels it: nothing is sent and the
 table is untouched. Sending shows a spinner until the round trip returns.
 
 The first press can raise the browser's microphone permission prompt, and
@@ -1848,44 +1848,44 @@ the press starts recording only once the prompt is granted. A release,
 tap, or Escape while the prompt is still up ends the session there: a
 later grant lands on nothing, the microphone is released immediately, and
 no recording, timer, or request ever starts. A quick tap in that window
-carries over — the granted session comes up latched. And whenever the
-button's own conditions stop holding mid-session — the provider switched
-to one without voice, or its key removed — the live session is torn down
+carries over: the granted session comes up latched. And whenever the
+button's own conditions stop holding mid-session: the provider switched
+to one without voice, or its key removed: the live session is torn down
 with the controls: the microphone is released and nothing is sent.
 
 Releasing the button posts a user bubble reading "🎙 Voice request" as a
 placeholder. As soon as the model responds, the placeholder is replaced with
-"🎙 " followed by the transcript — so the user sees what the model heard —
+"🎙 " followed by the transcript, so the user sees what the model heard,
 and the undo-history label for the turn matches. The assistant's response
 follows, the same bubble a typed request produces. If the model omits the
 transcript, the placeholder simply stays. On any failure (microphone,
 network, or a model error) a toast reading "Voice input failed" reports it,
-the same error also appears as an assistant message in the chat — carrying
-the same per-attempt debug detail a failed typed request shows — and nothing
+the same error also appears as an assistant message in the chat: carrying
+the same per-attempt debug detail a failed typed request shows, and nothing
 about the table or the spec changes.
 
 The instruction text accompanying the audio names the loaded file, lists the
-column names, and — when a cell is selected — includes that cell's column,
+column names, and, when a cell is selected, includes that cell's column,
 row, and value, so a request like "round this column" or "fix this cell"
 resolves against what the user is looking at.
 
 ### Hands-free continuous voice
 
-A second button — a waveform icon, next to the mic — turns voice fully
+A second button (a waveform icon, next to the mic) turns voice fully
 hands-free. Where the mic records one request (held or tap-latched), the
 waveform button
 is a toggle: click it once and the app listens continuously, click again to
 stop. While listening, the button's bars pulse. Starting takes a moment (the
-voice-activity detector loads first); clicks during that load are ignored —
+voice-activity detector loads first); clicks during that load are ignored:
 an impatient double-click still opens exactly one listening session, and
 the next click once it is up stops it. It appears under the same
 conditions as the mic (a voice-capable model plus a key) and is hidden when
-hands-free voice isn't wired — including on a browser missing `getUserMedia`
+hands-free voice isn't wired: including on a browser missing `getUserMedia`
 or the Web Audio API, where no hands-free port is wired at all.
 
 The difference is who decides a turn is over. A client-side voice-activity
-detector runs entirely in the browser — no audio leaves the machine to find turn
-boundaries — and watches the live microphone. When the user stops talking, it
+detector runs entirely in the browser: no audio leaves the machine to find turn
+boundaries, and watches the live microphone. When the user stops talking, it
 cuts that stretch of speech into one clip and sends it on the very same patch
 turn the mic button uses: one model call carrying the audio and the table
 context, returning the spec patch and a transcript. So each spoken turn applies a
@@ -1893,48 +1893,48 @@ transformation and shows its "🎙 …" bubble with no button press between turn
 the user just keeps talking. While a turn is being applied the button shows a
 spinner, then returns to listening. A turn that arrives while the previous one is
 still applying is dropped, so two transformations never overlap. Every applied
-turn is reversible with Undo. Stopping releases the microphone — whether the
+turn is reversible with Undo. Stopping releases the microphone, whether the
 user clicked stop or the button's conditions stopped holding mid-session (a
 provider switch, a removed key): closing the gate stops listening the same
-way. A clip the detector cuts while any turn is still applying — its own
-previous turn, a typed request, a mic turn — is dropped silently, never
+way. A clip the detector cuts while any turn is still applying, its own
+previous turn, a typed request, a mic turn: is dropped silently, never
 surfaced as an error.
 
-→ [code-contract.md — Voice input](code-contract.md#voice-input)
+→ [code-contract.md: Voice input](code-contract.md#voice-input)
 
 ## Tutorial mode (#TutorialMode)
 
 Tutorial mode lets a user walk through a `@tour`-tagged Gherkin scenario
 interactively, with **no API key**. The clickable list renders instantly from
-a small bundled index of scenario names; everything heavy — the feature
-source, the input/golden fixtures, and the recorded model responses — loads
+a small bundled index of scenario names; everything heavy, the feature
+source, the input/golden fixtures, and the recorded model responses: loads
 lazily, fetched from the deployed site itself the moment a tour opens. A
 `prefill-chat` step auto-submits its request text, but instead of calling the
 live model it **replays the tour's recorded cassette**, so a visitor with no
 key set can still play a full tour end to end. A miss (no recording for the
-exact request) ends the tour cleanly — the toast `Tour ended — the guided
-replay went off-script.` and the full tour cancel — never a raw
+exact request) ends the tour cleanly, the toast `Tour ended, the guided
+replay went off-script.` and the full tour cancel, never a raw
 fingerprint-mismatch error, never a silent hang.
 
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
-into the eight marketing feature categories** — Lazy AI execution, Clean up,
+into the eight marketing feature categories**, Lazy AI execution, Clean up,
 Enrich & extract, Classify, Validate, Process language, Be exact, and Load,
-save & reuse — numbered 01–08, in the same order as the homepage sections. A
+save & reuse: numbered 01–08, in the same order as the homepage sections. A
 scenario's group comes from its `@cat-…` tag (e.g. `@cat-cleanup`); empty
 categories are omitted.
 Each category holds **one showcase tour**: a single story that loads one
 sample file and walks through every feature of its homepage section in
-sequence — the `showcase-*.feature` files. Two categories have no tour, so
+sequence: the `showcase-*.feature` files. Two categories have no tour, so
 the panel shows six groups: Load, save & reuse (by the time a visitor cares
 about saving, they have already loaded a file and run a query) and Lazy AI
 execution (its tour script, `showcase-lazy-ai.feature`, records and joins the
 panel together with the lazy-execution implementation).
-**Clicking a tour starts it immediately** — there is no separate Play step. A
+**Clicking a tour starts it immediately**: there is no separate Play step. A
 tour the visitor has played to the end carries a **green checkmark** in the list
 (remembered across reloads), so it is easy to see what is left to try.
 Below the groups, a **Dev** dropdown lists every `@web` scenario that is *not*
-`@tour` — including the atomic per-feature scenarios that back CI — so a
+`@tour`, including the atomic per-feature scenarios that back CI, so a
 developer can smoke-test any scenario without opening the `.feature` file;
 picking one starts it too. Every "Show me →" link in a homepage section
 deep-links into that section's showcase tour; the Load, save & reuse and Lazy
@@ -1945,8 +1945,8 @@ prerequisite**, not a tour step: the file is written before the tour starts and
 the step is hidden, so a join tour reads Load → Run query rather than
 spotlighting a button the user never presses.
 
-When a tour starts, the app **returns to the empty state** — the current table
-is cleared — so the first step (always a Load) can spotlight the Open control
+When a tour starts, the app **returns to the empty state**: the current table
+is cleared, so the first step (always a Load) can spotlight the Open control
 the empty page shows. This matters on the phone, where the Open button only
 exists in the empty state: without the reset, starting a tour while a file was
 open would spotlight a button that isn't on screen, leaving a blank overlay
@@ -1955,35 +1955,35 @@ advances.
 
 When a tour starts, the Tours panel **closes** and Driver.js takes over:
 it highlights the relevant part of the UI and shows a popover with the step
-instruction, an **"N of M"** progress line, and a single forward button —
-**Next →**. **Tours are forward-only**: no Previous button, no ← key —
+instruction, an **"N of M"** progress line, and a single forward button:
+**Next →**. **Tours are forward-only**: no Previous button, no ← key,
 stepping back would desync the app's replay state (a loaded file, a sent
 query) from the tour cursor. **→** / **Space** / **Enter** advance; **Esc**
 cancels; an accidental click on the dimmed overlay does not. **Tours are
-watch-only**: the spotlighted element itself is not clickable — the tour is a
+watch-only**: the spotlighted element itself is not clickable, the tour is a
 guided replay the visitor watches, Next and Esc are the only controls, and
 each popover narrates progressively ("Opening the sample …", "Typing and
 running the query…") so no extra "don't interact" hint is needed.
 Watch-only blocks clicks, **not scrolling**: wheel, trackpad, and touch
 scrolls pass through the overlay to the scrollable region under the
-pointer — spotlighted or dimmed — so the visitor can pan a wide table
+pointer, spotlighted or dimmed, so the visitor can pan a wide table
 mid-tour (say, to compare a source column with the columns a query just
 split out of it). Scrolling never advances, cancels, or desyncs the tour.
 A spotlight
 never exceeds the screen: a target larger than the viewport (the table) is
 highlighted by its visible top region, so the popover always has room below
 it. Each step is **highlighted first** and **executed only when the user
-clicks Next** — the action runs as the tour advances, not at the moment the
+clicks Next**: the action runs as the tour advances, not at the moment the
 step appears, and it runs **once**. A showcase tour chains several query
 steps, so Next first waits for the previous step's replayed request to
 finish, and a Next clicked while a step is still executing (a voice clip
-playing, a query running) is ignored — a fast clicker can never skip a step
+playing, a query running) is ignored, a fast clicker can never skip a step
 or fire one twice.
 
 The **last stop is terminal**: it is numbered **"M of M"** and its popover
-shows a completion message — `Voilà, the tour "<tour name>" is done.` —
+shows a completion message: `Voilà, the tour "<tour name>" is done.`:
 naming what finished as *a tour*, so nobody reads a name like "Clean 25,000
-rows for cents" as a claim about what just ran — with two
+rows for cents" as a claim about what just ran, with two
 buttons. The primary, **Back to Tours**, ends the tour and returns the user to
 wherever they started: a tour launched from the Tutorial panel reopens the
 chooser, while a deep-link tour goes back to the page the user came from (see
@@ -1993,17 +1993,17 @@ earlier steps it still cancels).
 
 **Staying in the tour.** The table keeps the tour's result and the engine
 stays in key-free replay mode, so the user can examine the data and walk the
-steps back and forth with **undo/redo** — those re-runs replay from the tour's
+steps back and forth with **undo/redo**: those re-runs replay from the tour's
 cassette and need no API key. New requests cannot be served from the cassette,
 so the chat input and the mic are disabled while staying; the input shows the
 greyed hint `You are inside Tour replay, use undo/redo to examine steps. To
 exit, select Open or Tours to leave.` and
-a request sent anyway (programmatically) is silently ignored — no toast, table
+a request sent anyway (programmatically) is silently ignored, no toast, table
 untouched. The two ways out are the ones the hint names. **Tours**: selecting
 another tour leaves the stayed tour first (back to the empty state, exactly
 like Back to Tours) and then plays fresh; closing the panel leaves the
-finished tour as usual. **Open**: loading any file — a sample, a local file, a
-URL, a drop — leaves the stayed tour the same way before the new table loads,
+finished tour as usual. **Open**: loading any file, a sample, a local file, a
+URL, a drop: leaves the stayed tour the same way before the new table loads,
 so the fresh table gets a live engine, not the tour's replay cassette.
 
 Only the steps that drive the tour are shown; verification steps (`Then column
@@ -2011,53 +2011,53 @@ Only the steps that drive the tour are shown; verification steps (`Then column
 are dropped by the parser, so a tour reads load → query → compare. Each shown
 step maps to one of the tour actions:
 
-- **load-file** — the controller fetches the named fixture and routes it
+- **load-file**: the controller fetches the named fixture and routes it
   through the **same parse path a picked or dropped file takes**, so a
   file bigger than one page raises the large-file dialog exactly as in the
   app (the lazy showcase leans on this; every other tour's sample fits one
   page and loads directly). The open-file button is highlighted and the
-  popover narrates the sample being opened —
+  popover narrates the sample being opened:
   **Opening the sample "customers-input.csv"…**.
-- **load-lookup** — the named fixture is written into the in-memory store at
+- **load-lookup**: the named fixture is written into the in-memory store at
   the working-directory path so the engine can read it as a join lookup table.
   No dataset is replaced. The open-file button is highlighted. It stages the
-  file the same way the lookup dialog does when a user runs a join themselves
-  — the tour just answers the question ahead of time instead of stopping to
+  file the same way the lookup dialog does when a user runs a join themselves:
+  the tour just answers the question ahead of time instead of stopping to
   ask.
-- **prefill-chat** — the chat input is filled with the step's request text the
+- **prefill-chat**: the chat input is filled with the step's request text the
   moment the step is **highlighted**, so the popover reads simply **"Typing and
   running the query…"** instead of repeating it. Clicking **Next** submits the
   request (`sendChat`) and clears the input. The chat input is highlighted (on
   the phone the Type sheet opens so the composer the spotlight lands on is on
   screen).
-- **show-golden** — the controller parses the scenario's golden file and exposes
+- **show-golden**: the controller parses the scenario's golden file and exposes
   its rows in the panel for side-by-side comparison. The table view is
   highlighted.
-- **play-audio** — the named audio clip plays in the browser and then drives a
+- **play-audio**: the named audio clip plays in the browser and then drives a
   real voice turn: the controller fetches the clip, reuses the voice plumbing to
   build the same spoken request the microphone would, and runs it through the
-  engine in replay mode — so a voice tour transforms the table from the recorded
+  engine in replay mode, so a voice tour transforms the table from the recorded
   cassette with **no API key**, exactly like a `prefill-chat` step does for typed
-  requests. The **Speak** control is highlighted — the mic button on desktop, the
-  **Speak** dock button on the phone — and the popover reads **"Speaking and
+  requests. The **Speak** control is highlighted: the mic button on desktop, the
+  **Speak** dock button on the phone, and the popover reads **"Speaking and
   running the voice query…"**. The clip plays for you; nothing is recorded. The
-  mic button shows whenever a tour is playing, key or no key — outside a tour it
+  mic button shows whenever a tour is playing, key or no key, outside a tour it
   needs a voice-capable model and a key, but a key-free voice step replays a
   recorded Gemini turn and must have a mic to spotlight.
-- **load-shuffled / open-estimate / decline-estimate** — the lazy showcase's
+- **load-shuffled / open-estimate / decline-estimate**: the lazy showcase's
   three clicks (#LazyExec): resolve the large-file dialog with the shuffled
-  sample, open the run-on-all estimate dialog (shown, not executed — no key,
+  sample, open the run-on-all estimate dialog (shown, not executed, no key,
   no cost), and close it again with **"Not yet"** (nothing runs, no model
   call), so the tour ends with no dialog left open and the generic Voilà
-  terminal stop fires. The popovers narrate — **"Loading the shuffled
+  terminal stop fires. The popovers narrate, **"Loading the shuffled
   sample…"**, **"Opening the run-on-all estimate…"**, and the decline stop's
   `The "Run on all rows?" dialog estimates the time and cost of cleaning the
-  remaining 24,900 rows. Choosing "Not yet" because it would take some time.`
-  — the decline stop explains what the dialog is for before saying why the
+  remaining 24,900 rows. Choosing "Not yet" because it would take some time.`:
+  the decline stop explains what the dialog is for before saying why the
   tour declines it.
 
 The feature source, input/lookup fixtures, and golden files are fetched
-same-origin on demand — the feature when a tour opens (then parsed to get its
+same-origin on demand: the feature when a tour opens (then parsed to get its
 steps), a fixture when a `load-file`/`load-lookup`/`show-golden` step runs.
 Only the scenario index (name, source file, tags) ships in the bundle, so the
 page stays small. The golden file is named by `scenario.golden`, which the
@@ -2070,20 +2070,20 @@ tour plays the engine runs in **replay mode**: each model call is matched
 against the tour's recorded cassette (fetched same-origin) and served from it,
 so no key is needed and no network call leaves the browser. Matching is exact
 over the whole request, so the tour must reproduce the request that was
-recorded — playback therefore pins the same model and configuration the
+recorded: playback therefore pins the same model and configuration the
 recording used: the Gemini provider defaults, which every committed cassette
-is recorded with (voice tours included — voice input is Gemini-only anyway).
+is recorded with (voice tours included: voice input is Gemini-only anyway).
 The pin covers everything that shapes a request, not just the model: the
 table page follows the pinned provider (an AI step evaluates the rows in
 view, so a provider-shrunk page would issue different per-cell batches than
 the tape holds), and the **Always run on all rows** setting is ignored (it
-would push the step across the whole table — thousands of unrecorded
+would push the step across the whole table: thousands of unrecorded
 requests). Whatever provider or settings the visitor has selected, a tour
 replays exactly as recorded and their own config returns untouched when the
 tour ends.
 A request with no recording means the guided replay went off-script, so it
-ends the tour cleanly: the toast `Tour ended — the guided replay went
-off-script.`, then the full tour cancel (back to the empty state) — never a
+ends the tour cleanly: the toast `Tour ended, the guided replay went
+off-script.`, then the full tour cancel (back to the empty state), never a
 raw fingerprint-mismatch error toast, never a silent hang. Normal
 (non-tutorial) chat is unaffected: it still uses the visitor's own key
 against the live model.
@@ -2093,27 +2093,27 @@ against the live model.
 A link can open the app straight into one tour and play it. On load the app
 reads two query parameters:
 
-- `feature` — the Gherkin file name the scenario lives in (e.g. `filter.feature`).
-- `scenario` — the scenario name, URL-encoded.
+- `feature`: the Gherkin file name the scenario lives in (e.g. `filter.feature`).
+- `scenario`: the scenario name, URL-encoded.
 
 A third parameter, `tours` (any value), opens the Tours panel chooser instead
-of playing one tour — the homepage's "take a guided tour" links use it, so a
+of playing one tour: the homepage's "take a guided tour" links use it, so a
 key-free visitor lands directly on the tour list.
 
 Both together name one tour; the file disambiguates when two files share a
 scenario name, so matching on the scenario name alone is not enough. When both
 resolve to a real tour the app plays it from step 1 (the Tutorial panel stays
-closed — the Driver.js overlay takes over immediately). A missing parameter, an
-unknown file, or an unknown scenario boots the app normally — panel closed, no
+closed: the Driver.js overlay takes over immediately). A missing parameter, an
+unknown file, or an unknown scenario boots the app normally: panel closed, no
 error toast; a deep link never crashes or blocks a normal visit.
 
 **Finishing a tour.** Clicking **Back to Tours** on the terminal last step opens the
-Tutorial panel chooser, whichever way the tour was started — so the visitor can
+Tutorial panel chooser, whichever way the tour was started, so the visitor can
 pick another tutorial without hunting for the panel. The marketing homepage opens every "Show me →"
 link in a **new tab**, so a deep-link visitor who is finished simply closes that
 tab and is back on the homepage they came from; the app does not navigate for
-them. It does tidy the address bar: once the deep-linked tour ends — the
-terminal stop, or an Esc cancel — `history.replaceState` rewrites the URL to
+them. It does tidy the address bar: once the deep-linked tour ends, the
+terminal stop, or an Esc cancel: `history.replaceState` rewrites the URL to
 the plain app address, so the `feature`/`scenario` params name the tour only
 while it plays. Rewriting is not navigating: an earlier `history.back()`
 scheme had to go because a fresh tab has no history to go back to;
@@ -2122,7 +2122,7 @@ scheme had to go because a fresh tab has no history to go back to;
 Production links use the deployed base, e.g.
 `https://www.tamedtable.com/app/?feature=showcase-cleanup.feature&scenario=Clean+up+a+messy+customer+list`.
 
-→ [code-contract.md — Tutorial mode](code-contract.md#tutorial-mode)
+→ [code-contract.md: Tutorial mode](code-contract.md#tutorial-mode)
 
 ## One schema, richer sort keys, and Python export
 
@@ -2131,14 +2131,14 @@ export command. It changes no wire format and adds no transformation verb.
 
 ### One spec schema
 
-Every spec — a freshly loaded table, a patched spec, a replayed `.flow` —
+Every spec: a freshly loaded table, a patched spec, a replayed `.flow`:
 validates against one schema. A saved `.flow` records `version: 2`; an
 older `version: 1` flow still loads, validated under the same schema.
 
 ### Sorting by a SQL or AI key
 
-A `sort` key may be a column name or any expression — `{js}`, `{sql}`,
-or `{llm}` — exactly like a `mutate` value. A `{sql}` sort key runs
+A `sort` key may be a column name or any expression: `{js}`, `{sql}`,
+or `{llm}`: exactly like a `mutate` value. A `{sql}` sort key runs
 through DuckDB and an `{llm}` key through the cell model, one key value
 per row, the same machinery `mutate` already uses.
 
@@ -2147,14 +2147,14 @@ first N rows after ordering, so "top 10 by revenue" needs no manual row
 deletion.
 
 Ordering is numeric-aware. When both key values are numbers or numeric
-strings they compare as numbers — a CSV-loaded revenue column (all values
+strings they compare as numbers: a CSV-loaded revenue column (all values
 strings) sorts by magnitude, so 2 comes before 10, never "10" before "2".
 
 A column that mixes kinds still gets one predictable order, because every
 key value falls into one of three classes and the classes themselves rank:
 **numbers** first, then **text**, then **empty** cells (blank, null). So
 ascending "sort by amount" on a column holding `10`, `2`, `"pear"`,
-`"apple"` and one blank reads 2, 10, apple, pear, blank — numbers by
+`"apple"` and one blank reads 2, 10, apple, pear, blank: numbers by
 magnitude ahead of words in alphabetical order, with the empty cell last.
 Descending reverses the whole order, empty cells first. The ranking is what
 makes the order *predictable*: a comparator that only ordered pairs it could
@@ -2163,8 +2163,8 @@ that can shuffle even the numbers among themselves.
 
 ### A formatter bug never fails a request
 
-The plan printer — the code that renders a transformation as a readable
-line — runs inside a callback wrapped so a formatting error drops the plan
+The plan printer: the code that renders a transformation as a readable
+line: runs inside a callback wrapped so a formatting error drops the plan
 line and the request still commits; a cosmetic display bug can no longer
 surface to the user as "couldn't apply that change."
 
@@ -2176,14 +2176,14 @@ single self-contained Python 3 script. The script carries a
 top comments, so `./script.py input output` runs directly with `uv`
 resolving dependencies. It reads a `.csv` or `.jsonl` input and writes
 the transformed table to the output path. The script runs
-deterministically — no AI call at run time — and reproduces the flow's
+deterministically, no AI call at run time, and reproduces the flow's
 result: run over the same input, it writes the same rows the session
 would have written with `:save`.
 
 Generating the script makes exactly one AI call: the model translates
 the spec's transformations into Python. Because the exported script
 must be deterministic, `:save-py` refuses any flow containing an
-`{llm}` cell — a live AI cell cannot be reproduced offline. Such a flow
+`{llm}` cell: a live AI cell cannot be reproduced offline. Such a flow
 prints `:save-py: flow contains LLM cells; cannot export to Python` and
 writes nothing. A flow built only from `{js}`, `{sql}`, and the
 structural verbs (`filter`, `sort`, `select`, `group`, `join`, `split`,
@@ -2193,4 +2193,4 @@ structural verbs (`filter`, `sort`, `select`, `group`, `join`, `split`,
 subcommand. Missing path prints `:save-py: missing path`; a
 non-`.py` extension prints `:save-py: output must be a .py file`.
 
-→ [code-contract.md — One schema, richer sort keys, and Python export](code-contract.md#one-schema-richer-sort-keys-and-python-export)
+→ [code-contract.md: One schema, richer sort keys, and Python export](code-contract.md#one-schema-richer-sort-keys-and-python-export)

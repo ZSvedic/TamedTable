@@ -2,7 +2,7 @@
 
 Parses Gherkin feature files into guided tour scenarios (`parseTours`), runs the
 tour flow host-agnostically (`TourDriver` + `TourAdapter`), and renders a
-Driver.js spotlight UI (`./ui` — the only `driver.js`-dependent export). The
+Driver.js spotlight UI (`./ui`: the only `driver.js`-dependent export). The
 demo page tours itself through this pipeline.
 
 | What | Where |

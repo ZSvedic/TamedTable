@@ -1,8 +1,8 @@
-// RED-UI-1 (ChatPanel site) — regression test (red inventory): Enter pressed to
+// RED-UI-1 (ChatPanel site): regression test (red inventory): Enter pressed to
 // confirm an IME composition (KeyboardEvent.isComposing === true, the
 // keystroke a Japanese/Chinese/Korean user types to accept a conversion)
-// SENDS the half-composed draft. "Enter sends" —
-// spec/packages/chat-panel/behavior.md:90 — describes the user's Enter; every
+// SENDS the half-composed draft. "Enter sends":
+// spec/packages/chat-panel/behavior.md:90, describes the user's Enter; every
 // mainstream composer (ChatPanel.tsx:677 cites "the shape every mainstream
 // chat composer uses") ignores Enter while composing via the
 // `e.isComposing || e.keyCode === 229` guard. The textarea onKeyDown
@@ -46,8 +46,8 @@ test('RED-UI-1: Enter during IME composition sends the half-composed chat draft'
     throw new Error(`harness broken (not RED-UI-1): plain Enter should have sent once, got ${JSON.stringify(control)}`);
   }
 
-  // The bug: the same Enter with isComposing:true — an IME conversion
-  // confirm — must NOT send.
+  // The bug: the same Enter with isComposing:true, an IME conversion
+  // confirm: must NOT send.
   const sent: string[] = [];
   const el = mountPanel(sent);
   const ta = el.querySelector('textarea')!;
@@ -56,6 +56,6 @@ test('RED-UI-1: Enter during IME composition sends the half-composed chat draft'
   assert.deepEqual(
     sent,
     [],
-    'RED-UI-1 (spec/packages/chat-panel/behavior.md:90): "Enter sends" means the user\'s Enter — an IME conversion-confirm Enter (isComposing:true) must not send, but the half-composed draft was fired as a request (ChatPanel.tsx:698-703 never checks e.nativeEvent.isComposing)',
+    'RED-UI-1 (spec/packages/chat-panel/behavior.md:90): "Enter sends" means the user\'s Enter. An IME conversion-confirm Enter (isComposing:true) must not send, but the half-composed draft was fired as a request (ChatPanel.tsx:698-703 never checks e.nativeEvent.isComposing)',
   );
 });

@@ -1,4 +1,4 @@
-// #TutorialMode — "New here? Check Tours.": the empty page's guided path
+// #TutorialMode: "New here? Check Tours.": the empty page's guided path
 // into the Tours panel, shared by the desktop and phone empty states so a
 // first-time visitor finds the tours without hunting for the toolbar button.
 // Styled like the "What table can I tame?" heading so it reads as the second

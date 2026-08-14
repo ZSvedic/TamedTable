@@ -85,7 +85,7 @@ Feature: Chat panel package
     Scenario: Streaming shows live run progress with an expandable log
       Given the chat-panel demo page
       When the user toggles chat streaming
-      Then the run progress line shows "Step 2 of 5 — mutate Country (AI) · 300 / 424 rows"
+      Then the run progress line shows "Step 2 of 5: mutate Country (AI) · 300 / 424 rows"
       When the user expands the run progress detail
       Then the run progress log shows "Country · row 300"
 

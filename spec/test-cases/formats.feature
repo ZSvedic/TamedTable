@@ -1,7 +1,7 @@
 # #IoFormats
 # Load + save round-trip for every supported file format. The procedure is
 # identical per format, so one Scenario Outline drives them all. Fully offline
-# (no model call, no cassette), so it runs on every surface — the @web run
+# (no model call, no cassette), so it runs on every surface: the @web run
 # proves the controller routes binary formats too.
 Feature: File formats
 

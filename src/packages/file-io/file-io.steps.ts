@@ -1,5 +1,5 @@
 // #FileIO
-// Step defs for the @headless file-io scenarios — pure API calls, no browser.
+// Step defs for the @headless file-io scenarios: pure API calls, no browser.
 // The package's own steps live next to the code (see spec/packages/README.md);
 // they import nothing from the app harness.
 import { Given, Then, When } from '@cucumber/cucumber';

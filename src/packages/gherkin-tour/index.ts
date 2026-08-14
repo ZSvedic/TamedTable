@@ -5,17 +5,17 @@ export type TourAction =
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }
   | { kind: 'play-audio';    filename: string }
-  // #LazyExec — the Lazy AI execution tour's three clicks: resolve the
+  // #LazyExec: the Lazy AI execution tour's three clicks: resolve the
   // large-file dialog with the shuffled sample, open the run-on-all
   // estimate dialog (shown, not executed), and close it again with the
-  // "Not yet" choice — nothing runs, no model call.
+  // "Not yet" choice: nothing runs, no model call.
   | { kind: 'load-shuffled'                    }
   | { kind: 'open-estimate'                    }
   | { kind: 'decline-estimate'                 }
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
-// `feature` (the source file name) is not set by parseTours — it sees only the
+// `feature` (the source file name) is not set by parseTours: it sees only the
 // source string. The consumer assembling tours from many files stamps it, so a
 // deep link can match one tour by (feature, name).
 export interface TourScenario { name: string; tags: string[]; steps: TourStep[]; golden?: string; feature?: string }
@@ -26,9 +26,9 @@ function classify(text: string): TourAction {
   const load = text.match(/^load "(.+)"$/);
   if (load) return { kind: 'load-file', filename: load[1]! };
 
-  // #LazyExec — the lazy tour's stops. Tours read imperative (`load …`,
+  // #LazyExec: the lazy tour's stops. Tours read imperative (`load …`,
   // `open …`, `decline …`); the functional @web tests keep the narrative
-  // `user loads …` — both classify the same.
+  // `user loads …`, both classify the same.
   if (/^(?:user )?loads? the shuffled sample$/.test(text)) return { kind: 'load-shuffled' };
   if (/^(?:user )?opens? the run-on-all estimate dialog$/.test(text)) return { kind: 'open-estimate' };
   if (/^(?:user )?declines? the estimate with "Not yet"$/.test(text)) return { kind: 'decline-estimate' };
@@ -94,7 +94,7 @@ export function parseTours(source: string): TourScenario[] {
       // Drop everything that isn't an executable tour stop. Verification /
       // narration (`display`) is test machinery; `golden-source` is lifted
       // above; `show-golden` (`compare with the expected output`) is the
-      // trailing verification block — it collapses into the driver's terminal
+      // trailing verification block: it collapses into the driver's terminal
       // step, which surfaces the lifted `golden` after the last real step has
       // run. What remains reads load → query.
       const steps = all.filter(
@@ -122,7 +122,7 @@ export function parseTours(source: string): TourScenario[] {
       if (line === '"""') state = docstringReturn;
       continue;
     }
-    // An opening fence may carry a media type ("""json) — still a docstring.
+    // An opening fence may carry a media type ("""json), still a docstring.
     if (line.startsWith('"""')) {
       docstringReturn = state;
       state = 'docstring';
@@ -132,7 +132,7 @@ export function parseTours(source: string): TourScenario[] {
     // Skip comments and blank lines.
     if (line === '' || line.startsWith('#')) continue;
 
-    // Feature: — tags read so far are feature-level, inherited by every
+    // Feature:. Tags read so far are feature-level, inherited by every
     // scenario (that is how cucumber-js runs them).
     if (line.startsWith('Feature:')) {
       featureTags = pendingTags;
@@ -140,7 +140,7 @@ export function parseTours(source: string): TourScenario[] {
       continue;
     }
 
-    // Rule: — new rule scope; finalize any open scenario first.
+    // Rule:, new rule scope; finalize any open scenario first.
     if (line.startsWith('Rule:')) {
       flush();
       // Rule-scoped background resets; top-level background is preserved.
@@ -150,7 +150,7 @@ export function parseTours(source: string): TourScenario[] {
       continue;
     }
 
-    // @tags — accumulate (stacked tag lines all apply); attached to the next
+    // @tags: accumulate (stacked tag lines all apply); attached to the next
     // Scenario.
     if (line.startsWith('@')) {
       pendingTags.push(...line.split(/\s+/).filter((t) => t.startsWith('@')));
@@ -171,7 +171,7 @@ export function parseTours(source: string): TourScenario[] {
       continue;
     }
 
-    // Scenario Outline: — skip the whole block, including Examples table.
+    // Scenario Outline:, skip the whole block, including Examples table.
     if (line.startsWith('Scenario Outline:')) {
       flush();
       pendingTags = [];
@@ -205,7 +205,7 @@ export function parseTours(source: string): TourScenario[] {
       continue;
     }
 
-    // Everything else (Examples:, table rows, etc.) in outline state — skip.
+    // Everything else (Examples:, table rows, etc.) in outline state, skip.
   }
 
   flush();
@@ -214,8 +214,8 @@ export function parseTours(source: string): TourScenario[] {
 
 // ── Tour driver ──────────────────────────────────────────────────────────────
 
-// The driver owns the *flow* of a tour — cursor, step execution, done state,
-// return-on-finish — but knows nothing about any host: no DOM ids, no engine, no
+// The driver owns the *flow* of a tour, cursor, step execution, done state,
+// return-on-finish, but knows nothing about any host: no DOM ids, no engine, no
 // cassette. The host supplies a TourAdapter that turns each typed action into a
 // concrete side effect and owns its own element ids and navigation. This is what
 // lets the same flow drive TamedTable's app and the package's standalone demo.
@@ -229,18 +229,18 @@ export interface TourAdapter {
   /** `goldenFile` is the scenario's lifted `golden`, or undefined when none. */
   showGolden(goldenFile: string | undefined): Promise<void>;
   playAudio(filename: string): Promise<void>;
-  // #LazyExec — optional: hosts without the lazy-execution UI treat these as
+  // #LazyExec: optional: hosts without the lazy-execution UI treat these as
   // narration-only stops.
   loadShuffled?(): Promise<void>;
   openEstimate?(): Promise<void>;
   declineEstimate?(): Promise<void>;
   /** DOM id of the element a step should spotlight, or null for none. */
   elementIdFor(action: TourAction): string | null;
-  /** Called once when the tour finishes — the host decides what comes next
+  /** Called once when the tour finishes: the host decides what comes next
    *  (the app opens its Tutorial panel; the demo shows a status line). */
   onFinish(): void;
   /** Called once when the user stays at the terminal stop instead of
-   *  finishing — the host keeps what the tour built on screen. Optional:
+   *  finishing: the host keeps what the tour built on screen. Optional:
    *  hosts without a "stay" exit simply omit it (and get no Stay button). */
   onStay?(): void;
 }
@@ -251,10 +251,10 @@ export interface TourAdapter {
  *  from its controller) implements it directly and hands itself to `TourUi`. */
 export interface TourCursor {
   isActive(): boolean;
-  /** True on the terminal stop — the last real step has run and the tour shows
+  /** True on the terminal stop: the last real step has run and the tour shows
    *  its completion ("Voilà …") awaiting `finish`. */
   isDone(): boolean;
-  /** The highlighted step — `TourUi` reads only its `text` for the popover. */
+  /** The highlighted step: `TourUi` reads only its `text` for the popover. */
   currentStep(): { text: string } | null;
   currentStepElementId(): string | null;
   /** 1-based number of the highlighted step, or null on the terminal stop. */
@@ -273,7 +273,7 @@ export interface TourCursor {
  *  highlighted step through the adapter then advances; the final `next` runs the
  *  last real step then enters the *terminal* stop (cursor one past the last
  *  step), surfacing the scenario's golden and awaiting `finish`, which calls the
- *  adapter's `onFinish` hook. There is no `prev` — a tour only moves forward, so
+ *  adapter's `onFinish` hook. There is no `prev`: a tour only moves forward, so
  *  a step never re-runs. Empty tours are ignored. */
 export class TourDriver implements TourCursor {
   private tour: TourScenario | null = null;
@@ -301,7 +301,7 @@ export class TourDriver implements TourCursor {
     await this.execute(this.tour.steps[this.index]!);
     this.index = this.index < total - 1 ? this.index + 1 : total;
     // Entering the terminal stop: the trailing `compare with the expected
-    // output` collapsed into here, so surface the lifted golden now — after the
+    // output` collapsed into here, so surface the lifted golden now, after the
     // query has run, never before.
     if (this.index >= total && this.tour.golden !== undefined) {
       await this.adapter.showGolden(this.tour.golden);
@@ -320,7 +320,7 @@ export class TourDriver implements TourCursor {
     this.adapter.onFinish();
   }
 
-  /** End the tour, keeping the host's state — hands off to the optional
+  /** End the tour, keeping the host's state, hands off to the optional
    *  onStay hook instead of onFinish. */
   stay(): void {
     this.cancel();
@@ -332,7 +332,7 @@ export class TourDriver implements TourCursor {
     return this.tour !== null && this.index !== null && this.index < this.tour.steps.length;
   }
 
-  /** True on the terminal stop — every step has run and the tour awaits `finish`. */
+  /** True on the terminal stop: every step has run and the tour awaits `finish`. */
   isDone(): boolean {
     return this.tour !== null && this.index !== null && this.index >= this.tour.steps.length;
   }

@@ -3,7 +3,7 @@
 // (spec/test-cases/performance.feature, `bun run bench`). These steps drive the
 // headless engine directly and record total time, tokens, and estimated cost per
 // scenario; an AfterAll hook prints the summary table. Nothing here runs under
-// the regular @headless/@cli/@web profiles — every hook is scoped to @perf.
+// the regular @headless/@cli/@web profiles: every hook is scoped to @perf.
 import { Before, Given, When, Then, AfterAll, type ITestCaseHookParameter } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { join } from 'node:path';
@@ -49,10 +49,10 @@ Before({ tags: '@perf' }, function (this: TamedTableWorld, scenario: ITestCaseHo
   const tags = scenario.pickle.tags.map((t) => t.name);
   const opts = runnerOptsFor(scenario);
   // Tally token usage off every model response, wrapping whatever fetch is in
-  // play — the cassette recorder/player (replay/record) or the global fetch
+  // play: the cassette recorder/player (replay/record) or the global fetch
   // (live). Cloning the response leaves the SDK's own read untouched.
   // Tally token usage off every model response, wrapping whatever fetch is in
-  // play — the cassette recorder/player (replay/record) or the global fetch
+  // play: the cassette recorder/player (replay/record) or the global fetch
   // (live). The shared wrapper parses all three provider shapes identically.
   const base = opts.fetch ?? ((input: string | URL | Request, init?: RequestInit) => fetch(input, init));
   tally = newTally();
@@ -69,12 +69,12 @@ function bench(world: TamedTableWorld): HeadlessRunner {
 
 function record(world: TamedTableWorld, rows: number, timeMs: number): void {
   const p = pending.get(world);
-  if (!p) throw new Error('no pending benchmark — was the @perf Before hook skipped?');
+  if (!p) throw new Error('no pending benchmark: was the @perf Before hook skipped?');
   p.rows = rows;
   p.timeMs = timeMs;
 }
 
-// ── A — load ─────────────────────────────────────────────────────────────────
+// ── A: load ─────────────────────────────────────────────────────────────────
 Given('a fresh benchmark runner', function (this: TamedTableWorld) {
   this.ensureRunner(); // build it now so creation cost isn't charged to the op
 });
@@ -91,7 +91,7 @@ Given('the benchmark has loaded {string}', async function (this: TamedTableWorld
   await bench(this).loadInput(join(SPEC_TC_DIR, filename));
 });
 
-// ── B — SQL operations (no model call; setSpec runs the engine over every row) ─
+// ── B: SQL operations (no model call; setSpec runs the engine over every row) ─
 When('the benchmark sorts rows by {string}', async function (this: TamedTableWorld, column: string) {
   const runner = bench(this);
   const spec: TablePlan = structuredClone(runner.currentSpec());
@@ -111,7 +111,7 @@ When('the benchmark filters rows where {string} equals {string}', async function
   record(this, runner.currentRows().length, Date.now() - t0);
 });
 
-// ── C — natural-language cell fills (weaker model, batched per N rows) ─────────
+// ── C: natural-language cell fills (weaker model, batched per N rows) ─────────
 When('the benchmark runs the NL request {string}', async function (this: TamedTableWorld, text: string) {
   const runner = bench(this);
   const t0 = Date.now();
@@ -141,10 +141,10 @@ Then('the benchmark records the result', function (this: TamedTableWorld) {
 // ── Reporter ─────────────────────────────────────────────────────────────────
 const grp = (n: number) => n.toLocaleString('en-US');
 const secs = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
-const usd = (n: number) => (n === 0 ? '—' : `$${n.toFixed(4)}`);
+const usd = (n: number) => (n === 0 ? ': ' : `$${n.toFixed(4)}`);
 
 AfterAll(function () {
-  // Stay silent in the regular profiles — this file loads globally, but the
+  // Stay silent in the regular profiles: this file loads globally, but the
   // report is only meaningful when @perf scenarios actually ran.
   if (results.length === 0) return;
   const rows = results.map((r) => [

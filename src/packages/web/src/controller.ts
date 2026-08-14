@@ -1,5 +1,5 @@
 // #WebUI
-// WebController — the framework-agnostic core of the web shell.
+// WebController: the framework-agnostic core of the web shell.
 //
 // It mirrors the CLI's relationship to the engine: it wraps a headless
 // Runner, drives the onChunk/onDebug callbacks, owns an undo/redo journal,
@@ -10,7 +10,7 @@
 // This file is a composition shell: it owns every observable field (the React
 // components and the Cucumber web profile read these directly) plus the
 // notification hub, and delegates each responsibility to a domain manager
-// (engine, patch, files, voice, config, tutorial) through `ControllerHost` —
+// (engine, patch, files, voice, config, tutorial) through `ControllerHost`:
 // see controller-context.ts. The delegating methods keep the public surface on
 // one object; each method's contract is documented on the manager it calls.
 
@@ -47,7 +47,7 @@ import type {
   WebSettings,
 } from './controller-types.ts';
 
-// Public surface re-exports — keep existing imports through this module
+// Public surface re-exports: keep existing imports through this module
 // working without forcing every component to update its import path.
 export { detectFormat, userFacingMessage, summarizeDebug };
 export type { DiagEvent, RunAllDialogState, RunAllReason, RunEstimate, SaveGateState, ViewSort };
@@ -66,7 +66,7 @@ export type {
   WebSettings,
 };
 
-/** The page size for a provider: one AI-cell concurrency wave — rows per
+/** The page size for a provider: one AI-cell concurrency wave, rows per
  *  batch × batches in flight. Host opts win; otherwise the provider's pinned
  *  cell batch (openrouter: 5 × 5 = 25) or the engine default (20 × 5 = 100). */
 export function pageSizeFor(provider: Provider, opts: WebControllerOptions): number {
@@ -107,38 +107,38 @@ export class WebController implements ControllerHost {
   /** The chooser's error banner, or '' when there is none. */
   keyError = '';
   keyNotice = '';
-  /** Whether a connect is in flight — the input and Add button are disabled. */
+  /** Whether a connect is in flight: the input and Add button are disabled. */
   keyBusy = false;
-  /** #PuterGateway — the in-flight connect is the Puter sign-in. */
+  /** #PuterGateway: the in-flight connect is the Puter sign-in. */
   puterBusy = false;
   /** Per-provider tier and measured cost/speed, seeded from the cache written
    *  on the last connect (see ConfigManager). */
   probes: Partial<Record<Provider, ProviderProbe>> = readStoredProbes();
-  /** Providers whose measurements are still running — their rows read
+  /** Providers whose measurements are still running: their rows read
    *  "measuring…" until each call lands. */
   measuring: Partial<Record<Provider, boolean>> = {};
   /** Tracks an in-flight native picker handshake (distinct from urlDialogOpen). */
   dialog: DialogKind = null;
   /** Live progress of the streaming run (flow replay or chat request), or
-   *  null — the chat panel's inline progress block. */
+   *  null: the chat panel's inline progress block. */
   runProgress: RunProgress | null = null; // #OpenFlow
   /** Whether the Open URL modal dialog is showing. */
   urlDialogOpen = false;
   /** Whether the Open-sample picker dialog is showing. */
   sampleDialogOpen = false;
-  /** A modal error message (the flow error dialog), or null when hidden —
+  /** A modal error message (the flow error dialog), or null when hidden:
    *  used for failures a fading toast could miss. */
   errorDialog: string | null = null;
   streaming = false;
   toasts: Toast[] = [];
   messages: ChatMessage[] = [];
   lastDebug: RequestDebugInfo | undefined;
-  /** Rows per table page — a view setting the controller owns (the spec
+  /** Rows per table page: a view setting the controller owns (the spec
    *  never carries a page size), sized to one AI-cell concurrency wave so a
    *  streaming page fills in as each wave of concurrent batches lands.
    *  Re-derived on config changes: the wave shrinks with the provider's
    *  pinned cell batch size. While a tour replays, reads as the recording
-   *  provider's page instead — an AI step evaluates the rows in view, so a
+   *  provider's page instead: an AI step evaluates the rows in view, so a
    *  provider-shrunk page would issue per-cell batches the cassette never
    *  taped (spec/behavior.md § Key-free playback). */
   get pageSize(): number {
@@ -148,11 +148,11 @@ export class WebController implements ControllerHost {
   }
   set pageSize(n: number) { this.basePageSize = n; }
   private basePageSize = 0;
-  /** The selected cell, or null — tints the cell and feeds the voice prompt. */
+  /** The selected cell, or null: tints the cell and feeds the voice prompt. */
   selection: CellRef | null = null;
-  /** Microphone state — drives the MicButton's red ring and spinner. */
+  /** Microphone state: drives the MicButton's red ring and spinner. */
   voiceStatus: VoiceStatus = 'idle';
-  /** Continuous voice state — drives the WaveButton's pulse and spinner. */
+  /** Continuous voice state: drives the WaveButton's pulse and spinner. */
   continuousStatus: ContinuousStatus = 'idle';
   /** 1-based page index over the derived rows, clamped on read. */
   pageNum = 1;
@@ -175,7 +175,7 @@ export class WebController implements ControllerHost {
   // #LookupJoin
   /** The lookup file a waiting join needs, or null. The run is paused on it. */
   lookupDialog: { name: string } | null = null;
-  /** Column the grid should scroll into view — the reveal scroll to the start
+  /** Column the grid should scroll into view, the reveal scroll to the start
    *  of the changed block (spec/behavior.md § Grid upgrades). A new `seq`
    *  re-triggers the scroll even for the same column; null clears it. */
   reveal: { column: string; seq: number } | null = null;
@@ -184,7 +184,7 @@ export class WebController implements ControllerHost {
   constructor(opts: WebControllerOptions) {
     this.opts = opts;
     this.file = opts.file;
-    // In the browser we avoid importing process.env — guard with typeof check.
+    // In the browser we avoid importing process.env: guard with typeof check.
     // Tests pass opts.env = {} to suppress real API keys from the shell.
     const envVars: Record<string, string | undefined> =
       opts.env ?? (typeof process !== 'undefined' ? process.env : {});
@@ -236,7 +236,7 @@ export class WebController implements ControllerHost {
 
   pushToast(kind: Toast['kind'], message: string, action?: string): void {
     this.toasts = [...this.toasts, { id: ++this.toastSeq, kind, message, action }];
-    // Every toast is a diagnostics event — the user-visible signal that
+    // Every toast is a diagnostics event: the user-visible signal that
     // something happened, captured with whatever context is available.
     this.diagnostics.recordToast(kind, message);
     this.notify();
@@ -256,7 +256,7 @@ export class WebController implements ControllerHost {
   /** The chat thread with undo state applied: a reply whose history entry is
    *  undone swaps its `Executed steps:` heading for `Undone steps:` and
    *  carries `undone: true` (the hollow marker). The stored messages are
-   *  never mutated — this maps fresh copies on read. */
+   *  never mutated: this maps fresh copies on read. */
   displayMessages(): ChatMessage[] {
     return this.messages.map((m) => {
       if (m.historyId === undefined || this.patch.isApplied(m.historyId)) return m;
@@ -266,7 +266,7 @@ export class WebController implements ControllerHost {
 
   /** Drop the whole thread. Opening a table clears the undo journal, so the
    *  replies pointing at its entries would render as undone steps against a
-   *  table they never touched — the conversation goes with the journal. */
+   *  table they never touched: the conversation goes with the journal. */
   clearMessages(): void {
     this.messages = [];
     this.notify();
@@ -281,7 +281,7 @@ export class WebController implements ControllerHost {
   fail(message: string, debug?: RequestDebugInfo, reportable = true): void {
     // Every error toast offers a one-click diagnostics report, so a user who
     // hits a bug can grab the redacted, pasteable report on the spot. The
-    // durable Report bug action lives on the chat message — only for app
+    // durable Report bug action lives on the chat message: only for app
     // errors (`reportable` defaults to true so an unclassified error is never
     // silently unreportable); guidance errors pass false.
     this.pushToast('error', message, 'Copy report');
@@ -306,14 +306,14 @@ export class WebController implements ControllerHost {
   // ── Chat ─────────────────────────────────────────────────────────────────
 
   /** Send a natural-language request from the chat sidebar. Errors become
-   *  toasts rather than exceptions — the table is left untouched. */
+   *  toasts rather than exceptions: the table is left untouched. */
   async sendChat(text: string): Promise<void> {
     const trimmed = text.trim();
     if (!trimmed) return;
     // Staying in a finished tour: the engine still replays from the tour's
     // cassette, which cannot answer a request it never recorded. The UI
     // disables the input (with the STAY_REPLAY_HINT placeholder), so this
-    // guard is only reachable programmatically — ignore silently, before any
+    // guard is only reachable programmatically: ignore silently, before any
     // bubble or toast.
     if (this.tutorial.isTutorialStayed()) return;
     this.pushMessage('user', trimmed);
@@ -322,7 +322,7 @@ export class WebController implements ControllerHost {
       return;
     }
     // Text requests route through the selected provider, so a missing key for
-    // that provider fails fast — before any network call — leaving the table
+    // that provider fails fast, before any network call, leaving the table
     // untouched. A key for a different provider does not count. A playing
     // tutorial is the exception: it replays from a cassette and needs no key.
     // See spec/behavior.md § Web UI / settings.
@@ -333,22 +333,22 @@ export class WebController implements ControllerHost {
     try {
       await this.engine.request(trimmed);
       const debug = this.lastDebug;
-      // A wrong answer is a bug even when nothing turned red — every reply to
+      // A wrong answer is a bug even when nothing turned red: every reply to
       // a completed request carries the Report bug action.
       const reply = debug ? summarizeDebug(debug) : 'Done.';
       // Link the reply to the journal entry it reports, so its heading and
       // marker track the entry's undo state (see displayMessages).
       this.pushMessage('assistant', reply, debug, true, this.engine.lastCommitId ?? undefined);
-      // #Diagnostics — a completed request fires no toast, so log it explicitly
-      // (with the request in recentMessages) — else a report copied after a
+      // #Diagnostics: a completed request fires no toast, so log it explicitly
+      // (with the request in recentMessages): else a report copied after a
       // query would have no trace of it.
       this.diagnostics.recordActivity(reply);
     } catch (e) {
-      // A cassette replay miss means the guided replay went off-script — end
+      // A cassette replay miss means the guided replay went off-script: end
       // the tour cleanly (toast + full cancel), never surface the raw
       // fingerprint-mismatch error.
       if (this.tutorial.consumeReplayMiss()) {
-        this.pushToast('info', 'Tour ended — the guided replay went off-script.');
+        this.pushToast('info', 'Tour ended: the guided replay went off-script.');
         this.cancelTutorial();
         return;
       }
@@ -358,25 +358,25 @@ export class WebController implements ControllerHost {
     }
   }
 
-  /** Cancel the in-flight request or flow replay, if any — the chat Stop
+  /** Cancel the in-flight request or flow replay, if any: the chat Stop
    *  button and the mobile banner's stop icon. */
   cancelRequest(): void { this.engine.cancelActive(); }
 
-  // ── View accessors (never throw — safe before a file is loaded) ───────────
+  // ── View accessors (never throw: safe before a file is loaded) ───────────
 
   isLoaded(): boolean { return this.loaded; }
   displaySpec(): TablePlan { return this.engine.displaySpec(); }
   /** Current rows with any in-flight streaming chunks painted on top. */
   displayRows(): Row[] { return this.engine.displayRows(); }
 
-  // ── Pagination + view pipeline (view state — never touches the spec) ──────
-  // #LazyExec — displayed rows run derived → shuffle → filters → sort → page;
+  // ── Pagination + view pipeline (view state, never touches the spec) ──────
+  // #LazyExec: displayed rows run derived → shuffle → filters → sort → page;
   // view positions map back to derived indices through viewOrder.
 
   totalRows(): number { return this.viewRows().length; }
   pageCount(): number { return pageCountFor(this.totalRows(), this.pageSize); }
 
-  /** The current 1-based page, clamped — so a request that shortens the table
+  /** The current 1-based page, clamped, so a request that shortens the table
    *  pulls the page back into range with no extra bookkeeping. */
   currentPage(): number { return clampPage(this.pageNum, this.pageCount()); }
 
@@ -391,7 +391,7 @@ export class WebController implements ControllerHost {
   /** The slice of view rows shown on the current page. */
   pageRows(): Row[] { return pageSlice(this.viewRows(), this.currentPage(), this.pageSize); }
 
-  /** Original (derived) row numbers for the current page — the Row # column
+  /** Original (derived) row numbers for the current page: the Row # column
    *  keeps them while the view is shuffled. 1-based. */
   pageRowNumbers(): number[] {
     const order = this.view.viewOrder(this.engine.rawRows());
@@ -435,7 +435,7 @@ export class WebController implements ControllerHost {
 
   /** Jump to a page; out-of-range values clamp to the nearest edge. Opening
    *  a page with lagging rows queues exactly those rows for evaluation
-   *  (#LazyExec) — await the returned promise to observe the filled page. */
+   *  (#LazyExec): await the returned promise to observe the filled page. */
   goToPage(page: number): Promise<void> {
     this.pageNum = clampPage(page, this.pageCount());
     this.notify();
@@ -449,7 +449,7 @@ export class WebController implements ControllerHost {
   evaluatedReadout(): { done: number; total: number; failed: number } | null {
     return this.lazy.evaluatedReadout();
   }
-  /** 1-based pages carrying pending rows — the pager dots. */
+  /** 1-based pages carrying pending rows: the pager dots. */
   pendingPages(): number[] { return this.lazy.pendingPages(); }
   /** The run-on-all estimate, or null when nothing is pending. */
   runEstimate(): RunEstimate | null { return this.lazy.runEstimate(); }
@@ -463,14 +463,14 @@ export class WebController implements ControllerHost {
   confirmRunAll(): void { this.lazy.confirmRunAll(); }
   applyEvaluatedOnly(): void { this.lazy.applyEvaluatedOnly(); }
   declineRunAll(): void { this.lazy.declineRunAll(); }
-  // #SaveGate — the click a save picker needs when the work came first.
+  // #SaveGate: the click a save picker needs when the work came first.
   confirmSaveGate(): Promise<void> { return this.files.confirmSaveGate(); }
   dismissSaveGate(): void { this.files.dismissSaveGate(); }
-  // #LookupJoin — the paused join's file. "Choose file…" opens the picker from
+  // #LookupJoin: the paused join's file. "Choose file…" opens the picker from
   // this click; cancelling drops the step that needed it.
   chooseLookupFile(): Promise<void> { return this.files.chooseLookupFile(); }
   dismissLookupDialog(): void { this.files.dismissLookupDialog(); }
-  /** Cancel the in-flight run-all — finished rows are kept. */
+  /** Cancel the in-flight run-all: finished rows are kept. */
   cancelRunAll(): void { this.lazy.cancelRun(); }
   /** Await any queued lazy evaluation (tests). */
   lazySettle(): Promise<void> { return this.lazy.settle(); }
@@ -480,9 +480,9 @@ export class WebController implements ControllerHost {
   loadShuffled(): Promise<void> { return this.files.resolveLargeFile(true); }
   loadOriginalOrder(): Promise<void> { return this.files.resolveLargeFile(false); }
 
-  // ── Column-menu view state (#LazyExec — view, never the spec) ─────────────
+  // ── Column-menu view state (#LazyExec: view, never the spec) ─────────────
 
-  /** Whether the shuffled sample is what the grid is showing — the Row #
+  /** Whether the shuffled sample is what the grid is showing: the Row #
    *  hover hint. False once the flow decides the order (§ the shuffled view). */
   shuffledView(): boolean { return this.view.shuffleActive(); }
   /** The active view sort, or null. */
@@ -490,7 +490,7 @@ export class WebController implements ControllerHost {
   /** Per-column contains-match filters. */
   viewFilters(): Record<string, string> { return { ...this.view.filters }; }
   /** Sort from the column menu. On an AI-made column with pending rows the
-   *  dependency rule shows the run-all confirmation first — with a middle
+   *  dependency rule shows the run-all confirmation first, with a middle
    *  "Sort evaluated rows" choice (missing values sink to the end);
    *  declining leaves the view unchanged. */
   async setViewSort(column: string, dir: 'asc' | 'desc' | null): Promise<void> {
@@ -502,14 +502,14 @@ export class WebController implements ControllerHost {
       evaluate = gate !== 'partial';
     }
     this.view.setSort(column, dir);
-    // The new order brings different rows into the current page — evaluate
+    // The new order brings different rows into the current page: evaluate
     // their lagging cells exactly like a page open (#LazyExec).
     if (evaluate) {
       this.lazy.scheduleVisible();
       await this.lazy.settle();
     }
   }
-  /** Filter from the column menu — same gate as sort ("Filter evaluated
+  /** Filter from the column menu: same gate as sort ("Filter evaluated
    *  rows" hides unevaluated rows from the narrowed view). */
   async setViewFilter(column: string, text: string): Promise<void> {
     let evaluate = true;
@@ -524,10 +524,10 @@ export class WebController implements ControllerHost {
       await this.lazy.settle();
     }
   }
-  /** Delete a column — a spec step, exactly what the chat patch would do. */
+  /** Delete a column: a spec step, exactly what the chat patch would do. */
   deleteColumn(column: string): Promise<void> { return this.patch.deleteColumn(column); }
 
-  // ── Selection (view state — tints the cell) ───────────────────────────────
+  // ── Selection (view state: tints the cell) ───────────────────────────────
 
   /** Select a cell by 0-based view-absolute row index and column id. */
   selectCell(row: number, column: string): void {
@@ -539,7 +539,7 @@ export class WebController implements ControllerHost {
 
   canUndo(): boolean { return this.patch.canUndo(); }
   canRedo(): boolean { return this.patch.canRedo(); }
-  /** The undo journal, oldest first — one entry per spec-changing turn. */
+  /** The undo journal, oldest first: one entry per spec-changing turn. */
   history(): Array<{ label: string }> { return this.patch.history(); }
   /** The full history timeline (done + undone) plus the current cursor. */
   historyTimeline(): { steps: TimelineStep[]; cursor: number } { return this.patch.timeline(); }
@@ -556,7 +556,7 @@ export class WebController implements ControllerHost {
 
   /** Whether closing the tab would lose work: a loaded table with any
    *  committed transformation or an undoable step. The browser shell wires
-   *  this to `beforeunload` — a stray refresh must not silently discard
+   *  this to `beforeunload`: a stray refresh must not silently discard
    *  evaluated rows or edits. */
   hasUnsavedWork(): boolean {
     if (!this.loaded) return false;
@@ -566,21 +566,21 @@ export class WebController implements ControllerHost {
   // ── File dialogs (→ files) ─────────────────────────────────────────────────
 
   openCsv(): Promise<void> { return this.files.openCsv(); }
-  /** "Open .flow & run on current data…" — pick a saved flow and replay it
+  /** "Open .flow & run on current data…": pick a saved flow and replay it
    *  onto the currently-loaded table. */
   openFlow(): Promise<void> { return this.files.openFlow(); }
   /** Hide the modal error dialog. */
   dismissErrorDialog(): void { this.errorDialog = null; this.notify(); }
-  /** The Open menu's Recent entries — newest first, at most 5. */
+  /** The Open menu's Recent entries: newest first, at most 5. */
   recents(): RecentEntry[] { return this.files.recents(); }
   /** Re-open a Recent entry (reload a URL/sample, or re-raise a picker). */
   openRecent(entry: RecentEntry): Promise<void> { return this.files.openRecent(entry); }
-  /** Load a dropped file — with a table loaded this raises the replace-table
+  /** Load a dropped file, with a table loaded this raises the replace-table
    *  confirmation instead of loading (spec/behavior.md § Web UI). */
   openDropped(name: string, bytes: Uint8Array): Promise<void> { return this.files.openDropped(name, bytes); }
   /** The replace-table dialog's "Replace & load" click. */
   confirmReplaceDrop(): Promise<void> { return this.files.confirmReplaceDrop(); }
-  /** Dismiss the replace-table dialog — the current table stays. */
+  /** Dismiss the replace-table dialog: the current table stays. */
   dismissReplaceDrop(): void { this.files.dismissReplaceDrop(); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
@@ -593,7 +593,7 @@ export class WebController implements ControllerHost {
   saveDataAs(format: FormatId): Promise<void> { return this.files.saveDataAs(format); }
   /** Public file-load helper (also used by tutorial load-file steps). */
   loadFromText(name: string, text: string): Promise<void> { return this.files.loadFromText(name, text); }
-  /** Byte-level sibling — the @web test profile's `load "<file>"` seam. */
+  /** Byte-level sibling: the @web test profile's `load "<file>"` seam. */
   loadFromBytes(name: string, bytes: Uint8Array): Promise<void> { return this.files.loadFromBytes(name, bytes); }
 
   // ── Voice input (→ voice) ──────────────────────────────────────────────────
@@ -612,7 +612,7 @@ export class WebController implements ControllerHost {
   closeSettings(): void { this.settingsMgr.closeSettings(); }
   /** The user typed in the chooser's key input. */
   setKeyInput(value: string): void { this.settingsMgr.setKeyInput(value); }
-  /** #ProviderSelect — check the pasted key and connect its provider. */
+  /** #ProviderSelect: check the pasted key and connect its provider. */
   addKey(): Promise<void> { return this.settingsMgr.addKey(); }
   /** Make a connected provider the default. */
   selectProvider(provider: Provider): Promise<void> { return this.settingsMgr.selectProvider(provider); }
@@ -624,11 +624,11 @@ export class WebController implements ControllerHost {
   setPaidModelSet(provider: Provider, paid: boolean): Promise<void> {
     return this.settingsMgr.setPaidModelSet(provider, paid);
   }
-  /** #PuterGateway — sign in to Puter.js and connect the token it returns. */
+  /** #PuterGateway: sign in to Puter.js and connect the token it returns. */
   signInPuter(): Promise<void> { return this.settingsMgr.signInPuter(); }
   /** Whether this build can open the Puter sign-in (the host supplied a port). */
   canSignInPuter(): boolean { return this.opts.puterSignIn !== undefined; }
-  /** Every provider with a key — the chooser's card list. */
+  /** Every provider with a key: the chooser's card list. */
   connectedProviders(): Provider[] { return this.settingsMgr.connected(); }
   getConfig(): ResolvedConfig { return this.config; }
   setConfig(partial: Partial<ResolvedConfig>): Promise<void> { return this.settingsMgr.setConfig(partial); }
@@ -692,7 +692,7 @@ export class WebController implements ControllerHost {
   /** Copy the report and open a prefilled GitHub issue for the maintainers. */
   sendBugReport(): Promise<void> { return this.diagnostics.sendBugReport(); }
   /** Report bug from the chat: record the flagged reply (and the request that
-   *  produced it) as a diagnostics event, then run the send-bug-report flow —
+   *  produced it) as a diagnostics event, then run the send-bug-report flow,
    *  so the prefilled issue leads with the exchange being reported. */
   reportMessageBug(id: number): Promise<void> {
     const idx = this.messages.findIndex((m) => m.id === id);

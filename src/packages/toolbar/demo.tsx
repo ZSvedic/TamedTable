@@ -1,4 +1,4 @@
-// #Toolbar demo logic — mounts the real Toolbar + OpenUrlDialog over plain
+// #Toolbar demo logic: mounts the real Toolbar + OpenUrlDialog over plain
 // React state. Every button appends to the #out event log; the theme toggle
 // flips the wrapper (data-tb-mode); the dialog's submit logs the URL and
 // closes. #out is non-empty on load (the demo smoke test's ready signal).

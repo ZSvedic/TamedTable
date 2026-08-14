@@ -1,5 +1,5 @@
 # #SortRows
-# sort evaluates a {js}, {sql}, or {llm} key — not only a JS one.
+# sort evaluates a {js}, {sql}, or {llm} key, not only a JS one.
 # a sort may carry a `limit` to keep only the top N rows.
 Feature: Sort rows by a key
 
@@ -14,7 +14,7 @@ Feature: Sort rows by a key
       And "sort-topn-output.jsonl" matches the expected output
 
   # #TutorialMode
-  # Atomic "Sort or top-N" scenario — CI coverage; loads a sample, runs the
+  # Atomic "Sort or top-N" scenario: CI coverage; loads a sample, runs the
   # phrase, and replays from sort.json. The Be exact section's marketing tour
   # is the single story in showcase-exact.feature.
   Rule: The Sort top-N phrase runs key-free
@@ -45,7 +45,7 @@ Feature: Sort rows by a key
       And "sort-column-output.jsonl" matches the expected output
 
   # Regression: the comparator answered "equal" for every number-vs-word pair,
-  # which made it non-transitive — Array.sort then emitted an arbitrary order,
+  # which made it non-transitive: Array.sort then emitted an arbitrary order,
   # numbers wrongly ordered among themselves included.
   Rule: A column mixing numbers, words and blanks sorts in one predictable order
 

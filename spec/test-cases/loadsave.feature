@@ -1,5 +1,5 @@
 # #TutorialMode
-# Load/save regression test — no longer a marketing tour (the homepage
+# Load/save regression test, no longer a marketing tour (the homepage
 # "Load, save & reuse" section is informational only). Loads a file and runs
 # one transform (replayed from loadsave.json) so cumulative load → query
 # behavior stays covered. Still @web, so it appears in the panel's Dev dropdown.

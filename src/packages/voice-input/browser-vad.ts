@@ -23,7 +23,7 @@ export function browserContinuousPort(tuning: Partial<VadTuning> = {}): Continuo
         {
           onSpeechStart: () => h.onSpeechStart?.(),
           onSpeechEnd: (pcm) => {
-            // VAD emits 16 kHz mono Float32 — the rate every voice model wants.
+            // VAD emits 16 kHz mono Float32: the rate every voice model wants.
             const wav = encodeWav(pcm, 16000);
             void h.onSegment(new Blob([wav as BlobPart], { type: 'audio/wav' }));
           },

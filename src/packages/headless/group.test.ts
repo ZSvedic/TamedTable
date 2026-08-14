@@ -13,7 +13,7 @@ const SUM_DURATION_JS =
 
 const TOTAL_DURATION_SECONDS = 1131455;
 
-describe('group with an empty by — aggregate the whole table', () => {
+describe('group with an empty by: aggregate the whole table', () => {
   it('validateTablePlan accepts a group transformation with an empty by array', () => {
     expect(() =>
       validateTablePlan({

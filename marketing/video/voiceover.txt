@@ -1,4 +1,4 @@
-# TamedTable demo voiceover — English, 20 seconds.
+# TamedTable demo voiceover: English, 20 seconds.
 # The spoken lines are short so each fits its beat at natural pace (no speed-up).
 # The on-screen captions carry the fuller wording; the voiceover is punchier.
 #

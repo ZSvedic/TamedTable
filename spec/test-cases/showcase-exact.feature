@@ -1,5 +1,5 @@
 # #TutorialMode
-# The "Be exact" showcase tour — one quarterly sales sheet through five
+# The "Be exact" showcase tour: one quarterly sales sheet through five
 # deterministic steps: dedupe, lookup join, filter, pivot, sort. Every step
 # runs in the SQL engine; the only model call per ask is the spec patch.
 # Key-free @tour deep-linked from the homepage; replays from
@@ -8,7 +8,7 @@ Feature: Be exact showcase tour
 
   Rule: One sales sheet is deduped, joined, filtered, pivoted, and sorted
 
-    # The join's Region column is what the filter reads one ask later — the
+    # The join's Region column is what the filter reads one ask later: the
     # lookup table is a silent prerequisite, hidden from the tour steps.
     @web @tour @cat-deterministic
     Scenario: Shape a quarterly sales report

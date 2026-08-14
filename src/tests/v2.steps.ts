@@ -25,7 +25,7 @@ async function loadSyntheticRow(world: TamedTableWorld, row: Row): Promise<void>
 }
 
 function unescapeLiteral(s: string): string {
-  // Cucumber {string} delivers literal \n / \" — unescape to real chars.
+  // Cucumber {string} delivers literal \n / \": unescape to real chars.
   return s.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
 }
 
@@ -45,7 +45,7 @@ Given(/^a row with FirstName "(.+)" and an "(.+)" column equal to the object (\{
     await loadSyntheticRow(this, { ID: 1, FirstName: fn, [colName]: obj });
   });
 
-// #FormatOut — a spec with a labelled first column, to prove the CSV header
+// #FormatOut: a spec with a labelled first column, to prove the CSV header
 // row uses `label` when set (behavior.md § CSV output). Rows are keyed by id;
 // the header is the label. Self-contained (its own headless runner + temp file)
 // because the surface-agnostic Runner interface exposes no labelled load.
@@ -131,7 +131,7 @@ function safeStringify(v: unknown): string {
 }
 
 // Item 5: a split over a fixture that includes an empty-FullName row can't
-// give every output row a value — the empty cell yields nulls by design
+// give every output row a value: the empty cell yields nulls by design
 // (covered by the "empty input cell produces nulls" scenario). This weaker
 // assertion checks only the rows whose split source was non-empty.
 Then('every non-empty row has a non-null {string}', function (this: TamedTableWorld, col: string) {
@@ -220,10 +220,10 @@ Then('the row has LastName equal to null', function (this: TamedTableWorld) {
 Given('load the lookup table {string} with columns {string}',
   async function (this: TamedTableWorld, file: string, _cols: string) {
     // The @web surface has no working directory, so a browser join cannot
-    // resolve the lookup file by path — it pauses on the #LookupJoin dialog and
+    // resolve the lookup file by path: it pauses on the #LookupJoin dialog and
     // asks the user to pick it (PR #259 gave that seam a real UI). Drive that
-    // through the public `chooseLookupFile()` method — the same handshake the
-    // "user chooses the lookup file" step uses — rather than reaching into the
+    // through the public `chooseLookupFile()` method: the same handshake the
+    // "user chooses the lookup file" step uses: rather than reaching into the
     // controller engine: arm a background responder that answers the dialog
     // when the join later raises it. Path-based surfaces resolve it next to the
     // loaded input.
@@ -244,7 +244,7 @@ Given('load the lookup table {string} with columns {string}',
           await choosing;
         } catch {
           // A failure here starves the join of its lookup, so the scenario's
-          // `compare with the expected output` fails loudly — the right signal.
+          // `compare with the expected output` fails loudly: the right signal.
         }
       })());
       return;
@@ -264,8 +264,8 @@ Given('the lookup table has no entry for Country {string}', async function (this
 });
 
 Given('the customer table contains a row with Country {string}', function (this: TamedTableWorld, country: string) {
-  // Datanorm input does not have Atlantis; this step is a soft-no-op for now
-  // — the join's left-side behavior is what we actually assert.
+  // Datanorm input does not have Atlantis; this step is a soft-no-op for now:
+  // the join's left-side behavior is what we actually assert.
   void country;
 });
 
@@ -429,7 +429,7 @@ Then('the spec is unchanged from before the request', function (this: TamedTable
 //
 // The exported script's contract is `uv run --script <path> <input> <output>`:
 // the shebang + PEP 723 header resolve dependencies, no AI call at run time.
-// Executing it here pins the equivalence promise in behavior.md — the script
+// Executing it here pins the equivalence promise in behavior.md, the script
 // reproduces the rows the session itself saved.
 
 const execFileAsync = promisify(execFile);
@@ -448,7 +448,7 @@ When('user runs the exported script {string} with input {string} and output {str
     } catch (e) {
       const err = e as { code?: number | string; stdout?: string; stderr?: string; message: string };
       if (err.code === 'ENOENT') {
-        throw new Error('`uv` is not on PATH — the exported-script scenario needs it installed: '
+        throw new Error('`uv` is not on PATH: the exported-script scenario needs it installed: '
           + 'https://docs.astral.sh/uv/getting-started/installation/');
       }
       this.lastInvocation = {
@@ -463,6 +463,6 @@ Then('{string} has the same rows as {string}',
   async function (this: TamedTableWorld, actualFile: string, expectedFile: string) {
     const actual = await readJsonl(join(TEMP_DIR, basename(actualFile)));
     const expected = await readJsonl(join(TEMP_DIR, basename(expectedFile)));
-    assert.ok(expected.length > 0, `${expectedFile} is empty — nothing to compare`);
+    assert.ok(expected.length > 0, `${expectedFile} is empty: nothing to compare`);
     assert.deepEqual(actual, expected);
   });

@@ -2,7 +2,7 @@
 // Accuracy scoring for group-C cell fills. The engine ran an NL request that
 // added a target column; we compare the value it produced in each labelled row
 // against the committed ground truth (benchmarks/ground-truth/*). This is the
-// y-axis of the model- and batch-size tradeoff charts — without it, "best value"
+// y-axis of the model- and batch-size tradeoff charts, without it, "best value"
 // and "good enough for cells" have no measured basis, only cost.
 import type { Row } from '@tamedtable/core';
 

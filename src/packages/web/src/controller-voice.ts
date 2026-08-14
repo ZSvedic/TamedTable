@@ -2,7 +2,7 @@
 // Press-and-hold voice input. Owns the recording port (browser MediaRecorder
 // or a test stub), the mic state machine, and the 30 s auto-stop timer. A
 // release runs the ordinary patch turn with the audio riding along as a file
-// part — one model call, no separate transcription step.
+// part: one model call, no separate transcription step.
 import { basename } from 'node:path';
 import type { RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
 import { supportsVoiceInput } from '@tamedtable/model-config';
@@ -25,13 +25,13 @@ export class VoiceManager {
   private voiceAbort: AbortController | null = null;
   /** Cancels the pending 30 s auto-stop, set while a recording is live. */
   private voiceAutoStopCancel: (() => void) | null = null;
-  /** True while a continuous turn is being applied — so a second detected turn
+  /** True while a continuous turn is being applied, so a second detected turn
    *  that lands mid-request is dropped rather than overlapping the first. */
   private continuousBusy = false;
   /** Bumped on every mic-session start and abandon, so a start whose await
    *  (the permission prompt) outlives its session never goes live. */
   private voiceEpoch = 0;
-  /** A quick tap landed while the start was still pending — come up latched. */
+  /** A quick tap landed while the start was still pending: come up latched. */
   private latchOnStart = false;
 
   private readonly host: ControllerHost;
@@ -54,7 +54,7 @@ export class VoiceManager {
   }
 
   /** Press-and-hold start: begin recording, auto-stopping after 30 s. The
-   *  awaited `startRecording` is the browser permission prompt — the state
+   *  awaited `startRecording` is the browser permission prompt, the state
    *  machine sits in `starting` while it is up, so a release, Escape, or a
    *  closed gate in that window ends the session and the grant lands on a
    *  session that immediately releases the microphone. */
@@ -76,7 +76,7 @@ export class VoiceManager {
       return;
     }
     if (this.voiceEpoch !== epoch || this.host.voiceStatus !== 'starting') {
-      // Released or cancelled while the permission prompt was up — the grant
+      // Released or cancelled while the permission prompt was up, the grant
       // just lit a microphone nobody is holding; release it right away.
       try {
         this.voice.cancelRecording();
@@ -97,7 +97,7 @@ export class VoiceManager {
   }
 
   /** Quick tap (released before it counts as a hold): keep recording, but
-   *  hands-free — the button swaps to explicit cancel (✕) / send (✓) controls.
+   *  hands-free: the button swaps to explicit cancel (✕) / send (✓) controls.
    *  A tap that lands while the start is still pending (the permission
    *  prompt) is remembered, so the granted session comes up latched. */
   latchVoice(): void {
@@ -112,9 +112,9 @@ export class VoiceManager {
   }
 
   /** Release (or the ✓ control on a latched recording): stop recording and run
-   *  the ordinary patch turn with the audio riding along as a file part — one
+   *  the ordinary patch turn with the audio riding along as a file part: one
    *  model call, no transcription step. A release during `starting` (the
-   *  permission prompt is still up) has nothing recorded to send — it ends
+   *  permission prompt is still up) has nothing recorded to send: it ends
    *  the pending session instead. */
   async stopVoice(): Promise<void> {
     if (!this.voice) return;
@@ -139,7 +139,7 @@ export class VoiceManager {
       };
     } catch (e) {
       // A microphone failure surfaces like any other voice failure: the toast
-      // AND an assistant chat message — the toast fades, the chat entry stays.
+      // AND an assistant chat message: the toast fades, the chat entry stays.
       this.host.fail(`Voice input failed: ${(e as Error).message}`);
       this.host.voiceStatus = 'idle';
       this.voiceAbort = null;
@@ -160,11 +160,11 @@ export class VoiceManager {
    *  placeholder user bubble, send the audio on a single model call (the same
    *  call returns the spec patch and a transcript), swap the bubble + history
    *  label to the transcript, and surface failures the same way a typed request
-   *  does. Shared by the mic-release path and the tutorial `play-audio` step —
+   *  does. Shared by the mic-release path and the tutorial `play-audio` step,
    *  which replays this exact request from a cassette, key-free. */
   async sendAudioRequest(audio: RequestAudio, signal?: AbortSignal): Promise<void> {
     // Staying in a finished tour: the engine still replays from the tour's
-    // cassette, which cannot answer a request it never recorded — ignore
+    // cassette, which cannot answer a request it never recorded: ignore
     // silently like sendChat does (the UI disables the mic). A playing tour's
     // play-audio step is unaffected (not stayed).
     if (this.host.tutorial.isTutorialStayed()) return;
@@ -183,8 +183,8 @@ export class VoiceManager {
         },
       });
       // A declined confirmation (the run-all estimate, a lookup) dropped the
-      // patch: nothing committed, so there is no history entry to relabel —
-      // relabelling would rewrite the previous, unrelated entry — and no
+      // patch: nothing committed, so there is no history entry to relabel.
+      // Relabelling would rewrite the previous, unrelated entry, and no
       // success reply to post (code-contract § Voice: the label is rewritten
       // "on success" only). The placeholder bubble keeps the transcript.
       if (this.host.engine.lastCommitId === null) return;
@@ -198,10 +198,10 @@ export class VoiceManager {
         this.host.engine.lastCommitId ?? undefined,
       );
     } catch (e) {
-      // A cassette replay miss during a tour ends it cleanly — same safety
+      // A cassette replay miss during a tour ends it cleanly: same safety
       // net as sendChat, never the raw fingerprint-mismatch error.
       if (this.host.tutorial.consumeReplayMiss()) {
-        this.host.pushToast('info', 'Tour ended — the guided replay went off-script.');
+        this.host.pushToast('info', 'Tour ended: the guided replay went off-script.');
         this.host.tutorial.cancelTutorial();
         return;
       }
@@ -214,7 +214,7 @@ export class VoiceManager {
   }
 
   /** Escape: discard the recording without sending anything. During
-   *  `starting` there is nothing live yet — end the pending session and let
+   *  `starting` there is nothing live yet: end the pending session and let
    *  startVoice's continuation release the microphone once the prompt
    *  settles. */
   cancelVoice(): void {
@@ -237,7 +237,7 @@ export class VoiceManager {
 
   /** Called after every config change: the mic and waveform are shown only
    *  for a voice-capable model with a key, so when a provider switch or key
-   *  removal closes that gate, any live session is torn down with it — the
+   *  removal closes that gate, any live session is torn down with it: the
    *  controls unmount, and a stranded recording would keep the microphone
    *  hot and still send through the placeholder-key fallback. */
   enforceGate(): void {
@@ -256,7 +256,7 @@ export class VoiceManager {
   }
 
   /** One toggle: start listening if idle, stop if already running. A click
-   *  while the VAD is still loading (`starting`) is ignored — re-entering
+   *  while the VAD is still loading (`starting`) is ignored: re-entering
    *  start would open a second session holding the microphone forever, and
    *  the port keeps a single handle so stop would release only one. */
   async toggleContinuous(): Promise<void> {
@@ -310,12 +310,12 @@ export class VoiceManager {
     this.host.notify();
   }
 
-  /** Apply one detected turn through the ordinary audio patch turn — the same
+  /** Apply one detected turn through the ordinary audio patch turn, the same
    *  call the mic release makes, so context and cost match. A turn that arrives
    *  while one is still applying is dropped, so two patch turns never overlap. */
   private async onContinuousSegment(clip: Blob): Promise<void> {
-    // Dropped unless the session is plainly listening AND no other turn — a
-    // continuous one (continuousBusy), or a typed/mic one (host.streaming) —
+    // Dropped unless the session is plainly listening AND no other turn: a
+    // continuous one (continuousBusy), or a typed/mic one (host.streaming):
     // is still applying: any overlap, not just a continuous-on-continuous
     // one, must drop the clip rather than error (code-contract § Voice).
     if (this.continuousBusy || this.host.streaming || this.host.continuousStatus !== 'listening') return;
@@ -352,7 +352,7 @@ export class VoiceManager {
     const columns = spec.columns.map((c) => c.id);
     const ctx: VoiceContext = { filename, columns };
     if (this.host.selection) {
-      // The selection is a view position (#LazyExec) — map it back to the
+      // The selection is a view position (#LazyExec): map it back to the
       // derived row the model should be told about.
       const derived = this.host.view.viewOrder(this.host.engine.rawRows())[this.host.selection.row]
         ?? this.host.selection.row;

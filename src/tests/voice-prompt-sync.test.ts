@@ -1,7 +1,7 @@
 // #VoiceInput
 // Guard: the voice instruction in @tamedtable/voice-input is a byte-identical
 // copy of spec/prompt-app-edit.md § VOICE_PROMPT. The package is zero-dep and
-// browser-safe, so unlike headless it can't read the spec file at init — this
+// browser-safe, so unlike headless it can't read the spec file at init: this
 // test is what makes the spec section canonical. The text is
 // fingerprint-load-bearing: a drifted copy orphans every voice cassette.
 
@@ -19,7 +19,7 @@ describe('voice prompt sync', () => {
     const md = await Bun.file('../spec/prompt-app-edit.md').text();
     expect(
       VOICE_INSTRUCTION,
-      'voice-input VOICE_INSTRUCTION drifted from spec/prompt-app-edit.md § VOICE_PROMPT — sync them (and re-record voice cassettes if the wording really must change)'
+      'voice-input VOICE_INSTRUCTION drifted from spec/prompt-app-edit.md § VOICE_PROMPT: sync them (and re-record voice cassettes if the wording really must change)'
     ).toBe(section(md, 'VOICE_PROMPT'));
   });
 });

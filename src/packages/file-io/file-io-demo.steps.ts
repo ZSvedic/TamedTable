@@ -2,7 +2,7 @@
 // Step defs for the @web file-io scenarios. They drive the package's demo
 // page (see tests/demo-harness.ts) and assert through the demo's #fio-*
 // elements. Table URLs the scenarios fetch are served from a per-scenario
-// fixture map by the same request interceptor — no network. A CORS header on
+// fixture map by the same request interceptor, no network. A CORS header on
 // fixture responses lets the demo's cross-origin fetchTable call through.
 import { Given, Then, When } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';

@@ -1,9 +1,9 @@
 // Step defs for the voice-input regression scenarios in
-// spec/test-cases/voice.feature — the 2026-07-29 hunt findings RED-VOICE-1,
+// spec/test-cases/voice.feature: the 2026-07-29 hunt findings RED-VOICE-1,
 // -2, -6 and -7, fixed and moved green (-3/-4/-5 are unit tests in
 // voice-lifecycle.test.ts). Self-contained: each scenario builds its own
 // WebController with stub voice ports, a captured voiceSchedule (so the 30 s
-// auto-stop fires on demand), and an offline fetch — either the committed
+// auto-stop fires on demand), and an offline fetch, either the committed
 // cassettes/voice.json replay or a canned Gemini function-call response. No
 // network, no API key, no real timers.
 import { Given, When, Then } from '@cucumber/cucumber';
@@ -96,7 +96,7 @@ const S = new WeakMap<object, RedVoiceState>();
 
 function state(world: object): RedVoiceState {
   const s = S.get(world);
-  if (!s) throw new Error('voice-regressions state missing — did the Given step run?');
+  if (!s) throw new Error('voice-regressions state missing: did the Given step run?');
   return s;
 }
 
@@ -106,7 +106,7 @@ Given('a regression voice session whose microphone permission prompt is pending'
   let grant!: () => void;
   let live = false;
   const port: VoicePort = {
-    // getUserMedia is up as the browser permission prompt — resolves on grant.
+    // getUserMedia is up as the browser permission prompt: resolves on grant.
     startRecording: () =>
       new Promise<void>((res) => {
         grant = () => {
@@ -140,7 +140,7 @@ Then('granting the permission leaves the mic idle and the auto-stop sends nothin
   s.grant!();
   await s.startPending;
   // If the (already released) recording armed its 30 s auto-stop anyway, let
-  // it fire — the user walked away after granting the prompt.
+  // it fire: the user walked away after granting the prompt.
   const auto = s.rig.autoStop();
   if (auto) await auto.fn();
   const c = s.rig.c;
@@ -148,7 +148,7 @@ Then('granting the permission leaves the mic idle and the auto-stop sends nothin
   const sent = c.displaySpec().transformations.length;
   assert.ok(
     sent === 0 && voiceBubbles.length === 0 && c.voiceStatus === 'idle' && !s.recorderLive!(),
-    `RED-VOICE-1 (spec/behavior.md:1589): "hold the button to record … and release to send" — a release during the pending permission prompt must end the session, never leave the mic hot; instead the release was lost (stopVoice bails while voiceStatus is still 'idle'), the grant lit the mic with nobody holding the button, and the 30 s auto-stop sent ${voiceBubbles.length} unattended voice turn(s) (${JSON.stringify(voiceBubbles.map((m) => m.text))}) applying ${sent} transformation(s)`,
+    `RED-VOICE-1 (spec/behavior.md:1589): "hold the button to record … and release to send". A release during the pending permission prompt must end the session, never leave the mic hot; instead the release was lost (stopVoice bails while voiceStatus is still 'idle'), the grant lit the mic with nobody holding the button, and the 30 s auto-stop sent ${voiceBubbles.length} unattended voice turn(s) (${JSON.stringify(voiceBubbles.map((m) => m.text))}) applying ${sent} transformation(s)`,
   );
 });
 
@@ -199,7 +199,7 @@ Given('a second regression voice session listening hands-free', async function (
 
 When('the provider is switched mid-recording and the key is removed mid-listening', async function () {
   const s = state(this);
-  // Settings is reachable while recording/listening — no voiceStatus guard.
+  // Settings is reachable while recording/listening, no voiceStatus guard.
   await s.rig.c.selectProvider('anthropic');
   await s.contRig!.c.setConfig({ geminiKey: null });
 });
@@ -213,7 +213,7 @@ Then('both microphones are released and the keyless detected turn is not sent', 
       `the latched recording survives the provider switch with its controls unmounted (recorder released=${s.micReleased!()}, voiceStatus='${a.voiceStatus}', mic button rendered=${a.voiceAvailable()}, 30 s auto-stop still armed=${s.rig.autoStop() !== undefined})`,
     );
   }
-  // The VAD — still holding the mic — detects a spoken turn after the key is gone.
+  // The VAD, still holding the mic, detects a spoken turn after the key is gone.
   await s.contEmit!(clip('voice-normalize-dob.m4a'));
   const b = s.contRig!.c;
   const sent = b.displaySpec().transformations.length;
@@ -225,13 +225,13 @@ Then('both microphones are released and the keyless detected turn is not sent', 
   assert.equal(
     problems.length,
     0,
-    `RED-VOICE-2 (spec/behavior.md:1576-1583, 1638): the mic is shown only for a voice-capable model with a key, and "Stopping releases the microphone" — closing the gate mid-session must tear the live session down; instead ${problems.join('; and ')}`,
+    `RED-VOICE-2 (spec/behavior.md:1576-1583, 1638): the mic is shown only for a voice-capable model with a key, and "Stopping releases the microphone". Closing the gate mid-session must tear the live session down; instead ${problems.join('; and ')}`,
   );
 });
 
 // ── RED-VOICE-6: transcript on a declined patch ──────────────────────────────
 
-/** Canned Gemini function-call turn: one AI mutate plus a transcript — enough
+/** Canned Gemini function-call turn: one AI mutate plus a transcript, enough
  *  to trip the always-run-all estimate on a 20-row table paged at 10. */
 const GEMINI_VOICE_TURN = JSON.stringify({
   candidates: [
@@ -317,7 +317,7 @@ Then('the prior undo entry keeps its label and no success bubble is posted', fun
   assert.equal(
     problems.length,
     0,
-    `RED-VOICE-6 (spec/code-contract.md:1368-1369): the undo-history label is rewritten to the transcript "on success" only, and a declined confirmation means no history entry and no error surface (controller-engine.ts:469-472); instead ${problems.join('; and ')} — while the table correctly kept only the prior cell edit (${c.displaySpec().transformations.length} transformation(s), the declined voice patch itself dropped)`,
+    `RED-VOICE-6 (spec/code-contract.md:1368-1369): the undo-history label is rewritten to the transcript "on success" only, and a declined confirmation means no history entry and no error surface (controller-engine.ts:469-472); instead ${problems.join('; and ')}, while the table correctly kept only the prior cell edit (${c.displaySpec().transformations.length} transformation(s), the declined voice patch itself dropped)`,
   );
 });
 
@@ -367,6 +367,6 @@ Then('the cancelled voice turn applies no transformation', function () {
   assert.equal(
     sent,
     0,
-    `RED-VOICE-7 (spec/behavior.md:905-907): the chat Stop button "cancels either kind of run", but cancelRequest() during a mic voice turn is a no-op — the voice path passes its own signal so engine.activeAbort is never armed (controller-engine.ts:413-415) — and the turn applied ${sent} transformation(s) anyway`,
+    `RED-VOICE-7 (spec/behavior.md:905-907): the chat Stop button "cancels either kind of run", but cancelRequest() during a mic voice turn is a no-op, the voice path passes its own signal so engine.activeAbort is never armed (controller-engine.ts:413-415), and the turn applied ${sent} transformation(s) anyway`,
   );
 });

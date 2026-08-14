@@ -20,7 +20,7 @@ describe('debugEnabled', () => {
     expect(debugEnabled()).toBe(true);
   });
 
-  it('is off for 0, false, off — case- and space-insensitive', () => {
+  it('is off for 0, false, off: case- and space-insensitive', () => {
     for (const v of ['0', 'false', 'off', 'OFF', ' off ', 'False']) {
       setDebug(v);
       expect(debugEnabled()).toBe(false);
@@ -110,7 +110,7 @@ describe('formatDebugBlock', () => {
 });
 
 // spec/behavior.md § REPL: the block is "capped at twenty lines" AND "the
-// block's last line summarises the request" — both unconditional, so the cap
+// block's last line summarises the request", both unconditional, so the cap
 // has to drop from the middle. Truncating the tail (the RED-CLI-8 bug
 // inventory, now fixed) deleted exactly the line the spec pins as always-last.
 describe('the 20-line cap keeps the summary last', () => {

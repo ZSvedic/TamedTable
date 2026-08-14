@@ -22,7 +22,7 @@ async function runAndCapture(world: TamedTableWorld, argv: string[], extra?: { s
   const out = captureStdout();
   // Count model calls so a scenario can assert an input was handled locally
   // (an unknown ":" command must never reach the spec editor). The wrapper sits
-  // outside whatever fetch the scenario already has — the cassette recorder in
+  // outside whatever fetch the scenario already has: the cassette recorder in
   // replay mode, the real one otherwise.
   const opts = { ...world.runnerOpts };
   world.modelCalls = 0;
@@ -83,7 +83,7 @@ Then('REPL stdout does not contain {string}', function (this: TamedTableWorld, t
 // Slice the LAST table reprint from stdout. A table line is any line containing
 // " | " (the renderTable cell separator). The REPL writes its "> " prompt with
 // no newline, so a reprint's header line often carries a "> " prefix from the
-// previous prompt — which glues consecutive reprints into one contiguous block
+// previous prompt, which glues consecutive reprints into one contiguous block
 // of table lines. Scanning backwards, a prompt-prefixed table line is the
 // current reprint's own header: include it and stop there, or an assertion
 // about "the last reprint" would silently read the one before it too.
@@ -138,7 +138,7 @@ Then('the schema printed after the undo lists {string} before {string}',
 Then('the :history output lists no turns', function (this: TamedTableWorld) {
   const inv = getCapture(this);
   assert.ok(inv.stdout.includes('(no history)'),
-    `expected ":history" to print "(no history)" — :show/:find should not enter the journal. Stdout:\n${inv.stdout}`);
+    `expected ":history" to print "(no history)"; :show/:find should not enter the journal. Stdout:\n${inv.stdout}`);
 });
 
 Then('column {string} was normalized in the final state', function (this: TamedTableWorld, column: string) {
