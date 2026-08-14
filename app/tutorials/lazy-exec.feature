@@ -13,7 +13,7 @@ Feature: Lazy AI execution edge cases
 
   Rule: The page is the unit of AI work
 
-    # paginate-input.csv holds 246 rows — 100-row pages leave a 46-row last
+    # paginate-input.csv holds 246 rows: 100-row pages leave a 46-row last
     # page. Opening it evaluates exactly those 46 rows, never a full wave.
     @web
     Scenario: The short last page evaluates exactly its rows
@@ -25,8 +25,8 @@ Feature: Lazy AI execution edge cases
       Then the current page shows 46 rows
       And the evaluated-rows readout shows "146 of 246 rows evaluated"
 
-    # Row state is per row, never per page: OpenRouter's wave — and page —
-    # is 25 rows, so switching re-derives every indicator without touching
+    # Row state is per row, never per page: OpenRouter's wave, and page.
+    # Is 25 rows, so switching re-derives every indicator without touching
     # a row or making a model call.
     @web
     Scenario: Switching provider resizes pages but keeps row state
@@ -64,7 +64,7 @@ Feature: Lazy AI execution edge cases
 
     # Cancelling lands between waves: the first 100-row wave's results are
     # already cached, the last 46 rows stay pending. The second run touches
-    # only those — 46 rows fit one page, so it runs without the dialog.
+    # only those: 46 rows fit one page, so it runs without the dialog.
     @web
     Scenario: Cancel mid-run keeps finished rows; the next run touches only the rest
       Given load "paginate-input.csv"
@@ -96,7 +96,7 @@ Feature: Lazy AI execution edge cases
 
   Rule: The shuffled view is only a view
 
-    # No AI step, no model call — deterministic, replayable offline.
+    # No AI step, no model call: deterministic, replayable offline.
     @web
     Scenario: Sorting the shuffled sample reorders the view; saving keeps original order
       When user drops the file "showcase-lazy-input.csv" onto the empty page
@@ -110,7 +110,7 @@ Feature: Lazy AI execution edge cases
       Then the saved file keeps the original row order
 
     # Regression: the shuffle permuted whatever the engine handed it, so a flow
-    # that sorted came out shuffled — the user asked to sort by a column and got
+    # that sorted came out shuffled: the user asked to sort by a column and got
     # the sample back, in an order that looked like nothing at all. A sort in the
     # spec outranks the sample. Deterministic: a .flow replay, no model call.
     @web
@@ -123,7 +123,7 @@ Feature: Lazy AI execution edge cases
       Then the page rows are in ascending "Name" order
       And the Row # column no longer claims a shuffled view
 
-    # Undo puts the sort back in the box, and the sample returns — same seed,
+    # Undo puts the sort back in the box, and the sample returns: same seed,
     # so the rows come back in the order they were sampled in.
     @web
     Scenario: Undoing the sort brings the shuffled sample back
@@ -212,7 +212,7 @@ Feature: Lazy AI execution edge cases
       And the newly evaluated cells carry the changed marker
 
     # Regression (feedback round 4): with a sort active, opening a tail page
-    # evaluates it and then folds those rows into the sort — a sorted view must
+    # evaluates it and then folds those rows into the sort: a sorted view must
     # read sorted on every page, not leave later pages in their pre-sort order.
     @web
     Scenario: Paging a sorted AI column keeps each page sorted
@@ -225,7 +225,7 @@ Feature: Lazy AI execution edge cases
       Then the current page is sorted by "Language" ascending
       When user goes to page 2
       Then the current page is sorted by "Language" ascending
-      # Opening page 2 evaluates exactly page 2 — even though the ten cities
+      # Opening page 2 evaluates exactly page 2: even though the ten cities
       # cycle and page 3's answers are already cached, page 3 stays pending
       # behind its pager mark until the reader opens it.
       And the evaluated-rows readout shows "200 of 246 rows evaluated"
@@ -233,7 +233,7 @@ Feature: Lazy AI execution edge cases
     # Regression (feedback round 3): opening a pending page evaluates only that
     # page. Repeated data (the ten cities cycle) means page 2's answers are
     # already cached from page 1, but filling page 2 must not silently complete
-    # page 3 — the readout climbs 100 → 200, and the pager keeps a pending mark.
+    # page 3: the readout climbs 100 → 200, and the pager keeps a pending mark.
     @web
     Scenario: Opening a page evaluates only that page, even when the rest is cached
       Given load "paginate-input.csv"
@@ -245,7 +245,7 @@ Feature: Lazy AI execution edge cases
       Then the evaluated-rows readout shows "200 of 246 rows evaluated"
       And the pager marks the pages with pending rows
 
-    # Two AI columns land two chunks per row — the progress divides, so it
+    # Two AI columns land two chunks per row: the progress divides, so it
     # never reports more rows done than the table has.
     @web
     Scenario: Run-all progress counts rows, not cells
@@ -259,7 +259,7 @@ Feature: Lazy AI execution edge cases
       Then the run-all progress peaked at 146 of 146 rows
       And every row has a non-null "Tier"
 
-    # #SaveGate — a save that had to run rows first parks behind one more
+    # #SaveGate: a save that had to run rows first parks behind one more
     # click: the browser only opens a save picker inside a user gesture, and
     # the run consumed the original one. The run had its own progress dialog,
     # so this gate opens already ready.
@@ -279,7 +279,7 @@ Feature: Lazy AI execution edge cases
 
     # Regression (feedback round 3): a page-open evaluation fills the visible
     # page with live calls AND silently refills every other row whose prompt is
-    # already cached — the ten cities cycle, so the first page seeds them all,
+    # already cached: the ten cities cycle, so the first page seeds them all,
     # and opening page 2 quietly fills the whole table. Those free refills went
     # from blank to a value too, so they must carry the changed marker; if only
     # the live calls are marked, a shuffled or sorted view shows one block
@@ -299,7 +299,7 @@ Feature: Lazy AI execution edge cases
 
     # Regression (feedback round 4): ordinary successful work must reach the
     # diagnostics log. A completed request never fires a toast, so before this
-    # the log held only saves/errors — a report copied after running a query
+    # the log held only saves/errors, a report copied after running a query
     # was empty, with no trace of the query that misbehaved.
     @web
     Scenario: A completed request lands in the diagnostics log

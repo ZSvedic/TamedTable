@@ -1,8 +1,8 @@
 # #TutorialMode
-# The "Validate" showcase tour — one order sheet runs four semantic checks in a
+# The "Validate" showcase tour: one order sheet runs four semantic checks in a
 # row: fake emails, impossible birth dates, city/country mismatches, and
 # implausible prices. Each validate names its own flag pair (Email_ok,
-# DOB_ok, …), so the four audits stack — by the end the sheet carries all four
+# DOB_ok, …), so the four audits stack: by the end the sheet carries all four
 # verdicts side by side (see validate.feature). Key-free @tour deep-linked from
 # the homepage; replays from showcase-validate.json. Atomic scenarios stay in
 # validate.feature.

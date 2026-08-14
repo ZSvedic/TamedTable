@@ -1,10 +1,10 @@
 # #TutorialMode #LazyExec
-# The "Lazy AI execution" showcase tour — the homepage's top section. It loads
+# The "Lazy AI execution" showcase tour: the homepage's top section. It loads
 # the large bundled sample and walks the page-first story: the one-click
 # large-file dialog, the shuffled sample whose Row # column keeps original
 # numbers, an AI step that fills just the visible page, the pending-page
 # marks, and the run-on-all estimate dialog (shown, then declined with
-# "Not yet" — nothing runs, no key, no cost, and the tour ends with no
+# "Not yet": nothing runs, no key, no cost, and the tour ends with no
 # dialog left open). Replays key-free from cassettes/showcase-lazy-ai.json.
 Feature: Lazy AI execution showcase tour
 

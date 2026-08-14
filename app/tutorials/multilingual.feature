@@ -1,5 +1,5 @@
 # #DataNorm #VoiceInput
-# Multilingual capability probe — the same request ("normalize the phone
+# Multilingual capability probe, the same request ("normalize the phone
 # numbers") issued in Spanish, German, French, Croatian, and Chinese, as text
 # (c1) and as voice (c2). A robust property is asserted (a mutate targeting the
 # Phone column), not a brittle byte-golden, since model output varies by
@@ -19,7 +19,7 @@ Feature: Multilingual requests
       And every non-null "Phone" matches the pattern "^\+[0-9]{7,15}$"
 
     # The non-Spanish text variants share one shape; an outline keeps them
-    # together. (Spanish stays a standalone scenario above — the Process
+    # together. (Spanish stays a standalone scenario above, the Process
     # language showcase tour ends with the same Spanish ask.)
     @headless @web
     Scenario Outline: <language> text request
@@ -84,13 +84,13 @@ Feature: Multilingual requests
       And the mic status is "idle"
 
     # Capability gap, surfaced not forced: the synthetic espeak-ng Mandarin clip
-    # is too robotic for Gemini to transcribe — it mis-hears the request as
+    # is too robotic for Gemini to transcribe: it mis-hears the request as
     # gibberish and applies an unrelated patch. So we assert only that the voice
     # round-trip completes cleanly, NOT that the phone column is normalized. The
     # Chinese *text* request (c1) is understood correctly; only the synthetic
     # audio fails. A human re-record would likely fix this. See the PR notes.
     @web
-    Scenario: Chinese voice request — pipeline runs, synthetic audio mis-heard
+    Scenario: Chinese voice request. Pipeline runs, synthetic audio mis-heard
       Given the TamedTable web app
       And a stub microphone that records "voice-normalize-phone-zh.m4a"
       And load "customers-input.csv"

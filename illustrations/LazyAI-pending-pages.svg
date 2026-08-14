@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
-  <!-- TamedTable feature illustration: Lazy AI — the visible page fills, the rest stays pending.
+  <!-- TamedTable feature illustration: Lazy AI. The visible page fills, the rest stays pending.
        The Row # column keeps original row numbers (the view is shuffled); saving keeps that order. -->
   <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
   <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>

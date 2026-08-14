@@ -1,5 +1,5 @@
 # #Validate
-# validate transformation — flag rows, optionally reject the file.
+# validate transformation, flag rows, optionally reject the file.
 Feature: Row and dataset validation
 
   Rule: validate annotates each row with a named flag pair
@@ -21,7 +21,7 @@ Feature: Row and dataset validation
       And rows where "Phone_ok" is true have "Phone_ok_note" equal to null
 
     @headless @cli
-    Scenario: validate is additive — no rows are dropped
+    Scenario: validate is additive: no rows are dropped
       Given load "customers-input.csv"
       And the source has 20 rows and 3 have empty Phone
       When query "Validate that Phone is non-empty"
@@ -61,14 +61,14 @@ Feature: Row and dataset validation
       And the request commits
 
   # #TutorialMode
-  # Atomic "Validate" scenarios — CI coverage, one per feature. Each loads its
+  # Atomic "Validate" scenarios: CI coverage, one per feature. Each loads its
   # sample, runs the phrase, and replays from validate.json. The section's
   # marketing tour is the single story in showcase-validate.feature.
   Rule: Each Validate phrase runs key-free
 
     # "Looks fake" is a semantic judgment, so the edit is two steps: an {llm}
     # mutate computing a yes/no column, then a {js} validate reading it. The
-    # yes/no column is internal plumbing — the user sees only the Email_ok pair.
+    # yes/no column is internal plumbing: the user sees only the Email_ok pair.
     @web
     Scenario: Flag emails that look fake
       Given the TamedTable web app
@@ -112,13 +112,13 @@ Feature: Row and dataset validation
       And rows where "DOB" is "2024-02-30" have "DOB_ok" equal to false
       And rows where "DOB" is "1990-05-12" have "DOB_ok" equal to true
       And rows where "DOB" is "1985-11-03" have "DOB_ok" equal to true
-      # A pure {js} validate — no AI column anywhere — still tints its new
+      # A pure {js} validate, no AI column anywhere, still tints its new
       # pair and reveals it: filled is not an AI-only notion.
       And the table reveals the "DOB_ok" column
       And every cell in column "DOB_ok" carries the changed marker
 
     # The mutate that computes the yes/no column MUST precede the validate that
-    # reads it — the runtime rejects the reverse order (see spec/behavior.md
+    # reads it: the runtime rejects the reverse order (see spec/behavior.md
     # § Headless) and the recovery loop asks the model for a corrected patch.
     # The check spans two columns, so its pair appends at the end.
     @web
@@ -138,7 +138,7 @@ Feature: Row and dataset validation
       And rows where "City" is "Berlin" have "City_Country_ok" equal to true
 
     # Same two-step semantic shape as the fake-emails tour: a plain range check
-    # can never catch the missing-zero desk lamp. Item is only context — the
+    # can never catch the missing-zero desk lamp. Item is only context: the
     # check is about Price, so the pair lands right of Price.
     @web
     Scenario: Flag prices that seem wrong
@@ -158,7 +158,7 @@ Feature: Row and dataset validation
 
   Rule: Each check owns its columns, so audits stack
 
-    # Two checks with different names coexist — the second validate adds its
+    # Two checks with different names coexist: the second validate adds its
     # own pair instead of erasing the first (spec/behavior.md § validate).
     @headless @cli
     Scenario: A second validate adds its own pair next to the first

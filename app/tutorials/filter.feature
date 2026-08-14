@@ -22,7 +22,7 @@ Feature: Filter customer records
 
     # The request text lands as `query` on the FIRST transformation the turn
     # added (written once, opening the group); EVERY added transformation gets
-    # a short human `name` — its step label — so a saved flow reads top-down
+    # a short human `name`, its step label, so a saved flow reads top-down
     # as request → named steps without repeating the request per step.
     @headless
     Scenario: The request text becomes query metadata on the transformation it adds
@@ -41,12 +41,12 @@ Feature: Filter customer records
 
   Rule: A committed turn may not silently empty the table
 
-    # @regression — user-reported 2026-07-17 (PR #237): a filter whose SQL
+    # @regression: user-reported 2026-07-17 (PR #237): a filter whose SQL
     # date parsing missed the data's real format matched nothing, and the
     # commit silently replaced the table with 0 rows. The replay result is
     # now checked before commit: 0 rows out of a non-empty source rejects
     # the turn into the recovery loop, so the model can loosen the
-    # predicate — and a stubborn empty result fails the request instead of
+    # predicate, and a stubborn empty result fails the request instead of
     # emptying the table.
     @headless @scripted @regression
     Scenario: A patch that leaves the table empty is rejected into the recovery loop
@@ -77,7 +77,7 @@ Feature: Filter customer records
       When user runs "tamedtable execute filter.flow --input filter-input.csv --output filter-output.jsonl"
       Then "filter-output.jsonl" matches the expected output
 
-    # #BatchExec --input is a shell path, resolved from the working directory —
+    # #BatchExec --input is a shell path, resolved from the working directory,
     # never joined onto the .flow file's own dir. The bug was a doubled prefix
     # (spec/test-cases/spec/test-cases/…) when --input carried a path.
     @cli @offline

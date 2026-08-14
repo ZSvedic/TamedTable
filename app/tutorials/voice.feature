@@ -1,13 +1,13 @@
 # #VoiceInput
-# Voice input — web-only, two buttons sharing one patch turn. Press-and-hold the
+# Voice input: web-only, two buttons sharing one patch turn. Press-and-hold the
 # mic to record once; toggle the waveform button for hands-free continuous voice,
 # where a client-side VAD cuts each spoken turn with no button. Either way the
 # audio rides along on the ordinary patch turn: one Gemini call carries the audio,
 # the table context, and the spec-editing instructions, and returns the spec
-# patch directly — no separate transcription step. The same call also returns a
+# patch directly, no separate transcription step. The same call also returns a
 # verbatim transcript, which replaces the placeholder user bubble. The stub
 # microphone plays committed voice-*.m4a clips (real recordings); each firing
-# scenario replays a cassette holding that one Gemini patch response — and a
+# scenario replays a cassette holding that one Gemini patch response, and a
 # continuous turn reuses the very same clip, so it replays the same cassette. The
 # rest are offline.
 Feature: Voice input
@@ -71,7 +71,7 @@ Feature: Voice input
       And the provider "gemini" has API key "AIza-example-key"
       When user presses and holds the mic button
       And user releases the mic button
-      # The bubble carries the model's verbatim transcript — current Gemini
+      # The bubble carries the model's verbatim transcript: current Gemini
       # normalizes casing and punctuation, so the expected text mirrors that.
       Then a user bubble shows "🎙 Validate DOB is not empty."
       And no user bubble shows "🎙 Voice request"
@@ -185,7 +185,7 @@ Feature: Voice input
       Then the continuous status is "idle"
 
   # #TutorialMode
-  # The runnable, key-free spoken scenario — CI coverage for the voice
+  # The runnable, key-free spoken scenario, CI coverage for the voice
   # pipeline. It records/replays voice.json via the `speak` step (same request
   # the mic release issues). The marketing voice story now opens the Process
   # language showcase tour (showcase-language.feature), whose first step

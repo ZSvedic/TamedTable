@@ -1,5 +1,5 @@
 # #TutorialMode
-# Atomic "Clean up" scenarios — CI coverage, one per feature. Each loads a
+# Atomic "Clean up" scenarios: CI coverage, one per feature. Each loads a
 # sample, runs the exact phrase a user would type, and replays its model call
 # from clean-up.json. The section's marketing tour is the single story in
 # showcase-cleanup.feature; these stay browsable via the panel's Dev dropdown.
@@ -11,7 +11,7 @@ Feature: Clean up scenarios
       Given the TamedTable web app
       And load "customers-input.csv"
 
-    # A normalized phone is a + and digits — a letter (the l-for-1 garble) or a
+    # A normalized phone is a + and digits: a letter (the l-for-1 garble) or a
     # bare local number leaking through is a bad recording, not a style choice.
     @web
     Scenario: Normalize the phone numbers
@@ -28,7 +28,7 @@ Feature: Clean up scenarios
       And no toast is shown
       And compare with the expected output
 
-    # One mutate per name column — a single edit targeting both columns would
+    # One mutate per name column: a single edit targeting both columns would
     # write the same value into each. Rows I003/I008/I009 carry the miscapitalized
     # names ("mcdonald", "van der berg", "o'neil"); non-Latin names (rows
     # I017-I020) must pass through unchanged, never be nulled as "unrecognizable".
