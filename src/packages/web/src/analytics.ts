@@ -1,12 +1,18 @@
 // #WebAnalytics — action tracking for Cloudflare Web Analytics.
 //
-// Cloudflare counts a Page View for every SPA route change once the beacon is
-// loaded with `"spa":true` (see index.html). We don't have real routes, so to
-// register a discrete action we briefly push a fake `/action/<name>` URL and
-// immediately restore the real one. The push is what the beacon reports as a
-// Page View; the replace hides the fake path from the address bar and history.
+// With `"spa":true` (see index.html) the beacon reports a Page View for the
+// route you *leave* — it sends the previous route's measurement on the *next*
+// route change (Cloudflare FAQ: "send the measurement of the route before the
+// route is changed"). A push-then-replace never fires: replaceState isn't
+// hooked, so the fake route stays pending until the tab closes.
+//
+// So we push twice. The first push makes `/action/<name>` the current route
+// (and reports the real page we left); the second push, back to the real URL,
+// is the route change that reports `/action/<name>` as the page we left —
+// which is the Page View we want. Trade-off: this leaves the fake path as a
+// back-button history entry.
 export function trackAction(name: string): void {
   const current = location.pathname + location.search;
   history.pushState({}, '', `/action/${name}`);
-  history.replaceState({}, '', current);
+  history.pushState({}, '', current);
 }
