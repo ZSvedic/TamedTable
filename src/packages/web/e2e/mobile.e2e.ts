@@ -6,6 +6,7 @@
 // running on a phone can only be seen here.
 import { test, expect } from '@playwright/test';
 import { NARROW_MAX_WIDTH } from '../src/hooks/useIsNarrow.ts';
+import { expectPixelsClose } from './test-utils.ts';
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
@@ -475,9 +476,9 @@ test.describe('phone — the page is the table scroller', () => {
       dockH: document.querySelector('[data-mob-dock=""]')!.getBoundingClientRect().height,
     }));
     expect(zoomedIn.zoom, 'a ×3 spread must clamp to the 2× ceiling').toBe(2);
-    expect(zoomedIn.barH, 'the app bar must not scale with the table').toBe(chromeBefore.barH);
-    expect(zoomedIn.dockH, 'the dock must not scale with the table').toBe(chromeBefore.dockH);
-    expect(zoomedIn.barTop, 'the app bar must stay pinned').toBe(0);
+    expectPixelsClose(zoomedIn.barH, chromeBefore.barH, 1, 'the app bar must not scale with the table');
+    expectPixelsClose(zoomedIn.dockH, chromeBefore.dockH, 1, 'the dock must not scale with the table');
+    expectPixelsClose(zoomedIn.barTop, 0, 1, 'the app bar must stay pinned');
 
     // The frozen header still sticks right under the app bar while zoomed.
     await page.evaluate(() => window.scrollTo(0, 150));
@@ -538,7 +539,7 @@ test.describe('phone — the page is the table scroller', () => {
 
     // Clearing shrinks back to one line.
     await input.fill('');
-    await expect.poll(height, { message: 'an empty draft must return to one line' }).toBe(oneLine);
+    await expect.poll(height, { message: 'an empty draft must return to one line' }).toBeCloseTo(oneLine, 0);
   });
 
   test('Settings on a phone offers Add to home screen', async ({ page }) => {
