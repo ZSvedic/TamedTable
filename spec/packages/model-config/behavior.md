@@ -414,7 +414,7 @@ covering six providers is a round trip many never come back from.
 
 Every provider's paragraph follows the **same four-beat shape**, so a user
 comparing two of them reads the same facts in the same places: what it costs
-(`Free and paid plans.` / `Paid only.` / `Free models, no credit card.`), who it
+(`Free and paid plans.` / `Paid only.`), who it
 suits, whether the key survives the page that mints it, and finally the one
 extra requirement if the provider has one (the privacy toggle for OpenRouter).
 Providers without a fourth beat stop at three. Google is the one exception to

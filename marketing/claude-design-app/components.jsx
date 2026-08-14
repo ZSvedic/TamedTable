@@ -864,7 +864,7 @@ function ChatSidebar({
 
 // ── ModelChooser — provider accordion: masked key + chat/cell model matrix ──
 // Historical: this board is the pre-redesign matrix (one radio per model per
-// role). The shipped panel is the connected-provider card — see
+// role). The shipped panel is the connected-provider card: see
 // marketing/design_handoff_model_chooser/ and spec/packages/model-config/.
 const MODELS = [
   { id: 'gemini-3.5-flash', provider: 'gemini', voiceInput: true },
