@@ -17148,25 +17148,25 @@ var models_default = {
   ],
   defaults: {
     gemini: {
-      primary: "gemini-3.6-flash",
-      secondary: "gemini-3.1-flash-lite",
+      chat: "gemini-3.6-flash",
+      cell: "gemini-3.1-flash-lite",
       priceVariesByPlan: true
     },
-    openai: { primary: "gpt-5.5", secondary: "gpt-5.4-mini" },
-    anthropic: { primary: "claude-sonnet-4-6", secondary: "claude-haiku-4-5", batchSize: 40 },
+    openai: { chat: "gpt-5.5", cell: "gpt-5.4-mini" },
+    anthropic: { chat: "claude-sonnet-4-6", cell: "claude-haiku-4-5", batchSize: 40 },
     groq: {
-      primary: "openai/gpt-oss-120b",
-      secondary: "openai/gpt-oss-20b",
+      chat: "openai/gpt-oss-120b",
+      cell: "openai/gpt-oss-20b",
       batchSize: 20,
       priceVariesByPlan: true
     },
     openrouter: {
-      primary: "cohere/north-mini-code:free",
-      secondary: "cohere/north-mini-code:free",
+      chat: "cohere/north-mini-code:free",
+      cell: "cohere/north-mini-code:free",
       batchSize: 5,
-      paid: { primary: "google/gemini-3.6-flash", secondary: "google/gemini-3.1-flash-lite" }
+      paid: { chat: "google/gemini-3.6-flash", cell: "google/gemini-3.1-flash-lite" }
     },
-    puter: { primary: "gemini-3.6-flash", secondary: "gemini-3.1-flash-lite" }
+    puter: { chat: "gemini-3.6-flash", cell: "gemini-3.1-flash-lite" }
   }
 };
 
@@ -17180,7 +17180,7 @@ function setFor(provider, paid = false) {
   return paid && d.paid ? { ...d, ...d.paid, batchSize: d.paid.batchSize } : d;
 }
 function defaultModel(provider, paid = false) {
-  return setFor(provider, paid)?.primary ?? ALL_MODELS.find((m) => m.provider === provider).id;
+  return setFor(provider, paid)?.chat ?? ALL_MODELS.find((m) => m.provider === provider).id;
 }
 function hasPaidModelSet(provider) {
   return DEFAULTS[provider]?.paid !== undefined;
@@ -17189,7 +17189,7 @@ function modelFor(provider, modelId) {
   return ALL_MODELS.find((m) => m.provider === provider && m.id === modelId);
 }
 function defaultCellModel(provider, paid = false) {
-  return setFor(provider, paid)?.secondary ?? defaultModel(provider, paid);
+  return setFor(provider, paid)?.cell ?? defaultModel(provider, paid);
 }
 function priceVariesByPlan(provider) {
   return DEFAULTS[provider]?.priceVariesByPlan === true;
@@ -17877,7 +17877,7 @@ function ModelChooser({
                 whiteSpace: "nowrap",
                 color: ink2
               },
-              children: role === "primary" ? "Chat model" : "Cell model"
+              children: role === "chat" ? "Chat model" : "Cell model"
             }, undefined, false, undefined, this),
             /* @__PURE__ */ jsx_dev_runtime.jsxDEV("span", {
               "data-mc-model-id": row.model,
@@ -18000,8 +18000,8 @@ function ModelChooser({
             gap: 10
           },
           children: [
-            roleRow("primary", c.primary, c.priceVariesByPlan === true),
-            roleRow("secondary", c.secondary, c.priceVariesByPlan === true),
+            roleRow("chat", c.chat, c.priceVariesByPlan === true),
+            roleRow("cell", c.cell, c.priceVariesByPlan === true),
             c.hasPaidModelSet && onPaidModelSetChange && /* @__PURE__ */ jsx_dev_runtime.jsxDEV("div", {
               "data-mc-modelset": c.id,
               style: { display: "flex", alignItems: "center", gap: 6, fontFamily: fontUi, fontSize: 12 },
@@ -18384,8 +18384,8 @@ function readStoredProbes(now = Date.now()) {
         continue;
       kept[id] = {
         ...probe,
-        primary: stillTrue(probe.primary, defaultModel(id), now),
-        secondary: stillTrue(probe.secondary, defaultCellModel(id), now)
+        chat: stillTrue(probe.chat, defaultModel(id), now),
+        cell: stillTrue(probe.cell, defaultCellModel(id), now)
       };
     }
     return kept;
@@ -18632,8 +18632,8 @@ function Demo() {
       [provider]: { tier: p[provider]?.tier ?? null, connectedAt: p[provider]?.connectedAt }
     }));
     const stub = stubProbe();
-    for (const role of ["primary", "secondary"]) {
-      const modelId = role === "primary" ? defaultModel(provider) : defaultCellModel(provider);
+    for (const role of ["chat", "cell"]) {
+      const modelId = role === "chat" ? defaultModel(provider) : defaultCellModel(provider);
       try {
         const measure = await measureModel(provider, key, modelId, stub);
         const reading = { ...measure, model: modelId, at: Date.now() };
@@ -18686,7 +18686,7 @@ function Demo() {
   };
   const roleRow = (p, role) => {
     const paid = p === "openrouter" && paidSet;
-    const model = role === "primary" ? defaultModel(p, paid) : defaultCellModel(p, paid);
+    const model = role === "chat" ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
@@ -18702,8 +18702,8 @@ function Demo() {
     priceVariesByPlan: priceVariesByPlan(p),
     hasPaidModelSet: hasPaidModelSet(p),
     paidModelSet: p === "openrouter" && paidSet,
-    primary: roleRow(p, "primary"),
-    secondary: roleRow(p, "secondary")
+    chat: roleRow(p, "chat"),
+    cell: roleRow(p, "cell")
   }));
   const [query, setQuery] = import_react2.useState("");
   const [response, setResponse] = import_react2.useState("");
