@@ -1,5 +1,5 @@
 # #TutorialMode
-# The "Clean up" showcase tour — one story for the whole homepage section: one
+# The "Clean up" showcase tour: one story for the whole homepage section: one
 # sample file, every Clean up feature in sequence. A key-free @tour deep-linked
 # from the homepage; replays from showcase-cleanup.json. The atomic per-feature
 # scenarios stay in clean-up.feature as CI coverage.

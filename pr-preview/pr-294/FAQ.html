@@ -13,8 +13,8 @@ else if(p.endsWith('.html'))p=p.slice(0,-5);
 if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
 </script>
 <link rel="canonical" href="https://www.tamedtable.com/pr-preview/pr-294/FAQ">
-<title>Frequently Asked Questions — TamedTable</title>
-<meta name="description" content="TamedTable FAQ — how to bring your own API key (BYOK) from Google, OpenAI, Anthropic, or OpenRouter, privacy, and other common questions.">
+<title>Frequently Asked Questions | TamedTable</title>
+<meta name="description" content="TamedTable FAQ. How to bring your own API key (BYOK) from Google, OpenAI, Anthropic, or OpenRouter, privacy, and other common questions.">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
@@ -54,7 +54,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   @media (hover: none) { .copy-link { opacity: .5; } }
 
   /* A question block: the h2 question, then its answer body. Reset the global
-     section padding (76px) — these stack tightly inside the guide column. */
+     section padding (76px): these stack tightly inside the guide column. */
   .faq-q { padding: 0; margin-top: 30px; }
   .faq-q:first-of-type { margin-top: 20px; }
 
@@ -169,7 +169,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="byok" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p class="lede">TamedTable runs on <em>your</em> API key. Paste it into Settings and we work out the rest — which provider it belongs to, which models to use, and what they cost. The key stays in your browser. We never see it, and nothing is stored on our servers.</p>
+        <p class="lede">TamedTable runs on <em>your</em> API key. Paste it into Settings and we work out the rest: which provider it belongs to, which models to use, and what they cost. The key stays in your browser. We never see it, and nothing is stored on our servers.</p>
 
         <div class="gotcha">
           <h3>The #1 gotcha</h3>
@@ -243,7 +243,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="key-safety" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>The key is saved in your browser's local storage, on your device, and requests go straight from your browser to your provider's API. There is no TamedTable server in the middle: the site is static files on GitHub Pages, it loads no analytics and no ad code, so there is no code path that could quietly copy the key elsewhere. The one third-party script is Puter.js, and it is fetched only if you press <em>Sign in to Puter.js</em> — never on page load, so it is absent entirely unless you choose to use it.</p>
+        <p>The key is saved in your browser's local storage, on your device, and requests go straight from your browser to your provider's API. There is no TamedTable server in the middle: the site is static files on GitHub Pages, it loads no analytics and no ad code, so there is no code path that could quietly copy the key elsewhere. The one third-party script is Puter.js, and it is fetched only if you press <em>Sign in to Puter.js</em>, never on page load, so it is absent entirely unless you choose to use it.</p>
         <p>Best practice: create a separate API key for TamedTable with a monthly spending cap in your provider's console.</p>
         <p>And because the code is public, you don't have to take our word for it. You can read the request code <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/web/src/controller-engine.ts" target="_blank" rel="noopener">on GitHub</a> or run the app from your own clone.</p>
       </div>
@@ -256,7 +256,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="change-models" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>You connect a <strong>provider</strong> (Google, OpenAI, Anthropic, OpenRouter, Groq, or Puter.js) in Settings by pasting its key, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Chat model</strong> that reads your request and writes each spec patch (and handles voice), and a cheaper <strong>Cell model</strong> that fills per-row AI cells in bulk. When you add a key we run one call against each and time it, so the card shows both what a thousand tokens cost (input and output, from our price table) and roughly how long they take. The ⟳ button on a card re-runs the timing — a number taken while a provider was having a bad minute is one click from being replaced.</p>
+        <p>You connect a <strong>provider</strong> (Google, OpenAI, Anthropic, OpenRouter, Groq, or Puter.js) in Settings by pasting its key, not individual models. Each provider ships with two fixed defaults, chosen from our benchmarks: a <strong>Chat model</strong> that reads your request and writes each spec patch (and handles voice), and a cheaper <strong>Cell model</strong> that fills per-row AI cells in bulk. When you add a key we run one call against each and time it, so the card shows both what a thousand tokens cost (input and output, from our price table) and roughly how long they take. The ⟳ button on a card re-runs the timing: a number taken while a provider was having a bad minute is one click from being replaced.</p>
         <p>To change the chat or cell model, or add new models, edit the <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/model-config/models.json" target="_blank" rel="noopener">models.json file</a> and rebuild. (A rebuild is required: the catalogue is compiled into the app bundle, so editing the file in a deployed directory has no effect.)</p>
       </div>
     </section>

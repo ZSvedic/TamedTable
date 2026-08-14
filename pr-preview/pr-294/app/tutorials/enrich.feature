@@ -1,5 +1,5 @@
 # #Enrich #TutorialMode
-# Atomic "Enrich & extract" scenarios — CI coverage, one per feature. Each
+# Atomic "Enrich & extract" scenarios: CI coverage, one per feature. Each
 # loads its sample, runs the phrase, and replays from enrich.json. The
 # section's marketing tour is the single story in showcase-enrich.feature.
 Feature: Enrich and extract scenarios
@@ -7,7 +7,7 @@ Feature: Enrich and extract scenarios
   Rule: Each Enrich phrase runs key-free
 
     # Free-form addresses have no consistent delimiter, so the edit is one
-    # {llm} extraction per part — a comma split can never separate
+    # {llm} extraction per part: a comma split can never separate
     # "Mountain View CA 94043" into City, State, and Zip.
     @web
     Scenario: Split the address into its parts
@@ -23,7 +23,7 @@ Feature: Enrich and extract scenarios
       And the row where "Name" is "Ana" has "City" equal to "London"
       And the row where "Name" is "Ana" has "Zip" equal to "NW1 6XE"
       # The reveal scroll: the request appended columns off the right edge, so
-      # the grid is told to bring the first changed column into view — and
+      # the grid is told to bring the first changed column into view: and
       # undo/redo restore that step's changed-cell marks and reveal with it.
       And the table reveals the "Street" column
       And the newly evaluated cells carry the changed marker
@@ -55,7 +55,7 @@ Feature: Enrich and extract scenarios
       And compare with the expected output
 
     # Every memo names its year, so an extracted date is never a fabricated
-    # "current year" guess — a memo without a year would extract null. The
+    # "current year" guess: a memo without a year would extract null. The
     # phrase asks for refunds as negative so the amounts are signed money
     # movements, not bare digits copied off the memo.
     @web

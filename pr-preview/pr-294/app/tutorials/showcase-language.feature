@@ -1,5 +1,5 @@
 # #LanguageAI #TutorialMode
-# The "Process language" showcase tour — one multilingual feedback sheet, five
+# The "Process language" showcase tour: one multilingual feedback sheet, five
 # asks: a spoken command, language tagging, translation, one-line summaries,
 # and a request made in Spanish. The language tag lands before the translation
 # so it reads the original comments, not the English ones. Key-free @tour
@@ -9,7 +9,7 @@ Feature: Process language showcase tour
 
   Rule: One feedback sheet is worked by voice, in five languages
 
-    # The spoken clip is the committed English "Normalize DOB column" — the
+    # The spoken clip is the committed English "Normalize DOB column": the
     # same recording the atomic voice scenario replays. The Gemini key Given is
     # test plumbing (voice is Gemini-only); the tour player replays key-free.
     @web @tour @cat-language

@@ -17114,7 +17114,7 @@ var require_jsx_dev_runtime = __commonJS((exports, module) => {
   }
 });
 
-// packages/toolbar/demo.tsx
+// packages/chat-panel/demo.tsx
 var import_react7 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 // packages/ui-kit/tokens.json
@@ -17237,6 +17237,7 @@ var typography = tokens_default.typography;
 var space = tokens_default.space;
 var lightTheme = tokens_default.themes.light;
 var darkTheme = tokens_default.themes.dark;
+var TYPING_MS_PER_CHAR = 40;
 
 // packages/ui-kit/ThemeProvider.tsx
 var import_react = __toESM(require_react(), 1);
@@ -17272,12 +17273,6 @@ function useTheme() {
   if (!ctx)
     throw new Error("useTheme must be used within a ThemeProvider");
   return ctx.theme;
-}
-function useThemeControls() {
-  const ctx = import_react.useContext(ThemeContext);
-  if (!ctx)
-    throw new Error("useThemeControls must be used within a ThemeProvider");
-  return { mode: ctx.mode, toggle: ctx.toggle };
 }
 // packages/ui-kit/icons.ts
 var PATHS = {
@@ -17396,261 +17391,6 @@ function Button({
 // packages/ui-kit/MenuButton.tsx
 var import_react3 = __toESM(require_react(), 1);
 var jsx_dev_runtime4 = __toESM(require_jsx_dev_runtime(), 1);
-function MenuButton({
-  children,
-  sections,
-  disabled,
-  title,
-  id,
-  align = "left"
-}) {
-  const t = useTheme();
-  const [open, setOpen] = import_react3.useState(false);
-  const [hover, setHover] = import_react3.useState(false);
-  const [expanded, setExpanded] = import_react3.useState(null);
-  const rootRef = import_react3.useRef(null);
-  const close = () => {
-    setOpen(false);
-    setExpanded(null);
-  };
-  import_react3.useEffect(() => {
-    if (!open)
-      return;
-    const onDoc = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target))
-        close();
-    };
-    const onKey = (e) => {
-      if (e.key === "Escape")
-        close();
-    };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-  const tinted = !disabled && (hover || open);
-  const triggerStyle = {
-    height: 28,
-    display: "inline-flex",
-    alignItems: "center",
-    gap: space.px6,
-    padding: "0 6px 0 10px",
-    background: tinted ? t.surface3 : "transparent",
-    color: t.ink2,
-    border: 0,
-    borderRadius: space.radiusSm,
-    fontFamily: typography.ui,
-    fontSize: typography.size.sm,
-    fontWeight: 500,
-    lineHeight: 1,
-    whiteSpace: "nowrap",
-    cursor: disabled ? "default" : "pointer",
-    opacity: disabled ? 0.4 : 1,
-    transition: "background .12s"
-  };
-  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-    ref: rootRef,
-    id,
-    style: { position: "relative", display: "inline-flex" },
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
-        type: "button",
-        "data-uk-menubtn": "",
-        title,
-        "aria-haspopup": "menu",
-        "aria-expanded": open,
-        disabled,
-        onClick: () => open ? close() : setOpen(true),
-        onMouseEnter: () => setHover(true),
-        onMouseLeave: () => setHover(false),
-        style: triggerStyle,
-        children: [
-          children,
-          /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-            style: { color: t.ink3, display: "inline-flex" },
-            children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
-              name: "chevron",
-              size: 12
-            }, undefined, false, undefined, this)
-          }, undefined, false, undefined, this)
-        ]
-      }, undefined, true, undefined, this),
-      open && !disabled && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-        role: "menu",
-        style: {
-          position: "absolute",
-          top: "100%",
-          [align === "right" ? "right" : "left"]: 0,
-          marginTop: 4,
-          minWidth: 190,
-          maxWidth: "min(320px, 88vw)",
-          background: t.surface,
-          border: `1px solid ${t.line2}`,
-          borderRadius: space.radius,
-          boxShadow: t.shadow,
-          padding: space.px4,
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          zIndex: 50
-        },
-        children: sections.map((section, si) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-          style: { display: "flex", flexDirection: "column", gap: 2 },
-          children: [
-            si > 0 && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-              style: { height: 1, background: t.line, margin: `${space.px4}px 2px` }
-            }, undefined, false, undefined, this),
-            section.header && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-              "data-uk-menu-header": section.header,
-              style: {
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                fontWeight: 700,
-                letterSpacing: ".06em",
-                textTransform: "uppercase",
-                color: t.ink3,
-                padding: "4px 10px 2px"
-              },
-              children: section.header
-            }, undefined, false, undefined, this),
-            section.items.map((item) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-              style: { position: "relative" },
-              onMouseEnter: () => {
-                if (item.submenu && !item.disabled)
-                  setExpanded(item.label);
-              },
-              onMouseLeave: () => {
-                if (item.submenu)
-                  setExpanded((e) => e === item.label ? null : e);
-              },
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(MenuRow, {
-                  label: item.label,
-                  icon: item.icon,
-                  disabled: item.disabled,
-                  trailing: item.submenu ? /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-                    style: {
-                      color: t.ink3,
-                      display: "inline-flex",
-                      transform: align === "right" ? "rotate(90deg)" : "rotate(-90deg)"
-                    },
-                    children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
-                      name: "chevron",
-                      size: 11
-                    }, undefined, false, undefined, this)
-                  }, undefined, false, undefined, this) : undefined,
-                  onClick: () => {
-                    if (item.disabled)
-                      return;
-                    if (item.submenu) {
-                      setExpanded(item.label);
-                      return;
-                    }
-                    close();
-                    item.onClick?.();
-                  }
-                }, undefined, false, undefined, this),
-                item.submenu && expanded === item.label && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("div", {
-                  role: "menu",
-                  style: {
-                    position: "absolute",
-                    top: -space.px4,
-                    [align === "right" ? "right" : "left"]: "calc(100% - 4px)",
-                    minWidth: 180,
-                    maxWidth: "min(280px, 70vw)",
-                    background: t.surface,
-                    border: `1px solid ${t.line2}`,
-                    borderRadius: space.radius,
-                    boxShadow: t.shadow,
-                    padding: space.px4,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    zIndex: 51
-                  },
-                  children: item.submenu.map((sub) => /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(MenuRow, {
-                    label: sub.label,
-                    tag: sub.tag,
-                    onClick: () => {
-                      close();
-                      sub.onClick();
-                    }
-                  }, `${sub.label} ${sub.tag ?? ""}`, false, undefined, this))
-                }, undefined, false, undefined, this)
-              ]
-            }, item.label, true, undefined, this))
-          ]
-        }, si, true, undefined, this))
-      }, undefined, false, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-function MenuRow({
-  label,
-  icon,
-  tag,
-  trailing,
-  disabled,
-  onClick
-}) {
-  const t = useTheme();
-  const [hover, setHover] = import_react3.useState(false);
-  return /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("button", {
-    type: "button",
-    role: "menuitem",
-    "data-uk-menu-item": label,
-    disabled,
-    onClick,
-    onMouseEnter: () => setHover(true),
-    onMouseLeave: () => setHover(false),
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: space.px8,
-      width: "100%",
-      textAlign: "left",
-      border: 0,
-      background: !disabled && hover ? t.surface3 : "transparent",
-      borderRadius: space.radiusSm,
-      padding: "6px 10px",
-      cursor: disabled ? "default" : "pointer",
-      color: t.ink,
-      fontFamily: typography.ui,
-      fontSize: typography.size.sm,
-      whiteSpace: "nowrap",
-      opacity: disabled ? 0.4 : 1
-    },
-    children: [
-      icon && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-        style: { color: t.ink3, display: "inline-flex" },
-        children: /* @__PURE__ */ jsx_dev_runtime4.jsxDEV(Icon, {
-          name: icon,
-          size: 14
-        }, undefined, false, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-        style: { flex: 1, overflow: "hidden", textOverflow: "ellipsis" },
-        children: label
-      }, undefined, false, undefined, this),
-      tag && /* @__PURE__ */ jsx_dev_runtime4.jsxDEV("span", {
-        "data-uk-menu-tag": "",
-        style: {
-          fontFamily: typography.ui,
-          fontSize: typography.size.xs,
-          color: t.ink3,
-          background: t.surface3,
-          borderRadius: 4,
-          padding: "1px 6px"
-        },
-        children: tag
-      }, undefined, false, undefined, this),
-      trailing
-    ]
-  }, undefined, true, undefined, this);
-}
 // packages/ui-kit/Toasts.tsx
 var import_react4 = __toESM(require_react(), 1);
 var jsx_dev_runtime5 = __toESM(require_jsx_dev_runtime(), 1);
@@ -17662,920 +17402,1036 @@ function isImeComposingEvent(e) {
   return e.nativeEvent?.isComposing === true || e.keyCode === 229;
 }
 
-// packages/toolbar/Brand.tsx
+// packages/chat-panel/ChatPanel.tsx
+var import_react5 = __toESM(require_react(), 1);
+
+// packages/chat-panel/StatusDot.tsx
 var jsx_dev_runtime6 = __toESM(require_jsx_dev_runtime(), 1);
-var MARK_GRID = [
-  ["i", "i", "i", "i", "a", "i", "i", "i", "i"],
-  [".", "i", ".", ".", ".", ".", ".", "i", "."],
-  [".", "i", ".", "i", "i", "i", ".", "i", "."],
-  [".", "i", ".", ".", ".", ".", ".", "i", "."],
-  [".", "i", ".", "i", "i", "i", ".", "i", "."]
-];
-var MARK_COLS = 9;
-var MARK_ROWS = 5;
-function Mark({ height = 18, mode, style, title }) {
-  const m = mode ?? (height > 80 ? "grid" : "crisp");
-  const isRev = m === "reverse";
-  const isGrid = m === "grid";
-  const off = isGrid ? 4 : 0;
-  const cellSize = isGrid ? 96 : 100;
-  const vbW = isGrid ? MARK_COLS * 100 + 4 : MARK_COLS * 100;
-  const vbH = isGrid ? MARK_ROWS * 100 + 4 : MARK_ROWS * 100;
-  const w = height * (vbW / vbH);
-  const inkColor = isRev ? brand.white : brand.ink;
-  const accentColor = brand.accent;
-  const emptyColor = brand.white;
-  const rects = [];
-  if (isGrid) {
-    rects.push(/* @__PURE__ */ jsx_dev_runtime6.jsxDEV("rect", {
-      x: "0",
-      y: "0",
-      width: vbW,
-      height: vbH,
-      fill: brand.line
-    }, "bg", false, undefined, this));
-  }
-  for (let r = 0;r < MARK_ROWS; r++) {
-    for (let c = 0;c < MARK_COLS; c++) {
-      const v = MARK_GRID[r]?.[c];
-      let fill = null;
-      if (v === "i")
-        fill = inkColor;
-      else if (v === "a")
-        fill = accentColor;
-      else if (v === ".")
-        fill = isRev ? null : emptyColor;
-      if (fill === null)
-        continue;
-      rects.push(/* @__PURE__ */ jsx_dev_runtime6.jsxDEV("rect", {
-        x: c * 100 + off,
-        y: r * 100 + off,
-        width: cellSize,
-        height: cellSize,
-        fill
-      }, `${r}-${c}`, false, undefined, this));
-    }
-  }
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("svg", {
-    width: w,
-    height,
-    viewBox: `0 0 ${vbW} ${vbH}`,
-    shapeRendering: "crispEdges",
-    role: title ? "img" : "presentation",
-    "aria-label": title,
-    style: { flex: "0 0 auto", display: "block", ...style },
-    children: rects
+function StatusDot({
+  state,
+  size = 6,
+  style
+}) {
+  const t = useTheme();
+  const base = {
+    flex: "0 0 auto",
+    display: "inline-block",
+    width: size,
+    height: size,
+    borderRadius: size,
+    ...style
+  };
+  return state === "undone" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+    "data-status-dot": "undone",
+    style: { ...base, border: `1.5px solid ${t.ink3}`, boxSizing: "content-box" }
+  }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+    "data-status-dot": "ok",
+    style: { ...base, background: t.ok }
   }, undefined, false, undefined, this);
 }
-function Wordmark({ size = 14, color, style }) {
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-    style: {
-      fontFamily: typography.brand,
-      fontWeight: 500,
-      fontSize: size,
-      lineHeight: 1,
-      letterSpacing: "0.005em",
-      fontVariantCaps: "small-caps",
-      color: color ?? brand.ink,
-      whiteSpace: "nowrap",
-      display: "inline-block",
-      ...style
-    },
-    children: "TamedTable"
+
+// packages/chat-panel/ChatPanel.tsx
+var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
+var INPUT_MIN_H = 68;
+var INPUT_MAX_H = 240;
+var PIN_THRESHOLD = 40;
+var CP_CSS = "@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }";
+function UserBubble({ t, children }) {
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+    style: { display: "flex", justifyContent: "flex-end" },
+    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+      "data-cp-message": "user",
+      style: {
+        maxWidth: "88%",
+        background: t.accentSoft,
+        color: t.ink,
+        border: `1px solid ${t.line}`,
+        borderRadius: space.radius,
+        padding: "6px 10px",
+        fontFamily: typography.ui,
+        fontSize: typography.size.base,
+        lineHeight: 1.5,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word"
+      },
+      children
+    }, undefined, false, undefined, this)
   }, undefined, false, undefined, this);
 }
-function Lockup({ size = 14, color, dark = false, style }) {
-  const iconH = size * 0.72;
-  const markMode = dark ? "reverse" : "crisp";
-  return /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
-    style: { display: "inline-flex", alignItems: "center", gap: size * 0.34, ...style },
+function debugDetailText(debug) {
+  return [
+    "── request ──────────────────────────",
+    debug.userRequest,
+    `${debug.modelCalls.map((m) => `${m.model} ×${m.calls}`).join(", ")} · ${(debug.inputTokens + debug.outputTokens).toLocaleString("en-US")} tokens · ${(debug.elapsedMs / 1000).toFixed(1)}s`,
+    "",
+    "── response ─────────────────────────",
+    ...debug.turns.flatMap((turn, i) => [
+      `turn ${i + 1}: ${turn.outcome}`,
+      JSON.stringify(turn.ops, null, 2)
+    ]),
+    ...debug.cellSamples.length > 0 ? [
+      "",
+      "── cell samples (up to 3 per column) ──",
+      ...debug.cellSamples.flatMap((s) => s.samples.map((p) => `${s.column}: ${JSON.stringify(p.in)} → ${JSON.stringify(p.out)}`))
+    ] : []
+  ].join(`
+`);
+}
+function chipStyle(t) {
+  return {
+    background: t.surface,
+    border: `1px solid ${t.line}`,
+    borderRadius: space.radiusSm,
+    padding: "2px 7px",
+    cursor: "pointer",
+    color: t.ink3,
+    display: "inline-flex",
+    alignItems: "center"
+  };
+}
+function AssistantMessage({
+  t,
+  message,
+  onReportBug
+}) {
+  const [open, setOpen] = import_react5.useState(false);
+  const [copied, setCopied] = import_react5.useState(false);
+  const isError = message.text.startsWith("Error:");
+  const body = isError ? message.text.replace(/^Error:\s*/, "") : message.text;
+  const showReport = message.reportable === true && onReportBug !== undefined;
+  const copyDetail = () => {
+    if (!message.debug)
+      return;
+    navigator.clipboard?.writeText(debugDetailText(message.debug)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+    style: { display: "flex", flexDirection: "column" },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Mark, {
-        height: iconH,
-        mode: markMode,
-        title: "TamedTable"
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        "data-cp-message": "assistant",
+        "data-cp-error": isError ? "" : undefined,
+        style: {
+          display: "flex",
+          alignItems: "flex-start",
+          gap: space.px8,
+          color: isError ? t.err : t.ink2,
+          fontFamily: typography.ui,
+          fontSize: typography.size.base,
+          lineHeight: 1.5
+        },
+        children: [
+          isError ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { flex: "0 0 auto", marginTop: 2, color: t.err },
+            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+              name: "err"
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(StatusDot, {
+            state: message.undone ? "undone" : "ok",
+            style: { marginTop: message.undone ? 5 : 6 }
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: { flex: 1, whiteSpace: "pre-wrap", wordBreak: "break-word" },
+            children: body
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      (message.debug || showReport) && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: {
+              marginTop: space.px4,
+              marginLeft: space.px14,
+              alignSelf: "flex-start",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: space.px8
+            },
+            children: [
+              message.debug && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                    type: "button",
+                    "data-cp-detail-toggle": "",
+                    onClick: () => setOpen((o) => !o),
+                    style: {
+                      background: "transparent",
+                      border: 0,
+                      padding: 0,
+                      cursor: "pointer",
+                      color: t.ink3,
+                      fontFamily: typography.ui,
+                      fontSize: typography.size.xs,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: space.px4
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                        style: {
+                          display: "inline-flex",
+                          transition: "transform .15s",
+                          transform: open ? "rotate(0deg)" : "rotate(-90deg)"
+                        },
+                        children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+                          name: "chevron",
+                          size: 12
+                        }, undefined, false, undefined, this)
+                      }, undefined, false, undefined, this),
+                      "request detail"
+                    ]
+                  }, undefined, true, undefined, this),
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                    type: "button",
+                    onClick: copyDetail,
+                    title: copied ? "Copied" : "Copy request detail",
+                    "aria-label": copied ? "Copied" : "Copy request detail",
+                    "data-testid": "copy-debug",
+                    style: {
+                      ...chipStyle(t),
+                      color: copied ? t.ok : t.ink3
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+                      name: "copy",
+                      size: 12
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this),
+              showReport && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                type: "button",
+                "data-cp-report": "",
+                onClick: () => onReportBug?.(message),
+                title: "Report bug: opens a prefilled GitHub issue",
+                style: {
+                  ...chipStyle(t),
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.xs,
+                  gap: space.px4
+                },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+                    name: "bug",
+                    size: 12
+                  }, undefined, false, undefined, this),
+                  "Report bug"
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          message.debug && open && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("pre", {
+            "data-cp-detail": "",
+            style: {
+              margin: `${space.px6}px 0 0 ${space.px14}px`,
+              padding: "8px 10px",
+              background: t.surface3,
+              color: t.ink3,
+              fontFamily: typography.mono,
+              fontSize: typography.size.xs,
+              lineHeight: 1.55,
+              borderRadius: space.radiusSm,
+              border: `1px solid ${t.line}`,
+              whiteSpace: "pre-wrap",
+              overflow: "auto",
+              maxHeight: 320
+            },
+            children: debugDetailText(message.debug)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
+}
+function RunProgress({ t, progress }) {
+  const [open, setOpen] = import_react5.useState(false);
+  const logRef = import_react5.useRef(null);
+  import_react5.useEffect(() => {
+    const el = logRef.current;
+    if (el)
+      el.scrollTop = el.scrollHeight;
+  }, [progress.log.length, open]);
+  const fraction = progress.totalSteps === 0 ? 0 : Math.min(1, (Math.max(0, progress.step - 1) + (progress.rowsTotal > 0 ? progress.rowsDone / progress.rowsTotal : 0)) / progress.totalSteps);
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+    style: { display: "flex", flexDirection: "column", gap: space.px6, marginLeft: space.px14 },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        "data-cp-progress": "",
+        style: { fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2 },
+        children: progress.step === 0 ? "Starting…" : `Step ${progress.step} of ${progress.totalSteps}: ${progress.label}` + (progress.rowsTotal > 0 && progress.rowsDone > 0 ? ` · ${progress.rowsDone} / ${progress.rowsTotal} rows` : "")
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime6.jsxDEV(Wordmark, {
-        size,
-        color
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        role: "progressbar",
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+        "aria-valuenow": Math.round(fraction * 100),
+        style: {
+          height: 4,
+          borderRadius: space.radiusSm,
+          background: t.surface3,
+          overflow: "hidden"
+        },
+        children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+          style: {
+            width: `${fraction * 100}%`,
+            height: "100%",
+            background: t.accent,
+            transition: "width 120ms ease"
+          }
+        }, undefined, false, undefined, this)
+      }, undefined, false, undefined, this),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+        type: "button",
+        "data-cp-progress-toggle": "",
+        onClick: () => setOpen((o) => !o),
+        style: {
+          background: "transparent",
+          border: 0,
+          padding: 0,
+          cursor: "pointer",
+          color: t.ink3,
+          fontFamily: typography.ui,
+          fontSize: typography.size.xs,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: space.px4,
+          alignSelf: "flex-start"
+        },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: {
+              display: "inline-flex",
+              transition: "transform .15s",
+              transform: open ? "rotate(0deg)" : "rotate(-90deg)"
+            },
+            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+              name: "chevron",
+              size: 12
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          "request detail"
+        ]
+      }, undefined, true, undefined, this),
+      open && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("pre", {
+        ref: logRef,
+        "data-cp-progress-log": "",
+        style: {
+          margin: 0,
+          padding: "8px 10px",
+          background: t.surface3,
+          color: t.ink3,
+          fontFamily: typography.mono,
+          fontSize: typography.size.xs,
+          lineHeight: 1.55,
+          borderRadius: space.radiusSm,
+          border: `1px solid ${t.line}`,
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+          overflowY: "auto",
+          maxHeight: 200
+        },
+        children: progress.log.join(`
+`)
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-
-// packages/toolbar/Toolbar.tsx
-var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
-function openMenuSections(opts) {
-  const sections = [
-    {
-      items: [
-        {
-          label: "Recent",
-          icon: "clock",
-          disabled: opts.recentMenu.length === 0,
-          submenu: opts.recentMenu.map((r) => ({ label: r.label, tag: r.tag, onClick: r.onClick }))
-        }
-      ]
-    }
-  ];
-  sections.push({
-    header: "Data",
-    items: [
-      { label: "Open sample…", icon: "sparkle", onClick: opts.onOpenSample },
-      { label: "Open local…", icon: "upload", onClick: opts.onOpenLocal },
-      { label: "Open URL…", icon: "link", onClick: opts.onOpenUrl }
-    ]
-  }, {
-    header: "Recipe",
-    items: [
-      {
-        label: "Open .flow & run on current data…",
-        icon: "play",
-        disabled: !opts.loaded,
-        onClick: opts.onOpenFlow
-      }
-    ]
-  });
-  return sections;
-}
-function saveMenuSections(opts) {
-  return [
-    { header: "Data", items: opts.saveDataMenu },
-    { header: "Recipe", items: opts.saveFlowMenu }
-  ];
-}
-function Toolbar({
-  loaded,
-  busy,
-  fileName = null,
-  rowCount = 0,
-  colCount = 0,
-  canUndo,
-  canRedo,
-  openButtonId,
-  condensed = false,
-  onOpenSample,
-  onOpenUrl,
-  onOpenLocal,
-  onOpenFlow,
-  recentMenu,
-  saveDataMenu,
-  saveFlowMenu,
-  onUndo,
-  onRedo,
-  onToggleTheme,
-  onOpenSettings,
-  onOpenTutorial
+function ChatPanel({
+  messages,
+  streaming,
+  progress = null,
+  requestCount,
+  prefill = null,
+  disabledHint = null,
+  onSend,
+  onCancel,
+  onReportBug,
+  inputId,
+  emptyState,
+  helpLines = [],
+  micButton,
+  fill = false,
+  width = 360
 }) {
   const t = useTheme();
-  const dark = t.name === "dark";
-  const divider = /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-    style: { width: 1, height: 16, background: t.line, margin: `0 ${space.px6}px` }
-  }, undefined, false, undefined, this);
-  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("header", {
-    "data-tb-toolbar": "",
+  const [draft, setDraft] = import_react5.useState("");
+  const [focused, setFocused] = import_react5.useState(false);
+  const [helpOpen, setHelpOpen] = import_react5.useState(false);
+  const inputRef = import_react5.useRef(null);
+  import_react5.useEffect(() => {
+    const el = inputRef.current;
+    if (!el)
+      return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(INPUT_MIN_H, Math.min(INPUT_MAX_H, el.scrollHeight))}px`;
+    el.style.overflowY = el.scrollHeight > INPUT_MAX_H ? "auto" : "hidden";
+  }, [draft]);
+  const typing = import_react5.useRef({
+    typed: null,
+    timer: null
+  });
+  import_react5.useEffect(() => {
+    if (prefill === null)
+      return;
+    const guard = typing.current;
+    if (prefill === guard.typed)
+      return;
+    guard.typed = prefill;
+    if (guard.timer) {
+      clearInterval(guard.timer);
+      guard.timer = null;
+    }
+    if (prefill === "") {
+      setDraft("");
+      return;
+    }
+    let i = 0;
+    setDraft("");
+    guard.timer = setInterval(() => {
+      i += 1;
+      setDraft(prefill.slice(0, i));
+      if (i >= prefill.length && guard.timer) {
+        clearInterval(guard.timer);
+        guard.timer = null;
+      }
+    }, TYPING_MS_PER_CHAR);
+    return () => {
+      if (guard.timer) {
+        clearInterval(guard.timer);
+        guard.timer = null;
+      }
+    };
+  }, [prefill]);
+  const listRef = import_react5.useRef(null);
+  const pinned = import_react5.useRef(true);
+  const atBottom = (el) => el.scrollHeight - el.scrollTop - el.clientHeight <= PIN_THRESHOLD;
+  import_react5.useEffect(() => {
+    const el = listRef.current;
+    if (el && pinned.current)
+      el.scrollTop = el.scrollHeight;
+  }, [messages, streaming, progress?.step, progress?.rowsDone]);
+  const disabled = disabledHint !== null;
+  import_react5.useEffect(() => {
+    if (disabled)
+      setDraft("");
+  }, [disabled]);
+  const send = () => {
+    const text = draft.trim();
+    if (!text || streaming || disabled)
+      return;
+    const guard = typing.current;
+    if (guard.timer) {
+      clearInterval(guard.timer);
+      guard.timer = null;
+    }
+    setDraft("");
+    pinned.current = true;
+    onSend(text);
+  };
+  const hasDraft = draft.trim() !== "" && !disabled;
+  const sendBtn = {
+    height: 30,
+    width: 30,
+    flex: "0 0 auto",
+    borderRadius: space.radiusSm,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer"
+  };
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("aside", {
     style: {
-      height: space.topbarH,
-      flex: "0 0 auto",
+      width: fill ? "100%" : width,
+      height: fill ? "100%" : undefined,
+      flex: fill ? "1 1 auto" : "0 0 auto",
+      minHeight: 0,
       display: "flex",
-      alignItems: "center",
-      gap: space.px10,
-      padding: `0 ${space.px12}px`,
-      background: t.surface,
-      borderBottom: `1px solid ${t.line}`
+      flexDirection: "column",
+      background: t.surface2,
+      borderRight: fill ? "none" : `1px solid ${t.line}`
     },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Lockup, {
-        size: typography.size.md,
-        color: t.ink,
-        dark
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("style", {
+        children: CP_CSS
       }, undefined, false, undefined, this),
-      loaded && !condensed && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-        "data-tb-info": "",
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
         style: {
-          fontFamily: typography.mono,
-          fontSize: typography.size.sm,
-          color: t.ink3,
-          marginLeft: space.px6,
-          paddingLeft: space.px10,
-          borderLeft: `1px solid ${t.line}`,
-          whiteSpace: "nowrap",
-          minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis"
+          height: space.headerH,
+          flex: "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+          padding: `0 ${space.px12}px`,
+          borderBottom: `1px solid ${t.line}`,
+          fontFamily: typography.ui,
+          fontSize: typography.size.xs,
+          fontWeight: 600,
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
+          color: t.ink3
         },
         children: [
-          fileName && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+          "Requests",
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { flex: 1 }
+          }, undefined, false, undefined, this),
+          (requestCount > 0 || streaming) && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: {
+              fontFamily: typography.mono,
+              fontSize: typography.size.xs,
+              fontWeight: 400,
+              letterSpacing: 0,
+              textTransform: "none",
+              color: t.ink3
+            },
             children: [
-              fileName,
-              " ",
-              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
-                style: { color: t.ink4 },
-                children: "·"
-              }, undefined, false, undefined, this),
-              " "
+              requestCount > 0 && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+                children: [
+                  requestCount,
+                  " transformation",
+                  requestCount === 1 ? "" : "s"
+                ]
+              }, undefined, true, undefined, this),
+              streaming && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+                children: " · running"
+              }, undefined, false, undefined, this)
             ]
           }, undefined, true, undefined, this),
-          rowCount,
-          " rows × ",
-          colCount,
-          " cols"
+          helpLines.length > 0 && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+            style: { position: "relative", marginLeft: space.px6 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                type: "button",
+                onMouseEnter: () => setHelpOpen(true),
+                onMouseLeave: () => setHelpOpen(false),
+                onClick: () => setHelpOpen((o) => !o),
+                style: {
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: t.ink3,
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.xs,
+                  fontWeight: 600,
+                  padding: "2px 4px",
+                  lineHeight: 1,
+                  textTransform: "none",
+                  letterSpacing: 0,
+                  borderRadius: space.radiusSm
+                },
+                children: "?"
+              }, undefined, false, undefined, this),
+              helpOpen && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("ul", {
+                style: {
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  margin: 0,
+                  marginTop: 4,
+                  listStyle: "none",
+                  background: t.surface,
+                  border: `1px solid ${t.line}`,
+                  borderRadius: space.radius,
+                  padding: "8px 10px",
+                  boxShadow: t.shadow,
+                  whiteSpace: "nowrap",
+                  zIndex: 100,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  textTransform: "none",
+                  letterSpacing: 0,
+                  fontWeight: 400
+                },
+                children: helpLines.map((line) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("li", {
+                  style: {
+                    fontFamily: typography.ui,
+                    fontSize: typography.size.xs,
+                    color: t.ink2,
+                    lineHeight: 1.5
+                  },
+                  children: line
+                }, line, false, undefined, this))
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-        style: { flex: 1 }
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(MenuButton, {
-        id: openButtonId,
-        disabled: busy,
-        title: "Open a table or a saved flow",
-        sections: openMenuSections({ onOpenSample, onOpenLocal, onOpenUrl, onOpenFlow, recentMenu, loaded }),
+        ref: listRef,
+        "data-cp-messages": "",
+        onScroll: (e) => {
+          pinned.current = atBottom(e.currentTarget);
+        },
+        style: {
+          flex: 1,
+          overflowY: "auto",
+          padding: space.px14,
+          display: "flex",
+          flexDirection: "column",
+          gap: space.px12
+        },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "file"
-          }, undefined, false, undefined, this),
-          !condensed && "Open"
+          messages.length === 0 && emptyState,
+          messages.map((m) => m.role === "user" ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(UserBubble, {
+            t,
+            children: m.text
+          }, m.id, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(AssistantMessage, {
+            t,
+            message: m,
+            onReportBug
+          }, m.id, false, undefined, this)),
+          streaming && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+                "data-cp-running": "",
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: space.px8,
+                  color: t.ink2,
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.sm
+                },
+                children: [
+                  /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+                    className: "cp-pulse",
+                    style: { width: 6, height: 6, borderRadius: 3, background: t.accent }
+                  }, undefined, false, undefined, this),
+                  "Running…"
+                ]
+              }, undefined, true, undefined, this),
+              progress && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(RunProgress, {
+                t,
+                progress
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(MenuButton, {
-        disabled: !loaded || busy,
-        title: "Save the data or the recipe",
-        sections: saveMenuSections({ saveDataMenu, saveFlowMenu }),
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        style: {
+          flex: "0 0 auto",
+          borderTop: `1px solid ${t.line}`,
+          padding: space.px10
+        },
         children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "save"
-          }, undefined, false, undefined, this),
-          !condensed && "Save"
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: {
+              background: t.surface,
+              border: `1px solid ${focused ? t.accent : t.line2}`,
+              boxShadow: focused ? `0 0 0 3px ${t.ring}` : "none",
+              borderRadius: space.radius,
+              padding: "8px 10px 6px 10px",
+              display: "flex",
+              flexDirection: "column",
+              gap: space.px6,
+              transition: "border-color .12s, box-shadow .12s"
+            },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("textarea", {
+                id: inputId,
+                ref: inputRef,
+                value: draft,
+                onChange: (e) => setDraft(e.target.value),
+                onFocus: () => setFocused(true),
+                onBlur: () => setFocused(false),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !isImeComposingEvent(e)) {
+                    e.preventDefault();
+                    send();
+                  }
+                },
+                placeholder: disabledHint ?? "Describe a transformation…",
+                disabled,
+                rows: 3,
+                style: {
+                  width: "100%",
+                  resize: "none",
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.base,
+                  lineHeight: 1.5,
+                  color: disabled ? t.ink3 : t.ink
+                }
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+                style: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: space.px8 },
+                children: [
+                  disabled ? null : micButton,
+                  streaming ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                    type: "button",
+                    "data-cp-stop": "",
+                    onClick: onCancel,
+                    title: "Stop the running request",
+                    style: {
+                      ...sendBtn,
+                      border: `1px solid ${t.err}`,
+                      background: "transparent",
+                      color: t.err
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+                      name: "stop"
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+                    type: "button",
+                    "data-cp-send": "",
+                    onClick: send,
+                    disabled: !hasDraft,
+                    title: "Send (Enter)",
+                    style: {
+                      ...sendBtn,
+                      border: "none",
+                      background: hasDraft ? t.accent : t.surface3,
+                      color: hasDraft ? t.inkOnAcc : t.ink3,
+                      cursor: hasDraft ? "pointer" : "default"
+                    },
+                    children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
+                      name: "send"
+                    }, undefined, false, undefined, this)
+                  }, undefined, false, undefined, this)
+                ]
+              }, undefined, true, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+            style: {
+              marginTop: space.px6,
+              fontFamily: typography.ui,
+              fontSize: typography.size.micro,
+              color: t.ink4,
+              letterSpacing: 0.3
+            },
+            children: "↵ to send · ⇧↵ for newline"
+          }, undefined, false, undefined, this)
         ]
-      }, undefined, true, undefined, this),
-      divider,
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
-        onClick: onUndo,
-        disabled: !canUndo || busy,
-        title: "Undo (:undo)",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "undo"
-          }, undefined, false, undefined, this),
-          !condensed && "Undo"
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
-        onClick: onRedo,
-        disabled: !canRedo || busy,
-        title: "Redo (:redo)",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "redo"
-          }, undefined, false, undefined, this),
-          !condensed && "Redo"
-        ]
-      }, undefined, true, undefined, this),
-      divider,
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
-        onClick: onToggleTheme,
-        title: dark ? "Switch to light theme" : "Switch to dark theme",
-        children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-          name: dark ? "sun" : "moon"
-        }, undefined, false, undefined, this)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
-        onClick: onOpenSettings,
-        title: "API key and settings",
-        children: [
-          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-            name: "wrench"
-          }, undefined, false, undefined, this),
-          !condensed && "Settings"
-        ]
-      }, undefined, true, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Button, {
-        onClick: onOpenTutorial,
-        title: "Interactive tours — no API key required",
-        children: condensed ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(Icon, {
-          name: "tour"
-        }, undefined, false, undefined, this) : "Tours"
-      }, undefined, false, undefined, this)
+      }, undefined, true, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-// packages/toolbar/OpenUrlDialog.tsx
-var import_react5 = __toESM(require_react(), 1);
-var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
-function OpenUrlDialog({ open, onSubmit, onClose }) {
-  const t = useTheme();
-  const [url, setUrl] = import_react5.useState("");
-  const [error, setError] = import_react5.useState(null);
-  const [loading, setLoading] = import_react5.useState(false);
-  const inputRef = import_react5.useRef(null);
-  import_react5.useEffect(() => {
-    if (open) {
-      setUrl("");
-      setError(null);
-      setLoading(false);
-      const id = setTimeout(() => inputRef.current?.focus(), 0);
-      return () => clearTimeout(id);
-    }
-    return;
-  }, [open]);
-  if (!open)
-    return null;
-  const close = () => {
-    if (loading)
-      return;
-    onClose();
-  };
-  const submit = async (target) => {
-    if (loading)
-      return;
-    setError(null);
-    setLoading(true);
-    try {
-      await onSubmit(target);
-      onClose();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const onKeyDown = (e) => {
-    if (e.key === "Escape") {
-      e.stopPropagation();
-      close();
-    } else if (e.key === "Enter" && !e.shiftKey && !isImeComposingEvent(e)) {
-      e.preventDefault();
-      submit(url);
-    }
-  };
-  const httpWarning = url.trim().toLowerCase().startsWith("http://") ? "Note: http:// is unencrypted." : null;
-  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-    "data-tb-dialog": "",
-    onClick: close,
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: t.overlay,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 110
-    },
-    children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-      onClick: (e) => e.stopPropagation(),
-      onKeyDown,
-      style: {
-        width: 520,
-        maxWidth: "92vw",
-        maxHeight: "88vh",
-        background: t.surface,
-        border: `1px solid ${t.line2}`,
-        borderRadius: space.radiusLg,
-        boxShadow: t.shadowLg,
-        display: "flex",
-        flexDirection: "column"
-      },
-      children: [
-        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-          style: {
-            flex: "0 0 auto",
-            display: "flex",
-            alignItems: "center",
-            padding: `${space.px12}px ${space.px16}px`,
-            borderBottom: `1px solid ${t.line}`
-          },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-              style: {
-                fontFamily: typography.ui,
-                fontSize: typography.size.md,
-                fontWeight: 600,
-                color: t.ink
-              },
-              children: "Open from URL"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-              style: { flex: 1 }
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("button", {
-              type: "button",
-              onClick: close,
-              title: "Close",
-              disabled: loading,
-              style: {
-                background: "transparent",
-                border: 0,
-                padding: space.px4,
-                cursor: loading ? "default" : "pointer",
-                color: t.ink3,
-                display: "flex",
-                opacity: loading ? 0.4 : 1
-              },
-              children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Icon, {
-                name: "x"
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-          style: {
-            flex: 1,
-            overflowY: "auto",
-            padding: space.px16,
-            display: "flex",
-            flexDirection: "column",
-            gap: space.px16
-          },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-                  style: {
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.sm,
-                    fontWeight: 600,
-                    color: t.ink,
-                    marginBottom: space.px4
-                  },
-                  children: "URL"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-                  style: {
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.xs,
-                    lineHeight: 1.55,
-                    color: t.ink3,
-                    marginBottom: space.px8
-                  },
-                  children: [
-                    "Paste a link to a .csv, .jsonl, .parquet, or .arrow file (",
-                    /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("a", {
-                      href: "../FAQ.html#formats",
-                      target: "_blank",
-                      rel: "noopener",
-                      style: { color: t.accent },
-                      children: "all formats ↗"
-                    }, undefined, false, undefined, this),
-                    "). The remote server must allow cross-origin requests."
-                  ]
-                }, undefined, true, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("input", {
-                  ref: inputRef,
-                  "data-tb-url-input": "",
-                  type: "url",
-                  value: url,
-                  onChange: (e) => setUrl(e.target.value),
-                  placeholder: "https://example.com/data.csv",
-                  spellCheck: false,
-                  autoComplete: "off",
-                  disabled: loading,
-                  style: {
-                    width: "100%",
-                    boxSizing: "border-box",
-                    padding: "8px 10px",
-                    border: `1px solid ${t.line2}`,
-                    borderRadius: space.radius,
-                    background: t.surface2,
-                    fontFamily: typography.mono,
-                    fontSize: typography.size.sm,
-                    color: t.ink,
-                    outline: "none"
-                  }
-                }, undefined, false, undefined, this),
-                httpWarning && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-                  style: {
-                    marginTop: space.px6,
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.xs,
-                    color: t.ink3
-                  },
-                  children: httpWarning
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this),
-            error && /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-              role: "alert",
-              style: {
-                padding: "8px 10px",
-                border: `1px solid ${t.err}`,
-                background: t.errSoft,
-                borderRadius: space.radius,
-                color: t.err,
-                fontFamily: typography.ui,
-                fontSize: typography.size.sm,
-                lineHeight: 1.5,
-                display: "flex",
-                alignItems: "flex-start",
-                gap: space.px8
-              },
-              children: [
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Icon, {
-                  name: "err"
-                }, undefined, false, undefined, this),
-                /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
-                  style: { flex: 1 },
-                  children: error
-                }, undefined, false, undefined, this)
-              ]
-            }, undefined, true, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
-          style: {
-            flex: "0 0 auto",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: space.px8,
-            padding: space.px14,
-            borderTop: `1px solid ${t.line}`
-          },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
-              variant: "chrome",
-              onClick: close,
-              disabled: loading,
-              children: "Cancel"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Button, {
-              variant: "primary",
-              onClick: () => void submit(url),
-              disabled: loading || !url.trim(),
-              children: loading ? "Loading…" : "Load"
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
-      ]
-    }, undefined, true, undefined, this)
-  }, undefined, false, undefined, this);
-}
-// packages/toolbar/OpenSampleDialog.tsx
+// packages/chat-panel/MicButton.tsx
 var import_react6 = __toESM(require_react(), 1);
-
-// packages/toolbar/index.ts
-function sampleKind(name) {
-  return name.toLowerCase().endsWith(".csv") ? "CSV" : "JSONL";
-}
-
-// packages/toolbar/OpenSampleDialog.tsx
-var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
-function OpenSampleDialog({
-  open,
-  recommended,
-  samples,
-  onPick,
-  onClose
+var jsx_dev_runtime8 = __toESM(require_jsx_dev_runtime(), 1);
+var HOLD_MS = 250;
+var micCss = (rec) => `@keyframes cp-rec-kf { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 55%, transparent); }` + ` 70% { box-shadow: 0 0 0 7px color-mix(in srgb, ${rec} 0%, transparent); }` + ` 100% { box-shadow: 0 0 0 0 color-mix(in srgb, ${rec} 0%, transparent); } }` + " .cp-rec-ring { animation: cp-rec-kf 1.1s ease-out infinite; }" + " @keyframes cp-spin-kf { to { transform: rotate(360deg); } }" + " .cp-spin { animation: cp-spin-kf 0.7s linear infinite; }";
+var DEFAULT_SIZE = {
+  height: 30,
+  width: 30,
+  flex: "0 0 auto",
+  borderRadius: 4,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center"
+};
+function MicButton({
+  status,
+  onStart,
+  onLatch,
+  onStop,
+  onCancel,
+  size = DEFAULT_SIZE,
+  id
 }) {
   const t = useTheme();
-  const [showAll, setShowAll] = import_react6.useState(recommended.length === 0);
+  const recording = status === "recording";
+  const latched = status === "latched";
+  const sending = status === "sending";
+  const pressedRef = import_react6.useRef(false);
+  const pressTimeRef = import_react6.useRef(0);
   import_react6.useEffect(() => {
-    if (open)
-      setShowAll(recommended.length === 0);
-  }, [open, recommended.length]);
-  import_react6.useEffect(() => {
-    if (!open)
+    if (!recording && !latched)
       return;
     const onKey = (e) => {
-      if (e.key === "Escape")
-        onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-  if (!open)
-    return null;
-  const pick = (url) => {
-    onPick(url);
-    onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [recording, latched, onCancel]);
+  const press = (e) => {
+    if (sending)
+      return;
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    pressedRef.current = true;
+    pressTimeRef.current = Date.now();
+    onStart();
   };
-  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-    "data-tb-sample-dialog": "",
-    onClick: onClose,
-    style: {
-      position: "fixed",
-      inset: 0,
-      background: t.overlay,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 110
-    },
-    children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-      onClick: (e) => e.stopPropagation(),
-      style: {
-        width: 520,
-        maxWidth: "92vw",
-        maxHeight: "88vh",
-        background: t.surface,
-        border: `1px solid ${t.line2}`,
-        borderRadius: space.radiusLg,
-        boxShadow: t.shadowLg,
-        display: "flex",
-        flexDirection: "column"
-      },
+  const release = () => {
+    if (!pressedRef.current)
+      return;
+    pressedRef.current = false;
+    if (Date.now() - pressTimeRef.current >= HOLD_MS)
+      onStop();
+    else
+      onLatch();
+  };
+  const pointerCancel = () => {
+    pressedRef.current = false;
+    onCancel();
+  };
+  if (latched) {
+    return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("div", {
+      style: { display: "flex", alignItems: "center", gap: 6 },
       children: [
-        /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("style", {
+          children: micCss(t.rec)
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
+          "aria-hidden": true,
+          className: "cp-rec-ring",
+          style: { width: 10, height: 10, borderRadius: "50%", background: t.rec, flex: "0 0 auto" }
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("button", {
+          type: "button",
+          onClick: onCancel,
+          title: "Cancel recording",
+          "aria-label": "Cancel recording",
+          "data-testid": "mic-cancel",
           style: {
-            flex: "0 0 auto",
-            display: "flex",
-            alignItems: "center",
-            padding: `${space.px12}px ${space.px16}px`,
-            borderBottom: `1px solid ${t.line}`
+            ...size,
+            border: `1px solid ${t.line2}`,
+            background: "transparent",
+            color: t.ink2,
+            cursor: "pointer"
           },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
-              style: {
-                fontFamily: typography.ui,
-                fontSize: typography.size.md,
-                fontWeight: 600,
-                color: t.ink
-              },
-              children: "Open a sample"
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
-              style: { flex: 1 }
-            }, undefined, false, undefined, this),
-            /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
-              type: "button",
-              onClick: onClose,
-              title: "Close",
-              style: {
-                background: "transparent",
-                border: 0,
-                padding: space.px4,
-                cursor: "pointer",
-                color: t.ink3,
-                display: "flex"
-              },
-              children: /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(Icon, {
-                name: "x"
-              }, undefined, false, undefined, this)
-            }, undefined, false, undefined, this)
-          ]
-        }, undefined, true, undefined, this),
-        /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
+          children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Icon, {
+            name: "x"
+          }, undefined, false, undefined, this)
+        }, undefined, false, undefined, this),
+        /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("button", {
+          type: "button",
+          onClick: onStop,
+          title: "Send recording",
+          "aria-label": "Send recording",
+          "data-testid": "mic-send",
           style: {
-            flex: 1,
-            overflowY: "auto",
-            padding: space.px16,
-            display: "flex",
-            flexDirection: "column",
-            gap: space.px8
+            ...size,
+            border: `1px solid ${t.accent}`,
+            background: t.accent,
+            color: t.inkOnAcc,
+            cursor: "pointer"
           },
-          children: [
-            /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-              style: {
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                lineHeight: 1.55,
-                color: t.ink3
-              },
-              children: recommended.length > 0 ? "One table per feature — the same ones the tours use. Pick one to load it now." : "Bundled with TamedTable. Pick one to load it now."
-            }, undefined, false, undefined, this),
-            recommended.length > 0 && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-              role: "listbox",
-              style: {
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                border: `1px solid ${t.line2}`,
-                borderRadius: space.radius,
-                background: t.surface2,
-                padding: space.px4
-              },
-              children: recommended.map((sample) => /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(RecommendedRow, {
-                sample,
-                onPick: () => pick(sample.url)
-              }, sample.name, false, undefined, this))
-            }, undefined, false, undefined, this),
-            !showAll && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
-              type: "button",
-              "data-tb-sample-more": "",
-              onClick: () => setShowAll(true),
-              style: {
-                alignSelf: "flex-start",
-                background: "transparent",
-                border: 0,
-                padding: `${space.px4}px 0`,
-                cursor: "pointer",
-                color: t.ink3,
-                fontFamily: typography.ui,
-                fontSize: typography.size.xs,
-                textDecoration: "underline"
-              },
-              children: `Show all ${samples.length} bundled files`
-            }, undefined, false, undefined, this),
-            showAll && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-              role: "listbox",
-              style: {
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                border: `1px solid ${t.line2}`,
-                borderRadius: space.radius,
-                background: t.surface2,
-                padding: space.px4
-              },
-              children: [
-                samples.length === 0 && /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("div", {
-                  style: {
-                    padding: "8px 10px",
-                    fontFamily: typography.ui,
-                    fontSize: typography.size.sm,
-                    color: t.ink3
-                  },
-                  children: "No sample files bundled."
-                }, undefined, false, undefined, this),
-                samples.map((sample) => /* @__PURE__ */ jsx_dev_runtime9.jsxDEV(SampleRow, {
-                  sample,
-                  onPick: () => pick(sample.url)
-                }, sample.name, false, undefined, this))
-              ]
-            }, undefined, true, undefined, this)
-          ]
-        }, undefined, true, undefined, this)
+          children: /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Icon, {
+            name: "ok"
+          }, undefined, false, undefined, this)
+        }, undefined, false, undefined, this)
       ]
-    }, undefined, true, undefined, this)
-  }, undefined, false, undefined, this);
-}
-function RecommendedRow({ sample, onPick }) {
-  const t = useTheme();
-  const [hover, setHover] = import_react6.useState(false);
-  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
+    }, undefined, true, undefined, this);
+  }
+  const title = recording ? "Release to send · tap for hands-free · Esc to cancel" : sending ? "Transcribing…" : "Hold to record, or tap for hands-free";
+  return /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("button", {
     type: "button",
-    "data-tb-sample": "",
-    onClick: onPick,
-    onMouseEnter: () => setHover(true),
-    onMouseLeave: () => setHover(false),
-    title: `Open ${sample.name}`,
+    id,
+    className: recording ? "cp-rec-ring" : undefined,
+    onPointerDown: press,
+    onPointerUp: release,
+    onPointerCancel: pointerCancel,
+    disabled: sending,
+    title,
+    "aria-label": title,
+    "data-testid": "mic-button",
     style: {
-      textAlign: "left",
-      background: hover ? t.surface3 : "transparent",
-      border: 0,
-      borderRadius: space.radiusSm,
-      padding: "8px 10px",
-      cursor: "pointer",
-      display: "flex",
-      flexDirection: "column",
-      gap: 2
+      ...size,
+      border: `1px solid ${recording ? t.rec : t.line2}`,
+      background: recording ? t.rec : "transparent",
+      color: recording ? t.onRec : sending ? t.ink3 : t.ink2,
+      cursor: sending ? "default" : "pointer",
+      touchAction: "none"
     },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
-        style: {
-          fontFamily: typography.ui,
-          fontSize: typography.size.sm,
-          fontWeight: 600,
-          color: t.ink
-        },
-        children: sample.title
+      /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("style", {
+        children: micCss(t.rec)
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
+      sending ? /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
+        className: "cp-spin",
         style: {
-          fontFamily: typography.mono,
-          fontSize: typography.size.xs,
-          color: t.ink3
-        },
-        children: sample.name
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          border: `2px solid ${t.line2}`,
+          borderTopColor: t.ink2,
+          display: "block"
+        }
+      }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime8.jsxDEV(Icon, {
+        name: "mic"
       }, undefined, false, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }
-function SampleRow({ sample, onPick }) {
-  const t = useTheme();
-  const [hover, setHover] = import_react6.useState(false);
-  return /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("button", {
-    type: "button",
-    "data-tb-sample": "",
-    onClick: onPick,
-    onMouseEnter: () => setHover(true),
-    onMouseLeave: () => setHover(false),
-    title: `Open ${sample.name}`,
-    style: {
-      textAlign: "left",
-      background: hover ? t.surface3 : "transparent",
-      border: 0,
-      borderRadius: space.radiusSm,
-      padding: "8px 10px",
-      cursor: "pointer",
-      color: t.ink,
-      fontFamily: typography.mono,
-      fontSize: typography.size.sm,
-      display: "flex",
-      alignItems: "center",
-      gap: space.px8
-    },
-    children: [
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
-        style: {
-          fontFamily: typography.ui,
-          fontSize: typography.size.xs,
-          color: t.ink3,
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-          minWidth: 36
-        },
-        children: sampleKind(sample.name)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime9.jsxDEV("span", {
-        children: sample.name
-      }, undefined, false, undefined, this)
-    ]
-  }, undefined, true, undefined, this);
-}
-// packages/toolbar/demo.tsx
+// packages/chat-panel/WaveButton.tsx
+var jsx_dev_runtime9 = __toESM(require_jsx_dev_runtime(), 1);
+// packages/chat-panel/demo.tsx
 var jsx_dev_runtime10 = __toESM(require_jsx_dev_runtime(), 1);
-var RECOMMENDED = [
-  { title: "Clean up", name: "customers-input.csv", url: "https://example.com/customers-input.csv" }
-];
-var SAMPLES = [
-  { name: "customers-input.csv", url: "https://example.com/customers-input.csv" },
-  { name: "customers.jsonl", url: "https://example.com/customers.jsonl" }
+var SAMPLE_PROGRESS = {
+  step: 2,
+  totalSteps: 5,
+  label: "mutate Country (AI)",
+  rowsDone: 300,
+  rowsTotal: 424,
+  log: [
+    "step 1/5: filter (js) · 424 rows",
+    "  pred: row.FED === 'CRO'",
+    "step 2/5: mutate Country (AI) · 424 rows",
+    "  value: Normalize this country name to its English short form…",
+    'Country · row 299: "USA" → "United States"',
+    'Country · row 300: "UK" → "United Kingdom"'
+  ]
+};
+var SAMPLE_DETAIL = {
+  userRequest: "normalize the phone column",
+  modelCalls: [{ model: "claude-sonnet-4-6", calls: 2 }],
+  inputTokens: 1843,
+  outputTokens: 412,
+  elapsedMs: 5300,
+  turns: [
+    { outcome: "committed", ops: [{ op: "add", path: "/transformations/-", value: { kind: "mutate" } }] }
+  ],
+  cellSamples: [
+    { column: "phone", samples: [{ in: "555 0199", out: "+1-555-0199" }] }
+  ]
+};
+var HELP_LINES = [
+  "Double-click a cell to edit it",
+  "Type :undo or :redo in the chat"
 ];
 function Demo() {
   const t = useTheme();
-  const { mode, toggle } = useThemeControls();
-  const [dialogOpen, setDialogOpen] = import_react7.useState(false);
-  const [sampleOpen, setSampleOpen] = import_react7.useState(false);
-  const [canUndo, setCanUndo] = import_react7.useState(true);
+  const [messages, setMessages] = import_react7.useState([]);
+  const [streaming, setStreaming] = import_react7.useState(false);
+  const [prefill, setPrefill] = import_react7.useState(null);
+  const [disabledHint, setDisabledHint] = import_react7.useState(null);
+  const [voiceStatus, setVoiceStatus] = import_react7.useState("idle");
+  const [seq, setSeq] = import_react7.useState(0);
   const [log, setLog] = import_react7.useState(["ready"]);
   const report = (event) => setLog((l) => [...l, event]);
+  const append = (...items) => {
+    setMessages((list) => [...list, ...items.map((m, i) => ({ ...m, id: seq + i }))]);
+    setSeq((n) => n + items.length);
+  };
   return /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
-    "data-tb-mode": mode,
-    style: { height: "100vh", display: "flex", flexDirection: "column", background: t.bg },
+    style: { height: "100vh", display: "flex" },
     children: [
-      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Toolbar, {
-        openButtonId: "demo-open-btn",
-        loaded: true,
-        busy: false,
-        fileName: "customers.csv",
-        rowCount: 95,
-        colCount: 4,
-        canUndo,
-        canRedo: false,
-        onOpenSample: () => {
-          report("open sample dialog");
-          setSampleOpen(true);
+      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(ChatPanel, {
+        inputId: "demo-chat-input",
+        messages,
+        streaming,
+        progress: streaming ? SAMPLE_PROGRESS : null,
+        requestCount: messages.filter((m) => m.role === "user").length,
+        prefill,
+        disabledHint,
+        onSend: (text) => {
+          report(`send ${text}`);
+          append({ role: "user", text }, { role: "assistant", text: `Did: ${text}` });
         },
-        onOpenUrl: () => {
-          report("open dialog");
-          setDialogOpen(true);
+        onCancel: () => {
+          report("cancel");
+          setStreaming(false);
         },
-        onOpenLocal: () => report("open local"),
-        onOpenFlow: () => report("open flow"),
-        recentMenu: [
-          { label: "people.csv", tag: "local", onClick: () => report("recent people.csv") },
-          { label: "cities.jsonl", tag: "URL", onClick: () => report("recent cities.jsonl") }
-        ],
-        saveDataMenu: [
-          { label: "Save CSV…", onClick: () => report("save as csv") },
-          { label: "Save JSONL…", onClick: () => report("save as jsonl") },
-          { label: "Save Parquet…", onClick: () => report("save as parquet") }
-        ],
-        saveFlowMenu: [
-          { label: "Save recipe as .flow…", onClick: () => report("save as flow") },
-          { label: "Save recipe as Python…", onClick: () => report("save as python") }
-        ],
-        onUndo: () => {
-          report("undo");
-          setCanUndo(false);
-        },
-        onRedo: () => report("redo"),
-        onToggleTheme: () => {
-          report("toggle theme");
-          toggle();
-        },
-        onOpenSettings: () => report("open settings"),
-        onOpenTutorial: () => report("open tutorial")
+        onReportBug: (m) => report(`report bug #${m.id}`),
+        emptyState: /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("p", {
+          style: { margin: 0, color: t.ink3, fontFamily: typography.ui, fontSize: 13 },
+          children: "No messages yet: send one below, or use the buttons on the right."
+        }, undefined, false, undefined, this),
+        helpLines: HELP_LINES,
+        micButton: /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(MicButton, {
+          status: voiceStatus,
+          onStart: () => {
+            report("voice start");
+            setVoiceStatus("recording");
+          },
+          onLatch: () => {
+            report("voice latch");
+            setVoiceStatus("latched");
+          },
+          onStop: () => {
+            report("voice stop");
+            setVoiceStatus("sending");
+            setTimeout(() => setVoiceStatus("idle"), 800);
+          },
+          onCancel: () => {
+            report("voice cancel");
+            setVoiceStatus("idle");
+          }
+        }, undefined, false, undefined, this)
       }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("pre", {
-        id: "out",
-        style: {
-          flex: 1,
-          overflow: "auto",
-          margin: 12,
-          padding: ".5rem .75rem",
-          font: `11px/1.5 ${typography.mono}`,
-          background: t.surface2,
-          color: t.ink2,
-          border: `1px solid ${t.line}`,
-          borderRadius: 6
-        },
-        children: log.join(`
+      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+        style: { flex: 1, display: "flex", flexDirection: "column", background: t.bg },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("div", {
+            style: { display: "flex", flexWrap: "wrap", gap: 8, padding: 12 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => append({ role: "assistant", text: "Error: Something broke while applying the change." }),
+                children: "Add error reply"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => append({ role: "assistant", text: "Error: Something unexpected broke, this looks like a bug.", reportable: true }),
+                children: "Add app-error reply"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => append({ role: "assistant", text: "Normalized 12 phone numbers.", debug: SAMPLE_DETAIL, reportable: true }),
+                children: "Add reply with detail"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => append({ role: "assistant", text: `Undone steps:
+1. filter (js)`, undone: true }),
+                children: "Add undone reply"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => append(...Array.from({ length: 30 }, (_, i) => ({
+                  role: "assistant",
+                  text: `Filler reply ${i + 1}`
+                }))),
+                children: "Fill thread"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => setStreaming((v) => !v),
+                children: "Toggle streaming"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => setPrefill("Keep rows where age >= 18"),
+                children: "Prefill draft"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => setDisabledHint((v) => v ? null : "Replay mode: undo/redo only"),
+                children: "Toggle replay lock"
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime10.jsxDEV("pre", {
+            id: "out",
+            style: {
+              flex: 1,
+              overflow: "auto",
+              margin: 12,
+              marginTop: 0,
+              padding: ".5rem .75rem",
+              font: `11px/1.5 ${typography.mono}`,
+              background: t.surface2,
+              color: t.ink2,
+              border: `1px solid ${t.line}`,
+              borderRadius: 6
+            },
+            children: log.join(`
 `)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(OpenSampleDialog, {
-        open: sampleOpen,
-        recommended: RECOMMENDED,
-        samples: SAMPLES,
-        onPick: (url) => report(`open sample ${url}`),
-        onClose: () => setSampleOpen(false)
-      }, undefined, false, undefined, this),
-      /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(OpenUrlDialog, {
-        open: dialogOpen,
-        onSubmit: async (url) => {
-          report(`open url ${url}`);
-        },
-        onClose: () => setDialogOpen(false)
-      }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this)
     ]
   }, undefined, true, undefined, this);
 }

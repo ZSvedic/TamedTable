@@ -18008,7 +18008,7 @@ function TableView({
                       children: [
                         /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
                           "data-tv-rowstatus": status,
-                          title: status === "pending" ? "Pending — AI steps have not reached this row yet" : status === "failed" ? "Failed — retry from the readout below" : undefined,
+                          title: status === "pending" ? "Pending: AI steps have not reached this row yet" : status === "failed" ? "Failed: retry from the readout below" : undefined,
                           style: {
                             ...bodyCell,
                             color: status === "failed" ? t.onRec : t.ink4,
@@ -18405,7 +18405,7 @@ function Demo() {
           font: `600 14px/1.4 ${typography.ui}`
         },
         children: [
-          "table-view — 95 sample rows, page size ",
+          "table-view: 95 sample rows, page size ",
           PAGE_SIZE,
           /* @__PURE__ */ jsx_dev_runtime8.jsxDEV("span", {
             style: { flex: 1 }

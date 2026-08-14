@@ -18453,7 +18453,7 @@ async function blobToWavBytes(blob) {
 }
 
 // packages/model-config/demo-llm.ts
-var VOICE_PROMPT = "The user's query is spoken in the attached audio. Reply with ONLY a JSON " + "object — no markdown fences, no other text — of the shape " + '{"transcript": "<verbatim transcript of the audio>", ' + '"answer": "<your answer to the query>"}.';
+var VOICE_PROMPT = "The user's query is spoken in the attached audio. Reply with ONLY a JSON " + "object (no markdown fences, no other text) of the shape " + '{"transcript": "<verbatim transcript of the audio>", ' + '"answer": "<your answer to the query>"}.';
 function parseVoiceReply(raw) {
   const text = raw.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
   try {
@@ -18823,7 +18823,7 @@ function Demo() {
       }, undefined, false, undefined, this),
       /* @__PURE__ */ jsx_dev_runtime2.jsxDEV("h2", {
         children: [
-          "Test call — ",
+          "Test call: ",
           resolved.model
         ]
       }, undefined, true, undefined, this),

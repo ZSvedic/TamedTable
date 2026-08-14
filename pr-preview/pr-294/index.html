@@ -13,16 +13,16 @@ else if(p.endsWith('.html'))p=p.slice(0,-5);
 if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
 </script>
 <link rel="canonical" href="https://www.tamedtable.com/pr-preview/pr-294/">
-<title>TamedTable — AI ETL in Natural Language</title>
+<title>TamedTable | AI ETL in Natural Language</title>
 <meta name="description" content="TamedTable is an AI ETL and data preparation tool: load tabular data, describe what you want, and watch it transform. No formulas, no code. Source-available, runs on your own API key.">
-<meta property="og:title" content="TamedTable — AI ETL in Natural Language">
+<meta property="og:title" content="TamedTable | AI ETL in Natural Language">
 <meta property="og:description" content="Load tabular data, describe what you want, and watch it transform. AI ETL (Extract, Transform, Load): no formulas, no code. Source-available.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.tamedtable.com/pr-preview/pr-294/">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
-  TamedTable homepage — hi-fidelity static landing page.
+  TamedTable homepage: hi-fidelity static landing page.
   Stack: plain HTML + CSS + vanilla JS. No framework, no build step, no dependencies.
   KISS: markup here, palette + layout in styles.css, interactivity in main.js.
   Assets are symlinks (DRY): favicon-32.png → marketing/brand/, illustrations/ → marketing/illustrations/.
@@ -30,7 +30,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 
   Fonts: self-hosted from fonts/ (a symlink to marketing/fonts/), so no font
   request leaves for a third party. The only third-party request is the
-  cookie-less Cloudflare Web Analytics beacon before </body> — see the FAQ's
+  cookie-less Cloudflare Web Analytics beacon before </body>. See the FAQ's
   privacy answer.
 -->
 <link rel="stylesheet" href="fonts/fonts.css">
@@ -78,11 +78,11 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <p class="hero-note">No API key? <a href="https://www.tamedtable.com/pr-preview/pr-294/app/?tours=1" target="_blank" rel="noopener">Take a guided tour</a>: it replays real sessions, free.</p>
       </div>
 
-      <!-- Demo: looping AI run — the "60-second screencast", animated in CSS.
+      <!-- Demo: looping AI run, the "60-second screencast", animated in CSS.
            A category is not in the file and no formula can derive it: reading
            "Wireless Air Fryer" as kitchen takes world knowledge. The keyframes in
            styles.css type the prompt a character at a time, then materialize the
-           Category column — header word first, then a highlighted value per row —
+           Category column: header word first, then a highlighted value per row,
            on a loop. The prompt is 21 characters, and the typing keyframe reveals
            it in 21 steps; edit the text and the step count in styles.css must
            change with it.
@@ -111,7 +111,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   </section>
 
   <!-- ============================ VALUE PROPS ============================ -->
-  <!-- Deep links: section and bullet ids below are a public contract — links in
+  <!-- Deep links: section and bullet ids below are a public contract: links in
        replies, tweets, and docs point at them. Rename only with a redirect plan. -->
   <section class="sec-paper" id="data-jobs">
     <div class="wrap">
@@ -130,7 +130,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             </svg>
             <h3>Transform with context</h3>
           </div>
-          <p>The AI understands context, so it cleans, enriches, classifies, and validates — things no formula can.</p>
+          <p>The AI understands context, so it cleans, enriches, classifies, and validates: things no formula can.</p>
         </div>
         <div class="vp-card">
           <div class="vp-head">
@@ -165,7 +165,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
             </svg>
             <h3>Read many formats</h3>
           </div>
-          <p>Open CSV, JSONL, Parquet, and Arrow files — local, from a URL, or a bundled sample.</p>
+          <p>Open CSV, JSONL, Parquet, and Arrow files: local, from a URL, or a bundled sample.</p>
         </div>
       </div>
     </div>
@@ -185,7 +185,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     </div>
   </section>
 
-  <!-- FEATURE 01: Lazy AI execution — preview a page, see the price,
+  <!-- FEATURE 01: Lazy AI execution, preview a page, see the price,
        run on all rows only when sure. -->
   <section class="sec-paper" id="lazy-ai">
     <div class="wrap">
@@ -346,7 +346,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <div class="feat-list">
             <button class="feat-item active" id="dedupe" data-ill="illustrations/Deterministic-dedupe.svg" data-url="https://www.tamedtable.com/pr-preview/pr-294/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Remove the duplicate rows"</span><span class="fnote">Dedupe</span></button>
             <button class="feat-item" id="join" data-ill="illustrations/Deterministic-join.svg" data-url="https://www.tamedtable.com/pr-preview/pr-294/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Join with join-country-codes.csv on Country to add ISO and Region"</span><span class="fnote">Join two tables</span></button>
-            <button class="feat-item" id="filter" data-ill="illustrations/Deterministic-filter.svg" data-url="https://www.tamedtable.com/pr-preview/pr-294/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Show only customers in Europe"</span><span class="fnote">Filter rows — on the column the join just added</span></button>
+            <button class="feat-item" id="filter" data-ill="illustrations/Deterministic-filter.svg" data-url="https://www.tamedtable.com/pr-preview/pr-294/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Show only customers in Europe"</span><span class="fnote">Filter rows: on the column the join just added</span></button>
             <button class="feat-item" id="pivot" data-ill="illustrations/Deterministic-pivot.svg" data-url="https://www.tamedtable.com/pr-preview/pr-294/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Pivot Quarter into columns, with Revenue as the value"</span><span class="fnote">Reshape tall to wide</span></button>
             <button class="feat-item" id="sort" data-ill="illustrations/Deterministic-sort-top.svg" data-url="https://www.tamedtable.com/pr-preview/pr-294/app/" data-feature="showcase-exact.feature" data-scenario="Shape a quarterly sales report" data-label="Show me →"><span class="fcmd">"Sort by Q4, descending"</span><span class="fnote">Sort or top-N</span></button>
           </div>

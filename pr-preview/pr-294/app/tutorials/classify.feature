@@ -1,5 +1,5 @@
 # #Classify #TutorialMode
-# Atomic "Classify" scenarios — CI coverage, one per feature. Each loads its
+# Atomic "Classify" scenarios: CI coverage, one per feature. Each loads its
 # sample, runs the phrase, and replays from classify.json. The section's
 # marketing tour is the single story in showcase-classify.feature.
 Feature: Classify scenarios
@@ -36,7 +36,7 @@ Feature: Classify scenarios
       And load "titles.csv"
       And the expected output is "classify-seniority-expected.jsonl"
       # The recorded edit adds a visible SeniorityRank column, then sorts on
-      # it numerically descending — CTO first, intern last.
+      # it numerically descending: CTO first, intern last.
       When query "sort the titles by seniority"
       Then the spec has 2 transformations
       And column "SeniorityRank" exists in the spec

@@ -1282,7 +1282,7 @@ var adapter = {
   },
   async showGolden(_goldenFile) {
     renderTable(ADULTS);
-    setStatus(`Expected output — ${ADULTS.length} rows.`);
+    setStatus(`Expected output: ${ADULTS.length} rows.`);
   },
   async playAudio(_filename) {
     setStatus("Playing audio…");
@@ -1308,7 +1308,7 @@ var adapter = {
     }
   },
   onFinish() {
-    setStatus("Tour finished — the app would open the Tutorials panel here.");
+    setStatus("Tour finished: the app would open the Tutorials panel here.");
   }
 };
 function tour() {

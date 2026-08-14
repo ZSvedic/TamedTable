@@ -17114,7 +17114,7 @@ async function readParquetBytes(bytes) {
 }
 async function writeParquetBytes(rows, columns) {
   if (columns.length === 0) {
-    throw new Error("Cannot save a table with no columns as Parquet — add a column or choose another format.");
+    throw new Error("Cannot save a table with no columns as Parquet: add a column or choose another format.");
   }
   const c = await conn();
   const path = tmpFile("parquet");
@@ -17159,7 +17159,7 @@ function normalizeRows(raw) {
 function warnIfHuge(bytes, name) {
   if (bytes.length > LARGE_FILE_BYTES) {
     const gb = (bytes.length / 1024 / 1024 / 1024).toFixed(1);
-    console.warn(`file-io: ${name} is ${gb} GB — very large files may exhaust memory or run slowly.`);
+    console.warn(`file-io: ${name} is ${gb} GB. Very large files may exhaust memory or run slowly.`);
   }
 }
 var LARGE_FILE_BYTES;
@@ -28866,7 +28866,7 @@ async function fetchTable(url2, fetchImpl = fetch) {
   try {
     response = await fetchImpl(parsed.toString(), { redirect: "follow" });
   } catch (e) {
-    throw new Error(`Couldn’t fetch ${parsed.hostname} — network error or CORS blocked. (${e.message})`);
+    throw new Error(`Couldn’t fetch ${parsed.hostname}: network error or CORS blocked. (${e.message})`);
   }
   if (!response.ok) {
     throw new Error(`Fetch failed: HTTP ${response.status} ${response.statusText}`);
@@ -28960,7 +28960,7 @@ class BrowserFilePort {
 // packages/file-io/demo.ts
 var $ = (id) => document.getElementById(id);
 var port = new BrowserFilePort;
-$("fio-fsa").textContent = port.hasFileSystemAccess ? "File System Access API: available — Open and Save use real dialogs." : "File System Access API: missing — Open uses an upload field, Save downloads.";
+$("fio-fsa").textContent = port.hasFileSystemAccess ? "File System Access API: available, Open and Save use real dialogs." : "File System Access API: missing, Open uses an upload field, Save downloads.";
 var current = null;
 function show(picked, format2) {
   current = picked;

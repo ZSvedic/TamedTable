@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- #VoicePort + #VoiceInput demo — manual, isolated test of the voice-input
+<!-- #VoicePort + #VoiceInput demo: manual, isolated test of the voice-input
      package: press-and-hold recording, hands-free VAD capture, and
-     buildVoicePrompt. No LLM here — the app makes the model call.
+     buildVoicePrompt. No LLM here: the app makes the model call.
      Run: bun packages/voice-input/demo.html -->
 <html lang="en">
   <head>
@@ -33,11 +33,11 @@
     </style>
   <script type="module" crossorigin src="/pr-preview/pr-294/demos/voice-input/demo-p8x8b2yb.js"></script></head>
   <body>
-    <h1>voice-input — record, hands-free &amp; prompt</h1>
+    <h1>voice-input: record, hands-free &amp; prompt</h1>
     <p class="hint">
       The package's three jobs: capture a clip by <strong>press-and-hold</strong>,
       capture turns <strong>hands-free</strong> with a client-side VAD, and build
-      the instruction text sent with the audio. No LLM here — a captured turn is
+      the instruction text sent with the audio. No LLM here: a captured turn is
       just a clip you can play; the app makes the model call.
     </p>
 
@@ -73,16 +73,16 @@
       <button data-preset="relaxed">Relaxed (default)</button>
     </div>
     <div class="row">
-      <label class="field"><span>redemptionMs — silence before a turn</span><input id="redemptionMs" type="number" min="100" max="3000" step="50" /></label>
-      <label class="field"><span>minSpeechMs — ignore blips under</span><input id="minSpeechMs" type="number" min="0" max="2000" step="50" /></label>
+      <label class="field"><span>redemptionMs: silence before a turn</span><input id="redemptionMs" type="number" min="100" max="3000" step="50" /></label>
+      <label class="field"><span>minSpeechMs: ignore blips under</span><input id="minSpeechMs" type="number" min="0" max="2000" step="50" /></label>
     </div>
     <p class="hint">
-      <strong>redemptionMs</strong> is the delay you feel — the silence the VAD
+      <strong>redemptionMs</strong> is the delay you feel: the silence the VAD
       waits before sending a turn. Lower = snappier. Changes apply live. The VAD
       model/wasm load from a CDN on first start.
     </p>
 
-    <h2>buildVoicePrompt — sample context</h2>
+    <h2>buildVoicePrompt: sample context</h2>
     <pre id="out"></pre>
 
     

@@ -1,5 +1,5 @@
 # #ColSplit
-# split transformation — declarative 1 → N column splitting.
+# split transformation: declarative 1 → N column splitting.
 Feature: Column split
 
   Rule: Split by literal separator
@@ -63,7 +63,7 @@ Feature: Column split
       Given "colsplit-fullname-input.csv" contains messy international names
       When query "Split FullName into FirstName, MiddleName, LastName with an LLM"
       Then every non-empty row has a non-null "FirstName"
-      # A mononym has no last name — same semantics as the literal-split
+      # A mononym has no last name, same semantics as the literal-split
       # "too few parts pad the tail with null" rule above.
       And the Cher row has FirstName "Cher"
       And the Cher row has LastName equal to null

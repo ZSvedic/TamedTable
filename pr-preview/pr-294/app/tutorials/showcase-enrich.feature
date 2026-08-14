@@ -1,5 +1,5 @@
 # #Enrich #TutorialMode
-# The "Enrich & extract" showcase tour — one purchase ledger gains structure in
+# The "Enrich & extract" showcase tour: one purchase ledger gains structure in
 # four asks: address split, country fill, industry lookup, memo extraction.
 # Key-free @tour deep-linked from the homepage; replays from
 # showcase-enrich.json. Atomic scenarios stay in enrich.feature as CI coverage.
