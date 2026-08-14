@@ -14,6 +14,7 @@ import {
 } from '@tamedtable/voice-input';
 import { describeError, summarizeDebug } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
+import { track } from './analytics.ts';
 
 /** Placeholder chat-bubble/history label for a voice turn, replaced by
  *  `\u{1F399} <transcript>` once the model returns the transcript. */
@@ -173,6 +174,7 @@ export class VoiceManager {
     const bubbleId = this.host.pushMessage('user', VOICE_REQUEST_LABEL);
     let heard: string | undefined;
     try {
+      track('voice-request');
       await this.host.engine.request(buildVoicePrompt(this.buildVoiceContext()), {
         signal,
         audio,

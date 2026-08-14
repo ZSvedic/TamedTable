@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
+     the visible URL matches the canonical (GitHub Pages has no server redirects).
+     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
+<script>
+(function(){var p=location.pathname;
+if(p.endsWith('/index.html'))p=p.slice(0,-10);
+else if(p.endsWith('.html'))p=p.slice(0,-5);
+if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
+</script>
+<link rel="canonical" href="https://www.tamedtable.com/analytics">
+<title>Analytics Transparency | TamedTable</title>
+<meta name="description" content="Everything TamedTable tracks, in public: cookie-less Umami analytics, the full custom-event list, and the live dashboard anyone can open.">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+
+<!--
+  #Analytics transparency page. Same stack and theme as FAQ.html: plain HTML,
+  the shared styles.css, the homepage nav/footer markup so it reads native.
+  Everything the site's analytics collect is listed here, and the live Umami
+  dashboard is embedded once its public share URL is set below (UMAMI_SHARE_URL).
+  Page-only rules live in this small inline <style>, not the shared sheet.
+-->
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Guide-only layout: a readable column on the linen ground (as FAQ.html). */
+  .guide { max-width: 760px; padding: 56px 32px 72px; }
+  .guide h1 { font-size: 38px; font-weight: 600; color: var(--ink); }
+  .guide .lede { font-size: 18px; color: var(--muted); margin-top: 14px; }
+  .guide section { padding: 0; margin-top: 34px; }
+  .guide h2 {
+    font-size: 26px; font-weight: 600; color: var(--ink);
+    padding-bottom: 10px; border-bottom: 1px solid var(--silver);
+  }
+  .guide section > p { color: var(--ink); margin-top: 14px; }
+  .guide a { color: var(--accent); }
+
+  /* Event table: monospace event names, plain-language descriptions. */
+  .ev-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 15px; }
+  .ev-table th, .ev-table td {
+    text-align: left; padding: 9px 12px; vertical-align: top;
+    border-bottom: 1px solid var(--silver); color: var(--ink);
+  }
+  .ev-table th { font-weight: 600; }
+  .ev-table code { font-family: var(--font-mono); font-size: 13.5px; color: var(--accent); }
+  .ev-scroll { overflow-x: auto; }
+
+  /* Live dashboard embed. */
+  .dash-frame {
+    width: 100%; height: 640px; margin-top: 16px;
+    border: 1px solid var(--silver); border-radius: var(--radius);
+    background: var(--paper);
+  }
+  .dash-pending {
+    margin-top: 16px; padding: 18px 20px;
+    background: var(--paper); border: 1px solid var(--silver);
+    border-radius: var(--radius); color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/" aria-label="TamedTable home">
+      <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
+        <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
+        <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--mark-accent)"></rect>
+      </svg>
+      <span class="wordmark">TamedTable</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/FAQ">FAQ</a>
+      <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap guide">
+    <h1>Analytics, in public</h1>
+    <p class="lede">
+      TamedTable uses cookie-less analytics, and hides nothing about them:
+      this page lists everything the site tracks, and the live dashboard below
+      shows the same numbers we see. What reaches the analytics is anonymous
+      page views and feature counts; your data and your keys stay with you.
+    </p>
+
+    <section>
+      <h2>Live dashboard</h2>
+      <p>
+        The <a href="https://umami.is/" target="_blank" rel="noopener">Umami</a>
+        dashboard for www.tamedtable.com is public: the same page views and
+        event counts the maintainers see, live, for anyone who opens it.
+      </p>
+      <!-- Set to the Umami share URL (Umami → Settings → Share URL) to embed
+           the live dashboard and swap away the pending note. -->
+      <div id="dashSlot">
+        <div class="dash-pending">
+          The public share link is being set up: check back shortly. Until
+          then, the tables below still list everything that is tracked.
+        </div>
+      </div>
+      <script>
+        (function () {
+          var UMAMI_SHARE_URL = ''; // e.g. https://cloud.umami.is/share/XXXX/www.tamedtable.com
+          if (!UMAMI_SHARE_URL) return;
+          var slot = document.getElementById('dashSlot');
+          slot.innerHTML =
+            '<iframe class="dash-frame" loading="lazy" title="Live TamedTable analytics dashboard"></iframe>' +
+            '<p style="margin-top:10px;"><a target="_blank" rel="noopener">Open the full dashboard →</a></p>';
+          slot.querySelector('iframe').src = UMAMI_SHARE_URL;
+          slot.querySelector('a').href = UMAMI_SHARE_URL;
+        })();
+      </script>
+    </section>
+
+    <section>
+      <h2>What every visit records</h2>
+      <p>
+        Page views only: the page path, the referrer, and the coarse
+        browser/OS/device class and country Umami derives on its servers.
+        Umami sets no cookies and stores no identifier that could follow you
+        across visits or sites. The site also carries Cloudflare's cookie-less
+        <a href="https://developers.cloudflare.com/web-analytics/about/" target="_blank" rel="noopener">Web
+        Analytics</a> beacon, which records the same page-view level and nothing more.
+      </p>
+    </section>
+
+    <section>
+      <h2>The full event list</h2>
+      <p>
+        Inside the <a href="/app/">web app</a>, a handful of named events count
+        feature usage. An event is a name plus, at most, one coarse label from
+        a fixed list, shown in full below. Events never carry file names, file
+        contents, table values, chat or voice text, API keys, or anything else
+        you type: there is nothing more to an event than what this table says.
+      </p>
+      <div class="ev-scroll">
+      <table class="ev-table">
+        <tr><th>Event</th><th>Fires when</th><th>Properties</th></tr>
+        <tr><td><code>open-file</code></td><td>A table is opened.</td><td><code>source</code>: local, url, sample, or drop</td></tr>
+        <tr><td><code>open-flow</code></td><td>A saved flow is replayed onto the current table.</td><td>—</td></tr>
+        <tr><td><code>chat-request</code></td><td>A typed request is sent to the model.</td><td>—</td></tr>
+        <tr><td><code>voice-request</code></td><td>A spoken request is sent to the model.</td><td>—</td></tr>
+        <tr><td><code>undo</code> / <code>redo</code></td><td>History is stepped back or forward.</td><td>—</td></tr>
+        <tr><td><code>run-all</code></td><td>"Run on all rows" evaluates the pending AI cells.</td><td>—</td></tr>
+        <tr><td><code>save-data</code></td><td>The table is saved to a file.</td><td><code>format</code>: csv, jsonl, parquet, or arrow</td></tr>
+        <tr><td><code>save-flow</code></td><td>The flow is saved for later replay.</td><td>—</td></tr>
+        <tr><td><code>export-python</code></td><td>The flow is exported as a Python script.</td><td>—</td></tr>
+        <tr><td><code>tutorial-play</code></td><td>A guided tour starts.</td><td><code>tour</code>: the tour's name (fixed app content)</td></tr>
+        <tr><td><code>connect-provider</code></td><td>An API key is verified and its provider connected.</td><td><code>provider</code>: the provider's name, never the key</td></tr>
+      </table>
+      </div>
+      <p>
+        The event names and the code that sends them are open source:
+        <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/web/src/analytics.ts" target="_blank" rel="noopener">analytics.ts</a>
+        is the single wrapper every event goes through.
+      </p>
+    </section>
+  </div>
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <a class="brand" href="/" style="font-size:18px;" aria-label="TamedTable home">
+      <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
+        <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
+        <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--mark-accent)"></rect>
+      </svg>
+      <span class="wordmark">TamedTable</span>
+    </a>
+    <div class="foot-links">
+      <a href="/FAQ">FAQ</a>
+      <a href="/analytics">Analytics</a>
+      <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Shared nav behavior (mobile menu toggle) + the Umami loader. -->
+<script src="main.js"></script>
+
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6c98efef9e034b45840e0518efb24a6d"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

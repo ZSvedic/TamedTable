@@ -46,6 +46,7 @@ import type {
   WebControllerOptions,
   WebSettings,
 } from './controller-types.ts';
+import { track } from './analytics.ts';
 
 // Public surface re-exports: keep existing imports through this module
 // working without forcing every component to update its import path.
@@ -331,6 +332,7 @@ export class WebController implements ControllerHost {
       return;
     }
     try {
+      track('chat-request');
       await this.engine.request(trimmed);
       const debug = this.lastDebug;
       // A wrong answer is a bug even when nothing turned red: every reply to
@@ -455,7 +457,10 @@ export class WebController implements ControllerHost {
   runEstimate(): RunEstimate | null { return this.lazy.runEstimate(); }
   /** Run every pending/failed row, behind the estimate dialog when more than
    *  one page remains. */
-  runOnAllRows(): Promise<'complete' | 'declined' | 'incomplete'> { return this.lazy.runOnAllRows('run-all'); }
+  runOnAllRows(): Promise<'complete' | 'declined' | 'incomplete'> {
+    track('run-all');
+    return this.lazy.runOnAllRows('run-all');
+  }
   /** The readout's "Retry N failed rows". */
   retryFailedRows(): Promise<void> { return this.lazy.retryFailedRows(); }
   /** Confirm / decline the run-all estimate dialog; `applyEvaluatedOnly` is
@@ -545,8 +550,8 @@ export class WebController implements ControllerHost {
   historyTimeline(): { steps: TimelineStep[]; cursor: number } { return this.patch.timeline(); }
   /** Jump straight to a timeline step (mobile History sheet tap-to-jump). */
   jumpToHistory(index: number): Promise<void> { return this.patch.jumpTo(index); }
-  undo(): Promise<void> { return this.patch.undo(); }
-  redo(): Promise<void> { return this.patch.redo(); }
+  undo(): Promise<void> { track('undo'); return this.patch.undo(); }
+  redo(): Promise<void> { track('redo'); return this.patch.redo(); }
   editCell(rowIndex: number, column: string, value: string): Promise<void> {
     // The grid reports view-absolute positions; the patch keys on the
     // derived row index (which the Row # column shows).
