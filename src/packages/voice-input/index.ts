@@ -9,7 +9,7 @@
 // DOM-free at import time: the MediaRecorder is only touched inside
 // browserVoicePort(), which the browser calls at runtime and tests never load.
 
-/** What the table looks like when the user speaks — added to the instruction
+/** What the table looks like when the user speaks, added to the instruction
  *  text so spoken references ("this column", "the selected cell") resolve
  *  against the view. */
 export interface VoiceContext {
@@ -40,7 +40,7 @@ export function audioMediaType(filename: string): string {
   }
 }
 
-// Continuous (hands-free) voice — the VAD-driven port that turns the mic into a
+// Continuous (hands-free) voice: the VAD-driven port that turns the mic into a
 // stream of spoken turns. The browser implementation lives in the DOM-bound
 // `browser-vad` entry; the types and tuning are re-exported here.
 export type { ContinuousVoicePort, ContinuousVoiceHandlers } from './continuous.ts';
@@ -61,7 +61,7 @@ export const VOICE_INSTRUCTION = [
 ].join('\n');
 
 /** Build the deterministic instruction text sent next to the audio on the
- *  patch turn. Pure — no network, no DOM — so it is unit- and
+ *  patch turn. Pure (no network, no DOM) so it is unit- and
  *  Gherkin-testable. */
 export function buildVoicePrompt(ctx: VoiceContext): string {
   const lines = [

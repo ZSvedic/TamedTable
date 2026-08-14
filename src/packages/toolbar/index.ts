@@ -11,7 +11,7 @@ export interface ToolbarSample {
 }
 
 /** A sample the picker recommends: a bundled file plus the human `title` its
- *  row leads with. The host supplies the title — the package neither knows nor
+ *  row leads with. The host supplies the title: the package neither knows nor
  *  cares that titles come from the homepage's feature sections. */
 export interface RecommendedSample extends ToolbarSample {
   title: string;

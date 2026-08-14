@@ -1,4 +1,4 @@
-// #ModelConfig — Node/Bun only entry point.
+// #ModelConfig: Node/Bun only entry point.
 // Reads provider config from process.env. Do not import this from browser code.
 
 /**

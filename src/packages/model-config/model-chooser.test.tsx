@@ -1,8 +1,8 @@
-// #ModelConfig — what a card row actually renders for each speed state.
+// #ModelConfig: what a card row actually renders for each speed state.
 //
 // The @web scenarios drive the demo page, whose stub provider always answers,
-// so the two states a *broken* provider produces — the measurement that failed
-// and the row that was never measured — have no browser scenario that can
+// so the two states a *broken* provider produces, the measurement that failed
+// and the row that was never measured, have no browser scenario that can
 // reach them. This renders the pure component directly instead. No DOM needed:
 // the component holds no state, so a server render is the whole output.
 import { test } from 'bun:test';
@@ -12,7 +12,7 @@ import { renderToString } from 'react-dom/server';
 import { ModelChooser, type ConnectedCard, type RoleRow } from './ModelChooser.tsx';
 import { speedOf } from './storage.ts';
 
-/** One selected Google card, its primary row in the state under test. */
+/** One selected Google card, its chat row in the state under test. */
 function render(speed: RoleRow['speed']): string {
   const row = (s: RoleRow['speed']): RoleRow => ({
     model: 'gemini-3.6-flash',
@@ -22,8 +22,8 @@ function render(speed: RoleRow['speed']): string {
   });
   const card: ConnectedCard = {
     id: 'gemini', tier: 'paid', voice: true,
-    primary: row(speed),
-    secondary: row(null),
+    chat: row(speed),
+    cell: row(null),
   };
   return renderToString(h(ModelChooser, {
     connected: [card],
@@ -80,7 +80,7 @@ test('the icon buttons carry an accessible name, not just a tooltip', () => {
   assert.ok(html.includes('aria-label="Remove Google API"'), 'the delete button needs a label');
 });
 
-/** The Puter sign-in button's own markup — the whole page also holds a
+/** The Puter sign-in button's own markup: the whole page also holds a
  *  disabled Add button, so `disabled` has to be looked for on this tag alone. */
 function puterButton(html: string): string {
   const start = html.indexOf('<button', html.indexOf('data-mc-puter') - 300);

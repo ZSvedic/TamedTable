@@ -7,10 +7,10 @@ import type { RecommendedSample, ToolbarSample } from '@tamedtable/toolbar';
 import type { ShowcaseSample } from './showcase-samples.ts';
 
 // Sample files bundled into the deployed site by vite.config.ts. Frozen at
-// build time (goldens excluded — they are tour outputs, not files to open).
+// build time (goldens excluded: they are tour outputs, not files to open).
 declare const __TT_SAMPLE_FILES__: readonly string[];
 
-// The picker's recommended rows — one per showcase tour, in homepage order.
+// The picker's recommended rows: one per showcase tour, in homepage order.
 // Derived at build time by vite.config.ts from the tours themselves.
 declare const __TT_SHOWCASE_SAMPLES__: readonly ShowcaseSample[];
 
@@ -27,7 +27,7 @@ export function bundledSamples(): ToolbarSample[] {
 }
 
 /** The picker's recommended samples as `{ name, url, title }`, in homepage
- *  order — the file each showcase tour opens. */
+ *  order: the file each showcase tour opens. */
 export function recommendedSamples(): RecommendedSample[] {
   return [...__TT_SHOWCASE_SAMPLES__].map(({ title, file }) => ({
     title,

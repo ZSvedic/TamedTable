@@ -1,6 +1,6 @@
-// #MobileShell — "Add to home screen". Chrome on Android announces its
+// #MobileShell: "Add to home screen". Chrome on Android announces its
 // install prompt with a one-shot beforeinstallprompt event that fires early,
-// long before the Settings panel opens — so main.tsx captures it here at
+// long before the Settings panel opens, so main.tsx captures it here at
 // startup and the panel asks for it later. Safari/iOS never fires it; the
 // panel shows the share-menu instruction instead.
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void> };

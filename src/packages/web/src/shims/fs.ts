@@ -1,7 +1,7 @@
 // Browser shim for `node:fs` (sync) and `node:fs/promises` (async).
 //
 // The only real filesystem read in the browser is the system-prompt file at
-// engine module init — `readFileSync`, which Vite inlines as `__TT_PROMPT__`
+// engine module init: `readFileSync`, which Vite inlines as `__TT_PROMPT__`
 // (see vite.config.ts). Every other fs call belongs to core's path-based
 // loaders (`loadCsv`/`writeRows`), which the web no longer uses: input parses
 // through the file-io codec registry, output serializes through a codec, and
@@ -26,7 +26,7 @@ const unsupported = (name: string): never => {
   throw new Error(`fs shim: ${name} is unsupported in the browser`);
 };
 
-// node:fs/promises surface — present only so core's path loaders resolve in the
+// node:fs/promises surface, present only so core's path loaders resolve in the
 // bundle; the web never calls them.
 export function readFile(): Promise<string> {
   return unsupported('readFile');

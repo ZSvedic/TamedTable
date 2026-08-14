@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createHeadlessRunner } from './index.ts';
 import type { RequestDebugInfo } from './index.ts';
 
-// Bypass the rate limiter — same trick the cassette replay profile uses.
+// Bypass the rate limiter: same trick the cassette replay profile uses.
 process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 
 const FIXTURES = join(import.meta.dirname, '..', '..', '..', 'spec', 'test-cases');
@@ -45,7 +45,7 @@ function cellReplyBody(text: string): string {
 }
 
 /** Returns a mock fetch: spec-patch on the first call, single-cell value on all
- *  subsequent calls (per-row path — the SDK falls back to per-row when the
+ *  subsequent calls (per-row path: the SDK falls back to per-row when the
  *  batch response isn't a JSON array matching the prompt count). */
 function mockFetch(): (input: string | URL | Request, init?: RequestInit) => Promise<Response> {
   return async (_input, init) => {
@@ -75,7 +75,7 @@ describe('RequestDebugInfo.cellSamples', () => {
   beforeAll(async () => {
     const runner = createHeadlessRunner({
       apiKey: 'test-key',
-      // The mock responses are Anthropic-shaped, so pin Anthropic models —
+      // The mock responses are Anthropic-shaped, so pin Anthropic models:
       // the default is Gemini, whose wire format differs.
       model: 'claude-sonnet-4-6',
       cellModel: 'claude-sonnet-4-5',

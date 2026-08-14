@@ -1,5 +1,5 @@
 # #WebUI
-# V4: web front-end — interactions that genuinely differ from the CLI.
+# V4: web front-end, interactions that genuinely differ from the CLI.
 # Every scenario here is offline: file dialogs, the settings panel, and
 # browser gestures (cell edit, column reorder) make no model call. The
 # shared transformation behavior is covered by the @web scenarios in the
@@ -40,7 +40,7 @@ Feature: Web front-end
 
     # The engine builds its model clients once, with the key it was handed
     # (behavior.md § Web UI). A key added after the first request has to reach
-    # the next one — before this rebuild it sat unused until a page reload, so
+    # the next one, before this rebuild it sat unused until a page reload, so
     # every call kept failing while the card sat there looking connected.
     @web @offline
     Scenario: A key saved after the first request reaches the next one
@@ -63,7 +63,7 @@ Feature: Web front-end
       Then the configured API key is "sk-ant-example-key"
 
   # A key is checked against its provider as it is added, so a user learns it
-  # works before writing a single transformation — and a key that doesn't work
+  # works before writing a single transformation, and a key that doesn't work
   # never becomes a setting they have to hunt down and undo.
   Rule: The settings panel connects a provider from a pasted key
 
@@ -110,7 +110,7 @@ Feature: Web front-end
       And user connects the key "sk-proj-broke"
       Then the connect error is "Your OpenAI account has no credit left. Add credit (or a billing method) and try again."
 
-    # Retries are off, so a dead key answers once — not after the SDK has slept
+    # Retries are off, so a dead key answers once, not after the SDK has slept
     # through its backoff.
     @web
     Scenario: A refused connect makes exactly one model call
@@ -183,7 +183,7 @@ Feature: Web front-end
 
     @web
     # Every other card holds a key the user has their own copy of, so deleting
-    # it only forgets ours. Puter's is a session the SDK also keeps — leave it
+    # it only forgets ours. Puter's is a session the SDK also keeps: leave it
     # behind and the next sign-in silently returns the same account.
     Scenario: Deleting the Puter card signs out of Puter
       Given the TamedTable web app
@@ -196,7 +196,7 @@ Feature: Web front-end
       And the Puter session has been signed out
 
     @web
-    # Deleting any other card is not a sign-out — there is no session to end.
+    # Deleting any other card is not a sign-out: there is no session to end.
     Scenario: Deleting a Google card does not touch the Puter session
       Given the TamedTable web app
       And the API key has not been set
@@ -208,7 +208,7 @@ Feature: Web front-end
 
     @web
     # The old code returned null for every failure, and null means "the user
-    # closed the window" — so a blocked sign-in looked like a click that never
+    # closed the window", so a blocked sign-in looked like a click that never
     # registered.
     Scenario: A failed Puter sign-in says so instead of doing nothing
       Given the TamedTable web app
@@ -251,7 +251,7 @@ Feature: Web front-end
       Then table displays the header and at least the first 5 rows
 
     # Opening a table is a fresh start (behavior.md § Web UI): the load clears
-    # the undo history, so the thread that referenced it goes too — only the
+    # the undo history, so the thread that referenced it goes too: only the
     # new file's "Loaded …" line is left.
     @web
     Scenario: Opening a table starts a fresh chat thread
@@ -331,7 +331,7 @@ Feature: Web front-end
       And the chat shows a user message "Run filter.flow"
       And the last assistant reply shows "Executed steps:"
       And the last assistant reply shows "1. filter (js)"
-      And the last assistant reply shows "Ran filter.flow — 4 rows, 4 columns."
+      And the last assistant reply shows "Ran filter.flow: 4 rows, 4 columns."
       And a single undo returns the table to 10 rows
 
     # The reply tracks its step's undo state (behavior.md § Web UI): while the
@@ -354,7 +354,7 @@ Feature: Web front-end
       And the last assistant reply is not marked undone
 
     # A join names a second file, and the browser has no working directory to
-    # resolve it against (behavior.md § Web UI) — so the run stops and asks.
+    # resolve it against (behavior.md § Web UI), so the run stops and asks.
     # Deterministic: a flow replay makes no model call.
     @web @offline
     Scenario: A join whose lookup table is not staged asks for the file
@@ -367,7 +367,7 @@ Feature: Web front-end
       Then columns exist in the spec: "ISO", "Region"
       And the chat shows a user message "Run join-lookup.flow"
 
-    # A join emitted with no filename (`with: null` — the user named none, and
+    # A join emitted with no filename (`with: null`: the user named none, and
     # the model never invents one) asks with the same dialog; the picked file's
     # own name is written into the step, so the executed-steps reply and the
     # spec show the real file (behavior.md § Web UI).
@@ -522,8 +522,8 @@ Feature: Web front-end
   Rule: A view filter dies with the column it filters
 
     Sort and filter are view state over the columns the spec has now
-    (behavior.md § Web UI): a spec change that removes a column — undo, a
-    history jump, Delete column, a chat request — drops any view filter or
+    (behavior.md § Web UI): a spec change that removes a column, undo, a
+    history jump, Delete column, a chat request: drops any view filter or
     sort on that column, so it never silently empties the table.
 
     Background:
@@ -648,8 +648,8 @@ Feature: Web front-end
 
   Rule: The history timeline drives redo and jump
 
-    The History sheet reads the full timeline — done steps first, then the
-    undone ones — with a cursor on the current step. A fresh load clears
+    The History sheet reads the full timeline: done steps first, then the
+    undone ones, with a cursor on the current step. A fresh load clears
     the journal, so the load itself is never an entry.
 
     Background:
@@ -696,10 +696,10 @@ Feature: Web front-end
     The controller signals each tour step's focus target; the mobile shell
     raises the Type sheet exactly when that target is the chat composer, so
     the composer the tour spotlights is on screen. The layout halves of the
-    phone rules — the page is the table's scroller under a frozen header,
+    phone rules: the page is the table's scroller under a frozen header,
     pinch-to-zoom scales the table but never the app bar or dock, the Type
     composer grows with the draft up to five lines, and on desktop nothing
-    scrolls the page — are browser facts checked in
+    scrolls the page: are browser facts checked in
     src/packages/web/e2e/mobile.e2e.ts.
 
     @web
@@ -717,7 +717,7 @@ Feature: Web front-end
       Given the TamedTable web app
       And load "paginate-input.csv"
       # The 246-row file exceeds one page, so the unified load path raises the
-      # large-file dialog (#LazyExec) — resolve it to commit the table.
+      # large-file dialog (#LazyExec), resolve it to commit the table.
       And load the file in original order
 
     # The page size is one AI-cell concurrency wave: batch size × concurrent
@@ -736,7 +736,7 @@ Feature: Web front-end
       And the first row on the current page has ID "101"
 
     @web
-    # OpenRouter pins cell batch 5, so its wave — and page — is 5 × 5 = 25;
+    # OpenRouter pins cell batch 5, so its wave, and page, is 5 × 5 = 25;
     # switching back to a provider without a pin restores the 100-row wave.
     Scenario: Selecting the OpenRouter provider shrinks the page to its wave
       When user selects the provider "openrouter"
@@ -773,7 +773,7 @@ Feature: Web front-end
   Rule: The settings panel selects the engine model
 
     @web
-    Scenario: The web app defaults to the Gemini primary and flash-lite cell model
+    Scenario: The web app defaults to the Gemini chat model and flash-lite cell model
       Given the TamedTable web app
       Then the configured model is "gemini-3.6-flash"
       And the configured cellModel is "gemini-3.1-flash-lite"
@@ -855,8 +855,8 @@ Feature: Web front-end
       And user connects the key "AIza-good"
       Then the connect error is empty
       And the connected providers are "gemini"
-      And the "gemini" card's primary speed reads "failed"
-      And the "gemini" card's secondary speed reads "failed"
+      And the "gemini" card's chat speed reads "failed"
+      And the "gemini" card's cell speed reads "failed"
 
     @web
     # The free tier: OpenRouter's single $0 model fills both roles.
@@ -903,7 +903,7 @@ Feature: Web front-end
   Rule: Work in progress guards the tab
 
     # The browser shell wires this to beforeunload: refreshing or closing
-    # with anything to lose raises the browser's own confirmation first —
+    # with anything to lose raises the browser's own confirmation first:
     # evaluated rows and edits cost real work (behavior.md § Web UI).
     @web
     Scenario: Refreshing with work in progress warns first

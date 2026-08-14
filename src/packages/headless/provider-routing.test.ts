@@ -1,14 +1,14 @@
-// #ModelConfig #PuterGateway — where each provider's calls actually go.
+// #ModelConfig #PuterGateway: where each provider's calls actually go.
 //
 // The engine is *told* its provider rather than guessing from the model id,
 // because an id cannot say who serves it: `openai/gpt-oss-120b` is Groq's here
 // and OpenRouter's elsewhere, and Puter re-serves Google's ids under Google's
-// names. The Gherkin covers the resolution rules; this covers the wire — the
-// URL, the auth header and the model id that leave the process — which is the
+// names. The Gherkin covers the resolution rules; this covers the wire: the
+// URL, the auth header and the model id that leave the process, which is the
 // half a routing mistake actually breaks.
 //
 // One tiny table and one request is the smallest way in through the public API,
-// and the stub fetch records the outgoing call and then fails — so nothing here
+// and the stub fetch records the outgoing call and then fails, so nothing here
 // has to fabricate six providers' response shapes.
 import { test } from 'bun:test';
 import { strict as assert } from 'node:assert';
@@ -76,7 +76,7 @@ test('Groq calls its OpenAI-compatible endpoint with the vendor-prefixed id inta
   const sent = await capture({ provider: 'groq', model: 'openai/gpt-oss-120b', cellModel: 'openai/gpt-oss-20b' });
   assert.equal(sent.url, 'https://api.groq.com/openai/v1/chat/completions');
   assert.equal(sent.headers.get('authorization'), 'Bearer test-key');
-  // The slash is Groq's own naming, not a routing hint — it must survive.
+  // The slash is Groq's own naming, not a routing hint: it must survive.
   assert.equal(sent.body['model'], 'openai/gpt-oss-120b');
 });
 
@@ -113,7 +113,7 @@ test('The same model id goes to whichever provider the runner was told', async (
   assert.match(viaOpenRouter.url, /openrouter\.ai/);
 });
 
-test('With no provider told, the id still routes — the fallback the CLI and bench use', async () => {
+test('With no provider told, the id still routes: the fallback the CLI and bench use', async () => {
   const sent = await capture({ model: 'claude-sonnet-4-6', cellModel: 'claude-haiku-4-5' });
   assert.equal(sent.url, 'https://api.anthropic.com/v1/messages');
 });

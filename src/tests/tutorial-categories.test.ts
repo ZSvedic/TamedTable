@@ -1,7 +1,7 @@
 // #TutorialMode
 // Sync guard: the Tutorial panel groups its tours by the seven feature
 // categories defined in src/packages/web/src/tutorial-categories.ts. Those must
-// match — in title and order — the seven feature sections on the marketing
+// match, in title and order, the seven feature sections on the marketing
 // homepage (marketing/web/index.html), so the panel reads as the same list the
 // visitor saw before clicking "Show me →". This test fails if either side drifts.
 import { describe, expect, it } from 'bun:test';

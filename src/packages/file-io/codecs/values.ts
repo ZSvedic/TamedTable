@@ -1,7 +1,7 @@
 // #IoFormats
 // Shared helpers for the binary codecs (Parquet, Arrow). DuckDB and apache-arrow
 // hand back BIGINT/Int64 columns as JS `bigint`, and DuckDB additionally returns
-// DATE/TIMESTAMP/DECIMAL/LIST columns as wrapper objects — neither of which the
+// DATE/TIMESTAMP/DECIMAL/LIST columns as wrapper objects: neither of which the
 // downstream consumers (JSON.stringify in the JSONL writer, the table view, test
 // assertions) can handle. `normalizeDbCell` (shared with the engine's {sql}
 // path) coerces both to plain scalars.
@@ -29,7 +29,7 @@ export function warnIfHuge(bytes: Uint8Array, name: string): void {
   if (bytes.length > LARGE_FILE_BYTES) {
     const gb = (bytes.length / 1024 / 1024 / 1024).toFixed(1);
     console.warn(
-      `file-io: ${name} is ${gb} GB — very large files may exhaust memory or run slowly.`,
+      `file-io: ${name} is ${gb} GB. Very large files may exhaust memory or run slowly.`,
     );
   }
 }

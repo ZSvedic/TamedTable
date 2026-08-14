@@ -1,4 +1,4 @@
-// GENERATED from marketing/icons/*.svg by `bun run sync:icons` — do not edit
+// GENERATED from marketing/icons/*.svg by `bun run sync:icons`, do not edit
 // by hand. marketing/icons/ is the canonical source of the glyph artwork.
 
 export type IconName =
@@ -74,9 +74,9 @@ export const PATHS: Record<IconName, string> = {
   x: 'm4 4 8 8 M12 4l-8 8',
 };
 
-/** Glyphs drawn filled (fill="currentColor" on the source SVG) — every other
+/** Glyphs drawn filled (fill="currentColor" on the source SVG): every other
  *  glyph is stroked. */
 export const FILLED: ReadonlySet<IconName> = new Set<IconName>(['play', 'stop']);
 
-/** Every icon name, sorted — the demo's icon grid renders these. */
+/** Every icon name, sorted: the demo's icon grid renders these. */
 export const ICON_NAMES = Object.keys(PATHS) as IconName[];

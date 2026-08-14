@@ -1,8 +1,8 @@
-// TamedTable — design-base mirror of the CURRENT component inventory.
+// TamedTable: design-base mirror of the CURRENT component inventory.
 // Code is canonical: every primitive here matches src/packages/ui-kit (and the
 // feature packages chat-panel, table-view, toolbar, model-config) in API shape
 // and rendered look. Every color / size / radius reads a TT_* token from
-// tokens.jsx (the generated mirror of tokens.json) — no hardcoded values.
+// tokens.jsx (the generated mirror of tokens.json), no hardcoded values.
 // Components take the active theme object as a `t` prop (TT_LIGHT | TT_DARK)
 // so static artboards can pull the variant they need.
 
@@ -20,7 +20,7 @@ if (typeof document !== 'undefined' && !document.getElementById('tt-kf')) {
     '.tt-flash { animation: tt-flash-kf 0.9s ease-out forwards; }',
     '@keyframes tt-spin-kf { to { transform: rotate(360deg); } }',
     '.tt-spin { animation: tt-spin-kf 0.7s linear infinite; }',
-    // Pulsing record ring — built from the rec token via color-mix.
+    // Pulsing record ring, built from the rec token via color-mix.
     '@keyframes tt-rec-kf { 0% { box-shadow: 0 0 0 0 var(--tt-rec-55); }',
     '  70% { box-shadow: 0 0 0 7px var(--tt-rec-0); }',
     '  100% { box-shadow: 0 0 0 0 var(--tt-rec-0); } }',
@@ -61,7 +61,7 @@ const SAMPLE_ROWS = [
   ['1042', 'Emeka Obi',        'emeka.obi@lagos.io',      '628.555.0136',     '2025-10-27', '7.8'],
   ['1043', 'Nadia Petrova',    'nadia@petrova.bg',        '+359 2 555 0121',  '2025-10-26', '8.9'],
 ];
-// Country derived from each phone's country code — the AI-cell worked example.
+// Country derived from each phone's country code: the AI-cell worked example.
 const COUNTRY_BY_PHONE = {
   '+52': 'Mexico', '+33': 'France', '+46': 'Sweden', '+55': 'Brazil',
   '+39': 'Italy', '+359': 'Bulgaria',
@@ -75,7 +75,7 @@ function countryOf(phone) {
   return COUNTRY_BY_PHONE[code] || COUNTRY_BY_PHONE[code.slice(0, 3)] || 'United States';
 }
 
-// ── Icon — 16×16 inline SVG, currentColor stroke (mirrors ui-kit/Icon.tsx) ──
+// ── Icon: 16×16 inline SVG, currentColor stroke (mirrors ui-kit/Icon.tsx) ──
 const ICON_PATHS = {
   folder: 'M2 4.5A1.5 1.5 0 0 1 3.5 3h2.6a1 1 0 0 1 .7.3l1 1H12.5A1.5 1.5 0 0 1 14 5.8v5.7A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5z',
   save: 'M3 3h7l3 3v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M5 3v3h5V3 M5 13v-4h6v4',
@@ -111,7 +111,7 @@ function Icon({ name, size = 14 }) {
   );
 }
 
-// ── Button — variants ghost (default) | chrome | primary | danger ─────────
+// ── Button: variants ghost (default) | chrome | primary | danger ─────────
 // Primary is Ink (Aubergine): the Pale Sky accent is never a button fill.
 function Button({ t, children, variant = 'ghost', disabled, onClick, title, forceHover, style }) {
   const [hover, setHover] = useState(false);
@@ -143,7 +143,7 @@ function Button({ t, children, variant = 'ghost', disabled, onClick, title, forc
   );
 }
 
-// ── SplitButton — primary half + caret menu; closes on pick/outside/Esc ──
+// ── SplitButton: primary half + caret menu; closes on pick/outside/Esc ──
 function MenuItemButton({ t, label, onClick, disabled }) {
   const [hover, setHover] = useState(false);
   return (
@@ -213,7 +213,7 @@ function SplitButton({ t, children, onClick, menu = [], disabled, title, caretTi
   );
 }
 
-// ── Toasts — bottom-right stack, kinds info | error, each dismissible ────
+// ── Toasts: bottom-right stack, kinds info | error, each dismissible ────
 // `fixed` pins to the viewport (prototype); default absolute fits artboards.
 function Toasts({ t, toasts, onDismiss, fixed = false }) {
   if (!toasts || toasts.length === 0) return null;
@@ -247,7 +247,7 @@ function Toasts({ t, toasts, onDismiss, fixed = false }) {
   );
 }
 
-// ── MicButton — press-and-hold; idle → recording (rec fill + ring) → sending ──
+// ── MicButton: press-and-hold; idle → recording (rec fill + ring) → sending ──
 function MicButton({ t, status = 'idle', onStart, onStop, onCancel }) {
   const recording = status === 'recording';
   const sending = status === 'sending';
@@ -279,7 +279,7 @@ function MicButton({ t, status = 'idle', onStart, onStop, onCancel }) {
   );
 }
 
-// ── Pagination — prev/next chevrons around a 1 2 3 … N window ────────────
+// ── Pagination: prev/next chevrons around a 1 2 3 … N window ────────────
 function buildPageList(current, total) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages = [1];
@@ -332,7 +332,7 @@ function Pagination({ t, page, pageCount, onPageChange }) {
   );
 }
 
-// ── TableView — Silver grid, rowH 28 / headerH 32, selection, inline edit,
+// ── TableView: Silver grid, rowH 28 / headerH 32, selection, inline edit,
 //    drag-reorder grips, streaming banner, pagination footer.
 //    cellFlag(absRow, colIdx) → 'flash' | 'flash2' | 'pending' | undefined.
 function TableView({
@@ -478,7 +478,7 @@ function TableView({
   );
 }
 
-// ── Toolbar — lockup, file readout, open/save/undo/redo, theme, settings ──
+// ── Toolbar: lockup, file readout, open/save/undo/redo, theme, settings ──
 function Toolbar({
   t, loaded = true, busy = false, fileName = 'customers.csv', rowCount = 20, colCount = 6,
   canUndo = true, canRedo = false, splitOpen = false,
@@ -534,14 +534,14 @@ function Toolbar({
         <Icon name="cog" />
         Settings
       </Button>
-      <Button t={t} onClick={onOpenTutorial} title="Interactive tutorials — no API key required">
+      <Button t={t} onClick={onOpenTutorial} title="Interactive tutorials, no API key required">
         Tutorial
       </Button>
     </header>
   );
 }
 
-// ── OpenUrlDialog — URL field + bundled sample quick-picks ───────────────
+// ── OpenUrlDialog: URL field + bundled sample quick-picks ───────────────
 const SAMPLE_FILES = [
   { name: 'customers.csv', url: 'https://zsvedic.github.io/TamedTable/samples/customers.csv' },
   { name: 'orders.jsonl', url: 'https://zsvedic.github.io/TamedTable/samples/orders.jsonl' },
@@ -610,7 +610,7 @@ function OpenUrlDialog({
           </div>
           <div>
             <div style={label}>Or pick a sample file</div>
-            <div style={hint}>Shipped with TamedTable. Picking one fills the URL field — press Load to fetch.</div>
+            <div style={hint}>Shipped with TamedTable. Picking one fills the URL field: press Load to fetch.</div>
             <div role="listbox" style={{
               display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 240, overflowY: 'auto',
               border: `1px solid ${t.line2}`, borderRadius: TT_S.radius, background: t.surface2, padding: TT_S.px4,
@@ -643,7 +643,7 @@ function OpenUrlDialog({
   );
 }
 
-// ── Chat — request list, request-detail strip, input row w/ mic + send/stop ──
+// ── Chat: request list, request-detail strip, input row w/ mic + send/stop ──
 function debugDetailText(debug) {
   return [
     '── request ──────────────────────────',
@@ -741,7 +741,7 @@ function EmptyChat({ t }) {
       <span style={{ color: t.ink2, fontWeight: 500, fontSize: TT_TYPE.base }}>Load a table to begin.</span>
       <br />
       Open a local file, paste a URL, or pick a sample with{' '}
-      <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open URL or sample…</em> — then describe a change
+      <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open URL or sample…</em>, then describe a change
       in plain English, e.g. “normalize phone numbers” or “drop duplicate emails”. Requests are additive;
       use Undo to revert.
     </p>
@@ -862,7 +862,10 @@ function ChatSidebar({
   );
 }
 
-// ── ModelChooser — provider accordion: masked key + primary/secondary matrix ──
+// ── ModelChooser: provider accordion: masked key + chat/cell model matrix ──
+// Historical: this board is the pre-redesign matrix (one radio per model per
+// role). The shipped panel is the connected-provider card: see
+// marketing/design_handoff_model_chooser/ and spec/packages/model-config/.
 const MODELS = [
   { id: 'gemini-3.5-flash', provider: 'gemini', voiceInput: true },
   { id: 'gemini-3.1-pro-preview', provider: 'gemini', voiceInput: true },
@@ -880,7 +883,7 @@ const PROVIDERS = [
 ];
 
 function ModelChooser({
-  t, provider = 'gemini', primaryModel = 'gemini-3.5-flash', secondaryModel = 'gemini-3.5-flash',
+  t, provider = 'gemini', chatModel = 'gemini-3.5-flash', cellModel = 'gemini-3.5-flash',
   keys = { gemini: '', openai: '', anthropic: '' }, expandedProvider = 'gemini', revealed: revealedProp,
   onProviderClick, onKeyChange, onSelectModel,
 }) {
@@ -925,9 +928,9 @@ function ModelChooser({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: TT_S.px8 }}>
       <p style={{ margin: 0, fontFamily: TT_TYPE.ui, fontSize: TT_TYPE.xs, lineHeight: 1.45, color: t.ink3 }}>
-        <b style={{ color: t.ink }}>Primary</b> writes the spec patch each turn and handles voice input.{' '}
-        <b style={{ color: t.ink }}>Secondary</b> fills per-row AI cells — pick a cheaper model there for
-        bulk work. Both use the selected provider.
+        The <b style={{ color: t.ink }}>chat model</b> reads the request and writes the spec patch each
+        turn, and handles voice input.{' '} The <b style={{ color: t.ink }}>cell model</b> fills per-row AI
+        cells: pick a cheaper model there for bulk work. Both use the selected provider.
       </p>
       {PROVIDERS.map((meta) => {
         const isSelected = provider === meta.id;
@@ -977,21 +980,21 @@ function ModelChooser({
                 </div>
                 <div style={{ marginTop: TT_S.px8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: TT_S.px8, padding: '0 6px 4px' }}>
-                    {roleHead('Primary')}
-                    {roleHead('Secondary')}
+                    {roleHead('Chat')}
+                    {roleHead('Cell')}
                     <span style={{ flex: 1 }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {providerModels.map((m) => {
-                      const isPrimary = m.id === primaryModel;
-                      const isSecondary = m.id === secondaryModel;
+                      const isChat = m.id === chatModel;
+                      const isCell = m.id === cellModel;
                       return (
                         <div key={m.id} style={{
                           display: 'flex', alignItems: 'center', gap: TT_S.px8, padding: '7px 6px',
-                          borderRadius: TT_S.radiusSm, background: isPrimary ? t.accentSoft : 'transparent',
+                          borderRadius: TT_S.radiusSm, background: isChat ? t.accentSoft : 'transparent',
                         }}>
-                          {roleCell('primary', m.id, isPrimary)}
-                          {roleCell('secondary', m.id, isSecondary)}
+                          {roleCell('chat', m.id, isChat)}
+                          {roleCell('cell', m.id, isCell)}
                           <span style={{ fontFamily: TT_TYPE.mono, fontSize: TT_TYPE.sm, color: t.ink, flex: 1 }}>{m.id}</span>
                           {voiceTag(m.voiceInput)}
                         </div>
@@ -1008,7 +1011,7 @@ function ModelChooser({
   );
 }
 
-// ── Sheet shell — right-hand overlay panel (Settings / Tutorial share it) ──
+// ── Sheet shell: right-hand overlay panel (Settings / Tutorial share it) ──
 function Sheet({ t, inline = false, title, children, footer, onClose }) {
   return (
     <div onClick={onClose} style={{
@@ -1051,7 +1054,7 @@ function SettingsSheet({ t, inline = false, onClose, ...chooserProps }) {
   );
 }
 
-// ── TutorialSheet — scenario picker, or the active tour's step readout ────
+// ── TutorialSheet: scenario picker, or the active tour's step readout ────
 const TUTORIAL_SCENARIOS = [
   'Filter and sort a customer table',
   'Normalize phone numbers to E.164',
@@ -1122,7 +1125,7 @@ function TutorialSheet({
   );
 }
 
-// ── Empty pane — main region before a table is loaded ─────────────────────
+// ── Empty pane: main region before a table is loaded ─────────────────────
 function EmptyPane({ t, over = false, onOpen }) {
   return (
     <div style={{
@@ -1193,11 +1196,11 @@ const CHAT_RUNNING = [
 ];
 const CHAT_DONE = [
   ...CHAT_RUNNING,
-  { id: 4, role: 'assistant', text: 'Kept 11 of 20 rows (Score ≥ 8) and added Country — 11 cells filled by gemini-3.5-flash.', debug: TURN2_DEBUG },
+  { id: 4, role: 'assistant', text: 'Kept 11 of 20 rows (Score ≥ 8) and added Country, 11 cells filled by gemini-3.5-flash.', debug: TURN2_DEBUG },
 ];
 const CHAT_ERROR = [
   { id: 1, role: 'user', text: 'load https://internal.example.com/q4.csv' },
-  { id: 2, role: 'assistant', text: 'Error: Could not fetch the URL — the server did not allow cross-origin requests.' },
+  { id: 2, role: 'assistant', text: 'Error: Could not fetch the URL. The server did not allow cross-origin requests.' },
 ];
 
 // E.164-normalized phone column + the filtered, AI-augmented table.
@@ -1217,7 +1220,7 @@ const ROWS_FILTERED_AI = ROWS_NORMALIZED
   .map((r) => [...r, countryOf(r[3])]);
 const COLS_WITH_COUNTRY = [...SAMPLE_COLS, 'Country'];
 
-// ── AppScreen — the three-region shell composed for the canvas states ─────
+// ── AppScreen: the three-region shell composed for the canvas states ─────
 // state: 'empty' | 'loaded' | 'running' | 'error' | 'saved'
 function AppScreen({ theme = 'light', state = 'loaded', showSettings = false, showTutorial = false, showOpenDialog = false, w = 1180, h = 740 }) {
   const t = theme === 'dark' ? TT_DARK : TT_LIGHT;
@@ -1249,7 +1252,7 @@ function AppScreen({ theme = 'light', state = 'loaded', showSettings = false, sh
   const messages = state === 'empty' ? [] : state === 'error' ? CHAT_ERROR
     : running ? CHAT_RUNNING : CHAT_DONE.slice(0, state === 'loaded' ? 2 : 4);
   const toasts = state === 'error'
-    ? [{ id: 1, kind: 'error', message: 'Could not fetch https://internal.example.com/q4.csv — the server did not allow cross-origin requests.' }]
+    ? [{ id: 1, kind: 'error', message: 'Could not fetch https://internal.example.com/q4.csv. The server did not allow cross-origin requests.' }]
     : state === 'saved'
       ? [{ id: 1, kind: 'info', message: 'Saved customers.csv (20 rows × 6 cols).' }]
       : [];
@@ -1271,7 +1274,7 @@ function AppScreen({ theme = 'light', state = 'loaded', showSettings = false, sh
       </div>
       {showSettings && (
         <SettingsSheet t={t} inline expandedProvider="gemini" provider="gemini"
-          primaryModel="gemini-3.5-flash" secondaryModel="gemini-3.5-flash"
+          chatModel="gemini-3.5-flash" cellModel="gemini-3.5-flash"
           keys={{ gemini: 'AIzaSyD8eXampleKey', openai: '', anthropic: '' }} />
       )}
       {showTutorial && <TutorialSheet t={t} inline />}

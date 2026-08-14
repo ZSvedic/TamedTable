@@ -63,7 +63,7 @@ document.querySelectorAll('[data-feature]').forEach(function (block) {
 });
 
 // ---- Deep links to feature bullets ----
-// Section ids need no JS — the browser scrolls to them natively. A bullet id
+// Section ids need no JS: the browser scrolls to them natively. A bullet id
 // additionally needs its list's activate() (illustration swap) and a brief
 // flash so the reader sees which bullet the link meant.
 (function () {

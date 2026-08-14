@@ -1,5 +1,5 @@
 // #UiKit
-// Fixed bottom-right toast stack — pure props in, callbacks out. The host
+// Fixed bottom-right toast stack: pure props in, callbacks out. The host
 // owns the list; each item gets a dismiss button that reports its id back.
 // Each toast also fades away on its own after `toastDurationMs(message)` so a
 // routine "Saved …" note never has to be clicked shut; hovering a toast pauses
@@ -104,7 +104,7 @@ function ToastRow({
   };
 
   // Arm the countdown once on mount; clear every timer on unmount. A row's id
-  // and message never change, so a mount-only effect is correct — re-arming on
+  // and message never change, so a mount-only effect is correct: re-arming on
   // hover-leave is handled separately.
   useEffect(() => {
     arm();

@@ -1,7 +1,7 @@
-// #VoicePort + #VoiceInput demo logic — referenced by demo.html so `bun build`
+// #VoicePort + #VoiceInput demo logic: referenced by demo.html so `bun build`
 // bundles it. Three sections: press-and-hold recording (browserVoicePort),
 // hands-free VAD capture (browserContinuousPort), and the buildVoicePrompt
-// sample rendered into #out (the smoke test's ready signal). No LLM — a captured
+// sample rendered into #out (the smoke test's ready signal). No LLM, a captured
 // turn is just a clip you can play; the app makes the model call.
 import { buildVoicePrompt, type VadTuning } from './index.ts';
 import { browserVoicePort } from './browser-voice.ts';

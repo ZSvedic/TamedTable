@@ -1,4 +1,4 @@
-// #LLMCells — unit tests for the per-cell model choice. The regression this
+// #LLMCells: unit tests for the per-cell model choice. The regression this
 // guards: cell calls are text-only and must share the main model's provider, so
 // a cross-provider cell model must be coerced to the main provider's text
 // default rather than used as-is.
@@ -35,7 +35,7 @@ describe('resolveCellModelId', () => {
   });
 
   it('routes OpenRouter (bench-only) main models to the OpenRouter cell fallback', () => {
-    // The fallback is the catalogued OpenRouter text default — the one
+    // The fallback is the catalogued OpenRouter text default, the one
     // model-config's models.json and code-contract.md both name.
     expect(resolveCellModelId('qwen/qwen3-coder:free')).toBe('cohere/north-mini-code:free');
     expect(resolveCellModelId('qwen/qwen3-coder:free', 'cohere/north-mini-code:free'))

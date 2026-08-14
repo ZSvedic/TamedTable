@@ -1,4 +1,4 @@
-// Pure transformations — the deterministic half of the headless engine. Every
+// Pure transformations: the deterministic half of the headless engine. Every
 // function here maps rows → rows (plus the small helpers they share); nothing
 // in this file talks to an LLM or DuckDB. The runner loop lives in index.ts,
 // the DuckDB session in sql.ts.
@@ -61,7 +61,7 @@ export function compileJs(body: string): (row: Row, i: number, rows: Row[]) => u
  *  column in spec.columns that still appears in the rows (preserving the
  *  LLM-chosen order and any label/format), and append new keys the
  *  transformations introduced in first-seen order. Keys starting with `_`
- *  are internal unless the spec declares them — a validate's named `into`
+ *  are internal unless the spec declares them: a validate's named `into`
  *  pair (no underscore) displays like any data column, while a yes/no helper
  *  column a mutate computes only for a later validate, or the legacy
  *  `_valid`/`_validation` pair of an old flow that doesn't declare it, stays
@@ -79,7 +79,7 @@ export function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
   for (const col of spec.columns) {
     if (seen.has(col.id)) next.push(col);
   }
-  // Then, append any new keys that aren't already in spec.columns —
+  // Then, append any new keys that aren't already in spec.columns:
   // underscore-prefixed keys only when the spec declared them.
   const declared = new Set(next.map((c) => c.id));
   for (const k of actualKeys) {
@@ -92,15 +92,15 @@ export function syncColumnsToRows(spec: TablePlan, rows: Row[]): TablePlan {
 
 // #SortRows
 /** The sort comparator, as a **total order** (spec/behavior.md § Sorting by a
- *  SQL or AI key). Values fall into three classes — numbers (a number or a
+ *  SQL or AI key). Values fall into three classes: numbers (a number or a
  *  numeric string), text (anything else non-empty), and empty (null/undefined/
- *  empty string) — and the classes rank in that order, so a mixed column puts
+ *  empty string), and the classes rank in that order, so a mixed column puts
  *  every number, ordered by magnitude, ahead of every word, with empty cells
  *  last. Within a class, numbers compare by magnitude and text as text.
  *
  *  A total order is the point: comparing only "when both sides coerce" answered
  *  "equal" for every number-vs-word pair, which makes the comparator
- *  non-transitive and lets `Array.sort` emit an arbitrary order — numbers
+ *  non-transitive and lets `Array.sort` emit an arbitrary order: numbers
  *  wrongly ordered among *themselves* included. */
 export function compareSortKeys(a: unknown, b: unknown): number {
   const rank = (v: unknown): 0 | 1 | 2 =>
@@ -126,7 +126,7 @@ function asSortNumber(v: unknown): number | null {
   return null;
 }
 
-/** Pick a name not already taken: `<name>`, else `<name>_2`, `_3`, … — the
+/** Pick a name not already taken: `<name>`, else `<name>_2`, `_3`, …, the
  *  same collision rule the join's right columns follow, applied wherever a
  *  transformation derives an output column name from data or from a default
  *  (spec/behavior.md § group / pivot / unpivot). The key columns that identify
@@ -202,7 +202,7 @@ export function applyMutateJs(rows: Row[], t: Extract<Transformation, { kind: 'm
     // writes an own property instead of hitting the prototype setter.
     if (cols.length === 1) setCell(out, cols[0]!, result);
     // Multi-column: an array result fills the targets POSITIONALLY (the idiom
-    // spec/behavior.md § split calls out — the same padding/concat rules a
+    // spec/behavior.md § split calls out: the same padding/concat rules a
     // split uses); an object result is read by column name.
     else if (Array.isArray(result)) {
       const parts = padParts(result, cols);
@@ -293,7 +293,7 @@ export type AggGroup = { key: unknown; rows: Row[] };
 
 /** Compile a JS aggregate to the contracted `(rows, key, allGroups)` signature
  *  (spec/code-contract.md § group): the group's slice, its by-value, and every
- *  group as `{ key, rows }` in output order — so an aggregate can compute a
+ *  group as `{ key, rows }` in output order, so an aggregate can compute a
  *  share of the whole table, not only of its own slice. */
 export function compileAgg(js: string): (rows: Row[], key: unknown, allGroups: AggGroup[]) => unknown {
   return new Function('rows', 'key', 'allGroups', `return (${js.trim()});`) as (
@@ -344,8 +344,8 @@ export function padParts(parts: unknown[], into: string[]): unknown[] {
   return parts;
 }
 
-/** @internal — exported for unit tests. Parse a cell model's split reply into
- *  parts: prefers a JSON array (with any markdown fence stripped — models
+/** @internal: exported for unit tests. Parse a cell model's split reply into
+ *  parts: prefers a JSON array (with any markdown fence stripped, models
  *  sometimes wrap the array in ```json despite the "reply with ONLY"
  *  instruction), falls back to comma- then whitespace-separated tokens. */
 export function parseLlmParts(text: string): unknown[] {
@@ -356,7 +356,7 @@ export function parseLlmParts(text: string): unknown[] {
   try {
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed)) return parsed;
-  } catch { /* not JSON — fall through to delimiter splitting */ }
+  } catch { /* not JSON: fall through to delimiter splitting */ }
   return trimmed.includes(',') ? trimmed.split(',').map((s) => s.trim()) : trimmed.split(/\s+/);
 }
 
@@ -438,7 +438,7 @@ export function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivo
     bucket.cells.get(onVal)?.push(row[t.values]);
   }
   // The new column names come from the DATA, so one can equal an index column
-  // name — rename it (`region` → `region_2`) instead of overwriting the key
+  // name: rename it (`region` → `region_2`) instead of overwriting the key
   // that identifies the row (spec/behavior.md § pivot).
   const taken = new Set(t.index);
   const outName = new Map<string, string>();
@@ -464,7 +464,7 @@ export function applyPivot(rows: Row[], t: Extract<Transformation, { kind: 'pivo
 
 export function applyUnpivot(rows: Row[], t: Extract<Transformation, { kind: 'unpivot' }>): Row[] {
   // The `name`/`value` defaults are a name collision waiting to happen on a
-  // table with a column called `name` — rename rather than overwrite the id.
+  // table with a column called `name`, rename rather than overwrite the id.
   const { namesTo, valuesTo } = unpivotOutputNames(t);
   const out: Row[] = [];
   for (const row of rows) {
@@ -489,10 +489,10 @@ export async function applyJoin(
 ): Promise<Row[]> {
   if (!('js' in t.on)) throw new Error('join: LLM predicates not yet implemented');
   // A null `with` only reaches here outside the web UI (which resolves it via
-  // the lookup dialog before the run) — there is no file to read.
+  // the lookup dialog before the run): there is no file to read.
   if (t.with === null) throw new Error('join: no lookup file named — say which file to join with');
   const fn = new Function('leftRow', 'rightRow', `return (${t.on.js.trim()});`) as (l: Row, r: Row) => unknown;
-  // A staged lookup (browser join) wins, then the runner's right-table cache —
+  // A staged lookup (browser join) wins, then the runner's right-table cache:
   // a join is read from disk once and held, so an :undo/:redo that replays the
   // step never touches the file again (spec/behavior.md § join). Only a miss
   // reads the path.
@@ -507,7 +507,7 @@ export async function applyJoin(
   }
   // Compute right-column names with collision-renaming (Country → Country_2 …).
   // Both column lists are the UNION of every row's keys: a sparse column lives
-  // on some later row, and reading row 0 alone would miss it — then the right
+  // on some later row, and reading row 0 alone would miss it, then the right
   // table would silently overwrite it. The rename target is probed against the
   // right table's own columns too, so a real `code_2` on the right can't be
   // clobbered by a renamed `code`.

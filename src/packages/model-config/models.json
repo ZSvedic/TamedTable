@@ -32,14 +32,14 @@
     { "id": "gemini-3.1-flash-lite",  "name": "Gemini 3.1 Flash-Lite (Puter.js)","provider": "puter",     "temperature": true , "voiceInput": false, "inUsdPerMtok": 0.25, "outUsdPerMtok": 1.5  }
   ],
   "defaults": {
-    "gemini":     { "primary": "gemini-3.6-flash",  "secondary": "gemini-3.1-flash-lite",
+    "gemini":     { "chat": "gemini-3.6-flash",  "cell": "gemini-3.1-flash-lite",
       "priceVariesByPlan": true },
-    "openai":     { "primary": "gpt-5.5",           "secondary": "gpt-5.4-mini" },
-    "anthropic":  { "primary": "claude-sonnet-4-6", "secondary": "claude-haiku-4-5", "batchSize": 40 },
-    "groq":       { "primary": "openai/gpt-oss-120b", "secondary": "openai/gpt-oss-20b",
+    "openai":     { "chat": "gpt-5.5",           "cell": "gpt-5.4-mini" },
+    "anthropic":  { "chat": "claude-sonnet-4-6", "cell": "claude-haiku-4-5", "batchSize": 40 },
+    "groq":       { "chat": "openai/gpt-oss-120b", "cell": "openai/gpt-oss-20b",
       "batchSize": 20, "priceVariesByPlan": true },
-    "openrouter": { "primary": "cohere/north-mini-code:free", "secondary": "cohere/north-mini-code:free", "batchSize": 5,
-      "paid": { "primary": "google/gemini-3.6-flash", "secondary": "google/gemini-3.1-flash-lite" } },
-    "puter":      { "primary": "gemini-3.6-flash", "secondary": "gemini-3.1-flash-lite" }
+    "openrouter": { "chat": "cohere/north-mini-code:free", "cell": "cohere/north-mini-code:free", "batchSize": 5,
+      "paid": { "chat": "google/gemini-3.6-flash", "cell": "google/gemini-3.1-flash-lite" } },
+    "puter":      { "chat": "gemini-3.6-flash", "cell": "gemini-3.1-flash-lite" }
   }
 }

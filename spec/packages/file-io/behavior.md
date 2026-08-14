@@ -4,18 +4,18 @@ The `@tamedtable/file-io` package owns getting table files in and out: the
 format **codecs** (parse/serialize) behind a load-on-demand registry, format
 detection, the `FilePort` open/save dialog interface with its browser
 implementation, fetching a table from a URL, and serializing a plan into a
-`.flow` file. `core` owns only byte-acquisition — reading and writing files by
-path with `node:fs` — and delegates every parse/serialize to this package's
+`.flow` file. `core` owns only byte-acquisition: reading and writing files by
+path with `node:fs`, and delegates every parse/serialize to this package's
 registry (`loadCsv`/`writeRows` are thin `node:fs` wrappers over a codec). The
-package holds no app state — no dialog flags, no toasts, no chat messages; the
+package holds no app state, no dialog flags, no toasts, no chat messages; the
 host app wires outcomes into its own UI.
 
 Per-format quirks live in their own pages, one per codec:
 
-- [formats/csv.md](formats/csv.md) — CSV (RFC 4180, header handling)
-- [formats/jsonl.md](formats/jsonl.md) — JSONL / NDJSON (one object per line)
-- [formats/parquet.md](formats/parquet.md) — Parquet (DuckDB reader/writer)
-- [formats/arrow.md](formats/arrow.md) — Arrow / Feather (apache-arrow IPC)
+- [formats/csv.md](formats/csv.md): CSV (RFC 4180, header handling)
+- [formats/jsonl.md](formats/jsonl.md): JSONL / NDJSON (one object per line)
+- [formats/parquet.md](formats/parquet.md): Parquet (DuckDB reader/writer)
+- [formats/arrow.md](formats/arrow.md): Arrow / Feather (apache-arrow IPC)
 
 ## Worked example
 
@@ -58,14 +58,14 @@ interface FormatCodec {
 Arrow via apache-arrow) are async. Every caller `await`s, so both shapes work.
 
 The seam carries raw **bytes** (`Uint8Array`), not text, so a binary format
-works the same as a text one — the codec decodes internally. The registry
+works the same as a text one: the codec decodes internally. The registry
 exposes:
 
-- `detectFormat(pathname, contentType)` / `formatForExtension(pathname)` — read
+- `detectFormat(pathname, contentType)` / `formatForExtension(pathname)`: read
   the synchronous descriptor table (id + extensions + content types).
-- `loadCodec(id)` — dynamic-`import()` the codec, pulling its parser only on
+- `loadCodec(id)`: dynamic-`import()` the codec, pulling its parser only on
   first use, so a run never bundles a format it doesn't touch.
-- `parseTable(name, bytes)` — detect from `name`, parse the bytes, and build a
+- `parseTable(name, bytes)`: detect from `name`, parse the bytes, and build a
   fresh-load `TablePlan` (the browser's path-free counterpart to `core.loadCsv`).
 
 A new format is one codec file plus one registry row; `detectFormat` is a lookup
@@ -73,7 +73,7 @@ over the registry, not a hand-written `if` ladder.
 
 ## FilePort
 
-The dialog interface the host injects — the browser supplies the real one,
+The dialog interface the host injects: the browser supplies the real one,
 tests supply a stub:
 
 ```
@@ -82,7 +82,7 @@ pickOpen(accept)                              → PickedFile | null   (null = ca
 pickSave(suggestedName, accept, contentBytes) → SaveOutcome
 ```
 
-`PickedFile` is `{ name, bytes }` — the dialog seam carries raw bytes
+`PickedFile` is `{ name, bytes }`: the dialog seam carries raw bytes
 (`Uint8Array`), so binary formats work the same as text and the codec decodes
 internally. `pickSave`'s `content` is bytes too. `SaveOutcome` is
 `{ status: "saved" | "downloaded", name }` or `{ status: "cancelled" }`.
@@ -90,17 +90,17 @@ internally. `pickSave`'s `content` is bytes too. `SaveOutcome` is
 `BrowserFilePort` (separate `browser-fs` entry point, DOM required) uses the
 File System Access API where the browser has it. Where it doesn't, `pickOpen`
 falls back to a hidden `<input type=file>` and `pickSave` to a download
-anchor — that save resolves as `downloaded`, never `cancelled`.
+anchor: that save resolves as `downloaded`, never `cancelled`.
 
 Only a real user cancel maps to the quiet outcome: `BrowserFilePort` turns the
 picker's `AbortError` into `null` (Open) or `{ status: "cancelled" }` (Save)
-and rethrows every other error, so a genuine failure — permissions, disk —
+and rethrows every other error, so a genuine failure: permissions, disk:
 surfaces instead of looking like a cancel.
 
 ## Format detection
 
-`detectFormat(pathname, contentType)` returns a `FormatId` — `"csv"`,
-`"jsonl"`, `"parquet"`, or `"arrow"` — or `null`. The path extension wins:
+`detectFormat(pathname, contentType)` returns a `FormatId`: `"csv"`,
+`"jsonl"`, `"parquet"`, or `"arrow"`, or `null`. The path extension wins:
 `.csv` → csv; `.jsonl` or `.ndjson` → jsonl; `.parquet` or `.pq` → parquet;
 `.arrow`, `.feather`, or `.arrows` → arrow. Only
 when the path has no table extension does the Content-Type header decide
@@ -121,7 +121,7 @@ order:
 1. Blank input → `Enter a URL.`
 2. Unparseable → `That doesn’t look like a valid URL.`
 3. Protocol not http/https → `Only http:// and https:// URLs are supported.`
-4. Network/CORS failure → `Couldn’t fetch <host> — network error or CORS blocked. (<detail>)`
+4. Network/CORS failure → `Couldn’t fetch <host>: network error or CORS blocked. (<detail>)`
 5. Non-OK response → `Fetch failed: HTTP <status> <statusText>`
 6. Format undetectable (path + Content-Type) → `Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow.`
 
@@ -132,12 +132,12 @@ pretty-printed JSON `{ version: 2, source, spec }` with a trailing newline.
 `source` is the basename of `spec.table`, or `input.csv` when the spec has
 no table.
 
-`parseFlow(text)` is the inverse — the browser's flow reader (the CLI's
+`parseFlow(text)` is the inverse, the browser's flow reader (the CLI's
 `execute` keeps its own path-based loader). It parses the text as JSON,
 accepts `version` 1 or 2, validates `spec` through `validateTablePlan`,
 and returns `{ source, spec }` (`source` falls back to `""` when the file
-carries none). Anything else — bad JSON, another `version`, a spec the
-schema rejects — throws with a message the host can show as-is.
+carries none). Anything else: bad JSON, another `version`, a spec the
+schema rejects: throws with a message the host can show as-is.
 
 ## Demo page
 
@@ -150,4 +150,4 @@ file renders as name (`#fio-name`), detected format (`#fio-format`), and a
 20-line preview (`#fio-preview`, decoded from the bytes); failures land in
 `#fio-error`, save
 outcomes in `#fio-outcome`. A `serializeFlow` sample renders into `#out` on
-load — the same ready signal the demo smoke test waits for.
+load: the same ready signal the demo smoke test waits for.

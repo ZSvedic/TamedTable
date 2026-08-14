@@ -1,8 +1,8 @@
 // #ModelConfig #ProviderSelect
-// ModelChooser — the panel a user connects providers in. Three parts, stacked:
+// ModelChooser: the panel a user connects providers in. Three parts, stacked:
 // the connected-provider list (or an empty row), the "Already have an API key?"
 // block that adds one, and the supported-providers footer. There is no provider
-// list to pick from before connecting — the key names its own provider.
+// list to pick from before connecting: the key names its own provider.
 // Pure component: props in, callbacks out, no state of its own. Styled only via
 // --mc-* CSS custom properties, each with a presentable light default, so it
 // renders standalone and the host injects its theme by setting the variables on
@@ -31,11 +31,11 @@ export interface RoleRow {
 export interface ConnectedCard {
   id: Provider;
   tier: Tier;
-  /** Whether this provider's primary model accepts audio input. */
+  /** Whether this provider's chat model accepts audio input. */
   voice: boolean;
   /** The catalogue price is not necessarily what this account pays, because
    *  the provider has a free tier we cannot detect (Groq). The rows then name
-   *  no price at all — a number that is wrong for most of a provider's users
+   *  no price at all: a number that is wrong for most of a provider's users
    *  is worse than saying we do not know. */
   priceVariesByPlan?: boolean;
   /** This provider serves a free and a paid model set, so the card offers the
@@ -43,8 +43,8 @@ export interface ConnectedCard {
   hasPaidModelSet?: boolean;
   /** Which set is running. Meaningless without `hasPaidModelSet`. */
   paidModelSet?: boolean;
-  primary: RoleRow;
-  secondary: RoleRow;
+  chat: RoleRow;
+  cell: RoleRow;
 }
 
 export interface ModelChooserProps {
@@ -59,7 +59,7 @@ export interface ModelChooserProps {
    *  same card, same models, same tag, so without a word the whole thing reads
    *  as a button that did nothing. */
   notice?: string;
-  /** An add is in flight — the input and button are disabled so a slow
+  /** An add is in flight: the input and button are disabled so a slow
    *  provider cannot be double-submitted. */
   busy: boolean;
   /** The in-flight connect is the Puter sign-in, so its button says so rather
@@ -71,15 +71,15 @@ export interface ModelChooserProps {
   onAdd: () => void;
   onSelect: (p: Provider) => void;
   onRemove: (p: Provider) => void;
-  /** The ⟳ button — re-run this provider's measurements. Omit it and no card
+  /** The ⟳ button: re-run this provider's measurements. Omit it and no card
    *  shows one, so a host with nothing to re-measure gets no dead button. */
   onRefresh?: (p: Provider) => void;
   /** Switch a card between its free and paid model sets. Omit it and the
    *  control is not rendered, so a host that cannot persist the choice shows no
    *  switch that would not stick. */
   onPaidModelSetChange?: (p: Provider, paid: boolean) => void;
-  /** The "No API key?" block's Puter.js sign-in. Omit it and the whole block —
-   *  divider included — is left out, so a host that cannot open a sign-in
+  /** The "No API key?" block's Puter.js sign-in. Omit it and the whole block:
+   *  divider included: is left out, so a host that cannot open a sign-in
    *  window (the CLI, the demo page) shows no button that would not work. */
   onPuterSignIn?: () => void;
 }
@@ -92,12 +92,12 @@ export const PROVIDER_LABEL: Record<Provider, string> = Object.fromEntries(
     .map((p) => [p, p === 'puter' ? PROVIDER_NAME[p] : `${PROVIDER_NAME[p]} API`]),
 ) as Record<Provider, string>;
 
-// ── Theme variables — every visual choice reads var(--mc-*, default) ───────
+// ── Theme variables: every visual choice reads var(--mc-*, default) ───────
 
 const v = (name: string, fallback: string): string => `var(--mc-${name}, ${fallback})`;
 
 const ink = v('ink', '#1c1f23');
-/** Readable *on* `ink` — the primary button's text. */
+/** Readable *on* `ink`: the primary button's text. */
 const inkOnInk = v('ink-on-ink', '#ffffff');
 const ink2 = v('ink2', '#4a5260');
 const ink3 = v('ink3', '#6b7280');
@@ -129,11 +129,11 @@ function money(usd: number): string {
  *
  *   $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
  *
- * The prices are there once the catalogue knows the model — unless the provider
+ * The prices are there once the catalogue knows the model, unless the provider
  * has a free tier we cannot detect, in which case the catalogue's number is
  * wrong for most of its users and the line says so instead. The `~Z sec` tail
  * is the measurement, so it reads `measuring…` while the call is out and
- * `speed unknown` when the call came back an error — a row that simply went
+ * `speed unknown` when the call came back an error: a row that simply went
  * blank looked identical to one still loading. */
 function costLine(row: RoleRow, priceVariesByPlan = false): string | null {
   const parts: string[] = [];
@@ -205,8 +205,8 @@ export function ModelChooser({
   const puterConnected = connected.some((c) => c.id === 'puter');
   const canAdd = keyInput.trim() !== '' && !busy;
   // The one piece of state the component owns: which provider's instructions
-  // are expanded. It is ephemeral and means nothing to the host — nothing is
-  // stored, nothing is resolved from it — so threading it through two hosts
+  // are expanded. It is ephemeral and means nothing to the host: nothing is
+  // stored, nothing is resolved from it, so threading it through two hosts
   // would buy nothing.
   const [howTo, setHowTo] = useState<Provider | null>(null);
   const open = KEY_SETUP.find((s) => s.provider === howTo);
@@ -248,10 +248,10 @@ export function ModelChooser({
 
   // One role row: the label column and the model id on one line, the priced
   // line under both. The cost line starts at the row's left edge rather than
-  // indented under the model id — indented, it had a third of the card to fit
+  // indented under the model id: indented, it had a third of the card to fit
   // a sentence in and got clipped.
   const roleRow = (
-    role: 'primary' | 'secondary', row: RoleRow, priceVaries: boolean,
+    role: 'chat' | 'cell', row: RoleRow, priceVaries: boolean,
   ): ReactNode => {
     const cost = costLine(row, priceVaries);
     return (
@@ -261,20 +261,21 @@ export function ModelChooser({
             style={{
               // Fixed, so the two rows' model ids line up under each other.
               // Sized to "Chat model" / "Cell model"; it was 104 when the
-              // labels read "Secondary model", and every pixel it does not
-              // need is a pixel of model id that gets an ellipsis instead.
+              // labels ranked the two roles instead of naming them, and every
+              // pixel it does not need is a pixel of model id that gets an
+              // ellipsis instead.
               width: 76,
               flex: '0 0 auto',
               fontFamily: fontUi,
               fontSize: 12,
               fontWeight: 650,
               whiteSpace: 'nowrap',
-              // Both roles read the same: the secondary model is not a lesser
+              // Both roles read the same: the cell model is not a lesser
               // setting, it is the one that runs on every row.
               color: ink2,
             }}
           >
-            {role === 'primary' ? 'Chat model' : 'Cell model'}
+            {role === 'chat' ? 'Chat model' : 'Cell model'}
           </span>
           <span
             data-mc-model-id={row.model}
@@ -375,7 +376,7 @@ export function ModelChooser({
             <button
               type="button"
               data-mc-refresh={c.id}
-              // Icon-only, so the label has to be the accessible name too — a
+              // Icon-only, so the label has to be the accessible name too: a
               // tooltip alone leaves a screen reader reading "button".
               aria-label={`Re-measure ${PROVIDER_LABEL[c.id]}`}
               title={`Re-measure ${PROVIDER_LABEL[c.id]}`}
@@ -403,7 +404,7 @@ export function ModelChooser({
           </button>
         </div>
 
-        {/* Only the selected card shows its models — it is the one that runs. */}
+        {/* Only the selected card shows its models: it is the one that runs. */}
         {isSelected && (
           <div
             style={{
@@ -413,8 +414,8 @@ export function ModelChooser({
               gap: 10,
             }}
           >
-            {roleRow('primary', c.primary, c.priceVariesByPlan === true)}
-            {roleRow('secondary', c.secondary, c.priceVariesByPlan === true)}
+            {roleRow('chat', c.chat, c.priceVariesByPlan === true)}
+            {roleRow('cell', c.cell, c.priceVariesByPlan === true)}
             {/* The free/paid choice is the user's, not the account's. A key with
                 credits still opens on free: having a balance is not the same as
                 wanting to spend it. A $0 key cannot pick paid at all, because
@@ -578,7 +579,7 @@ export function ModelChooser({
               flex: '0 0 auto',
               padding: '10px 18px',
               borderRadius: radius,
-              // Filled ink once there is something to add — the host's primary
+              // Filled ink once there is something to add: the host's primary
               // button. The accent is a pale sky in this theme, so an
               // accent-filled button read as the secondary of the pair.
               border: `1px solid ${canAdd ? ink : line}`,
@@ -600,8 +601,8 @@ export function ModelChooser({
             tab is a round trip many never come back from. */}
         {/* Inline, not flex: five names and four slashes have to fit on one
             line in a 400px sheet, so the separators carry no space of their
-            own — the padding on each button keeps the labels off the slashes
-            without a line break's worth of gap. The open one is underlined —
+            own: the padding on each button keeps the labels off the slashes
+            without a line break's worth of gap. The open one is underlined:
             the cheapest possible "this is the one you are reading". */}
         <div
           data-mc-providers=""
@@ -655,7 +656,7 @@ export function ModelChooser({
             {/* One paragraph: the steps read as prose, not as a checklist of
                 three one-line bullets. The recommended provider's first line is
                 bold, because it is the answer to the question the user is
-                actually asking here — which of these five do I pick? */}
+                actually asking here, which of these five do I pick? */}
             <span>
               {open.recommended && typeof open.steps[0] === 'string' && (
                 <strong>{open.steps[0]}{' '}</strong>
@@ -695,7 +696,7 @@ export function ModelChooser({
         )}
       </div>
 
-      {/* ── No API key? — sign in to the Puter.js gateway ───────────────── */}
+      {/* ── No API key?: sign in to the Puter.js gateway ───────────────── */}
       {onPuterSignIn && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           <div style={{ fontFamily: fontUi, fontSize: 13, fontWeight: 650, color: ink }}>

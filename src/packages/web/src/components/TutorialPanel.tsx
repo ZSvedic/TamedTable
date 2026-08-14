@@ -23,7 +23,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
   const currentStep = controller.currentStepDetail();
 
   // The tour's spotlight, popover footer, and keyboard navigation are the shared
-  // gherkin-tour TourUi — the same code the standalone demo runs, so the app and
+  // gherkin-tour TourUi: the same code the standalone demo runs, so the app and
   // the demo can no longer drift. We hand it a TourCursor backed by the
   // controller (which owns the cursor, engine, and cassette replay) plus the
   // app's theme colors. The slide-over panel below (chooser + golden table) stays
@@ -44,7 +44,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
       cancel:               () => { controller.cancelTutorial(); },
     };
     const ui = new TourUi(cursor, {
-      // On the terminal stop the step's own target may be gone — anchor to
+      // On the terminal stop the step's own target may be gone: anchor to
       // the table, the result the tour just produced, on both layouts.
       doneElementId: 'tutorial-table-view',
       // The terminal stop's "Voilà …" celebration, shown after the last real
@@ -78,7 +78,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 
   return (
     <>
-      {/* Visual panel — only rendered when open. Driver.js + keyboard effects
+      {/* Visual panel: only rendered when open. Driver.js + keyboard effects
           above stay mounted as long as the component renders (active or done). */}
       {open && (
         <div
@@ -160,7 +160,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
             >
               {!active ? (
                 /* Scenario picker. The done state is shown in the Driver.js
-                   completion popover, not here — the panel stays closed during a
+                   completion popover, not here: the panel stays closed during a
                    tour, so a deep-link visitor never sees this slide-over. */
                 <div>
                   {groups.length === 0 ? (
@@ -237,7 +237,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                       .feature file. Picking one starts it immediately. */}
                   {devNames.length > 0 && (
                     <div style={{ marginTop: space.px16 }}>
-                      <div style={{ ...labelStyle, color: t.ink3 }}>Dev — run any scenario</div>
+                      <div style={{ ...labelStyle, color: t.ink3 }}>Dev, run any scenario</div>
                       <select
                         value={devNames.includes(selectedTourName) ? selectedTourName : ''}
                         onChange={(e) => {
@@ -268,7 +268,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                   )}
                 </div>
               ) : (
-                /* Active tour — panel is normally closed during a tour, but may
+                /* Active tour: panel is normally closed during a tour, but may
                    briefly render here (e.g. when open=true during a step transition). */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: space.px12 }}>
                   <div
@@ -392,7 +392,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
 }
 
 // Tours are watch-only, so each step narrates progressively ("Opening the
-// sample …") — the Gherkin keyword (Given/When/Then) is test-suite structure,
+// sample …"): the Gherkin keyword (Given/When/Then) is test-suite structure,
 // not something a learner needs, so it is dropped. This mirrors the popover
 // copy the shared `TourUi` renders (gherkin-tour/ui.ts). A `query "…"` step's
 // text is prefilled into the chat box and a `speak "…"` step plays its clip,

@@ -72,7 +72,7 @@ Feature: Toolbar package
       Then the toolbar event log shows "open sample https://example.com/customers-input.csv"
       And the toolbar sample picker is closed
 
-    # The picker leads with the recommended rows — a first-time visitor meets a
+    # The picker leads with the recommended rows: a first-time visitor meets a
     # handful of titled files, not the whole bundle. The rest hide behind a
     # disclosure until asked for.
     @web

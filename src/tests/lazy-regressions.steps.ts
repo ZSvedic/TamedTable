@@ -1,4 +1,4 @@
-// Step defs for spec/test-cases/lazy-regressions.feature — the lazy AI
+// Step defs for spec/test-cases/lazy-regressions.feature: the lazy AI
 // execution regressions from the red inventory (#LazyExec). Self-contained:
 // each scenario builds its own WebController through lazy-harness.util.ts
 // (fake FilePort, scripted offline Gemini fetch); no worldParameters, no
@@ -39,7 +39,7 @@ const S = new WeakMap<object, RedLazyState>();
 
 function state(world: object): RedLazyState {
   const s = S.get(world);
-  if (!s) throw new Error('lazy-regressions state missing — did the Given step run?');
+  if (!s) throw new Error('lazy-regressions state missing: did the Given step run?');
   return s;
 }
 
@@ -69,7 +69,7 @@ Given('a regression lazy session with an AI column previewed on page 1', async f
   await app.lazySettle();
   const readout = app.evaluatedReadout();
   if (!readout || readout.done !== 100 || readout.total !== 246) {
-    throw new Error(`precondition: page 1 should preview 100 of 246 rows — got ${JSON.stringify(readout)}`);
+    throw new Error(`precondition: page 1 should preview 100 of 246 rows, got ${JSON.stringify(readout)}`);
   }
   S.set(this, { be, app });
 });
@@ -94,7 +94,7 @@ Then('page 2 is evaluated and no off-page rows were billed', function () {
   const offPage = prompted.filter((n) => !visibleNames.has(n));
   assert.ok(
     pendingOnPage === 0 && offPage.length === 0,
-    `RED-LAZY-1 (spec/behavior.md:1390-1398): opening a pending page after a deterministic sort must evaluate exactly that page's lagging rows — the spec explicitly sanctions deterministic steps after the AI step — but page 2 still shows ${pendingOnPage} pending rows and ${offPage.length} of the ${prompted.length} rows the page-open billed are not on the opened page (e.g. ${JSON.stringify(offPage.slice(0, 4))}); derived-row indices are passed where the engine's cellFilter contract wants step-input indices (controller-lazy.ts:269-275, :379 vs headless/index.ts:188-191)`,
+    `RED-LAZY-1 (spec/behavior.md:1390-1398): opening a pending page after a deterministic sort must evaluate exactly that page's lagging rows, the spec explicitly sanctions deterministic steps after the AI step, but page 2 still shows ${pendingOnPage} pending rows and ${offPage.length} of the ${prompted.length} rows the page-open billed are not on the opened page (e.g. ${JSON.stringify(offPage.slice(0, 4))}); derived-row indices are passed where the engine's cellFilter contract wants step-input indices (controller-lazy.ts:269-275, :379 vs headless/index.ts:188-191)`,
   );
 });
 
@@ -117,7 +117,7 @@ function assertPageEvaluated(s: RedLazyState, view: string): void {
   const missing = s.app.pageRows().filter((r) => !r.Segment).length;
   assert.ok(
     pending === 0 && missing === 0,
-    `behavior.md § Grid upgrades: a view change evaluates the rows it brings into view like a page open — but after the ${view} the current page still shows ${pending} pending rows and ${missing} empty Segment cells; setViewSort/setViewFilter never schedule the visible page's evaluation (controller.ts) while goToPage does`,
+    `behavior.md § Grid upgrades: a view change evaluates the rows it brings into view like a page open, but after the ${view} the current page still shows ${pending} pending rows and ${missing} empty Segment cells; setViewSort/setViewFilter never schedule the visible page's evaluation (controller.ts) while goToPage does`,
   );
 }
 
@@ -153,7 +153,7 @@ Given('a regression lazy session with an AI split previewed on page 1', async fu
   const readout = app.evaluatedReadout();
   const first = app.displayRows()[0]?.First;
   if (!readout || readout.done !== 100 || first !== 'A1') {
-    throw new Error(`precondition: split should preview page 1 (100 done, row 0 First = "A1") — got ${JSON.stringify(readout)}, First=${JSON.stringify(first)}`);
+    throw new Error(`precondition: split should preview page 1 (100 done, row 0 First = "A1"), got ${JSON.stringify(readout)}, First=${JSON.stringify(first)}`);
   }
   S.set(this, { be, app });
 });
@@ -178,7 +178,7 @@ Then("the split's evaluated cells refill from the cell cache with no new AI call
   const restored = s.rowFirstAfterRedo === 'A1' && (s.readoutAfterRedo?.done ?? 0) >= 100;
   assert.ok(
     s.reopenCalls === 0 && restored,
-    `RED-LAZY-2 (spec/behavior.md:1390-1396, 1408-1410): an {llm} split's evaluated cells must refill free from the cell cache and "redo restores it from the cell cache with no new AI calls" — but re-opening page 1 spent ${s.reopenCalls} fresh cell calls on rows already paid for, and redo-after-undo left row 0's First = ${JSON.stringify(s.rowFirstAfterRedo)} with readout ${JSON.stringify(s.readoutAfterRedo)} (${s.redoCalls} calls); applySplitLlm never reads or writes the cell cache and is unwired from every lazy pass (headless/index.ts:1401-1433 vs the mutate path's cache at :1457-1462)`,
+    `RED-LAZY-2 (spec/behavior.md:1390-1396, 1408-1410): an {llm} split's evaluated cells must refill free from the cell cache and "redo restores it from the cell cache with no new AI calls", but re-opening page 1 spent ${s.reopenCalls} fresh cell calls on rows already paid for, and redo-after-undo left row 0's First = ${JSON.stringify(s.rowFirstAfterRedo)} with readout ${JSON.stringify(s.readoutAfterRedo)} (${s.redoCalls} calls); applySplitLlm never reads or writes the cell cache and is unwired from every lazy pass (headless/index.ts:1401-1433 vs the mutate path's cache at :1457-1462)`,
   );
 });
 
@@ -202,7 +202,7 @@ Given('a regression lazy session with an AI column previewed and a sort step app
   await app.sendChat('sort by Name');
   const readout = app.evaluatedReadout();
   if (!readout || readout.done !== 100 || app.displayRows().length !== 246) {
-    throw new Error(`precondition: 246 rows with 100 evaluated expected — got ${JSON.stringify(readout)}, rows=${app.displayRows().length}`);
+    throw new Error(`precondition: 246 rows with 100 evaluated expected, got ${JSON.stringify(readout)}, rows=${app.displayRows().length}`);
   }
   if (s.gateSeen) throw new Error('precondition: neither the AI column nor the deterministic sort should be gated');
   S.set(this, s);
@@ -211,7 +211,7 @@ Given('a regression lazy session with an AI column previewed and a sort step app
 When("the model's patch replaces the sort with a filter reading the AI column", async function () {
   const s = state(this);
   // spec/prompt-app-edit.md licenses replace ops ("unless the user says undo
-  // or replace") — this is realistic model output, not a synthetic patch.
+  // or replace"): this is realistic model output, not a synthetic patch.
   s.be.patchQueue.push([
     { op: 'replace', path: '/transformations/1', value: { kind: 'filter', pred: { js: "row.Segment === 'business'" } } },
   ]);
@@ -223,7 +223,7 @@ Then('the dependency confirmation gates the replace patch and pending rows survi
   const rows = s.app.displayRows().length;
   assert.ok(
     s.gateSeen === true && rows === 246,
-    `RED-LAZY-5 (spec/behavior.md:1477-1481; code-contract.md:1080-1084): "the dependency rule applies at patch commit" for any patch shape, but a replace patch introducing an AI-reading {js} filter committed ungated (confirmation shown: ${String(s.gateSeen)}) and the filter compared 146 pending sentinel rows against the predicate, silently deleting them — table now has ${rows} of 246 rows, readout ${JSON.stringify(s.app.evaluatedReadout())}; newStepsReadAiColumns diffs only steps appended beyond the previous spec's length (controller-lazy.ts:646-650)`,
+    `RED-LAZY-5 (spec/behavior.md:1477-1481; code-contract.md:1080-1084): "the dependency rule applies at patch commit" for any patch shape, but a replace patch introducing an AI-reading {js} filter committed ungated (confirmation shown: ${String(s.gateSeen)}) and the filter compared 146 pending sentinel rows against the predicate, silently deleting them. Table now has ${rows} of 246 rows, readout ${JSON.stringify(s.app.evaluatedReadout())}; newStepsReadAiColumns diffs only steps appended beyond the previous spec's length (controller-lazy.ts:646-650)`,
   );
 });
 
@@ -246,7 +246,7 @@ Given('two regression lazy sessions on the paginated fixture', async function ()
   await groupApp.sendChat('add a Segment column');
   const readout = groupApp.evaluatedReadout();
   if (!readout || readout.done !== 100) {
-    throw new Error(`precondition: group session should have 146 pending rows — got ${JSON.stringify(readout)}`);
+    throw new Error(`precondition: group session should have 146 pending rows, got ${JSON.stringify(readout)}`);
   }
   s.groupBe = groupBe;
   s.groupApp = groupApp;
@@ -280,7 +280,7 @@ Then('the AI sort is estimate-gated and no outgoing prompt carries the pending s
   const leaked = s.groupBe!.cellPrompts.filter((p) => p.includes('__ttPending'));
   assert.ok(
     s.gateSeen === true && leaked.length === 0,
-    `RED-LAZY-6 (spec/behavior.md:1361-1363, 1388, 1452-1456): "an AI step runs on the page you are looking at, not on the whole table" and more than a page of AI work shows the estimate dialog first — but the {llm} sort ran ${sortPrompts} cell prompts table-wide with no gate (dialog shown: ${String(s.gateSeen)}; Simple mode DOES gate this same request via specHasLlmCell, proving the omission), and ${leaked.length} group {*} prompts serialized the {"__ttPending":true} sentinel to the model as data (fragment: ${JSON.stringify(leaked[0]?.slice(0, 120) ?? '')}); evalSortKey and applyGroup never receive the lazy cellFilter (headless/index.ts:1283, 1343-1353) and readsAiColumns exempts llm aggregates (controller-lazy.ts:635)`,
+    `RED-LAZY-6 (spec/behavior.md:1361-1363, 1388, 1452-1456): "an AI step runs on the page you are looking at, not on the whole table" and more than a page of AI work shows the estimate dialog first, but the {llm} sort ran ${sortPrompts} cell prompts table-wide with no gate (dialog shown: ${String(s.gateSeen)}; Simple mode DOES gate this same request via specHasLlmCell, proving the omission), and ${leaked.length} group {*} prompts serialized the {"__ttPending":true} sentinel to the model as data (fragment: ${JSON.stringify(leaked[0]?.slice(0, 120) ?? '')}); evalSortKey and applyGroup never receive the lazy cellFilter (headless/index.ts:1283, 1343-1353) and readsAiColumns exempts llm aggregates (controller-lazy.ts:635)`,
   );
 });
 
@@ -298,7 +298,7 @@ Given('a regression lazy session with an AI column previewed and two rows rigged
   await app.sendChat('add a Segment column');
   const readout = app.evaluatedReadout();
   if (!readout || readout.done !== 100) {
-    throw new Error(`precondition: 146 rows should be pending before Save — got ${JSON.stringify(readout)}`);
+    throw new Error(`precondition: 146 rows should be pending before Save, got ${JSON.stringify(readout)}`);
   }
   be.failCells = (p) => p.includes('User-205') || p.includes('User-210');
   S.set(this, { be, app, toastsBefore: app.toasts.length });
@@ -309,7 +309,7 @@ When('the user saves and confirms the estimate dialog', async function () {
   const save = s.app.saveData();
   const gateShown = await untilRunAllDialog(s.app);
   if (!gateShown || s.app.runAllDialog?.reason !== 'save') {
-    throw new Error(`precondition: Save with pending rows must raise the estimate dialog (reason "save") — got ${JSON.stringify(s.app.runAllDialog)}`);
+    throw new Error(`precondition: Save with pending rows must raise the estimate dialog (reason "save"), got ${JSON.stringify(s.app.runAllDialog)}`);
   }
   s.app.confirmRunAll();
   await save;
@@ -320,13 +320,13 @@ Then('the Save click ends with a save-ready confirmation or a visible message', 
   const s = state(this);
   const readout = s.app.evaluatedReadout();
   if (!readout || readout.failed !== 2) {
-    throw new Error(`precondition: the run should end with exactly 2 failed rows — got ${JSON.stringify(readout)}`);
+    throw new Error(`precondition: the run should end with exactly 2 failed rows, got ${JSON.stringify(readout)}`);
   }
   const newToasts = s.app.toasts.slice(s.toastsBefore!);
   const saveMessages = s.app.messages.filter((m) => /save/i.test(m.text));
   const anyFeedback = s.app.saveGate || newToasts.length > 0 || saveMessages.length > 0;
   assert.ok(
     anyFeedback,
-    `RED-LAZY-7 (spec/behavior.md:1469-1471): "when the run was started from Save, a save-ready confirmation follows the run" — the user clicked Save, confirmed a paid run that finished ${readout.done}/${readout.total} with ${readout.failed} failed rows, and got nothing: saveGate=${JSON.stringify(s.app.saveGate)}, new toasts=${newToasts.length}, save-related chat messages=${saveMessages.length}; saveGated bails silently on any run with failures (controller-files.ts:413)`,
+    `RED-LAZY-7 (spec/behavior.md:1469-1471): "when the run was started from Save, a save-ready confirmation follows the run", the user clicked Save, confirmed a paid run that finished ${readout.done}/${readout.total} with ${readout.failed} failed rows, and got nothing: saveGate=${JSON.stringify(s.app.saveGate)}, new toasts=${newToasts.length}, save-related chat messages=${saveMessages.length}; saveGated bails silently on any run with failures (controller-files.ts:413)`,
   );
 });

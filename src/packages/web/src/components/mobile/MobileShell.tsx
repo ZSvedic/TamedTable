@@ -2,11 +2,11 @@
 // The phone layout: app bar (file + pager) over the frozen-header table over a
 // persistent five-action dock, with the Type / Speak / History sheets rising in
 // the dock's place. The app bar and the bottom region are fixed to the screen;
-// the table flows in the document, so the page itself scrolls it — a natural
+// the table flows in the document, so the page itself scrolls it, a natural
 // swipe hides the phone browser's bars and the browser scrollbar shows the
 // true position in the table (index.css keeps the page ≥1px scrollable so even
 // the empty page can be swiped). It drives the same WebController the desktop
-// tree does — the menu drawer and the shared Settings / Open-URL / Tours
+// tree does: the menu drawer and the shared Settings / Open-URL / Tours
 // overlays carry every action that doesn't fit the dock. A running tour reuses
 // the real Driver.js engine: the mobile table, the Menu button, and the
 // composer carry the ids the tour targets, and a chat step opens the Type
@@ -30,7 +30,7 @@ import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
 
-// #LazyExec — the slim banner under the app bar: the evaluated-rows readout,
+// #LazyExec: the slim banner under the app bar: the evaluated-rows readout,
 // the retry action, and a compact Run all button (behavior.md § progress
 // indicators). Hidden while nothing is pending or failed.
 function LazyBanner({ t, controller }: { t: Theme; controller: WebController }): ReactNode {
@@ -94,7 +94,7 @@ function LazyBanner({ t, controller }: { t: Theme; controller: WebController }):
   );
 }
 
-// #LazyExec — the phone's column menu, a bottom sheet like every other phone
+// #LazyExec: the phone's column menu, a bottom sheet like every other phone
 // dialog: Sort ascending/descending, a contains-match filter row, and Delete
 // column (a spec step). Sort/filter on an AI column go through the same
 // dependency gate the desktop menu uses.
@@ -185,7 +185,7 @@ function ColumnMenuSheet({
             Filter
           </button>
         </div>
-        {/* Only when a filter is set — clear it in one tap. */}
+        {/* Only when a filter is set: clear it in one tap. */}
         {controller.viewFilters()[col] && (
           <button type="button" data-mob-menu-item="remove-filter" style={item}
             onClick={() => { void controller.setViewFilter(col, ''); onClose(); }}>
@@ -233,7 +233,7 @@ function AppBar({
   pageCount: number;
   onPrev: () => void;
   onNext: () => void;
-  /** #LazyExec — pages with pending rows exist: the pager carries a dot. */
+  /** #LazyExec: pages with pending rows exist: the pager carries a dot. */
   pendingDot?: boolean;
 }): ReactNode {
   const navBtn = (dir: 'prev' | 'next', on: (() => void) | null): ReactNode => (
@@ -378,7 +378,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
 
   const [inputMode, setInputMode] = useState<InputMode>('none');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // #LazyExec — the column whose menu (bottom sheet) is open, or null.
+  // #LazyExec: the column whose menu (bottom sheet) is open, or null.
   const [menuCol, setMenuCol] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [now, setNow] = useState(0);
@@ -397,14 +397,14 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
 
   const voiceStatus = controller.voiceStatus;
   // Staying in a finished tour: the cassette can't answer new requests, so
-  // the composer greys with the replay hint and Speak disables — undo/redo
+  // the composer greys with the replay hint and Speak disables: undo/redo
   // and the History sheet stay live (behavior.md § Staying in the tour).
   const stayed = controller.isTutorialStayed();
   const tourActive = controller.isTutorialActive();
   const stepEl = tourActive ? controller.currentStepElementId() : null;
   const prefill = controller.tutorialPrefill;
 
-  // History relative-time ticker — only while the sheet is open.
+  // History relative-time ticker: only while the sheet is open.
   useEffect(() => {
     if (inputMode !== 'history') return;
     setNow(Date.now());
@@ -568,7 +568,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         </>
       )}
 
-      {/* bottom region: the dock, or one of the input sheets in its place —
+      {/* bottom region: the dock, or one of the input sheets in its place,
           pinned to the bottom of the screen while the page scrolls the table.
           Only the Type composer rides the keyboard; the dock and the other
           sheets stay pinned (bottomInset gates the lift), so a stray

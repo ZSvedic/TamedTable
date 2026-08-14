@@ -7,7 +7,7 @@ import { TamedTableWorld, runnerOptsFor, SPEC_TC_DIR, CASSETTE_DIR } from './wor
 import { apiKeyOfCall, WebTestFilePort, webScenarios, type WebScenarioCtx } from './web-file-port.ts';
 
 // The same @tour/@web feature files the deployed bundle indexes. Tests read
-// the manifest, feature source, fixtures, and cassettes straight from disk —
+// the manifest, feature source, fixtures, and cassettes straight from disk:
 // the lazy loaders the browser fetches same-origin.
 const TUTORIAL_FEATURES = [
   'showcase-cleanup.feature', 'showcase-enrich.feature', 'showcase-classify.feature',
@@ -53,8 +53,8 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
     const port = new WebTestFilePort(!ctx.noFsa);
     ctx.filePort = port;
     // A composite fetch: URL-load steps register a fixture body keyed by URL
-    // (served as text/csv or application/jsonl by extension). Anything else
-    // — Anthropic model calls — still goes through the cassette recorder
+    // (served as text/csv or application/jsonl by extension). Anything else:
+    // Anthropic model calls: still goes through the cassette recorder
     // (opts.fetch) or the real network.
     const innerFetch = opts.fetch;
     const compositeFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -67,7 +67,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
         const ct = url.toLowerCase().endsWith('.jsonl') ? 'application/jsonl' : 'text/csv';
         return Promise.resolve(new Response(body, { status: 200, headers: { 'content-type': ct } }));
       }
-      // Everything past the fixture check is a model call — note the key it
+      // Everything past the fixture check is a model call: note the key it
       // carries, so a step can prove a settings edit reached the engine.
       ctx.lastCallApiKey = apiKeyOfCall(input, init);
       ctx.llmCallCount = (ctx.llmCallCount ?? 0) + 1;
@@ -86,7 +86,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
         return () => { ctx.voiceAutoStop = undefined; };
       },
       fetch: compositeFetch,
-      // #PuterGateway — the browser opens Puter's sign-in window here; a
+      // #PuterGateway: the browser opens Puter's sign-in window here; a
       // scenario decides what that window did. Wiring it at all is also what
       // makes the chooser show the Puter block.
       puterSignIn: () => {
@@ -99,7 +99,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       // Given fills the map; empty means no sample is bundled (null → the
       // stored address is used as-is, like the browser with a stale name).
       resolveSampleUrl: (name) => ctx.sampleUrls.get(name) ?? null,
-      // Suppress real shell API keys — tests set keys explicitly via steps.
+      // Suppress real shell API keys, tests set keys explicitly via steps.
       env: {},
       config: opts.apiKey ? { geminiKey: opts.apiKey } : undefined,
       batchSize: opts.batchSize,

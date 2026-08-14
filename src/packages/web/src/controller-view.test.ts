@@ -1,4 +1,4 @@
-// #LazyExec — the shuffled view is a seeded permutation derived from the file
+// #LazyExec: the shuffled view is a seeded permutation derived from the file
 // identity, so reopening the same file reproduces the same shuffle (plan
 // acceptance criterion 6).
 import { describe, it, expect } from 'bun:test';

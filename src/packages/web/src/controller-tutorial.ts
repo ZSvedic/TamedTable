@@ -1,8 +1,8 @@
 // #TutorialMode
 // Tutorial-panel state: a lightweight manifest of @tour/@web scenarios, the
 // active tour/step cursors, and the per-step side effects (load a file, prefill
-// the chat, surface a golden). Everything heavy — the `.feature` source, the
-// input/golden fixtures, and the recorded cassette — loads lazily through the
+// the chat, surface a golden). Everything heavy: the `.feature` source, the
+// input/golden fixtures, and the recorded cassette: loads lazily through the
 // host's TutorialSources, so the JS bundle carries only the manifest.
 //
 // A playing tour also flips the engine into key-free *replay* mode: LLM-driven
@@ -31,7 +31,7 @@ export class TutorialManager {
   private tutorialStepIndex: number | null = null;
   /** Highest step index whose side effect has already run. Steps execute once:
    *  stepping back then forward re-visits a step that already loaded its file or
-   *  sent its query — re-sending in replay mode would miss the cassette, so a
+   *  sent its query: re-sending in replay mode would miss the cassette, so a
    *  re-visit just navigates. -1 means nothing executed yet. */
   private executedThrough = -1;
   /** The in-flight prefill-chat request, exposed via `settle()` for tests. */
@@ -44,7 +44,7 @@ export class TutorialManager {
   private readonly featureCache = new Map<string, TourScenario[]>();
   private readonly cassetteCache = new Map<string, Cassette>();
 
-  /** Lookup tables THIS tour staged (#LookupJoin) — cleared out of the
+  /** Lookup tables THIS tour staged (#LookupJoin): cleared out of the
    *  engine when the tour ends, so the user's own join naming the same file
    *  asks for their file instead of silently reusing tour data. User-staged
    *  lookups (picked through the dialog) are untouched. */
@@ -96,7 +96,7 @@ export class TutorialManager {
     this.cancelTutorial();
   }
 
-  /** Names of `@tour` tours — the clickable list in the panel. */
+  /** Names of `@tour` tours: the clickable list in the panel. */
   tutorialScenarioNames(): string[] {
     return this.manifest.filter((t) => t.tags.includes('@tour')).map((t) => t.name);
   }
@@ -112,7 +112,7 @@ export class TutorialManager {
     })).filter((g) => g.names.length > 0);
   }
 
-  /** Names of `@web` scenarios that are not `@tour` — the trailing "Dev"
+  /** Names of `@web` scenarios that are not `@tour`: the trailing "Dev"
    *  dropdown for smoke-testing a scenario without opening the .feature file. */
   devScenarioNames(): string[] {
     return this.manifest
@@ -124,7 +124,7 @@ export class TutorialManager {
     this.selected = this.manifest.find((t) => t.name === name) ?? null;
     // Leave any playing or stayed tour through the full cancel cleanup. A bare
     // `activeTour = null` here once flipped replay mode off while the stayed
-    // tour's data was still marked loaded — the next render then read rows from
+    // tour's data was still marked loaded: the next render then read rows from
     // a freshly rebuilt (empty) engine and crashed. cancelTutorial resets the
     // engine and the loaded flag together, so the app returns to the empty
     // state before the newly selected tour plays.
@@ -135,30 +135,30 @@ export class TutorialManager {
    *  the Tutorial panel closed (Driver.js overlay takes over immediately).
    *  Returns true when a tour matched; otherwise leaves the panel closed and
    *  returns false. A missing/empty arg or an unknown file/scenario never
-   *  opens the panel — a deep link must not block a normal visit. */
+   *  opens the panel: a deep link must not block a normal visit. */
   async openTutorialFromLink(feature: string | null, scenario: string | null): Promise<boolean> {
     if (!feature || !scenario) return false;
     const entry = this.manifest.find((t) => t.feature === feature && t.name === scenario);
     if (!entry) return false;
     this.selected = entry;
-    // Same full cleanup as selectTutorialScenario — see the comment there.
+    // Same full cleanup as selectTutorialScenario: see the comment there.
     this.cancelTutorial();
-    // True only when the tour actually played from step 1 — a zero-step
+    // True only when the tour actually played from step 1, a zero-step
     // entry arms nothing, and reporting it played would make main.tsx
     // install the URL watcher and strip the deep-link params for nothing.
     return this.playTutorial();
   }
 
   /** Load and start the selected tour. Resolves true when the tour armed
-   *  (step 1 highlighted); false when there is nothing to play — no
+   *  (step 1 highlighted); false when there is nothing to play: no
    *  selection, no sources, or an entry whose steps all classify as display
    *  and drop. */
   async playTutorial(): Promise<boolean> {
     if (!this.selected || !this.tutorialSrc) return false;
     const loaded = await this.loadTour(this.selected);
     if (!loaded || loaded.steps.length === 0) return false;
-    // A `load the lookup table …` step is a silent prerequisite — the join query
-    // reads the file from the work dir, the user never opens it — so it is not a
+    // A `load the lookup table …` step is a silent prerequisite: the join query
+    // reads the file from the work dir, the user never opens it, so it is not a
     // tour step. Write those files up front and drop them from the visible steps,
     // leaving a tour that reads Load → Run query (not a phantom "load the lookup"
     // step that spotlights a button the user doesn't touch).
@@ -170,8 +170,8 @@ export class TutorialManager {
     this.activeTour = tour;
     // Entering replay mode: rebuild the engine pinned to the recording config so
     // the request the tour issues fingerprints identically to what was taped.
-    // Return to the empty state (like cancelTutorial) so the first step — always
-    // a Load — spotlights the Open control the empty page shows. On the phone the
+    // Return to the empty state (like cancelTutorial) so the first step: always
+    // a Load: spotlights the Open control the empty page shows. On the phone the
     // Open button exists only in the empty state, so without this a tour started
     // over a loaded file would spotlight nothing and show a blank overlay.
     this.host.engine.reset();
@@ -185,7 +185,7 @@ export class TutorialManager {
     this.replayMissed = false;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
-    // Close the Tutorial panel — Driver.js takes over. The step is highlighted
+    // Close the Tutorial panel: Driver.js takes over. The step is highlighted
     // but NOT executed yet; execution happens when the user clicks Next.
     this.host.tutorialOpen = false;
     this.prefillCurrentStep();
@@ -193,7 +193,7 @@ export class TutorialManager {
     return true;
   }
 
-  /** True while nextStep is executing a step — a re-entrant Next (clicked
+  /** True while nextStep is executing a step: a re-entrant Next (clicked
    *  during a voice clip's seconds-long playback, say) is ignored, or it would
    *  fire the step a second time and double-advance past the next one. */
   private advancing = false;
@@ -214,18 +214,18 @@ export class TutorialManager {
     // may still be streaming, and the prefill-chat execute guard refuses to
     // send during a stream. Wait it out so a fast Next never skips a query.
     await this.pending;
-    // The awaited request may have ended the tour (a replay miss cancels it) —
+    // The awaited request may have ended the tour (a replay miss cancels it):
     // a Next that was already in flight then has nothing left to advance.
     if (this.tutorialStepIndex === null || !this.activeTour) return;
     const total = this.activeTour.steps.length;
     if (this.tutorialStepIndex >= total) return; // already done
 
     // Execute each step once. A re-visit (Previous then Next) skips the side
-    // effect — the file is already loaded, the query already sent — so replay
+    // effect (the file is already loaded, the query already sent) so replay
     // doesn't fire a second, unrecorded request.
     if (this.tutorialStepIndex > this.executedThrough) {
       await this.executeTutorialStep(this.tutorialStepIndex);
-      // Esc may have cancelled the tour while the step executed — the nulled
+      // Esc may have cancelled the tour while the step executed, the nulled
       // cursor must stay null (a `null++` here once resurrected it as step 1).
       if (this.tutorialStepIndex === null || !this.activeTour) return;
       this.executedThrough = this.tutorialStepIndex;
@@ -237,7 +237,7 @@ export class TutorialManager {
       this.prefillCurrentStep();
       this.host.notify();
     } else {
-      // Last real step executed — enter the terminal stop. The trailing
+      // Last real step executed: enter the terminal stop. The trailing
       // `compare with the expected output` collapsed into here, so surface the
       // golden now (never before the query has run). The "Voilà …" completion is
       // shown in the Driver.js popover, numbered "N of N"; the slide-over panel
@@ -248,7 +248,7 @@ export class TutorialManager {
       const tour = this.activeTour;
       this.host.notify();
       // The checkmark means "played to the end": the final query may still be
-      // replaying, and a replay miss cancels the tour when it settles — so
+      // replaying, and a replay miss cancels the tour when it settles: so
       // wait it out and mark only a tour that is still standing.
       await this.pending;
       if (this.activeTour === tour) this.markCompleted(tour.name);
@@ -264,11 +264,11 @@ export class TutorialManager {
     this.activeTour = null;
     this.host.goldenRows = null;
     this.host.tutorialPrefill = null;
-    // The tour's staged lookups leave with it — mid-tour rebuilds kept them,
+    // The tour's staged lookups leave with it: mid-tour rebuilds kept them,
     // the user's own session must not (spec/behavior.md § tour exit).
     for (const name of this.tourLookups) this.host.engine.unregisterLookup(name);
     this.tourLookups.clear();
-    // #LazyExec — a tour can end with the estimate or large-file dialog
+    // #LazyExec: a tour can end with the estimate or large-file dialog
     // open (the lazy tour's finale shows the estimate); close both.
     this.host.lazy.declineRunAll();
     this.host.files.dismissLargeFile();
@@ -286,15 +286,15 @@ export class TutorialManager {
   /** End the tour and open the Tutorial panel chooser, however the tour was
    *  started, so the user can pick another tutorial. A deep-link visitor arrived
    *  in a new tab (the homepage opens "Show me →" links in a new tab) and closes
-   *  that tab to return to the homepage — the app does not navigate for them. */
+   *  that tab to return to the homepage: the app does not navigate for them. */
   finishTutorial(): void {
     this.cancelTutorial();
     this.openTutorial();
   }
 
   /** Leave the terminal stop but keep the finished tour on screen: the step
-   *  cursor clears (the overlay tears down) while the active tour — and with it
-   *  key-free cassette replay — stays. Undo/redo re-runs replay from the tape;
+   *  cursor clears (the overlay tears down) while the active tour, and with it
+   *  key-free cassette replay: stays. Undo/redo re-runs replay from the tape;
    *  new requests are refused (see the sendChat/sendAudioRequest guards). */
   stayTutorial(): void {
     if (!this.isTutorialDone()) return;
@@ -326,7 +326,7 @@ export class TutorialManager {
     );
   }
 
-  /** True while a tour is playing — the engine pins the recording config and
+  /** True while a tour is playing: the engine pins the recording config and
    *  routes model calls through the tour's cassette. */
   isReplaying(): boolean {
     return this.activeTour !== null;
@@ -337,15 +337,15 @@ export class TutorialManager {
     return this.activeTour ? basename(this.activeTour.feature ?? '', '.feature') : null;
   }
 
-  /** Provider the active tour pins for replay. Every committed cassette —
-   *  voice tours included — records with the Gemini provider defaults, so
+  /** Provider the active tour pins for replay. Every committed cassette:
+   *  voice tours included: records with the Gemini provider defaults, so
    *  every tour replays against Gemini. Drives the replay model in
    *  `EngineManager.ensureHeadless`. */
   replayProvider(): Provider {
     return 'gemini';
   }
 
-  /** Note that a replay lookup missed the cassette — the guided replay went
+  /** Note that a replay lookup missed the cassette: the guided replay went
    *  off-script. The engine's fetch calls this before rethrowing, because the
    *  SDK may wrap the error beyond recognition by the time the request
    *  settles; the flag survives the unwind instead. */
@@ -353,9 +353,9 @@ export class TutorialManager {
     this.replayMissed = true;
   }
 
-  /** True once after a replay miss — the request paths (sendChat,
+  /** True once after a replay miss: the request paths (sendChat,
    *  sendAudioRequest) consume it when the failed request settles, toast
-   *  `Tour ended — the guided replay went off-script.`, and cancel the tour
+   *  `Tour ended: the guided replay went off-script.`, and cancel the tour
    *  instead of surfacing the raw fingerprint-mismatch error. */
   consumeReplayMiss(): boolean {
     const missed = this.replayMissed;
@@ -385,7 +385,7 @@ export class TutorialManager {
   }
 
   /** Total stops including the terminal "Voilà …" one, so progress reads "N of
-   *  N" there — matching the gherkin-tour cursor contract. */
+   *  N" there: matching the gherkin-tour cursor contract. */
   tutorialStepCount(): number {
     return this.activeTour ? this.activeTour.steps.length + 1 : 0;
   }
@@ -418,11 +418,11 @@ export class TutorialManager {
       case 'prefill-chat': return 'tutorial-chat-input';
       case 'play-audio': return 'tutorial-speak';
       case 'load-shuffled': return 'tutorial-load-shuffled';
-      // Highlighted while the step is still pending — the dialog it opens
+      // Highlighted while the step is still pending: the dialog it opens
       // does not exist yet, so the spotlight lands on the button instead.
       case 'open-estimate': return 'tutorial-runall-btn';
       // By the time this step is highlighted the previous one has opened the
-      // estimate dialog — spotlight the dialog whose "Not yet" gets chosen.
+      // estimate dialog: spotlight the dialog whose "Not yet" gets chosen.
       case 'decline-estimate': return 'tutorial-runall-dialog';
       case 'show-golden':
       case 'golden-source':
@@ -445,7 +445,7 @@ export class TutorialManager {
     if (!tours) {
       const src = await this.tutorialSrc!.loadFeature(entry.feature);
       // Stamp each tour with its source filename so a deep link matches on
-      // (feature, name) — parseTours sees only the source string.
+      // (feature, name): parseTours sees only the source string.
       tours = parseTours(src).map((t) => ({ ...t, feature: entry.feature }));
       this.featureCache.set(entry.feature, tours);
     }
@@ -487,7 +487,7 @@ export class TutorialManager {
     const step = tour?.steps[index];
     if (!tour || !step) return;
     // Esc can cancel the tour while a step's async work (a fixture fetch,
-    // the simulated model pause, a clip's playback) is in flight — the
+    // the simulated model pause, a clip's playback) is in flight: the
     // cancelled step must not keep executing onto the reset engine
     // (spec/behavior.md § leaving a tour). Checked after every await below.
     const cancelled = (): boolean => this.activeTour !== tour;
@@ -504,7 +504,7 @@ export class TutorialManager {
         // kept here for any caller that steps a load-lookup directly.
         await this.writeLookup(action.filename);
         break;
-      // #LazyExec — the Lazy AI execution tour's three clicks.
+      // #LazyExec: the Lazy AI execution tour's three clicks.
       case 'load-shuffled':
         await this.host.files.resolveLargeFile(true);
         break;
@@ -516,14 +516,14 @@ export class TutorialManager {
         break;
       case 'decline-estimate':
         // The finale's "Not yet": the dialog closes, nothing runs, no model
-        // call — the parked open-estimate promise resolves as a skip.
+        // call: the parked open-estimate promise resolves as a skip.
         this.host.lazy.declineRunAll();
         break;
       case 'prefill-chat':
         // The query is already typed into the chat box (animated in when this
         // step was highlighted, so the popover could just say "Run the query").
         // Next runs it: a brief pause simulates the LLM call, then submit from
-        // the cassette — `settle()` lets tests await it.
+        // the cassette: `settle()` lets tests await it.
         if (!this.host.streaming) {
           await simulateModelLatency();
           if (cancelled()) return;
@@ -535,14 +535,14 @@ export class TutorialManager {
         break;
       case 'play-audio': {
         // A voice step: fetch the clip, play it aloud for the demo, then run it
-        // through the engine as a real voice turn — reusing the mic-release
+        // through the engine as a real voice turn, reusing the mic-release
         // plumbing so the request fingerprints identically to the recorded
         // voice turn and replays from the tour's cassette, key-free.
         const bytes = await this.loadAudio(action.filename);
         if (!bytes || cancelled()) break;
         // Play the clip aloud from the bytes we just fetched. A blob URL is used
         // rather than the bare filename: `new Audio("voice-….m4a")` resolves
-        // against /app/, 404s, and fires `onerror` at once — so nothing is heard
+        // against /app/, 404s, and fires `onerror` at once, so nothing is heard
         // and the step finishes instantly. Playing the in-memory bytes both makes
         // it audible and lets us await real playback, so the tour pauses for the
         // clip. No-op where the Audio constructor is unavailable (headless tests).
@@ -574,7 +574,7 @@ export class TutorialManager {
 
   /** Load the scenario's golden (lifted by the parser from `the expected output
    *  is "X"`) into `goldenRows` for the side-by-side comparison. Called when the
-   *  tour reaches its terminal stop — the trailing `compare with the expected
+   *  tour reaches its terminal stop, the trailing `compare with the expected
    *  output` collapsed into there. No golden ⇒ nothing to show. */
   private async surfaceGolden(): Promise<void> {
     const goldenFile = this.activeTour?.golden;
@@ -588,7 +588,7 @@ export class TutorialManager {
 }
 
 // A playing tutorial replays its model call from a cassette, which returns
-// instantly — too fast to read as "the model is working". In a real browser a
+// instantly: too fast to read as "the model is working". In a real browser a
 // short pause after Next restores that beat; in headless tests (no DOM) it is
 // skipped so the suite stays fast.
 function simulateModelLatency(): Promise<void> {

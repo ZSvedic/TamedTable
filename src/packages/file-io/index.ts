@@ -1,7 +1,7 @@
 // #FileIO
 // Browser-safe file input/output for tables: the FilePort dialog interface,
 // format detection, URL fetching, and .flow serialization. This entry has no
-// DOM dependency — the browser FilePort implementation lives in the separate
+// DOM dependency: the browser FilePort implementation lives in the separate
 // ./browser-fs entry point. Spec: spec/packages/file-io/behavior.md.
 
 import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
@@ -17,7 +17,7 @@ export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
  *  (a fetch that fell back to the Content-Type header for an extension-less
  *  URL), otherwise chosen from `name`'s extension; the codec parses the content,
  *  and the plan carries `name` as its table and the codec's columns. This is the
- *  browser's path-free counterpart to core's `loadCsv` — the web hands the
+ *  browser's path-free counterpart to core's `loadCsv`: the web hands the
  *  result straight to `Runner.loadParsed`. */
 export async function parseTable(
   name: string,
@@ -76,7 +76,7 @@ export type FetchLike = (
   init?: RequestInit,
 ) => Promise<Response>;
 
-/** Derive a friendly file name from a URL — the last path segment, or a
+/** Derive a friendly file name from a URL: the last path segment, or a
  *  fallback `download.<ext>` for URLs that don't expose one. */
 export function sampleNameFromUrl(url: URL, format: FormatId): string {
   const segment = url.pathname.split('/').filter(Boolean).pop() ?? '';
@@ -84,7 +84,7 @@ export function sampleNameFromUrl(url: URL, format: FormatId): string {
   return `download.${format}`;
 }
 
-/** A fetched table: a picked file plus the format detection saw — the URL
+/** A fetched table: a picked file plus the format detection saw, the URL
  *  path's extension, or the response Content-Type when the path has none. */
 export type FetchedTable = PickedFile & { format: FormatId };
 
@@ -111,7 +111,7 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
     // A network/CORS failure surfaces as a TypeError with no useful
     // detail in the browser. Rewrite to something the user can act on.
     throw new Error(
-      `Couldn’t fetch ${parsed.hostname} — network error or CORS blocked. (${(e as Error).message})`,
+      `Couldn’t fetch ${parsed.hostname}: network error or CORS blocked. (${(e as Error).message})`,
     );
   }
   if (!response.ok) {
@@ -137,7 +137,7 @@ export function serializeFlow(spec: TablePlan): string {
 }
 
 // #OpenFlow
-/** Parse a .flow file's text — the browser-side inverse of serializeFlow
+/** Parse a .flow file's text: the browser-side inverse of serializeFlow
  *  (the CLI's `execute` keeps its own path-based loader). Accepts `version`
  *  1 or 2 and validates the spec through the one TablePlan schema; throws
  *  with a message the host can show as-is. */

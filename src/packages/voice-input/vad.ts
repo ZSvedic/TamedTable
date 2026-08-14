@@ -2,14 +2,14 @@
 // The button replacement for continuous voice. Wraps @ricky0123/vad-web (Silero
 // VAD on ONNX in an AudioWorklet) and hands the caller two events: a turn
 // started, a turn ended with its captured PCM. All the ONNX/WASM/worklet detail
-// lives behind this file. DOM-free at import time — the mic is only touched in
+// lives behind this file. DOM-free at import time: the mic is only touched in
 // createVad(), which only browser-vad.ts calls, so the Node test build never
 // loads it.
 //
 // @ricky0123/vad-web fetches its worklet, the Silero .onnx model, and
 // onnxruntime-web's .wasm at runtime. Its own default base path is `/` (it
 // expects you to self-host), which 404s under a bundler, so we point both paths
-// at a pinned jsDelivr CDN by default — static files, so no backend. Override to
+// at a pinned jsDelivr CDN by default: static files, so no backend. Override to
 // self-host for a fully offline build. The onnxruntime-web version below must
 // track this package's installed version, since vad-web bundles the matching glue.
 
@@ -53,7 +53,7 @@ export interface VadCallbacks {
   onSpeechStart(): void;
   /** A finished turn: Float32 PCM at 16 kHz mono. */
   onSpeechEnd(pcm: Float32Array): void;
-  /** A blip too short to be real speech — no turn emitted. */
+  /** A blip too short to be real speech, no turn emitted. */
   onMisfire?(): void;
 }
 
@@ -61,7 +61,7 @@ export interface VadHandle {
   start(): Promise<void>;
   pause(): Promise<void>;
   destroy(): Promise<void>;
-  /** Change turn-detection knobs on a running VAD — no reload. Only the
+  /** Change turn-detection knobs on a running VAD, no reload. Only the
    *  frame-processor fields apply live; asset paths are fixed at load. */
   setOptions(opts: Partial<VadTuning>): void;
 }

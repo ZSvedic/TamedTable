@@ -12,18 +12,18 @@ import { renderTokensJsx, type Tokens } from '../packages/ui-kit/sync-tokens.ts'
 // A raw color literal: hex, rgb()/rgba(), oklch(), or hsl()/hsla().
 const COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(|\bhsla?\(/;
 
-// var(--…, fallback) is legitimate theming — the fallback default for an
+// var(--…, fallback) is legitimate theming: the fallback default for an
 // injected custom property. Blank those out before scanning a line.
 const stripVarFallbacks = (line: string): string => line.replace(/var\([^)]*\)/g, 'var()');
 
 // Files allowed to carry raw colors:
-//   ui-kit/**            — the token home; colors are *defined* here
-//   *.test.ts/.steps.ts  — test code, not shipped UI
-//   **/demo*             — standalone dev harnesses, not the product
-//   bench/**             — dev/research tool, not shipped UI; its charts use the
+//   ui-kit/**: the token home; colors are *defined* here
+//   *.test.ts/.steps.ts: test code, not shipped UI
+//   **/demo*: standalone dev harnesses, not the product
+//   bench/**: dev/research tool, not shipped UI; its charts use the
 //     Okabe-Ito colourblind-safe data-viz palette, which is a categorical
 //     accessibility choice unrelated to (and wrong to source from) the brand theme
-//   model-config/ModelChooser.tsx — the documented `--mc-*` injection adapter
+//   model-config/ModelChooser.tsx: the documented `--mc-*` injection adapter
 //     (behavior.md § Tokens): its hex are fallback defaults for host-set vars
 const isExempt = (path: string): boolean =>
   path.includes('/ui-kit/') ||
@@ -35,7 +35,7 @@ const isExempt = (path: string): boolean =>
 
 describe('design-token guard', () => {
   it('no shipping component hard-codes a color', async () => {
-    // Tracked files only — node_modules is gitignored, so this skips it.
+    // Tracked files only: node_modules is gitignored, so this skips it.
     const files = (await $`git ls-files packages`.text())
       .split('\n')
       .filter((p) => /\.(ts|tsx)$/.test(p) && !isExempt(`/${p}`));
@@ -52,7 +52,7 @@ describe('design-token guard', () => {
 
     expect(
       offenders,
-      `Raw color literals found — use a ui-kit token or a var(--…) custom property:\n${offenders.join('\n')}\n`,
+      `Raw color literals found: use a ui-kit token or a var(--…) custom property:\n${offenders.join('\n')}\n`,
     ).toEqual([]);
   });
 
@@ -63,7 +63,7 @@ describe('design-token guard', () => {
   it('ui-kit tokens.json is an exact copy of the design-base master', async () => {
     const master = await Bun.file('../marketing/tokens.json').text();
     const copy = await Bun.file('packages/ui-kit/tokens.json').text();
-    expect(copy, 'ui-kit/tokens.json is stale — run `bun run sync:tokens`').toBe(master);
+    expect(copy, 'ui-kit/tokens.json is stale: run `bun run sync:tokens`').toBe(master);
   });
 
   it('design-base tokens.jsx is generated from tokens.json', async () => {
@@ -71,7 +71,7 @@ describe('design-token guard', () => {
       await Bun.file('../marketing/tokens.json').text(),
     ) as Tokens;
     const committed = await Bun.file('../marketing/claude-design-app/tokens.jsx').text();
-    expect(committed, 'tokens.jsx is stale — run `bun run sync:tokens`').toBe(
+    expect(committed, 'tokens.jsx is stale: run `bun run sync:tokens`').toBe(
       renderTokensJsx(master),
     );
   });

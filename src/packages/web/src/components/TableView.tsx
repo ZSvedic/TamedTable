@@ -1,4 +1,4 @@
-// Binds WebController to the generic table grid — the grid itself (paging,
+// Binds WebController to the generic table grid: the grid itself (paging,
 // selection, inline edit, header drag) lives in @tamedtable/table-view. Only
 // the empty state stays here: it is app copy wired to the app's file dialogs.
 import { useState, type DragEvent, type ReactNode } from 'react';
@@ -10,7 +10,7 @@ import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
 import { ToursLink } from './ToursLink.tsx';
 
-// The three open actions — the same trio the toolbar and the mobile drawer
+// The three open actions: the same trio the toolbar and the mobile drawer
 // offer, here stacked as the first-run choices.
 function openOptions(
   controller: WebController,
@@ -163,7 +163,7 @@ function EmptyState({ controller, t }: { controller: WebController; t: Theme }):
   );
 }
 
-// #LazyExec — the pagination-bar readout: "N of M rows evaluated", plus the
+// #LazyExec: the pagination-bar readout: "N of M rows evaluated", plus the
 // "Retry N failed rows" action while any row has failed.
 export function EvaluatedReadout({ controller, t }: { controller: WebController; t: Theme }): ReactNode {
   const readout = controller.evaluatedReadout();
@@ -206,7 +206,7 @@ export function EvaluatedReadout({ controller, t }: { controller: WebController;
 export function TableView({ controller }: { controller: WebController }): ReactNode {
   useController(controller);
   const t = useTheme();
-  // The loaded table stays a drop target (spec/behavior.md § Web UI) — the
+  // The loaded table stays a drop target (spec/behavior.md § Web UI): the
   // drop raises the replace-table confirmation instead of loading directly.
   const { dragging, dropProps } = useFileDrop(controller);
 
@@ -235,11 +235,11 @@ export function TableView({ controller }: { controller: WebController }): ReactN
         onEditCell={(row, column, value) => void controller.editCell(row, column, value)}
         onReorderColumns={(order) => void controller.reorderColumns(order)}
         streaming={controller.streaming}
-        // #LazyExec — row state, view state, and the grid upgrades.
+        // #LazyExec: row state, view state, and the grid upgrades.
         rowNumbers={controller.pageRowNumbers()}
         rowNumberHint={
           controller.shuffledView()
-            ? 'Original row numbers — the view is shuffled; saving keeps this order.'
+            ? 'Original row numbers: the view is shuffled; saving keeps this order.'
             : undefined
         }
         rowStatus={controller.pageRowStatus()}

@@ -1,5 +1,5 @@
 // #MobileShell
-// The persistent bottom action bar — five borderless, white icons over a dark
+// The persistent bottom action bar: five borderless, white icons over a dark
 // bar (Menu · Undo · History · Type · Speak). In light theme the bar is the
 // Aubergine ink; in dark theme `t.ink` is near-white, so the bar drops to a
 // fixed near-black. Every dock button is disabled (dimmed, inert) until a

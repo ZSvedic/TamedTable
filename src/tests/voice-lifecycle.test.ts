@@ -1,7 +1,7 @@
-// Voice-input lifecycle regressions — the 2026-07-29 hunt findings
+// Voice-input lifecycle regressions: the 2026-07-29 hunt findings
 // RED-VOICE-3, -4 and -5 (spec/test-cases/red/README.md), fixed and moved
 // green. Driven through WebController with stub voice/continuous ports,
-// offline — the model call replays the committed cassettes/voice.json; no
+// offline: the model call replays the committed cassettes/voice.json; no
 // network, no API key, no real timers (promise gates only). RED-VOICE-1, -2,
 // -6 and -7 are Gherkin regression scenarios in spec/test-cases/voice.feature.
 import { test } from 'bun:test';
@@ -118,12 +118,12 @@ test('RED-VOICE-3: a continuous clip landing while a mic turn applies is dropped
   await mic;
   assert.ok(
     errorToasts.length === 0 && placeholders <= 1 && errorBubbles === 0,
-    `RED-VOICE-3 (spec/code-contract.md:1350-1351): "A clip that lands while a turn is still applying is dropped" — any turn, not only a continuous one; instead the overlapping clip produced ${errorToasts.length} error toast(s) (${JSON.stringify(errorToasts)}), ${errorBubbles} assistant Error bubble(s), and ${placeholders} \u{1F399} Voice request placeholder bubble(s) — the second stranded forever`,
+    `RED-VOICE-3 (spec/code-contract.md:1350-1351): "A clip that lands while a turn is still applying is dropped" (any turn, not only a continuous one; instead the overlapping clip produced ${errorToasts.length} error toast(s) (${JSON.stringify(errorToasts)}), ${errorBubbles} assistant Error bubble(s), and ${placeholders} \u{1F399} Voice request placeholder bubble(s)) the second stranded forever`,
   );
 });
 
 // RED-VOICE-4 (was minor). A stopRecording failure once pushed a toast only,
-// skipping host.fail() — the chat kept no trace of a microphone failure.
+// skipping host.fail(): the chat kept no trace of a microphone failure.
 test('RED-VOICE-4: a microphone failure at release produces a toast and an assistant chat message', async () => {
   const port: VoicePort = {
     startRecording: () => Promise.resolve(),
@@ -143,7 +143,7 @@ test('RED-VOICE-4: a microphone failure at release produces a toast and an assis
   );
   assert.ok(
     assistantError !== undefined,
-    `RED-VOICE-4 (spec/behavior.md:1606-1609): "On any failure (microphone, network, or a model error) a toast reading \\"Voice input failed\\" reports it, the same error also appears as an assistant message in the chat" — the toast was pushed (${JSON.stringify(toast?.message)}) but no assistant message exists; the toast fades and the chat keeps no trace of the microphone failure (assistant bubbles: ${JSON.stringify(c.messages.filter((m) => m.role === 'assistant').map((m) => m.text.slice(0, 40)))})`,
+    `RED-VOICE-4 (spec/behavior.md:1606-1609): "On any failure (microphone, network, or a model error) a toast reading \\"Voice input failed\\" reports it, the same error also appears as an assistant message in the chat". The toast was pushed (${JSON.stringify(toast?.message)}) but no assistant message exists; the toast fades and the chat keeps no trace of the microphone failure (assistant bubbles: ${JSON.stringify(c.messages.filter((m) => m.role === 'assistant').map((m) => m.text.slice(0, 40)))})`,
   );
 });
 
@@ -177,8 +177,8 @@ test('RED-VOICE-5: double-clicking the waveform during the VAD load opens one li
   await loadCustomers(c);
   await useGemini(c);
 
-  const t1 = c.toggleContinuous(); // click 1 — VAD model + WASM downloading
-  const t2 = c.toggleContinuous(); // click 2 — impatient, or toggling back off
+  const t1 = c.toggleContinuous(); // click 1: VAD model + WASM downloading
+  const t2 = c.toggleContinuous(); // click 2: impatient, or toggling back off
   resolvers.forEach((r) => r());
   resolvers = [];
   await t1;
@@ -187,6 +187,6 @@ test('RED-VOICE-5: double-clicking the waveform during the VAD load opens one li
 
   assert.ok(
     startCalls <= 1 && liveSessions.length === 0,
-    `RED-VOICE-5 (spec/behavior.md:1620-1623, 1638): the waveform button "is a toggle: click it once and the app listens continuously, click again to stop", and "Stopping releases the microphone" — a second click during the async VAD start must stop or be ignored; instead port.start ran ${startCalls} times (stop ran ${stopCalls}) and ${liveSessions.length} session(s) are still live holding the microphone (status now '${c.continuousStatus}')`,
+    `RED-VOICE-5 (spec/behavior.md:1620-1623, 1638): the waveform button "is a toggle: click it once and the app listens continuously, click again to stop", and "Stopping releases the microphone". A second click during the async VAD start must stop or be ignored; instead port.start ran ${startCalls} times (stop ran ${stopCalls}) and ${liveSessions.length} session(s) are still live holding the microphone (status now '${c.continuousStatus}')`,
   );
 });

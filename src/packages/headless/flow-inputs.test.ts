@@ -1,5 +1,5 @@
 // #FileIO
-// checkFlowInputColumns — can a saved flow run on a table with the given
+// checkFlowInputColumns: can a saved flow run on a table with the given
 // source columns? Drives the web's "Open .flow & run on current data…" guard.
 import { describe, expect, it } from 'bun:test';
 import type { TablePlan, Transformation } from '@tamedtable/core';

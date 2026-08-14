@@ -23,7 +23,7 @@ import type { Browser, Page, Route } from 'playwright';
 export function assertBrowserTestsSupported(): void {
   if (process.versions.bun && process.platform === 'win32') {
     throw new Error(
-      'browser tests cannot run under bun on Windows (oven-sh/bun#27977) — rely on CI, or run them under WSL.',
+      'browser tests cannot run under bun on Windows (oven-sh/bun#27977): rely on CI, or run them under WSL.',
     );
   }
 }
@@ -54,18 +54,18 @@ export function findChromium(chromium?: { executablePath(): string }): string | 
   try {
     const fallback = chromium?.executablePath();
     if (fallback && existsSync(fallback)) return fallback;
-  } catch { /* Playwright cannot resolve a path — fall through to undefined */ }
+  } catch { /* Playwright cannot resolve a path: fall through to undefined */ }
   return undefined;
 }
 
 export interface DemoPageOptions {
   /** Demo name: registers `Given('the <name> demo page')`, serves http://<name>.demo. */
   name: string;
-  /** The package dir holding demo.html — pass import.meta.dirname. */
+  /** The package dir holding demo.html: pass import.meta.dirname. */
   pkgDir: string;
   /** Extra Chromium launch args (e.g. voice-input's fake-media flags). */
   launchArgs?: string[];
-  /** Per-page default timeout in ms (default 5_000 — fail fast: a missing
+  /** Per-page default timeout in ms (default 5_000, fail fast: a missing
    *  element should red the step in seconds, not minutes). */
   pageTimeout?: number;
   /** Runs before the bundle-dir fallback for each request; return true when
@@ -106,7 +106,7 @@ export function bindDemoPage(opts: DemoPageOptions): (world: object) => Page {
     p.setDefaultTimeout(opts.pageTimeout ?? 5_000);
     const world = this;
     // Module scripts don't load over file://, so fulfill requests from the
-    // bundle dir directly — no HTTP server needed.
+    // bundle dir directly, no HTTP server needed.
     await p.route('**/*', async (route) => {
       if (opts.onRoute && (await opts.onRoute(route, world))) return;
       const { pathname } = new URL(route.request().url());
@@ -133,7 +133,7 @@ export function bindDemoPage(opts: DemoPageOptions): (world: object) => Page {
 
   return function page(world: object): Page {
     const p = pages.get(world);
-    assert.ok(p, `no demo page — missing "Given the ${opts.name} demo page"?`);
+    assert.ok(p, `no demo page: missing "Given the ${opts.name} demo page"?`);
     return p;
   };
 }

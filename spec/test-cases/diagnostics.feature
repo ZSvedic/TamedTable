@@ -1,6 +1,6 @@
 # #Diagnostics
 # Web-only: the in-app diagnostics log and its one-click report. Every
-# scenario is offline — a failed request is simulated (a 401 mock or a
+# scenario is offline: a failed request is simulated (a 401 mock or a
 # tutorial replay miss), so no model call leaves the browser.
 Feature: In-app diagnostics log
 
@@ -58,7 +58,7 @@ Feature: In-app diagnostics log
       And the bug report link notes the report was truncated
 
     @web @offline @regression
-    # The bug-report link prefills a GitHub issue with the report — it must stay
+    # The bug-report link prefills a GitHub issue with the report: it must stay
     # redacted, since the URL is shared publicly.
     Scenario: The bug-report link points to GitHub with a redacted report
       Given the TamedTable web app
@@ -72,7 +72,7 @@ Feature: In-app diagnostics log
   Rule: Bug reporting starts in the chat, and only for app errors
 
     @web @offline
-    # An error matching no known pattern is an app error — the reply offers
+    # An error matching no known pattern is an app error: the reply offers
     # Report bug. Guidance errors (wrong key, no file) never do.
     Scenario: An unrecognized failure marks the chat reply reportable
       Given the TamedTable web app

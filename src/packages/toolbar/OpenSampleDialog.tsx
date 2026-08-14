@@ -1,5 +1,5 @@
 // #Toolbar
-// The "Open sample" picker — a modal in two tiers. It leads with the handful
+// The "Open sample" picker: a modal in two tiers. It leads with the handful
 // of recommended samples the host passes (titled rows, one per homepage
 // feature section), and hides the whole bundle behind a "Show all …"
 // disclosure: a first-time visitor should meet files worth opening, not sixty
@@ -15,7 +15,7 @@ import { sampleKind, type RecommendedSample, type ToolbarSample } from './index.
 
 export interface OpenSampleDialogProps {
   open: boolean;
-  /** The curated rows, in display order — the host composes each full URL. */
+  /** The curated rows, in display order: the host composes each full URL. */
   recommended: ReadonlyArray<RecommendedSample>;
   /** Every bundled sample file, behind the "Show all …" disclosure. */
   samples: ReadonlyArray<ToolbarSample>;
@@ -32,10 +32,10 @@ export function OpenSampleDialog({
   onClose,
 }: OpenSampleDialogProps): ReactNode {
   const t = useTheme();
-  // With nothing recommended there is nothing to lead with — show the bundle.
+  // With nothing recommended there is nothing to lead with, show the bundle.
   const [showAll, setShowAll] = useState(recommended.length === 0);
 
-  // Each opening starts collapsed again — the dialog stays mounted between
+  // Each opening starts collapsed again: the dialog stays mounted between
   // opens, so without this the disclosure would remember the last visit.
   useEffect(() => {
     if (open) setShowAll(recommended.length === 0);
@@ -143,7 +143,7 @@ export function OpenSampleDialog({
             }}
           >
             {recommended.length > 0
-              ? 'One table per feature — the same ones the tours use. Pick one to load it now.'
+              ? 'One table per feature: the same ones the tours use. Pick one to load it now.'
               : 'Bundled with TamedTable. Pick one to load it now.'}
           </div>
 
@@ -166,7 +166,7 @@ export function OpenSampleDialog({
             </div>
           )}
 
-          {/* The whole bundle — a developer's testing surface, one click away
+          {/* The whole bundle: a developer's testing surface, one click away
               but never the first impression. */}
           {!showAll && (
             <button
@@ -226,7 +226,7 @@ export function OpenSampleDialog({
 }
 
 /** A recommended row: the human title on the leading line, the filename below
- *  it — the file still matters (it is what you copy and re-open), it just
+ *  it: the file still matters (it is what you copy and re-open), it just
  *  stops being the headline. */
 function RecommendedRow({ sample, onPick }: { sample: RecommendedSample; onPick: () => void }): ReactNode {
   const t = useTheme();

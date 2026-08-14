@@ -1,4 +1,4 @@
-// #MobileShell — the pinch arithmetic behind useTableZoom.
+// #MobileShell: the pinch arithmetic behind useTableZoom.
 import { describe, expect, test } from 'bun:test';
 import { pinchedZoom, scrollAfterZoom, ZOOM_MAX, ZOOM_MIN } from './useTableZoom.ts';
 

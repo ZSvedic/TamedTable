@@ -1,5 +1,5 @@
 # #PivotData
-# pivot and unpivot transformations — wide ↔ long reshape.
+# pivot and unpivot transformations: wide ↔ long reshape.
 Feature: Pivot and unpivot
 
   Rule: pivot reshapes long → wide

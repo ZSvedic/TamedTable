@@ -1,6 +1,6 @@
 Feature: Lazy AI execution regressions (RED-LAZY)
 
-  Regressions covering the web shell's lazy AI execution (#LazyExec) —
+  Regressions covering the web shell's lazy AI execution (#LazyExec):
   the 2026-07-29 hunt-audit findings (red inventory, group 5/5) plus later
   field reports. Self-contained step defs in
   src/tests/lazy-regressions.steps.ts: each scenario builds its own
@@ -40,7 +40,7 @@ Feature: Lazy AI execution regressions (RED-LAZY)
     Then the Save click ends with a save-ready confirmation or a visible message
 
   # Field report 2026-07-31: sorting a plain column from the column menu
-  # reordered the view but left the AI column's newly visible rows pending —
+  # reordered the view but left the AI column's newly visible rows pending:
   # only paging away and back forced their evaluation
   # (behavior.md § Grid upgrades: a view change evaluates like a page open).
   @web @regression

@@ -115,7 +115,7 @@ Feature: Table view package
       When the user toggles streaming
       Then the streaming banner is visible
 
-  Rule: The column menu sorts, filters, autofits, and deletes — the host applies
+  Rule: The column menu sorts, filters, autofits, and deletes, the host applies
 
     # #LazyExec grid upgrades: sort/filter are host view state reported
     # through callbacks; the header shows the ▲/▼ and funnel marks.

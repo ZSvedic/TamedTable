@@ -1,4 +1,4 @@
-// #Patch — unit tests for the surface-agnostic undo/redo journal.
+// #Patch: unit tests for the surface-agnostic undo/redo journal.
 import { describe, it, expect } from 'bun:test';
 import { SpecJournal, type JournalEntry } from './journal.ts';
 import type { TablePlan } from '@tamedtable/core';
@@ -13,7 +13,7 @@ function entry(label: string, prev: string, next: string): JournalEntry {
 }
 
 describe('SpecJournal', () => {
-  it('starts empty — nothing to undo or redo', () => {
+  it('starts empty: nothing to undo or redo', () => {
     const j = new SpecJournal();
     expect(j.canUndo()).toBe(false);
     expect(j.canRedo()).toBe(false);
@@ -52,7 +52,7 @@ describe('SpecJournal', () => {
     expect(j.canRedo()).toBe(false);
   });
 
-  it('recording a new change forks the timeline — redo is cleared', () => {
+  it('recording a new change forks the timeline: redo is cleared', () => {
     const j = new SpecJournal();
     j.record(entry('a', 's0', 's1'));
     j.takeUndo();
@@ -93,7 +93,7 @@ describe('SpecJournal', () => {
     j.record(entry('a', 's0', 's1'));
     j.record(entry('b', 's1', 's2'));
     j.record(entry('c', 's2', 's3'));
-    j.takeUndo(); // undo c — cursor now on b, c is a future step
+    j.takeUndo(); // undo c: cursor now on b, c is a future step
 
     const { steps, cursor } = j.timeline();
     expect(steps.map((s) => s.label)).toEqual(['a', 'b', 'c']);
@@ -128,7 +128,7 @@ describe('SpecJournal', () => {
     j.record(entry('a', 's0', 's1'));
     j.record(entry('b', 's1', 's2'));
     const applied = j.jumpTo(-1);
-    expect(applied?.columns[0]!.id).toBe('s0'); // a.prevSpec — the initial state
+    expect(applied?.columns[0]!.id).toBe('s0'); // a.prevSpec: the initial state
     expect(j.canUndo()).toBe(false);
     expect(j.canRedo()).toBe(true);
   });

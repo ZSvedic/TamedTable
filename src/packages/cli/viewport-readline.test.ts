@@ -41,7 +41,7 @@ async function loadedRunner(stdout: NodeJS.WritableStream): Promise<CliRunner> {
 }
 
 function readSummary(s: string): { rows: number; cols: number } {
-  // Matches "viewport: 10 rows (auto) × 5 cols (auto)" — accepts ASCII "x" too.
+  // Matches "viewport: 10 rows (auto) × 5 cols (auto)", accepts ASCII "x" too.
   const m = s.match(/viewport:\s+(\d+)\s+rows.*?[×x]\s+(\d+)\s+cols/);
   if (!m) throw new Error(`unparseable viewportSummary: ${s}`);
   return { rows: Number(m[1]), cols: Number(m[2]) };

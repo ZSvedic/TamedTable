@@ -1,4 +1,4 @@
-// GENERATED from tokens.json by `bun run sync:tokens` — do not edit by hand.
+// GENERATED from tokens.json by `bun run sync:tokens`, do not edit by hand.
 // marketing/tokens.json is the canonical source of truth.
 const TT_BRAND = {
   "ink": "#281C60",

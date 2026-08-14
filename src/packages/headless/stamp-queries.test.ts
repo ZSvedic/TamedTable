@@ -1,4 +1,4 @@
-// #Patch — unit tests for provenance stamping (query once + name per step)
+// #Patch: unit tests for provenance stamping (query once + name per step)
 // and its prompt-side strip.
 import { describe, it, expect } from 'bun:test';
 import { describeStep, stampQueries, stripQueryMetadata } from './index.ts';

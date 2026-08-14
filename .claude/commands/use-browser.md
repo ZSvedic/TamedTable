@@ -2,14 +2,14 @@
 description: Set up headless browsing in this environment using the pre-installed container Chromium (Playwright CDN is blocked), then render a JS page to prove it works.
 ---
 
-Render JavaScript-driven pages that `WebFetch` can't see (it fetches static HTML and never runs JS). This environment blocks the Playwright browser CDN, so **do not** run `playwright install` — point Playwright at the Chromium binary already baked into the image.
+Render JavaScript-driven pages that `WebFetch` can't see (it fetches static HTML and never runs JS). This environment blocks the Playwright browser CDN, so **do not** run `playwright install`: point Playwright at the Chromium binary already baked into the image.
 
 ## Why the obvious recipe fails here
 
-Three gotchas, all handled by the steps below — read them so you don't rediscover them mid-task:
+Three gotchas, all handled by the steps below: read them so you don't rediscover them mid-task:
 
-1. **CDN blocked.** `cdn.playwright.dev` returns 403, so `playwright install [--with-deps] chromium` downloads nothing (and `--with-deps` exits 100 on blocked apt PPAs). The browser is already at `$PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`) — use it via `executablePath`.
-2. **Version skew.** The latest `playwright` npm package expects a newer Chromium build than the image ships, so its default launch path 404s. Passing an explicit `executablePath` sidesteps the version check entirely — any package version works.
+1. **CDN blocked.** `cdn.playwright.dev` returns 403, so `playwright install [--with-deps] chromium` downloads nothing (and `--with-deps` exits 100 on blocked apt PPAs). The browser is already at `$PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`), use it via `executablePath`.
+2. **Version skew.** The latest `playwright` npm package expects a newer Chromium build than the image ships, so its default launch path 404s. Passing an explicit `executablePath` sidesteps the version check entirely: any package version works.
 3. **Proxy cert.** All egress goes through a TLS-intercepting proxy whose CA Chromium doesn't trust (curl trusts it via the system bundle; Chromium uses its own). Launch with `--ignore-certificate-errors` **and** context `ignoreHTTPSErrors: true`.
 
 ## Setup
@@ -21,7 +21,7 @@ PW_DIR=/tmp/pw-driver
 mkdir -p "$PW_DIR" && cd "$PW_DIR"
 [ -d node_modules/playwright ] || { echo '{"name":"pw-driver","private":true}' > package.json; bun add playwright; }
 
-# Discover the Chromium binary (build number varies across images — never hardcode it)
+# Discover the Chromium binary (build number varies across images, never hardcode it)
 export PW_CHROME=$(ls -d "${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"/chromium-*/chrome-linux/chrome 2>/dev/null | sort -V | tail -1)
 echo "Using Chromium: $PW_CHROME"
 
@@ -46,7 +46,7 @@ await b.close();
 EOF
 ```
 
-Setup is ~1–9s (just the npm package; the browser is already present). If `$PW_CHROME` comes back empty, the image has no pre-installed browser — stop and tell the user, since the CDN download is blocked.
+Setup is ~1–9s (just the npm package; the browser is already present). If `$PW_CHROME` comes back empty, the image has no pre-installed browser: stop and tell the user, since the CDN download is blocked.
 
 ## Usage
 
@@ -69,7 +69,7 @@ Use `SendUserFile` to surface any screenshot you capture.
 
 ## Verify
 
-Prove it works before reporting ready — load this repo's own JS-rendered demo and read the editor textarea, which `WebFetch` cannot see:
+Prove it works before reporting ready: load this repo's own JS-rendered demo and read the editor textarea, which `WebFetch` cannot see:
 
 ```bash
 cd /tmp/pw-driver

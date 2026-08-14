@@ -1,6 +1,6 @@
 // #PuterGateway
 // Puter's credential is a session token, and the only way to mint one is its
-// sign-in popup — there is no device-code or headless login endpoint. This port
+// sign-in popup: there is no device-code or headless login endpoint. This port
 // loads Puter's SDK, opens that popup, and hands back the token.
 //
 // The SDK is fetched **on click, never on page load**. TamedTable's pages pull
@@ -16,7 +16,7 @@ const TOKEN_KEYS = ['puter.auth.token.v2', 'puter.auth.token'];
 const ORIGIN_KEY = 'puter.auth.token.origin.v2';
 
 /** What `puter.auth.signIn()` resolves with on success. The token is right
- *  there in the answer, so it is read from the answer — the SDK also writes it
+ *  there in the answer, so it is read from the answer: the SDK also writes it
  *  to localStorage, but that is a side effect to fall back on, not the
  *  channel. */
 interface SignInResult {
@@ -97,7 +97,7 @@ export async function browserPuterSignIn(): Promise<string | null> {
 
   // The answer carries the token; localStorage is the SDK's own copy of it and
   // only a fallback. Reading storage alone meant a successful sign-in whose
-  // write was blocked (private mode, partitioned storage) came back as null —
+  // write was blocked (private mode, partitioned storage) came back as null,
   // indistinguishable from a dismissal.
   const token = result?.token ?? storedToken();
   if (!token) throw new Error('Puter.js signed in but returned no token.');
@@ -105,14 +105,14 @@ export async function browserPuterSignIn(): Promise<string | null> {
 }
 
 /**
- * Forget the Puter session — what deleting the Puter card means.
+ * Forget the Puter session: what deleting the Puter card means.
  *
  * Dropping our own stored token is not enough: the SDK keeps its own copy in
  * localStorage and reads it back on the next load, so a user who deleted the
  * card and clicked Sign in again would be silently signed in as the same
  * account, with no way to switch. This clears the SDK's copy too.
  *
- * Deliberately local — no SDK load, no network call. Deleting a card must work
+ * Deliberately local, no SDK load, no network call. Deleting a card must work
  * on a page that never loaded Puter.js, and a session token is forgotten by
  * throwing it away.
  */

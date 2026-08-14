@@ -30,12 +30,12 @@ describe('applyAndValidate', () => {
   });
 });
 
-// Regression: asked "show only Ana", the model patched `/filter` — a view
+// Regression: asked "show only Ana", the model patched `/filter`, a view
 // knob that is no longer part of the spec (the spec describes data; the UI
 // owns the view). The strict schema rejects any top-level key outside
 // { table, columns, transformations } as unrecognized, with a clear message
 // the recovery loop can feed back to the model.
-describe('applyAndValidate — view fields are not part of the spec', () => {
+describe('applyAndValidate: view fields are not part of the spec', () => {
   const cases = [
     { path: '/filter', value: { js: "row.Name === 'Ana'" } },
     { path: '/sort', value: [{ key: 'Name', dir: 'asc' }] },
@@ -56,7 +56,7 @@ describe('applyAndValidate — view fields are not part of the spec', () => {
 
 // Gemini's function-calling layer turns an untyped `value: {}` into a bare
 // `{ type: "object" }` with no guidance, and the model then emits garbage
-// (e.g. `"value": 3`) — so `value` is a string-typed field carrying
+// (e.g. `"value": 3`), so `value` is a string-typed field carrying
 // JSON-encoded content, decoded by decodeOpValues. The schema is identical
 // for every provider; no per-model special cases.
 describe('patchOperationsProperty', () => {
@@ -82,7 +82,7 @@ describe('decodeOpValues', () => {
 
   it('repairs an invalid backslash escape the model slipped into a JSON value', () => {
     // The model JSON-encoded a mutate but escaped apostrophes in its prompt
-    // example as `\'` — invalid JSON, so a strict parse throws. The value must
+    // example as `\'`: invalid JSON, so a strict parse throws. The value must
     // still decode to the object (regression: broke the capitalization tour).
     const encoded =
       `{"kind":"mutate","columns":["FirstName"],"value":{"llm":"e.g. 'O\\'BRIEN' to 'O\\'Brien'"}}`;

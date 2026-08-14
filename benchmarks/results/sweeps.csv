@@ -1,4 +1,4 @@
-date,run,provider,tier,freeTier,cellModel,primaryModel,batchSize,accuracyPct,costUsd,timeSec,rows,scored,missing,calls,inTokens,outTokens
+date,run,provider,tier,freeTier,cellModel,chatModel,batchSize,accuracyPct,costUsd,timeSec,rows,scored,missing,calls,inTokens,outTokens
 2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,1,91.7,0.015233,175.2,120,120,0,120,12834,644
 2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,5,89.2,0.017384,43.4,120,120,0,30,15360,567
 2026-07-02,phase2-all,anthropic,paid,no,claude-haiku-4-5,claude-sonnet-4-6,10,90.8,0.0155,26.8,120,120,0,13,13866,491

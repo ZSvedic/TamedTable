@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lazy AI execution — UI mockup (phase 2)</title>
+<title>Lazy AI execution: UI mockup (phase 2)</title>
 <!--
   Phase-2 review artifact for the lazy-AI plan
   (process/journal/2026-07-18-prompt-lazy-ai.md). One self-contained file, no
   app code, static data. Every changed UI element is mocked below in the
-  ui-kit look (marketing/tokens.json, light theme) — desktop on the left,
+  ui-kit look (marketing/tokens.json, light theme), desktop on the left,
   the phone dock-layout equivalent on the right. Behavior it depicts is
   specified in spec/behavior.md § Lazy AI execution.
 -->
@@ -144,10 +144,10 @@
 <body>
 <div class="wrap">
 
-  <h1>Lazy AI execution — UI mockup</h1>
+  <h1>Lazy AI execution: UI mockup</h1>
   <p class="lead">Phase-2 review artifact for the
   <code>2026-07-18-prompt-lazy-ai</code> plan: every changed UI element, static
-  data, ui-kit look, no app code — desktop on the left, the phone dock layout
+  data, ui-kit look, no app code: desktop on the left, the phone dock layout
   on the right. The behavior behind each element is specified in
   <code>spec/behavior.md § Lazy AI execution</code>. Hover the tinted Category
   cells in §2 for the previous-value tooltip, and the <code>Row&nbsp;#</code>
@@ -160,7 +160,7 @@
       <div class="duo">
         <div class="board grow" style="display:flex; align-items:center;">
           <div class="dialog" style="margin: auto;">
-            <h3>25,000 rows — sample it?</h3>
+            <h3>25,000 rows: sample it?</h3>
             <div class="sub">Work page by page; saving preserves original row order.</div>
             <div class="dfoot" style="border-top: 0; padding-top: 0; margin-top: 6px;">
               <button class="btn ghost">Load in original order</button>
@@ -172,14 +172,14 @@
           <div class="mob-appbar"><span class="mfile">showcase-lazy-input.csv</span></div>
           <div class="mob-dim"></div>
           <div class="sheet">
-            <h3>25,000 rows — sample it?</h3>
+            <h3>25,000 rows: sample it?</h3>
             <div class="sub">Work page by page; saving preserves original row order.</div>
             <button class="btn primary">🔀 Load shuffled</button>
             <button class="btn ghost">Load in original order</button>
           </div>
         </div></div>
       </div>
-      <figcaption>One click either way — the two choices are the buttons, with
+      <figcaption>One click either way: the two choices are the buttons, with
       <b>Load shuffled</b> as the primary default. Shown once, only when the
       file is bigger than one page; a one-page file loads exactly as today.
       Shuffled is a seeded, file-derived permutation, so the same file always
@@ -209,7 +209,7 @@
       <table>
         <thead>
           <tr>
-            <th class="num"><span class="hint" title="Original row numbers — the view is shuffled; saving keeps this order.">Row #</span></th>
+            <th class="num"><span class="hint" title="Original row numbers: the view is shuffled; saving keeps this order.">Row #</span></th>
             <th>Id <span class="dots">⋮</span></th>
             <th>Product <span class="dots">⋮</span></th>
             <th>Brand <span class="dir">▲</span><svg class="funnel" width="9" height="9" viewBox="0 0 9 9"><path d="M0 0 h9 L5.5 4.2 V8 L3.5 9 V4.2 Z" fill="oklch(0.42 0.10 287)"/></svg> <span class="dots">⋮</span></th>
@@ -304,12 +304,12 @@
       </div></div>
       </div>
       <figcaption>Everything in one frame. The <b>Row #</b> column keeps
-      original row numbers — hover its dotted header for the hint (it is the
+      original row numbers: hover its dotted header for the hint (it is the
       grid's usual first, frozen column, shuffled or not; under shuffle the
       numbers are what tell you the order is a view). Each column header ends
       in a <b>⋮ menu</b> (Category's is open): Sort ascending / Sort
-      descending / Filter… — marked <i>runs all rows</i> on an AI column,
-      where they first raise the dialog in §5 — plus Autofit width and Delete
+      descending / Filter…: marked <i>runs all rows</i> on an AI column,
+      where they first raise the dialog in §5, plus Autofit width and Delete
       column. The header itself carries the state indicators: Brand shows the
       ▲ sort direction and the filter funnel. <b>Changed cells</b> tint, hover
       for <code>was: null</code>; the <b>failed row</b> is marked red and
@@ -325,7 +325,7 @@
 
   <!-- ═══ 3 · estimate dialog ═══ -->
   <section>
-    <h2>3 · Run on all rows — the estimate</h2>
+    <h2>3 · Run on all rows, the estimate</h2>
     <figure>
       <div class="duo">
         <div class="board grow" style="display:flex; align-items:center;">
@@ -359,9 +359,9 @@
       <figcaption>Shown when more than one page of rows is pending (one page or
       less just runs). Tokens are the mean per evaluated row × rows remaining,
       priced at the selected cell model's catalogue rates; time comes from the
-      observed rows-per-second — previewing a page is what makes the estimate
+      observed rows-per-second: previewing a page is what makes the estimate
       possible. <b>Save</b> opens the same dialog titled
-      <i>"Save — run the remaining rows first?"</i> with <i>Run&nbsp;&amp;&nbsp;save</i>
+      <i>"Save: run the remaining rows first?"</i> with <i>Run&nbsp;&amp;&nbsp;save</i>
       as its primary; with nothing pending, Save just saves.</figcaption>
     </figure>
   </section>
@@ -401,8 +401,8 @@ Category · row 8,120: null → "clothing"</div>
         </div></div>
       </div>
       <figcaption>Confirming swaps the dialog body for a progress bar with a
-      live row count. A <b>Show log</b> expander — collapsed by default (the
-      phone shows the collapsed state), open on the desktop frame — feeds the
+      live row count. A <b>Show log</b> expander: collapsed by default (the
+      phone shows the collapsed state), open on the desktop frame: feeds the
       same bounded event stream as the chat's <i>request detail</i>: each step
       and each streamed cell, newest pinned, so the user can sample
       transformed data while they wait. <b>Finished rows are always kept</b>:
@@ -420,7 +420,7 @@ Category · row 8,120: null → "clothing"</div>
           <div class="dialog" style="margin: auto;">
             <h3>Sorting by Category reads every row</h3>
             <div class="sub">Category is an AI column with 24,940 rows not yet
-            evaluated — they run first, then the sort applies.</div>
+            evaluated: they run first, then the sort applies.</div>
             <div class="drow"><span class="k">Rows remaining</span><span class="v">24,940</span></div>
             <div class="drow"><span class="k">Estimated cost</span><span class="v strong">$0.53</span></div>
             <div class="drow"><span class="k">Estimated time</span><span class="v">~7 min</span></div>
@@ -443,9 +443,9 @@ Category · row 8,120: null → "clothing"</div>
           </div>
         </div></div>
       </div>
-      <figcaption>Any step that <i>reads</i> an AI-made column across all rows
-      — a column-menu sort or filter, a <code>{js}</code>/<code>{sql}</code>
-      reference, a group or pivot key — raises this confirmation first.
+      <figcaption>Any step that <i>reads</i> an AI-made column across all rows:
+      a column-menu sort or filter, a <code>{js}</code>/<code>{sql}</code>
+      reference, a group or pivot key: raises this confirmation first.
       Declining leaves the step out entirely: not in the spec, not in the
       table, not in history.</figcaption>
     </figure>
@@ -488,7 +488,7 @@ Category · row 8,120: null → "clothing"</div>
         </div></div>
       </div>
       <figcaption>A settings toggle under a new <b>Execution</b> heading below
-      the provider cards — on the phone, inside the full-width Settings sheet.
+      the provider cards: on the phone, inside the full-width Settings sheet.
       Off by default; persisted like every other setting.</figcaption>
     </figure>
   </section>

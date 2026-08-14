@@ -3,7 +3,7 @@
 // (KeyboardSheet), the voice recorder (VoiceSheet), and the undo timeline
 // (HistorySheet). Voice and History share one fixed height so swapping
 // between them never resizes the region under the table; the composer is only
-// as tall as its input row — the OS keyboard right below it does the rest.
+// as tall as its input row: the OS keyboard right below it does the rest.
 import { useEffect, useRef, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
@@ -23,7 +23,7 @@ const sheetBase = (t: Theme, fixedHeight?: number): React.CSSProperties => ({
   flex: '0 0 auto',
   // Grow by the home-indicator inset and pad it back, so the sheet keeps its
   // content height and nothing sits under the iOS home indicator. The
-  // composer passes no fixedHeight — it hugs its input row.
+  // composer passes no fixedHeight: it hugs its input row.
   height: fixedHeight != null ? `calc(${fixedHeight}px + env(safe-area-inset-bottom))` : undefined,
   paddingBottom: 'env(safe-area-inset-bottom)',
   boxSizing: 'border-box',
@@ -49,12 +49,12 @@ export function KeyboardSheet({
   onDraft: (v: string) => void;
   onSend: () => void;
   onClose: () => void;
-  /** True while the sheet rides above the OS keyboard — the keyboard covers
+  /** True while the sheet rides above the OS keyboard: the keyboard covers
    *  the home indicator, so the safe-area padding would be dead space. */
   lifted: boolean;
   inputId?: string;
   /** Non-null disables the composer: the field and send grey out and this
-   *  text shows as the placeholder — the same "input is off, here is why"
+   *  text shows as the placeholder: the same "input is off, here is why"
    *  state the desktop chat panel renders (staying in a finished tour). */
   disabledHint?: string | null;
 }): ReactNode {

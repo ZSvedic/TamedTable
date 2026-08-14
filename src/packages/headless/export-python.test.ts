@@ -1,10 +1,10 @@
-// #PyExport #LowEffort — the Python export's two time-sensitive properties,
+// #PyExport #LowEffort: the Python export's two time-sensitive properties,
 // both offline through an injected fetch:
 //
 //   • it STREAMS. The script arrives in pieces and `onProgress` sees each one,
 //     so a host can show the script being written instead of a blank wait. The
 //     fake below hands out SSE frames one at a time and only releases the next
-//     when the test says so — a single-shot response would make every
+//     when the test says so: a single-shot response would make every
 //     assertion here fire at once, which is exactly the regression to catch.
 //   • it asks for the LEAST DELIBERATION the provider sells. Reasoning tokens
 //     dominated the wall-clock time (measured 2-3x the script itself), so each
@@ -107,7 +107,7 @@ test('a fenced script is unfenced in the progress updates too, not just at the e
   );
 });
 
-test('exportPython works with no onProgress — the CLI passes none', async () => {
+test('exportPython works with no onProgress: the CLI passes none', async () => {
   const { fetchImpl, finish } = streamingFetch(['print(1)\n']);
   const runner = await loadedRunner(fetchImpl as unknown as typeof fetch);
   const done = runner.exportPython();
@@ -126,7 +126,7 @@ test('an empty stream is an error, not an empty file', async () => {
   await rejects;
 });
 
-// ── #LowEffort — one table, one merge, three providers ──────────────────────
+// ── #LowEffort: one table, one merge, three providers ──────────────────────
 
 test('the Google request carries a thinking budget both Gemini generations accept', async () => {
   const { fetchImpl, bodies, finish } = streamingFetch(['print(1)\n']);
@@ -151,7 +151,7 @@ test('the OpenAI request carries reasoning_effort: low', async () => {
 });
 
 // Anthropic never thinks unless asked, and the SDK drops a `disabled` thinking
-// block from the body precisely because it is the default — so what the wire
+// block from the body precisely because it is the default, so what the wire
 // must show is NO thinking block, with the prompt-cache control still in place.
 test('the Anthropic request asks for no thinking and keeps its cache control', async () => {
   const frame = (t: string): string =>

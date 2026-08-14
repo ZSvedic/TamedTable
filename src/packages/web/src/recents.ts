@@ -1,9 +1,9 @@
 // #FileIO
 // The Open menu's "Recent" list: the last few successful loads, persisted to
-// localStorage best-effort (in-memory when it is unavailable — private mode,
-// tests). Storage only — what clicking an entry does lives in FilesManager.
+// localStorage best-effort (in-memory when it is unavailable: private mode,
+// tests). Storage only: what clicking an entry does lives in FilesManager.
 
-/** How an entry was loaded — the badge the menu shows, and what a click does:
+/** How an entry was loaded: the badge the menu shows, and what a click does:
  *  `sample`/`url` reload the stored address, `local`/`flow` re-open the
  *  matching picker (a browser cannot silently reopen a local file). */
 export type RecentKind = 'sample' | 'url' | 'local' | 'flow';
@@ -12,7 +12,7 @@ export interface RecentEntry {
   kind: RecentKind;
   /** Display name, e.g. "customers.csv". */
   label: string;
-  /** Reload address — set for `sample` and `url` kinds. */
+  /** Reload address: set for `sample` and `url` kinds. */
   url?: string;
 }
 
@@ -37,7 +37,7 @@ export class RecentsStore {
     this.save();
   }
 
-  /** Drop `entry` — a reload that failed, or a stale address superseded by a
+  /** Drop `entry`: a reload that failed, or a stale address superseded by a
    *  re-resolved one (spec/behavior.md § Web UI, Recent). */
   remove(entry: RecentEntry): void {
     this.entries = this.entries.filter((e) => !RecentsStore.same(e, entry));
@@ -72,7 +72,7 @@ export class RecentsStore {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.entries));
       }
     } catch {
-      // Best-effort persistence — the in-memory list still works this session.
+      // Best-effort persistence: the in-memory list still works this session.
     }
   }
 }

@@ -1,4 +1,4 @@
-// #TutorialMode — step definitions for spec/test-cases/tutorial.feature
+// #TutorialMode: step definitions for spec/test-cases/tutorial.feature
 import { Given, When, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
 import { TamedTableWorld } from './world.ts';
@@ -35,7 +35,7 @@ When('user advances to the next tutorial step', async function (this: TamedTable
   await controller(this).nextStep();
 });
 
-// Two overlapping Next clicks — the second lands while the first step is still
+// Two overlapping Next clicks: the second lands while the first step is still
 // executing and must be ignored (behavior.md § Tutorial mode).
 When('user advances to the next tutorial step twice rapidly', async function (this: TamedTableWorld) {
   const c = controller(this);

@@ -1,5 +1,5 @@
 # #TutorialMode
-# Tutorial panel — walk through @tour scenarios offline, key-free.
+# Tutorial panel: walk through @tour scenarios offline, key-free.
 # All scenarios are @web; the WebController drives the tour, no browser needed.
 Feature: Tutorial panel
 
@@ -38,7 +38,7 @@ Feature: Tutorial panel
       And the dev list includes "Filter by Country"
       And the dev list does not include "Shape a quarterly sales report"
 
-  # The step-mechanics scenarios below drive "Filter by Country" — an atomic
+  # The step-mechanics scenarios below drive "Filter by Country", an atomic
   # scenario that is no longer a marketing tour but stays in the manifest (Dev
   # dropdown), so it still plays; its 3 stops keep these tests short.
   Rule: Playing a tutorial walks through steps
@@ -61,7 +61,7 @@ Feature: Tutorial panel
     @web
     Scenario: Starting a tour from a loaded file returns to the empty state
       # The first step spotlights the Open control, which on the phone exists only
-      # in the empty state — so a tour started over a loaded file must clear it,
+      # in the empty state, so a tour started over a loaded file must clear it,
       # or the spotlight lands on nothing and the step shows a blank overlay.
       Given the TamedTable web app
       And load "filter-input.csv"
@@ -188,7 +188,7 @@ Feature: Tutorial panel
       And no toast is shown
 
     # Regression: the voice step plays its clip for seconds before the request
-    # fires. A second Next inside that window must be ignored — re-executing
+    # fires. A second Next inside that window must be ignored: re-executing
     # would fire a second, unrecorded voice request, and double-advancing would
     # skip the next query, desyncing every later step from the cassette.
     @web @regression
@@ -211,7 +211,7 @@ Feature: Tutorial panel
 
     # Regression: selecting OpenRouter shrinks the table page to its pinned
     # cell batch (25 rows), so a tour's AI step evaluated a different preview
-    # window than the cassette recorded (100 rows) — the replay missed and the
+    # window than the cassette recorded (100 rows): the replay missed and the
     # 25,000-row tour ended "off-script" on its query step. Replay pins the
     # page size along with the model.
     @web @regression
@@ -225,7 +225,7 @@ Feature: Tutorial panel
       And no toast is shown
 
     # "Always run on all rows" would push the tour's AI step across the whole
-    # table — thousands of requests the cassette never recorded.
+    # table: thousands of requests the cassette never recorded.
     @web @regression
     Scenario: A tour replays key-free with "Always run on all rows" on
       Given the TamedTable web app
@@ -240,7 +240,7 @@ Feature: Tutorial panel
 
     # The cassette can only answer the requests the tour recorded. A request it
     # never taped (the guided replay went off-script) must end the tour with a
-    # clean toast and the full cancel — never surface the raw
+    # clean toast and the full cancel, never surface the raw
     # fingerprint-mismatch error.
     @web
     Scenario: An off-script request ends the tour with a clean toast
@@ -250,7 +250,7 @@ Feature: Tutorial panel
       And user plays the tutorial
       And user advances to the next tutorial step
       When user sends the chat message "do something the cassette never recorded"
-      Then a toast shows "Tour ended — the guided replay went off-script."
+      Then a toast shows "Tour ended: the guided replay went off-script."
       And the tutorial is not active
       And no table is loaded
 
@@ -282,7 +282,7 @@ Feature: Tutorial panel
 
     # "Stay in tour" keeps the tour's result on screen in key-free replay mode:
     # undo/redo re-run earlier specs whose model calls replay from the cassette,
-    # while new typed or spoken requests are refused with a toast — the cassette
+    # while new typed or spoken requests are refused with a toast, the cassette
     # cannot answer a request it never recorded.
     @web
     Scenario: Staying keeps the tour's result and replay mode
@@ -316,8 +316,8 @@ Feature: Tutorial panel
       And user plays the whole tutorial
       And user stays in the tour
       When user opens the tutorial panel
-      # Selecting while stayed leaves the stayed tour first — back to the empty
-      # state — so the view never reads rows from a freshly rebuilt engine.
+      # Selecting while stayed leaves the stayed tour first, back to the empty
+      # state, so the view never reads rows from a freshly rebuilt engine.
       And the tutorial "Filter by Country" is selected
       Then the table has 0 rows
       When user plays the whole tutorial

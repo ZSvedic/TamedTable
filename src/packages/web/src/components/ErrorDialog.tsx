@@ -1,5 +1,5 @@
 // #FileIO
-// The modal error dialog — for failures a fading toast could miss (the flow
+// The modal error dialog: for failures a fading toast could miss (the flow
 // error dialog). A fixed overlay with a centered card, identical on desktop
 // and phone; OK, Escape, or the backdrop dismisses it.
 import type { ReactNode } from 'react';

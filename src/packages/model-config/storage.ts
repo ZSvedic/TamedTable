@@ -1,4 +1,4 @@
-// #ModelConfig — browser localStorage entry point.
+// #ModelConfig: browser localStorage entry point.
 // StoragePort implementation: config persisted as a single JSON blob under
 // 'tamedtable.config'. All three helpers are no-ops in environments with no
 // localStorage (Node, headless tests), and swallow exceptions from Safari
@@ -86,16 +86,16 @@ export function clearStoredConfig(): void {
 // What each connected provider's models cost and how fast they are, so a
 // reopened panel shows its numbers without paying for the calls again. This is
 // a display cache, not config: the engine never reads it, and losing it costs a
-// re-measure rather than a working setup. That is why it lives in its own blob
-// — the config blob stays exactly what the engine is built from.
+// re-measure rather than a working setup. That is why it lives in its own blob:
+// the config blob stays exactly what the engine is built from.
 
 /** How long a speed reading is worth showing. A provider that was slow last
  *  month is not a provider that is slow now. */
 const PROBE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** A measurement plus what it was taken from. Both can go stale underneath it
- *  — a `models.json` default change retires the model, and time retires the
- *  numbers — so both are recorded and both are checked on read. */
+/** A measurement plus what it was taken from. Both can go stale underneath it:
+ *  a `models.json` default change retires the model, and time retires the
+ *  numbers, so both are recorded and both are checked on read. */
 export interface StoredMeasure extends ModelMeasure {
   /** The model id the numbers came from. */
   model: string;
@@ -108,11 +108,11 @@ export interface StoredMeasure extends ModelMeasure {
  *  and the numbers once they are in. */
 export interface ProviderProbe {
   tier: Tier;
-  /** Milliseconds-since-epoch the key was connected — what the card order is
+  /** Milliseconds-since-epoch the key was connected: what the card order is
    *  sorted by. Absent in blobs written before card order was tracked. */
   connectedAt?: number;
-  primary?: StoredMeasure | null;
-  secondary?: StoredMeasure | null;
+  chat?: StoredMeasure | null;
+  cell?: StoredMeasure | null;
 }
 
 export type StoredProbes = Partial<Record<Provider, ProviderProbe>>;
@@ -129,7 +129,7 @@ function stillTrue(
 }
 
 /** Read the cache, dropping readings that can no longer be trusted. The tier
- *  and `connectedAt` survive — they are not measurements and do not go stale,
+ *  and `connectedAt` survive: they are not measurements and do not go stale,
  *  so a card whose numbers expired is still a card. `now` is injectable so a
  *  scenario can age a reading without waiting a week. */
 export function readStoredProbes(now: number = Date.now()): StoredProbes {
@@ -142,14 +142,14 @@ export function readStoredProbes(now: number = Date.now()): StoredProbes {
     const kept: StoredProbes = {};
     for (const id of Object.keys(stored) as Provider[]) {
       const probe = stored[id];
-      // A provider this build has no defaults for — written by a newer build,
+      // A provider this build has no defaults for: written by a newer build,
       // or dropped since. There is no current model to compare against, so
       // there is nothing to show either.
       if (!probe || !(id in DEFAULTS)) continue;
       kept[id] = {
         ...probe,
-        primary: stillTrue(probe.primary, defaultModel(id), now),
-        secondary: stillTrue(probe.secondary, defaultCellModel(id), now),
+        chat: stillTrue(probe.chat, defaultModel(id), now),
+        cell: stillTrue(probe.cell, defaultCellModel(id), now),
       };
     }
     return kept;
@@ -166,7 +166,7 @@ export function readStoredProbes(now: number = Date.now()): StoredProbes {
 export type RoleSpeed = ModelMeasure | 'measuring' | 'failed' | null;
 
 /** Read a stored reading as a row's speed. Absent and null are different
- *  things — never measured versus measured and failed — so they must not
+ *  things, never measured versus measured and failed, so they must not
  *  render the same. Lives here rather than in the component because both hosts
  *  (the web app's SettingsPanel and the demo page) build their rows from this
  *  same blob, and only one place should have to remember which is which. */
@@ -195,7 +195,7 @@ export function writeStoredProbes(p: StoredProbes): void {
     if (localStorage === undefined) return;
     localStorage.setItem(PROBE_STORAGE, JSON.stringify(p));
   } catch {
-    // Swallow as above — an unwritable cache just means measuring again.
+    // Swallow as above: an unwritable cache just means measuring again.
   }
 }
 

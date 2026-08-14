@@ -40,7 +40,7 @@ const tutorialSources: TutorialSources = {
 
 const controller = createWebController({
   file: new BrowserFilePort(),
-  // #PuterGateway — loads Puter's SDK on click, never on page load.
+  // #PuterGateway: loads Puter's SDK on click, never on page load.
   puterSignIn: browserPuterSignIn,
   puterSignOut: browserPuterSignOut,
   // The port factories return null on a browser without the capture APIs;
@@ -49,7 +49,7 @@ const controller = createWebController({
   // Hands-free mode starts at the Balanced tuning (snappier than the library
   // default 1.4 s) so a turn is sent ~0.7 s after you stop.
   continuousVoice: browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 }) ?? undefined,
-  // A sample Recent's stored address goes stale when a deployment moves —
+  // A sample Recent's stored address goes stale when a deployment moves:
   // re-resolve by name against this build's bundled samples.
   resolveSampleUrl: (name) => bundledSamples().find((s) => s.name === name)?.url ?? null,
   tutorialSources,
@@ -57,10 +57,10 @@ const controller = createWebController({
 
 // Keep the page title in sync with activity; nothing else needed here for now.
 controller.subscribe(() => {
-  // Intentionally empty — config is persisted inside the controller.
+  // Intentionally empty: config is persisted inside the controller.
 });
 
-// #LazyExec — a stray refresh must not silently discard work in progress
+// #LazyExec: a stray refresh must not silently discard work in progress
 // (evaluated rows cost real money). With anything to lose, the browser's own
 // are-you-sure confirmation gates the unload; a clean tab closes freely.
 window.addEventListener('beforeunload', (e) => {
@@ -71,16 +71,16 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 // Deep link: ?feature=<file>&scenario=<name> opens the named tour and plays
-// it; ?tours (any value) opens the Tours panel chooser instead — the
+// it; ?tours (any value) opens the Tours panel chooser instead: the
 // homepage's "take a guided tour" links use it. Reading the URL belongs here
 // (alongside the app build data), not the controller. Unmatched/missing
-// params boot normally — the controller no-ops.
+// params boot normally: the controller no-ops.
 const params = new URLSearchParams(window.location.search);
 if (params.has('tours')) controller.openTutorial();
 else {
   void controller.openTutorialFromLink(params.get('feature'), params.get('scenario')).then((matched) => {
     if (!matched) return;
-    // Once the deep-linked tour ends — the terminal stop, or an Esc cancel —
+    // Once the deep-linked tour ends: the terminal stop, or an Esc cancel:
     // rewrite the address back to the plain app URL. replaceState never
     // navigates, so it works in the fresh tab the homepage opened
     // (behavior.md § Deep links into a tutorial).

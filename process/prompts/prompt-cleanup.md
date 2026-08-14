@@ -2,7 +2,7 @@ Read `AGENTS.md` and `README.md` first. Find the most recent `process/journal/YY
 
 Walk every tracked file outside `process/journal/` and gitignored paths. For each one:
 
-- **Outdated?** Compare against the current state of the repo — what shipped, which files and directories exist. Update any stale reference, regardless of file format (`.md`, `.csv`, `.txt`, anything).
+- **Outdated?** Compare against the current state of the repo: what shipped, which files and directories exist. Update any stale reference, regardless of file format (`.md`, `.csv`, `.txt`, anything).
 - **Consistent?** Does it agree with every other tracked file? Fix any mismatch. The library-package mirror must stay complete: every library package under `src/packages/` has a matching `spec/packages/<name>/` (and no spec dir is an orphan), and each package `README.md` link table (spec, scenarios, code, demo) resolves. The app packages (`core`, `headless`, `cli`, `web`) are specced at app level, not in `spec/packages/`.
 - **Simplified?** Can it be removed or shortened? Intentional repetition is fine (the same concept in a spec, a test, and a journal entry). Remove unintentional duplication. Delete files that no longer serve any purpose.
 
@@ -24,4 +24,4 @@ The **Updates** column lists the change you made to that file in this pass. `-` 
 
 Skip files in gitignored paths and frozen journal entries.
 
-For each ID in `MAP.md`, run `grep -rn '#<ID>' . --exclude-dir=node_modules --exclude-dir=.git`. `MAP.md` has two tables: for **Feature** IDs, flag any whose hits do not match the Hdls/CLI/Web `✓` columns (orphan tags in columns marked `-`, or columns marked `✓` with no hit); for **Code area** IDs (no `✓` columns), flag any ID with zero hits — a row pointing at code that no longer exists.
+For each ID in `MAP.md`, run `grep -rn '#<ID>' . --exclude-dir=node_modules --exclude-dir=.git`. `MAP.md` has two tables: for **Feature** IDs, flag any whose hits do not match the Hdls/CLI/Web `✓` columns (orphan tags in columns marked `-`, or columns marked `✓` with no hit); for **Code area** IDs (no `✓` columns), flag any ID with zero hits, a row pointing at code that no longer exists.

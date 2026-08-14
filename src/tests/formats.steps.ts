@@ -1,5 +1,5 @@
 // #IoFormats
-// Step defs for formats.feature — the load→save→reload round-trip, surface-
+// Step defs for formats.feature: the load→save→reload round-trip, surface-
 // agnostic (every step goes through the shared Runner interface, so the same
 // scenario runs on @headless, @cli, and @web). Saved files land in temp/.
 import { When, Then } from '@cucumber/cucumber';
@@ -26,7 +26,7 @@ When('the table is saved as {string}', async function (this: TamedTableWorld, fi
 
 When('the saved file is reloaded', async function (this: TamedTableWorld) {
   const rt = roundTrip.get(this);
-  if (!rt) throw new Error('no saved file — missing "the table is saved as" step');
+  if (!rt) throw new Error('no saved file: missing "the table is saved as" step');
   await this.ensureRunner().loadInput(rt.savedPath);
 });
 

@@ -1,5 +1,5 @@
 
-// DesignCanvas.jsx — Figma-ish design canvas wrapper
+// DesignCanvas.jsx: Figma-ish design canvas wrapper
 // Warm gray grid bg + Sections + Artboards + PostIt notes.
 // Artboards are reorderable (grip-drag), deletable, labels/titles are
 // inline-editable, and any artboard can be opened in a fullscreen focus
@@ -72,7 +72,7 @@ if (typeof document !== 'undefined' && !document.getElementById('dc-styles')) {
   '  font:inherit;transition:background .12s,color .12s}',
   '.dc-expand:hover,.dc-kebab:hover{background:rgba(0,0,0,.06);color:#2a251f}',
   // Slot hosting an open menu floats above later siblings (which otherwise
-  // paint on top — same z-index:auto, later DOM order) so the popup isn't
+  // paint on top: same z-index:auto, later DOM order) so the popup isn't
   // clipped by the next card.
   '[data-dc-slot]:has(.dc-menu){z-index:10}',
   '.dc-menu{position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border-radius:8px;',
@@ -86,18 +86,18 @@ if (typeof document !== 'undefined' && !document.getElementById('dc-styles')) {
   '.dc-menu .dc-danger:hover{background:rgba(201,100,66,.1)}',
   // Chrome (titles / labels / buttons) counter-scales against the viewport
   // zoom so it stays a constant on-screen size. --dc-inv-zoom is set by
-  // DCViewport on every transform update and inherits to all descendants —
+  // DCViewport on every transform update and inherits to all descendants:
   // any overlay inside the world (e.g. a TweaksPanel on an artboard) can use
   // it the same way.
   //
   // The header uses transform:scale (out-of-flow, so layout impact doesn't
   // matter) with its world-space width set to card-width / inv-zoom so that
-  // after counter-scaling its on-screen width exactly matches the card's —
+  // after counter-scaling its on-screen width exactly matches the card's:
   // that's what lets the container query + text-overflow behave against the
   // card's visible edge at every zoom level.
   //
   // The section head uses CSS zoom instead of transform so its layout box
-  // grows with the counter-scale, pushing the card row down — otherwise the
+  // grows with the counter-scale, pushing the card row down: otherwise the
   // constant-screen-size title would overflow into the (shrinking) world-
   // space gap and overlap the artboard headers at low zoom.
   '.dc-header{width:calc((100% + 4px) / var(--dc-inv-zoom,1));',
@@ -121,14 +121,14 @@ function dcFlatten(children) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// DesignCanvas — stateful wrapper around the pan/zoom viewport.
+// DesignCanvas: stateful wrapper around the pan/zoom viewport.
 // Owns runtime state (per-section order, renamed titles/labels, hidden
 // artboards, focused artboard). Order/titles/labels/hidden persist to a
 // .design-canvas.state.json
 // sidecar next to the HTML. Reads go via plain fetch() so the saved
 // arrangement is visible anywhere the HTML + sidecar are served together
 // (omelette preview, direct link, downloaded zip). Writes go through the
-// host's window.omelette bridge — editing requires the omelette runtime.
+// host's window.omelette bridge: editing requires the omelette runtime.
 // Focus is ephemeral.
 // ─────────────────────────────────────────────────────────────
 const DC_STATE_FILE = '.design-canvas.state.json';
@@ -186,7 +186,7 @@ function DesignCanvas({ children, minScale, maxScale, style }) {
       const aid = ab.props.id ?? ab.props.label;
       if (aid) abs.push([aid, ab]);
     });
-    // hidden is scoped to one source revision — when the agent regenerates
+    // hidden is scoped to one source revision: when the agent regenerates
     // (artboard-ID set changes), prior deletes don't apply to new content.
     const srcKey = abs.map(([k]) => k).join('\x1f');
     const hidden = persisted.srcKey === srcKey ? persisted.hidden || [] : [];
@@ -240,7 +240,7 @@ function DesignCanvas({ children, minScale, maxScale, style }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// DCViewport — transform-based pan/zoom (internal)
+// DCViewport: transform-based pan/zoom (internal)
 //
 // Input mapping (Figma-style):
 //   • trackpad pinch  → zoom   (ctrlKey wheel; Safari gesture* events)
@@ -249,7 +249,7 @@ function DesignCanvas({ children, minScale, maxScale, style }) {
 //   • middle-drag / primary-drag-on-bg → pan
 //
 // Transform state lives in a ref and is written straight to the DOM
-// (translate3d + will-change) so wheel ticks don't go through React —
+// (translate3d + will-change) so wheel ticks don't go through React:
 // keeps pans at 60fps on dense canvases.
 // ─────────────────────────────────────────────────────────────
 function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
@@ -271,7 +271,7 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
     // Exposed for zoom-invariant chrome (labels, buttons, TweaksPanel).
     el.style.setProperty('--dc-inv-zoom', String(1 / scale));
     // Keep the host toolbar's % readout in sync with the canvas scale. Pan
-    // ticks leave scale unchanged — skip the cross-frame post for those.
+    // ticks leave scale unchanged: skip the cross-frame post for those.
     if (lastPostedScale.current !== scale) {
       lastPostedScale.current = scale;
       window.parent.postMessage({ type: '__dc_zoom', scale }, '*');
@@ -312,7 +312,7 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
       const k = next / t.scale;
       // --dc-inv-zoom consumers (.dc-sectionhead's CSS zoom, each section's
       // marginBottom) reflow on every scale change, vertically shifting the
-      // world layout — so a world point mathematically pinned under the cursor
+      // world layout, so a world point mathematically pinned under the cursor
       // drifts as you zoom (content creeps up on zoom-in, down on zoom-out).
       // Anchor the DOM element under the cursor instead: record its screen Y,
       // apply the transform + --dc-inv-zoom, then cancel whatever vertical
@@ -347,16 +347,16 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
 
     const onWheel = (e) => {
       e.preventDefault();
-      if (isGesturing) return; // Safari: gesture* owns the pinch — discard concurrent wheels
+      if (isGesturing) return; // Safari: gesture* owns the pinch, discard concurrent wheels
       if ((e.ctrlKey || e.metaKey) && !isMouseWheel(e)) {
         // trackpad pinch, or ctrl/cmd + smooth-scroll mouse. Notched
         // wheels fall through to the fixed-step branch below.
         zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.01));
       } else if (isMouseWheel(e)) {
-        // notched mouse wheel — fixed-ratio step per click
+        // notched mouse wheel: fixed-ratio step per click
         zoomAt(e.clientX, e.clientY, Math.exp(-Math.sign(e.deltaY) * 0.18));
       } else {
-        // trackpad two-finger scroll — pan
+        // trackpad two-finger scroll: pan
         tf.current.x -= e.deltaX;
         tf.current.y -= e.deltaY;
         apply();
@@ -366,7 +366,7 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
     // Safari sends native gesture* events for trackpad pinch with a smooth
     // e.scale; preferring these over the ctrl+wheel fallback gives a much
     // better feel there. No-ops on other browsers. Safari also fires
-    // ctrlKey wheel events during the same pinch — isGesturing makes
+    // ctrlKey wheel events during the same pinch: isGesturing makes
     // onWheel drop those entirely so they neither zoom nor pan.
     let gsBase = 1;
     let isGesturing = false;
@@ -403,7 +403,7 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
     };
 
     // Host-driven zoom (toolbar % menu). Zooms around viewport centre so the
-    // visible midpoint stays fixed — matching the host's iframe-zoom feel.
+    // visible midpoint stays fixed: matching the host's iframe-zoom feel.
     const onHostMsg = (e) => {
       const d = e.data;
       if (d && d.type === '__dc_set_zoom' && typeof d.scale === 'number') {
@@ -414,7 +414,7 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
         // fires on the iframe's native 'load', which for canvases with
         // images/fonts is after our mount-time announce, so re-announce.
         // Clear the pan-tick guard so apply() re-posts the current scale
-        // even if it's unchanged — the host just reset dcScale to 1.
+        // even if it's unchanged: the host just reset dcScale to 1.
         window.parent.postMessage({ type: '__dc_present' }, '*');
         lastPostedScale.current = undefined;
         apply();
@@ -489,7 +489,7 @@ function DCViewport({ children, minScale = 0.1, maxScale = 8, style = {} }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// DCSection — editable title + h-row of artboards in persisted order
+// DCSection: editable title + h-row of artboards in persisted order
 // ─────────────────────────────────────────────────────────────
 function DCSection({ id, title, subtitle, children, gap = 48 }) {
   const ctx = React.useContext(DCCtx);
@@ -513,7 +513,7 @@ function DCSection({ id, title, subtitle, children, gap = 48 }) {
   const byId = Object.fromEntries(artboards.map((a) => [a.props.id ?? a.props.label, a]));
 
   // marginBottom counter-scales so the on-screen gap between sections stays
-  // constant — otherwise at low zoom the (world-space) gap collapses while
+  // constant: otherwise at low zoom the (world-space) gap collapses while
   // the screen-constant sectionhead below it doesn't, and the title reads as
   // belonging to the section above. paddingBottom below is just enough for
   // the 24px artboard-header (abs-positioned above each card) plus ~8px, so
@@ -547,7 +547,7 @@ function DCSection({ id, title, subtitle, children, gap = 48 }) {
 
 }
 
-// DCArtboard — marker; rendered by DCArtboardFrame via DCSection.
+// DCArtboard: marker; rendered by DCArtboardFrame via DCSection.
 function DCArtboard() {return null;}
 
 // Per-artboard export (kind: 'png' | 'html'). Both paths share the same
@@ -563,7 +563,7 @@ async function dcExport(node, w, h, name, kind) {
   })).catch(() => url);
 
   // Collect @font-face rules. ss.cssRules throws SecurityError on
-  // cross-origin sheets (e.g. fonts.googleapis.com) — in that case fetch
+  // cross-origin sheets (e.g. fonts.googleapis.com): in that case fetch
   // the CSS text directly (those endpoints send ACAO:*) and regex-extract
   // the blocks. @import and @media/@supports are walked so nested
   // @font-face rules aren't missed.
@@ -649,7 +649,7 @@ async function dcExport(node, w, h, name, kind) {
     return save(new Blob([html], { type: 'text/html' }), 'html');
   }
 
-  // PNG: the SVG's own width/height must be the output resolution — an
+  // PNG: the SVG's own width/height must be the output resolution, an
   // <img>-loaded SVG rasterizes at its intrinsic size, so sizing it at 1×
   // and ctx.scale()-ing up would just upscale a 1× bitmap. viewBox maps the
   // w×h foreignObject onto the px·w × px·h SVG canvas so the browser renders
@@ -679,7 +679,7 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
   const [confirming, setConfirming] = React.useState(false);
 
   // ⋯ menu: close on any outside pointerdown. Two-click delete lives inside
-  // the menu — first click arms the row, second commits; closing disarms.
+  // the menu: first click arms the row, second commits; closing disarms.
   React.useEffect(() => {
     if (!menuOpen) {setConfirming(false);return;}
     const off = (e) => {if (!menuRef.current || !menuRef.current.contains(e.target)) setMenuOpen(false);};
@@ -702,7 +702,7 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
     e.preventDefault();e.stopPropagation();
     const me = ref.current;
     // translateX is applied in local (pre-scale) space but pointer deltas and
-    // getBoundingClientRect().left are screen-space — divide by the viewport's
+    // getBoundingClientRect().left are screen-space, divide by the viewport's
     // current scale so the dragged card tracks the cursor at any zoom level.
     const scale = me.getBoundingClientRect().width / me.offsetWidth || 1;
     const peers = Array.from(document.querySelectorAll(`[data-dc-section="${sectionId}"] [data-dc-slot]`));
@@ -799,7 +799,7 @@ function DCArtboardFrame({ sectionId, artboard, label, order, onRename, onReorde
 
 }
 
-// Inline rename — commits on blur or Enter.
+// Inline rename: commits on blur or Enter.
 function DCEditable({ value, onChange, style, tag = 'span', onClick }) {
   const T = tag;
   return (
@@ -813,7 +813,7 @@ function DCEditable({ value, onChange, style, tag = 'span', onClick }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Focus mode — overlay one artboard; ←/→ within section, ↑/↓ across
+// Focus mode: overlay one artboard; ←/→ within section, ↑/↓ across
 // sections, Esc or backdrop click to exit.
 // ─────────────────────────────────────────────────────────────
 function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
@@ -828,7 +828,7 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
 
   const go = (d) => {const n = peers[(idx + d + peers.length) % peers.length];if (n) ctx.setFocus(`${sectionId}/${n}`);};
   const goSection = (d) => {
-    // Sections whose artboards are all deleted have slotIds:[] — step past
+    // Sections whose artboards are all deleted have slotIds:[], step past
     // them to the next non-empty section so ↑/↓ doesn't dead-end.
     const n = sectionOrder.length;
     for (let i = 1; i < n; i++) {
@@ -911,7 +911,7 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
           borderRadius: 16, fontSize: 20, cursor: 'pointer', lineHeight: 1, transition: 'background .12s' }}>×</button>
       </div>
 
-      {/* card centered, label + index below — only the card itself stops
+      {/* card centered, label + index below: only the card itself stops
                  propagation so any backdrop click (including the margins around
                  the card) exits focus */}
       <div
@@ -946,7 +946,7 @@ function DCFocusOverlay({ entry, sectionMeta, sectionOrder }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Post-it — absolute-positioned sticky note
+// Post-it: absolute-positioned sticky note
 // ─────────────────────────────────────────────────────────────
 function DCPostIt({ children, top, left, right, bottom, rotate = -2, width = 180 }) {
   return (

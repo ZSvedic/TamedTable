@@ -1,9 +1,9 @@
-// RED-UI-1 (TableView sites) — regression tests (red inventory): Enter pressed
+// RED-UI-1 (TableView sites): regression tests (red inventory): Enter pressed
 // to confirm an IME composition (KeyboardEvent.isComposing === true, the
 // keystroke a Japanese/Chinese/Korean user types to accept a conversion)
 // commits the half-composed cell edit and applies the half-composed column
-// filter. "Enter or blur commits" — spec/packages/table-view/behavior.md:51
-// — describes the user's Enter; the standard composer guard
+// filter. "Enter or blur commits": spec/packages/table-view/behavior.md:51,
+// describes the user's Enter; the standard composer guard
 // (`e.isComposing || e.keyCode === 229`) is missing from both handlers:
 // the inline cell editor (TableView.tsx:578-585) and the column-menu filter
 // input (TableView.tsx:793-796) check only `e.key === 'Enter'` and never
@@ -63,8 +63,8 @@ test('RED-UI-1: Enter during IME composition commits the half-composed cell edit
     throw new Error(`harness broken (not RED-UI-1): plain Enter should have committed once, got ${JSON.stringify(control)}`);
   }
 
-  // The bug: the same Enter with isComposing:true — an IME conversion
-  // confirm — must neither commit nor close the editor.
+  // The bug: the same Enter with isComposing:true, an IME conversion
+  // confirm: must neither commit nor close the editor.
   const edits: string[] = [];
   const el = mountGrid({ onEditCell: (r, c, v) => edits.push(`${r}:${c}=${v}`) });
   const input = openEditor(el);
@@ -73,7 +73,7 @@ test('RED-UI-1: Enter during IME composition commits the half-composed cell edit
   assert.deepEqual(
     edits,
     [],
-    'RED-UI-1 (spec/packages/table-view/behavior.md:51): "Enter or blur commits" means the user\'s Enter — an IME conversion-confirm Enter (isComposing:true) must not commit the half-composed kana as the cell value, but it did (TableView.tsx:578-585 never checks e.nativeEvent.isComposing)',
+    'RED-UI-1 (spec/packages/table-view/behavior.md:51): "Enter or blur commits" means the user\'s Enter. An IME conversion-confirm Enter (isComposing:true) must not commit the half-composed kana as the cell value, but it did (TableView.tsx:578-585 never checks e.nativeEvent.isComposing)',
   );
   assert.notEqual(
     el.querySelector('[data-tv-edit]'),
@@ -105,6 +105,6 @@ test('RED-UI-1: Enter during IME composition applies the half-composed column fi
   assert.deepEqual(
     filters,
     [],
-    'RED-UI-1 (spec/packages/table-view/behavior.md:51 — same user-Enter contract): an IME conversion-confirm Enter (isComposing:true) must not apply the half-composed filter text, but it did (TableView.tsx:793-796 never checks e.nativeEvent.isComposing)',
+    'RED-UI-1 (spec/packages/table-view/behavior.md:51. Same user-Enter contract): an IME conversion-confirm Enter (isComposing:true) must not apply the half-composed filter text, but it did (TableView.tsx:793-796 never checks e.nativeEvent.isComposing)',
   );
 });

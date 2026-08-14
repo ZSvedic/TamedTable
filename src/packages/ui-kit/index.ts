@@ -1,5 +1,5 @@
 // #UiKit
-// Single source of truth for every visual choice — the TamedTable brand
+// Single source of truth for every visual choice: the TamedTable brand
 // system expressed as design tokens. The canonical token *values* live in the
 // design base, marketing/tokens.json, so they survive a full src/
 // regeneration; ./tokens.json here is a generated copy (run `bun run
@@ -22,10 +22,10 @@
 
 import tokens from './tokens.json' with { type: 'json' };
 
-/** Brand-literal hex constants — used verbatim by the pixel mark. */
+/** Brand-literal hex constants: used verbatim by the pixel mark. */
 export const brand = tokens.brand;
 
-/** Typography — Outfit for the wordmark, Inter for UI, JetBrains Mono for data. */
+/** Typography: Outfit for the wordmark, Inter for UI, JetBrains Mono for data. */
 export const typography = tokens.typography;
 
 /** Spacing, fixed dimensions, and corner radii. */
@@ -65,16 +65,16 @@ export interface Theme {
   cellHi2: string;
   shadow: string;
   shadowLg: string;
-  // mobile action dock — a dark bar with white icons in both themes
+  // mobile action dock: a dark bar with white icons in both themes
   dockBg: string;
   dockInk: string;
   dockBorder: string;
 }
 
-// Light — cool pale-blue Mist ground, Aubergine ink. The default theme.
+// Light: cool pale-blue Mist ground, Aubergine ink. The default theme.
 export const lightTheme = tokens.themes.light as Theme;
 
-// Dark — deep aubergine field. Same density; the accent stays pale sky.
+// Dark: deep aubergine field. Same density; the accent stays pale sky.
 export const darkTheme = tokens.themes.dark as Theme;
 
 // ── Motion timings ──────────────────────────────────────────────────────────
@@ -90,8 +90,8 @@ export const TYPING_MS_PER_CHAR = 40;
 export const TOAST_FLOOR_MS = 3000;
 export const TOAST_CEILING_MS = 12000;
 
-/** How long a toast stays before it auto-fades: the time to read `message` —
- *  one character per typing tick — doubled, then clamped to the floor/ceiling. */
+/** How long a toast stays before it auto-fades: the time to read `message`,
+ *  one character per typing tick: doubled, then clamped to the floor/ceiling. */
 export function toastDurationMs(message: string): number {
   const readMs = message.length * TYPING_MS_PER_CHAR;
   return Math.min(TOAST_CEILING_MS, Math.max(TOAST_FLOOR_MS, readMs * 2));

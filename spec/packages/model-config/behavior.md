@@ -8,7 +8,7 @@ document is the behavior and the reasons.
 
 Five entry points, so a host pays only for what it uses: `index.ts` (zero
 runtime dependencies, any JS environment), `ModelChooser.tsx` (React),
-`storage.ts` (localStorage), `env.ts` (Node/Bun), and `probe.ts` — the only
+`storage.ts` (localStorage), `env.ts` (Node/Bun), and `probe.ts`, the only
 part that touches the network.
 
 ## Worked example
@@ -32,12 +32,12 @@ Price depends on your plan, ~3.4 sec
 ```
 
 Only the seconds are measured. Google names no price here because it has a free
-tier we cannot detect — see *Checking a key*. Where the price is shown, it is
+tier we cannot detect: see *Checking a key*. Where the price is shown, it is
 the catalogue's, divided by a thousand.
 
 ## Detecting the provider from the key
 
-The user never picks a provider from a list — they paste a key and its prefix
+The user never picks a provider from a list, they paste a key and its prefix
 names the provider. The prefix table is in the code contract; two things about
 it are behavior. Order matters: `sk-proj-`, `sk-ant-` and `sk-or-` all start
 with `sk-`, so the generic OpenAI rule is tested last or it swallows all three.
@@ -50,18 +50,18 @@ provider itself confirm the key.
 ## Model catalogue
 
 One canonical home:
-[`models.json`](../../../src/packages/model-config/models.json) — `models`
+[`models.json`](../../../src/packages/model-config/models.json): `models`
 (every model with its per-Mtok prices) and `defaults` (each provider's chat and
-cell model ids, under the JSON keys `primary` and `secondary`, plus an optional
+cell model ids, under the JSON keys `chat` and `cell`, plus an optional
 pinned `batchSize`). The user connects a
 **provider**, not individual models; `defaults` decides the two roles.
 
-`models` mirrors [`benchmarks/models.jsonl`](../../../benchmarks/models.jsonl)
-— same ids, same prices, and a bench test enforces that every catalogue id has
+`models` mirrors [`benchmarks/models.jsonl`](../../../benchmarks/models.jsonl):
+same ids, same prices, and a bench test enforces that every catalogue id has
 a pricing row there. Membership: the paid providers get `models.jsonl` minus
 `runnable: false`; OpenRouter gets only the `defaults` pick, since the other
 `:free` rows are bench-only sweep candidates. `ALL_MODELS` is that array,
-imported — neither the code nor this spec duplicates the list, because a copy
+imported: neither the code nor this spec duplicates the list, because a copy
 here went stale once already. Every id is verified against the provider's
 current docs before it changes; none is ever guessed.
 
@@ -91,7 +91,7 @@ only decides whether the paid option is offered at all. A $0 key sees the
 control disabled, because picking paid would only produce 402s.
 
 This also settles a display contradiction. The card's `PAID` tag describes the
-**account**, the price lines describe the **models** — so a paid OpenRouter
+**account**, the price lines describe the **models**, so a paid OpenRouter
 account showed `PAID` above two `$0` rows. It now reads honestly either way:
 free models under a paid account say so, and switching to paid shows real
 prices.
@@ -140,7 +140,7 @@ really is not.
 
 Ids are **not unique**. Puter is a gateway that re-serves other providers'
 models under their own names, so `gemini-3.6-flash` appears twice in the
-catalogue — once as Google's, once as Puter's. Anything reading a price, a
+catalogue: once as Google's, once as Puter's. Anything reading a price, a
 voice flag or a temperature flag must go through `modelFor(provider, id)`;
 `ALL_MODELS.find(m => m.id === …)` would silently pick whichever came first.
 
@@ -148,13 +148,13 @@ voice flag or a temperature flag must go through `modelFor(provider, id)`;
 
 `resolveConfig(env, stored)` merges env over stored; env always wins. When
 several provider keys are in env the order is gemini, openai, anthropic, groq,
-openrouter, **puter last** — a direct provider key always outranks the gateway.
+openrouter, **puter last**: a direct provider key always outranks the gateway.
 With no env key the stored provider is used, falling back to gemini: that is
 the provider every committed cassette is recorded with, so key-free replay
 (tests, tours) resolves the models the recordings used.
 
-Both models are then guarded to the resolved provider — cell calls never cross
-providers — and a model belonging to **no** provider is coerced to the default
+Both models are then guarded to the resolved provider: cell calls never cross
+providers, and a model belonging to **no** provider is coerced to the default
 rather than sent to the API to 404. An empty env value (`TAMEDTABLE_MODEL=` in
 a `.env`) counts as unset, like the `*_API_KEY` vars. Membership is
 `modelFor`'s answer, not `providerFor`'s: only the catalogue can place an id
@@ -169,10 +169,10 @@ name. So the engine is **told** its provider
 the key named it. `providerFor` is what is left for callers holding only an id:
 the benchmark sweeping a model off a command line, and a stored config from an
 older build. It reads the catalogue first, then prefixes (the rule list is in
-the code contract), and never returns `puter` — no id could point at a gateway.
+the code contract), and never returns `puter`: no id could point at a gateway.
 
 Groq and OpenRouter are full app providers: catalogue entry, `defaults` row,
-chooser card, resolved by `resolveConfig`. Cerebras stays **bench-only** — the
+chooser card, resolved by `resolveConfig`. Cerebras stays **bench-only**: the
 engine routes its ids and the benchmark sweeps them, but it has no catalogue
 entry and no card, and `resolveConfig` never resolves it. The non-default
 `:free` OpenRouter ids are sweep-only the same way.
@@ -189,12 +189,12 @@ default, so there the engine keeps the SDK's and only the probe reads the table.
 ### Card order
 
 `connectedProviders(config, order?)` turns the stored config into the chooser's
-card list — a connected provider *is* a provider with a key, so connecting
+card list: a connected provider *is* a provider with a key, so connecting
 needs no storage of its own. The design orders cards **as they were added**,
 which the config alone cannot say, so the optional map is
 `Provider → timestamp` and the result is sorted by it. Providers missing from
 the map sort as `0` under a stable sort, so they keep catalogue order among
-themselves and sit ahead of the timed ones — right for a config written before
+themselves and sit ahead of the timed ones: right for a config written before
 the timestamps existed. Callers that only want "which providers have a key"
 (the CLI, the fallback pick when a card is deleted) pass no map.
 
@@ -202,7 +202,7 @@ The timestamps live with the measurements (`connectedAt` in
 `tamedtable.probes`), not in the config blob: card order is display, and the
 engine's input stays exactly what the engine is built from.
 
-## Checking a key — the probe
+## Checking a key: the probe
 
 A key that is merely typed is not a key that works, and a price a user cannot
 see is a price they find out about on their bill. `probe.ts` answers both
@@ -221,8 +221,8 @@ $0.0015 per thousand tokens to someone on the free tier is the same mistake as
 the `PAID` tag, one decimal place further down.
 
 Google looks like it should be able to answer, and that is the trap. Its
-`x-gemini-service-tier` response header is the *inference* tier — standard,
-priority or flex, the latency class the request was served at — and it reads
+`x-gemini-service-tier` response header is the *inference* tier: standard,
+priority or flex, the latency class the request was served at, and it reads
 `standard` on an ordinary call whether the project is billed or not. We read it
 as a billing signal, so a key on a project with billing never set up was
 labelled `PAID`. Confirmed on 2026-08-13 against a key AI Studio itself lists as
@@ -230,8 +230,8 @@ labelled `PAID`. Confirmed on 2026-08-13 against a key AI Studio itself lists as
 single word that tells a free-tier user to worry about a bill they will never
 get.
 It is the gate: no card appears, and nothing is stored, until it resolves. It
-answers in about a second — the cheap cell model, a two-word prompt, no
-retries — because a user whose account is empty should not watch a spinner for
+answers in about a second: the cheap cell model, a two-word prompt, no
+retries, because a user whose account is empty should not watch a spinner for
 a minute to learn what the first response already said. Puter is checked with
 `GET /whoami` instead: it proves the token, costs nothing, answers instantly.
 
@@ -246,11 +246,11 @@ Failures come back as one sentence the user can act on, named for the provider
 (`Key rejected by Google. Check the key and try again.`); anything unrecognised
 passes the provider's own message through so no information is lost. An account
 with no credit left arrives as a 429 alongside real rate limits, so the quota
-case is tested first — "wait a minute" would send that user into a wait that
+case is tested first: "wait a minute" would send that user into a wait that
 never ends.
 
 **Price is never measured.** It comes from the catalogue, shown per thousand
-tokens, input and output separately. Providers do not report what a call cost —
+tokens, input and output separately. Providers do not report what a call cost:
 only OpenRouter does, and one exception is not worth a second source of truth.
 
 **`measureModel`** measures **speed only**, with one streaming call: the same
@@ -258,19 +258,19 @@ twenty-row classification prompt the app runs, capped at 300 output tokens.
 Timing splits in two, because a model call is two different things end to end:
 
 ```
-ttftSec   = seconds until the first frame carrying text  — getting going
-tokPerSec = outTok / (totalSec − ttftSec)                — generating
+ttftSec   = seconds until the first frame carrying text: getting going
+tokPerSec = outTok / (totalSec − ttftSec): generating
 ```
 
 A card's `~Z sec` is those two put back together for a thousand tokens:
 `ttftSec + 1000 / tokPerSec`. Splitting them is what makes a small sample
-extrapolate honestly — the startup cost is paid once per call whatever its
+extrapolate honestly: the startup cost is paid once per call whatever its
 length, so folding it into a per-token average makes short answers look slow.
 Measured against live providers, dividing a whole round trip by its tokens
 inverted the ranking outright.
 
 "Carrying text" is the whole point of the first line. A stream opens with
-frames that are not output — a role header, a `message_start`, a keep-alive
+frames that are not output: a role header, a `message_start`, a keep-alive
 ping, and on a thinking model however many reasoning deltas it needs before it
 says anything. Stamping the first *frame* would time the cheapest byte on the
 wire and make a slow thinker look instant, so frames are parsed as they arrive
@@ -285,7 +285,7 @@ tokens in one frame), and turning thinking off is not the answer either since
 Gemini 3.6 rejects `thinkingBudget: 0`. The probe therefore sends no reasoning
 options at all and stays provider-neutral.
 
-**When a provider buffers** there is no separable first-token time — the reply
+**When a provider buffers** there is no separable first-token time, the reply
 arrives in a frame or two at the very end. If no frame carried text, or under a
 fifth of the call was spent streaming, the split is abandoned and the whole
 call counts as generation. The estimate becomes a plain average, which is the
@@ -309,7 +309,7 @@ which is what the chooser's **Sign in / Sign up to Puter.js** button is for. The
 web app wires it to `browserPuterSignIn`: load Puter's SDK, call
 `puter.auth.signIn()`, and hand the token it resolves with to the same connect
 path a pasted credential takes. The SDK is fetched **on click, never on page
-load** — TamedTable's pages pull in no third-party scripts, and a user who never
+load**: TamedTable's pages pull in no third-party scripts, and a user who never
 touches Puter keeps it that way.
 
 Three things about that flow are the difference between it working and it
@@ -318,13 +318,13 @@ looking broken:
 - **The token comes from the answer**, with the SDK's
   `localStorage["puter.auth.token.v2"]` copy as a fallback. Reading only
   storage meant a sign-in that succeeded but could not write (private mode,
-  partitioned storage) came back as `null` — which the caller reads as "the
+  partitioned storage) came back as `null`, which the caller reads as "the
   user cancelled" and answers by doing nothing.
 - **Only a closed window is silent.** `auth_window_closed` is the user changing
   their mind and resolves to null; everything else throws and lands in the
-  error banner. A browser-blocked window gets its own sentence — *Your browser
+  error banner. A browser-blocked window gets its own sentence, *Your browser
   blocked the Puter.js sign-in window. Allow pop-ups for this site and try
-  again.* — because the old catch-all turned it into a click that appeared not
+  again.*, because the old catch-all turned it into a click that appeared not
   to register.
 - **The button says it started.** While the sign-in is out it reads
   `Signing in…` and is disabled, and a click on the panel's backdrop no longer
@@ -334,7 +334,7 @@ looking broken:
 
 **Deleting the Puter card signs out.** Every other card holds a key the user
 has their own copy of, so deleting it only forgets ours. Puter's is a session,
-and the SDK keeps its own copy — so `removeProvider('puter')` also calls
+and the SDK keeps its own copy, so `removeProvider('puter')` also calls
 `browserPuterSignOut`, which drops the SDK's stored token. Without it, a user
 who deleted the card and signed in again would be handed the same account back
 with no way to switch. The sign-out is deliberately local: no SDK load, no
@@ -343,16 +343,16 @@ Puter.js.
 
 **The transport is one endpoint.** `POST /drivers/call` takes an envelope whose
 `args` are an OpenAI chat-completions body and answers with an OpenAI choice,
-tool calls included — close enough to translate rather than reimplement. The
+tool calls included: close enough to translate rather than reimplement. The
 engine points the ordinary OpenAI client at a fetch that wraps the body and
 unwraps the reply (`#PuterGateway` in `src/packages/headless/`), so tool
 calling, retries and usage stay on the tested path. It always calls Puter
 **non-streaming**: Puter streams NDJSON rather than SSE and its streamed frames
 carry no tool calls, which the patch turn depends on. The one streaming caller
 is the Python export, and there the finished script is replayed as a single
-frame — it lands in one piece instead of typing out.
+frame: it lands in one piece instead of typing out.
 
-**Its models are other providers' models**, at the same prices — Puter passes
+**Its models are other providers' models**, at the same prices: Puter passes
 list price through. That is what makes ids non-unique.
 
 ## Storage
@@ -376,8 +376,13 @@ speed under today's model's name, and a provider that was slow last month is
 not a provider that is slow now. `readStoredProbes` drops any reading whose
 model is no longer that role's default or whose age passes a week. A dropped
 reading leaves the row without its `~Z sec` tail rather than with a wrong one,
-and ⟳ puts a fresh number there. Nothing re-measures on its own — a panel that
+and ⟳ puts a fresh number there. Nothing re-measures on its own: a panel that
 opens should not spend the user's money without a click.
+
+The two readings are keyed `chat` and `cell`, matching the rows they feed. A
+blob written under the old `primary`/`secondary` keys simply reads as never
+measured: no migration, because the whole blob is a cache that expires in a week
+and costs one click to refill.
 
 ## Reading from env, and the CLI
 
@@ -391,20 +396,20 @@ Record for `resolveConfig`'s first argument. The CLI calls
 
 Three parts, stacked: the list of connected providers (or an empty row), the
 "Already have an API key?" block that adds one, and the supported-providers
-footer. There is no provider list to choose from before connecting — the key
+footer. There is no provider list to choose from before connecting, the key
 names its own provider.
 
 **Instructions, in the panel.** Under the input sits
-`Instructions: Google/OpenAI/Anthropic/OpenRouter/Groq` — one line, the
+`Instructions: Google/OpenAI/Anthropic/OpenRouter/Groq`: one line, the
 separators carrying no space of their own so five names and four slashes fit,
 with a few pixels of padding on each label to keep it off them. Each provider
 is a button that expands a short
 paragraph and, on its own row, a link straight to that provider's key page. One
 is open at a time, the open one is underlined (and carries `aria-expanded`), and
-clicking it again closes it. The link row ends with `(starts with AQ.Ab…)` —
+clicking it again closes it. The link row ends with `(starts with AQ.Ab…)`:
 the prefixes used to live in the input's placeholder, which is exactly where a
 user cannot read them once they have pasted something. Puter is
-deliberately absent even though it is a full provider — its credential comes
+deliberately absent even though it is a full provider: its credential comes
 from the sign-in button below, not from this input, so naming it here would
 send users looking for a Puter key to paste.
 
@@ -414,7 +419,7 @@ covering six providers is a round trip many never come back from.
 
 Every provider's paragraph follows the **same four-beat shape**, so a user
 comparing two of them reads the same facts in the same places: what it costs
-(`Free and paid plans.` / `Paid only.` / `Free models, no credit card.`), who it
+(`Free and paid plans.` / `Paid only.`), who it
 suits, whether the key survives the page that mints it, and finally the one
 extra requirement if the provider has one (the privacy toggle for OpenRouter).
 Providers without a fourth beat stop at three. Google is the one exception to
@@ -423,17 +428,17 @@ the cost beat: instead of naming a plan it links out to
 the only inline link the paragraphs carry.
 
 Exactly one provider carries `recommended`, and its paragraph opens with one
-extra line naming why — for Google, voice input, a generous free tier, accuracy
+extra line naming why: for Google, voice input, a generous free tier, accuracy
 and speed. The chooser sets that line in bold. Five even-handed paragraphs
 answer "what is OpenRouter?" but not "which do I pick?", which is the question
 someone opening this section actually has. Two recommendations would be none. Before this the five paragraphs each argued their own case in their own
-order, which made the section impossible to skim — and the one thing a user is
+order, which made the section impossible to skim, and the one thing a user is
 doing here *is* comparing providers. Two rules on the prose: no em dashes, and
 the paid-only providers say plainly that an OpenAI or Anthropic *subscription* is
 not the same thing as API credits, because assuming it is costs a user the whole
 setup before they find out.
 
-The text comes from `KEY_SETUP` in the package — one ordered table of
+The text comes from `KEY_SETUP` in the package: one ordered table of
 `{ provider, label, steps, url, action }`, which also supplies the row's
 labels, so the list of providers is stated once. The FAQ keeps its own longer
 BYOK cards; the two are **allowed to differ in prose and not in destination**,
@@ -441,22 +446,22 @@ and a test asserts every `KEY_SETUP` URL appears in `FAQ.html`. A key page that
 moves would otherwise leave one of the two pointing at nothing.
 
 **Connected provider cards.** One per connected provider, in the order the host
-passes them (see *Card order*). The header — the whole row is the click target
-— carries a radio knob, the provider's display name, its tags, a ⟳ refresh
+passes them (see *Card order*). The header: the whole row is the click target:
+carries a radio knob, the provider's display name, its tags, a ⟳ refresh
 button and a delete button. Tags are `FREE`/`PAID` when the provider reported a
-tier and nothing when it didn't, plus `VOICE` when that provider's primary
+tier and nothing when it didn't, plus `VOICE` when that provider's chat
 model accepts audio input, read from the catalogue rather than hardcoded. Both
 buttons stop the click from also selecting the card, and both carry an
-`aria-label` as well as a tooltip — they are icon-only, so without one a screen
+`aria-label` as well as a tooltip: they are icon-only, so without one a screen
 reader announces "button".
 
 Only the **selected** card shows a body, and the selected card is the default
 provider every run uses. The body has two rows, **Chat model** and **Cell
 model**, labelled in the same colour. The names say what each one does: the chat
-model reads the request and edits the table, the cell model fills the cells. They
-used to read *Primary* and *Secondary*, which ranked them, and ranked them
-backwards: the cell model is the one that runs on every row, so it decides both
-the bill and the wait. Each row puts its label and model id on one line and the
+model reads the request and edits the table, the cell model fills the cells.
+Neither name ranks the other, because a ranking would get it backwards: the cell
+model is the one that runs on every row, so it decides both the bill and the
+wait. Each row puts its label and model id on one line and the
 priced line beneath *both*, starting at the row's left edge rather than indented
 under the id: indented, it had a third of the card in which to fit a sentence,
 and got clipped.
@@ -468,7 +473,7 @@ $0.0015 in / $0.0075 out per 1000 tok, ~9.4 sec
 
 The prices are catalogue values per thousand tokens (a model the catalogue
 doesn't price shows only the tail). A provider whose `defaults` row is marked
-`priceVariesByPlan` shows **`Price depends on your plan`** in their place —
+`priceVariesByPlan` shows **`Price depends on your plan`** in their place:
 Groq is the one: its free tier costs nothing and its API cannot say which tier
 a key is on, so the catalogue's paid number is wrong for most Groq accounts,
 and a wrong price is worse than an admitted unknown. The `~Z sec` tail has four
@@ -481,13 +486,13 @@ states, because "blank" was telling the user three different things at once:
 | the call came back an error | `speed unknown` |
 | never measured | nothing |
 
-Both hosts derive that value with `speedOf(reading, measuring)` — an absent
-reading is unmeasured, a null one failed — so only one place has to remember
+Both hosts derive that value with `speedOf(reading, measuring)`, an absent
+reading is unmeasured, a null one failed, so only one place has to remember
 which is which.
 
 **Adding a key.** One input reading `Paste an API key here` and an Add button,
 enabled as soon as the input is non-empty; Enter does the same thing. The host
-detects, verifies, stores and selects — the component only reports the click.
+detects, verifies, stores and selects, the component only reports the click.
 Typing clears the error. While
 an add is in flight the input and button are disabled and the button reads
 `Checking…`, so a slow provider cannot be double-submitted. Errors render as
@@ -499,7 +504,7 @@ re-measures, rather than erroring. The card has no key field, so a user whose
 key expired would otherwise have to delete the card to fix it.
 
 That replacement is invisible on the cards: same provider, same models, usually
-the same tier tag. So it says so, in a neutral banner under the input —
+the same tier tag. So it says so, in a neutral banner under the input:
 `Google key replaced. Re-measuring.` Without it, pasting a working key looks
 exactly like a button that did nothing, and the next move a user makes is to
 delete the card and add the key again, which is the one flow the in-place
@@ -509,13 +514,13 @@ wins the space.
 
 **No API key?** Below the instructions row, a full-width
 **Sign in / Sign up to Puter.js** button carrying Puter's mark, with
-`$0.25 in API credits for any model on Puter.js sign up.` underneath it — it is
+`$0.25 in API credits for any model on Puter.js sign up.` underneath it: it is
 the reason to press the button, which reads better as a footnote than as a
 preamble. There is no `OR` divider: the host's section heading above the whole
 chooser already separates it from what comes next, and a second separator
 *inside* one section only competed with it. Once Puter is connected the button
-turns green, reads `Connected to Puter.js`, and is inert. The whole block —
-divider included — renders only when `onPuterSignIn` is supplied, so a host
+turns green, reads `Connected to Puter.js`, and is inert. The whole block:
+divider included: renders only when `onPuterSignIn` is supplied, so a host
 that cannot open a sign-in window shows no button that would not work.
 
 **Selecting and deleting.** Clicking any card header makes it the default; the
@@ -523,7 +528,7 @@ previously selected card collapses. Deleting removes the card and its key; if
 it was the default, the default falls back to the last remaining card, or to
 none, and the empty row returns.
 
-The component is pure — props in, callbacks out, no storage, no network — and
+The component is pure (props in, callbacks out, no storage, no network) and
 holds exactly one piece of state: which provider's instructions are expanded.
 That is ephemeral display state the host has no use for (nothing is stored,
 nothing is resolved from it), so threading it through two hosts would buy
@@ -533,7 +538,7 @@ to `WebController` in the app, and plain React state does it on the demo page.
 Styling comes only from `--mc-*` CSS custom properties (listed in the code
 contract), each with a default that gives a presentable light look standalone;
 the host injects its theme by setting them on any wrapping element. The **Add**
-button fills with `ink` on `ink-on-ink` once the input is non-empty — the
+button fills with `ink` on `ink-on-ink` once the input is non-empty: the
 host's *primary* button, and a deliberate departure from the handoff's accent
 fill, because this theme's accent is a pale sky and an accent-filled Add read
 as the quieter half of the pair rather than the action.
@@ -542,7 +547,7 @@ as the quieter half of the pair rather than the action.
 
 The demo (`demo.html` + `demo.tsx`, under `/demos/model-config/`) mounts the
 real `ModelChooser` over plain React state and shows the `resolveConfig` result
-live. Its chooser runs against a **stub** provider — a demo page that billed
+live. Its chooser runs against a **stub** provider, a demo page that billed
 real accounts, or needed a real key to show anything, would do its job badly.
 Two behaviors beyond the chooser itself:
 
@@ -552,12 +557,12 @@ Two behaviors beyond the chooser itself:
   with no interaction the stored blob is left byte-for-byte untouched. A
   written change merges the demo's fields over the stored blob, so fields the
   demo doesn't thread (`alwaysRunAll`) keep their persisted values.
-- **Test call.** Below the resolved config, a dev harness — query input
-  (`#tc-input`), Send (`#tc-send`), response (`#tc-response`) — issues one
+- **Test call.** Below the resolved config, a dev harness: query input
+  (`#tc-input`), Send (`#tc-send`), response (`#tc-response`): issues one
   *real* completion call to the selected provider/model with the resolved key.
   A model with `voiceInput: true` also gets a press-and-hold mic (`#tc-mic`),
   matching the main app: the audio itself is the query, sent in one round trip
   asking for JSON with both a verbatim transcript and the answer. The
   transcript fills the input (so the user sees what the model heard), the
   answer lands in the response field, and an unparseable reply drops its raw
-  text there instead — no separate transcription call either way.
+  text there instead, no separate transcription call either way.

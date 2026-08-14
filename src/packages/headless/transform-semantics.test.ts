@@ -33,7 +33,7 @@ const writeData = (name: string, content: string) => {
 
 // ── Sort: a total order, not a per-pair coercion ─────────────────────────────
 // A comparator that answers "equal" for every number-vs-word pair is
-// non-transitive, and Array.sort then emits an arbitrary order — numbers
+// non-transitive, and Array.sort then emits an arbitrary order: numbers
 // wrongly ordered among themselves included.
 
 /** The spec's own "numeric-aware" test (spec/code-contract.md § Sorting). */
@@ -128,7 +128,7 @@ test("a join rename target avoids the right table's own <name>_2 column", async 
   const values = Object.values(row);
   assert.ok(
     values.includes('RC1') && values.includes('RC2'),
-    `collision rename must pick a FREE name ("so no column silently overwrites another", spec/behavior.md § join) — right "code" (RC1) and right "code_2" (RC2) must both survive the join; got row ${JSON.stringify(row)}`,
+    `collision rename must pick a FREE name ("so no column silently overwrites another", spec/behavior.md § join): right "code" (RC1) and right "code_2" (RC2) must both survive the join; got row ${JSON.stringify(row)}`,
   );
 });
 
@@ -161,7 +161,7 @@ test("undo of an unrelated later step does not re-read the join's right table", 
   const joinT = { kind: 'join', with: right, on: { js: 'leftRow.id === rightRow.id' } } as const;
   const filterT = { kind: 'filter', pred: { js: "row.id === '1'" } } as const;
 
-  // Turn 1: join. Turn 2: join + filter — exactly how two committed turns
+  // Turn 1: join. Turn 2: join + filter, exactly how two committed turns
   // leave the journal; prevSpec is what cli/session.ts hands to setSpec on
   // :undo of the filter.
   await r.setSpec({ ...base, transformations: [joinT] });
@@ -169,7 +169,7 @@ test("undo of an unrelated later step does not re-read the join's right table", 
   const rowsAfterTurn1 = structuredClone(r.currentRows());
   await r.setSpec({ ...base, transformations: [joinT, filterT] });
 
-  // The right file moves away — the join itself is NOT being undone.
+  // The right file moves away: the join itself is NOT being undone.
   unlinkSync(right);
   let err: Error | undefined;
   try {
@@ -180,7 +180,7 @@ test("undo of an unrelated later step does not re-read the join's right table", 
   assert.equal(
     err,
     undefined,
-    `spec/behavior.md § join: "A join's right table is *not* re-read on :undo/:redo" — undoing the FILTER must not touch ${right}: ${err?.message.split('\n')[0]}`,
+    `spec/behavior.md § join: "A join's right table is *not* re-read on :undo/:redo". Undoing the FILTER must not touch ${right}: ${err?.message.split('\n')[0]}`,
   );
   assert.deepEqual(
     r.currentRows(),
@@ -204,7 +204,7 @@ test('a pivot on-VALUE equal to an index column name keeps the index values', as
   assert.deepEqual(
     regions,
     ['north', 'south'],
-    `pivot output rows are "keyed by the index tuple" (spec/behavior.md § pivot) — the region keys north/south must survive a metric value that happens to equal "region"; got region column ${JSON.stringify(regions)} (rows ${JSON.stringify(r.currentRows())})`,
+    `pivot output rows are "keyed by the index tuple" (spec/behavior.md § pivot): the region keys north/south must survive a metric value that happens to equal "region"; got region column ${JSON.stringify(regions)} (rows ${JSON.stringify(r.currentRows())})`,
   );
 });
 
@@ -221,7 +221,7 @@ test('the unpivot names_to default keeps an id column named "name"', async () =>
   const values = rows.flatMap((row) => Object.values(row));
   assert.ok(
     values.includes('alice') && values.includes('bob'),
-    `unpivot output columns are "id + [names_to, values_to]" (spec/behavior.md § unpivot) — the id values alice/bob must survive the names_to default "name"; got rows ${JSON.stringify(rows)}`,
+    `unpivot output columns are "id + [names_to, values_to]" (spec/behavior.md § unpivot): the id values alice/bob must survive the names_to default "name"; got rows ${JSON.stringify(rows)}`,
   );
 });
 
@@ -238,7 +238,7 @@ test('a group aggregate named like a by column keeps the group key', async () =>
   const values = rows.flatMap((row) => Object.values(row));
   assert.ok(
     values.includes('a') && values.includes('b'),
-    `group emits "one output row per distinct by-value tuple" and the by-keys survive into the output (spec/behavior.md § group) — the keys a/b must not vanish when an agg column shares the by name; got rows ${JSON.stringify(rows)}`,
+    `group emits "one output row per distinct by-value tuple" and the by-keys survive into the output (spec/behavior.md § group): the keys a/b must not vanish when an agg column shares the by name; got rows ${JSON.stringify(rows)}`,
   );
 });
 
@@ -287,7 +287,7 @@ test('a JS group aggregate binds the contracted (rows, key, allGroups) signature
 // ── Validate: the threshold message states a true inequality ─────────────────
 
 test('the validate threshold error states a true inequality', async () => {
-  // 49 rows, 10 failures: rate 20.4% > threshold 20% — aborts, correctly.
+  // 49 rows, 10 failures: rate 20.4% > threshold 20%, aborts, correctly.
   const p = writeData(
     'v6.csv',
     'v\n' + Array.from({ length: 49 }, (_, i) => (i < 10 ? '0' : '1')).join('\n') + '\n',
@@ -309,6 +309,6 @@ test('the validate threshold error states a true inequality', async () => {
   assert.ok(m, `the message matches the spec format; got ${JSON.stringify(err!.message)}`);
   assert.ok(
     Number(m![1]) > Number(m![2]),
-    `the abort message "validation failed: <rate>% > <threshold>%" must state a TRUE inequality — the same string feeds the recovery model; got "${err!.message}"`,
+    `the abort message "validation failed: <rate>% > <threshold>%" must state a TRUE inequality, the same string feeds the recovery model; got "${err!.message}"`,
   );
 });

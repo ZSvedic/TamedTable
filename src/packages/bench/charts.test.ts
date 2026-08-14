@@ -5,7 +5,7 @@ import type { ResultRow } from './results.ts';
 function res(partial: Partial<ResultRow>): ResultRow {
   return {
     date: '2026-08-12', run: 'test', tier: 'paid', freeTier: false,
-    cellModel: 'm', primaryModel: 'p', provider: 'anthropic', batchSize: 20,
+    cellModel: 'm', chatModel: 'p', provider: 'anthropic', batchSize: 20,
     rows: 100, timeMs: 1000, calls: 5, inTokens: 1000, outTokens: 100,
     costUsd: 0.1, accuracy: 0.6, scored: 100, missing: 0, ...partial,
   };
@@ -42,7 +42,7 @@ test('tradeoffChart plots time when asked, not cost', () => {
 test('tradeoffChart draws the Pareto frontier through the undominated points', () => {
   // b is both cheaper and more accurate than c, so c is dominated; a and b are
   // the real trade (a is dearer but more accurate). The frontier is the UPPER
-  // envelope — traced along the bottom instead it recommends the worst models,
+  // envelope: traced along the bottom instead it recommends the worst models,
   // which is worse than drawing no line at all.
   const svg = tradeoffChart([
     res({ cellModel: 'a', costUsd: 0.9, accuracy: 0.97 }),
@@ -91,7 +91,7 @@ test('every chart uses the same accuracy scale, so two of them compare', () => {
   const tradeoff = tradeoffChart(rows, { batchSize: 20, axis: 'cost', title: 't' });
   for (const tick of ACC_TICKS) expect(tradeoff).toContain(`>${(tick * 100).toFixed(0)}%</text>`);
   // The batch panels label only the ends plus the 90% midline, but off the very
-  // same scale — a point at 90% sits at the same height on both.
+  // same scale: a point at 90% sits at the same height on both.
   expect(batchSweepChart(rows, 'x')).toContain('>90%</text>');
 });
 

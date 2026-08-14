@@ -1,5 +1,5 @@
 # #PyExport
-# :save-py — export the current flow as a standalone Python script.
+# :save-py, export the current flow as a standalone Python script.
 Feature: Export a flow as a Python script
 
   Rule: :save-py writes a runnable Python script for a deterministic flow
@@ -22,7 +22,7 @@ Feature: Export a flow as a Python script
 
     # Same phrase as the scenario above, so both model calls (spec patch +
     # Python generation) replay from the cassette already on tape. The script
-    # itself runs deterministically — the equivalence check needs no model.
+    # itself runs deterministically: the equivalence check needs no model.
     @cli
     Scenario: The exported script writes the same rows the session saved
       When user enters the REPL with "customers-input.csv" and types:
@@ -40,11 +40,11 @@ Feature: Export a flow as a Python script
 
   Rule: The web app exports the same flow through the Save-flow dropdown
 
-    # #SaveGate — writing the script is a model call, so it outlives the click
+    # #SaveGate: writing the script is a model call, so it outlives the click
     # that started it and the browser refuses the save picker ("Must be handling
     # a user gesture"). The export runs behind the save gate, which collects the
-    # fresh click the picker needs (issue #278). The waiting phase — bar
-    # animating, Save file… disabled — is unit-tested in save-gate.test.ts,
+    # fresh click the picker needs (issue #278). The waiting phase: bar
+    # animating, Save file… disabled: is unit-tested in save-gate.test.ts,
     # where the model call can be held open.
     @web
     Scenario: Save as Python writes a script for a deterministic flow
@@ -59,7 +59,7 @@ Feature: Export a flow as a Python script
       When user saves as "customers-flow.py"
       Then a toast shows "Saved customers-flow.py."
 
-    # Cancelling throws the generated script away — no picker, no file.
+    # Cancelling throws the generated script away, no picker, no file.
     @web
     Scenario: Cancelling the save gate writes nothing
       Given the TamedTable web app

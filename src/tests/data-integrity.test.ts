@@ -1,4 +1,4 @@
-// Data-integrity regressions — hostile-but-real data driven through the engine
+// Data-integrity regressions: hostile-but-real data driven through the engine
 // offline (loadInput → setSpec with deterministic specs → exportAs; no model
 // calls, no API key). These used to be the RED-DATA-1/2/3/4/6 bug inventory,
 // now fixed and pinned green: a leading-blank-line CSV, the `in`-operator
@@ -46,7 +46,7 @@ test('CSV with one leading blank line loads its real header and a load→save ke
   );
 });
 
-test('`in`-operator prototype leak is closed — toString column and constructor select behave', async () => {
+test('`in`-operator prototype leak is closed: toString column and constructor select behave', async () => {
   // Union-of-keys JSONL: only the first row owns `toString`.
   const p = writeData('tostring.jsonl', '{"a":"1","toString":"T1"}\n{"a":"2"}\n');
   const r = createHeadlessRunner({});
@@ -84,7 +84,7 @@ test('writes to a column named __proto__ are own properties; a __proto__ pivot o
   const own = Object.getOwnPropertyDescriptor(r.currentRows()[0]!, '__proto__')?.value;
   assert.equal(own, 'X', 'a mutate targeting a column named "__proto__" must write an own property "X"');
 
-  // (b) pivot on-value "__proto__" with an object cell — output rows must keep
+  // (b) pivot on-value "__proto__" with an object cell: output rows must keep
   // Object.prototype as their prototype and inherit no data keys.
   const p2 = writeData(
     'pivotproto.jsonl',
@@ -136,7 +136,7 @@ test('a mutate writing undefined saves as null in JSONL, matching the CSV empty 
   assert.deepEqual(
     JSON.parse(line),
     { v: 'x', out: null },
-    `the JSONL save must carry the "out" key as null — matching the CSV save — but the row was ${line}`,
+    `the JSONL save must carry the "out" key as null, matching the CSV save, but the row was ${line}`,
   );
 });
 
@@ -158,7 +158,7 @@ test('a multi-column mutate with an array-returning {js} body fills the targets 
   assert.deepEqual(
     [row.first, row.last],
     ['Jane', 'Doe'],
-    'spec/behavior.md § split: "a mutate with columns: string[] and a JS array-returning body already does" — the array result must fill the target columns positionally',
+    'spec/behavior.md § split: "a mutate with columns: string[] and a JS array-returning body already does". The array result must fill the target columns positionally',
   );
 });
 
@@ -176,6 +176,6 @@ test('an array-returning multi-column mutate pads and concatenates like a split'
   assert.deepEqual(
     r.currentRows().map((row) => [row.first, row.last]),
     [['Jane', null], ['Jane', 'van Doe']],
-    'too few parts pad the tail with null, too many concatenate onto the last column — the same arity rules a split follows',
+    'too few parts pad the tail with null, too many concatenate onto the last column: the same arity rules a split follows',
   );
 });

@@ -1,8 +1,8 @@
 // #MobileShell
-// The left slide-in drawer — the phone's home for everything the dock can't
+// The left slide-in drawer: the phone's home for everything the dock can't
 // carry. It renders the SAME menu model the desktop toolbar dropdowns use
 // (openMenuSections / saveMenuSections: identical items, icons, order, and
-// disabled states — DRY), expanded in full under "Open" and "Save" headings
+// disabled states: DRY), expanded in full under "Open" and "Save" headings
 // with separators between the groups. "Recent" expands in place. Below them:
 // the dark-mode toggle, Settings, and Tours.
 import { useState, type ReactNode } from 'react';
@@ -83,7 +83,7 @@ function Item({
 }
 
 /** One drawer group: the desktop dropdown's sections flattened into the
- *  drawer — separators between sections (their small Data/Recipe headers are
+ *  drawer: separators between sections (their small Data/Recipe headers are
  *  dropped; the item labels carry the meaning), submenu items expanding in
  *  place with their tagged sub-entries. */
 function SectionList({

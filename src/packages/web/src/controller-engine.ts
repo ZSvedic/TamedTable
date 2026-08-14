@@ -23,7 +23,7 @@ import type { ControllerHost } from './controller-context.ts';
 import type { RunProgress } from './controller-types.ts';
 import { aiMadeColumns, newlyWrittenColumns } from './controller-lazy.ts';
 
-/** Newest log lines the run-progress feed keeps — a bound, not a transcript. */
+/** Newest log lines the run-progress feed keeps: a bound, not a transcript. */
 const FLOW_LOG_MAX = 500;
 
 /** One log-worthy cell value: short, single-line, quoted when stringy. */
@@ -33,7 +33,7 @@ function flowLogValue(v: unknown): string {
 }
 
 /** One log-worthy expression body: an AI prompt or a long SQL fragment can
- *  run to hundreds of characters — cap it, the label already names the step. */
+ *  run to hundreds of characters: cap it, the label already names the step. */
 function flowLogExpr(body: string): string {
   return body.length > 200 ? `${body.slice(0, 197)}…` : body;
 }
@@ -51,7 +51,7 @@ export class EngineManager {
   private readonly overlay = new Map<string, unknown>();
   private overlayTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // #LazyExec — cells the last spec step changed, keyed "<derivedRow>:<col>"
+  // #LazyExec: cells the last spec step changed, keyed "<derivedRow>:<col>"
   // → the previous value. The grid tints them and shows the old value on
   // hover. Reset when a new request starts; cleared by undo/redo/jump.
   readonly changedCells = new Map<string, unknown>();
@@ -59,7 +59,7 @@ export class EngineManager {
   private activeAbort: AbortController | null = null;
 
   /** Journal-entry id of the last committed request, or null when the latest
-   *  request committed nothing (declined, failed) — read by the chat/voice
+   *  request committed nothing (declined, failed), read by the chat/voice
    *  reply paths to link their bubble to its undo state. */
   lastCommitId: number | null = null;
 
@@ -67,10 +67,10 @@ export class EngineManager {
   // model change can rebuild the engine without a filesystem round-trip.
   private loadedSource: { rows: Row[]; spec: TablePlan } | null = null;
 
-  // #LookupJoin — lookup tables staged this session, by the name a join's
+  // #LookupJoin: lookup tables staged this session, by the name a join's
   // `with` asks for. Held here rather than only in the runner so a rebuild
   // (model or key change) re-registers them; a join must not start asking for
-  // a file the user already picked. They outlive a table load — a lookup is a
+  // a file the user already picked. They outlive a table load: a lookup is a
   // file of its own.
   private readonly stagedLookups = new Map<string, Row[]>();
 
@@ -100,7 +100,7 @@ export class EngineManager {
           // The original bug: "no recording for this request" on a tour. Log it
           // with the active tour/scenario and the missing fingerprint. The note
           // lets the request path end the tour cleanly when the failure
-          // settles — the raw mismatch message never reaches a toast.
+          // settles: the raw mismatch message never reaches a toast.
           this.host.tutorial.noteReplayMiss();
           await this.host.diagnostics.recordRequestFailure({ method, url, body, replayMiss: true, error: e });
           throw e;
@@ -132,15 +132,15 @@ export class EngineManager {
   ensureHeadless(): HeadlessRunner {
     const replaying = this.host.tutorial.isReplaying();
     if (this.headless && this.builtForReplay === replaying) return this.headless;
-    // Tutorial replay pins the recording config — the Gemini provider
-    // defaults every cassette records with — so the request matches the taped
+    // Tutorial replay pins the recording config: the Gemini provider
+    // defaults every cassette records with, so the request matches the taped
     // one. The engine is rebuilt when replay mode flips (and playTutorial
     // resets it per tour, so the provider tracks).
     const replayProvider = replaying ? this.host.tutorial.replayProvider() : 'gemini';
     this.headless = createHeadlessRunner({
       // A placeholder key is enough in replay because the cassette intercepts
       // every call. Otherwise pass the active provider's key (a non-empty
-      // fallback lets the SDK initialise even with no key — the real error then
+      // fallback lets the SDK initialise even with no key: the real error then
       // surfaces from the API response, which userFacingMessage describes).
       apiKey: replaying ? PLACEHOLDER_KEY : (this.host.settingsMgr.activeApiKey() ?? PLACEHOLDER_KEY),
       // The engine is told its provider rather than left to infer it from the
@@ -151,17 +151,17 @@ export class EngineManager {
       cellModel: replaying ? defaultCellModel(replayProvider) : this.host.config.cellModel,
       fetch: this.makeFetch(),
       // Host opts win; otherwise the provider's pinned cell batch (openrouter:
-      // 5). Replay keeps the engine default — cassettes recorded with it.
+      // 5). Replay keeps the engine default: cassettes recorded with it.
       batchSize: this.host.opts.batchSize
         ?? (replaying ? undefined : defaultBatchSize(this.host.config.provider)),
       chunkSize: this.host.opts.chunkSize,
       onDebug: (info) => {
         this.host.lastDebug = info;
       },
-      // #LazyExec — the estimate math accumulates per-call token usage.
+      // #LazyExec: the estimate math accumulates per-call token usage.
       onUsage: (u) => this.host.lazy.recordUsage(u),
     });
-    // #LookupJoin — a fresh runner starts with no lookup tables; hand back the
+    // #LookupJoin: a fresh runner starts with no lookup tables; hand back the
     // ones already staged so a rebuild never re-asks for a picked file.
     for (const [name, rows] of this.stagedLookups) this.headless.registerLookup(name, rows);
     this.builtForReplay = replaying;
@@ -183,7 +183,7 @@ export class EngineManager {
   /** Rebuild the engine for a model or key change with a file loaded. The derived
    *  rows and the per-cell result cache carry over verbatim (#LazyExec):
    *  evaluated rows keep their values, pending rows stay pending, and not a
-   *  single model call is made — indicators re-derive from the same data. */
+   *  single model call is made: indicators re-derive from the same data. */
   async rebuildForConfigChange(spec: TablePlan): Promise<void> {
     const old = this.headless;
     const rows = old?.currentRows();
@@ -196,7 +196,7 @@ export class EngineManager {
     } else {
       await runner.loadInput(this.host.sourcePath);
     }
-    // Seed after the load — commitSource clears the cell cache.
+    // Seed after the load: commitSource clears the cell cache.
     if (cache) runner.seedCellCache(cache);
     if (rows) await runner.adoptState(spec, rows, origins);
     else await runner.setSpec(spec);
@@ -210,7 +210,7 @@ export class EngineManager {
     this.afterLoad(runner, path);
   }
 
-  /** Load an already-parsed table (browser open/fetch/tutorial) — no path,
+  /** Load an already-parsed table (browser open/fetch/tutorial), no path,
    *  no filesystem. The web parses through file-io and hands rows here. */
   async loadParsed(rows: Row[], spec: TablePlan): Promise<void> {
     const runner = this.ensureHeadless();
@@ -231,7 +231,7 @@ export class EngineManager {
     return new Set(this.stagedLookups.keys());
   }
 
-  /** Drop a staged lookup by name — tour cleanup (#TutorialMode): a tour's
+  /** Drop a staged lookup by name, tour cleanup (#TutorialMode): a tour's
    *  bundled lookup must not outlive the tour, or the user's own join naming
    *  the same file would silently join against tour data. The runner itself
    *  is dropped by the tour-end engine reset; this clears the rebuild seed. */
@@ -239,7 +239,7 @@ export class EngineManager {
     this.stagedLookups.delete(name);
   }
 
-  /** The loaded source's column ids — what a replayed flow reads (its
+  /** The loaded source's column ids: what a replayed flow reads (its
    *  transformations run on the source rows, not the derived view). */
   sourceColumns(): string[] {
     return this.loadedSource?.spec.columns.map((c) => c.id) ?? [];
@@ -247,8 +247,8 @@ export class EngineManager {
 
   // #OpenFlow
   /** Replace the current spec, replaying its transformations onto the loaded
-   *  source rows (the Open & run .flow path). Runs like a request — AI cells
-   *  paint onto the overlay as chunks land — behind the chat's live run
+   *  source rows (the Open & run .flow path). Runs like a request: AI cells
+   *  paint onto the overlay as chunks land: behind the chat's live run
    *  progress: `host.runProgress` carries step/row progress and the event
    *  log, and the chat Stop button (or the mobile banner's stop icon) aborts
    *  through the same controller a chat request uses. setSpec commits only
@@ -272,12 +272,12 @@ export class EngineManager {
         signal: ownAbort.signal,
         onStep: feed.onStep,
         onChunk: feed.onChunk,
-        // #LazyExec — a replayed flow's AI cells fill the rows in view, like
+        // #LazyExec: a replayed flow's AI cells fill the rows in view, like
         // a chat request; the rest stays pending behind the indicators.
         cellFilter: this.host.lazy.requestCellFilter(),
       });
-      // #LazyExec — mark the cells the flow filled on its preview page —
-      // structurally written columns included — and point the grid at the
+      // #LazyExec: mark the cells the flow filled on its preview page:
+      // structurally written columns included, and point the grid at the
       // start of the changed block.
       this.recordFilled(beforeRows, true,
         newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
@@ -297,13 +297,13 @@ export class EngineManager {
     }
   }
 
-  /** Drop the memoized sentinel-blanked rows (#LazyExec) — call after any
+  /** Drop the memoized sentinel-blanked rows (#LazyExec): call after any
    *  in-place mutation of the derived rows. */
   invalidateDisplay(): void {
     this.displayCache = null;
   }
 
-  // #LazyExec — lazy evaluation passes stream like a request: each landed
+  // #LazyExec: lazy evaluation passes stream like a request: each landed
   // chunk paints onto the display overlay (batched notify), and the pass
   // clears it once the derived rows carry the values.
   paintChunk(u: ChunkUpdate): void {
@@ -320,7 +320,7 @@ export class EngineManager {
   }
 
   /** Apply a spec through the cache only (#LazyExec): no cell may spend a
-   *  model call — evaluated cells refill from the cell cache, unevaluated
+   *  model call: evaluated cells refill from the cell cache, unevaluated
    *  cells stay pending. Undo, redo, history jumps, and gesture patches ride
    *  this path, so none of them ever costs an AI call. */
   async applySpecCached(spec: TablePlan): Promise<void> {
@@ -331,7 +331,7 @@ export class EngineManager {
     this.pruneViewToSpec();
   }
 
-  /** Bring the view back in step with the spec — drops view sort/filters on
+  /** Bring the view back in step with the spec: drops view sort/filters on
    *  columns the spec no longer has, and stands the shuffled sample down (or
    *  back up) as the spec gains or loses an ordering step. Called after every
    *  spec change (undo/redo/jump/gesture patches ride applySpecCached; chat
@@ -345,8 +345,8 @@ export class EngineManager {
     this.changedCells.set(`${derivedRow}:${column}`, before ?? null);
   }
 
-  /** Replace the changed-cell marks wholesale — undo/redo/jump restoring the
-   *  marks a history entry recorded — and refresh the reveal target so the
+  /** Replace the changed-cell marks wholesale: undo/redo/jump restoring the
+   *  marks a history entry recorded, and refresh the reveal target so the
    *  grid scrolls back to that step's changed block. */
   restoreChangedCells(cells: ReadonlyMap<string, unknown>): void {
     this.changedCells.clear();
@@ -366,19 +366,19 @@ export class EngineManager {
     this.host.setReveal(first);
   }
 
-  // #LazyExec — the changed-cell tint means "filled by the current request".
+  // #LazyExec: the changed-cell tint means "filled by the current request".
   // A pass records what it changed by diffing the AI-made columns' shown
   // values (a pending/failed sentinel reads as blank) against `before`: a cell
-  // that went blank→value (a live call OR a free cache refill — a page-open
+  // that went blank→value (a live call OR a free cache refill, a page-open
   // seeds the cache, so one page's pass can quietly fill the rest) or was
   // overwritten counts as filled; a cache refill that reproduces the same
-  // value does not. Diffing the data — not trusting which cells a live call
-  // streamed through onChunk — is what keeps a shuffled or sorted view from
+  // value does not. Diffing the data, not trusting which cells a live call
+  // streamed through onChunk: is what keeps a shuffled or sorted view from
   // tinting one block and leaving an identically filled block below it bare.
   // `reset` starts a new request's marks; page-open, run-all, and retry passes
   // pass `false` so an AI column tints uniformly as the reader pages through
   // it. Earlier marks keep their recorded previous value (the hover tooltip).
-  // `extraCols` widens the diff beyond the AI-made columns — the commit paths
+  // `extraCols` widens the diff beyond the AI-made columns: the commit paths
   // pass the columns the request's own steps wrote (a {js}/{sql} mutate, a
   // split, a validate's flag pair), so a structural fill tints and reveals
   // like an AI one (spec/behavior.md § Grid upgrades).
@@ -398,7 +398,7 @@ export class EngineManager {
       for (const c of cols) {
         if (!(c in a)) continue;
         const av = shown(a[c]);
-        if (av === undefined) continue; // still blank — not filled
+        if (av === undefined) continue; // still blank, not filled
         const bv = b && c in b ? shown(b[c]) : undefined;
         if (bv === av) continue; // unchanged (an already-evaluated cache refill)
         if (!this.changedCells.has(`${i}:${c}`)) this.changedCells.set(`${i}:${c}`, bv ?? null);
@@ -444,8 +444,8 @@ export class EngineManager {
     this.lastCommitId = null;
 
     // The engine always owns the abort controller, so cancelActive() (the
-    // chat Stop button) reaches every kind of run. A caller-passed signal —
-    // the voice path's Escape — is chained in rather than passed through:
+    // chat Stop button) reaches every kind of run. A caller-passed signal:
+    // the voice path's Escape: is chained in rather than passed through:
     // either source of abort cancels the request.
     const ownAbort = new AbortController();
     if (opts?.signal) {
@@ -459,15 +459,15 @@ export class EngineManager {
     this.host.selection = null;
     this.host.notify();
 
-    // The chat's live run progress rides along from the start (#OpenFlow) —
+    // The chat's live run progress rides along from the start (#OpenFlow):
     // a deterministic request just flashes its steps briefly. The feed also
     // paints the overlay, so the wrapper only forwards the caller's onChunk.
-    // #LazyExec — this request resets the changed-cell tint; recordFilled
+    // #LazyExec: this request resets the changed-cell tint; recordFilled
     // marks what it changed once it commits (diffed against this snapshot).
     this.changedCells.clear();
     const beforeRows = this.snapshotRows();
     const feed = this.runProgressFeed();
-    // #LazyExec — the preview window's throughput seeds the estimate math.
+    // #LazyExec: the preview window's throughput seeds the estimate math.
     const started = Date.now();
     const callsBefore = this.host.lazy.cellCallCount();
     let chunkCount = 0;
@@ -484,22 +484,22 @@ export class EngineManager {
         onStep: feed.onStep,
         audio: opts?.audio,
         onTranscript: opts?.onTranscript,
-        // #LazyExec — an AI step evaluates the rows in view; everything
+        // #LazyExec: an AI step evaluates the rows in view; everything
         // already evaluated refills from the cell cache. The dependency rule
         // gates the commit when a new step reads an AI-made column.
         cellFilter: this.host.lazy.requestCellFilter(),
         // Two gates on the patch the model just produced, both able to drop it
         // cleanly: #LookupJoin asks for a join's second file (the browser has
         // no path to read it from), then #LazyExec's dependency rule. The
-        // lookup runs first — declining it means the step cannot run at all,
+        // lookup runs first: declining it means the step cannot run at all,
         // so there is nothing to estimate.
         confirmSpec: async (next, prev) =>
           (await this.host.files.ensureLookups(next)) &&
           (await this.host.lazy.confirmPatch(next, prev)),
       });
-      // #LazyExec — mark the cells this request filled on its preview page
-      // (before the journal snapshots them) — structurally written columns
-      // included — and point the grid at the start of the changed block (the
+      // #LazyExec: mark the cells this request filled on its preview page
+      // (before the journal snapshots them): structurally written columns
+      // included, and point the grid at the start of the changed block (the
       // reveal scroll).
       this.recordFilled(beforeRows, true,
         newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
@@ -511,7 +511,7 @@ export class EngineManager {
         nextSpec: structuredClone(runner.currentSpec()),
       });
     } catch (e) {
-      // A declined dependency confirmation drops the patch silently — no
+      // A declined dependency confirmation drops the patch silently: no
       // spec change, no history entry, no error surface.
       if (!isDeclined(e)) throw e;
     } finally {
@@ -540,8 +540,8 @@ export class EngineManager {
   // #OpenFlow
   /** Build the live run-progress event feed for one run: the returned
    *  handlers keep `host.runProgress` (step/row progress + capped log)
-   *  current — published immediately, for flow replays and chat requests
-   *  alike — and paint streamed cells onto the overlay. */
+   *  current: published immediately, for flow replays and chat requests
+   *  alike, and paint streamed cells onto the overlay. */
   private runProgressFeed(
     totalSteps = 0,
   ): { onStep: (u: StepUpdate) => void; onChunk: (u: ChunkUpdate) => void } {
@@ -558,8 +558,8 @@ export class EngineManager {
         run.label = u.label;
         run.rowsTotal = u.rows;
         run.rowsDone = 0;
-        appendLog(`step ${u.index + 1}/${u.total} — ${u.label} · ${u.rows} rows`);
-        // The exact code behind the label — the detail box shows what the
+        appendLog(`step ${u.index + 1}/${u.total}: ${u.label} · ${u.rows} rows`);
+        // The exact code behind the label: the detail box shows what the
         // step runs, not just its name.
         for (const e of u.expressions) appendLog(`  ${e.label}: ${flowLogExpr(e.body)}`);
         this.host.notify();
@@ -568,7 +568,7 @@ export class EngineManager {
         run.rowsDone = Math.max(run.rowsDone, u.rowIndex + 1);
         appendLog(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);
         this.overlay.set(`${u.rowIndex} ${u.column}`, u.after);
-        // #LazyExec — the changed-cell tint is recorded by recordFilled once
+        // #LazyExec: the changed-cell tint is recorded by recordFilled once
         // the pass settles (it diffs the data so free cache refills count too),
         // not per streamed chunk; the overlay above is just the live paint.
         this.scheduleOverlayFlush();
@@ -603,21 +603,21 @@ export class EngineManager {
     }, 80);
   }
 
-  // ── View accessors (never throw — safe before a file is loaded) ───────────
+  // ── View accessors (never throw: safe before a file is loaded) ───────────
 
   displaySpec(): TablePlan {
     if (!this.host.loaded) return { columns: [], transformations: [] };
     return this.ensureHeadless().currentSpec();
   }
 
-  /** The derived rows exactly as the engine holds them — sentinels included.
+  /** The derived rows exactly as the engine holds them: sentinels included.
    *  The lazy scan and the view mapping key on this array's identity. */
   rawRows(): Row[] {
     if (!this.host.loaded) return [];
     return this.ensureHeadless().currentRows();
   }
 
-  /** Source-row origin per derived row (#LazyExec) — the lazy manager's
+  /** Source-row origin per derived row (#LazyExec): the lazy manager's
    *  derived-to-step-input index mapping. */
   rowOrigins(): ReadonlyArray<number | undefined> {
     if (!this.host.loaded) return [];
@@ -667,7 +667,7 @@ export class EngineManager {
     });
   }
 
-  // #LazyExec — the run-all progress dialog's event feed reuses the chat
+  // #LazyExec: the run-all progress dialog's event feed reuses the chat
   // request-detail log format ("column · row n: before → after").
   appendRunLog(feed: RunProgress, u: ChunkUpdate): void {
     feed.log.push(`${u.column} · row ${u.rowIndex + 1}: ${flowLogValue(u.before)} → ${flowLogValue(u.after)}`);

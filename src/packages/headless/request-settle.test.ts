@@ -1,4 +1,4 @@
-// How a request *settles* — the three ways it can end that the RED-HL-2/3/8
+// How a request *settles*: the three ways it can end that the RED-HL-2/3/8
 // bug inventory found broken (now fixed and pinned green):
 //   • cancelled: every abort surfaces as the one `Runner: cancelled` message
 //     hosts string-match, whichever await it landed in (#CancelOp);
@@ -76,7 +76,7 @@ function csvFile(name: string, content: string): string {
 // The patch-turn model call is most of a request's wall-clock, so it is where a
 // Stop usually lands; `setSpec`'s replay is the flow-open equivalent. Both used
 // to leak the SDK's raw AbortError, which web's describeError then classified
-// as reportable — offering a bug report to the user who pressed Stop.
+// as reportable: offering a bug report to the user who pressed Stop.
 
 test('aborting request() while the patch-turn model call is in flight throws Runner: cancelled', async () => {
   const fetch = makeFetch([{ stall: true }]);
@@ -129,7 +129,7 @@ test('aborting setSpec() while an {llm} cell call is in flight throws Runner: ca
 
 // ── onDebug fires on failure too, the model call included ───────────────────
 
-test('onDebug fires once per request on failure too — including failures inside the model call itself', async () => {
+test('onDebug fires once per request on failure too: including failures inside the model call itself', async () => {
   // Case 1: provider returns HTTP 400 on the patch turn.
   let fires400 = 0;
   {
@@ -157,12 +157,12 @@ test('onDebug fires once per request on failure too — including failures insid
   assert.equal(
     fires400,
     1,
-    `spec/code-contract.md § Headless: "onDebug fires once per request — on success and on failure — just before the call settles"; the request failed with HTTP 400 in the model call and onDebug fired ${fires400} times`,
+    `spec/code-contract.md § Headless: "onDebug fires once per request, on success and on failure, just before the call settles"; the request failed with HTTP 400 in the model call and onDebug fired ${fires400} times`,
   );
   assert.equal(
     firesText,
     1,
-    `spec/code-contract.md § Headless: the request failed with a no-tool-call reply and onDebug fired ${firesText} times — the failed call's token spend must not be invisible to CLI and web`,
+    `spec/code-contract.md § Headless: the request failed with a no-tool-call reply and onDebug fired ${firesText} times. The failed call's token spend must not be invisible to CLI and web`,
   );
 });
 
@@ -220,7 +220,7 @@ test(
     const out = await new Response(proc.stdout).text();
     assert.ok(
       out.includes('OUTCOME=SETTLED'),
-      `spec/code-contract.md § ConfigEnv: TAMEDTABLE_RPM is a requests-per-minute cap (default 40) — a 0/invalid value must fall back, never leave every request spinning in the limiter; child reported: ${out.trim() || '(no output)'}`,
+      `spec/code-contract.md § ConfigEnv: TAMEDTABLE_RPM is a requests-per-minute cap (default 40). A 0/invalid value must fall back, never leave every request spinning in the limiter; child reported: ${out.trim() || '(no output)'}`,
     );
   },
   30_000,

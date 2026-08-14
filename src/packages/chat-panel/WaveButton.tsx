@@ -1,5 +1,5 @@
 // #ChatPanel
-// Toggle button for hands-free continuous voice — the waveform sibling of the
+// Toggle button for hands-free continuous voice: the waveform sibling of the
 // press-and-hold MicButton. One click starts listening (the bars pulse), another
 // stops; while a detected turn is being sent it shows a spinner. Whether it
 // appears at all is the host's call. Animations ship inside the component.
@@ -44,10 +44,10 @@ export function WaveButton({
   const active = listening || sending;
 
   const title = listening
-    ? 'Listening — click to stop'
+    ? 'Listening: click to stop'
     : sending
       ? 'Sending…'
-      : 'Hands-free voice — click to start';
+      : 'Hands-free voice, click to start';
 
   return (
     <button

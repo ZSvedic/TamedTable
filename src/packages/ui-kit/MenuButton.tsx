@@ -19,7 +19,7 @@ export interface MenuButtonItem {
   icon?: IconName;
   disabled?: boolean;
   /** Sub-entries shown in a side flyout panel when the item is hovered or
-   *  clicked — the menu stays open until a sub-entry (or another item) is
+   *  clicked: the menu stays open until a sub-entry (or another item) is
    *  picked. The flyout opens away from the menu's aligned edge. */
   submenu?: MenuButtonSubItem[];
 }
@@ -40,7 +40,7 @@ interface MenuButtonProps {
   title?: string;
   /** DOM id forwarded to the root wrapper element (e.g. for Driver.js highlights). */
   id?: string;
-  /** Which trigger edge the menu aligns to — 'right' keeps a menu near the
+  /** Which trigger edge the menu aligns to: 'right' keeps a menu near the
    *  right screen edge (e.g. the mobile app bar) from overflowing. */
   align?: 'left' | 'right';
 }
@@ -67,7 +67,7 @@ export function MenuButton({
     setExpanded(null);
   };
 
-  // Close on click-outside or Escape — the menu is a transient, weightless
+  // Close on click-outside or Escape: the menu is a transient, weightless
   // surface, not a modal.
   useEffect(() => {
     if (!open) return;

@@ -1,5 +1,5 @@
 // #UiKit
-// Step defs for the @headless ui-kit scenarios — pure token assertions, no
+// Step defs for the @headless ui-kit scenarios: pure token assertions, no
 // browser. The package's own steps live next to the code (see
 // spec/packages/README.md); they import nothing from the app harness.
 import { Then, When } from '@cucumber/cucumber';
@@ -56,7 +56,7 @@ Then(
 
 // Each on-color labels a matching filled surface; the two must contrast in every
 // theme (their oklch lightness differs by a clear margin), or a filled control
-// reads as same-on-same — the dark-mode inkOnInk regression that shipped once.
+// reads as same-on-same: the dark-mode inkOnInk regression that shipped once.
 const ON_COLOR_PAIRS: Array<[keyof Theme, keyof Theme]> = [
   ['inkOnInk', 'ink'], // primary button label on its ink fill
   ['inkOnAcc', 'accent'], // label on an accent fill (e.g. the voice send button)
@@ -76,7 +76,7 @@ Then('every on-color clearly contrasts with its surface in both themes', functio
       const delta = Math.abs(oklchLightness(theme[on]) - oklchLightness(theme[surface]));
       assert.ok(
         delta >= MIN_LIGHTNESS_DELTA,
-        `${theme.name}: ${on} (${theme[on]}) barely contrasts with ${surface} (${theme[surface]}) — ΔL ${delta.toFixed(2)} < ${MIN_LIGHTNESS_DELTA}`,
+        `${theme.name}: ${on} (${theme[on]}) barely contrasts with ${surface} (${theme[surface]}), ΔL ${delta.toFixed(2)} < ${MIN_LIGHTNESS_DELTA}`,
       );
     }
   }

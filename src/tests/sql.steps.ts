@@ -4,7 +4,7 @@
 // @scripted scenarios answer the patch turn locally: a fetch wrapper
 // recognises the request text and replies with a canned apply_spec_patch
 // tool call, so the SQL that reaches DuckDB is exactly the slow aggregate
-// each scenario needs — deterministic where a live model (or a cassette
+// each scenario needs: deterministic where a live model (or a cassette
 // miss) would not be. Unrecognised requests fall through to the original
 // fetch (cassette or live), so non-scripted steps in the same scenario
 // still work.
@@ -18,13 +18,13 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Both aggregates hash every tuple of a self-join so DuckDB cannot shortcut
 // the count. Against the 1 821-row fixture the three-way join (~6e9 tuples)
-// runs for minutes — reliably still executing when the cancel lands — while
+// runs for minutes, reliably still executing when the cancel lands, while
 // `conn.interrupt()` kills it within milliseconds. The drain variant
 // (1 821 × 100 000 tuples, ~5–15 s) is sized to outlive the runner's give-up
 // window yet finish on its own, for the interrupt-ignored scenario.
 const SLOW_AGG_SQL = "(SELECT count(*) FROM t a, t b, t c WHERE hash(a.title || b.title || c.title) % 1000 = 0)";
 const DRAIN_AGG_SQL = "(SELECT count(*) FROM t a, range(100000) r WHERE hash(a.title || r.range::VARCHAR) % 1000 = 0)";
-// A fragment DuckDB cannot parse — drives the recovery-loop scenario.
+// A fragment DuckDB cannot parse: drives the recovery-loop scenario.
 const INVALID_SQL = "date_diff('year', DOB::DATE,";
 
 interface ScriptedState {
@@ -41,12 +41,12 @@ const scripted = new WeakMap<TamedTableWorld, ScriptedState>();
 
 function requireScripted(world: TamedTableWorld): ScriptedState {
   const state = scripted.get(world);
-  if (!state) throw new Error('not a @scripted scenario — no scripted fetch installed');
+  if (!state) throw new Error('not a @scripted scenario, no scripted fetch installed');
   return state;
 }
 
 /** A canned Gemini generateContent response carrying one apply_spec_patch
- *  call — the default provider's wire shape. */
+ *  call: the default provider's wire shape. */
 function toolUseBody(ops: unknown[]): string {
   return JSON.stringify({
     candidates: [{
@@ -92,7 +92,7 @@ function routeScripted(body: string, state: ScriptedState): string | undefined {
   if (body.includes('(first filters out every row)')) {
     if (!state.emptyServed) {
       state.emptyServed = true;
-      // A predicate that matches nothing — the shape of a mis-parsed date/code.
+      // A predicate that matches nothing: the shape of a mis-parsed date/code.
       return toolUseBody(addJsFilter('false'));
     }
     return toolUseBody(addJsFilter("row.Country === 'USA'"));
@@ -108,7 +108,7 @@ function routeScripted(body: string, state: ScriptedState): string | undefined {
 }
 
 Before({ tags: '@scripted' }, function (this: TamedTableWorld) {
-  if (!this.runnerOpts) return; // surface mismatch — no runner bound
+  if (!this.runnerOpts) return; // surface mismatch, no runner bound
   const state: ScriptedState = { requests: [] };
   scripted.set(this, state);
   const upstream = this.runnerOpts.fetch;
@@ -151,7 +151,7 @@ When('user cancels the operation while the SQL query is in flight', async functi
     if (Date.now() - start > 30_000) throw new Error('timed out waiting for the scripted patch turn');
     await sleep(20);
   }
-  // Let replay register the relation and enter the SELECT — the insert phase
+  // Let replay register the relation and enter the SELECT: the insert phase
   // measures ~130 ms on the 1 821-row fixture, the SELECT runs far longer.
   await sleep(500);
   const cancelAt = Date.now();
@@ -201,7 +201,7 @@ Then('column {string} still shows uppercased values', function (this: TamedTable
     );
     if (upper !== source) changed++;
   }
-  assert.ok(changed > 0, `${col} is identical to channel in every row — transformation lost`);
+  assert.ok(changed > 0, `${col} is identical to channel in every row: transformation lost`);
 });
 
 Then('the second request commits successfully', function (this: TamedTableWorld) {
@@ -214,7 +214,7 @@ Given('the SQL query is contrived to ignore conn.interrupt\\(\\)', function (thi
   const state = requireScripted(this);
   state.ignoreInterrupt = true;
   state.realInterrupt = DuckDBConnection.prototype.interrupt;
-  DuckDBConnection.prototype.interrupt = function () { /* contrived no-op — restored in After */ };
+  DuckDBConnection.prototype.interrupt = function () { /* contrived no-op: restored in After */ };
 });
 
 Then('a second request started immediately throws {string}', async function (this: TamedTableWorld, expected: string) {
@@ -258,7 +258,7 @@ Given('a request that introduces an invalid SQL fragment', function (this: Tamed
 
 When('the spec patch is applied', async function (this: TamedTableWorld) {
   const text = recoveryRequest.get(this);
-  if (!text) throw new Error('no pending recovery request — missing Given');
+  if (!text) throw new Error('no pending recovery request: missing Given');
   const runner = this.ensureRunner();
   const specBefore = structuredClone(runner.currentSpec());
   try {

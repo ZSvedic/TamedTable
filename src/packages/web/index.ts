@@ -1,6 +1,6 @@
 // Public, DOM-free entry point for @tamedtable/web. The browser bundle
 // (React components, File System Access port) lives under src/ and is reached
-// only through main.tsx — never re-exported here — so importing this module
+// only through main.tsx, never re-exported here, so importing this module
 // from a Node context (the Cucumber suite) pulls in no DOM dependency.
 
 export {

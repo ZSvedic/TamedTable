@@ -67,15 +67,15 @@ export async function readParquetBytes(bytes: Uint8Array): Promise<RawTable> {
 }
 
 export async function writeParquetBytes(rows: Row[], columns: string[]): Promise<Uint8Array> {
-  // DuckDB cannot CREATE a table with no columns — the raw parser error
+  // DuckDB cannot CREATE a table with no columns: the raw parser error
   // ("must have at least one column") would leak to the user. Refuse cleanly.
   if (columns.length === 0) {
-    throw new Error('Cannot save a table with no columns as Parquet — add a column or choose another format.');
+    throw new Error('Cannot save a table with no columns as Parquet: add a column or choose another format.');
   }
   const c = await conn();
   const path = tmpFile('parquet');
   // All columns ingest as VARCHAR, mirroring how the engine treats CSV/JSONL
-  // cells — string in, string out — so a load→save→load roundtrip is stable.
+  // cells (string in, string out) so a load→save→load roundtrip is stable.
   await c.run('DROP TABLE IF EXISTS _tt_save');
   const colDefs = columns.map((col) => `${sqlIdent(col)} VARCHAR`).join(', ');
   await c.run(`CREATE TABLE _tt_save (${colDefs})`);

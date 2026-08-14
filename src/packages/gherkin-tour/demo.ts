@@ -1,4 +1,4 @@
-// #GherkinTour demo logic — referenced by demo.html as an external module so
+// #GherkinTour demo logic: referenced by demo.html as an external module so
 // `bun build` bundles it (inline scripts are left unbundled and 404 on ./index.ts).
 //
 // This is a self-touring page: a trivial TourAdapter wires the package's
@@ -22,7 +22,7 @@ const featureText = `Feature: Tour the gherkin-tour demo
     And compare with the expected output
 `;
 
-// Inline fixtures — the demo's stand-in for files + a recorded result. Long
+// Inline fixtures: the demo's stand-in for files + a recorded result. Long
 // enough to overflow the demo table's fixed-height box, so the tour's
 // scroll-through has something to scroll.
 const PEOPLE = [
@@ -60,7 +60,7 @@ function renderTable(rows: Array<Record<string, unknown>>): void {
   tableView.innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
 
-// A short Web-Audio chime — no bundled asset needed.
+// A short Web-Audio chime, no bundled asset needed.
 function playChime(): Promise<void> {
   return new Promise((resolve) => {
     try {
@@ -76,14 +76,14 @@ function playChime(): Promise<void> {
       osc.stop(ctx.currentTime + 0.4);
       osc.onended = () => { ctx.close().catch(() => {}); resolve(); };
     } catch {
-      resolve(); // headless / no audio — the demo still tours
+      resolve(); // headless / no audio: the demo still tours
     }
   });
 }
 
 // ── The demo's TourAdapter ───────────────────────────────────────────────────
 // Maps each typed action to a side effect on this page, and each action to the
-// element the spotlight should land on. No engine, no cassette — playAudio
+// element the spotlight should land on. No engine, no cassette: playAudio
 // plays a tone then shows a canned result; onFinish just notes completion (the
 // app opens its Tutorial panel here instead).
 const adapter = {
@@ -100,7 +100,7 @@ const adapter = {
   },
   async showGolden(_goldenFile: string | undefined): Promise<void> {
     renderTable(ADULTS);
-    setStatus(`Expected output — ${ADULTS.length} rows.`);
+    setStatus(`Expected output: ${ADULTS.length} rows.`);
   },
   async playAudio(_filename: string): Promise<void> {
     setStatus('Playing audio…');
@@ -125,7 +125,7 @@ const adapter = {
   onFinish(): void {
     // In the app this is where the Tutorial panel reopens so the user can pick
     // another tour; the demo just notes it.
-    setStatus('Tour finished — the app would open the Tutorials panel here.');
+    setStatus('Tour finished: the app would open the Tutorials panel here.');
   },
 };
 

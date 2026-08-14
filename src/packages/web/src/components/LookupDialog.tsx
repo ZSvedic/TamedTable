@@ -1,10 +1,10 @@
 // #LookupJoin
-// The "this join needs its second file" modal — one fixed wording, whether
+// The "this join needs its second file" modal: one fixed wording, whether
 // the join names a file (the browser has no working directory to read it
 // from) or names none (`with: null`; the picked file's name is written into
 // the step). The run pauses here and asks.
 //
-// #SaveGate — it renders through the same GateDialog as the save gate, for the
+// #SaveGate: it renders through the same GateDialog as the save gate, for the
 // same reason: a typed request's click is long spent by the time the model
 // answers, and a browser only opens a picker from a fresh one. Cancel drops the
 // step whole. See spec/behavior.md § Web UI and § The save gate.

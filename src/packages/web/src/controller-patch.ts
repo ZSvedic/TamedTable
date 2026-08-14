@@ -9,7 +9,7 @@ import type { ControllerHost } from './controller-context.ts';
 
 export class PatchManager {
   private readonly journal = new SpecJournal();
-  // Per-entry changed-cell marks, snapshotted at record time — undo/redo/jump
+  // Per-entry changed-cell marks, snapshotted at record time: undo/redo/jump
   // restore the landing entry's marks so stepping through history shows which
   // cells that step changed (spec/behavior.md § Grid upgrades).
   private readonly marks = new Map<number, Map<string, unknown>>();
@@ -34,7 +34,7 @@ export class PatchManager {
     this.marks.clear();
   }
 
-  /** Whether the entry is currently applied — false while undone, and false
+  /** Whether the entry is currently applied: false while undone, and false
    *  forever once a new edit forked it off the timeline. Drives the chat
    *  reply's Executed/Undone display. */
   isApplied(id: number): boolean {
@@ -42,7 +42,7 @@ export class PatchManager {
   }
 
   // Restore the marks of the step the cursor landed on (empty before the
-  // first step) — and re-run the reveal scroll to its first changed column.
+  // first step), and re-run the reveal scroll to its first changed column.
   private restoreCurrentMarks(): void {
     const id = this.journal.current()?.id;
     const cells = id === undefined ? undefined : this.marks.get(id);
@@ -62,12 +62,12 @@ export class PatchManager {
     return this.journal.canRedo();
   }
 
-  /** The undo journal, oldest first — one entry per spec-changing turn. */
+  /** The undo journal, oldest first: one entry per spec-changing turn. */
   history(): Array<{ label: string }> {
     return this.journal.entries();
   }
 
-  /** The full history timeline (done + undone) and the current cursor — the
+  /** The full history timeline (done + undone) and the current cursor: the
    *  mobile History sheet reads this. */
   timeline(): { steps: TimelineStep[]; cursor: number } {
     return this.journal.timeline();
@@ -86,7 +86,7 @@ export class PatchManager {
 
   // ── Undo / redo ──────────────────────────────────────────────────────────
   // Both replay through the cache-only path (#LazyExec): undo lowers the row
-  // marks, redo restores them from the cell cache — never a new AI call.
+  // marks, redo restores them from the cell cache, never a new AI call.
 
   async undo(): Promise<void> {
     const entry = this.journal.takeUndo();
@@ -114,7 +114,7 @@ export class PatchManager {
 
   // ── Browser gestures → spec patches ──────────────────────────────────────
 
-  /** A cell edit becomes a `mutate` keyed by row index — an ordinary,
+  /** A cell edit becomes a `mutate` keyed by row index, an ordinary,
    *  undoable spec patch that replays against the source. */
   async editCell(rowIndex: number, column: string, value: string): Promise<void> {
     const before = this.host.engine.rawRows()[rowIndex]?.[column];
@@ -131,22 +131,22 @@ export class PatchManager {
         },
       ],
     }));
-    // The edited cell tints like any other change (#LazyExec grid upgrades) —
+    // The edited cell tints like any other change (#LazyExec grid upgrades),
     // and the entry's mark snapshot catches up so undo/redo restores it.
     this.host.engine.noteChangedCell(rowIndex, column, before);
     this.marks.set(id, new Map(this.host.engine.changedCells));
     // An active column sort stays live: once the commit settles, the edited
     // row folds back into order instead of leaving the ▲/▼ indicator lying
-    // (spec/behavior.md § Grid upgrades — the sort holds only while rows
+    // (spec/behavior.md § Grid upgrades: the sort holds only while rows
     // stream in, then folds them into order).
     this.host.view.refreshSortOrder();
-    // applySpecChange already notified — before the mark existed. Notify again
+    // applySpecChange already notified, before the mark existed. Notify again
     // so the tint and its "was: …" tooltip land with the committed value,
     // not on whatever unrelated render happens next.
     this.host.notify();
   }
 
-  /** The column menu's Delete column — a spec step, the same patch a chat
+  /** The column menu's Delete column, a spec step, the same patch a chat
    *  request would commit (#LazyExec: not view state, fully undoable). */
   async deleteColumn(column: string): Promise<void> {
     await this.applySpecChange(`delete column ${column}`, (spec) => ({

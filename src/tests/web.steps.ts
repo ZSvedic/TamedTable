@@ -73,7 +73,7 @@ Then('no API key is configured', function (this: TamedTableWorld) {
   assert.equal(controller(this).getConfig().anthropicKey, null);
 });
 
-/** A key-only edit — the settings panel's key field, with the provider already
+/** A key-only edit: the settings panel's key field, with the provider already
  *  selected. Unlike "the provider X has API key Y" this changes no model, so
  *  it exercises the key change on its own. */
 When(
@@ -137,7 +137,7 @@ Then('no column filter is active', function (this: TamedTableWorld) {
   assert.deepEqual(filters, {}, `expected no active column filter, got ${JSON.stringify(filters)}`);
 });
 
-// The count the user sees — after the view pipeline (shuffle → filters →
+// The count the user sees, after the view pipeline (shuffle → filters →
 // sort), unlike "the table has N rows" which reads the derived rows.
 Then('the table view shows {int} rows', function (this: TamedTableWorld, n: number) {
   assert.equal(controller(this).totalRows(), n);
@@ -191,7 +191,7 @@ When('user selects {string}', async function (this: TamedTableWorld, filename: s
 });
 
 /** Await the dialog action started by `user says`, unless the run parks on a
- *  modal only a later step can answer — a flow whose join needs its lookup
+ *  modal only a later step can answer, a flow whose join needs its lookup
  *  file (#LookupJoin) waits there, so awaiting the run itself would deadlock. */
 async function settleUnlessPaused(world: TamedTableWorld): Promise<void> {
   const ctx = ctxOf(world);
@@ -257,7 +257,7 @@ When('user dismisses the flow error dialog', function (this: TamedTableWorld) {
 // ── Lookup tables a browser join needs (#LookupJoin) ───────────────────────
 
 Then('the lookup dialog asks for {string}', async function (this: TamedTableWorld, name: string) {
-  // The run is paused on the dialog, so the openFlow promise is still pending —
+  // The run is paused on the dialog, so the openFlow promise is still pending:
   // read the state, don't await it.
   assert.equal(controller(this).lookupDialog?.name, name);
 });
@@ -266,7 +266,7 @@ Then('no lookup dialog is shown', function (this: TamedTableWorld) {
   assert.equal(controller(this).lookupDialog, null);
 });
 
-// A join emitted with `with: null` — the user named no file — raises the
+// A join emitted with `with: null`, the user named no file, raises the
 // dialog with no filename to show.
 Then('the lookup dialog asks for no particular file', function (this: TamedTableWorld) {
   const dialog = controller(this).lookupDialog;
@@ -280,7 +280,7 @@ When('user chooses the lookup file {string}', async function (this: TamedTableWo
   const bytes = new Uint8Array(await readFile(join(SPEC_TC_DIR, filename)));
   await ctx.filePort!.resolveOpen({ name: filename, bytes });
   await choosing;
-  // The paused run resumes on the choice — let it finish before asserting.
+  // The paused run resumes on the choice: let it finish before asserting.
   await ctx.pending;
 });
 
@@ -470,7 +470,7 @@ Then('history entry {int} is labelled {string}', function (this: TamedTableWorld
 // ── Pagination ─────────────────────────────────────────────────────────────
 
 When('user goes to page {int}', async function (this: TamedTableWorld, page: number) {
-  // Opening a page evaluates its lagging rows (#LazyExec) — await that.
+  // Opening a page evaluates its lagging rows (#LazyExec): await that.
   await controller(this).goToPage(page);
 });
 
@@ -606,7 +606,7 @@ When('user closes the settings panel', function (this: TamedTableWorld) {
   controller(this).closeSettings();
 });
 
-/** Paste a key and press Add — the whole connect flow, prefix detection and
+/** Paste a key and press Add: the whole connect flow, prefix detection and
  *  the provider check included. The scenario's LLM stub answers the check. */
 When('user connects the key {string}', async function (this: TamedTableWorld, key: string) {
   controller(this).setKeyInput(key);
@@ -617,7 +617,7 @@ When('user removes the provider {string}', async function (this: TamedTableWorld
   await controller(this).removeProvider(provider as ModelProvider);
 });
 
-// ── #PuterGateway — the sign-in window, and the session behind it ──────────
+// ── #PuterGateway: the sign-in window, and the session behind it ──────────
 
 Given(
   'the Puter sign-in fails with {string}',
@@ -684,7 +684,7 @@ Then(
   function (this: TamedTableWorld, provider: string, role: string, expected: string) {
     const c = controller(this);
     const p = provider as ModelProvider;
-    const reading = c.probes[p]?.[role as 'primary' | 'secondary'];
+    const reading = c.probes[p]?.[role as 'chat' | 'cell'];
     assert.equal(speedOf(reading, c.measuring[p] ?? false), expected);
   },
 );
@@ -749,7 +749,7 @@ Given('the LLM API returns a 429 rate-limit error', function (this: TamedTableWo
             status: 'RESOURCE_EXHAUSTED',
           },
         }),
-        // retry-after: 0 — the SDK honors it, so its retry budget drains in
+        // retry-after: 0, the SDK honors it, so its retry budget drains in
         // milliseconds instead of minutes of exponential backoff.
         { status: 429, headers: { 'content-type': 'application/json', 'retry-after': '0' } },
       ),
@@ -757,7 +757,7 @@ Given('the LLM API returns a 429 rate-limit error', function (this: TamedTableWo
 });
 
 Given('the LLM API returns an unrecognized error', function (this: TamedTableWorld) {
-  // A non-retryable 400 whose message matches no known pattern — the app-error
+  // A non-retryable 400 whose message matches no known pattern, the app-error
   // (reportable) classification's fall-through case.
   ctxOf(this).mockLlmFetch = () =>
     Promise.resolve(
@@ -775,7 +775,7 @@ Given('the LLM API returns an unrecognized error', function (this: TamedTableWor
 });
 
 // An empty billing account, as OpenAI reports it: HTTP 429, but waiting never
-// clears it — the message has to say "no credit", not "wait a minute".
+// clears it: the message has to say "no credit", not "wait a minute".
 Given('the LLM API returns a 429 insufficient-quota error', function (this: TamedTableWorld) {
   ctxOf(this).mockLlmFetch = () =>
     Promise.resolve(
@@ -967,7 +967,7 @@ When('user confirms the run', async function (this: TamedTableWorld) {
 
 When('user confirms the run and cancels after the first chunk', async function (this: TamedTableWorld) {
   const c = controller(this);
-  // Cancel synchronously inside the first chunk's notify — deterministic in
+  // Cancel synchronously inside the first chunk's notify: deterministic in
   // record and replay: the first wave is already computed (and cached), the
   // next wave's abort check stops the run.
   let cancelled = false;
@@ -1092,7 +1092,7 @@ Then('the saved file keeps the original row order', function (this: TamedTableWo
   const saved = [...port.saved.values()].at(-1);
   assert.ok(saved, 'expected a saved file');
   const lines = saved.split('\n');
-  // The source is ordered P00001, P00002, … — the shuffled view must not
+  // The source is ordered P00001, P00002, …: the shuffled view must not
   // leak into the file.
   assert.ok(lines[1]!.startsWith('P00001,'), `expected P00001 first, got ${lines[1]}`);
   assert.ok(lines[2]!.startsWith('P00002,'), `expected P00002 second, got ${lines[2]}`);
@@ -1120,7 +1120,7 @@ When('(user )open(s) the run-on-all estimate dialog', function (this: TamedTable
 
 When('(user )decline(s) the estimate with {string}', async function (this: TamedTableWorld, choice: string) {
   // The lazy tour's finale: close the estimate dialog with the "Not yet"
-  // choice — nothing runs, no model call.
+  // choice: nothing runs, no model call.
   assert.equal(choice, 'Not yet', `unknown estimate decline "${choice}"`);
   controller(this).declineRunAll();
   await ctxOf(this).pending;
@@ -1257,7 +1257,7 @@ Then('no cells are marked changed', function (this: TamedTableWorld) {
   assert.equal(marked.length, 0, `unexpected changed-cell marks: ${marked.join(', ')}`);
 });
 
-// Column-scoped marker check — a structurally written column (a validate's
+// Column-scoped marker check: a structurally written column (a validate's
 // flag pair, a {js}/{sql} mutate target) tints every filled cell, AI or not.
 Then('every cell in column {string} carries the changed marker', function (this: TamedTableWorld, column: string) {
   const c = controller(this);
@@ -1284,7 +1284,7 @@ Then('no column is revealed', function (this: TamedTableWorld) {
   assert.equal(target, null, `unexpected reveal target: ${target?.column}`);
 });
 
-// ── The tab guard (#LazyExec — behavior.md § Web UI) ─────────────────────────
+// ── The tab guard (#LazyExec: behavior.md § Web UI) ─────────────────────────
 
 Then('leaving the page needs no confirmation', function (this: TamedTableWorld) {
   assert.equal(controller(this).hasUnsavedWork(), false);
@@ -1305,7 +1305,7 @@ Then(
     const start = (c.currentPage() - 1) * c.pageSize;
     let unmarked = 0;
     for (let p = 0; p < rows.length; p++) {
-      if (status[p] !== undefined) continue; // pending/failed — shows no value
+      if (status[p] !== undefined) continue; // pending/failed: shows no value
       for (const col of aiCols) {
         if (!(`${start + p}:${col}` in changed)) unmarked++;
       }

@@ -1,9 +1,9 @@
 // #LazyExec
 // The two lazy-execution dialogs (spec/behavior.md § Lazy AI execution,
 // mockup spec/mockups/lazy-ai.html):
-//  - LargeFileDialog — one sentence, two one-click choices, Load shuffled
+//  - LargeFileDialog: one sentence, two one-click choices, Load shuffled
 //    primary. Raised by any UI load of a file bigger than one page.
-//  - RunAllDialog — the shared run-on-all / save / dependency confirmation:
+//  - RunAllDialog: the shared run-on-all / save / dependency confirmation:
 //    rows remaining, estimated tokens, cost, and time; confirming swaps the
 //    body for a progress bar with Cancel and a collapsed Show log expander
 //    (the chat request-detail event feed). On the phone both render as
@@ -58,14 +58,14 @@ const CONFIRM_LABELS: Record<RunAllReason, { title: string; note: string; confir
   },
   sort: {
     title: 'Run on all rows?',
-    note: 'Sorting by an AI column needs every row evaluated first — or sort what is already computed, free (unevaluated rows sink to the end).',
+    note: 'Sorting by an AI column needs every row evaluated first, or sort what is already computed, free (unevaluated rows sink to the end).',
     confirm: 'Run all & sort',
     decline: "Don't sort",
     partial: 'Sort evaluated rows',
   },
   filter: {
     title: 'Run on all rows?',
-    note: 'Filtering by an AI column needs every row evaluated first — or filter what is already computed, free (unevaluated rows stay hidden).',
+    note: 'Filtering by an AI column needs every row evaluated first, or filter what is already computed, free (unevaluated rows stay hidden).',
     confirm: 'Run all & filter',
     decline: "Don't filter",
     partial: 'Filter evaluated rows',
@@ -83,7 +83,7 @@ export function LargeFileDialog({ controller }: { controller: WebController }): 
       {/* The id is the lazy tour's spotlight target for its Load-shuffled step. */}
       <div id="tutorial-load-shuffled" data-tt-largefile-dialog="" role="dialog" onClick={(e) => e.stopPropagation()} style={cardStyle(t, isMobile)}>
         <div style={{ fontFamily: typography.ui, fontSize: typography.size.md, fontWeight: 600, color: t.ink }}>
-          {dialog.rowCount.toLocaleString()} rows — sample it?
+          {dialog.rowCount.toLocaleString()} rows: sample it?
         </div>
         <div style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink2, lineHeight: 1.5 }}>
           Work page by page; saving preserves original row order.
@@ -101,7 +101,7 @@ export function LargeFileDialog({ controller }: { controller: WebController }): 
   );
 }
 
-// #SaveGate — the one dialog every gesture-gated save waits behind. Its words
+// #SaveGate: the one dialog every gesture-gated save waits behind. Its words
 // and its busy flag come from the controller (controller-files.ts), so adding a
 // wait is a copy entry, not another dialog. See spec/behavior.md § The save gate.
 export function SaveGateDialog({ controller }: { controller: WebController }): ReactNode {

@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-// #FileIO demo logic — referenced by demo.html as an external module so
+// #FileIO demo logic: referenced by demo.html as an external module so
 // `bun build` bundles it (inline scripts are left unbundled and 404 on ./index.ts).
 import type { TablePlan } from '@tamedtable/table-plan';
 import { detectFormat, fetchTable, serializeFlow, type PickedFile } from './index.ts';
@@ -9,8 +9,8 @@ const $ = (id: string): HTMLElement => document.getElementById(id)!;
 
 const port = new BrowserFilePort();
 $('fio-fsa').textContent = port.hasFileSystemAccess
-  ? 'File System Access API: available — Open and Save use real dialogs.'
-  : 'File System Access API: missing — Open uses an upload field, Save downloads.';
+  ? 'File System Access API: available, Open and Save use real dialogs.'
+  : 'File System Access API: missing, Open uses an upload field, Save downloads.';
 
 let current: PickedFile | null = null;
 

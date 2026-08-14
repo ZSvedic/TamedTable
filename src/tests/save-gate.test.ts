@@ -1,10 +1,10 @@
-// #SaveGate — the waiting phase of the Python export, which the @web scenario
+// #SaveGate: the waiting phase of the Python export, which the @web scenario
 // in save-py.feature cannot pin down: there the model answers from the cassette
 // before the next step runs. Here the export's model call is held at the
-// injected fetch, so the gate can be caught mid-wait — bar animating, "Save
-// file…" still disabled and no picker opened — and then released.
+// injected fetch, so the gate can be caught mid-wait: bar animating, "Save
+// file…" still disabled and no picker opened, and then released.
 //
-// #StepDefSurface — everything below drives the public controller surface only
+// #StepDefSurface: everything below drives the public controller surface only
 // (construction options, savePython, confirmSaveGate, dismissSaveGate). The
 // model call is held at the fetch seam rather than by reaching into the engine,
 // which is also the only way a real browser could stall it.
@@ -15,8 +15,8 @@ import { createWebController, type FilePort } from '@tamedtable/web';
 import { SPEC_TC, tick } from './lazy-harness.util.ts';
 
 /** The export's answer, as the wire really delivers it: a Gemini SSE stream.
- *  `streamText` reads the body as a stream, so a plain JSON response — what the
- *  patch-turn harness serves — would not parse here. */
+ *  `streamText` reads the body as a stream, so a plain JSON response: what the
+ *  patch-turn harness serves: would not parse here. */
 function sseResponse(script: string): Response {
   const frame = `data: ${JSON.stringify({
     candidates: [{ content: { parts: [{ text: script }], role: 'model' }, index: 0 }],
@@ -62,10 +62,10 @@ async function heldExportApp(script = 'print("hi")\n'): Promise<{
   return { app, saves, release, calls: () => calls };
 }
 
-describe('#SaveGate — Save recipe as Python', () => {
+describe('#SaveGate: Save recipe as Python', () => {
   it('shows the script in the gate as it streams, before it is writable', async () => {
     // The harness fetch answers in one frame, so the assertion is that the
-    // gate carries what the stream produced — the per-chunk growth itself is
+    // gate carries what the stream produced: the per-chunk growth itself is
     // pinned in packages/headless/export-python.test.ts, where the frames can
     // be released one at a time.
     const { app, release } = await heldExportApp('print("hi")\n');
@@ -85,8 +85,8 @@ describe('#SaveGate — Save recipe as Python', () => {
     const pending = app.savePython();
     await tick();
 
-    // Waiting: the dialog is up and says so, and the picker has not opened —
-    // opening it here is the bug from issue #278.
+    // Waiting: the dialog is up and says so, and the picker has not opened.
+    // Opening it here is the bug from issue #278.
     expect(app.saveGate?.busy).toBe(true);
     expect(app.saveGate?.title).toBe('Writing the Python script');
     expect(saves).toEqual([]);
@@ -94,7 +94,7 @@ describe('#SaveGate — Save recipe as Python', () => {
     release();
     await pending;
 
-    // Ready: same dialog, new wording, button live — still no picker until the
+    // Ready: same dialog, new wording, button live, still no picker until the
     // user clicks, because that click is the gesture the picker needs.
     expect(app.saveGate?.busy).toBe(false);
     expect(app.saveGate?.title).toBe('Python script ready');
@@ -111,7 +111,7 @@ describe('#SaveGate — Save recipe as Python', () => {
     await tick();
 
     await app.confirmSaveGate();
-    // The wait survives the stray confirm — it must not cancel the export or
+    // The wait survives the stray confirm: it must not cancel the export or
     // reach the picker with nothing written yet.
     expect(app.saveGate?.busy).toBe(true);
     expect(saves).toEqual([]);
@@ -144,7 +144,7 @@ describe('#SaveGate — Save recipe as Python', () => {
 
     app.dismissSaveGate();
     expect(app.saveGate).toBe(null);
-    // The model call cannot be recalled — it lands after the cancel and must
+    // The model call cannot be recalled: it lands after the cancel and must
     // not reopen the gate the user just dismissed.
     release();
     await pending;

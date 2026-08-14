@@ -1,4 +1,4 @@
-// #UiKit demo logic — mounts every component over plain React state. Each
+// #UiKit demo logic: mounts every component over plain React state. Each
 // interaction appends to the #out event log; #out is non-empty on load (the
 // demo smoke test's ready signal) and the wrapper carries data-uk-mode.
 import { useState, type ReactNode } from 'react';
@@ -39,7 +39,7 @@ function Demo(): ReactNode {
   return (
     <div data-uk-mode={mode} style={{ color: t.ink, fontFamily: typography.ui }}>
       <h1 style={{ font: `600 18px/1.4 ${typography.ui}`, margin: 0 }}>
-        ui-kit — tokens &amp; primitives
+        ui-kit: tokens &amp; primitives
       </h1>
 
       <div style={section}>

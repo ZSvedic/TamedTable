@@ -4,7 +4,7 @@
 // is reached only from main.tsx.
 //
 // stopRecording re-encodes the captured audio (webm/opus or mp4/aac, browser-
-// dependent) to 16 kHz mono PCM16 WAV before resolving — the one format every
+// dependent) to 16 kHz mono PCM16 WAV before resolving: the one format every
 // voice-capable provider accepts (OpenAI's input_audio takes only wav/mp3).
 
 import { blobToWavBytes } from '@tamedtable/model-config/audio-wav';

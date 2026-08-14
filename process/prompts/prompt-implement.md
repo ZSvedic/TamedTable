@@ -1,4 +1,4 @@
-Read `AGENTS.md` and `README.md` first — they hold project-specific paths, test commands, and process rules. Then check git history (`git log --oneline -20`, `git diff main~1..main`) to see what recently changed.
+Read `AGENTS.md` and `README.md` first: they hold project-specific paths, test commands, and process rules. Then check git history (`git log --oneline -20`, `git diff main~1..main`) to see what recently changed.
 
 Load the spec (`spec/behavior.md`, `spec/code-contract.md`), all active Gherkin features, and the current step definitions. The step defs are the executable contract.
 

@@ -19,7 +19,7 @@ const cassetteDir = join(here, '../../../cassettes');
 
 // Tutorial: the @tour/@web feature files. We ship only a lightweight
 // MANIFEST (scenario name + tags + source file) in the JS bundle; the heavy
-// assets — feature source, input/golden fixtures, and recorded cassettes —
+// assets: feature source, input/golden fixtures, and recorded cassettes:
 // load lazily, fetched same-origin from /tutorials/, /samples/, and
 // /cassettes/. That keeps page load small and lets a key-free visitor play a
 // full tour by replaying the tour's cassette.
@@ -43,7 +43,7 @@ const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {
 
 // The sample picker's recommended rows: the file each showcase tour opens,
 // titled by its homepage section, in homepage order. Derived, never
-// hand-listed — see src/showcase-samples.ts, guarded by
+// hand-listed: see src/showcase-samples.ts, guarded by
 // src/tests/showcase-samples.test.ts.
 const showcaseSourceNames = tutorialFeatureNames.filter((name) => name.startsWith('showcase-'));
 const showcaseSamplesList = showcaseSamples(
@@ -53,16 +53,16 @@ const showcaseSamplesList = showcaseSamples(
 // Static assets served same-origin: the sample CSV/JSONL files (also the
 // tutorial inputs + goldens), the tutorial feature files, and the recorded
 // cassettes. Each is copied into dist/ at build and served from its source dir
-// by a dev middleware — same pattern, three directories.
+// by a dev middleware: same pattern, three directories.
 const SAMPLE_EXTS = ['.csv', '.jsonl', '.parquet', '.arrow'];
 const servedSampleFiles = readdirSync(specTcDir)
   .filter((name) => SAMPLE_EXTS.some((ext) => name.endsWith(ext)))
   .sort();
 // What the picker lists is narrower than what we serve: goldens (`*-expected.*`)
-// are tour *outputs* compared against, never files a user would open — but the
+// are tour *outputs* compared against, never files a user would open, but the
 // tutorial still fetches them from /samples/, so they stay served.
 const sampleFiles = servedSampleFiles.filter((name) => !name.includes('-expected.'));
-// Voice clips for `play-audio` tour steps — served from /samples/ alongside the
+// Voice clips for `play-audio` tour steps: served from /samples/ alongside the
 // CSV/JSONL fixtures, but kept out of __TT_SAMPLE_FILES__ (the Open URL dialog's
 // quick-picks are data files only).
 const audioFiles = readdirSync(specTcDir).filter((name) => name.endsWith('.m4a')).sort();
@@ -78,7 +78,7 @@ function contentTypeFor(name: string): string {
   return 'text/plain; charset=utf-8';  // .feature
 }
 
-/** Serve `files` from `srcDir` under `/<route>/…` — dev middleware + a build
+/** Serve `files` from `srcDir` under `/<route>/…`, dev middleware + a build
  *  copy into dist/<route>/. The base prefix (e.g. /TamedTable/) is part of the
  *  incoming dev URL because this middleware runs ahead of Vite's base rewrite. */
 function staticDirPlugin(route: string, srcDir: string, files: string[]): Plugin {
@@ -149,9 +149,9 @@ export default defineConfig({
     // The list of bundled sample files (filenames only) the sample picker
     // shows behind its "Show all …" disclosure. Frozen at build time.
     __TT_SAMPLE_FILES__: JSON.stringify(sampleFiles),
-    // The picker's recommended rows — { title, file } per showcase tour.
+    // The picker's recommended rows: { title, file } per showcase tour.
     __TT_SHOWCASE_SAMPLES__: JSON.stringify(showcaseSamplesList),
-    // Lightweight tutorial scenario index — names + tags + source file. The
+    // Lightweight tutorial scenario index: names + tags + source file. The
     // feature source, fixtures, goldens, and cassettes load lazily.
     __TT_TUTORIAL_MANIFEST__: JSON.stringify(tutorialManifest),
   },

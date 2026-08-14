@@ -2,7 +2,7 @@
 
 The `@tamedtable/ui-kit` package owns the TamedTable design system: the brand
 tokens (colors, typography, spacing) and the primitive React components every
-surface composes — buttons, icons, the dropdown menu button, the toast stack,
+surface composes: buttons, icons, the dropdown menu button, the toast stack,
 and the light/dark theme context. It owns no app state and no storage: hosts
 pass data in and get callbacks out, and theme persistence is injected through
 `ThemeProvider` props.
@@ -29,24 +29,24 @@ regeneration. `bun run sync:tokens` regenerates two copies from it:
 `packages/ui-kit/tokens.json` (which this package imports, so `src/` stays a
 self-contained deployable unit) and `marketing/claude-design-app/tokens.jsx` (the
 design canvas globals). The guard test fails CI if either copy drifts. The main entry types and names the tokens,
-exporting the brand system as plain objects — no React:
+exporting the brand system as plain objects, no React:
 
-- `brand` — the brand-literal hex constants (Aubergine ink `#281C60`, Pale Sky
+- `brand`: the brand-literal hex constants (Aubergine ink `#281C60`, Pale Sky
   accent `#96BED7`, Silver line, white, Mist ground, Linen). Pale Sky is the
-  **mark's** accent cell and nothing else — `theme.accent` is a separate,
+  **mark's** accent cell and nothing else, `theme.accent` is a separate,
   saturated blue, because a colour picked to sit inside a logo is too quiet to
   carry a link. The marketing site has always drawn that line (`--mark-accent`
   vs `--accent`); the app now draws it too.
-- `typography` — UI / mono / brand font stacks and the size scale
-- `space` — spacing, fixed dimensions, corner radii
-- `lightTheme` / `darkTheme` — two `Theme` objects sharing one shape: surfaces,
+- `typography`: UI / mono / brand font stacks and the size scale
+- `space`: spacing, fixed dimensions, corner radii
+- `lightTheme` / `darkTheme`: two `Theme` objects sharing one shape: surfaces,
   ink levels, lines, accent + semantic colors, highlights, shadows
 
-Each **on-color** names the label to place on a matching filled surface —
+Each **on-color** names the label to place on a matching filled surface:
 `inkOnInk` on an `ink` fill (the primary button), `inkOnAcc` on an `accent`
 fill. In **both** themes an on-color must contrast with its surface: their
 `oklch` lightness differs by a clear margin, so a primary button is never, say,
-near-white text on a near-white fill. A guard test enforces this — it is how a
+near-white text on a near-white fill. A guard test enforces this: it is how a
 mistuned token (an on-color left equal to its surface in one theme) is caught.
 
 Components read the active theme through `useTheme()` and never hard-code a
@@ -56,35 +56,35 @@ from these tokens.
 
 ## Components (`./components` entry, react peer dependency)
 
-All components are pure — props in, callbacks out — and carry stable
+All components are pure (props in, callbacks out) and carry stable
 `data-uk-*` attributes for tests:
 
-- `ThemeProvider({ initialMode?, onModeChange?, children })` — owns the
+- `ThemeProvider({ initialMode?, onModeChange?, children })`: owns the
   mode state (default light), paints the page background, and notifies the
   host on toggle; the host persists the mode. `useTheme()` / `useThemeControls()`
   throw outside the provider.
-- `Icon({ name, size? })` — inline 16×16 SVG, `currentColor` stroke
-  (`data-uk-icon`). The glyph artwork is canonical in `marketing/icons/` —
+- `Icon({ name, size? })`: inline 16×16 SVG, `currentColor` stroke
+  (`data-uk-icon`). The glyph artwork is canonical in `marketing/icons/`:
   one SVG per name, so the drawings survive a full `src/` regeneration; a
   glyph whose source SVG says `fill="currentColor"` renders filled (stop,
   play), every other one stroked. `bun run sync:icons` regenerates the
   package's importable catalogue (`icons.ts`) from that directory; the guard
   test fails CI if the catalogue drifts.
-- `Button({ children, onClick?, disabled?, variant?, title? })` — variants
+- `Button({ children, onClick?, disabled?, variant?, title? })`: variants
   `ghost` (default), `chrome`, `primary`, `danger` (`data-uk-button`).
   `ghost` is borderless: reserve it for buttons whose affordance is already
-  obvious from context — an **icon-bearing button in the toolbar row**, where
+  obvious from context: an **icon-bearing button in the toolbar row**, where
   the icon and the toolbar frame read as clickable. A **text-only action in a
   panel or dialog** must not be `ghost`; borderless text reads as a label, so
   give it `chrome` (a bordered secondary button) or `primary`/`danger` as its
-  weight warrants — even a dismissive "Cancel"/"Not now" next to a primary
+  weight warrants: even a dismissive "Cancel"/"Not now" next to a primary
   action.
-- `MenuButton({ children, sections, disabled?, title?, id?, align? })` — a
+- `MenuButton({ children, sections, disabled?, title?, id?, align? })`: a
   plain dropdown button: one trigger (label plus chevron, no split default
   action) that opens a grouped menu. `sections` is a list of
   `{ header?, items }`; sections after the first draw a separator line, and a
   `header` renders as a small uppercase group label. Each item is
-  `{ label, onClick?, icon?, tag?, disabled?, submenu? }` — `icon` draws a
+  `{ label, onClick?, icon?, tag?, disabled?, submenu? }`: `icon` draws a
   leading `Icon`, `tag` a small right-aligned badge, and `submenu` (a list of
   `{ label, tag?, onClick }`) gives the item a side flyout: hovering or
   clicking it opens the sub-entries in a panel beside the menu, away from the
@@ -94,12 +94,12 @@ All components are pure — props in, callbacks out — and carry stable
   trigger's right edge for buttons near the right screen edge. Closes on
   pick, click-outside, or Escape (`data-uk-menubtn`, `data-uk-menu-header`,
   `data-uk-menu-item`, `data-uk-menu-tag`).
-- `Toasts({ toasts, onDismiss, onAction? })` — fixed bottom-right stack of
+- `Toasts({ toasts, onDismiss, onAction? })`: fixed bottom-right stack of
   `{ id, kind: "info" | "error", message, action? }` items, each with a dismiss
   button; a toast carrying an `action` label also shows an inline action button
   that calls `onAction(id)` (`data-uk-toast-action`). Renders nothing when the
   list is empty; ships its own slide-in animation (`data-uk-toast`,
-  `data-uk-toast-dismiss`). Each toast also **auto-fades** on its own — it
+  `data-uk-toast-dismiss`). Each toast also **auto-fades** on its own: it
   schedules `onDismiss(id)` after `toastDurationMs(message)`, fading out
   (`data-uk-toast-leaving`) just before it goes. Hovering a toast pauses the
   timer so it stays while the cursor is over it (and while a slow reader needs
@@ -111,9 +111,9 @@ All components are pure — props in, callbacks out — and carry stable
 The timing is a React-free helper in the main entry, so it is unit-testable and
 shared:
 
-- `TYPING_MS_PER_CHAR` — the cadence (ms per character) the app types tutorial
+- `TYPING_MS_PER_CHAR`: the cadence (ms per character) the app types tutorial
   queries at, reused as a reading-speed proxy.
-- `toastDurationMs(message)` — the time to read `message` (one character per
+- `toastDurationMs(message)`: the time to read `message` (one character per
   typing tick) doubled, then clamped between `TOAST_FLOOR_MS` and
   `TOAST_CEILING_MS` so a terse note still lingers long enough to notice and a
   long error does not camp on the screen.
@@ -125,4 +125,4 @@ every component over plain React state inside a `ThemeProvider`: the four
 button variants, the full icon grid, a grouped menu button, add-info/add-error toast
 buttons, and the theme toggle. The wrapper carries `data-uk-mode` with the
 active mode, every interaction appends to the `#out` event log, and `#out`
-is non-empty on load — the demo smoke test's ready signal.
+is non-empty on load: the demo smoke test's ready signal.

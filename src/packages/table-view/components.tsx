@@ -1,5 +1,5 @@
 // #TableView
-// React entry point — kept separate so the main entry (pagination model)
+// React entry point: kept separate so the main entry (pagination model)
 // stays React-free; `react` is a peer dependency of this entry only.
 
 export {

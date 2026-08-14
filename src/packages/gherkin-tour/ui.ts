@@ -1,12 +1,12 @@
 // #GherkinTour
 // Reusable tour UI: a Driver.js spotlight + popover driving a TourCursor. The
-// popover uses Driver.js's own footer — its Next/Done button, its "X of Y"
-// progress, its animation, and Esc-to-cancel — so there is no hand-rolled button
+// popover uses Driver.js's own footer: its Next/Done button, its "X of Y"
+// progress, its animation, and Esc-to-cancel, so there is no hand-rolled button
 // row or key-cap badges to maintain. The tour only moves forward: there is no
 // Previous button and no ← key (stepping back would desync the app's replay
 // engine, so it was removed rather than made to undo state).
 //
-// This is the only entry point that pulls in driver.js — the parser and driver
+// This is the only entry point that pulls in driver.js: the parser and driver
 // in `./index.ts` stay zero-dep, so a consumer that only needs `parseTours` /
 // `TourDriver` never ships driver.js.
 import { driver } from 'driver.js';
@@ -22,23 +22,23 @@ export interface TourUiTheme {
   /** Popover body + footer text. */        text?: string;
   /** Popover box + control borders. */     border?: string;
   /** Title / emphasis color. */            accent?: string;
-  /** Primary (Next/Done) button fill — defaults to `accent`. */ primaryBg?: string;
-  /** Primary button label color — defaults to `background`. */  primaryText?: string;
+  /** Primary (Next/Done) button fill: defaults to `accent`. */ primaryBg?: string;
+  /** Primary button label color: defaults to `background`. */  primaryText?: string;
 }
 
 export interface TourUiOptions {
-  /** Element the terminal popover anchors to — a step's own target may be gone
+  /** Element the terminal popover anchors to: a step's own target may be gone
    *  by the time the tour is done, so the host names a stable fallback. */
   doneElementId: string;
   /** Run after every state change so the host can sync its own view (e.g. show
    *  a prefilled chat input) and re-render if a spotlight target appeared. */
   onChange?: () => void;
-  /** Terminal-stop text — shown after the last real step has run, e.g.
+  /** Terminal-stop text: shown after the last real step has run, e.g.
    *  `Voilà, the tour "<tour>" is done.`. Defaults to "Done.". */
   doneDescription?: string;
-  /** Terminal-stop primary button label — defaults to "Done". */
+  /** Terminal-stop primary button label: defaults to "Done". */
   doneBtnText?: string;
-  /** Terminal-stop secondary (stay) button label — defaults to "Stay here".
+  /** Terminal-stop secondary (stay) button label: defaults to "Stay here".
    *  Shown only when the cursor implements `stay()`. */
   stayBtnText?: string;
   /** Host theme colors for the popover; omit to keep Driver.js defaults. */
@@ -47,17 +47,17 @@ export interface TourUiOptions {
 
 /** Drives a Driver.js overlay from a TourCursor: spotlights the current step,
  *  wires Driver's own Next/Done button and keyboard back to the cursor, and
- *  re-renders on every transition. Host-agnostic — all DOM ids come from the
+ *  re-renders on every transition. Host-agnostic: all DOM ids come from the
  *  cursor (`currentStepElementId`) plus the `doneElementId` fallback. */
 export class TourUi {
   private readonly tour: TourCursor;
   private readonly opts: TourUiOptions;
   private d: ReturnType<typeof driver> | null = null;
   // True while our code is programmatically destroying the overlay (step change,
-  // cleanup) — suppresses the spurious cancel that onDestroyStarted would fire.
+  // cleanup): suppresses the spurious cancel that onDestroyStarted would fire.
   private silentDestroy = false;
   private keyHandler: ((e: KeyboardEvent) => void) | null = null;
-  // Some hosts mount a step's target lazily — the mobile composer rises only
+  // Some hosts mount a step's target lazily: the mobile composer rises only
   // when the tour reaches a chat step, a render after the cursor advanced. When
   // the target isn't there yet, re-attempt the spotlight for a short while
   // rather than leaving the popover stuck on the previous step.
@@ -74,7 +74,7 @@ export class TourUi {
   private touchStartHandler: ((e: TouchEvent) => void) | null = null;
   private touchMoveHandler: ((e: TouchEvent) => void) | null = null;
   private lastTouch: { x: number; y: number } | null = null;
-  // Wheel events arrive in bursts — cache the found scroller briefly.
+  // Wheel events arrive in bursts: cache the found scroller briefly.
   private scrollHit: { el: HTMLElement; at: number } | null = null;
 
   constructor(tour: TourCursor, opts: TourUiOptions) {
@@ -102,7 +102,7 @@ export class TourUi {
       return;
     }
 
-    // On the terminal stop the step's own target may be gone — anchor to the
+    // On the terminal stop the step's own target may be gone: anchor to the
     // host's stable fallback element instead.
     const elementId = done ? this.opts.doneElementId : this.tour.currentStepElementId();
     const el = elementId ? document.getElementById(elementId) : null;
@@ -124,7 +124,7 @@ export class TourUi {
 
     // The terminal stop offers a second exit when the cursor supports it:
     // "stay" keeps what the tour built on screen. The button rides in Driver's
-    // previous-button slot — a first-class Driver.js button, no DOM injection —
+    // previous-button slot: a first-class Driver.js button, no DOM injection,
     // and Esc then means stay, the non-destructive reading of "dismiss".
     const canStay = done && typeof this.tour.stay === 'function';
 
@@ -132,11 +132,11 @@ export class TourUi {
       animate: true,
       overlayOpacity: 0.25,
       allowClose: true,
-      // Tours are watch-only: the spotlighted element is not clickable —
+      // Tours are watch-only: the spotlighted element is not clickable;
       // Next/Esc are the only controls, and the popover narrates what the
       // tour itself is doing ("Opening the sample …").
       disableActiveInteraction: true,
-      // Esc dismisses (allowClose), but an accidental overlay click must not —
+      // Esc dismisses (allowClose), but an accidental overlay click must not:
       // a no-op behavior keeps the tour from vanishing on a stray click.
       overlayClickBehavior: () => {},
       onDestroyStarted: () => {
@@ -203,7 +203,7 @@ export class TourUi {
   }
 
   // Paint the popover box, description, and Driver's footer controls with the
-  // host's theme colors. No-op without a theme — the popover then keeps
+  // host's theme colors. No-op without a theme: the popover then keeps
   // Driver.js's default styling. No color literals here: every value comes from
   // the host-supplied theme.
   private applyTheme(wrapper: HTMLElement): void {
@@ -225,7 +225,7 @@ export class TourUi {
       next.style.textShadow = 'none';
       // A solid primary button (matches the host's primary button, e.g. "Load"):
       // a strong fill with a contrasting label, the same color for the border so
-      // it reads as filled — not the low-contrast accent tint that looked disabled.
+      // it reads as filled, not the low-contrast accent tint that looked disabled.
       const bg = theme.primaryBg ?? theme.accent;
       const fg = theme.primaryText ?? theme.background;
       if (bg) { next.style.background = bg; next.style.borderColor = bg; }
@@ -283,7 +283,7 @@ export class TourUi {
   // ── Scroll forwarding ──────────────────────────────────────────────────────
   // Watch-only blocks clicks, not scrolling (behavior.md § TourUi). While the
   // overlay is up, Driver.js disables pointer events across the page, which
-  // also swallows wheel/touch scrolling — so hit-testing (elementsFromPoint)
+  // also swallows wheel/touch scrolling, so hit-testing (elementsFromPoint)
   // can't see the page either. Instead, find the innermost scrollable element
   // whose box contains the pointer geometrically and scroll it directly.
   // Scrolls over the popover stay with the popover; when nothing scrollable
@@ -338,8 +338,8 @@ export class TourUi {
     return target instanceof Element && target.closest('.driver-popover') !== null;
   }
 
-  // The innermost scrollable element under the point — overflowing content
-  // plus an auto/scroll overflow style — with driver chrome and the spotlight
+  // The innermost scrollable element under the point: overflowing content
+  // plus an auto/scroll overflow style, with driver chrome and the spotlight
   // proxy skipped. Wheel events arrive in bursts, so the last hit is reused
   // while the pointer stays inside it.
   private scrollableAt(x: number, y: number): HTMLElement | null {
@@ -371,7 +371,7 @@ export class TourUi {
     return best;
   }
 
-  // A target can be larger than the screen — the app's table fills it. A
+  // A target can be larger than the screen: the app's table fills it. A
   // cutout that big leaves the popover nowhere to sit, and Driver's
   // scroll-into-view yanks the page. Spotlight a fixed stand-in box clamped
   // to the target's visible top region instead, so the cutout and the popover
@@ -443,7 +443,7 @@ export class TourUi {
   }
 }
 
-// Tours are watch-only, so each popover narrates progressively — "watch this
+// Tours are watch-only, so each popover narrates progressively: "watch this
 // happen", never an instruction to act. The Gherkin keyword (Given/When/Then)
 // is test structure, not something a learner needs, so it is dropped.
 //
@@ -455,7 +455,7 @@ function asInstruction(text: string): string {
   if (/^query "(.+)"$/.test(text)) return 'Typing and running the query…';
   if (/^speak "(.+)"$/.test(text)) return 'Speaking and running the voice query…';
   // The load step opens a bundled sample (the UI's "Open sample…" action), so
-  // the narration names that action — and the file — rather than echoing the
+  // the narration names that action, and the file, rather than echoing the
   // Gherkin verb.
   const load = text.match(/^load "(.+)"$/);
   if (load) return `Opening the sample "${load[1]}"…`;

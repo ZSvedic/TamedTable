@@ -1,5 +1,5 @@
 # #LanguageAI #TutorialMode
-# Atomic "Language" scenarios (text) — CI coverage, one per feature. Each
+# Atomic "Language" scenarios (text): CI coverage, one per feature. Each
 # loads its sample, runs the phrase, and replays from language-ai.json. The
 # section's marketing tour is the single story in showcase-language.feature.
 Feature: Language scenarios

@@ -5,7 +5,7 @@
 // Cucumber web profile read these directly), plus the notification hub
 // (notify/pushToast/pushMessage). Each manager owns the *behavior* and the
 // private infra for one responsibility, and reaches shared state and its
-// siblings through this `ControllerHost` interface — so no manager imports
+// siblings through this `ControllerHost` interface, so no manager imports
 // the WebController class, and the public surface stays on one object.
 import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
@@ -44,7 +44,7 @@ export interface ControllerHost {
   streaming: boolean;
   selection: CellRef | null;
   dialog: DialogKind;
-  /** Live progress of the streaming run, or null — the chat progress block. */
+  /** Live progress of the streaming run, or null: the chat progress block. */
   runProgress: RunProgress | null;
   urlDialogOpen: boolean;
   sampleDialogOpen: boolean;
@@ -68,7 +68,7 @@ export interface ControllerHost {
   goldenRows: Row[] | null;
   tutorialPrefill: string | null;
   pageNum: number;
-  /** Rows per table page — re-derived from the provider on config changes. */
+  /** Rows per table page: re-derived from the provider on config changes. */
   pageSize: number;
   // #LazyExec
   /** The large-file dialog (Load shuffled / original order), or null. */
@@ -96,7 +96,7 @@ export interface ControllerHost {
   pushToast(kind: 'info' | 'error', message: string, action?: string): void;
   pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number;
   updateMessage(id: number, text: string): void;
-  /** Drop the whole thread — a new table starts a new conversation. */
+  /** Drop the whole thread: a new table starts a new conversation. */
   clearMessages(): void;
   fail(message: string, debug?: RequestDebugInfo, reportable?: boolean): void;
   /** Send a chat request (used by tutorial prefill-chat steps). */

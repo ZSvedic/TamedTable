@@ -67,7 +67,7 @@ export type ChunkUpdate = {
 // #OpenFlow
 /** One replayed transformation starting: its 0-based index, the run's total,
  *  its kind, its describeStep label, the row count entering it, and its
- *  transformationExpressions — the exact JS/SQL/prompt bodies behind the
+ *  transformationExpressions: the exact JS/SQL/prompt bodies behind the
  *  label, so a progress log can show what the step runs, not just its name.
  *  Steps a replay skips (the unchanged-prefix reuse) are not reported. */
 export type StepUpdate = {
@@ -79,9 +79,9 @@ export type StepUpdate = {
   expressions: Array<{ label: string; body: string }>;
 };
 
-// ── describeStep — human-friendly one-liner per transformation ───────────────
+// ── describeStep: human-friendly one-liner per transformation ───────────────
 
-/** The expression-shape marker for a step label: which engine evaluates it —
+/** The expression-shape marker for a step label: which engine evaluates it,
  *  and, for `llm`, that the step calls the per-row cell model. */
 function exprMarker(e: Expr | string | RegExp | undefined): 'js' | 'sql' | 'AI' | undefined {
   if (!e || typeof e === 'string' || e instanceof RegExp) return undefined;
@@ -90,14 +90,14 @@ function exprMarker(e: Expr | string | RegExp | undefined): 'js' | 'sql' | 'AI' 
   return 'js';
 }
 
-/** First few names, `, …` when more — keeps labels one line. */
+/** First few names, `, …` when more: keeps labels one line. */
 function nameList(names: string[], cap = 4): string {
   return names.slice(0, cap).join(', ') + (names.length > cap ? ', …' : '');
 }
 
 // #OpenFlow
 /** A deterministic, human-friendly one-liner for a transformation, derived
- *  entirely from its own fields — no model call, nothing stored. Shown by the
+ *  entirely from its own fields, no model call, nothing stored. Shown by the
  *  run-progress status line and log so each step names its target and
  *  flags per-row model work with an `(AI)` marker: `mutate EventGroup (AI)`,
  *  `filter (js)`, `group by EventGroup → total_players, sections, …`,
@@ -147,7 +147,7 @@ export interface RequestDebugInfo {
   userRequest: string;
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;
-  /** describeStep label per appended transformation (success path) — the web
+  /** describeStep label per appended transformation (success path), the web
    *  chat's one-line-per-step reply. */
   steps: string[];
   cellSamples: CellSample[];
@@ -168,7 +168,7 @@ export type PlanEdit =
 // Cell sentinels for the web shell's page-first scheduling
 // (spec/code-contract.md § Lazy AI execution). A lazy replay leaves the cells
 // it skipped holding a pending sentinel and the cells whose call failed
-// holding a failed sentinel — row state is then derivable from the data
+// holding a failed sentinel: row state is then derivable from the data
 // itself, so it survives deterministic reshaping, undo/redo, and engine
 // rebuilds with no index bookkeeping. Value-shaped (not identity-based) so
 // structuredClone copies still test true. The batch path never sees them:
@@ -186,7 +186,7 @@ export function isFailedCell(v: unknown): v is { __ttFailed: string } {
   return typeof v === 'object' && v !== null && typeof (v as { __ttFailed?: unknown }).__ttFailed === 'string';
 }
 
-/** Thrown by request() when the host's confirmSpec hook declines the patch —
+/** Thrown by request() when the host's confirmSpec hook declines the patch:
  *  the dependency rule's "leave the step out entirely" outcome. */
 export const DECLINED = 'Runner: declined';
 export function isDeclined(e: unknown): boolean {
@@ -194,7 +194,7 @@ export function isDeclined(e: unknown): boolean {
 }
 
 // #LazyExec
-// Row-origin tags — the index-mapping layer between a host's derived-row
+// Row-origin tags: the index-mapping layer between a host's derived-row
 // indices and the engine's step-input indices. A replay tags its working
 // row copies with their source position under a symbol key: object spread
 // (the way every row-copying step clones rows) carries it along, while
@@ -205,12 +205,12 @@ export function isDeclined(e: unknown): boolean {
 // they are stripped off the final rows into the runner's parallel
 // `derivedOrigins` array (exposed as `rowOrigins()`), so committed rows
 // stay plain data. Steps that build rows from scratch (select, group,
-// pivot) drop the tag — callers fall back to positional identity there.
+// pivot) drop the tag: callers fall back to positional identity there.
 const ROW_ORIGIN = Symbol('ttRowOrigin');
 
 /** The source-row origin a replay's in-flight row carries, or undefined for
  *  rows created by a reshaping step. Meaningful only inside a replay's
- *  callbacks (cellFilter); committed rows are stripped — read the runner's
+ *  callbacks (cellFilter); committed rows are stripped, read the runner's
  *  `rowOrigins()` for those. */
 export function rowOrigin(row: Row | undefined): number | undefined {
   return row ? ((row as Record<symbol, unknown>)[ROW_ORIGIN] as number | undefined) : undefined;
@@ -231,7 +231,7 @@ function stripOrigins(rows: Row[]): Array<number | undefined> {
   });
 }
 
-/** Lazy-evaluation hooks a replay accepts (web shell only — the CLI and the
+/** Lazy-evaluation hooks a replay accepts (web shell only: the CLI and the
  *  batch path never pass them, keeping their output byte-identical). */
 export interface LazyEvalOpts {
   /** Per-cell gate for {llm} mutate/split steps: return false to leave the
@@ -248,9 +248,9 @@ export interface LazyEvalOpts {
 }
 
 export interface HeadlessRunnerOptions {
-  /** Who serves the models. A model id cannot say who hosts it —
+  /** Who serves the models. A model id cannot say who hosts it:
    *  `openai/gpt-oss-120b` is Groq's here, and OpenRouter serves the same
-   *  weights under the same name — so the runner is told rather than left to
+   *  weights under the same name, so the runner is told rather than left to
    *  guess. Callers holding only an id (the benchmark sweeping from a command
    *  line, a CLI with just TAMEDTABLE_MODEL) omit it and get
    *  `providerFor(model)`. */
@@ -267,11 +267,11 @@ export interface HeadlessRunnerOptions {
   onChunk?: (update: ChunkUpdate) => void;
   onPlanEdits?: (items: PlanEdit[]) => void;
   onDebug?: (info: RequestDebugInfo) => void;
-  /** Fires once per model call with its token usage — the web shell's
+  /** Fires once per model call with its token usage: the web shell's
    *  estimate math accumulates these (#LazyExec). `role` says which slot made
-   *  the call ('primary' = patch turn, 'cell' = cell work), so the host can
+   *  the call ('chat' = patch turn, 'cell' = cell work), so the host can
    *  attribute usage even when one model id serves both roles. */
-  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number; role: 'primary' | 'cell' }) => void;
+  onUsage?: (u: { model: string; inputTokens: number; outputTokens: number; role: 'chat' | 'cell' }) => void;
   signal?: AbortSignal;
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 }
@@ -283,7 +283,7 @@ export type RequestAudio = { data: Uint8Array; mediaType: string };
 
 // #PyExport
 export interface ExportPythonOpts {
-  /** The script so far, already unfenced, on every chunk that changes it —
+  /** The script so far, already unfenced, on every chunk that changes it:
    *  the hook a host shows the script being written through. */
   onProgress?: (scriptSoFar: string) => void;
   signal?: AbortSignal;
@@ -291,7 +291,7 @@ export interface ExportPythonOpts {
 
 export interface HeadlessRunner {
   loadInput(path: string): Promise<void>;
-  /** Load an already-parsed table directly — the path-free sibling of
+  /** Load an already-parsed table directly: the path-free sibling of
    *  loadInput. The web app parses a picked/fetched file through the file-io
    *  codec registry and loads the rows here, so the browser never needs a
    *  filesystem. `spec` is the fresh-load TablePlan (table name + columns,
@@ -305,11 +305,11 @@ export interface HeadlessRunner {
   request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void; confirmSpec?: (next: TablePlan, prev: TablePlan) => Promise<boolean>; } & LazyEvalOpts): Promise<void>;
   /** Replace the spec, replaying its transformations onto the loaded source
    *  rows. Accepts the same streaming/abort options a request carries plus
-   *  `onStep`, which fires as each transformation starts — so a replayed
+   *  `onStep`, which fires as each transformation starts, so a replayed
    *  flow streams, reports progress, and can be cancelled (the Open & run
    *  flow path); aborting throws `Runner: cancelled` with the previous spec
    *  and rows untouched. `fresh` skips the derived-prefix shortcut and
-   *  replays from the source — a lazy re-evaluation pass needs unchanged
+   *  replays from the source: a lazy re-evaluation pass needs unchanged
    *  steps to run again so a widened cellFilter can fill their pending
    *  cells (cached cells replay without a call). */ // #OpenFlow #LazyExec
   setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; fresh?: boolean } & LazyEvalOpts): Promise<void>;
@@ -320,14 +320,14 @@ export interface HeadlessRunner {
    *  Python script. Returns the script source, and streams it to
    *  `onProgress` on the way (#PyExport). */
   exportPython(opts?: ExportPythonOpts): Promise<string>;
-  // #LazyExec — web-shell seams. adoptState swaps in a spec + derived rows
+  // #LazyExec: web-shell seams. adoptState swaps in a spec + derived rows
   // with no replay and no model call (provider switch keeps evaluated rows);
   // `origins` carries the adopted rows' source origins (see rowOrigins) so
   // the index-mapping survives the rebuild. The cache accessors carry the
   // per-cell result cache across an engine rebuild so redo/resume stay free.
   adoptState(spec: TablePlan, rows: Row[], origins?: ReadonlyArray<number | undefined>): Promise<void>;
   /** Source-row origin of each derived row (parallel to currentRows), or
-   *  undefined where a reshaping step built the row from scratch — the
+   *  undefined where a reshaping step built the row from scratch: the
    *  derived-to-step-input index mapping (#LazyExec). */
   rowOrigins(): ReadonlyArray<number | undefined>;
   cellCacheEntries(): Array<[string, unknown]>;
@@ -352,7 +352,7 @@ const PROVIDER_CELL_FALLBACKS: Record<ReturnType<typeof providerFor>, string> = 
   openrouter: 'cohere/north-mini-code:free',
 };
 
-/** @internal — exported for unit tests. Pick the model for per-cell LLM
+/** @internal: exported for unit tests. Pick the model for per-cell LLM
  *  calls: the explicit cell model when it shares the main model's provider,
  *  else that provider's text-capable fallback. */
 export function resolveCellModelId(mainId: string, explicitCellModel?: string): string {
@@ -430,8 +430,8 @@ function loadPrompts(): {
 
 const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT } = loadPrompts();
 
-/** @internal — exported for unit tests. The JSON-Schema for the `operations`
- *  argument of apply_spec_patch — identical for every provider. `value` is a
+/** @internal: exported for unit tests. The JSON-Schema for the `operations`
+ *  argument of apply_spec_patch: identical for every provider. `value` is a
  *  string carrying JSON-encoded content, decoded back by decodeOpValues. It
  *  is never left untyped: Gemini's function-calling layer converts an untyped
  *  `value` to a bare `{ type: "object" }` with no shape, and the model then
@@ -490,10 +490,10 @@ function repairJsonEscapes(s: string): string {
   return s.replace(/\\([\s\S])/g, (match, ch) => (VALID_JSON_ESCAPE.has(ch) ? match : ch));
 }
 
-/** @internal — exported for unit tests. Decode each op's `value` when it
+/** @internal: exported for unit tests. Decode each op's `value` when it
  *  arrives as a JSON string: the patch schema asks for exactly that encoding.
- *  A near-miss encoding — valid JSON but for a stray invalid escape the model
- *  slipped in — is repaired and retried once before giving up. A string that
+ *  A near-miss encoding: valid JSON but for a stray invalid escape the model
+ *  slipped in: is repaired and retried once before giving up. A string that
  *  still isn't valid JSON (a plain literal like a column name) is left as-is,
  *  so fast-json-patch always receives the real value. */
 export function decodeOpValues(ops: unknown[]): unknown[] {
@@ -518,7 +518,7 @@ const ANTHROPIC_EPHEMERAL = { anthropic: { cacheControl: { type: 'ephemeral' as 
 // #LowEffort
 /** The least deliberation each provider sells, in that provider's own words.
  *  Reasoning tokens are generated one at a time like any other, so on a purely
- *  mechanical job — translating an explicit spec — they are wall-clock time
+ *  mechanical job (translating an explicit spec) they are wall-clock time
  *  spent on nothing (measured: 2-3x the script itself, and 19.5s -> 4.8s on
  *  gemini-3.6-flash once capped).
  *
@@ -526,7 +526,7 @@ const ANTHROPIC_EPHEMERAL = { anthropic: { cacheControl: { type: 'ephemeral' as 
  *  is the only knob BOTH catalogue generations accept: `thinkingLevel` 400s on
  *  gemini-2.5-* ("Thinking level is not supported for this model") and
  *  `thinkingBudget: 0` 400s on gemini-3.x, which cannot stop thinking at all.
- *  512 is a cap, not a quota — 3.6 Flash spent 0 of it on the export prompt.
+ *  512 is a cap, not a quota: 3.6 Flash spent 0 of it on the export prompt.
  *
  *  One table so a new provider is a row, not another branch at the call site.
  *  A provider free to ignore the hint (a free OpenRouter model does) is not an
@@ -606,10 +606,10 @@ const RECOVERY_GUIDANCE = [
   'Do not just retry the same shape with a different literal — the next emission must be measurably more permissive than the one that failed.',
 ].join(' ');
 
-/** @internal — exported for unit tests. The spec as the model sees it: each
+/** @internal: exported for unit tests. The spec as the model sees it: each
  *  transformation's `query`/`name` provenance stripped. The model neither
  *  reads nor edits the metadata, and stripping keeps patch-turn and
- *  Python-export prompts byte-identical to a spec that never carried it — so
+ *  Python-export prompts byte-identical to a spec that never carried it: so
  *  recorded cassettes keep replaying. */
 export function stripQueryMetadata(spec: TablePlan): TablePlan {
   const transformations = spec.transformations as Transformation[];
@@ -621,10 +621,10 @@ export function stripQueryMetadata(spec: TablePlan): TablePlan {
 }
 
 function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string {
-  // The LLM edits transformations/columns/view-ops — never `table`. A long
+  // The LLM edits transformations/columns/view-ops, never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
   // model only ever sees the basename. Query provenance is stripped the same
-  // way — metadata, not the model's to see or edit.
+  // way: metadata, not the model's to see or edit.
   spec = stripQueryMetadata(spec);
   const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
   const specJson = JSON.stringify(llmSpec, null, 2);
@@ -634,10 +634,10 @@ function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string 
 
 type PatchAttempt = { kind: 'ok'; spec: TablePlan } | { kind: 'err'; message: string };
 
-/** @internal — exported for unit tests. Apply an LLM-proposed JSON Patch to
+/** @internal: exported for unit tests. Apply an LLM-proposed JSON Patch to
  *  the spec and validate the result. `validateOperation` is on so a malformed
  *  op (bad `op`, missing `path`) surfaces as a clear RFC-6902 message the
- *  recovery loop can feed back — not an opaque internal TypeError. */
+ *  recovery loop can feed back, not an opaque internal TypeError. */
 // #Patch
 export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchAttempt {
   try {
@@ -647,7 +647,7 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
     const patched = jsonpatch.applyPatch(structuredClone(currentSpec), ops as Operation[], true, false).newDocument as unknown;
     const validated = validateTablePlan(patched);
     // Compare STRIPPED to STRIPPED: the model edits a provenance-stripped view,
-    // so an echo of exactly what it was shown — the classic do-nothing reply —
+    // so an echo of exactly what it was shown: the classic do-nothing reply,
     // differs from the stamped spec in the `query`/`name` fields alone. Against
     // the stamped spec that echo looks like a change and commits as a success.
     if (specIdentity(validated) === specIdentity(currentSpec)) {
@@ -660,19 +660,19 @@ export function applyAndValidate(currentSpec: TablePlan, ops: unknown[]): PatchA
 }
 
 // #Patch
-/** @internal — exported for unit tests. Stamp provenance on the
- *  transformations the committed turn added or changed — any transformation
+/** @internal: exported for unit tests. Stamp provenance on the
+ *  transformations the committed turn added or changed: any transformation
  *  with no counterpart in the pre-request spec once provenance and key order
  *  are normalized away: `query` (the request text, verbatim) on the FIRST such
  *  transformation only, so a multi-step request writes its text once, and
  *  `name` (the describeStep label) on every one. A step untouched by the turn
- *  gets its earlier stamps back — even when the patch re-emitted it stripped,
+ *  gets its earlier stamps back: even when the patch re-emitted it stripped,
  *  as a whole-array replace does; a step the patch rewrote is restamped with
  *  the latest request. */
 export function stampQueries(spec: TablePlan, before: TablePlan, query: string): TablePlan {
   // The pre-request steps as a MULTISET keyed by their provenance-stripped
   // identity. Stripped, because a whole-array replace re-emits the existing
-  // steps as the model saw them — without stamps — and those steps are
+  // steps as the model saw them, without stamps, and those steps are
   // untouched, not new: they get their earlier stamps back rather than the new
   // request's text. A multiset, not a set, because a turn that appends a
   // duplicate of an existing step DID add a step and must be stamped.
@@ -707,7 +707,7 @@ function stepIdentity(t: Transformation): string {
   return canonicalJson(rest);
 }
 
-/** The whole spec's identity, provenance-free — `stepIdentity` for every
+/** The whole spec's identity, provenance-free: `stepIdentity` for every
  *  transformation plus the rest of the spec. */
 function specIdentity(spec: TablePlan): string {
   return canonicalJson({
@@ -808,13 +808,13 @@ export function checkValidateColumnOrder(spec: TablePlan, sourceColumns: string[
 // #FileIO
 /** Whether a saved flow can run on a table with `sourceColumns`: walks the
  *  transformations tracking column availability (the same walk as
- *  `checkValidateColumnOrder`), checking each step's *reads* — expression
+ *  `checkValidateColumnOrder`), checking each step's *reads*: expression
  *  references (`row.X`, `{X}` templates), `split.from`, `select`/`group.by`/
  *  `pivot`/`unpivot` column names. Returns a user-readable message naming the
  *  first column no earlier step provides, or undefined when the flow fits.
  *  `join` and `pivot` add columns that can't be enumerated statically, so
  *  they suspend the check for later steps; `{sql}` expressions aren't parsed. */
-/** @internal — exported for unit tests. The declared-but-unwritten guard
+/** @internal: exported for unit tests. The declared-but-unwritten guard
  *  (spec/behavior.md § Headless): a patch may not add a `columns` entry that
  *  no transformation writes. Returns the rejection message, or undefined.
  *  Reshaping steps (`group`, `pivot`, `unpivot`, `join`) produce columns
@@ -955,14 +955,14 @@ export function checkFlowInputColumns(spec: TablePlan, sourceColumns: string[]):
 // ── Runner ─────────────────────────────────────────────────────────────────
 
 // #PuterGateway
-// Puter takes one endpoint — POST /drivers/call — whose `args` are an OpenAI
+// Puter takes one endpoint, POST /drivers/call, whose `args` are an OpenAI
 // chat-completions body, and answers `{success, result}` where `result` is an
 // OpenAI choice. That is close enough to translate rather than reimplement:
 // this fetch sits under the ordinary OpenAI client, wrapping the request and
 // unwrapping the reply, so tool calling and retries stay on the tested path.
 //
 // It always calls Puter **non-streaming**. Puter streams newline-delimited
-// JSON rather than SSE, and its streamed frames carry no tool calls — which the
+// JSON rather than SSE, and its streamed frames carry no tool calls, which the
 // patch turn depends on. When the SDK asked for a stream (only the Python
 // export does), the finished answer is replayed as a single SSE frame: the
 // script lands in one piece instead of typing out, and nothing else changes.
@@ -1043,7 +1043,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private sourcePath = '';
   private spec: TablePlan = { columns: [], transformations: [] };
   private derivedRows: Row[] = [];
-  // #LazyExec — source origin of each derived row (parallel to derivedRows)
+  // #LazyExec: source origin of each derived row (parallel to derivedRows)
   // and the origins of the last completed replay, committed together with
   // its rows. See the ROW_ORIGIN notes above.
   private derivedOrigins: Array<number | undefined> = [];
@@ -1051,14 +1051,14 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // Lookup tables staged by name (browser joins): a `join` whose `with` matches
   // a key here uses these rows instead of reading the file by path.
   private lookupTables = new Map<string, Row[]>();
-  // #LookupJoin — right tables already read from disk, keyed by the join's
+  // #LookupJoin: right tables already read from disk, keyed by the join's
   // `with` path. A join reads its right table once and holds it, so an
   // :undo/:redo that replays the step never re-reads the file (and no longer
   // throws when it has moved since). Pruned to the committed spec's joins after
   // every commit, and cleared with the source.
   private joinRightTables = new Map<string, Row[]>();
-  // The loaded source's column list — the JSONL union of keys, not row 0's
-  // keys — as the patch-turn guards must see it (spec/code-contract.md § core).
+  // The loaded source's column list: the JSONL union of keys, not row 0's
+  // keys, as the patch-turn guards must see it (spec/code-contract.md § core).
   private sourceColumns: string[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private modelCache: any;
@@ -1073,7 +1073,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private cellSampleLog: CellSample[] = [];
   private loaded = false;
   private busy = false;
-  // The DuckDB session behind every {sql} expression — see sql.ts.
+  // The DuckDB session behind every {sql} expression: see sql.ts.
   private sql = new SqlSession();
 
   constructor(opts: HeadlessRunnerOptions = {}) {
@@ -1089,7 +1089,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private recordCall(
     model: string,
     usage: { inputTokens?: number; outputTokens?: number } | undefined,
-    role: 'primary' | 'cell' = 'cell',
+    role: 'chat' | 'cell' = 'cell',
   ): void {
     const entry = {
       model,
@@ -1160,13 +1160,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       const cerebras = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.cerebras, ...fetchOpt });
       this.providerCache = (modelId: string) => cerebras.chat(modelId);
     } else if (detected === 'puter') {
-      // #PuterGateway — Puter is not OpenAI-compatible at the transport level,
+      // #PuterGateway: Puter is not OpenAI-compatible at the transport level,
       // but its `ai-chat` driver speaks OpenAI's *payload*: the same messages,
       // the same `tools`, and `finish_reason: "tool_calls"` with
       // `message.tool_calls[]` coming back. So rather than a bespoke
       // LanguageModel implementation, the OpenAI client is pointed at a fetch
       // that puts the body into Puter's envelope and takes the answer out
-      // again. Everything downstream — tool calling, retries, usage — is the
+      // again. Everything downstream (tool calling, retries, usage) is the
       // path the other providers already use.
       const key = apiKey ?? process.env.PUTER_TOKEN;
       if (!key) throw new Error('PUTER_TOKEN is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
@@ -1188,7 +1188,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     } else if (detected === 'openrouter') {
       // Shipped app provider (the 4th), same OpenAI-compatible path as
       // Cerebras. :free models 404 unless the account's privacy settings
-      // allow free model publication — see benchmarks/README.md.
+      // allow free model publication: see benchmarks/README.md.
       const key = apiKey ?? process.env.OPENROUTER_API_KEY;
       if (!key) throw new Error('OPENROUTER_API_KEY is not set. Export it in your shell or pass `apiKey` to createHeadlessRunner().');
       const openrouter = createOpenAI({ apiKey: key, baseURL: PROVIDER_BASE_URL.openrouter, ...fetchOpt });
@@ -1215,7 +1215,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   // Sampling params to spread into a generateText() call. We pin temperature
-  // to 0 for determinism, but only for models that still accept it — the
+  // to 0 for determinism, but only for models that still accept it: the
   // newest models removed sampling params and 400 on `temperature`, so we omit
   // it for them. See acceptsTemperature() in @tamedtable/model-config.
   private samplingParams(modelId: string): { temperature?: number } {
@@ -1253,7 +1253,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.lookupTables.set(name, rows);
   }
 
-  /** Commit a freshly-loaded source — shared by loadInput (path) and
+  /** Commit a freshly-loaded source: shared by loadInput (path) and
    *  loadParsed (rows). Resets derived state and the DuckDB relation. */
   private async commitSource(rows: Row[], spec: TablePlan, sourcePath: string): Promise<void> {
     this.sourceRows = rows;
@@ -1287,8 +1287,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   // #PyExport
   // The call streams (#PyExport): the script is the slowest thing the app
   // asks a model for, and a host that can show it being written turns a blank
-  // wait into something to watch. Streaming unconditionally — `onProgress` or
-  // not — keeps ONE request shape, so the CLI and the web app share a cassette.
+  // wait into something to watch. Streaming unconditionally: `onProgress` or
+  // not: keeps ONE request shape, so the CLI and the web app share a cassette.
   async exportPython(opts: ExportPythonOpts = {}): Promise<string> {
     this.requireLoaded();
     // Same trims as a patch turn: basename-only table, no query provenance.
@@ -1330,7 +1330,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   ): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
-    // #CancelOp — a long replay ({llm} cells, a big flow) is cancellable, and
+    // #CancelOp: a long replay ({llm} cells, a big flow) is cancellable, and
     // the abort must reach the host as `Runner: cancelled`, not as whatever
     // the provider SDK threw. Nothing below has run yet, so the previous spec
     // and rows stay untouched.
@@ -1359,13 +1359,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     for (const key of [...this.joinRightTables.keys()]) if (!live.has(key)) this.joinRightTables.delete(key);
   }
 
-  // #LazyExec — web-shell seams (see the interface docs).
+  // #LazyExec: web-shell seams (see the interface docs).
   async adoptState(spec: TablePlan, rows: Row[], origins?: ReadonlyArray<number | undefined>): Promise<void> {
     const validated = validateTablePlan(spec);
     if (this.sourcePath) validated.table = this.sourcePath;
     this.spec = syncColumnsToRows(validated, rows);
     this.derivedRows = rows;
-    // Without handed-over origins, fall back to positional identity — the
+    // Without handed-over origins, fall back to positional identity: the
     // pre-mapping behavior, correct whenever no step reordered the rows.
     this.derivedOrigins = origins ? [...origins] : rows.map((_, i) => i);
     await this.sql.resetTable();
@@ -1401,7 +1401,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.callLog = [];
     this.cellSampleLog = [];
     // onDebug fires exactly once per request, on every way it can settle
-    // (spec/code-contract.md § Headless) — a failure inside the model call
+    // (spec/code-contract.md § Headless): a failure inside the model call
     // itself included, since it still spent tokens. The flag keeps the
     // catch-all report below from doubling a report already made.
     let debugReported = false;
@@ -1415,12 +1415,12 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       let lastError: string | undefined;
       let transcriptSent = false;
       // The provenance text stamped on committed transformations: the request
-      // text, or — for a spoken request — the transcript once it arrives.
+      // text, or, for a spoken request, the transcript once it arrives.
       let queryText = text;
       let prompt = buildPrompt(text, this.spec);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
-        // #CancelOp — the model call is most of a request's wall-clock, so it
+        // #CancelOp: the model call is most of a request's wall-clock, so it
         // is where a Stop usually lands. Translate here too, or the SDK's raw
         // AbortError escapes and the host reads a cancel as a crash.
         let llmTurn: { ops: unknown[]; transcript?: string };
@@ -1462,8 +1462,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           continue;
         }
 
-        // The mirror guard: a patch that only DECLARES a new column — no
-        // transformation writes it — would commit as a silent no-op. Weak
+        // The mirror guard: a patch that only DECLARES a new column, no
+        // transformation writes it: would commit as a silent no-op. Weak
         // models produce exactly this shape; send it back for the computing
         // step (spec/behavior.md § Headless).
         const ghostError = checkDeclaredColumnsWritten(tried.spec, this.spec, this.sourceColumns);
@@ -1475,7 +1475,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           continue;
         }
 
-        // #LazyExec — the dependency rule's gate: the host inspects the
+        // #LazyExec: the dependency rule's gate: the host inspects the
         // applied-but-not-yet-replayed spec and may decline it (or widen its
         // cellFilter to run all rows first). Declining drops the patch with
         // no spec change, no history entry, and no recovery turn.
@@ -1485,7 +1485,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
 
         if (onPlanEdits) {
           // The edit printer runs inside this callback. A formatting bug in
-          // it must drop an edit line, never fail an otherwise-good request —
+          // it must drop an edit line, never fail an otherwise-good request:
           // so swallow anything diffPlans or the callback throws.
           try {
             const edits = diffPlans(this.spec, tried.spec);
@@ -1498,7 +1498,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           abortIf(signal);
           // Zero-rows guard (spec/behavior.md § Headless): a patch that
           // evaluates to an empty table from a non-empty source is almost
-          // always a predicate mis-parsing real cell values — reject it into
+          // always a predicate mis-parsing real cell values: reject it into
           // the recovery loop instead of silently emptying the table.
           if (newRows.length === 0 && this.sourceRows.length > 0) {
             throw new Error(
@@ -1532,8 +1532,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       reportDebug(info);
       throw err;
     } catch (e) {
-      // Anything that escaped the loop — an HTTP error or a text-only reply in
-      // the model call, a cancel, a declined patch — still settles the request,
+      // Anything that escaped the loop: an HTTP error or a text-only reply in
+      // the model call, a cancel, a declined patch, still settles the request,
       // so its token spend must not be invisible to the CLI and the web.
       reportDebug(this.buildDebugInfo(text, turns, [], Date.now() - startedAt));
       throw e;
@@ -1561,7 +1561,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     });
     await rateLimiter.acquire(signal);
     // With audio (web voice input) the user message is multimodal: the prompt
-    // text plus the spoken request as a file part — still one model call.
+    // text plus the spoken request as a file part: still one model call.
     const userContent = audio
       ? {
           messages: [{
@@ -1585,7 +1585,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
-    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage, 'primary');
+    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage, 'chat');
     if (!captured) {
       const direct = result.toolCalls?.find((c) => c.toolName === 'apply_spec_patch');
       const input = direct?.input as { operations?: unknown[]; transcript?: string } | undefined;
@@ -1615,7 +1615,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       this.derivedRows.length > 0 &&
       prev.every((p, i) => JSON.stringify(p) === JSON.stringify(next[i]));
 
-    // #LazyExec — tag the working copies with their source origins (derived
+    // #LazyExec: tag the working copies with their source origins (derived
     // rows re-carry the origins committed with them), stripped back off the
     // final rows below. See the ROW_ORIGIN notes.
     let rows: Row[];
@@ -1668,7 +1668,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 
   /** Evaluate one sort key to a per-row value array. A key may be a column
-   *  name or any Expr shape — the same set `mutate.value` accepts. {sql}
+   *  name or any Expr shape: the same set `mutate.value` accepts. {sql}
    *  runs through DuckDB, {llm} through the cell model. */
   private async evalSortKey(
     rows: Row[],
@@ -1681,7 +1681,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       return rows.map((r, i) => fn(r, i, rows));
     }
     if ('sql' in key) return this.sql.evalSqlScalar(rows, key.sql, signal);
-    // {llm}: one rendered prompt per row, evaluated through the cell model —
+    // {llm}: one rendered prompt per row, evaluated through the cell model,
     // the same batching/caching path a mutate LLM column uses, so a table
     // larger than one batch becomes several requests, not one giant one.
     validateTemplate(key.llm, rows);
@@ -1725,7 +1725,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     if (!hasLlmAgg && !hasSqlAgg) return applyGroupJs(rows, t);
 
     const { order, groups } = buildGroups(rows, t.by);
-    // Output names, with an aggregate that shares a by-column's name renamed —
+    // Output names, with an aggregate that shares a by-column's name renamed:
     // the group key must survive (spec/behavior.md § group).
     const { byNames, aggNames } = groupOutputNames(t.by, t.agg);
     const allGroups = order.map((k) => {
@@ -1733,8 +1733,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       return { key: aggKey(g.keyTuple), rows: g.slice };
     });
 
-    // LLM aggregates: pre-render one prompt per (group, llm-agg) cell — {*}
-    // expands to the group's compact JSON — then run them through the shared
+    // LLM aggregates: pre-render one prompt per (group, llm-agg) cell, {*}
+    // expands to the group's compact JSON, then run them through the shared
     // batch/chunk driver, so many groups cost many bounded requests instead of
     // one request carrying every group's rows.
     const llmAggCols = Object.entries(t.agg).filter(([, e]) => 'llm' in e) as Array<[string, { llm: string; model?: string }]>;
@@ -1798,8 +1798,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
    *  arity exactly as a literal or regex split would. Runs through the same
    *  batch/cache driver an {llm} mutate uses (#LazyExec): a cellFilter's
    *  excluded rows refill from the per-cell result cache when their rendered
-   *  prompt is cached (free), else hold pending sentinels — so paging,
-   *  undo/redo, and resume never re-bill a split cell — and with
+   *  prompt is cached (free), else hold pending sentinels, so paging,
+   *  undo/redo, and resume never re-bill a split cell, and with
    *  `onCellError` set a failing cell lands a failed sentinel per row
    *  instead of failing the step. */
   private async applySplitLlm(
@@ -1814,7 +1814,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const included = (i: number): boolean => !lazy?.cellFilter || lazy.cellFilter(tIndex, i, rows[i]!);
     const out: Row[] = rows.map((r) => ({ ...r }));
     // `stream` mirrors the mutate path: only cells an included batch landed
-    // emit chunks — an excluded row's silent cache refill paints nothing.
+    // emit chunks: an excluded row's silent cache refill paints nothing.
     const fill = (i: number, reply: unknown, stream = false): void => {
       const target = out[i]!;
       if (isFailedCell(reply)) {
@@ -1870,7 +1870,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const batchSize = this.batchSize();
     const chunkSize = this.chunkSize();
     const out: Row[] = rows.map((r) => ({ ...r }));
-    // #LazyExec — rows the cellFilter excludes never spend a model call:
+    // #LazyExec: rows the cellFilter excludes never spend a model call:
     // a cell whose rendered prompt is already cached refills silently (this
     // is what makes undo/redo, resume, and provider re-replays free), the
     // rest get a pending sentinel. Batches form over the included rows only,
@@ -1907,7 +1907,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           for (const c of cols) {
             const before = out[rowIndex]![c];
             out[rowIndex]![c] = value;
-            // A failed cell keeps its sentinel out of the stream and samples —
+            // A failed cell keeps its sentinel out of the stream and samples:
             // the host learns about it through onCellError, not a chunk.
             if (isFailedCell(value)) continue;
             onChunk?.({ transformationIndex: tIndex, rowIndex, column: c, before, after: value });
@@ -1936,7 +1936,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
    *  in flight, results concatenated back in input order. A `mutate` value
    *  drives the same two sizes itself because it also maps each batch's
    *  results onto row indices and streams them; a `sort` key and a `group`
-   *  aggregate, which just need one value per item, come through here — so no
+   *  aggregate, which just need one value per item, come through here, so no
    *  slot can send a whole large table as one context-blowing request. */
   private async runCellBatches<T>(
     items: T[],
@@ -1979,7 +1979,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     if (!onCellFail) {
       fetched = await this.callLlmCells(pending.map((p) => p.prompt), perCellModel, signal);
     } else {
-      // #LazyExec — failure capture: a batch call that errors falls back to
+      // #LazyExec: failure capture: a batch call that errors falls back to
       // per-cell calls so one poisoned row fails alone; a per-cell error
       // becomes a failed sentinel (reported, uncached) instead of failing
       // the step. Cancellation still propagates.
@@ -2001,7 +2001,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
     for (let k = 0; k < pending.length; k++) {
       results[pending[k]!.idx] = fetched[k];
-      // Failed cells are never cached — a retry must call again.
+      // Failed cells are never cached: a retry must call again.
       if (isFailedCell(fetched[k])) continue;
       this.cellResultCache.set(this.cacheKey(perCellModel, pending[k]!.prompt), fetched[k]);
     }
@@ -2046,7 +2046,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   }
 }
 
-/** @internal — exported for unit tests. */
+/** @internal: exported for unit tests. */
 export function diffPlans(oldSpec: TablePlan, newSpec: TablePlan): PlanEdit[] {
   const items: PlanEdit[] = [];
   const oldIds = oldSpec.columns.map((c) => c.id);
@@ -2074,7 +2074,7 @@ function exprToString(e: Expr): string {
   return e.llm.trim();
 }
 
-/** @internal — exported for unit tests. The primary expression(s) of a
+/** @internal: exported for unit tests. The primary expression(s) of a
  *  transformation, for the CLI debug block. Secondary fields such as a
  *  validate `message` are intentionally omitted. */
 export function transformationExpressions(t: Transformation): Array<{ label: string; body: string }> {
@@ -2124,7 +2124,7 @@ export function specHasLlmCell(spec: TablePlan): boolean {
   return false;
 }
 
-/** @internal — exported for unit tests. */
+/** @internal: exported for unit tests. */
 export function tryParseBatchResponse(text: string, expectedLen: number): unknown[] | undefined {
   let cleaned = text.trim();
   if (cleaned.startsWith('```')) {
@@ -2137,7 +2137,7 @@ export function tryParseBatchResponse(text: string, expectedLen: number): unknow
       if (v === null) return null;
       if (typeof v === 'string') {
         const t = v.trim();
-        // Only the literal lowercased word — see callLlmCell.
+        // Only the literal lowercased word: see callLlmCell.
         return t === '' || t === 'null' ? null : t;
       }
       return String(v);

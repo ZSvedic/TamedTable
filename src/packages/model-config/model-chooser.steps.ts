@@ -77,7 +77,7 @@ Then(
   },
 );
 
-// Cards in DOM order, by provider id — the design orders them by when they
+// Cards in DOM order, by provider id: the design orders them by when they
 // were added, which is not the catalogue's order.
 Then(
   "the chooser's cards read {string}",
@@ -124,17 +124,11 @@ Then('the {string} card shows no model rows', async function (this: object, prov
   assert.equal(rows.length, 0, `expected the ${provider} card to be collapsed`);
 });
 
-/** The two roles are "chat" and "cell" in the spec and on screen; the DOM keeps
- *  `primary`/`secondary`, which is persisted API and not worth churning for a
- *  wording change. This is the one place the two vocabularies meet. */
-const ROLE_ATTR: Record<string, string> = { chat: 'primary', cell: 'secondary' };
-
 Then(
   "the {string} card's {word} model is {string}",
   async function (this: object, provider: string, role: string, modelId: string) {
-    const attr = ROLE_ATTR[role] ?? role;
     await page(this).waitForSelector(
-      `[data-mc-card="${provider}"] ~ div [data-mc-role="${attr}"][data-mc-model="${modelId}"]`,
+      `[data-mc-card="${provider}"] ~ div [data-mc-role="${role}"][data-mc-model="${modelId}"]`,
       { timeout: 5_000 },
     );
   },
@@ -234,7 +228,7 @@ Then("the chooser's footer reads {string}", async function (this: object, text: 
 // ── how-to-get-a-key instructions ────────────────────────────────────────────
 
 // The link labels in DOM order. Asserted as a list rather than as the row's
-// text, because the row's spacing is flex gap — its textContent runs the
+// text, because the row's spacing is flex gap: its textContent runs the
 // labels together.
 Then(
   "the chooser's instructions row lists {string}",

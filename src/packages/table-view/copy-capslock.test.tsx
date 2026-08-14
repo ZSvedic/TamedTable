@@ -1,11 +1,11 @@
-// RED-UI-4 — regression test (red inventory): Cmd/Ctrl+C cell copy is dead when
+// RED-UI-4: regression test (red inventory): Cmd/Ctrl+C cell copy is dead when
 // CapsLock is on. With CapsLock engaged the browser reports the C key as
-// `key: 'C'` (KeyboardEvent.key reflects CapsLock — standard UI Events
+// `key: 'C'` (KeyboardEvent.key reflects CapsLock: standard UI Events
 // behavior), and the copy handler's case-sensitive comparison
 // `e.key !== 'c'` (TableView.tsx:153) silently no-ops. Spec: "with a cell
 // selected (and not editing), Cmd/Ctrl+C copies its text to the clipboard
-// and reports `onCopyCell(row, column, text)`" —
-// spec/packages/table-view/behavior.md:114-116 — no CapsLock carve-out.
+// and reports `onCopyCell(row, column, text)`":
+// spec/packages/table-view/behavior.md:114-116, no CapsLock carve-out.
 // import { afterAll, beforeAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { win, h, act, mount, unmountAll, setupReact } from '../../tests/ui-dom-harness.tsx';
@@ -16,7 +16,7 @@ setupReact(await import('react'), await import('react-dom/client'));
 const { ThemeProvider } = await import('@tamedtable/ui-kit/components');
 const { TableView } = await import('./TableView.tsx');
 
-// The handler calls navigator.clipboard?.writeText — give the shared window
+// The handler calls navigator.clipboard?.writeText: give the shared window
 // a permission-free stub for the duration of this file, then restore.
 const realNavigator = (globalThis as { navigator: unknown }).navigator;
 beforeAll(() => {
@@ -61,12 +61,12 @@ test('RED-UI-4: Ctrl/Cmd+C cell copy dead with CapsLock (key reported as upperca
   }
   copies.length = 0;
 
-  // The bug: with CapsLock the browser reports key 'C' — the copy must still
+  // The bug: with CapsLock the browser reports key 'C', the copy must still
   // fire.
   fire('C');
   assert.deepEqual(
     copies,
     ['0:name=Ada'],
-    "RED-UI-4 (spec/packages/table-view/behavior.md:114-116): Cmd/Ctrl+C must copy the selected cell with no CapsLock carve-out, but with CapsLock (key 'C') the shortcut silently does nothing — TableView.tsx:153 compares e.key !== 'c' case-sensitively",
+    "RED-UI-4 (spec/packages/table-view/behavior.md:114-116): Cmd/Ctrl+C must copy the selected cell with no CapsLock carve-out, but with CapsLock (key 'C') the shortcut silently does nothing, TableView.tsx:153 compares e.key !== 'c' case-sensitively",
   );
 });

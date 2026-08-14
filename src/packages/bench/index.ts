@@ -1,5 +1,5 @@
 // #BenchSweep
-// @tamedtable/bench — the model & batch-size benchmark. A dev/research tool
+// @tamedtable/bench: the model & batch-size benchmark. A dev/research tool
 // (not a shipped library): it drives the headless engine over the committed
 // fixture across a grid of (model, batch size) configs and scores each on
 // speed, cost, and accuracy against ground-truth labels.

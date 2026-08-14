@@ -1,4 +1,4 @@
-// Binds the controller's toast list to the ui-kit toast stack — the stack
+// Binds the controller's toast list to the ui-kit toast stack, the stack
 // itself (layout, styling, dismiss buttons) lives in @tamedtable/ui-kit.
 import type { ReactNode } from 'react';
 import { Toasts as ToastStack } from '@tamedtable/ui-kit/components';

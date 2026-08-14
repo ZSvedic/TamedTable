@@ -9,9 +9,9 @@ The human-authored contract for TamedTable: what the system does, the types it e
 | [code-contract.md](code-contract.md) | Types, signatures, env vars, exit codes |
 | [prompt-app-edit.md](prompt-app-edit.md) | The LLM prompts (imported by the runtime at init) |
 | [writing-style.md](writing-style.md) | Writing style for all markdown in the repo |
-| [test-conventions.md](test-conventions.md) | How the Gherkin suite is organized and kept small — tags, outlining levers, cross-file DRY decisions |
-| [packages/](packages/README.md) | Per-package specs — layout rules in its README |
-| [mockups/](mockups/) | Static HTML mockups reviewed at a phase gate — currently the lazy-execution UI ([lazy-ai.html](mockups/lazy-ai.html)) |
+| [test-conventions.md](test-conventions.md) | How the Gherkin suite is organized and kept small: tags, outlining levers, cross-file DRY decisions |
+| [packages/](packages/README.md) | Per-package specs: layout rules in its README |
+| [mockups/](mockups/) | Static HTML mockups reviewed at a phase gate: currently the lazy-execution UI ([lazy-ai.html](mockups/lazy-ai.html)) |
 | [test-cases/](test-cases/) | Gherkin features + fixtures, named as below |
 | [user-data/](user-data/README.md) | Real user-contributed files: minimal repro fixtures the `@regression` scenarios in `test-cases/` replay, plus the `-original` full files kept for manual testing |
 
@@ -21,16 +21,16 @@ The structural rule: library packages (self-contained, demo-able) get per-packag
 
 App-behavior scenarios in [test-cases/](test-cases/) test the TamedTable app through its surfaces (CLI, headless, web). Files per use case:
 
-- `<usecase>-input.<ext>` — source fixture (committed). Feature files whose scenarios each need a different source (validate, classify, enrich, language-ai, sort) name inputs by content instead — `emails.csv`, `tickets.csv`, …
-- `<usecase>-expected.<ext>` — golden output (committed)
-- `<usecase>-output.<ext>` — runtime-generated (gitignored)
-- `<usecase>.flow` — saved flow
-- `<usecase>.feature` — Gherkin scenarios
+- `<usecase>-input.<ext>` (source fixture (committed). Feature files whose scenarios each need a different source (validate, classify, enrich, language-ai, sort) name inputs by content instead) `emails.csv`, `tickets.csv`, …
+- `<usecase>-expected.<ext>`: golden output (committed)
+- `<usecase>-output.<ext>`: runtime-generated (gitignored)
+- `<usecase>.flow`: saved flow
+- `<usecase>.feature`: Gherkin scenarios
 
-App-behavior step defs live in `src/tests/` and share the app harness (`world.ts`); library-package step defs live in the package itself — see [packages/README.md](packages/README.md).
+App-behavior step defs live in `src/tests/` and share the app harness (`world.ts`); library-package step defs live in the package itself: see [packages/README.md](packages/README.md).
 
-Edits by the AI to `*-expected.jsonl` golden files are spec changes — review them, don't treat them as routine fixture churn.
+Edits by the AI to `*-expected.jsonl` golden files are spec changes: review them, don't treat them as routine fixture churn.
 
 ## Regression scenarios
 
-A scenario written to lock a fixed bug is a behavior specification like any other, so it lives **with the behavior it describes** — in `test-cases/` (or a package spec), in the feature file for that capability, never in a separate `bug-cases/` tree. A `bug-cases/` split would duplicate the taxonomy, scatter one behavior's spec across two homes, and rot the moment "bug" and "feature" blur. Provenance is metadata, not structure: tag the scenario `@regression` (alongside its execution tags like `@headless`/`@web`) and reference the issue/PR in a comment above it. The tag is filterable (`--tags @regression`) as the count grows; the layout stays organized by capability. A bug that fits no existing feature gets its own capability feature — e.g. [test-cases/model-resilience.feature](test-cases/model-resilience.feature) collects the runner's tolerance of imperfect model output.
+A scenario written to lock a fixed bug is a behavior specification like any other, so it lives **with the behavior it describes** (in `test-cases/` (or a package spec), in the feature file for that capability, never in a separate `bug-cases/` tree. A `bug-cases/` split would duplicate the taxonomy, scatter one behavior's spec across two homes, and rot the moment "bug" and "feature" blur. Provenance is metadata, not structure: tag the scenario `@regression` (alongside its execution tags like `@headless`/`@web`) and reference the issue/PR in a comment above it. The tag is filterable (`--tags @regression`) as the count grows; the layout stays organized by capability. A bug that fits no existing feature gets its own capability feature) e.g. [test-cases/model-resilience.feature](test-cases/model-resilience.feature) collects the runner's tolerance of imperfect model output.

@@ -1,4 +1,4 @@
-// #IoFormats #DuckDB — browser-level E2E for binary file loading. The Cucumber
+// #IoFormats #DuckDB: browser-level E2E for binary file loading. The Cucumber
 // @web suite loads these formats through node-api in Node; only the real browser
 // build exercises duckdb-wasm (Parquet, via registerFileBuffer) and apache-arrow
 // (Arrow). Each format is loaded from its bundled sample via the Open URL dialog
@@ -19,7 +19,7 @@ for (const { label, file } of [
     await dialog.locator('[data-tb-url-input]').fill(`${BASE}/samples/${file}`);
     await dialog.getByRole('button', { name: 'Load' }).click();
 
-    // Row 1 (0-indexed) is "Canada" in the fixture — a value parsed straight out
+    // Row 1 (0-indexed) is "Canada" in the fixture: a value parsed straight out
     // of the binary file, so a match proves the client-side reader worked.
     await expect(page.locator('[data-tv-cell="1:Country"]')).toHaveText('Canada', {
       timeout: 60_000,
@@ -49,7 +49,7 @@ test('Save data writes a real Parquet in the browser (hyparquet-writer)', async 
   await dialog.getByRole('button', { name: 'Load' }).click();
   await expect(page.locator('[data-tv-cell="1:Country"]')).toHaveText('Canada', { timeout: 60_000 });
 
-  // Save Parquet — headless Chromium lacks the File System Access API, so this
+  // Save Parquet: headless Chromium lacks the File System Access API, so this
   // takes the download fallback. Capture the bytes and check the Parquet magic.
   const dl = page.waitForEvent('download');
   await page.locator('[data-uk-menubtn]').nth(1).click();

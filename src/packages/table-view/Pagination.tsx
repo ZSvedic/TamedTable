@@ -1,5 +1,5 @@
 // #TableView
-// Pager — prev/next chevrons around the buildPageList number window. Pure
+// Pager: prev/next chevrons around the buildPageList number window. Pure
 // props in, callbacks out; the host owns the current page.
 import type { CSSProperties, ReactNode } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
@@ -15,7 +15,7 @@ export function Pagination({
   page: number;
   pageCount: number;
   onPageChange: (page: number) => void;
-  /** 1-based pages carrying pending rows — each gets a small dot mark
+  /** 1-based pages carrying pending rows: each gets a small dot mark
    *  (#LazyExec). */
   markedPages?: number[];
 }): ReactNode {

@@ -4,7 +4,7 @@ import { toCsv, parseCsv, mergeRuns, hasFreeTier, type ResultRow } from './resul
 function row(partial: Partial<ResultRow>): ResultRow {
   return {
     date: '2026-08-12', run: 'r', tier: 'paid', freeTier: false,
-    cellModel: 'm', primaryModel: 'p', provider: 'gemini', batchSize: 20,
+    cellModel: 'm', chatModel: 'p', provider: 'gemini', batchSize: 20,
     rows: 120, timeMs: 51_300, calls: 7, inTokens: 1000, outTokens: 100,
     costUsd: 0.0043, accuracy: 0.97, scored: 120, missing: 0, ...partial,
   };
@@ -17,7 +17,7 @@ test('a row survives a CSV round trip', () => {
 
 test('the header names the filter columns first, for a spreadsheet', () => {
   const header = toCsv([row({})]).split('\n')[0];
-  expect(header).toBe('date,run,provider,tier,freeTier,cellModel,primaryModel,batchSize,accuracyPct,costUsd,timeSec,rows,scored,missing,calls,inTokens,outTokens');
+  expect(header).toBe('date,run,provider,tier,freeTier,cellModel,chatModel,batchSize,accuracyPct,costUsd,timeSec,rows,scored,missing,calls,inTokens,outTokens');
 });
 
 test('accuracy is written as a percentage, so a spreadsheet sorts it as one', () => {

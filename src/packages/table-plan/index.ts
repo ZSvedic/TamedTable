@@ -2,18 +2,18 @@
 // The declarative table definition (formerly named `Spec`) plus its Zod schema
 // and validator, and the FormatCodec interface every format plugs into. This is
 // the zero-dependency base package both `core` (engine) and `file-io` (codecs,
-// dialogs, fetch) import — the clean DAG `core → file-io → table-plan` with no
+// dialogs, fetch) import: the clean DAG `core → file-io → table-plan` with no
 // cycle. Spec: spec/packages/file-io/behavior.md.
 
 import { z } from 'zod';
 
 // Zod declares `"sideEffects": false` and registers its English locale with a
-// bare `config(en())` call in its own entry point — which Rollup is free to
+// bare `config(en())` call in its own entry point, which Rollup is free to
 // drop, and does, from the production web bundle. Without the locale every
 // issue message degrades to a bare "Invalid input", so the browser describes a
 // bad spec differently from the CLI. That text is quoted verbatim into the
 // recovery prompt ("Your previous patch failed: …"), which is part of a
-// request's cassette fingerprint — so the drift also breaks tutorial replay in
+// request's cassette fingerprint, so the drift also breaks tutorial replay in
 // the deployed app. Configuring the locale by reference keeps it in the bundle.
 z.config(z.locales.en());
 
@@ -35,7 +35,7 @@ export function cellAt(row: Row, col: string, fallback: unknown = null): unknown
 }
 
 /** Assign a data-derived column onto a row without tripping the `__proto__`
- *  prototype setter — a column literally named `__proto__` would otherwise be
+ *  prototype setter: a column literally named `__proto__` would otherwise be
  *  silently dropped (or, for an object value, installed as the row's prototype)
  *  instead of becoming an own property. */
 export function setCell(row: Row, col: string, value: unknown): void {
@@ -61,7 +61,7 @@ export function normalizeDbCell(v: unknown): unknown {
   }
   if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
     const proto = Object.getPrototypeOf(v);
-    // A DuckDB value wrapper is a class instance — its prototype is neither the
+    // A DuckDB value wrapper is a class instance, its prototype is neither the
     // plain-object prototype nor null. Stringify it (its toString is the
     // canonical DATE/TIMESTAMP/DECIMAL/… text); leave plain data objects alone.
     if (proto !== Object.prototype && proto !== null) return String(v);
@@ -69,7 +69,7 @@ export function normalizeDbCell(v: unknown): unknown {
   return v;
 }
 
-// ── TablePlan schema (one schema for every plan — fresh load, patch, replay) ──
+// ── TablePlan schema (one schema for every plan: fresh load, patch, replay) ──
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);
 
@@ -82,8 +82,8 @@ export const ExprSchema: z.ZodTypeAny = z.union([
 const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
 
 // Provenance metadata every kind accepts. The runner stamps it at commit:
-// `query` — the chat request (voice: the transcript) — on the first step a
-// turn added or changed; `name` — the step's human describeStep label — on
+// `query`, the chat request (voice: the transcript), on the first step a
+// turn added or changed; `name`, the step's human describeStep label, on
 // every one. The engine ignores both; the model never sees them.
 const QueryMeta = { query: z.string().optional(), name: z.string().optional() };
 
@@ -107,7 +107,7 @@ const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({
     kind: z.literal('join'),
-    // null: the user named no file — the web UI asks for one and writes the
+    // null: the user named no file, the web UI asks for one and writes the
     // picked file's name back before the join runs (#LookupJoin).
     with: z.string().refine((s) => JsonLikeFileExtRe.test(s), {
       message: 'join.with: unknown file type (must be .csv or .jsonl)',
@@ -155,7 +155,7 @@ export type Expr =
   | { llm: string; model?: string }
   | { sql: string };
 
-/** Provenance metadata on every Transformation kind — see QueryMeta above. */
+/** Provenance metadata on every Transformation kind: see QueryMeta above. */
 type WithQuery = { query?: string; name?: string };
 
 export type Transformation =
@@ -176,7 +176,7 @@ const ColumnSchema = z.object({
   format: z.string().optional(),
 });
 
-// The spec describes data only — table, columns, transformations. View knobs
+// The spec describes data only: table, columns, transformations. View knobs
 // (page size, pagination) are UI state, so `.strict()` rejects any other
 // top-level key (e.g. `filter`, `sort`, `page`, `summary`) as unrecognized.
 export const TablePlanSchema = z
@@ -214,7 +214,7 @@ export interface ParsedTable {
  *  these; the engine and the web app reach formats only through it. Pure-JS
  *  codecs (csv, jsonl) implement `parse`/`serialize` synchronously; codecs whose
  *  reader is async (Phase 1's DuckDB-backed Parquet, Arrow via apache-arrow)
- *  return a Promise — every caller `await`s, so both shapes work. */
+ *  return a Promise: every caller `await`s, so both shapes work. */
 export interface FormatCodec {
   /** Stable format id, e.g. "csv", "jsonl". */
   id: string;
@@ -228,7 +228,7 @@ export interface FormatCodec {
   parse(bytes: Uint8Array, name: string): ParsedTable | Promise<ParsedTable>;
   /** Serialize rows to the format's raw bytes, emitting `columns` in order.
    *  Cells are always looked up by `columns` (the spec's column ids). `headers`,
-   *  when given, overrides the *display* names written for those columns —
+   *  when given, overrides the *display* names written for those columns:
    *  the CSV codec uses it for the header row (column `label` when set, id
    *  otherwise); formats whose keys must round-trip (JSONL keys, Parquet/Arrow
    *  schema names) ignore it and keep the ids. Defaults to `columns`. */

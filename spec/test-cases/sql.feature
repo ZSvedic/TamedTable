@@ -1,5 +1,5 @@
 # #SqlExpr
-# {sql} expression shape — DuckDB-backed predicates, scalars, aggregates.
+# {sql} expression shape: DuckDB-backed predicates, scalars, aggregates.
 Feature: SQL expressions
 
   Rule: {sql} as a scalar in mutate
@@ -9,7 +9,7 @@ Feature: SQL expressions
 
     # @web too: the web build routes {sql} through duckdb-wasm. The web
     # cucumber surface runs the controller in Node (real @duckdb/node-api) and
-    # replays the same sql.json cassette — the request body is byte-identical —
+    # replays the same sql.json cassette: the request body is byte-identical,
     # so this proves the controller re-enables SQL. The browser wasm path itself
     # is exercised by web/e2e/sql.e2e.ts.
     @headless @cli @web
@@ -41,10 +41,10 @@ Feature: SQL expressions
 
   Rule: {sql} runs over reserved-word and punctuated column names
 
-    # @regression — user-reported 2026-07-17 (PR #237, fixtures in
+    # @regression: user-reported 2026-07-17 (PR #237, fixtures in
     # spec/user-data/): a chess-tournament CSV whose columns include the
     # reserved word `do` and the punctuated `Organizator(i)` made every {sql}
-    # step fail with `Parser Error: syntax error at or near "do"` — the DuckDB
+    # step fail with `Parser Error: syntax error at or near "do"`, the DuckDB
     # relation was CREATEd with unquoted identifiers.
     @headless @regression
     Scenario: A {sql} flow replays over columns named `do` and `Organizator(i)`
@@ -86,8 +86,8 @@ Feature: SQL expressions
 
     These scenarios run against the 1 821-row performance fixture so the
     aggregate is reliably still executing when the cancel lands. The
-    `via SQL` request path is scripted — the patch turn is answered locally
-    with a canned aggregate over the fixture — so the SQL that reaches
+    `via SQL` request path is scripted: the patch turn is answered locally
+    with a canned aggregate over the fixture, so the SQL that reaches
     DuckDB is deterministic where a live model would not be.
 
     @headless @cli @cancel @scripted

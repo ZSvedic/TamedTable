@@ -1,4 +1,4 @@
-// #OpenFlow — unit tests for describeStep, the derived one-line step label
+// #OpenFlow: unit tests for describeStep, the derived one-line step label
 // the live run progress shows. Shapes mirror a real user flow (chess
 // tournaments): an AI clustering mutate, js filters, a grouped aggregation.
 import { describe, it, expect } from 'bun:test';

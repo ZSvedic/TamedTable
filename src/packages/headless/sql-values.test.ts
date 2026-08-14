@@ -1,4 +1,4 @@
-// {sql} value normalization — a regression that used to be RED-CORE-4, now
+// {sql} value normalization: a regression that used to be RED-CORE-4, now
 // fixed and pinned green. A {sql} step producing a DuckDB DATE/TIMESTAMP/DECIMAL
 // wrapper (e.g. via try_strptime, which the engine's recovery guidance steers
 // the model toward) must commit as a plain scalar so every save format works.

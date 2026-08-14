@@ -7,7 +7,7 @@ config) with no user-visible behavior of their own.
 
 ## Data model
 
-→ [behavior.md — Data model](behavior.md#data-model)
+→ [behavior.md, Data model](behavior.md#data-model)
 
 The model below lives in the zero-dependency base package
 `@tamedtable/table-plan`: `Row`, `Expr`, `Transformation` and their schemas,
@@ -15,7 +15,7 @@ The model below lives in the zero-dependency base package
 interface (see [§ Format codecs](#format-codecs)). `@tamedtable/core`
 re-exports the whole surface, so `from '@tamedtable/core'` keeps resolving
 every name. The dependency DAG is `core → file-io → table-plan`,
-`core → table-plan` — no cycle.
+`core → table-plan`, no cycle.
 
 ```ts
 type Expr =
@@ -29,15 +29,15 @@ type Transformation =
   | { kind: "select";   columns: string[] }                                     // #ColSelect
   | { kind: "sort";     by: Array<{ key: Expr | string; dir: "asc" | "desc" }>; limit?: number } // #SortRows
   | { kind: "group";    by: Array<Expr | string>; agg: Record<string, Expr> }    // #Aggregate
-  | { kind: "join";     with: string | null; on: Expr; how?: "inner" | "left" }  // #LookupJoin — null: no file named yet
+  | { kind: "join";     with: string | null; on: Expr; how?: "inner" | "left" }  // #LookupJoin, null: no file named yet
   | { kind: "split";    from: string; into: string[]; on: string | RegExp | Expr; drop?: boolean }  // #ColSplit
   | { kind: "validate"; pred: Expr; message?: Expr; threshold?: number; into?: string } // #Validate
   | { kind: "pivot";    index: string[]; on: string; values: string; agg?: "sum" | "count" | "avg" | "min" | "max" | "first" }  // #PivotData
   | { kind: "unpivot";  id: string[]; measures: string[]; names_to?: string; values_to?: string };  // #PivotData
 
 // Every Transformation variant also accepts optional provenance metadata:
-//   query?: string   // the chat request (voice: the transcript) — stamped on the FIRST step a turn added/changed
-//   name?: string    // the step's describeStep label — stamped on EVERY step a turn added/changed
+//   query?: string   // the chat request (voice: the transcript), stamped on the FIRST step a turn added/changed
+//   name?: string    // the step's describeStep label, stamped on EVERY step a turn added/changed
 
 type Row = Record<string, unknown>;
 
@@ -57,39 +57,39 @@ set and runs at three points:
 
 The schema checks: `kind` is one of the nine verbs; `Expr` is one of the
 three shapes; `split.into`, `pivot.index`, `sort.by`, and
-`unpivot.measures` are non-empty (an empty `group.by` is allowed — it
+`unpivot.measures` are non-empty (an empty `group.by` is allowed: it
 aggregates the whole table into one row);
 `validate.threshold` is in `[0, 1]`; `join.with` is `null` (the user
-named no file — the web UI asks for one and writes the picked file's
+named no file: the web UI asks for one and writes the picked file's
 name into the step before the join runs) or ends in `.csv` or
-`.jsonl`; the top-level object is strict — any key outside `table`,
+`.jsonl`; the top-level object is strict: any key outside `table`,
 `columns`, and `transformations` fails as an unrecognized key (the spec
 describes data, never the view, so a patch writing a view knob such as
 `filter`, `sort`, `page`, or `summary` is rejected into the recovery
 loop). It does *not* check whether a JS body compiles or whether an
-`{Column}` placeholder matches a real column — those errors surface at
+`{Column}` placeholder matches a real column: those errors surface at
 evaluation time and flow through the recovery loop. A single schema
 validates every spec; there is no separate legacy rejection path.
 
 `query` and `name` are provenance metadata, accepted on every
 transformation kind. The runner stamps them at commit time on the
-transformations the committed turn added or changed — "changed" meaning the
+transformations the committed turn added or changed: "changed" meaning the
 step has no counterpart in the pre-request spec once provenance is stripped
 from both sides and object keys are sorted. Stripped, because the model edits
 a stripped view: a whole-array `replace` re-emits the existing steps without
-their stamps, and those steps are untouched, not new — they get their own
+their stamps, and those steps are untouched, not new, they get their own
 earlier stamps back, never the new request's text. The comparison is against a
 **multiset**, not a set, so a turn that appends a duplicate of a step already
 in the spec still counts as having added one and gets stamped. The
 request's text (voice: the transcript) lands verbatim as `query` on the
-**first** such transformation only — so a multi-step request writes its
-text once, opening the group — while **every** such transformation gets
+**first** such transformation only, so a multi-step request writes its
+text once, opening the group, while **every** such transformation gets
 `name`, its `describeStep` label (`mutate _event_group (AI)`). The same
 stripped comparison decides the no-op rejection (`applyAndValidate`): an echo
 of exactly the view the model was shown differs from the committed spec only
 in provenance, and must be sent back rather than committed as a success. The
-engine never reads either stamp, and the spec shown to the model — the patch
-turn and the Python-export turn — has both stripped, so the model neither sees
+engine never reads either stamp, and the spec shown to the model, the patch
+turn and the Python-export turn: has both stripped, so the model neither sees
 nor edits them and prompts stay byte-identical for cassette replay. Since
 they ride inside `transformations`, `serializeFlow` carries them into
 saved `.flow` files unchanged and `execute` accepts them back.
@@ -114,7 +114,7 @@ Patches: RFC 6902 via `fast-json-patch`; RFC 7396 merge hand-rolled
 
 ## Core / runner
 
-→ [behavior.md — Core / runner](behavior.md#core--runner)
+→ [behavior.md: Core / runner](behavior.md#core--runner)
 
 ```ts
 function loadCsv(path: string):   Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }>;
@@ -129,7 +129,7 @@ interface Runner {
   // registry and loads the rows here, so the browser needs no filesystem.
   loadParsed(rows: Row[], spec: TablePlan): Promise<void>;
   // Stage a lookup table by name so a `join` whose `with` matches resolves
-  // against these rows instead of reading the file by path — lets joins run
+  // against these rows instead of reading the file by path: lets joins run
   // in the browser. An unregistered name falls back to the by-path read, which
   // in the browser has no filesystem to fall back to: the web controller
   // therefore checks every new join against its staged names *before* the
@@ -141,7 +141,7 @@ interface Runner {
   // replay (the web's flow-open #OpenFlow): `onStep` fires as each
   // transformation starts, `onChunk` streams AI-cell results, and aborting
   // `signal` throws `Runner: cancelled` with the previous spec and rows
-  // untouched — setSpec commits only when the whole replay finishes.
+  // untouched: setSpec commits only when the whole replay finishes.
   setSpec(spec: TablePlan, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
@@ -160,13 +160,13 @@ type ChunkUpdate = {
 // its kind, a human-friendly label, the row count entering it, and its
 // expressions. Steps a replay skips (the unchanged-prefix reuse) are not
 // reported. `label` comes
-// from `describeStep(t)` — a deterministic one-liner derived from the
+// from `describeStep(t)`: a deterministic one-liner derived from the
 // transformation's own fields: the kind, its target columns/keys, and the
-// expression shape as a marker — `(js)`, `(sql)`, or `(AI)` when the step
+// expression shape as a marker: `(js)`, `(sql)`, or `(AI)` when the step
 // calls the cell model. Examples: `mutate EventGroup (AI)`, `filter (js)`,
 // `group by EventGroup → total_players, sections, …`, `sort by Name desc`.
-// `expressions` comes from `transformationExpressions(t)` — the exact
-// JS/SQL/prompt bodies behind the label — so a progress log can show what
+// `expressions` comes from `transformationExpressions(t)`, the exact
+// JS/SQL/prompt bodies behind the label, so a progress log can show what
 // the step runs, not just its name.
 type StepUpdate = {
   index: number; total: number; kind: string; label: string; rows: number;
@@ -188,18 +188,18 @@ type RequestAudio = { data: Uint8Array; mediaType: string };
 `core` owns byte-acquisition (`node:fs`) only; the parse/serialize of each
 format lives in the `file-io` codec registry (see [§ Format codecs](#format-codecs)).
 `loadCsv` reads the file's raw bytes and hands them to the CSV codec (which
-decodes and parses with `csv-parse`, `trim: true` — unquoted leading/trailing
+decodes and parses with `csv-parse`, `trim: true`: unquoted leading/trailing
 whitespace stripped, quoted fields verbatim), then builds the initial plan from
 the codec's columns; it still throws `loadCsv: <path> has no header row` /
 `… duplicate column "…"`. `loadJsonl` and `readJsonl` hand the bytes to the
 JSONL codec, which derives the column list from the union of keys across rows
-(insertion order from the first row each key appears in). `Runner.loadInput` dispatches on file extension — `.csv`
+(insertion order from the first row each key appears in). `Runner.loadInput` dispatches on file extension: `.csv`
 to `loadCsv`, `.jsonl` to `loadJsonl`, and any other registered extension
 (`.parquet`, `.arrow`, …) through the codec registry; an extension no codec
 claims throws a clear *"unknown file type"* error that the REPL surfaces
 inline. `writeJsonl`
 overwrites the file; the parent directory must already exist. The recovery
-budget is 3 turns; running out throws an error carrying a `debug` field —
+budget is 3 turns; running out throws an error carrying a `debug` field:
 a `RequestDebugInfo` (see Headless).
 
 `Runner` is the surface step definitions drive ([common.steps.ts](../src/tests/common.steps.ts));
@@ -207,8 +207,8 @@ the CLI and headless packages both return Runners with the same method
 signatures, differing only in what each does under the hood. One deliberate
 asymmetry: the Gherkin `load "<file>"` step calls `loadInput` on the headless
 and CLI surfaces, but on the **@web** surface it routes the fixture's raw
-bytes through `WebController.loadFromBytes` — the same parse path a picked,
-dropped, or fetched file takes — so a file bigger than one page raises the
+bytes through `WebController.loadFromBytes`, the same parse path a picked,
+dropped, or fetched file takes, so a file bigger than one page raises the
 large-file dialog in tests exactly as in the app (#LazyExec), and the
 scenario resolves it with an explicit `load the file in original order` /
 `load the shuffled sample` step.
@@ -240,8 +240,8 @@ function loadCodec(id: FormatId): Promise<FormatCodec>;
 ```
 
 `detectFormat`/`formatForExtension` read a synchronous descriptor table
-(id + extensions + content types); `loadCodec` pulls the codec — and its
-parser — only on first use, so a run that never touches a format never imports
+(id + extensions + content types); `loadCodec` pulls the codec, and its
+parser: only on first use, so a run that never touches a format never imports
 its parser. `core`'s `loadCsv`/`loadJsonl`/`readJsonl`/`writeJsonl` delegate
 parse/serialize to the registry; `writeRows` dispatches on extension straight
 through the codec registry. Adding a format is one codec file plus one
@@ -249,7 +249,7 @@ registry row.
 
 ## Headless
 
-→ [behavior.md — Headless](behavior.md#headless)
+→ [behavior.md: Headless](behavior.md#headless)
 
 ```ts
 function createHeadlessRunner(opts?: HeadlessRunnerOptions): Runner;
@@ -306,28 +306,28 @@ interface RequestDebugInfo {
 Built on the Vercel AI SDK (`ai` + `@ai-sdk/anthropic`). The
 `apply_spec_patch` tool's input schema is a JSON Schema describing the RFC
 6902 operations list. Each op's `value` is a JSON-encoded **string**;
-the runner decodes it with `JSON.parse`. A near-miss encoding — valid
+the runner decodes it with `JSON.parse`. A near-miss encoding: valid
 JSON but for a stray invalid escape the model slipped in (e.g. an
-apostrophe escaped as `\'`, which JSON does not allow) — is repaired
+apostrophe escaped as `\'`, which JSON does not allow): is repaired
 (the stray backslash dropped, valid escapes including `\\` kept) and
 parsed once more before the value is left as a plain literal. Anthropic
 prompt caching uses `providerOptions.anthropic.cacheControl =
 { type: 'ephemeral' }` on the system-prompt prefix.
 
 Every abort surfaces as `Runner: cancelled`, whichever await it lands
-in — the patch-turn model call and the `setSpec` replay included. The
+in: the patch-turn model call and the `setSpec` replay included. The
 provider SDK's own `AbortError` never escapes the runner: hosts
 string-match the one message (the CLI to print `Cancelled.`, the web to
 keep a cancel out of the bug-report path), so a raw SDK error reaching
 them is a defect.
 
-`onDebug` fires once per `request` — on success and on failure — just
+`onDebug` fires once per `request`, on success and on failure, just
 before the call settles, carrying a `RequestDebugInfo`. A failure inside
 the model call itself counts: an HTTP error or a reply that never called
 the tool still spent tokens, so it still reports. The
 recovery-budget-exhausted error also carries the same struct on its
 `debug` field. `expressions` is populated on a successful request (one
-entry per appended transformation, `label` naming the field — `pred`,
+entry per appended transformation, `label` naming the field: `pred`,
 `value`, …); `steps` carries the matching `describeStep` label per
 appended transformation (the web chat's one-line-per-step reply);
 `cellSamples` captures up to 3 per-row LLM before→after
@@ -353,22 +353,22 @@ Env vars:
 | `OPENROUTER_API_KEY` | — | OpenRouter key (free plan). Read by the engine when a slash-containing model id (`vendor/model:free`) routes to OpenRouter, by `bench sweep`/`bench label`, and by `resolveConfig` (lowest env priority — any paid key outranks it). The account's privacy settings must allow free model publication or every `:free` call 404s. |
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com/v1` | Custom endpoint. |
 | `TAMEDTABLE_MODEL` | `gemini-3.6-flash` | Model that writes the spec patch each turn. Must belong to the resolved provider; a cross-provider value is coerced to that provider's default, same as a stored model. |
-| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Cell model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default — `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `openai/gpt-oss-20b` (Groq), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
-| `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). Must be a positive number; `0`, a negative, or unparsable text falls back to the default — a cap the limiter can never satisfy would wedge every request in its wait loop. |
+| `TAMEDTABLE_CELL_MODEL` | `gemini-3.1-flash-lite` | Cell model that fills in per-row LLM cells. Must share the main model's provider; a cross-provider value is coerced to that provider's **text** default: `gemini-3.1-flash-lite` (Google), `claude-haiku-4-5` (Anthropic), `gpt-5.4-mini` (OpenAI), `openai/gpt-oss-20b` (Groq), `gpt-oss-120b` (Cerebras), `cohere/north-mini-code:free` (OpenRouter). |
+| `TAMEDTABLE_RPM` | `40` | Per-process requests-per-minute cap (org ceiling is 50). Must be a positive number; `0`, a negative, or unparsable text falls back to the default: a cap the limiter can never satisfy would wedge every request in its wait loop. |
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
-| `TAMEDTABLE_DEBUG` | `on` | On by default — the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
+| `TAMEDTABLE_DEBUG` | `on` | On by default: the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
 
-Exactly one provider key is required — `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
+Exactly one provider key is required: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 `OPENAI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `PUTER_TOKEN`. `resolveConfig` picks the provider from whichever is set
 (Gemini > OpenAI > Anthropic > Groq > OpenRouter > Puter when several are), and `TAMEDTABLE_MODEL` must
-name a model from that provider — one from another provider is coerced to
+name a model from that provider: one from another provider is coerced to
 the provider's default model.
 
 The CLI calls `core`'s `loadEnv()` at startup: it looks for a `.env`
 file in the working directory and up to four parent directories,
 parses it, and sets each variable only when the environment doesn't
-already define it — real env vars always win.
+already define it: real env vars always win.
 
 ### Recording model calls for tests (#Cassettes)
 
@@ -382,23 +382,23 @@ implements; the SDK's own `fetch` field is `typeof globalThis.fetch`,
 so the forward casts to bridge the two.
 
 The cucumber suite passes a `fetch`-shaped *cassette recorder* as
-`opts.fetch`. The recorder fingerprints each request — a SHA-256 hex
-digest of `method + "\n" + url + "\n" + body` — and looks it up in a
+`opts.fetch`. The recorder fingerprints each request: a SHA-256 hex
+digest of `method + "\n" + url + "\n" + body`, and looks it up in a
 cassette file. The `TAMEDTABLE_CASSETTE` env var selects the mode:
 
 | `TAMEDTABLE_CASSETTE` | Behavior |
 |---|---|
-| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs the real key of the provider being recorded (`GEMINI_API_KEY` — every cassette records with the Gemini defaults; the `@web` provider-key step also substitutes `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` from the environment for scenarios that select those providers). |
+| `record` | Hit → return the saved response, no network. Miss → call the wrapped real `fetch`, save a successful response, return it. Needs the real key of the provider being recorded (`GEMINI_API_KEY`: every cassette records with the Gemini defaults; the `@web` provider-key step also substitutes `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` from the environment for scenarios that select those providers). |
 | `replay` | Hit → return the saved response. Miss → throw `no recording for this request: <fingerprint>`; when any committed entry carries a readable request, the message also names the nearest recorded request and the byte offset where it diverges, with a short excerpt of each side. No network, no API key. |
-| `off` (or any other value) | No recorder is installed; every call hits the network — a live run. |
+| `off` (or any other value) | No recorder is installed; every call hits the network: a live run. |
 
 `cucumber.js` defaults `TAMEDTABLE_CASSETTE` to `replay` when it is
 unset, so the suite runs offline unless a command opts into `record`
 or `off`. The fingerprint is strict by design: a changed prompt is
 always a miss, never a silent stale hit.
 
-A *small* prompt edit — one that would not change what the model
-answers — does not have to force a live re-record:
+A *small* prompt edit: one that would not change what the model
+answers: does not have to force a live re-record:
 `bun run cassettes:rekey` (`src/packages/cassette/rekey.ts`) rewrites
 the committed cassettes in place, splicing the current
 `spec/prompt-app-edit.md` `SYSTEM_PROMPT` into every recorded
@@ -412,7 +412,7 @@ alter model behavior. An entry recorded before the readable-request
 format (no `request` field) cannot be re-keyed; the script reports it.
 
 A full re-record is one command: `bun run test:record` records the
-headless, CLI, *and* web profiles in sequence — every profile that
+headless, CLI, *and* web profiles in sequence: every profile that
 makes model calls, so a prompt change can never leave one profile's
 tapes keyed to the old prompt while the others moved on.
 
@@ -424,8 +424,8 @@ one feature across all three profiles (`TAMEDTABLE_FEATURES` narrows
 each run). Needs `GEMINI_API_KEY`, like any recording.
 
 When a fresh recording disagrees with a committed golden, a human
-verifies the correct value against independent truth — outside the
-model's answer — before deciding which side to fix. A golden and a
+verifies the correct value against independent truth: outside the
+model's answer, before deciding which side to fix. A golden and a
 cassette can be wrong *together*: replay only proves they agree with
 each other. Precedent: `cleanup-expected.csv` carried a wrong `+490…`
 phone number for months because the golden and the cassette froze the
@@ -433,7 +433,7 @@ same wrong model answer.
 
 Only `2xx` responses are saved. A transient error (`429`, `5xx`) is
 returned to the SDK unsaved, so its built-in retry reaches the live API
-and the eventual success — not the transient error — is what lands in
+and the eventual success, not the transient error, is what lands in
 the cassette.
 
 A cassette file is a JSON object keyed by fingerprint; each value is
@@ -449,13 +449,13 @@ byte-identical leading run) is deduplicated into a top-level
 there (or is `null` when the body shares no long prefix with any
 other recording), and `prefix + suffix` reconstructs the exact
 original body bytes. The recorder splits each new body against the
-known prefixes — reusing the longest one the body starts with, or
+known prefixes: reusing the longest one the body starts with, or
 minting a new prefix from the longest common run (≥ 200 chars) it
 shares with an already-recorded body and re-splitting the entries that
 share it. `_prefixes` is reserved vocabulary: it can never collide
 with an entry key, which is always a 64-char hex fingerprint. The
-entry key stays the full-body fingerprint — replay lookup and the
-changed-prompt-is-a-miss guarantee are untouched — and a unit test
+entry key stays the full-body fingerprint: replay lookup and the
+changed-prompt-is-a-miss guarantee are untouched, and a unit test
 asserts `fingerprint(method, url, prefix + suffix) === key` over every
 committed entry that carries a `request`. Entries recorded before this
 field existed have no `request`; they load and replay as-is and gain
@@ -464,7 +464,7 @@ secrets never reach the file: every provider sends its API key in a
 header, and request headers are not recorded.)
 
 Cassettes live one per
-feature file at `cassettes/<feature>.json` in the repo root — committed
+feature file at `cassettes/<feature>.json` in the repo root: committed
 recorded data, not human-reviewed contract, so they sit outside `spec/`,
 and not regenerable from spec (re-recording needs a live API key), so
 they sit outside `src/` too. They are written pretty-printed with keys sorted
@@ -474,13 +474,13 @@ entry is flushed to its file as soon as it is captured.
 `runnerOptsFor` in [`src/tests/world.ts`](../src/tests/world.ts) wires
 this in: for a `@cli` or `@headless` scenario it reads
 `TAMEDTABLE_CASSETTE`, and when the value is `record` or `replay` it
-adds a recorder — bound to that scenario's feature-named cassette
-file — to the runner options bag. That bag also reaches the
+adds a recorder: bound to that scenario's feature-named cassette
+file: to the runner options bag. That bag also reaches the
 `runCli`-based steps, so REPL- and `execute`-driven scenarios record
 and replay too. In `replay` mode it sets a placeholder `apiKey` (the
 runner needs a non-empty key to build its provider, and the recorder
 intercepts every call before that key would be used), and `cucumber.js`
-lifts `TAMEDTABLE_RPM` — cassette hits touch no network, so the rate
+lifts `TAMEDTABLE_RPM`: cassette hits touch no network, so the rate
 limiter would only add idle delay. `bun test` lifts it the same way,
 from the `[test] preload` script named in `bunfig.toml`: the limiter is
 process-wide and seeded at module load, so leaving it in place lets one
@@ -491,7 +491,7 @@ under `src/tests/`; `src/packages/headless` merely forwards
 
 ## CLI
 
-→ [behavior.md — CLI](behavior.md#cli)
+→ [behavior.md: CLI](behavior.md#cli)
 
 ```ts
 function createCliRunner(options?: CliRunnerOptions): Runner;
@@ -499,7 +499,7 @@ function runCli(argv: string[]): Promise<{ exitCode: number; stderr: string }>;
 ```
 
 REPL uses `node:readline/promises`. The readline interface is created
-with `terminal:` true only when stdin **and** stdout are TTYs — line
+with `terminal:` true only when stdin **and** stdout are TTYs: line
 editing redraws the input line on the screen, so it needs a real screen
 as well as a real keyboard. Fully interactive runs get raw-mode line
 editing (↑/↓ history, ←/→, ⌃A/⌃E, ⌃R, etc.) for free; runs with either
@@ -508,12 +508,12 @@ interpretation, so Cucumber-driven input stays byte-deterministic and a
 piped stdout never collects control codes. The flag is never
 hardcoded to `false`; passing an explicit `false` would break
 interactive UX (arrow keys echo as `^[[A`). The CLI does not maintain
-or persist a history file — readline's in-memory history is
+or persist a history file: readline's in-memory history is
 sufficient for a single session.
 
 Ctrl-C is wired **twice**: `rl.on('SIGINT')` and `process.on('SIGINT')`,
 both routed to the same handler (cancel the running request if there is
-one, else close the interface). Neither alone is enough — a terminal-mode
+one, else close the interface). Neither alone is enough, a terminal-mode
 readline puts stdin in raw mode, so `^C` arrives as a keypress and no
 process signal is ever raised, while a piped run has no readline `SIGINT`
 event and only the process signal fires. Registering the readline
@@ -532,12 +532,12 @@ and after `:viewport` from `process.stdout.columns` /
   `floor((process.stdout.columns - REPL_INDENT) / REPL_AVG_COL_WIDTH)`
   with `REPL_INDENT = 1` and `REPL_AVG_COL_WIDTH = 16` (average cell
   plus the ` | ` separator), floored at `REPL_FALLBACK_COLS = 5`. The
-  estimate is deliberately conservative — at the default 80-col TTY it
+  estimate is deliberately conservative: at the default 80-col TTY it
   yields 5, and `:viewport` overrides it when the data needs a
   different ratio.
 
 When `process.stdout.isTTY` is false (piped stdout, no controlling
-terminal — tests, CI, `tamedtable execute`), both autodetect branches
+terminal: tests, CI, `tamedtable execute`), both autodetect branches
 are skipped and the renderer falls back to
 `REPL_FALLBACK_ROWS = 10` and `REPL_FALLBACK_COLS = 5`. The `/dev/tty`
 ioctl path is **not** used; non-interactive runs must stay byte-
@@ -548,11 +548,11 @@ as `(pinRows, pinCols)`. A pinned axis ignores `SIGWINCH` until cleared
 with `auto`. Effective per-axis size is `pin ?? auto ?? fallback`. When
 rows or columns fall outside the current viewport, the truncated edge
 renders `...{N} more rows.` or `...{N} more cols.` markers in place of
-cells — so a marker's text is part of its column's width, and every
+cells, so a marker's text is part of its column's width, and every
 ` | ` separator on a marker line sits under the header's.
 
 The CLI runner holds the viewport cursor `(rowOffset, colOffset)`, the
-viewport pins `(pinRows, pinCols)`, and the undo/redo journal — none
+viewport pins `(pinRows, pinCols)`, and the undo/redo journal: none
 of those surface on the `Runner` interface, since headless callers
 don't need them. The two help screens are the verbatim fenced blocks
 in [behavior.md §CLI/REPL](behavior.md#cli) (`:help`, in-session) <!-- #ReplCmds -->
@@ -569,15 +569,15 @@ so callers can decide what to do with a failure.
 {
   "version": 2,
   "source": "customers-input.csv",
-  "spec": { /* TablePlan — see Data model above */ }
+  "spec": { /* TablePlan, see Data model above */ }
 }
 ```
 
 `:save-flow` writes `version: 2`. `execute` <!-- #BatchExec --> accepts a `version` of `1`
 or `2` and validates the spec against the single schema either way; any
 other `version` exits 2. The embedded `source` is read relative to the
-`.flow` file's own directory. A `--input` flag overrides it and — like the
-`<flow>` argument and `--output` — is a shell path resolved relative to the
+`.flow` file's own directory. A `--input` flag overrides it and: like the
+`<flow>` argument and `--output`: is a shell path resolved relative to the
 current working directory, never re-anchored under the flow's directory.
 
 Exit codes:
@@ -594,7 +594,7 @@ Exit codes:
 
 ## System prompts
 
-→ [behavior.md — System prompts](behavior.md#system-prompts)
+→ [behavior.md: System prompts](behavior.md#system-prompts)
 
 [`spec/prompt-app-edit.md`](prompt-app-edit.md) is parsed at module load.
 The file is split on top-level `## ` headers; each section becomes a
@@ -615,7 +615,7 @@ not contain the prompt text directly.
 
 ## Extended transformations, SQL, and the web UI
 
-→ [behavior.md — Extended transformations, SQL, and the web UI](behavior.md#extended-transformations-sql-and-the-web-ui)
+→ [behavior.md: Extended transformations, SQL, and the web UI](behavior.md#extended-transformations-sql-and-the-web-ui)
 
 The wire model is the same `(spec, row_stream)` throughout: the spec is
 the contract. The `group`, `join`, and `{sql}` shapes in the type union
@@ -649,11 +649,11 @@ interface JoinTransform  { kind: "join";  with: string; on: Expr; how?: "inner" 
 ```
 
 The `by` list accepts either a bare column name (string) or a `{js}`
-expression (`{sql}`/`{llm}` keys throw at evaluation — see the support
+expression (`{sql}`/`{llm}` keys throw at evaluation, see the support
 matrix in [Data model](#data-model)) and may be
 empty, which aggregates the whole table into a single output row. `agg`
 expressions evaluate with the group's row slice bound as `rows` for
-JS (`(rows, key, allGroups) => …`), and as a relation for SQL — named
+JS (`(rows, key, allGroups) => …`), and as a relation for SQL: named
 `g`, and also reachable as `t` so a fragment that references the table
 by name resolves; LLM aggregates receive the group's compact JSON as
 `{*}`.
@@ -661,16 +661,16 @@ by name resolves; LLM aggregates receive the group's compact JSON as
 All three JS bindings are real: `rows` is the group's slice, `key` its
 by-value (the value itself for a single `by` key, the tuple array for
 several, `null` for an empty `by`), and `allGroups` every group as
-`{ key, rows }` in output order — so an aggregate can compute a share of the
+`{ key, rows }` in output order, so an aggregate can compute a share of the
 whole table, not only of its own slice. `groupOutputNames` resolves the
 output names: the by-names first, then one per `agg` entry, collision-renamed
 through `freeColumnName` so an aggregate named like a by-column becomes
 `<name>_2`. The column-availability walks (`checkValidateColumnOrder`,
-`checkFlowInputColumns`) call the same helper — and `unpivotOutputNames` for
-an unpivot — so what a guard believes a step emits is what it emits.
+`checkFlowInputColumns`) call the same helper, and `unpivotOutputNames` for
+an unpivot, so what a guard believes a step emits is what it emits.
 
 `applyJoin` emits one output row per matching `(leftRow, rightRow)`
-pair — SQL multiplicity, not a first-match lookup — so a left row with
+pair (SQL multiplicity, not a first-match lookup) so a left row with
 N right matches produces N rows. `Runner.loadInput` continues to
 dispatch on extension; the join's right-side path is loaded by the
 same code path. Both column lists are the union of every row's own keys, and
@@ -707,10 +707,10 @@ the recovery loop as plain strings.
 
 `validate` writes two columns named by `into`: `<into>` (boolean) and
 `<into>_note` (string | null). Without `into` the legacy names
-`_valid` and `_validation` apply — the back-compat path old flows
+`_valid` and `_validation` apply: the back-compat path old flows
 replay through; the patch prompt always sets `into`. A `validate`
-overwrites only columns of its own name — same-`into` checks replace
-each other, different-`into` checks coexist — so the patch prompt
+overwrites only columns of its own name: same-`into` checks replace
+each other, different-`into` checks coexist, so the patch prompt
 tells the LLM to pick a fresh `into` per check (and one that doesn't
 collide with a data column).
 
@@ -728,13 +728,13 @@ patch through the recovery loop with:
 ```
 validate reads column "<X>" which no earlier step provides. A validate can
 only read source columns or columns created by transformations ordered
-before it — order the step that computes "<X>" before the validate.
+before it: order the step that computes "<X>" before the validate.
 ```
 
 Exported for tests as `checkValidateColumnOrder(spec, sourceColumns):
 string | undefined` from `@tamedtable/headless`.
 
-`sourceColumns` — for this guard and for `checkDeclaredColumnsWritten` — is
+`sourceColumns`, for this guard and for `checkDeclaredColumnsWritten`, is
 the **loaded spec's** column list, kept on the runner at `loadInput` /
 `loadParsed` time. Never the first source row's keys: a JSONL source's columns
 are the union of keys across all rows, so row 0 alone under-reports on any
@@ -752,7 +752,7 @@ type SqlExpr = { sql: string };
 ```
 
 DuckDB runs in-process. In Node (CLI / headless) the engine imports
-`@duckdb/node-api` — pinned to an exact version in `src/package.json`
+`@duckdb/node-api`: pinned to an exact version in `src/package.json`
 (no caret: its `-r.N` release tags don't range-match as plain semver);
 bump the pin deliberately, with the suite green. The version number
 itself lives only in `package.json`/`bun.lock`, never here.
@@ -765,7 +765,7 @@ that never runs `{sql}` never loads it. The runner creates its
 `DuckDBInstance` and connection lazily, on the first `{sql}` use.
 Before each SQL-touching transformation runs, the current rows are
 materialized as a table `t` (`CREATE TABLE` with every column
-`VARCHAR` — SQL fragments cast as needed — filled by batched
+`VARCHAR`, SQL fragments cast as needed, filled by batched
 `INSERT`s of 100 rows); any prior `t` is dropped first, so SQL always
 sees the latest committed state. Column identifiers are **quoted** in
 the DDL (embedded `"` doubled), so a column named after a reserved
@@ -782,7 +782,7 @@ query is in flight. On `AbortSignal` abort, the cancel handler calls
 abort its current query). The pending query promise rejects with a
 DuckDB *"INTERRUPT"* error, which the runner translates to the same
 *"cancelled"* error shape the LLM-cancel path emits. The 2-second
-cancel budget applies — if `interrupt()` doesn't take effect within
+cancel budget applies, if `interrupt()` doesn't take effect within
 that window, the runner still signals cancelled and the next request
 must wait for the lingering query to drain (`Runner.request` already
 throws when a second request starts while one is running). The
@@ -790,14 +790,14 @@ DuckDB table `t` is not dropped on cancel.
 
 | Env var | Default | Effect |
 |---|---|---|
-| `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. Node only — the browser is always in-memory. |
-| `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. Node only — the browser wasm build is single-threaded, so the adapter ignores the thread-count setting. |
+| `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. Node only: the browser is always in-memory. |
+| `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. Node only: the browser wasm build is single-threaded, so the adapter ignores the thread-count setting. |
 
 ### Web UI (#WebUI)
 
 The web app is a separate package under `src/packages/web/` (Vite +
 React; no Bun-specific APIs in the renderer code, since it ships as
-static assets). It imports `@tamedtable/headless` directly — no HTTP
+static assets). It imports `@tamedtable/headless` directly, no HTTP
 layer; the model call goes from the browser to the selected provider
 through the same SDK, with the API key read from a per-tab settings
 panel rather than an env var. File-system access uses the File System
@@ -809,14 +809,14 @@ engine's DuckDB import to the `duckdb-wasm` adapter (see [§ `{sql}`
 expression shape](#sql-expression-shape)), so a browser session has the same
 SQL support the CLI does. The wasm loads lazily on the first `{sql}`
 transformation, behind a dynamic `import()` that Vite splits into its own
-chunk — the CSV/JSON golden path never fetches it.
+chunk: the CSV/JSON golden path never fetches it.
 
 `WebController.sendChat` routes a text request through the selected
 provider: the engine builds the matching SDK client from `config.model`
 and the active provider's key (`config.geminiKey`, `config.openaiKey`,
 `config.anthropicKey`, or `config.openrouterKey`). It rejects before any network call when the
 *selected provider's* key is null or empty, surfacing a provider-named
-toast such as `Text requests require a Google API key — open Settings and
+toast such as `Text requests require a Google API key: open Settings and
 add one.` A key for a different provider does not satisfy the check.
 
 Exit codes are CLI-only; web errors surface as toasts inside the
@@ -824,18 +824,18 @@ table view and carry the same error strings the recovery loop
 produces.
 
 Pagination, cell selection, and the chosen model are `WebController`
-state, not spec fields — the same split the CLI keeps for its viewport.
+state, not spec fields: the same split the CLI keeps for its viewport.
 Provider, key, and model config flow through `ResolvedConfig` from
 `@tamedtable/model-config` (see [§ Model config](#model-config));
 `WebSettings` is replaced by `ResolvedConfig`. `WebController` gains the
 surface below.
 
 ```ts
-// pagination — rows per page is a WebController-owned view setting (the
+// pagination: rows per page is a WebController-owned view setting (the
 // spec never carries a page size), sized to one AI-cell concurrency wave:
 // (opts.batchSize ?? defaultBatchSize(provider) ?? DEFAULT_BATCH_SIZE) ×
-// (opts.chunkSize ?? DEFAULT_CHUNK_SIZE) — 100 with the defaults, 25 on
-// openrouter (its defaults pin batchSize 5) — so a streaming page fills
+// (opts.chunkSize ?? DEFAULT_CHUNK_SIZE): 100 with the defaults, 25 on
+// openrouter (its defaults pin batchSize 5), so a streaming page fills
 // wave by wave. Re-derived on config changes. The engine defaults are
 // exported by @tamedtable/headless (env-var-aware, see
 // TAMEDTABLE_BATCH_SIZE / TAMEDTABLE_CHUNK_SIZE above). The page index is
@@ -847,15 +847,15 @@ WebController.pageCount(): number;
 WebController.totalRows(): number;
 WebController.goToPage(page: number): void;
 
-// selection — view state (tints the cell; feeds the voice prompt context)
+// selection: view state (tints the cell; feeds the voice prompt context)
 WebController.selection: { row: number; column: string } | null;
 WebController.selectCell(row: number, column: string): void;
 
-// model — async: rebuilds the engine with the new model and replays
+// model: async: rebuilds the engine with the new model and replays
 // the current spec against the source, preserving the loaded table
 WebController.setModel(model: string): Promise<void>;
 
-// open sources — local file, remote URL, or a bundled sample (samples
+// open sources: local file, remote URL, or a bundled sample (samples
 // live in their own OpenSampleDialog picker; the URL dialog is
 // URL-only)
 WebController.openCsv(): Promise<void>;          // native file picker → load
@@ -873,14 +873,14 @@ body, detects the format (path extension first, `Content-Type` as
 fallback), and routes the bytes through the same `loadFromPicked`
 path local files use. `WebController.loadFromBytes(name, bytes)` /
 `loadFromText(name, text)` are the seam the tour engine and the @web
-test profile's `load` step use to enter that same path directly —
+test profile's `load` step use to enter that same path directly:
 every browser load, scripted or not, funnels through `loadFromPicked`
 and its large-file gate. Failures throw; the dialog catches and renders
 the message inline and stays open. `WebControllerOptions.fetch`, when
-present, replaces the global `fetch` used here — the same hook the
+present, replaces the global `fetch` used here: the same hook the
 engine uses for cassette replay, so URL-load scenarios run offline.
 
-The three load sources are first-class actions — **Open sample…**,
+The three load sources are first-class actions: **Open sample…**,
 **Open local…**, **Open URL…**. The toolbar renders them inside one
 `MenuButton` (ui-kit): a plain dropdown trigger with grouped sections
 (**Recent** submenu entry, then **Data** and **Recipe** headers).
@@ -904,7 +904,7 @@ recommendedSamples(): RecommendedSample[]  // the showcase set, as { name, url, 
 `__TT_SHOWCASE_SAMPLES__` is derived, never hand-listed:
 `showcaseSamples()` in `src/packages/web/src/showcase-samples.ts` takes the
 `showcase-*.feature` sources, parses each with `parseTours`, and pairs the
-tour's `@cat-…` tag with the filename its first `load-file` step names —
+tour's `@cat-…` tag with the filename its first `load-file` step names:
 emitted in `TUTORIAL_CATEGORIES` order, titled with that category's title. A
 category without a showcase tour simply contributes no row.
 `__TT_SAMPLE_FILES__` excludes goldens (`*-expected.*`); the `samples/`
@@ -916,7 +916,7 @@ fetches goldens from there.
 interface RecentEntry {
   kind: 'sample' | 'url' | 'local' | 'flow';
   label: string;         // display name, e.g. "customers.csv"
-  url?: string;          // set for sample/url kinds — reload address
+  url?: string;          // set for sample/url kinds, reload address
 }
 class WebController {
   recents(): RecentEntry[];                 // newest first, at most 5
@@ -926,7 +926,7 @@ class WebController {
 ```
 
 Recents persist under the localStorage key `tamedtable-recents`
-(best-effort — in-memory when localStorage is unavailable), capped at
+(best-effort: in-memory when localStorage is unavailable), capped at
 5, deduplicated by kind + label + url. `openRecent` on a sample entry
 asks the optional `WebControllerOptions.resolveSampleUrl(name)` for the
 running deployment's address of that sample first (the browser wires it
@@ -934,11 +934,11 @@ to the bundled-samples list; null falls back to `entry.url`), and a
 successful load through a re-resolved address drops the stale entry so
 the fresh record doesn't duplicate it. When the load of a sample or URL
 entry throws, `openRecent` removes the entry from the store and the
-error toast ends with `— removed from Recent.` `openFlow` runs one
+error toast ends with `: removed from Recent.` `openFlow` runs one
 `FilePort.pickOpen` handshake for the `.flow` file, validates it,
 checks its input columns against the current table's source columns
 (`checkFlowInputColumns(spec, sourceColumns)`, exported by
-`@tamedtable/headless` — walks the transformations tracking column
+`@tamedtable/headless`: walks the transformations tracking column
 availability the way `checkValidateColumnOrder` does and returns a
 message naming the first missing read, or undefined), then applies
 the flow's spec through `Runner.setSpec` onto the already-loaded
@@ -948,8 +948,8 @@ source rows, recording one patch-journal entry labelled
 a request carries plus `onStep` (a `StepUpdate` as each transformation
 starts), so a replayed AI cell streams onto the table and can be
 aborted; the web controller sets `streaming` for the duration (the
-same busy state a chat request drives). While any run streams — a flow
-replay or a chat request, published as soon as the run starts — the
+same busy state a chat request drives). While any run streams, a flow
+replay or a chat request, published as soon as the run starts: the
 controller exposes `runProgress: RunProgress | null`: 1-based
 `step`/`totalSteps`, the running step's `describeStep` label,
 `rowsDone`/`rowsTotal`, and a `log` capped at the newest 500 lines.
@@ -961,12 +961,12 @@ carries the same optional `onStep` callback `setSpec` does. Opening a
 flow posts a `Run <flow name>` user chat bubble before the replay
 starts, and a successful replay's assistant reply lists one
 `describeStep` line per transformation above the
-`Ran <flow> — N rows, M columns.` summary. Flow failures set
-`WebController.errorDialog: string | null` — rendered by the shared
+`Ran <flow>: N rows, M columns.` summary. Flow failures set
+`WebController.errorDialog: string | null`, rendered by the shared
 `ErrorDialog` overlay (both layouts), dismissed with
 `dismissErrorDialog()` (`data-tt-error-dialog`); a cancel is not a
-failure — it surfaces as the info toast
-`Flow cancelled — table unchanged.` plus the same sentence as an
+failure: it surfaces as the info toast
+`Flow cancelled: table unchanged.` plus the same sentence as an
 assistant chat line, so the `Run <flow>` bubble is never left dangling.
 
 At a viewport width of 768 px and below `AppShell` renders
@@ -1012,11 +1012,11 @@ Undo/Redo buttons do. `TourUi.render()` retries briefly when a step's
 target isn't mounted yet, so a lazily-opened sheet (the mobile composer)
 still gets its spotlight.
 
-Undo-state plumbing (behavior.md § Web UI — the `Undone steps:` reply,
+Undo-state plumbing (behavior.md § Web UI: the `Undone steps:` reply,
 changed-cell marks across undo/redo, and the reveal scroll):
 
 ```ts
-// SpecJournal — every recorded entry gets a stable monotonic id
+// SpecJournal: every recorded entry gets a stable monotonic id
 record(entry: JournalEntry): number;   // returns the entry's id
 current(): JournalEntry | undefined;   // top of the undo stack (the applied step)
 isApplied(id: number): boolean;        // id sits on the undo stack
@@ -1046,8 +1046,8 @@ controller composes a `DiagnosticsManager` alongside its other managers.
 localStorage is the source of truth, the in-memory mirror a cache: the
 manager re-reads the persisted log before every read (`diagnosticsEvents`,
 `diagnosticsReport`) and before appending each event, then persists. Every
-tab on the origin shares one key — the live app and any pr-preview build
-included — so without that re-read a report copied from one tab would miss
+tab on the origin shares one key: the live app and any pr-preview build
+included, so without that re-read a report copied from one tab would miss
 (or, on the next event, clobber) events another tab wrote. Re-reading keeps
 the newest-first report honest across tabs.
 
@@ -1061,7 +1061,7 @@ interface DiagEvent {
   context: Record<string, unknown>;  // structured, already redacted
 }
 
-// caps — evict oldest first when either is exceeded
+// caps: evict oldest first when either is exceeded
 const MAX_EVENTS = 20;
 const MAX_BYTES = 64 * 1024;         // ~64 KB of serialized JSON
 const MAX_BODY = 2048;               // request-body truncation, in chars
@@ -1076,13 +1076,13 @@ WebController.reportMessageBug(id: number): Promise<void>; // record the flagged
 WebController.clearDiagnostics(): void;
 ```
 
-`ChatMessage` carries `reportable?: boolean` — the chat panel shows its
+`ChatMessage` carries `reportable?: boolean`: the chat panel shows its
 **Report bug** action only when it is `true`. The controller sets it on
-every reply to a completed request — chat replies and flow replays alike
-— and on app-error replies;
+every reply to a completed request: chat replies and flow replays alike,
+and on app-error replies;
 `describeError(error, provider)` in `controller-messages.ts` returns
-`{ message, reportable }` (guidance patterns — cancelled, in-progress,
-401/404/429, network — are not reportable; the unknown fall-through and
+`{ message, reportable }` (guidance patterns: cancelled, in-progress,
+401/404/429, network: are not reportable; the unknown fall-through and
 the exhausted recovery budget are). `userFacingMessage` remains the
 message-only wrapper around it.
 
@@ -1115,12 +1115,12 @@ fetch records a failed model request (method, URL, `fingerprint` from
 fetch records a tutorial replay miss with the active tour, scenario, and
 missing fingerprint; and `reportMessageBug` records a user report
 (`source: 'user-report'`, the flagged reply's text and the request that
-produced it — `RequestDebugInfo.userRequest` when present, else the nearest
-user message above — both truncated to `MAX_BODY`).
+produced it: `RequestDebugInfo.userRequest` when present, else the nearest
+user message above: both truncated to `MAX_BODY`).
 
 `recordActivity(message)` (`source: 'activity'`) records the ordinary
-successful actions that never surface as a toast — a file load and a
-completed chat request (the executed-steps summary) — so a report copied
+successful actions that never surface as a toast: a file load and a
+completed chat request (the executed-steps summary), so a report copied
 after normal work is not empty. Without it the log would hold only saves,
 errors, and copies, and a "my query did the wrong thing" report would carry
 no trace of the query.
@@ -1128,17 +1128,17 @@ no trace of the query.
 ## Lazy AI execution (#LazyExec)
 
 Types and surfaces for page-first AI execution
-([behavior.md — Lazy AI execution](behavior.md#lazy-ai-execution-lazyexec)).
-The batch CLI and the headless `Runner` batch path are untouched — laziness
+([behavior.md: Lazy AI execution](behavior.md#lazy-ai-execution-lazyexec)).
+The batch CLI and the headless `Runner` batch path are untouched: laziness
 is a web-shell scheduling policy over the same engine.
 
 ```ts
-// Row state — one entry per source row, held by the engine manager.
+// Row state: one entry per source row, held by the engine manager.
 type RowStatus = 'evaluated' | 'pending' | 'failed';
 interface RowState {
   applied: number;     // spec-step prefix already applied to this row
   status: RowStatus;   // derived from `applied` vs the spec, plus the last error
-  error?: string;      // failed rows only — the per-row cell failure message
+  error?: string;      // failed rows only, the per-row cell failure message
 }
 
 // Scheduler (engine manager). Evaluating rows in view is the default; the
@@ -1146,21 +1146,21 @@ interface RowState {
 rowStates(): readonly RowState[];
 evaluateRows(indices: number[], signal?: AbortSignal): Promise<void>;
 
-// Estimates — extrapolated from the rows already evaluated.
+// Estimates: extrapolated from the rows already evaluated.
 interface RunEstimate {
   rowsRemaining: number;
   estTokens: number;    // mean in+out tokens per evaluated row × rowsRemaining
   estUsd: number;       // estTokens priced at the cell model's catalogue rates
-                        // (inUsdPerMtok / outUsdPerMtok in models.json — the
+                        // (inUsdPerMtok / outUsdPerMtok in models.json: the
                         // catalogue a unit test keeps in sync with
                         // benchmarks/models.jsonl; the id matches exactly, or
-                        // by LONGEST prefix for dated variants — never a
+                        // by LONGEST prefix for dated variants, never a
                         // shorter sibling like gpt-5.4 for gpt-5.4-mini)
   estSeconds: number;   // rowsRemaining / observed rows-per-second so far
 }
 // The accumulators behind the means reset whenever a patch changes the
 // spec's {llm} cell steps: recorded usage extrapolates the OLD columns'
-// cost, and rows already banked in the cell cache re-run free — carrying
+// cost, and rows already banked in the cell cache re-run free: carrying
 // the tally over would price a second AI column at the whole session's
 // spend. Only the cell role's usage accumulates (see onUsage below).
 
@@ -1170,13 +1170,13 @@ runOnAllRows():                         // estimate-gated (> 1 page pending);
   Promise<'complete'                    // progress + log + cancel; finished rows
     | 'declined' | 'incomplete'>;       // kept. 'declined' = dialog dismissed,
                                         // nothing ran; 'incomplete' = a confirmed
-                                        // run ended with failed rows or a cancel —
+                                        // run ended with failed rows or a cancel:
                                         // purposeful callers (Save) surface it
 retryFailedRows(): Promise<void>;       // the readout's "Retry N failed rows"
 evaluatedReadout(): { done: number; total: number; failed: number } | null;
 pendingPages(): number[];               // 1-based pages carrying pending rows
 
-// View state — never in the spec, never a history entry. Sort and filter
+// View state, never in the spec, never a history entry. Sort and filter
 // (both reached through the grid's per-column ⋮ menu) on an AI-made column
 // call the dependency-rule confirmation first; declining leaves the view
 // unchanged. Delete column, also in the menu, is NOT view state: it commits
@@ -1187,14 +1187,14 @@ interface TableViewState {
   filters: Record<string, string>;                   // per-column contains-match
 }
 
-// Settings — persisted alongside the provider settings.
+// Settings: persisted alongside the provider settings.
 alwaysRunAll: boolean;   // Simple mode: "Always run on all rows", default false
 ```
 
 The dependency rule applies at patch commit: a transformation that reads an
 AI-made column across all rows (sort/filter keys, a `{js}`/`{sql}` expression
 referencing it, group/pivot keys) triggers the run-all confirmation before
-the patch commits; a decline drops the patch — no spec change, no history
+the patch commits; a decline drops the patch, no spec change, no history
 entry. Grid-side types (changed-cell metadata, sort/filter/autofit/retry
 callbacks) live in the table-view package spec
 ([spec/packages/table-view/behavior.md](packages/table-view/behavior.md)).
@@ -1204,40 +1204,40 @@ callbacks) live in the table-view package spec
 The headless runner stays eager; the web shell schedules it through four
 optional seams, all invisible to the CLI and the batch path:
 
-- **`cellFilter(transformationIndex, rowIndex, row)`** on `request`/`setSpec`
-  — an excluded `{llm}` cell refills from the per-cell result cache when its
+- **`cellFilter(transformationIndex, rowIndex, row)`** on `request`/`setSpec`:
+  an excluded `{llm}` cell refills from the per-cell result cache when its
   rendered prompt is cached (free), else it holds a **pending sentinel**.
   Row state derives from the sentinels in the data itself, which is what
   lets it survive deterministic reshaping, undo/redo, and engine rebuilds
   with no index bookkeeping. `rowIndex` is the row's index in the **step's
-  input rows** — not the derived view — and `row` is that input row itself.
-- **Row origins** — the index-mapping layer between derived rows and a
+  input rows**, not the derived view, and `row` is that input row itself.
+- **Row origins**: the index-mapping layer between derived rows and a
   step's input rows. Every replay tags its working row copies with their
   source-row position (an enumerable symbol key that spread copies carry and
   JSON/`Object.keys` never see); the tags come off the final rows into a
   parallel array exposed as **`rowOrigins()`**. A host targeting derived
   rows translates its target to origins through `rowOrigins()` and matches a
-  `cellFilter`'s `row` by `rowOrigin(row)` — positions alone mis-target as
+  `cellFilter`'s `row` by `rowOrigin(row)`: positions alone mis-target as
   soon as a sort or filter sits between the AI step and the view. Rows a
   reshaping step builds from scratch (select, group, pivot) carry no origin;
   both sides fall back to positional identity there.
-- **`onCellError`** — with it set, a cell call that still fails after
+- **`onCellError`**, with it set, a cell call that still fails after
   retries writes a **failed sentinel** (never cached) and reports, instead
   of failing the step; a failing batch call falls back to per-cell calls so
   one poisoned row fails alone. Without it the step throws, so the request
   preview keeps today's fail-fast error surface. The report carries the
   step-input `rowIndex` plus the row's `origin` when it has one, so the host
   can locate the failed derived row.
-- **`confirmSpec(next, prev)`** on `request` — the dependency rule's gate,
+- **`confirmSpec(next, prev)`** on `request`: the dependency rule's gate,
   called after the patch validates and before it replays; `false` throws
   `DECLINED`, which the web shell swallows (no history entry, no error).
-- **`adoptState(spec, rows, origins?)` + `cellCacheEntries`/`seedCellCache`**
-  — a provider switch rebuilds the engine but adopts the derived rows, their
+- **`adoptState(spec, rows, origins?)` + `cellCacheEntries`/`seedCellCache`**:
+  a provider switch rebuilds the engine but adopts the derived rows, their
   row origins, and the cell cache verbatim: evaluated rows keep their
   values, no call is made.
 
 `onUsage` (per-call token usage) feeds the estimate accumulators; each
-report carries the call's `role` — `'primary'` (patch turn) or `'cell'` —
+report carries the call's `role`: `'chat'` (patch turn) or `'cell'`,
 so the host attributes usage even when one model id serves both roles (a
 model-id comparison would drop every cell call then). `setSpec`'s `fresh`
 flag forces a full replay from the source, so a widened `cellFilter` can
@@ -1245,7 +1245,7 @@ fill pending cells in unchanged steps.
 
 ## One schema, richer sort keys, and Python export
 
-→ [behavior.md — One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)
+→ [behavior.md: One schema, richer sort keys, and Python export](behavior.md#one-schema-richer-sort-keys-and-python-export)
 
 ### One TablePlan schema
 
@@ -1253,7 +1253,7 @@ fill pending cells in unchanged steps.
 `runCli execute` does not branch on `flow.version`: a `version` of `1`
 or `2` both validate through `validateTablePlan`.
 
-Its failure text — `Spec validation failed: <path>: <message>; …` — must read
+Its failure text (`Spec validation failed: <path>: <message>; …`) must read
 the same on every surface, because the runner quotes it back to the model in
 the recovery prompt and that prompt is part of a request's cassette
 fingerprint. A browser that words the error differently from the recorder
@@ -1277,7 +1277,7 @@ transformation. When `sort.limit` is set, the ordered rows are sliced to
 the first N.
 
 `compareSortKeys` (exported from `headless`) is the comparator, and it is a
-**total order** — required, since `Array.prototype.sort` on a non-transitive
+**total order**: required, since `Array.prototype.sort` on a non-transitive
 comparator emits an arbitrary permutation. Each value is classified once:
 class 0 numbers (`typeof v === 'number'` and finite, or a non-empty string
 with a finite `Number(v)`), class 1 text (anything else non-empty), class 2
@@ -1290,7 +1290,7 @@ negates the result, so empty cells lead a descending sort.
 
 The `onPlanEdits` callback dispatch in `Runner.request` is wrapped in
 `try/catch`. `diffPlans` and the callback can throw without aborting
-the request — the edit line is dropped, the commit proceeds.
+the request: the edit line is dropped, the commit proceeds.
 
 ### Export a flow as a Python script (#PyExport)
 
@@ -1312,24 +1312,24 @@ makes one **`streamText`** call with `PYTHON_EXPORT_PROMPT` as the system
 message, returning the whole script once the stream ends. Every caller
 gets the same single request whether or not it passes `onProgress`, so
 one recording serves both. It is recorded by the cassette recorder like
-any other model call — a streamed response tapes as its SSE body and
+any other model call: a streamed response tapes as its SSE body and
 replays through the same `Response`, so no cassette-side special case
 exists. The CLI `:save-py`
 handler: validates the `.py` extension and the path; scans
 `currentSpec().transformations` for any `{llm}` `Expr` and refuses if
 one is present; otherwise calls `exportPython` and writes the result.
-`:save-py` is REPL-only — no `tamedtable` subcommand.
+`:save-py` is REPL-only, no `tamedtable` subcommand.
 
 Two settings are specific to this call, both about wall-clock time
 (§ Least deliberation below, and `EXPORT_MAX_RETRIES = 2` rather than the
-`DEFAULT_MAX_RETRIES` of 6 — a translation this cheap is not worth six
+`DEFAULT_MAX_RETRIES` of 6: a translation this cheap is not worth six
 backoffs, which is how a queued free model turns one slow call into
 minutes).
 
 ### Least deliberation (#LowEffort)
 
 Reasoning models spend tokens thinking before they answer, and thinking
-tokens are generated one at a time like any other — on the Python export
+tokens are generated one at a time like any other: on the Python export
 they measured **2–3× the script itself**. Translating an explicit spec is
 mechanical, so the export asks every provider for the least deliberation
 it sells, through one table keyed by provider (`LOW_EFFORT` in
@@ -1338,12 +1338,12 @@ it sells, through one table keyed by provider (`LOW_EFFORT` in
 
 | Provider | Option | Why this one |
 |---|---|---|
-| Google | `thinkingConfig.thinkingBudget: 512` | The only knob both Gemini generations accept — `thinkingLevel` 400s on 2.5 (`Thinking level is not supported for this model`) and `thinkingBudget: 0` 400s on 3.x. |
+| Google | `thinkingConfig.thinkingBudget: 512` | The only knob both Gemini generations accept: `thinkingLevel` 400s on 2.5 (`Thinking level is not supported for this model`) and `thinkingBudget: 0` 400s on 3.x. |
 | OpenAI | `reasoningEffort: 'low'` | |
 | OpenRouter, Cerebras | `reasoningEffort: 'low'` | OpenAI-compatible endpoint. Advisory: a free model may ignore it. |
 | Anthropic | `thinking: { type: 'disabled' }` | Already the API default; sent so the request states the intent. |
 
-A provider that ignores the setting is not an error — the request stays
+A provider that ignores the setting is not an error: the request stays
 valid and the export just takes as long as it takes.
 
 ## Benchmarks (#BenchPerf #BenchSweep)
@@ -1353,12 +1353,12 @@ valid and the export just takes as long as it takes.
 Benchmark costing must come from real provider usage responses: the
 runner wraps `fetch` (`tallyingFetch` in
 [`src/packages/bench/usage.ts`](../src/packages/bench/usage.ts)) and
-reads each provider's usage fields — including the cache-write and
-cache-read token classes, priced through `benchmarks/models.jsonl` —
+reads each provider's usage fields: including the cache-write and
+cache-read token classes, priced through `benchmarks/models.jsonl`,
 never token counts echoed back through debug callbacks, which miss
 cache classes and understate cost whenever caching kicks in. The bench
-must exercise the real request path — the same engine `fetch` route the
-app uses — never a mock or a reimplemented client, so caching, retries,
+must exercise the real request path: the same engine `fetch` route the
+app uses, never a mock or a reimplemented client, so caching, retries,
 and batching show up in the measurement.
 
 ## Model config
@@ -1366,8 +1366,8 @@ and batching show up in the measurement.
 → [spec/packages/model-config/behavior.md](../spec/packages/model-config/behavior.md)
 
 ```ts
-type Provider = "anthropic" | "gemini" | "openai" | "groq" | "openrouter" | "puter";  // app providers — catalogue, chooser, resolveConfig
-type EngineProvider = Provider | "cerebras";  // engine routing — cerebras is bench-only (no chooser card, no catalogue entry)
+type Provider = "anthropic" | "gemini" | "openai" | "groq" | "openrouter" | "puter";  // app providers: catalogue, chooser, resolveConfig
+type EngineProvider = Provider | "cerebras";  // engine routing: cerebras is bench-only (no chooser card, no catalogue entry)
 
 interface ModelDef { id: string; name: string; provider: Provider; temperature: boolean; voiceInput: boolean; inUsdPerMtok: number; outUsdPerMtok: number; }
 
@@ -1379,8 +1379,8 @@ interface ResolvedConfig {
   groqKey: string | null;
   openrouterKey: string | null;
   puterToken: string | null;          // a Puter session token, not an API key
-  model: string;      // primary — writes the spec patch (and carries voice)
-  cellModel: string;  // the cell model — fills per-row cells; always same-provider as model
+  model: string;      // the chat model. Writes the spec patch (and carries voice)
+  cellModel: string;  // the cell model, fills per-row cells; always same-provider as model
   alwaysRunAll: boolean;  // Simple mode toggle (#LazyExec); persisted, default false
 }
 
@@ -1390,41 +1390,41 @@ interface StoragePort {
   clear(): void;
 }
 
-const ALL_MODELS: readonly ModelDef[];  // imported from models.json — the catalogue's single source
+const ALL_MODELS: readonly ModelDef[];  // imported from models.json, the catalogue's single source
 function resolveConfig(env: Record<string, string | undefined>, stored: Partial<ResolvedConfig>): ResolvedConfig;
-function defaultModel(provider: Provider): string;      // primary (patch-turn) default
+function defaultModel(provider: Provider): string;      // the chat-model default
 function defaultCellModel(provider: Provider): string;  // the cell-model default
 function defaultBatchSize(provider: Provider): number | undefined;  // defaults' pinned cell batch size (openrouter: 5); undefined = engine default
 function priceVariesByPlan(provider: Provider): boolean;  // defaults' flag (groq): an undetectable free tier, so the card names no price
 function providerFor(modelId: string): EngineProvider;   // fallback only; never returns "puter"
-function modelFor(p: Provider, modelId: string): ModelDef | undefined;  // ids are shared — Puter re-serves them — so lookups name the provider
+function modelFor(p: Provider, modelId: string): ModelDef | undefined;  // ids are shared, Puter re-serves them, so lookups name the provider
 function acceptsTemperature(modelId: string): boolean;   // per-model `temperature` flag in models.json, prefix-matched; false for unknown ids
 function keyFor(config: ResolvedConfig): string | null;  // the key for config.provider, via KEY_FIELD
 function connectedProviders(config: ResolvedConfig, order?: Partial<Record<Provider, number>>): Provider[];  // every provider with a key; `order` (connectedAt stamps) sorts the cards, absent = catalogue order
 function detectProvider(key: string): Provider | null;   // the provider a pasted key belongs to, by prefix; null when none matches
-const SUPPORTED_PREFIXES: readonly string[];             // 'AQ.Ab…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…' — the display list the chooser's error names
+const SUPPORTED_PREFIXES: readonly string[];             // 'AQ.Ab…', 'sk-proj-…', 'sk-ant-…', 'sk-or-…', 'gsk_…', 'eyJ…', the display list the chooser's error names
 const KEY_FIELD: Record<Provider, keyof ResolvedConfig>; // provider → the config field its key lives in
 const PROVIDER_BASE_URL: Record<EngineProvider, string>; // one table the engine and the probe both read, so their endpoints cannot drift
-const PUTER_DRIVERS_URL: string;                         // `${PROVIDER_BASE_URL.puter}/drivers/call` — the gateway's single endpoint
+const PUTER_DRIVERS_URL: string;                         // `${PROVIDER_BASE_URL.puter}/drivers/call`, the gateway's single endpoint
 function puterEnvelope(body: Record<string, unknown>): Record<string, unknown>;  // { interface:'puter-chat-completion', driver:'ai-chat', method:'complete', args: body }
-function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only — in env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
+function readConfigFromEnv(): Record<string, string | undefined>;  // Node/Bun only. In env.ts; reads ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, TAMEDTABLE_MODEL, TAMEDTABLE_CELL_MODEL
 
-// probe.ts entry point — the only part of the module that touches the network
+// probe.ts entry point: the only part of the module that touches the network
 type Tier = 'free' | 'paid' | null;                      // null = the provider reports nothing
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 interface ProbeOptions { fetch?: FetchLike; now?: () => number }
-interface ModelMeasure { ttftSec: number; tokPerSec: number }   // speed only — price comes from the catalogue
+interface ModelMeasure { ttftSec: number; tokPerSec: number }   // speed only. Price comes from the catalogue
 function verifyKey(p: Provider, key: string, o?: ProbeOptions): Promise<{ tier: Tier }>;  // one call, no retries; throws a user-facing sentence
 function measureModel(p: Provider, key: string, modelId: string, o?: ProbeOptions): Promise<ModelMeasure>;  // one capped streaming call
-function estimateSecPer1kTok(m: ModelMeasure): number;          // ttftSec + 1000 / tokPerSec — the card's "~Z sec"
+function estimateSecPer1kTok(m: ModelMeasure): number;          // ttftSec + 1000 / tokPerSec, the card's "~Z sec"
 
-// storage.ts entry point — measurements cache under 'tamedtable.probes'
-interface StoredMeasure extends ModelMeasure { model: string; at: number }  // which model, and when — both go stale under the numbers
+// storage.ts entry point: measurements cache under 'tamedtable.probes'
+interface StoredMeasure extends ModelMeasure { model: string; at: number }  // which model, and when, both go stale under the numbers
 interface ProviderProbe {
   tier: Tier;
   connectedAt?: number;                    // ms since epoch; what card order sorts by (see connectedProviders)
-  primary?: StoredMeasure | null;          // absent = never measured, null = the measurement failed
-  secondary?: StoredMeasure | null;
+  chat?: StoredMeasure | null;             // absent = never measured, null = the measurement failed
+  cell?: StoredMeasure | null;
 }
 function readStoredProbes(now?: number): Partial<Record<Provider, ProviderProbe>>;  // drops readings whose model is no longer the role's default, or older than 7 days
 function writeStoredProbes(p: Partial<Record<Provider, ProviderProbe>>): void;
@@ -1435,21 +1435,21 @@ function speedOf(reading: StoredMeasure | null | undefined, measuring: boolean):
 ```
 
 ```ts
-// ModelChooser.tsx entry point — react is a peer dependency
+// ModelChooser.tsx entry point: react is a peer dependency
 interface RoleRow {                       // prices are catalogue values per 1000 tokens; speed is measured
   model: string;
   inUsdPer1kTok: number | null;           // null = the catalogue doesn't price this model
   outUsdPer1kTok: number | null;
   speed: RoleSpeed;                       // 'measuring' → "measuring…", 'failed' → "speed unknown", null → no tail
 }
-interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; priceVariesByPlan?: boolean; primary: RoleRow; secondary: RoleRow }
+interface ConnectedCard { id: Provider; tier: Tier; voice: boolean; priceVariesByPlan?: boolean; chat: RoleRow; cell: RoleRow }
 interface ModelChooserProps {
   connected: readonly ConnectedCard[];  // one card per connected provider, in the order added
   selected: Provider | null;            // the default provider; only its card shows model rows
   keyInput: string;
   error: string;
-  busy: boolean;                        // a connect is in flight — input, Add and the Puter button all disabled
-  puterBusy?: boolean;                  // that connect is the Puter sign-in — its button reads "Signing in…"
+  busy: boolean;                        // a connect is in flight, input, Add and the Puter button all disabled
+  puterBusy?: boolean;                  // that connect is the Puter sign-in. Its button reads "Signing in…"
   onKeyInputChange(value: string): void;
   onAdd(): void;
   onSelect(p: Provider): void;
@@ -1457,7 +1457,7 @@ interface ModelChooserProps {
   onRefresh?(p: Provider): void;          // the ⟳ button; omit it and no card shows one
   onPuterSignIn?(): void;                 // the "No API key?" block; omit it and the whole block is left out
 }
-const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", … — one home for the display names
+const PROVIDER_LABEL: Record<Provider, string>;  // "Google API", "OpenAI API", …, one home for the display names
 type Step = string | { before?: string; text: string; href: string; after?: string }; // a how-to line; the object form carries one inline link
 interface KeySetup { provider: Provider; label: string; prefix: string; steps: readonly Step[]; url: string; action: string }
 const KEY_SETUP: readonly KeySetup[];            // the five pasteable providers in row order, with the panel's short how-to-get; a test asserts each `url` appears in FAQ.html
@@ -1480,7 +1480,7 @@ last because `sk-proj-`, `sk-ant-` and `sk-or-` all start with it:
 Provider defaults (`models.json` → `DEFAULTS`), the two roles a connected
 provider pins:
 
-| provider | primary (`model`) | secondary (`cellModel`) |
+| provider | chat model (`model`, JSON `chat`) | cell model (`cellModel`, JSON `cell`) |
 |---|---|---|
 | gemini | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 | openai | `gpt-5.5` | `gpt-5.4-mini` |
@@ -1490,12 +1490,12 @@ provider pins:
 | puter | `gemini-3.6-flash` | `gemini-3.1-flash-lite` |
 
 Each `models` entry: `id` (the provider's exact API id), `name`, `provider`,
-`temperature` (still accepts a sampling parameter — the newest models reject it
+`temperature` (still accepts a sampling parameter: the newest models reject it
 with a 400), `voiceInput` (mirrors the bench row's `audioInput`), and
 `inUsdPerMtok` / `outUsdPerMtok`.
 
-`providerFor(modelId)` reads the catalogue first — an exact match returns that
-entry's provider — then falls back to prefixes, in this order:
+`providerFor(modelId)` reads the catalogue first: an exact match returns that
+entry's provider, then falls back to prefixes, in this order:
 
 | test | provider | why |
 |---|---|---|
@@ -1506,15 +1506,15 @@ entry's provider — then falls back to prefixes, in this order:
 | `gpt-` | openai | |
 | anything else | anthropic | the catch-all |
 
-`verifyKey` tier sources — only real signals, so an unknown reports `null` and
+`verifyKey` tier sources: only real signals, so an unknown reports `null` and
 the chooser shows no tag:
 
 | provider | tier read from |
 |---|---|
 | gemini | `x-gemini-service-tier`: `free` → free, any other value → paid, **header absent → null** |
 | openrouter | `GET /api/v1/key` → `is_free_tier` |
-| openai, anthropic | always `paid` — neither has a free tier |
-| groq, puter | `null` — neither publishes a signal |
+| openai, anthropic | always `paid`: neither has a free tier |
+| groq, puter | `null`: neither publishes a signal |
 
 `ModelChooser` theme variables, each with a presentable light default:
 `--mc-ink`, `--mc-ink-on-ink`, `--mc-ink2`, `--mc-ink3`, `--mc-surface`,
@@ -1525,7 +1525,7 @@ the chooser shows no tag:
 
 Test hooks: `data-mc-empty` on the empty row; `data-mc-card`, `data-mc-tier`,
 `data-mc-voice`, `data-mc-refresh` and `data-mc-remove` keyed by provider id;
-`data-mc-role` (`"primary"`/`"secondary"`) and `data-mc-model` (keyed by model
+`data-mc-role` (`"chat"`/`"cell"`) and `data-mc-model` (keyed by model
 id) on each role row, with `data-mc-model-id` on the id and `data-mc-cost` on
 the line beneath; `data-mc-keyinput` and `data-mc-add` on the add row;
 `data-mc-error` on the banner; `data-mc-providers` on the footer;
@@ -1536,13 +1536,13 @@ expanded block.
 `@tamedtable/model-config` has five entry points: the main `index.ts` (no
 `process` references, runs in any environment), `env.ts` (reads
 `process.env`; Node/Bun only), `ModelChooser.tsx` (React; browser only),
-`probe.ts` (the only part that touches the network — hosts inject `fetch`), and
+`probe.ts` (the only part that touches the network: hosts inject `fetch`), and
 `storage.ts` (the localStorage `StoragePort` implementation plus the
-measurement cache — browser only, but a safe no-op anywhere without
+measurement cache: browser only, but a safe no-op anywhere without
 localStorage):
 
 ```ts
-// storage.ts entry point — implements StoragePort over localStorage
+// storage.ts entry point: implements StoragePort over localStorage
 function readStoredConfig(): Partial<ResolvedConfig>;
 function writeStoredConfig(c: Partial<ResolvedConfig>): void;
 function clearStoredConfig(): void;
@@ -1552,7 +1552,7 @@ The web controller imports these from `@tamedtable/model-config/storage`.
 
 ## Voice input
 
-→ [behavior.md — Voice input](behavior.md#voice-input-voiceinput)
+→ [behavior.md: Voice input](behavior.md#voice-input-voiceinput)
 
 Web-only. The `VoicePort`, the MediaRecorder→WAV browser implementation, and
 `buildVoicePrompt` live in `@tamedtable/voice-input` (#VoicePort); the
@@ -1576,7 +1576,7 @@ interface VoicePort {
 ```
 
 `buildVoicePrompt` renders the deterministic instruction text that accompanies
-the audio on the patch turn — it says the request is spoken in the attached
+the audio on the patch turn: it says the request is spoken in the attached
 audio and adds the table context: the filename, the column list, and the
 selected cell when present. It makes no network call, so it is unit/Gherkin
 testable.
@@ -1600,7 +1600,7 @@ without capture APIs simply leaves voice unwired (mic hidden).
 `audioMediaType(filename)` maps an audio filename's extension to the MIME
 type the voice patch turn sends (`m4a`→`audio/mp4`, `mp3`→`audio/mpeg`,
 `wav`→`audio/wav`, `webm`→`audio/webm`) and **throws** on any other
-extension — deliberate, so a mistyped fixture name fails loudly instead of
+extension: deliberate, so a mistyped fixture name fails loudly instead of
 uploading under a guessed type.
 
 ### Continuous voice
@@ -1622,10 +1622,10 @@ interface ContinuousVoicePort {
 ```
 
 `browserContinuousPort()` (separate `browser-vad` entry point, DOM + WASM
-required) wraps `@ricky0123/vad-web` — the Silero VAD on ONNX in an
+required) wraps `@ricky0123/vad-web`: the Silero VAD on ONNX in an
 AudioWorklet. Its `onSpeechEnd` Float32 PCM is encoded to a 16 kHz WAV `Blob`
 and handed to `onSegment`. `VadTuning` exposes the turn-detection knobs in
-milliseconds (`redemptionMs` is the silence before a turn closes — the felt
+milliseconds (`redemptionMs` is the silence before a turn closes, the felt
 delay; the browser wires Balanced ≈ 700 ms, snappier than the library's 1.4 s
 default). The VAD model/wasm load from a pinned jsDelivr CDN by default (static
 files, no backend); `baseAssetPath` / `onnxWASMBasePath` override to self-host.
@@ -1640,48 +1640,48 @@ and `toggleContinuous()`. Toggling on calls `port.start`; the status sits in
 that window are ignored, so exactly one session ever opens. A stop that lands
 during `starting` (the gate closing) makes the load's completion release the
 session instead of going live. Each `onSegment`
-clip routes through the same `sendAudioRequest` the mic uses — one patch turn per
+clip routes through the same `sendAudioRequest` the mic uses: one patch turn per
 spoken turn, table context and cost identical. A clip that lands while **any**
-turn is still applying — its own previous turn, a typed request, a mic turn —
+turn is still applying: its own previous turn, a typed request, a mic turn:
 is dropped, so patch turns never overlap; toggling off calls
 `port.stop`. `WebControllerOptions.continuousVoice` supplies the port; the
 browser passes `browserContinuousPort({ redemptionMs: 700, minSpeechMs: 300 })
-?? undefined` in `main.tsx` — the factory returns `null` (hands-free unwired,
+?? undefined` in `main.tsx`: the factory returns `null` (hands-free unwired,
 waveform hidden) when the browser lacks `getUserMedia` or the Web Audio API.
 
 `WebController` adds `voiceStatus: 'idle' | 'starting' | 'recording' |
 'latched' | 'sending'`
 and four methods: `startVoice()` begins recording (auto-stopping after 30 s;
-the schedule is injectable via `WebControllerOptions.voiceSchedule` —
-defaulting to `setTimeout` — so tests fire the timeout without waiting). The
+the schedule is injectable via `WebControllerOptions.voiceSchedule`:
+defaulting to `setTimeout`, so tests fire the timeout without waiting). The
 status sits in `starting` while the awaited recording start (the browser
 permission prompt) is pending: `stopVoice()` or `cancelVoice()` in that window
 ends the session, and the start's completion then releases the just-granted
-microphone instead of going live — no recording, timer, or request starts.
+microphone instead of going live, no recording, timer, or request starts.
 `latchVoice()` switches a live press-and-hold recording to hands-free `latched`
 (a quick tap; recording continues under the explicit cancel/send controls, and
-it is a no-op unless currently `recording` — except during `starting`, where
+it is a no-op unless currently `recording`: except during `starting`, where
 the latch is remembered and the granted session comes up `latched`),
 `stopVoice()` ends recording from
 either `recording` or `latched` and delegates to `sendAudioRequest(audio, signal)`, which
 builds a `VoiceContext` from `currentSpec()` and `selection` and runs the
-ordinary `request` with the recorded bytes as the `audio` option — one patch
+ordinary `request` with the recorded bytes as the `audio` option, one patch
 turn, no transcription call. It posts a `🎙 Voice request` placeholder user
 bubble immediately; when `onTranscript` fires it rewrites that bubble (and, on
 success, the undo-history label) to `🎙 <transcript>`. `sendAudioRequest` is the
 shared patch-turn-with-audio path: the tutorial `play-audio` step calls it too,
 so a voice tour issues a byte-identical request and replays its cassette
 key-free. Request failures go through the same `fail()` path a
-typed request uses — error toast plus an `Error: Voice input failed: …`
+typed request uses: error toast plus an `Error: Voice input failed: …`
 assistant message carrying the request's `RequestDebugInfo`. `cancelVoice()` discards the recording. The mic button is
 gated on the selected model's `voiceInput` flag plus a key for the selected
 provider. `browserVoicePort` re-encodes the MediaRecorder output to 16 kHz
-mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`) —
+mono PCM16 WAV before resolving, so the bytes work for Gemini (`inlineData`):
 the only provider wired for voice.
 
 The runner is **told** which provider to call: `createHeadlessRunner({ provider,
-… })`. A model id cannot say who serves it — `openai/gpt-oss-120b` is Groq's in
-this catalogue and OpenRouter serves the same weights under the same name — so
+… })`. A model id cannot say who serves it: `openai/gpt-oss-120b` is Groq's in
+this catalogue and OpenRouter serves the same weights under the same name: so
 inferring it from the string is guessing. Callers that hold only an id (the
 benchmark sweeping from a command line, a CLI with just `TAMEDTABLE_MODEL`)
 leave `provider` unset and the runner falls back to `providerFor(model)`.
@@ -1701,7 +1701,7 @@ recorded provider's defaults.
 
 ## Tutorial mode
 
-→ [behavior.md — Tutorial mode](behavior.md#tutorial-mode-tutorialmode)
+→ [behavior.md: Tutorial mode](behavior.md#tutorial-mode-tutorialmode)
 
 ### Gherkin Tour parser (`@tamedtable/gherkin-tour`)
 
@@ -1713,9 +1713,9 @@ export type TourAction =
   | { kind: 'show-golden'                      }
   | { kind: 'golden-source'; filename: string }  // lifted onto scenario.golden
   | { kind: 'play-audio';    filename: string }  // voice clip → real voice turn
-  | { kind: 'load-shuffled'                    }  // #LazyExec — resolve the large-file dialog shuffled
-  | { kind: 'open-estimate'                    }  // #LazyExec — open the run-on-all estimate (shown, not run)
-  | { kind: 'decline-estimate'                 }  // #LazyExec — close it with "Not yet"; nothing runs
+  | { kind: 'load-shuffled'                    }  // #LazyExec, resolve the large-file dialog shuffled
+  | { kind: 'open-estimate'                    }  // #LazyExec, open the run-on-all estimate (shown, not run)
+  | { kind: 'decline-estimate'                 }  // #LazyExec. Close it with "Not yet"; nothing runs
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -1733,7 +1733,7 @@ holds only `load-file`, `load-lookup`, `prefill-chat`, `show-golden`,
 `play-audio` (matched from `speak "<clip>"`), and the three lazy stops
 `load-shuffled` / `open-estimate` / `decline-estimate`.
 
-`feature` is **not** set by `parseTours` — it sees only the source string. The
+`feature` is **not** set by `parseTours`: it sees only the source string. The
 consumer that assembles tours stamps each one with its source filename
 (`TutorialManager.loadTour`, after fetching the `.feature`), so a deep link can
 match a tour on `(feature, name)`.
@@ -1743,7 +1743,7 @@ match a tour on `(feature, name)`.
 ```ts
 export interface TutorialManifestEntry {
   name: string;      // scenario name (clickable list / Dev dropdown)
-  feature: string;   // source .feature file name — disambiguates a deep link
+  feature: string;   // source .feature file name, disambiguates a deep link
   tags: string[];    // e.g. ['@web', '@tour']
 }
 
@@ -1759,8 +1759,8 @@ export interface TutorialSources {
 Only the lightweight `manifest` ships in the JS bundle; the feature source,
 fixtures, goldens, cassettes, and audio clips load lazily through the loaders.
 In the browser (`main.tsx`) the loaders `fetch` same-origin under
-`import.meta.env.BASE_URL` — `tutorials/<name>`, `samples/<name>` (CSV/JSONL
-fixtures *and* `.m4a` voice clips), `cassettes/<feature>.json` — directories the
+`import.meta.env.BASE_URL`: `tutorials/<name>`, `samples/<name>` (CSV/JSONL
+fixtures *and* `.m4a` voice clips), `cassettes/<feature>.json`: directories the
 Vite `staticDirPlugin` copies into `dist/` at build and serves via dev
 middleware (features and fixtures from `spec/test-cases/`, cassettes from
 the root `cassettes/` dir). `loadAudio` fetches the clip's bytes
@@ -1780,7 +1780,7 @@ export interface WebControllerOptions {
 ### Key-free cassette replay
 
 The fingerprint, on-tape entry shape, and replay lookup live in
-`@tamedtable/cassette` (no Node imports — it loads in the browser; the hash goes
+`@tamedtable/cassette` (no Node imports: it loads in the browser; the hash goes
 through Web Crypto, so its hex digest matches the `node:crypto` digest the
 Cucumber recorder produced). `src/tests/cassette.ts` adds the Node-fs
 record/replay file layer on top; the web shell imports `replayFetch` directly.
@@ -1791,17 +1791,17 @@ cassette (`loadCassette(feature)`, cached) and serves the recorded response or
 throws on a miss. A miss during replay is noted on the `TutorialManager`
 (`noteReplayMiss()`); when the failed request settles, the request paths
 (`sendChat`, `sendAudioRequest`) consume the note (`consumeReplayMiss()`) and,
-instead of the ordinary error surface, push the toast `Tour ended — the guided
-replay went off-script.` and call `cancelTutorial()` — the raw
+instead of the ordinary error surface, push the toast `Tour ended, the guided
+replay went off-script.` and call `cancelTutorial()`, the raw
 fingerprint-mismatch message never reaches a toast. `ensureHeadless` pins the recording configuration during
-replay — `defaultModel(provider)` / `defaultCellModel(provider)` and a
-placeholder key — so the request fingerprints identically to the taped one; the
+replay: `defaultModel(provider)` / `defaultCellModel(provider)` and a
+placeholder key, so the request fingerprints identically to the taped one; the
 engine is rebuilt when replay mode flips. The provider comes from
-`TutorialManager.replayProvider()`, which always returns `'gemini'` — every
+`TutorialManager.replayProvider()`, which always returns `'gemini'`: every
 committed cassette, voice tours included, records with the Gemini provider
 defaults. The pin reaches past the engine: while a tour replays,
-`WebController.pageSize` reads as `pageSizeFor(replayProvider(), opts)` —
-not the visitor's provider-derived page — so the lazy preview window an AI
+`WebController.pageSize` reads as `pageSizeFor(replayProvider(), opts)`,
+not the visitor's provider-derived page, so the lazy preview window an AI
 step evaluates matches the recording (OpenRouter's pinned cell batch would
 otherwise shrink the page and fingerprint different per-cell batches), and
 `LazyManager` ignores `config.alwaysRunAll` (`requestCellFilter`,
@@ -1809,14 +1809,14 @@ otherwise shrink the page and fingerprint different per-cell batches), and
 table. `sendChat` skips its provider-key guard while
 replaying. Because the patch turn embeds only `basename(spec.table)` and pins
 the default model, a tour replays the cassette a `@headless`/`@cli`/`@web` run of
-the same scenario already recorded — no separate tutorial recording is needed (a
+the same scenario already recorded: no separate tutorial recording is needed (a
 voice tour reuses the cassette its `@web` voice scenario recorded).
 
 A `play-audio` step is the voice analogue of `prefill-chat`:
 `TutorialManager.executeTutorialStep` fetches the clip with `loadAudio`, plays it
 in the browser (no-op where `Audio` is absent), then hands the bytes to
-`VoiceManager.sendAudioRequest` — the same patch-turn-with-audio path the
-microphone release uses — so the request fingerprints identically to the recorded
+`VoiceManager.sendAudioRequest`: the same patch-turn-with-audio path the
+microphone release uses, so the request fingerprints identically to the recorded
 voice turn and replays key-free.
 
 ### Tutorial controller methods
@@ -1828,21 +1828,21 @@ voice turn and replays key-free.
 | `tutorialScenarioNames(): string[]` | Names of `@tour` tours (flat list). |
 | `tutorialGroups(): { title; names }[]` | `@tour` tours grouped by `@cat-…` tag into the eight marketing categories, in homepage order; empty categories dropped. Drives the panel's grouped list. |
 | `devScenarioNames(): string[]` | Names of `@web` non-`@tour` scenarios (the Dev dropdown). |
-| `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup — the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
-| `async playTutorial(): Promise<boolean>` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). Resolves `true` when the tour armed; `false` when there was nothing to play — no selection, no sources, or an entry whose steps all classify as display and drop. |
+| `selectTutorialScenario(name)` | Selects the manifest entry by name and leaves any playing or stayed tour via the `cancelTutorial()` cleanup: the engine returns to the empty state, so a select while stayed never leaves a loaded flag pointing at a fresh engine (the tour loads lazily on play). |
+| `async playTutorial(): Promise<boolean>` | Loads the selected tour (fetch + parse), enters replay mode, closes the Tutorial panel, and highlights step 1 (does **not** execute it). Resolves `true` when the tour armed; `false` when there was nothing to play, no selection, no sources, or an entry whose steps all classify as display and drop. |
 | `async tutorialSettle()` | Awaits any in-flight prefill-chat request (test helper). |
-| `async nextStep()` | Executes the **current** step (only if it hasn't run before — see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`doneDescription`), so the UI never reaches the done state; `nextStep` still supports it for the step-def loop. |
-| `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. A step still executing when the cancel lands stops at its next await — it never loads the tour's sample onto the fresh engine — and the tour's staged lookup tables are dropped, so the user's own join naming the same file asks for their file (#LookupJoin). |
+| `async nextStep()` | Executes the **current** step (only if it hasn't run before: see execute-once below), then advances the step index. On the last step, executes it and enters the done state. The app's `TourUi` makes the last step terminal (`doneDescription`), so the UI never reaches the done state; `nextStep` still supports it for the step-def loop. |
+| `cancelTutorial()` | Clears step state and the active tour; if a tour was playing, resets the engine and returns to the empty state. A step still executing when the cancel lands stops at its next await, it never loads the tour's sample onto the fresh engine, and the tour's staged lookup tables are dropped, so the user's own join naming the same file asks for their file (#LookupJoin). |
 | `finishTutorial()` | Cancels the active tour and opens the Tutorial panel chooser, regardless of how the tour was launched, so the user can pick another tutorial. Deep-link visitors arrive in a new tab (the homepage opens "Show me →" in a new tab) and close it to return to the homepage; the app does not navigate for them. |
-| `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` return silently while stayed (the UI disables the chat input and mic — see behavior.md § Staying in the tour). |
-| `isTutorialStayed(): boolean` | True after `stayTutorial()` — a tour is loaded (replay mode on) but no step is highlighted and the terminal stop is dismissed. Cleared by `cancelTutorial()`/`selectTutorialScenario()`/`playTutorial()`. |
+| `stayTutorial()` | From the terminal stop only: clears the step cursor (the overlay tears down) but keeps the active tour, so the engine stays in key-free replay mode over the tour's data. Undo/redo re-runs replay from the cassette; `sendChat` and `sendAudioRequest` return silently while stayed (the UI disables the chat input and mic: see behavior.md § Staying in the tour). |
+| `isTutorialStayed(): boolean` | True after `stayTutorial()`: a tour is loaded (replay mode on) but no step is highlighted and the terminal stop is dismissed. Cleared by `cancelTutorial()`/`selectTutorialScenario()`/`playTutorial()`. |
 | `isTutorialActive(): boolean` | True while a step is highlighted (indices 0 … N-1); false in the done state and when no tour is playing. |
 | `isTutorialDone(): boolean` | True once all steps have been executed and the tour is awaiting the final Finish action. |
 | `currentTutorialStepNumber(): number \| null` | 1-based step number, or `null` when inactive or done. |
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
-| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled — the large-file dialog), `tutorial-runall-btn` (open-estimate — the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate — the estimate dialog the previous step opened), or `tutorial-table-view` (show-golden / display). |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled. The large-file dialog), `tutorial-runall-btn` (open-estimate: the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate, the estimate dialog the previous step opened), or `tutorial-table-view` (show-golden / display). |
 | `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing
@@ -1855,10 +1855,10 @@ voice turn and replays key-free.
 current step clears it (`''`). The `TutorialPanel` passes the tour name to
 `TourUi` as `doneDescription: Voilà, the tour "<name>" is done.`, making the final
 step a terminal celebration (see
-[gherkin-tour behavior — TourDriver / TourCursor](packages/gherkin-tour/behavior.md#tourdriver--tourcursor)).
+[gherkin-tour behavior: TourDriver / TourCursor](packages/gherkin-tour/behavior.md#tourdriver--tourcursor)).
 
 **Execute once.** `TutorialManager` tracks `executedThrough` (highest executed
 step index, `-1` before play; reset on play/select/cancel). `nextStep` runs a
 step's side effect only when `tutorialStepIndex > executedThrough`, so stepping
 Prev then Next re-highlights a step without re-loading its file or re-sending its
-query — a re-sent request would miss the replay cassette.
+query: a re-sent request would miss the replay cassette.

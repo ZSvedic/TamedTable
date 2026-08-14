@@ -25,7 +25,7 @@ export interface WebScenarioCtx {
   /** Stub continuous (hands-free) voice port, set before the controller builds. */
   continuousPort?: ContinuousVoicePort;
   /** Emits one detected turn into the running continuous session. Set by the
-   *  stub port's start(), cleared on stop() — so a step can fire a turn. */
+   *  stub port's start(), cleared on stop(), so a step can fire a turn. */
   continuousEmit?: () => Promise<void>;
   /** The pending 30 s recording auto-stop, captured by the injected
    *  voiceSchedule so the "30 seconds pass" step can fire it without waiting. */
@@ -39,26 +39,26 @@ export interface WebScenarioCtx {
    *  Anthropic API calls still flow through the cassette recorder above. */
   readonly urlFixtures: Map<string, string | null>;
   /** Sample name → the running deployment's address, backing the injected
-   *  `resolveSampleUrl` — the recents re-resolve seam. */
+   *  `resolveSampleUrl`: the recents re-resolve seam. */
   readonly sampleUrls: Map<string, string>;
   /** Last error raised by a `loadFromUrl` step that expected failure. */
   lastUrlError?: Error;
   /** When set, intercepts all non-fixture fetch calls to simulate LLM API errors. */
   mockLlmFetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   /** The API key the newest model call carried, however the provider sends it.
-   *  Recorded by the composite fetch — proves a key edit reached the engine. */
+   *  Recorded by the composite fetch: proves a key edit reached the engine. */
   lastCallApiKey?: string;
-  /** Model calls this scenario has made — proves a key test does not retry. */
+  /** Model calls this scenario has made: proves a key test does not retry. */
   llmCallCount?: number;
-  /** #PuterGateway — what the injected sign-in port does. Unset resolves a
+  /** #PuterGateway: what the injected sign-in port does. Unset resolves a
    *  token (the happy path); `closed` is the user dismissing the window;
    *  `error` is any real failure, which must reach the banner. */
   puterSignInClosed?: boolean;
   puterSignInError?: string;
-  /** Set by the injected sign-out port — deleting the Puter card must end the
+  /** Set by the injected sign-out port: deleting the Puter card must end the
    *  session, and deleting any other card must not. */
   puterSignedOut?: boolean;
-  /** #LookupJoin — background tasks that answer the lookup dialog through the
+  /** #LookupJoin: background tasks that answer the lookup dialog through the
    *  public `chooseLookupFile()` seam when a join later raises it, so a @web
    *  `load the lookup table …` Given never reaches into the controller engine. */
   lookupResponders?: Promise<void>[];
@@ -91,7 +91,7 @@ export function webController(world: TamedTableWorld): WebController {
 /** This world's scenario context; throws if the @web Before hook didn't run. */
 export function webCtx(world: TamedTableWorld): WebScenarioCtx {
   const ctx = webScenarios.get(world);
-  if (!ctx) throw new Error('web scenario context missing — is the @web Before hook wired?');
+  if (!ctx) throw new Error('web scenario context missing: is the @web Before hook wired?');
   return ctx;
 }
 

@@ -143,7 +143,7 @@ Feature: Gherkin Tour parser
       Then step 1 of scenario 1 has action kind "play-audio"
       And step 1 of scenario 1 has action filename "voice-demo.mp3"
 
-    # #LazyExec — the Lazy AI execution tour's stops: the large-file dialog's
+    # #LazyExec: the Lazy AI execution tour's stops: the large-file dialog's
     # shuffled choice, the estimate dialog (shown, not executed), and the
     # "Not yet" decline that closes it again. Tour steps read in imperative
     # voice (load / open / decline), matching the other showcase tours.
@@ -168,7 +168,7 @@ Feature: Gherkin Tour parser
 
     # The functional @web tests (lazy-exec.feature, web.feature) describe the
     # same UI actions in narrative "user …" voice; classify tolerates both.
-    # The narrative drag-drop step is web-test machinery, not a tour stop —
+    # The narrative drag-drop step is web-test machinery, not a tour stop:
     # it classifies as display and is dropped from the step list.
     @headless
     Scenario: The narrative "user …" phrasing classifies the same
@@ -191,7 +191,7 @@ Feature: Gherkin Tour parser
   Rule: Verification steps are dropped; the golden source is lifted
 
     @headless
-    Scenario: the compare step is dropped — it collapses into the terminal stop
+    Scenario: the compare step is dropped, it collapses into the terminal stop
       Given a feature string:
         """
         Feature: Demo
@@ -318,7 +318,7 @@ Feature: Gherkin Tour parser
       And the driver advances 4 times
       Then the adapter calls were "loadFile(a.csv), loadLookup(b.csv), prefillChat(hi), playAudio(c.mp3)"
 
-    # #LazyExec — the lazy stops dispatch to their optional adapter methods;
+    # #LazyExec: the lazy stops dispatch to their optional adapter methods;
     # decline-estimate closes the estimate the previous stop opened.
     @headless
     Scenario: the lazy actions dispatch to their own adapter methods
@@ -384,8 +384,8 @@ Feature: Gherkin Tour parser
   Rule: The overlay blocks clicks but lets scrolls through
 
     # Watch-only means clicks, not scrolling: while the overlay is up, wheel
-    # and touch scrolls forward to the scrollable region under the pointer —
-    # spotlighted (pointer-events disabled by Driver.js) or dimmed — so a
+    # and touch scrolls forward to the scrollable region under the pointer:
+    # spotlighted (pointer-events disabled by Driver.js) or dimmed, so a
     # learner can pan a wide table mid-tour. See behavior.md § TourUi.
 
     @web

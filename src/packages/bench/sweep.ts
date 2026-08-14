@@ -1,6 +1,6 @@
 // #BenchSweep
 // The grid driver. For each (cell model, batch size) config it runs the group-C
-// NL request over the labelled fixture and records speed, cost, and accuracy —
+// NL request over the labelled fixture and records speed, cost, and accuracy:
 // one flat SweepResult per config. The model tradeoff chart and the batch-size
 // chart are both slices of this table.
 //
@@ -15,12 +15,12 @@ import { scoreAccuracy, type Label } from './score.ts';
 
 /** One point in the sweep: a candidate cell model at a given batch size. */
 export interface SweepConfig {
-  /** The per-row cell model under test — the one whose accuracy we care about. */
+  /** The per-row cell model under test: the one whose accuracy we care about. */
   cellModel: string;
   batchSize: number;
-  /** The patch-turn model that writes the "add column" edit. Defaults to the
+  /** The chat model that writes the "add column" edit. Defaults to the
    *  same-provider default; it makes one cheap call and doesn't affect accuracy. */
-  primaryModel?: string;
+  chatModel?: string;
 }
 
 export interface SweepContext {
@@ -36,7 +36,7 @@ export interface SweepContext {
   apiKey?: string;
   /** Base fetch to wrap for tallying (cassette or global). Defaults to global. */
   baseFetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-  /** Engine factory — defaults to createHeadlessRunner. Injected for tests. */
+  /** Engine factory: defaults to createHeadlessRunner. Injected for tests. */
   runnerFactory?: (opts: HeadlessRunnerOptions) => HeadlessRunner;
   /** Extra attempts per config before giving up. Free models occasionally
    *  return the patch-turn tool call as plain text (the run then throws); a
@@ -52,7 +52,7 @@ export interface SweepContext {
 
 export interface SweepResult {
   cellModel: string;
-  primaryModel: string;
+  chatModel: string;
   provider: string;
   batchSize: number;
   rows: number;
@@ -71,13 +71,13 @@ export interface SweepResult {
 
 export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<SweepResult> {
   const provider = providerFor(cfg.cellModel);
-  const primaryModel = cfg.primaryModel ?? defaultPrimaryFor(cfg.cellModel);
+  const chatModel = cfg.chatModel ?? defaultChatModelFor(cfg.cellModel);
   const tally = newTally();
   const base = ctx.baseFetch ?? ((input: string | URL | Request, init?: RequestInit) => fetch(input, init));
   const runnerFactory = ctx.runnerFactory ?? createHeadlessRunner;
 
   const runner = runnerFactory({
-    model: primaryModel,
+    model: chatModel,
     cellModel: cfg.cellModel,
     batchSize: cfg.batchSize,
     apiKey: ctx.apiKey,
@@ -95,7 +95,7 @@ export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<Sw
 
   return {
     cellModel: cfg.cellModel,
-    primaryModel,
+    chatModel,
     provider,
     batchSize: cfg.batchSize,
     rows: out.length,
@@ -110,7 +110,7 @@ export async function runConfig(cfg: SweepConfig, ctx: SweepContext): Promise<Sw
   };
 }
 
-/** Run every config sequentially (one at a time — the live API has a rate cap,
+/** Run every config sequentially (one at a time: the live API has a rate cap,
  *  and interleaving would muddy per-config timing). */
 export async function runSweep(configs: SweepConfig[], ctx: SweepContext): Promise<SweepResult[]> {
   const retries = ctx.retries ?? 0;
@@ -136,9 +136,9 @@ export async function runSweep(configs: SweepConfig[], ctx: SweepContext): Promi
   return results;
 }
 
-/** Same-provider patch-turn default for a cell model, so the patch call never
+/** Same-provider chat-model default for a cell model, so the patch call never
  *  crosses providers. Uses the provider's mid-tier model. */
-function defaultPrimaryFor(cellModel: string): string {
+function defaultChatModelFor(cellModel: string): string {
   switch (providerFor(cellModel)) {
     case 'gemini':     return 'gemini-3.6-flash';
     case 'openai':     return 'gpt-5.5';

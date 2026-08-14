@@ -1,5 +1,5 @@
 // #WebUI
-// True on the desktop layout's medium band — wider than the phone breakpoint
+// True on the desktop layout's medium band, wider than the phone breakpoint
 // but too narrow to fit the toolbar's labelled buttons in one row. Drives the
 // Toolbar's `condensed` prop (icon-only, no file readout) so the bar fits
 // instead of overflowing the viewport. Must be ≥ the full-label toolbar width

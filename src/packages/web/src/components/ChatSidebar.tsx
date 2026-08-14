@@ -1,4 +1,4 @@
-// Binds WebController to the generic chat panel — the panel itself (message
+// Binds WebController to the generic chat panel: the panel itself (message
 // list, request detail, input row) and the MicButton live in
 // @tamedtable/chat-panel. Only app copy (empty state, help lines) and the
 // voice wiring stay here.
@@ -33,7 +33,7 @@ function EmptyChat(): ReactNode {
       </span>
       <br />
       Pick a sample, open a local file, or paste a URL with{' '}
-      <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open sample…</em> — then
+      <em style={{ color: t.ink2, fontStyle: 'normal' }}>Open sample…</em>, then
       describe a change in plain English, e.g. “normalize phone numbers” or “drop duplicate
       emails”. Requests are additive; use Undo to revert.
     </p>
@@ -47,7 +47,7 @@ export function ChatSidebar({
 }: {
   controller: WebController;
   fill?: boolean;
-  /** Sidebar width — the desktop shell's resize handle feeds this. */
+  /** Sidebar width: the desktop shell's resize handle feeds this. */
   width?: number;
 }): ReactNode {
   useController(controller);

@@ -1,4 +1,4 @@
-// #LlmLayer — regression steps for the runner's tolerance of imperfect model
+// #LlmLayer: regression steps for the runner's tolerance of imperfect model
 // output. These drive the real decode + apply seam (decodeOpValues →
 // applyAndValidate) with a patch the model JSON-encoded slightly wrong, the
 // same way the recovery loop feeds a model reply through it.
@@ -27,7 +27,7 @@ Given(
   'a patch that adds a mutate whose JSON-encoded value contains an invalid backslash escape',
   function (this: object) {
     // The model JSON-encodes the transformation into the patch `value`, but
-    // escapes the apostrophes in its prompt example as `\'` — which is NOT a
+    // escapes the apostrophes in its prompt example as `\'`, which is NOT a
     // legal JSON escape (JSON allows \" \\ \/ \b \f \n \r \t \uXXXX). A naive
     // JSON.parse therefore throws; the recorded "Fix the capitalization of
     // names" tour broke for exactly this reason.

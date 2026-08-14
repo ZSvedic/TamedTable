@@ -1,5 +1,5 @@
 // #TableView
-// Step defs for the @headless table-view scenarios — pure pagination-model
+// Step defs for the @headless table-view scenarios: pure pagination-model
 // assertions, no browser. The package's own steps live next to the code (see
 // spec/packages/README.md); they import nothing from the app harness.
 import { Then } from '@cucumber/cucumber';

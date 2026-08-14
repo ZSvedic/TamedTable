@@ -1,5 +1,5 @@
 // #UiKit
-// Theme context — provides the active Theme object and a light/dark toggle.
+// Theme context: provides the active Theme object and a light/dark toggle.
 // The package owns no storage: the host passes the starting mode and hears
 // about every toggle through onModeChange, persisting it however it likes.
 
@@ -28,7 +28,7 @@ export function ThemeProvider({
   onModeChange,
   children,
 }: {
-  /** Mode on first render — the brand's default is light. */
+  /** Mode on first render: the brand's default is light. */
   initialMode?: ThemeMode;
   /** Called after every toggle so the host can persist the choice. */
   onModeChange?: (mode: ThemeMode) => void;

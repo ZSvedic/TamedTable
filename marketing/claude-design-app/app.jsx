@@ -1,9 +1,9 @@
-// TamedTable — design canvas composition.
+// TamedTable: design canvas composition.
 // The current product inventory: main-screen states × 2 themes, the ui-kit
 // primitives (Button, SplitButton, Icon, Toasts, ThemeProvider's toggle),
 // the feature surfaces (Toolbar, TableView, ChatSidebar + MicButton,
 // SettingsPanel/ModelChooser, TutorialPanel), brand renders, and the tokens.
-// Everything reads TT_* tokens from tokens.jsx — nothing is hardcoded.
+// Everything reads TT_* tokens from tokens.jsx: nothing is hardcoded.
 
 const { useState: useStateCanvas } = React;
 
@@ -48,7 +48,7 @@ function TokenBoard({ theme }) {
           {theme === 'dark' ? 'Dark' : 'Light'} tokens
         </div>
         <div style={{ font: `400 12px/1 ${TT_TYPE.mono}`, color: t.ink3 }}>
-          generated from tokens.json — incl. rec/onRec (voice mic)
+          generated from tokens.json: incl. rec/onRec (voice mic)
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
@@ -187,7 +187,7 @@ function ButtonsBoard({ theme }) {
   const row = { display: 'flex', alignItems: 'center', gap: 10 };
   return (
     <Stage theme={theme} width={560} height={300}>
-      <StageLabel t={t}>Button — ghost · chrome · primary · danger</StageLabel>
+      <StageLabel t={t}>Button: ghost · chrome · primary · danger</StageLabel>
       <div style={row}>
         <Button t={t}>Ghost</Button>
         <Button t={t} variant="chrome">Chrome</Button>
@@ -208,7 +208,7 @@ function ButtonsBoard({ theme }) {
         <Button t={t}><Icon name="save" />Save data</Button>
         <Button t={t} variant="chrome"><Icon name="folder" />Open URL…</Button>
       </div>
-      <StageLabel t={t}>SplitButton — closed · open</StageLabel>
+      <StageLabel t={t}>SplitButton: closed · open</StageLabel>
       <div style={{ ...row, alignItems: 'flex-start' }}>
         <SplitButton t={t} menu={[{ label: 'Open local…' }]} title="Open a CSV or JSONL file from a URL">
           <Icon name="folder" />Open URL…
@@ -225,7 +225,7 @@ function IconBoard({ theme }) {
   const t = theme === 'dark' ? TT_DARK : TT_LIGHT;
   return (
     <Stage theme={theme} width={560} height={220}>
-      <StageLabel t={t}>Icon — 16×16 viewBox · 1.5 stroke · currentColor</StageLabel>
+      <StageLabel t={t}>Icon: 16×16 viewBox · 1.5 stroke · currentColor</StageLabel>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 10 }}>
         {ICON_NAMES.map((name) => (
           <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
@@ -234,7 +234,7 @@ function IconBoard({ theme }) {
           </div>
         ))}
       </div>
-      <StageLabel t={t}>in context — ink2 · ink3 · accent · err · ok</StageLabel>
+      <StageLabel t={t}>in context: ink2 · ink3 · accent · err · ok</StageLabel>
       <div style={{ display: 'flex', gap: 14 }}>
         <span style={{ color: t.ink2 }}><Icon name="cog" size={16} /></span>
         <span style={{ color: t.ink3 }}><Icon name="chevron" size={16} /></span>
@@ -250,11 +250,11 @@ function ToastBoard({ theme }) {
   const t = theme === 'dark' ? TT_DARK : TT_LIGHT;
   return (
     <Stage theme={theme} width={460} height={190}>
-      <StageLabel t={t}>Toasts — bottom-right stack · info | error · dismissible</StageLabel>
+      <StageLabel t={t}>Toasts: bottom-right stack · info | error · dismissible</StageLabel>
       <div style={{ position: 'relative', flex: 1 }}>
         <Toasts t={t} toasts={[
           { id: 1, kind: 'info', message: 'Saved customers.csv (20 rows × 6 cols).' },
-          { id: 2, kind: 'error', message: 'Could not fetch the URL — the server did not allow cross-origin requests.' },
+          { id: 2, kind: 'error', message: 'Could not fetch the URL. The server did not allow cross-origin requests.' },
         ]} />
       </div>
     </Stage>
@@ -266,7 +266,7 @@ function MicBoard({ theme }) {
   const cell = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 };
   return (
     <Stage theme={theme} width={460} height={170}>
-      <StageLabel t={t}>MicButton — press-and-hold · idle → recording → sending</StageLabel>
+      <StageLabel t={t}>MicButton: press-and-hold · idle → recording → sending</StageLabel>
       <div style={{ display: 'flex', gap: 36, padding: '12px 4px' }}>
         <div style={cell}>
           <MicButton t={t} status="idle" />
@@ -303,7 +303,7 @@ function CellsBoard({ theme }) {
   const row = { display: 'flex', alignItems: 'center', gap: 12 };
   return (
     <Stage theme={theme} width={560} height={330}>
-      <StageLabel t={t}>cell states — selection · edit · flash · pending</StageLabel>
+      <StageLabel t={t}>cell states: selection · edit · flash · pending</StageLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={row}>{lab('default')}{cell({}, '+14155550142')}</div>
         <div style={row}>{lab('selected')}{cell({ background: t.accentSoft }, '+14155550142')}</div>
@@ -313,7 +313,7 @@ function CellsBoard({ theme }) {
         <div style={row}>{lab('pending AI')}{cell({}, <span className="tt-pulse" style={{ color: t.ink4 }}>…</span>)}</div>
         <div style={row}>{lab('null')}{cell({}, <span style={{ color: t.ink4 }}>null</span>)}</div>
       </div>
-      <StageLabel t={t}>header — rest · hover (grip) · dragging</StageLabel>
+      <StageLabel t={t}>header: rest · hover (grip) · dragging</StageLabel>
       <div style={{ display: 'flex', gap: 12 }}>
         {[['rest', t.surface2, false], ['hover', t.surface3, true], ['dragging', t.accentSoft, true]].map(([k, bg, grip]) => (
           <div key={k} style={{
@@ -334,7 +334,7 @@ function PaginationBoard({ theme }) {
   const t = theme === 'dark' ? TT_DARK : TT_LIGHT;
   return (
     <Stage theme={theme} width={460} height={190}>
-      <StageLabel t={t}>Pagination — windowed 1 2 3 … N</StageLabel>
+      <StageLabel t={t}>Pagination: windowed 1 2 3 … N</StageLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Pagination t={t} page={1} pageCount={3} />
         <Pagination t={t} page={5} pageCount={23} />
@@ -388,7 +388,7 @@ function InputBoard({ theme }) {
   );
   return (
     <Stage theme={theme} width={460} height={540}>
-      <StageLabel t={t}>input row — idle · typed · focused · running · recording</StageLabel>
+      <StageLabel t={t}>input row: idle · typed · focused · running · recording</StageLabel>
       {wrap(<ChatInputRow t={t} />)}
       {wrap(<ChatInputRow t={t} draft="round Score to 1 decimal" />)}
       {wrap(<ChatInputRow t={t} draft="drop duplicate emails" focused />)}
@@ -403,10 +403,10 @@ function ChooserBoard({ theme, expanded = 'gemini' }) {
   const t = theme === 'dark' ? TT_DARK : TT_LIGHT;
   return (
     <Stage theme={theme} width={430} height={620}>
-      <StageLabel t={t}>ModelChooser — provider accordion · {expanded} expanded</StageLabel>
+      <StageLabel t={t}>ModelChooser: provider accordion · {expanded} expanded</StageLabel>
       <ModelChooser t={t} expandedProvider={expanded} provider={expanded}
-        primaryModel={expanded === 'anthropic' ? 'claude-sonnet-4-6' : expanded === 'openai' ? 'gpt-5.5' : 'gemini-3.5-flash'}
-        secondaryModel={expanded === 'anthropic' ? 'claude-sonnet-4-5' : expanded === 'openai' ? 'gpt-5.4-mini' : 'gemini-3.5-flash'}
+        chatModel={expanded === 'anthropic' ? 'claude-sonnet-4-6' : expanded === 'openai' ? 'gpt-5.5' : 'gemini-3.5-flash'}
+        cellModel={expanded === 'anthropic' ? 'claude-sonnet-4-5' : expanded === 'openai' ? 'gpt-5.4-mini' : 'gemini-3.5-flash'}
         keys={{ gemini: 'AIzaSyD8eXampleKey', openai: '', anthropic: 'sk-ant-api03-example' }} />
     </Stage>
   );
@@ -430,17 +430,17 @@ function OverviewBoard() {
       <Lockup size={30} />
       <div style={{ font: `400 ${TT_TYPE.lg}px/1.5 ${TT_TYPE.ui}`, color: t.ink2, maxWidth: 560 }}>
         A natural-language ETL tool: load a table, then drive transformations by
-        chatting in plain English. Three regions — toolbar, table grid, chat
-        sidebar — on a cool Mist ground with Aubergine ink. Pale Sky is the only
+        chatting in plain English. Three regions: toolbar, table grid, chat
+        sidebar: on a cool Mist ground with Aubergine ink. Pale Sky is the only
         accent: the mark's center cell, focus rings, and selection.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', paddingTop: 4 }}>
-        {li('Tokens are the single source', 'tokens.json is canonical; tokens.jsx and the app\'s ui-kit copy are generated mirrors — incl. the new rec/onRec voice tokens.')}
+        {li('Tokens are the single source', 'tokens.json is canonical; tokens.jsx and the app\'s ui-kit copy are generated mirrors: incl. the new rec/onRec voice tokens.')}
         {li('ui-kit primitives', 'Button (ghost · chrome · primary · danger), SplitButton, 19 icons, dismissible Toasts, ThemeProvider light/dark.')}
         {li('Toolbar', 'Brand lockup, file readout, Open URL/local split button, Save data / Save flow, undo/redo, theme toggle, Settings, Tutorial.')}
         {li('TableView', 'Silver grid · 28px rows · 32px header. Selection, inline edit, header drag-reorder, pagination footer. LLM cells flash cellHi → cellHi2; pending cells pulse.')}
         {li('ChatSidebar', 'Request list with collapsible request-detail strips, input row with send/stop and the press-and-hold MicButton (rec red + pulsing ring).')}
-        {li('Settings & Tutorial', 'Provider accordion (Google / OpenAI / Anthropic / OpenRouter) with masked keys and a Primary/Secondary model matrix; guided tutorial scenarios.')}
+        {li('Settings & Tutorial', 'Provider accordion (Google / OpenAI / Anthropic / OpenRouter) with masked keys and a chat/cell model matrix; guided tutorial scenarios.')}
       </div>
       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Mark height={16} />
@@ -462,13 +462,13 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="brand" title="Brand" subtitle="The 9×5 mark with overhanging eaves — crisp ≤80px, grid >80px, reverse on dark. Accent cell is always Pale Sky.">
+      <DCSection id="brand" title="Brand" subtitle="The 9×5 mark with overhanging eaves: crisp ≤80px, grid >80px, reverse on dark. Accent cell is always Pale Sky.">
         <DCArtboard id="brand-board" label="Mark modes & lockups" width={760} height={330}>
           <BrandBoard />
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="tokens" title="Tokens" subtitle="Generated from tokens.json — the single source of truth. Includes the new rec/onRec recording tokens.">
+      <DCSection id="tokens" title="Tokens" subtitle="Generated from tokens.json: the single source of truth. Includes the new rec/onRec recording tokens.">
         <DCArtboard id="tokens-light" label="Light" width={980} height={560}>
           <TokenBoard theme="light" />
         </DCArtboard>
@@ -477,7 +477,7 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="light-states" title="Main screen — light" subtitle="The worked example: normalize phones, then filter Score ≥ 8 + AI Country column (cells flash cellHi → cellHi2, pending cells pulse).">
+      <DCSection id="light-states" title="Main screen: light" subtitle="The worked example: normalize phones, then filter Score ≥ 8 + AI Country column (cells flash cellHi → cellHi2, pending cells pulse).">
         <DCArtboard id="light-empty" label="Empty · no file" width={SCREEN_W} height={SCREEN_H}>
           <AppScreen theme="light" state="empty" />
         </DCArtboard>
@@ -504,7 +504,7 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="dark-states" title="Main screen — dark" subtitle="Same states, same density; the accent stays Pale Sky.">
+      <DCSection id="dark-states" title="Main screen: dark" subtitle="Same states, same density; the accent stays Pale Sky.">
         <DCArtboard id="dark-empty" label="Empty · no file" width={SCREEN_W} height={SCREEN_H}>
           <AppScreen theme="dark" state="empty" />
         </DCArtboard>
@@ -528,7 +528,7 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="uikit" title="ui-kit primitives" subtitle="Mirrors src/packages/ui-kit — Button, SplitButton, Icon, Toasts. Primary is Ink; Pale Sky is never a button fill.">
+      <DCSection id="uikit" title="ui-kit primitives" subtitle="Mirrors src/packages/ui-kit: Button, SplitButton, Icon, Toasts. Primary is Ink; Pale Sky is never a button fill.">
         <DCArtboard id="buttons-l" label="Buttons · light" width={560} height={300}>
           <ButtonsBoard theme="light" />
         </DCArtboard>
@@ -615,7 +615,7 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="settings" title="Settings · ModelChooser" subtitle="Provider accordion — masked API key (eye reveal) + Primary/Secondary model matrix; voice-capable models carry the 🎙 badge.">
+      <DCSection id="settings" title="Settings · ModelChooser" subtitle="Provider accordion: masked API key (eye reveal) + chat/cell model matrix; voice-capable models carry the 🎙 badge.">
         <DCArtboard id="chooser-gemini" label="Google expanded · light" width={430} height={620}>
           <ChooserBoard theme="light" expanded="gemini" />
         </DCArtboard>
@@ -627,7 +627,7 @@ function Canvas() {
         </DCArtboard>
       </DCSection>
 
-      <DCSection id="tutorial" title="TutorialPanel" subtitle="Scenario picker and the active tour's step readout — step bubbles spotlight live UI in the app.">
+      <DCSection id="tutorial" title="TutorialPanel" subtitle="Scenario picker and the active tour's step readout: step bubbles spotlight live UI in the app.">
         <DCArtboard id="tut-picker" label="Scenario picker" width={420} height={520}>
           <div style={{ width: 420, height: 520, position: 'relative', fontFamily: TT_TYPE.ui, background: TT_LIGHT.bg }}>
             <TutorialSheet t={TT_LIGHT} inline />

@@ -1,10 +1,10 @@
-// #ModelConfig — browser-only audio re-encoding entry point.
+// #ModelConfig: browser-only audio re-encoding entry point.
 // MediaRecorder output (webm/opus on Chrome, mp4/aac on Safari) → 16 kHz mono
 // PCM16 WAV: the one format every voice-capable provider accepts (OpenAI's
 // input_audio takes only wav/mp3; Gemini takes wav among others). Used by the
 // web app's recording port and the demo's spoken-query call.
 
-// This file is part of the Node typecheck (no DOM lib) — declare the minimal
+// This file is part of the Node typecheck (no DOM lib), declare the minimal
 // Web Audio surface used.
 interface DecodedAudio {
   length: number;

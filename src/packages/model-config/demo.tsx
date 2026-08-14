@@ -1,7 +1,7 @@
-// #ModelConfig demo logic — referenced by demo.html as an external module so
+// #ModelConfig demo logic: referenced by demo.html as an external module so
 // `bun build` bundles it (inline scripts are left unbundled and 404 on the
-// imports). Mounts the real ModelChooser — the role WebController plays in
-// the app — and shows the resolveConfig result live. State seeds from, and
+// imports). Mounts the real ModelChooser: the role WebController plays in
+// the app, and shows the resolveConfig result live. State seeds from, and
 // every change persists to, the same localStorage blob the main app uses.
 // Below the config sits a dev test-call harness issuing real provider calls.
 // Spec: spec/packages/model-config/behavior.md § Demo page.
@@ -73,7 +73,7 @@ function Demo() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // The models follow the provider defaults — they are not user-selectable,
+  // The models follow the provider defaults: they are not user-selectable,
   // beyond OpenRouter's free/paid model set, which is.
   const paidSet = stored.openrouterPaid ?? false;
   const setPaid = (p: Provider, paid: boolean) => {
@@ -86,7 +86,7 @@ function Demo() {
     cellModel: defaultCellModel(stored.provider ?? 'gemini', paidSet),
   });
 
-  // Persist every CHANGE to the blob the main app reads (and vice versa) — a
+  // Persist every CHANGE to the blob the main app reads (and vice versa): a
   // page load is not a change, so the mount run is skipped: writing on mount
   // would rewrite the blob unprompted and reset fields the demo doesn't
   // thread (alwaysRunAll) to resolveConfig's defaults. On a real change the
@@ -129,8 +129,8 @@ function Demo() {
       [provider]: { tier: p[provider]?.tier ?? null, connectedAt: p[provider]?.connectedAt },
     }));
     const stub = stubProbe();
-    for (const role of ['primary', 'secondary'] as const) {
-      const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
+    for (const role of ['chat', 'cell'] as const) {
+      const modelId = role === 'chat' ? defaultModel(provider) : defaultCellModel(provider);
       try {
         const measure = await measureModel(provider, key, modelId, stub);
         // Stamped with the model and the moment, so a default change or a week
@@ -195,13 +195,13 @@ function Demo() {
     setProbes(({ [p]: _dropped, ...rest }) => rest);
   };
 
-  const roleRow = (p: Provider, role: 'primary' | 'secondary'): RoleRow => {
+  const roleRow = (p: Provider, role: 'chat' | 'cell'): RoleRow => {
     const paid = p === 'openrouter' && paidSet;
-    const model = role === 'primary' ? defaultModel(p, paid) : defaultCellModel(p, paid);
+    const model = role === 'chat' ? defaultModel(p, paid) : defaultCellModel(p, paid);
     const priced = modelFor(p, model);
     return {
       model,
-      // Price is the catalogue's, per thousand tokens — never measured.
+      // Price is the catalogue's, per thousand tokens, never measured.
       inUsdPer1kTok: priced ? priced.inUsdPerMtok / 1000 : null,
       outUsdPer1kTok: priced ? priced.outUsdPerMtok / 1000 : null,
       speed: speedOf(probes[p]?.[role], measuring[p] ?? false),
@@ -216,8 +216,8 @@ function Demo() {
     priceVariesByPlan: priceVariesByPlan(p),
     hasPaidModelSet: hasPaidModelSet(p),
     paidModelSet: p === 'openrouter' && paidSet,
-    primary: roleRow(p, 'primary'),
-    secondary: roleRow(p, 'secondary'),
+    chat: roleRow(p, 'chat'),
+    cell: roleRow(p, 'cell'),
   }));
 
   // ── Test call state ───────────────────────────────────────────────────────
@@ -315,7 +315,7 @@ function Demo() {
         busy={busy}
         onKeyInputChange={(value) => {
           setKeyInput(value);
-          // Typing clears the error — the user is already fixing it.
+          // Typing clears the error: the user is already fixing it.
           if (error !== '') setError('');
           if (notice !== '') setNotice('');
         }}
@@ -338,7 +338,7 @@ function Demo() {
       <h2>resolveConfig({'{}'}, stored)</h2>
       <pre id="out">{JSON.stringify(resolved, null, 2)}</pre>
 
-      <h2>Test call — {resolved.model}</h2>
+      <h2>Test call: {resolved.model}</h2>
       <div style={{ display: 'flex', gap: 6 }}>
         <input
           id="tc-input"

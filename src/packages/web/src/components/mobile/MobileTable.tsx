@@ -3,9 +3,9 @@
 // scrolled by the DOCUMENT in both directions (no inner scroller), so a swipe
 // through the table hides the phone browser's bars and the browser scrollbar
 // shows the true position. The header row stays frozen below the fixed app
-// bar and the row-number column at the left edge — both position: sticky
+// bar and the row-number column at the left edge: both position: sticky
 // against the page. Tapping a cell selects it (the status the voice prompt
-// reads). Editing and column-drag are desktop gestures — the mobile grid is
+// reads). Editing and column-drag are desktop gestures: the mobile grid is
 // select-and-scroll.
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
@@ -25,7 +25,7 @@ export interface MobileTableProps {
   id?: string;
   t: Theme;
   /** Pinch-to-zoom factor (useTableZoom). Applied via the CSS `zoom` property
-   *  so the layout — and with it the document scroll range — scales along;
+   *  so the layout, and with it the document scroll range, scales along;
    *  the sticky offsets aimed at the unzoomed fixed app bar divide it back. */
   zoom?: number;
   columns: string[];
@@ -34,14 +34,14 @@ export interface MobileTableProps {
   selection: CellRef | null;
   onSelect: (row: number, column: string) => void;
   streaming?: boolean;
-  /** Live run progress — the phone's stand-in for the chat progress block
+  /** Live run progress: the phone's stand-in for the chat progress block
    *  (no sidebar is visible): its status line rides the streaming banner. */
   progress?: RunProgress | null;
-  /** Cancels the streaming run — the banner's stop icon. */
+  /** Cancels the streaming run: the banner's stop icon. */
   onStop?: () => void;
-  // #LazyExec — row state + column-menu marks (the menu itself is the
+  // #LazyExec: row state + column-menu marks (the menu itself is the
   // shell's bottom sheet; a header tap opens it).
-  /** Original row numbers (1-based) — kept while the view is shuffled. */
+  /** Original row numbers (1-based): kept while the view is shuffled. */
   rowNumbers?: number[];
   /** Per-visible-row status: pending washes the number cell, failed reds it. */
   rowStatus?: Array<'pending' | 'failed' | undefined>;
@@ -50,11 +50,11 @@ export interface MobileTableProps {
   filters?: Record<string, string>;
   /** A header tap opens the column menu (bottom sheet) when present. */
   onHeaderTap?: (column: string) => void;
-  /** Cells the host's last step changed, keyed "<absRow>:<col>" — a changed
+  /** Cells the host's last step changed, keyed "<absRow>:<col>", a changed
    *  cell tints, exactly as on desktop (the tint is the signal; the phone
    *  does without the hover tooltip). */
   changedCells?: Record<string, unknown>;
-  /** Column the host wants on screen — the reveal scroll. Each new `seq`
+  /** Column the host wants on screen: the reveal scroll. Each new `seq`
    *  pans the page (the phone's scroller) to that column's header, corrected
    *  for the frozen row-number column at the left edge. */
   reveal?: { column: string; seq: number } | null;
@@ -81,7 +81,7 @@ export function MobileTable({
   reveal,
 }: MobileTableProps): ReactNode {
   // The reveal scroll: pan the page (the phone's scroller) so the named
-  // column's header is on screen — cleared past the frozen Row # column,
+  // column's header is on screen: cleared past the frozen Row # column,
   // which would otherwise hide a column revealed at the left edge (an undo
   // landing on a step whose changed column sits left of the view).
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -132,7 +132,7 @@ export function MobileTable({
   };
 
   return (
-    // width: max-content — the document scrolls this grid sideways, and the
+    // width: max-content, the document scrolls this grid sideways, and the
     // data cells are transparent, so the wrapper that paints the table surface
     // (and anchors the tour spotlight) must span the whole table, not stop at
     // the viewport edge where the page background would show through.
@@ -143,7 +143,7 @@ export function MobileTable({
       style={{
         flex: 1,
         width: 'max-content',
-        // 100% of the parent renders zoom× wide — divide back so the surface
+        // 100% of the parent renders zoom× wide, divide back so the surface
         // still spans at least the full viewport when zoomed out.
         minWidth: zoom === 1 ? '100%' : `calc(100% / ${zoom})`,
         background: t.surface,
@@ -166,7 +166,7 @@ export function MobileTable({
           }}
         >
           {/* Sticky left pins the status to the visible edge while the page
-              scrolls the table sideways. The span must stay content-sized —
+              scrolls the table sideways. The span must stay content-sized:
               a full-width (flex: 1) span leaves sticky no room to shift, so
               the content would scroll off screen with the banner. */}
           <span
@@ -182,7 +182,7 @@ export function MobileTable({
             <span className="tt-pulse" style={{ flex: '0 0 auto', width: 6, height: 6, borderRadius: 3, background: t.accent }} />
             <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {progress && progress.step > 0
-                ? `Step ${progress.step} of ${progress.totalSteps} — ${progress.label}` +
+                ? `Step ${progress.step} of ${progress.totalSteps}: ${progress.label}` +
                   (progress.rowsTotal > 0 && progress.rowsDone > 0
                     ? ` · ${progress.rowsDone} / ${progress.rowsTotal} rows`
                     : '')

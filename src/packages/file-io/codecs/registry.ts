@@ -1,7 +1,7 @@
 // #FileIO #IoFormats
 // The load-on-demand codec registry. A new format is a codec file plus one row
 // here. Detection reads the synchronous descriptor table (id + extensions +
-// content types); the codec itself — and its parser — is pulled lazily by
+// content types); the codec itself, and its parser, is pulled lazily by
 // `loadCodec`, so a request that never touches a format never imports its parser.
 import type { FormatCodec } from '@tamedtable/table-plan';
 

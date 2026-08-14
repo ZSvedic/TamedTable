@@ -1,6 +1,6 @@
-// RED-TUT-5 — regression test (red inventory, now green): tour popover copy
+// RED-TUT-5: regression test (red inventory, now green): tour popover copy
 // must match the sentence the canonical docs pin, because nothing else green
-// does — the e2e only asserts toContainText('Voilà'), so drifted copy would
+// does: the e2e only asserts toContainText('Voilà'), so drifted copy would
 // ship silently. Two sentences are pinned:
 //   Voilà, the tour "<name>" is done.        (terminal stop)
 //   The "Run on all rows?" dialog estimates the time and cost of cleaning
@@ -11,8 +11,8 @@
 
 // The strings are only observable through a live Driver.js popover (the
 // doneDescription is handed to TourUi inside a mount effect), so these tests
-// extract the constants from the component sources — the exact strings the
-// app passes — and assert them against the spec-pinned sentences.
+// extract the constants from the component sources: the exact strings the
+// app passes, and assert them against the spec-pinned sentences.
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -26,19 +26,19 @@ test('RED-TUT-5: terminal-stop popover copy matches the spec-pinned sentence', (
   const match = src.match(/doneDescription:\s*`([^`]+)`/);
   assert.ok(
     match,
-    'RED-TUT-5 harness: could not find the doneDescription template literal in TutorialPanel.tsx — the component changed shape; update the extraction, not the assertion',
+    'RED-TUT-5 harness: could not find the doneDescription template literal in TutorialPanel.tsx, the component changed shape; update the extraction, not the assertion',
   );
   const passed = match![1]!.replace(/\$\{selectedTourName\}/g, '<name>');
   assert.equal(
     passed,
     'Voilà, the tour "<name>" is done.',
-    'RED-TUT-5 (spec/behavior.md § tours, spec/code-contract.md § tutorial mode, spec/packages/gherkin-tour/behavior.md § TourUi): the canonical docs pin the terminal popover copy as `Voilà, the tour "<name>" is done.` — the app passes a drifted sentence to TourUi (TutorialPanel.tsx doneDescription)',
+    'RED-TUT-5 (spec/behavior.md § tours, spec/code-contract.md § tutorial mode, spec/packages/gherkin-tour/behavior.md § TourUi): the canonical docs pin the terminal popover copy as `Voilà, the tour "<name>" is done.`. The app passes a drifted sentence to TourUi (TutorialPanel.tsx doneDescription)',
   );
 });
 
 test('decline-estimate narration matches the spec-pinned sentence in both asInstruction copies', () => {
   // asInstruction is deliberately duplicated (TutorialPanel.tsx mirrors
-  // gherkin-tour/ui.ts) — pin the decline sentence in both so neither drifts.
+  // gherkin-tour/ui.ts): pin the decline sentence in both so neither drifts.
   const pinned =
     'The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.';
   const sources = [
@@ -50,7 +50,7 @@ test('decline-estimate narration matches the spec-pinned sentence in both asInst
     const match = src.match(/declines\?[^\n]*\n\s*return '([^']+)';/);
     assert.ok(
       match,
-      `harness: could not find the decline-estimate return in ${file} — the asInstruction shape changed; update the extraction, not the assertion`,
+      `harness: could not find the decline-estimate return in ${file}, the asInstruction shape changed; update the extraction, not the assertion`,
     );
     assert.equal(
       match![1],

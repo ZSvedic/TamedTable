@@ -1,5 +1,5 @@
 // #UiKit
-// React entry point — kept separate so the main entry (design tokens) stays
+// React entry point: kept separate so the main entry (design tokens) stays
 // React-free; `react` is a peer dependency of this entry only.
 
 export { ThemeProvider, useTheme, useThemeControls, type ThemeMode } from './ThemeProvider.tsx';
@@ -13,7 +13,7 @@ export {
 } from './MenuButton.tsx';
 export { Toasts, type ToastItem } from './Toasts.tsx';
 
-/** True when a keydown belongs to an IME composition — the Enter a
+/** True when a keydown belongs to an IME composition: the Enter a
  *  Japanese/Chinese/Korean user presses to confirm a conversion, which every
  *  mainstream composer ignores (`isComposing`, with `keyCode === 229` as the
  *  legacy-browser fallback). Every "Enter submits" keydown handler must gate

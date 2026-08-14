@@ -1,6 +1,6 @@
 // #Cassettes
-// Shared cassette primitives — the fingerprint, the on-tape entry shape, and a
-// replay-only fetch — used by BOTH the Cucumber suite (src/tests/cassette.ts,
+// Shared cassette primitives: the fingerprint, the on-tape entry shape, and a
+// replay-only fetch: used by BOTH the Cucumber suite (src/tests/cassette.ts,
 // which adds the Node-fs record/replay file layer) and the browser web shell
 // (tutorial playback replays a fetched cassette so a key-free visitor can run a
 // full tour). No Node imports, so it loads unchanged in a browser; the hash
@@ -95,7 +95,7 @@ function commonPrefixLen(a: string, b: string): number {
 
 /** Split a request body against the tape's known prefixes: reuse the longest
  *  prefix the body starts with, or mint a new one from the longest common run
- *  (≥ MIN_SHARED_PREFIX) it shares with an already-recorded body — re-splitting
+ *  (≥ MIN_SHARED_PREFIX) it shares with an already-recorded body: re-splitting
  *  the entries that share it so the boilerplate is stored once. May add to
  *  `tape.prefixes` and rewrite existing entries' `request`. */
 export function splitBody(tape: Cassette, body: string): { prefixId: string | null; suffix: string } {

@@ -39,7 +39,7 @@ export interface RunCliResult {
 /** Build the option object for `readline.createInterface` used by the REPL.
  *  Exported so tests (and any embedder) can verify terminal-mode wiring
  *  without standing up the full REPL loop. `terminal: true` enables
- *  Node's line editor — Up/Down for history, Left/Right for cursor — and
+ *  Node's line editor (Up/Down for history, Left/Right for cursor) and
  *  requires both streams to be real TTYs; non-TTY streams (piped input,
  *  redirected output, the test harness) keep `terminal: false`. */
 export function replReadlineOptions(
@@ -171,7 +171,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   const stdin = opts.stdin ?? process.stdin;
   const stdout = opts.stdout ?? process.stdout;
   // Resolve provider/key/model from env; let opts override (tests inject
-  // apiKey/model directly). The provider travels with the key it belongs to —
+  // apiKey/model directly). The provider travels with the key it belongs to:
   // the engine is told, not left to infer it from the model id.
   if (!opts.apiKey) {
     const cfg = resolveConfig(readConfigFromEnv(), {});
@@ -194,8 +194,8 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   // The "> " glyph: in terminal mode rl.prompt() lets readline own the
   // line-redraw (a manual write would fight it). In batch mode the piped
   // stdin ends at once, so readline closes while the loop is still draining
-  // buffered lines — rl.prompt() then throws ERR_USE_AFTER_CLOSE, and its
-  // redraw is moot anyway — so write the glyph directly.
+  // buffered lines: rl.prompt() then throws ERR_USE_AFTER_CLOSE, and its
+  // redraw is moot anyway, so write the glyph directly.
   let rlClosed = false;
   rl.on('close', () => { rlClosed = true; });
   const prompt = () => {
@@ -204,7 +204,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   };
   const onSigint = () => { activeRequest ? activeRequest.abort() : rl.close(); };
   // Wired twice on purpose. A terminal-mode readline holds stdin in raw mode,
-  // so ^C never becomes a process SIGINT — readline sees the keypress and, with
+  // so ^C never becomes a process SIGINT: readline sees the keypress and, with
   // no 'SIGINT' listener of ours, closes the interface, which ends the `for
   // await` loop and takes the whole session down. A piped run is the mirror
   // image: no readline SIGINT event, only the process signal. Both paths reach

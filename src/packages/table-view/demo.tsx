@@ -1,4 +1,4 @@
-// #TableView demo logic — mounts the real TableView over 95 generated rows
+// #TableView demo logic: mounts the real TableView over 95 generated rows
 // at page size 10, with plain React state playing the host. Every callback
 // appends to the #out event log; #out is non-empty on load (the demo smoke
 // test's ready signal). The host state includes the grid upgrades
@@ -61,7 +61,7 @@ function Demo(): ReactNode {
   }
   const viewRows = order.map((i) => rows[i]!);
   // Changed-cell marks are stored by SOURCE row (the edit's identity) and
-  // remapped to view-absolute keys per render — a sort or filter moves the
+  // remapped to view-absolute keys per render: a sort or filter moves the
   // mark with its row instead of leaving it on the old view slot.
   const viewSlot = new Map(order.map((src, view) => [src, view]));
   const changedView: Record<string, unknown> = {};
@@ -74,7 +74,7 @@ function Demo(): ReactNode {
   const current = clampPage(page, pageCount);
   const pageOrder = pageSlice(order, current, PAGE_SIZE);
   // Demo row status: IDs 91–95 pending (they live on page 10 unsorted),
-  // ID 7 failed — page 10 carries the pager dot.
+  // ID 7 failed: page 10 carries the pager dot.
   const statusFor = (i: number): 'pending' | 'failed' | undefined => {
     const idn = Number(rows[i]?.ID);
     return idn === 7 ? 'failed' : idn > 90 ? 'pending' : undefined;
@@ -94,7 +94,7 @@ function Demo(): ReactNode {
           font: `600 14px/1.4 ${typography.ui}`,
         }}
       >
-        table-view — 95 sample rows, page size {PAGE_SIZE}
+        table-view: 95 sample rows, page size {PAGE_SIZE}
         <span style={{ flex: 1 }} />
         <Button variant="chrome" onClick={() => setStreaming((v) => !v)}>
           Toggle streaming

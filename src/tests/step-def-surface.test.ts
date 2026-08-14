@@ -1,8 +1,8 @@
-// #StepDefSurface — a guard test.
+// #StepDefSurface: a guard test.
 //
 // Step definitions must drive the app only through its public controller
 // surface, never reach into internals. The @web Cucumber profile drives
-// WebController directly — no DOM, no bundler, no clicks — so a step that pokes
+// WebController directly (no DOM, no bundler, no clicks) so a step that pokes
 // `controller.engine` / `.lazy` / `.patch` / `.settingsMgr` exercises a seam no
 // real browser user can reach. That gap is exactly how three shipped features
 // passed the suite while broken in the deployed app (PR #259). This test pins

@@ -1,6 +1,6 @@
 // #IoFormats #DuckDB
 // Parquet codec. Reading and writing both go through the shared DuckDB engine
-// (./parquet-engine.ts — node-api in Node, duckdb-wasm in the browser). Per-format
+// (./parquet-engine.ts: node-api in Node, duckdb-wasm in the browser). Per-format
 // notes: spec/packages/file-io/formats/parquet.md.
 import type { FormatCodec, ParsedTable, Row } from '@tamedtable/table-plan';
 import { readParquetBytes, writeParquetBytes } from './parquet-engine.ts';

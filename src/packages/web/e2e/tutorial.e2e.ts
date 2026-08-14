@@ -1,4 +1,4 @@
-// #TutorialMode — browser-level E2E tests for the Tours panel.
+// #TutorialMode: browser-level E2E tests for the Tours panel.
 // These catch UI bugs (z-index, Driver.js interactions) that the Cucumber
 // @web suite cannot see because it drives WebController directly, no DOM.
 import { test, expect, type Page } from '@playwright/test';
@@ -13,7 +13,7 @@ function panel(page: Page) {
   return page.getByTestId('tutorial-panel');
 }
 
-/** Open the Tours panel and click a tour — clicking an option starts it. */
+/** Open the Tours panel and click a tour: clicking an option starts it. */
 async function startTour(page: Page, name: string | RegExp) {
   await page.getByRole('button', { name: 'Tours', exact: true }).click();
   await panel(page).getByRole('option', { name }).click();
@@ -21,7 +21,7 @@ async function startTour(page: Page, name: string | RegExp) {
 
 /** The tour runs in the shared gherkin-tour popover (the slide-over panel is
  *  closed during a tour). Driver.js's own footer holds the progress text and a
- *  single forward button — Next on a step, Done on the terminal stop. There is
+ *  single forward button: Next on a step, Done on the terminal stop. There is
  *  no Previous button. */
 function progress(page: Page) {
   return page.locator('.driver-popover-progress-text');
@@ -56,7 +56,7 @@ test('Next advances to the second stop', async ({ page }) => {
   await nextBtn(page).click();
 
   await expect(progress(page)).toHaveText('2 of 6');
-  // There is no Previous button — the tour only moves forward.
+  // There is no Previous button: the tour only moves forward.
   await expect(page.locator('.driver-popover-prev-btn')).toBeHidden();
 });
 
@@ -84,9 +84,9 @@ test('the voice showcase tour replays whole, key-free', async ({ page }) => {
   await expect(page.locator('.driver-popover')).toContainText('Voilà');
 });
 
-// #LazyExec — the Lazy AI execution tour: load the 25k-row sample, take the
+// #LazyExec: the Lazy AI execution tour: load the 25k-row sample, take the
 // shuffled one-click load, preview a page, show the estimate dialog, and
-// decline it with "Not yet" — nothing runs, all key-free from the cassette,
+// decline it with "Not yet": nothing runs, all key-free from the cassette,
 // and the tour ends with no dialog left open.
 test('the Lazy AI execution tour replays whole, key-free', async ({ page }) => {
   await startTour(page, 'Clean 25,000 rows for cents');
@@ -107,7 +107,7 @@ test('the Lazy AI execution tour replays whole, key-free', async ({ page }) => {
   await expect(progress(page)).toHaveText('5 of 6', { timeout: 20_000 });
   await expect(page.locator('[data-tt-runall-dialog]')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('[data-tt-est-rows]')).toContainText('24,900');
-  await nextBtn(page).click(); // decline-estimate closes it — the finale
+  await nextBtn(page).click(); // decline-estimate closes it, the finale
   await expect(progress(page)).toHaveText('6 of 6', { timeout: 20_000 });
   await expect(page.locator('[data-tt-runall-dialog]')).toBeHidden();
   await expect(page.locator('.driver-popover')).toContainText('Voilà');
@@ -118,7 +118,7 @@ test('Cancel exits the tour and starting it again restarts it', async ({ page })
   await expect(progress(page)).toHaveText('1 of 6');
 
   // Esc cancels the tour (Driver.js default). The popover goes away and the
-  // app returns to the empty state — the panel reopens only on Finish/Done.
+  // app returns to the empty state: the panel reopens only on Finish/Done.
   await page.keyboard.press('Escape');
   await expect(page.locator('.driver-popover')).toBeHidden();
 
@@ -141,8 +141,8 @@ test('Arrow-right advances; there is no ← key', async ({ page }) => {
 
 // Deep links carry ?feature=&scenario= so the app can pick one tour; once the
 // tour ends the address bar returns to the plain app URL (behavior.md § Deep
-// links into a tutorial). The Cucumber @web suite cannot see the URL — it
-// drives the controller directly — so the round trip is pinned here.
+// links into a tutorial). The Cucumber @web suite cannot see the URL: it
+// drives the controller directly, so the round trip is pinned here.
 test('finishing a deep-link tour restores the plain app URL', async ({ page }) => {
   await page.goto('/TamedTable/app/?feature=filter.feature&scenario=Filter+by+Country');
   await expect(progress(page)).toHaveText(/1 of \d+/);

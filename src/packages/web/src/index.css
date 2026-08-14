@@ -17,7 +17,7 @@ body,
   height: 100svh;
 }
 
-/* #MobileShell — document-scroll layout. At phone width (keep in sync with
+/* #MobileShell: document-scroll layout. At phone width (keep in sync with
    MOBILE_MAX_WIDTH in useIsMobile.ts) the document itself scrolls the table:
    the shell pins its app bar and dock and lets the content flow, so a natural
    swipe hides the phone browser's bars and the browser scrollbar shows the

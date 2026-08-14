@@ -1,5 +1,5 @@
 // #ChatPanel
-// The chat sidebar — pure props in, callbacks out. The host owns the message
+// The chat sidebar: pure props in, callbacks out. The host owns the message
 // list and the streaming flag; the panel owns only its draft text and which
 // detail panels are open. App copy (empty state, help lines) and the mic
 // button arrive as props, so the panel knows nothing about engines or files.
@@ -14,7 +14,7 @@ import { StatusDot } from './StatusDot.tsx';
 const INPUT_MIN_H = 68;
 const INPUT_MAX_H = 240;
 
-// How far off the bottom the list may sit and still count as "at the bottom" —
+// How far off the bottom the list may sit and still count as "at the bottom":
 // enough slack for a fractional scroll position, small enough that a deliberate
 // scroll up stops the auto-follow.
 const PIN_THRESHOLD = 40;
@@ -48,7 +48,7 @@ function UserBubble({ t, children }: { t: Theme; children: ReactNode }): ReactNo
   );
 }
 
-/** Render the request-detail panel's full text — also what the copy icon
+/** Render the request-detail panel's full text: also what the copy icon
  *  puts on the clipboard. */
 function debugDetailText(debug: ChatRequestDetail): string {
   return [
@@ -130,7 +130,7 @@ function AssistantMessage({
           </span>
         ) : (
           // Solid ok dot for an applied step; hollow circle when the reply's
-          // step is undone — the table no longer shows what it reports.
+          // step is undone: the table no longer shows what it reports.
           <StatusDot
             state={message.undone ? 'undone' : 'ok'}
             style={{ marginTop: message.undone ? 5 : 6 }}
@@ -201,7 +201,7 @@ function AssistantMessage({
                 type="button"
                 data-cp-report=""
                 onClick={() => onReportBug?.(message)}
-                title="Report bug — opens a prefilled GitHub issue"
+                title="Report bug: opens a prefilled GitHub issue"
                 style={{
                   ...chipStyle(t),
                   fontFamily: typography.ui,
@@ -273,7 +273,7 @@ function RunProgress({ t, progress }: { t: Theme; progress: ChatRunProgress }): 
       >
         {progress.step === 0
           ? 'Starting…'
-          : `Step ${progress.step} of ${progress.totalSteps} — ${progress.label}` +
+          : `Step ${progress.step} of ${progress.totalSteps}: ${progress.label}` +
             (progress.rowsTotal > 0 && progress.rowsDone > 0
               ? ` · ${progress.rowsDone} / ${progress.rowsTotal} rows`
               : '')}
@@ -357,9 +357,9 @@ function RunProgress({ t, progress }: { t: Theme; progress: ChatRunProgress }): 
 
 export interface ChatPanelProps {
   messages: ChatPanelMessage[];
-  /** True while a request runs — shows Running…, swaps send for stop. */
+  /** True while a request runs: shows Running…, swaps send for stop. */
   streaming: boolean;
-  /** Live progress of the streaming run, or null — rendered as a block under
+  /** Live progress of the streaming run, or null: rendered as a block under
    *  the Running… line (status line, thin bar, live request-detail log). */
   progress?: ChatRunProgress | null;
   /** Committed-transformation count for the header readout. */
@@ -368,7 +368,7 @@ export interface ChatPanelProps {
   prefill?: string | null;
   /** Non-null disables the input row: the textarea and send grey out, the
    *  draft clears, this text shows as the placeholder, and the `micButton`
-   *  slot is hidden — the host's "input is off, here is why" state. */
+   *  slot is hidden: the host's "input is off, here is why" state. */
   disabledHint?: string | null;
   onSend: (text: string) => void;
   onCancel: () => void;
@@ -377,16 +377,16 @@ export interface ChatPanelProps {
   onReportBug?: (message: ChatPanelMessage) => void;
   /** DOM id for the textarea (e.g. for Driver.js highlights). */
   inputId?: string;
-  /** Rendered when there are no messages — app copy. */
+  /** Rendered when there are no messages: app copy. */
   emptyState?: ReactNode;
-  /** Lines for the header's `?` popover — app copy. */
+  /** Lines for the header's `?` popover: app copy. */
   helpLines?: string[];
   /** The host's mic button (or null when voice is unavailable). */
   micButton?: ReactNode;
   /** Fill the parent (width + height 100%) instead of the fixed 360px sidebar
-   *  width — used when the panel rises as a mobile bottom sheet. */
+   *  width: used when the panel rises as a mobile bottom sheet. */
   fill?: boolean;
-  /** Sidebar width in px (ignored under `fill`). The host owns resizing —
+  /** Sidebar width in px (ignored under `fill`). The host owns resizing:
    *  the app's drag handle feeds this. Default 360. */
   width?: number;
 }
@@ -413,7 +413,7 @@ export function ChatPanel({
   const [focused, setFocused] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  // The textarea grows with the draft — three lines minimum, ten lines
+  // The textarea grows with the draft: three lines minimum, ten lines
   // maximum, then it scrolls internally. Height is measured, not counted:
   // wrapped lines grow it too.
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -431,7 +431,7 @@ export function ChatPanel({
   // clears the box at once.
   //
   // Re-entrancy guard: Driver.js re-highlights the step on refresh() (window
-  // resize, scroll recalculation), re-firing this effect with the same prefill —
+  // resize, scroll recalculation), re-firing this effect with the same prefill,
   // without the `typed` guard the animation would restart or double-type.
   const typing = useRef<{ typed: string | null; timer: ReturnType<typeof setInterval> | null }>({
     typed: null,
@@ -440,7 +440,7 @@ export function ChatPanel({
   useEffect(() => {
     if (prefill === null) return;
     const guard = typing.current;
-    if (prefill === guard.typed) return; // same value re-fired — ignore
+    if (prefill === guard.typed) return; // same value re-fired: ignore
     guard.typed = prefill;
     if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
     if (prefill === '') { setDraft(''); return; }
@@ -457,7 +457,7 @@ export function ChatPanel({
   // The list follows the newest message: every arriving message (and the start
   // of a run) scrolls it to the bottom, so the user sees what they just posted
   // and the reply forming under it. Scrolling up to re-read stops the
-  // following — `pinned` goes false past the threshold — until the list is
+  // following, `pinned` goes false past the threshold, until the list is
   // scrolled back down or the next send re-pins it. Anything that pushes
   // messages gets this, the host's own sends and a tour's alike.
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -469,7 +469,7 @@ export function ChatPanel({
     if (el && pinned.current) el.scrollTop = el.scrollHeight;
   }, [messages, streaming, progress?.step, progress?.rowsDone]);
 
-  // Entering the disabled state drops whatever was typed — the hint placeholder
+  // Entering the disabled state drops whatever was typed: the hint placeholder
   // must show, and a stale draft would send the moment the row re-enables.
   const disabled = disabledHint !== null;
   useEffect(() => {
@@ -487,7 +487,7 @@ export function ChatPanel({
     if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
     setDraft('');
     // Sending always returns to the bottom, however far back the user had
-    // scrolled — the bubble about to appear is the one they want to see.
+    // scrolled: the bubble about to appear is the one they want to see.
     pinned.current = true;
     onSend(text);
   };
@@ -549,7 +549,7 @@ export function ChatPanel({
               color: t.ink3,
             }}
           >
-            {/* "· running" shows for every stream — the FIRST request has
+            {/* "· running" shows for every stream: the FIRST request has
                 requestCount 0 and still needs the marker. */}
             {requestCount > 0 && <>{requestCount} transformation{requestCount === 1 ? '' : 's'}</>}
             {streaming && <> · running</>}
@@ -679,7 +679,7 @@ export function ChatPanel({
         }}
       >
         {/* Full-width textarea over an actions row: the draft grows the box
-            (three lines min, ten max, then internal scroll — so the
+            (three lines min, ten max, then internal scroll, so the
             scrollbar sits at the right edge, never between text and
             buttons), and the mic/voice/send controls keep a fixed row
             underneath, the shape every mainstream chat composer uses. */}

@@ -8,7 +8,7 @@
 // so we override `globalThis.fetch` to spawn `curl` for the LLM provider hosts
 // and leave every other request on native fetch.
 //
-// Scope: helps any bun/Node command that makes live LLM calls — the CLI
+// Scope: helps any bun/Node command that makes live LLM calls, the CLI
 // (`@tamedtable/cli`) and the benchmark (`@tamedtable/bench`) both go through
 // the headless engine's default global fetch. The web app runs in a browser
 // (the browser handles the proxy) and needs none of this.
@@ -18,7 +18,7 @@
 //   bun --preload ../process/proxy-fetch.ts packages/bench/cli.ts sweep …
 //
 // It only rewrites requests when an HTTPS proxy is configured, so it is a safe
-// no-op on a machine with direct egress — leave it preloaded everywhere.
+// no-op on a machine with direct egress: leave it preloaded everywhere.
 
 const PROXY = process.env.HTTPS_PROXY ?? process.env.https_proxy;
 
@@ -49,7 +49,7 @@ function pickHeaders(init: RequestInit | undefined, input: unknown): Headers {
 
 globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  // Only intervene when a proxy is present AND the target is a provider host —
+  // Only intervene when a proxy is present AND the target is a provider host:
   // otherwise native fetch is correct and cheaper.
   if (!PROXY || !HOSTS.includes(hostOf(url))) return orig(input as Parameters<typeof orig>[0], init);
 

@@ -34,7 +34,7 @@ export class ConfigManager {
     return keyFor(this.host.config);
   }
 
-  /** Every provider with a key — the chooser's card list, in the order the
+  /** Every provider with a key: the chooser's card list, in the order the
    *  user added them (the `connectedAt` stamps kept beside the measurements). */
   connected(): Provider[] {
     return connectedProviders(this.host.config, connectedOrder(this.host.probes));
@@ -42,7 +42,7 @@ export class ConfigManager {
 
   // ── The connect flow ──────────────────────────────────────────────────────
 
-  /** The user typed in the key input. Typing clears the error — they are
+  /** The user typed in the key input. Typing clears the error: they are
    *  already fixing it. */
   setKeyInput(value: string): void {
     this.host.keyInput = value;
@@ -52,7 +52,7 @@ export class ConfigManager {
   }
 
   /**
-   * #ProviderSelect — connect the pasted key. Detect the provider from its
+   * #ProviderSelect: connect the pasted key. Detect the provider from its
    * prefix, prove the key works against that provider, and only then store
    * anything: a key that does not work never becomes a setting the user has to
    * hunt down and undo. The card appears as soon as the check passes; the two
@@ -85,20 +85,20 @@ export class ConfigManager {
   }
 
   /**
-   * #PuterGateway — the "No API key?" button. Puter's credential is a session
+   * #PuterGateway: the "No API key?" button. Puter's credential is a session
    * token, and the only way to mint one is its sign-in popup, so this loads
    * Puter's SDK, opens it, and then connects the resulting token through the
    * very same path a pasted one takes.
    *
    * The SDK is fetched **on click, never on load**. TamedTable's pages pull in
    * no third-party scripts, and a user who does not use Puter should keep it
-   * that way — see the FAQ's key-safety answer.
+   * that way: see the FAQ's key-safety answer.
    */
   async signInPuter(): Promise<void> {
     if (this.host.keyBusy) return;
     this.host.keyBusy = true;
     // The sign-in happens in a window in front of the panel, so the button
-    // has to show it started — otherwise coming back to an unchanged panel
+    // has to show it started: otherwise coming back to an unchanged panel
     // reads as a click that never registered.
     this.host.puterBusy = true;
     this.host.keyError = '';
@@ -144,7 +144,7 @@ export class ConfigManager {
     void this.measure(provider, key);
   }
 
-  /** Re-run a connected provider's measurements — the card's ⟳ button. A
+  /** Re-run a connected provider's measurements: the card's ⟳ button. A
    *  number taken while the provider was having a bad minute is one click from
    *  being replaced. */
   async refreshProvider(provider: Provider): Promise<void> {
@@ -163,18 +163,18 @@ export class ConfigManager {
   }
 
   /** Fill in the card's two speed lines. Each row lands on its own, and a
-   *  measurement that fails leaves that row blank rather than the card broken —
+   *  measurement that fails leaves that row blank rather than the card broken:
    *  a working key with an unknown price is still a working key. */
   async measure(provider: Provider, key: string): Promise<void> {
     this.host.measuring = { ...this.host.measuring, [provider]: true };
     this.host.notify();
-    for (const role of ['primary', 'secondary'] as const) {
-      const modelId = role === 'primary' ? defaultModel(provider) : defaultCellModel(provider);
+    for (const role of ['chat', 'cell'] as const) {
+      const modelId = role === 'chat' ? defaultModel(provider) : defaultCellModel(provider);
       let measure = null;
       try {
         measure = await measureModel(provider, key, modelId, { fetch: this.host.opts.fetch });
       } catch {
-        // Leave the row blank — see above.
+        // Leave the row blank: see above.
       }
       const probe = this.host.probes[provider];
       if (!probe) return; // Removed while measuring.
@@ -191,7 +191,7 @@ export class ConfigManager {
 
   /** Make a connected provider the default. The user connects a provider, not
    *  individual models, so this always pins that provider's two fixed
-   *  defaults — even if a stale model from an older build is still stored. */
+   *  defaults: even if a stale model from an older build is still stored. */
   async selectProvider(provider: Provider): Promise<void> {
     await this.setConfig({
       provider,
@@ -215,10 +215,10 @@ export class ConfigManager {
   }
 
   /** Remove a provider and its key. When it was the default, the default falls
-   *  back to the last remaining connected provider — or, with none left, to the
+   *  back to the last remaining connected provider: or, with none left, to the
    *  gemini fallback resolveConfig uses everywhere else. */
   async removeProvider(provider: Provider): Promise<void> {
-    // #PuterGateway — Puter's credential is a session, not a key the user
+    // #PuterGateway: Puter's credential is a session, not a key the user
     // holds a copy of, so deleting the card has to end the session as well.
     // Dropping only our token would leave the SDK's own copy behind, and the
     // next sign-in would hand back the same account with no way to switch.
@@ -263,7 +263,7 @@ export class ConfigManager {
   async setConfig(partial: Partial<ResolvedConfig>): Promise<void> {
     const next = resolveConfig({}, { ...this.host.config, ...partial });
     // The engine hands its key to the model clients when it is built, so a key
-    // edit has to rebuild exactly like a model switch — otherwise the key the
+    // edit has to rebuild exactly like a model switch: otherwise the key the
     // user just connected sits unused until the page reloads and every request
     // keeps failing with "Invalid API key" under a card that looks connected.
     const engineChanged =
@@ -277,7 +277,7 @@ export class ConfigManager {
     if (engineChanged && this.host.streaming) {
       this.host.pushToast(
         'error',
-        'A request is running — stop it or let it finish before switching the provider, model, or key.',
+        'A request is running: stop it or let it finish before switching the provider, model, or key.',
       );
       return;
     }
@@ -302,7 +302,7 @@ export class ConfigManager {
         );
       }
     } else if (engineChanged) {
-      // No engine built yet, or none with a file in it — the next
+      // No engine built yet, or none with a file in it, the next
       // ensureHeadless() picks up the new models and key.
       this.host.engine.reset();
     }
@@ -316,7 +316,7 @@ export class ConfigManager {
     void this.setConfig({ anthropicKey: trimmed === '' ? null : trimmed });
   }
 
-  /** Clear every provider key — "no API key is set" regardless of provider.
+  /** Clear every provider key: "no API key is set" regardless of provider.
    *  @deprecated Use setConfig with explicit null keys instead. */
   clearApiKey(): void {
     void this.setConfig({

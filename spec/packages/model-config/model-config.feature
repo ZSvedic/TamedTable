@@ -5,7 +5,7 @@ Feature: Model config
 
   Rule: detectProvider names the provider from the key's prefix
 
-    The user never picks a provider from a list — the key they paste names it.
+    The user never picks a provider from a list: the key they paste names it.
 
     @headless
     Scenario Outline: <prefix> is a <provider> key
@@ -103,11 +103,11 @@ Feature: Model config
       And the resolved cellModel is "openai/gpt-oss-20b"
 
     # Precedence: when several provider keys are present, Gemini beats OpenAI
-    # beats Anthropic beats Groq beats OpenRouter — a paid key always outranks
+    # beats Anthropic beats Groq beats OpenRouter: a paid key always outranks
     # the free tier. Anthropic is present (and loses) in the first rows, so its
     # key is nulled each time. Single-key resolution is covered above.
     @headless
-    Scenario Outline: <present> in env — <winner> wins
+    Scenario Outline: <present> in env, <winner> wins
       When resolveConfig is called with env keys "<keys>"
       Then the resolved provider is "<winner>"
       And the resolved <winnerKey> is set
@@ -158,7 +158,7 @@ Feature: Model config
       Then the resolved cellModel is "gpt-5.4-mini"
 
     @headless
-    # Rule 9: the final primary model must belong to the resolved provider.
+    # Rule 9: the final chat model must belong to the resolved provider.
     Scenario: A cross-provider stored model is coerced to the provider default
       When resolveConfig is called with stored provider "openai" and model "claude-sonnet-4-6"
       Then the resolved model is "gpt-5.5"
@@ -294,7 +294,7 @@ Feature: Model config
       Then the boolean result is false
 
     @headless
-    # Verified live against api.groq.com — the open-weight models still sample.
+    # Verified live against api.groq.com: the open-weight models still sample.
     Scenario: Groq's gpt-oss models accept temperature
       When acceptsTemperature is called with "openai/gpt-oss-120b"
       Then the boolean result is true
@@ -339,7 +339,7 @@ Feature: Model config
 
   Rule: connectedProviders lists the providers that have a key
 
-    A connected provider is a provider with a key — connecting stores nothing
+    A connected provider is a provider with a key: connecting stores nothing
     of its own, so the card list is derived from the config.
 
     @headless
@@ -348,14 +348,14 @@ Feature: Model config
       Then connectedProviders returns ""
 
     @headless
-    # No order map — what the CLI and the delete-fallback pick ask for.
+    # No order map: what the CLI and the delete-fallback pick ask for.
     Scenario: Two stored keys make two connected providers, in catalogue order
       Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
       Then connectedProviders returns "gemini, groq"
 
     @headless
     # The design orders cards as they were added, which the config alone cannot
-    # say — hence the order map. Here it reverses the catalogue order.
+    # say: hence the order map. Here it reverses the catalogue order.
     Scenario: An order map puts the providers in the order they were added
       Given a stored config with geminiKey "AIza-x" and groqKey "gsk_y"
       And groq was connected at 1000
@@ -379,10 +379,10 @@ Feature: Model config
     @headless
     Scenario Outline: defaultModel for <provider>
       When defaultModel is called with "<provider>"
-      Then the result is "<primary>"
+      Then the result is "<chat>"
 
       Examples:
-        | provider   | primary                     |
+        | provider   | chat                        |
         | puter      | gemini-3.6-flash            |
         | anthropic  | claude-sonnet-4-6           |
         | gemini     | gemini-3.6-flash            |
@@ -395,10 +395,10 @@ Feature: Model config
     @headless
     Scenario Outline: defaultCellModel for <provider>
       When defaultCellModel is called with "<provider>"
-      Then the result is "<secondary>"
+      Then the result is "<cell>"
 
       Examples:
-        | provider   | secondary                   |
+        | provider   | cell                        |
         | puter      | gemini-3.1-flash-lite       |
         | anthropic  | claude-haiku-4-5            |
         | openai     | gpt-5.4-mini                |
@@ -586,10 +586,10 @@ Feature: Model config
 
     @headless
     Scenario Outline: DEFAULTS for <provider>
-      Then DEFAULTS names the <provider> primary "<primary>" and secondary "<secondary>"
+      Then DEFAULTS names the <provider> chat model "<chat>" and cell model "<cell>"
 
       Examples:
-        | provider   | primary                     | secondary                   |
+        | provider   | chat                        | cell                        |
         | gemini     | gemini-3.6-flash            | gemini-3.1-flash-lite       |
         | openai     | gpt-5.5                     | gpt-5.4-mini                |
         | anthropic  | claude-sonnet-4-6           | claude-haiku-4-5            |
@@ -630,13 +630,13 @@ Feature: Model config
       Then the verified tier is "free"
 
     @headless
-    Scenario: OpenAI is always paid — it has no free tier
+    Scenario: OpenAI is always paid: it has no free tier
       Given a stub provider API that accepts the key
       When verifyKey is called for provider "openai" with key "sk-proj-good"
       Then the verified tier is "paid"
 
     @headless
-    Scenario: Anthropic is always paid — it has no free tier
+    Scenario: Anthropic is always paid: it has no free tier
       Given a stub provider API that accepts the key
       When verifyKey is called for provider "anthropic" with key "sk-ant-good"
       Then the verified tier is "paid"
@@ -661,8 +661,8 @@ Feature: Model config
       Then verifyKey fails with "OpenAI rate-limited the check. Wait a minute and try again."
 
     @headless
-    # An empty balance arrives as a 429 too, so the quota case is checked first
-    # — "wait a minute" would send that user into a wait that never ends.
+    # An empty balance arrives as a 429 too, so the quota case is checked first:
+    # "wait a minute" would send that user into a wait that never ends.
     Scenario: An account with no credit says so, not "wait a minute"
       Given a stub provider API that rejects the key with HTTP 429 and code "insufficient_quota"
       When verifyKey is called for provider "openai" with key "sk-proj-broke"
@@ -706,7 +706,7 @@ Feature: Model config
       And the estimated seconds for 1000 tokens is 9.3
 
     @headless
-    # Under a fifth of the call spent streaming is buffering by another name —
+    # Under a fifth of the call spent streaming is buffering by another name:
     # gemini-3.6-flash streams its thinking silently, then flushes.
     Scenario: A last-moment flush counts as buffered, not as a fast rate
       Given a stub provider API that streams 300 output tokens, first chunk at 2.77s, last at 2.79s
@@ -715,7 +715,7 @@ Feature: Model config
       And the estimated seconds for 1000 tokens is 9.3
 
     @headless
-    # A stream opens with frames that carry no output — a role header, a ping,
+    # A stream opens with frames that carry no output, a role header, a ping,
     # and on a thinking model however many reasoning deltas it needs before it
     # says anything. Stopping the clock on the first of those would time the
     # cheapest byte on the wire and make a slow thinker look instant.
@@ -774,7 +774,7 @@ Feature: Model config
 
   Rule: storage.ts keeps measurements in their own blob
 
-    Measurements are a display cache, not config — the engine never reads them,
+    Measurements are a display cache, not config: the engine never reads them,
     so they stay out of the blob the engine's input is built from.
 
     @headless
@@ -798,7 +798,7 @@ Feature: Model config
     Scenario: A reading from today's default model survives
       Given a fake localStorage
       When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 1 day ago
-      Then readStoredProbes returns a primary reading for "gemini"
+      Then readStoredProbes returns a chat reading for "gemini"
 
     @headless
     # models.json picking a new default would otherwise show yesterday's model's
@@ -806,7 +806,7 @@ Feature: Model config
     Scenario: A reading from a model that is no longer the default is dropped
       Given a fake localStorage
       When writeStoredProbes is called for provider "gemini" measured from "gemini-2-retired" 1 day ago
-      Then readStoredProbes returns no primary reading for "gemini"
+      Then readStoredProbes returns no chat reading for "gemini"
       And readStoredProbes returns a measurement for "gemini"
 
     @headless
@@ -814,7 +814,7 @@ Feature: Model config
     Scenario: A reading older than a week is dropped
       Given a fake localStorage
       When writeStoredProbes is called for provider "gemini" measured from "gemini-3.6-flash" 8 days ago
-      Then readStoredProbes returns no primary reading for "gemini"
+      Then readStoredProbes returns no chat reading for "gemini"
 
     @headless
     # Dropping the reading must not drop the card: the tier and the time the
@@ -867,8 +867,8 @@ Feature: Model config
       When the user adds the key "AIza-demo"
       Then the "gemini" card's chat model is "gemini-3.6-flash"
       And the "gemini" card's cell model is "gemini-3.1-flash-lite"
-      And the "gemini" card's "primary" cost line matches "Price depends on your plan"
-      And the "gemini" card's "primary" cost line matches ", ~"
+      And the "gemini" card's "chat" cost line matches "Price depends on your plan"
+      And the "gemini" card's "chat" cost line matches ", ~"
 
     @web
     Scenario: An unselected card shows no model rows
@@ -905,7 +905,7 @@ Feature: Model config
 
     @web
     # Driven by the catalogue's voiceInput flag, not hardcoded per provider.
-    Scenario: The VOICE tag follows the primary model's audio support
+    Scenario: The VOICE tag follows the chat model's audio support
       Given the model-config demo page
       When the user adds the key "AIza-demo"
       And the user adds the key "sk-proj-demo"
@@ -991,8 +991,8 @@ Feature: Model config
     Scenario Outline: A provider whose price depends on the plan names no price
       Given the model-config demo page
       When the user adds the key "<key>"
-      Then the "<provider>" card's "primary" cost line matches "Price depends on your plan"
-      And the "<provider>" card's "primary" cost line matches ", ~"
+      Then the "<provider>" card's "chat" cost line matches "Price depends on your plan"
+      And the "<provider>" card's "chat" cost line matches ", ~"
 
       Examples:
         | provider | key         |
@@ -1003,14 +1003,14 @@ Feature: Model config
     Scenario: A provider with one price list still shows it
       Given the model-config demo page
       When the user adds the key "sk-proj-demo"
-      Then the "openai" card's "primary" cost line matches "$0.005 in / $0.03 out per 1000 tok"
+      Then the "openai" card's "chat" cost line matches "$0.005 in / $0.03 out per 1000 tok"
 
     @web
     Scenario: The refresh button re-runs that provider's measurements
       Given the model-config demo page
       When the user adds the key "AIza-demo"
       And the user refreshes the "gemini" card
-      Then the "gemini" card's "primary" cost line matches ", ~"
+      Then the "gemini" card's "chat" cost line matches ", ~"
 
     @web
     Scenario: Every card carries its own refresh and delete buttons
@@ -1033,7 +1033,7 @@ Feature: Model config
 
     @web
     # The card appearing is the observable "the connect finished" checkpoint.
-    # Reloading straight after the click races the demo's persistence effect —
+    # Reloading straight after the click races the demo's persistence effect:
     # locally it always won, on a slower CI runner it did not.
     Scenario: Connected providers persist across a demo page reload
       Given the model-config demo page
@@ -1116,7 +1116,7 @@ Feature: Model config
       Then no provider instructions are shown
 
     @web
-    # One at a time — the panel is 400px wide and five open blocks is a wall.
+    # One at a time: the panel is 400px wide and five open blocks is a wall.
     Scenario: Opening another provider closes the one before it
       Given the model-config demo page
       When the user clicks the "gemini" instructions link

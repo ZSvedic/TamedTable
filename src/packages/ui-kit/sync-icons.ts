@@ -1,6 +1,6 @@
 // #UiKit
 // Icon sync. marketing/icons/*.svg is the canonical source of the glyph
-// artwork — one 16×16 SVG per icon name; this regenerates the package's
+// artwork: one 16×16 SVG per icon name; this regenerates the package's
 // importable catalogue (packages/ui-kit/icons.ts) so the two can't drift.
 // A filled glyph (stop, play) says fill="currentColor" on its <svg>; every
 // other glyph is stroked. Run from src/: `bun run sync:icons`. The guard test
@@ -37,7 +37,7 @@ export function renderIconsTs(glyphs: Glyph[]): string {
   const names = glyphs.map((g) => `  | '${g.name}'`).join('\n');
   const paths = glyphs.map((g) => `  ${g.name}: '${g.d}',`).join('\n');
   const filled = glyphs.filter((g) => g.filled).map((g) => `'${g.name}'`).join(', ');
-  return `// GENERATED from marketing/icons/*.svg by \`bun run sync:icons\` — do not edit
+  return `// GENERATED from marketing/icons/*.svg by \`bun run sync:icons\`, do not edit
 // by hand. marketing/icons/ is the canonical source of the glyph artwork.
 
 export type IconName =
@@ -47,11 +47,11 @@ export const PATHS: Record<IconName, string> = {
 ${paths}
 };
 
-/** Glyphs drawn filled (fill="currentColor" on the source SVG) — every other
+/** Glyphs drawn filled (fill="currentColor" on the source SVG): every other
  *  glyph is stroked. */
 export const FILLED: ReadonlySet<IconName> = new Set<IconName>([${filled}]);
 
-/** Every icon name, sorted — the demo's icon grid renders these. */
+/** Every icon name, sorted: the demo's icon grid renders these. */
 export const ICON_NAMES = Object.keys(PATHS) as IconName[];
 `;
 }

@@ -1,7 +1,7 @@
-// Gemini-TTS voiceover for the demo — finalizer for the chosen voice.
+// Gemini-TTS voiceover for the demo: finalizer for the chosen voice.
 // Renders the WHOLE script in ONE call (one coherent take, consistent voice),
 // splits that read at its five longest pauses, and lays the phrases onto the
-// beats by CONCATENATING them with silence in between — sequential, so two
+// beats by CONCATENATING them with silence in between: sequential, so two
 // phrases can never overlap (that overlap is what caused the "double voice").
 // Produces out/voice-<VOICE>.wav (raw read) and hero-<ratio>-en.webm.
 // Needs GEMINI_API_KEY. Usage: node gemini-tts.mjs
@@ -62,7 +62,7 @@ async function continuousWav(file) {
   }
 }
 
-// cumulative word-count fraction at each of the 5 sentence boundaries — where a
+// cumulative word-count fraction at each of the 5 sentence boundaries: where a
 // cut *should* fall in the read. "Longest silence" alone mis-splits when pacing
 // varies, so anchor each cut to its expected spot, then snap to the best pause
 // nearby (prefer longer, i.e. a real sentence break over a comma).
@@ -135,4 +135,4 @@ for (const ratio of RATIOS) {
   console.log(`✓ ${ratio}: ${destWebm}`);
 }
 rmSync(tmp, { recursive: true, force: true });
-console.log('done — now run: node encode.mjs  (for MP4 + GIF)');
+console.log('done: now run: node encode.mjs  (for MP4 + GIF)');

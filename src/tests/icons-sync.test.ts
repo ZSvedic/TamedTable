@@ -9,7 +9,7 @@ import { readGlyphs, renderIconsTs } from '../packages/ui-kit/sync-icons.ts';
 describe('icon catalogue sync', () => {
   it('ui-kit icons.ts is generated from marketing/icons/*.svg', async () => {
     const current = await Bun.file('packages/ui-kit/icons.ts').text();
-    expect(current, 'ui-kit/icons.ts is stale — run `bun run sync:icons`').toBe(
+    expect(current, 'ui-kit/icons.ts is stale: run `bun run sync:icons`').toBe(
       renderIconsTs(readGlyphs('../marketing/icons'))
     );
   });

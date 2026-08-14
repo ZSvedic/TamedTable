@@ -1,10 +1,10 @@
 // #TableView
-// Pure pagination model — no React, no host state. The host keeps the current
+// Pure pagination model, no React, no host state. The host keeps the current
 // page number and delegates every calculation here; the package's Pagination
 // component uses buildPageList. This entry is React-free; the components live
 // in ./components. Spec: spec/packages/table-view/behavior.md.
 
-/** A table row — column id to cell value. */
+/** A table row: column id to cell value. */
 export type TableRow = Record<string, unknown>;
 
 /** Clamp a 1-based page index into [1, pageCount]. */
@@ -54,12 +54,12 @@ export function defaultColumnWidth(title: string): number {
 }
 
 /** The href for a cell that is a link, or null. Deliberately strict: only a
- *  string whose entire value parses as an http(s) URL counts — no bare-domain
+ *  string whose entire value parses as an http(s) URL counts, no bare-domain
  *  guessing ("justify.me" stays plain text). */
 export function urlHref(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const s = value.trim();
-  // /i — URL schemes are case-insensitive (RFC 3986); `new URL` normalizes.
+  // /i: URL schemes are case-insensitive (RFC 3986); `new URL` normalizes.
   if (!/^https?:\/\/\S+$/i.test(s)) return null;
   try {
     const u = new URL(s);
@@ -70,10 +70,10 @@ export function urlHref(value: unknown): string | null {
 }
 
 /** The reveal scroll (behavior.md § Grid upgrades): bring a column header on
- *  screen with the smallest scroll that shows it — 'nearest' is a no-op when
+ *  screen with the smallest scroll that shows it: 'nearest' is a no-op when
  *  it is already visible. Shared by the desktop grid (inner scroller) and the
  *  app's phone grid (document scroller). `stickyRight` is the right edge, in
- *  viewport px, of a frozen left column the header must clear — scrollIntoView
+ *  viewport px, of a frozen left column the header must clear: scrollIntoView
  *  alone can leave the target hidden under it. */
 export function revealHeader(th: Element | null | undefined, stickyRight = 0): void {
   if (!th) return;

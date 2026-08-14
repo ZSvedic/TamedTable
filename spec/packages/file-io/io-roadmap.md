@@ -3,10 +3,10 @@
 Client-side (browser, BYOK) file-format support beyond the shipped four
 (CSV, JSONL, Parquet, Arrow).
 Every format below is a bounded file that loads fully into the existing data
-model — no backend, no streaming model required. Backend-only / streaming-native
+model, no backend, no streaming model required. Backend-only / streaming-native
 formats (Arrow Flight, Kafka, Delta/Iceberg/Hudi, ORC) are excluded.
 
-## The loader — DuckDB-Wasm
+## The loader: DuckDB-Wasm
 
 One engine reads the columnar and binary formats, in both runtimes:
 
@@ -16,11 +16,11 @@ One engine reads the columnar and binary formats, in both runtimes:
 - **Browser** runs **duckdb-wasm** (shipped with Phase 1:
   `web/src/shims/duckdb.ts` adapts it), which (a) reads the same formats
   client-side via `registerFileBuffer(bytes)` and (b) powers `{sql}`
-  transforms in the web build — one dependency, two wins.
+  transforms in the web build, one dependency, two wins.
 
 Cost and shape:
 
-- duckdb-wasm is a multi-MB wasm payload. It is **lazy-loaded** — pulled only the
+- duckdb-wasm is a multi-MB wasm payload. It is **lazy-loaded**: pulled only the
   first time a non-CSV/JSON file is opened or a `{sql}` transform runs. The
   CSV/JSON golden path keeps its tiny pure-JS parsers (`csv-parse`, native
   `JSON.parse`) and never pays for the wasm.
@@ -28,9 +28,9 @@ Cost and shape:
   `Row[]` + column list. Mind the BIGINT→`bigint` mapping `core` already handles
   for `{sql}`.
 - DuckDB does **not** cover everything. Formats that aren't DuckDB-native and
-  need a user-supplied schema (XML, Protobuf) stay bespoke — see Phase 2.
+  need a user-supplied schema (XML, Protobuf) stay bespoke: see Phase 2.
 
-## Phase 1 — columnar & self-describing (one DuckDB integration)
+## Phase 1: columnar & self-describing (one DuckDB integration)
 
 Self-describing / schema-on-write: the schema rides in the file, so import needs
 no user input. With DuckDB wired in, each format is a reader call, not a new
@@ -38,9 +38,9 @@ library.
 
 | Format | Reader | Status |
 |--------|--------|--------|
-| [Parquet](https://parquet.apache.org/) | DuckDB `read_parquet` / `COPY … (FORMAT PARQUET)` | **shipped** — load + save, both runtimes |
-| [Arrow / Feather](https://arrow.apache.org/) | `apache-arrow` IPC (`tableFromIPC` / `tableToIPC`) | **shipped** — load + save, both runtimes |
-| [Avro](https://avro.apache.org/) | `read_avro` (community extension) | pending — see note below |
+| [Parquet](https://parquet.apache.org/) | DuckDB `read_parquet` / `COPY … (FORMAT PARQUET)` | **shipped**, load + save, both runtimes |
+| [Arrow / Feather](https://arrow.apache.org/) | `apache-arrow` IPC (`tableFromIPC` / `tableToIPC`) | **shipped**, load + save, both runtimes |
+| [Avro](https://avro.apache.org/) | `read_avro` (community extension) | pending, see note below |
 
 Arrow uses `apache-arrow` rather than DuckDB: DuckDB's Arrow-IPC file reader is a
 community extension that downloads at runtime, which the offline test/preview
@@ -53,17 +53,17 @@ Parquet engine (node-api + temp file in Node, `registerFileBuffer` /
 result to rows. After that, a new self-describing format is a registry row + a
 `formats/<name>.md`.
 
-> **Avro:** still pending — the `read_avro` community extension must first be
+> **Avro:** still pending. The `read_avro` community extension must first be
 > confirmed to load under duckdb-wasm (the offline constraint that pushed Arrow
 > to apache-arrow applies here too). If it can't, the `avsc` browser-only
 > fallback is the alternative.
 
-## Phase 2 — needs user input or a non-DuckDB parser
+## Phase 2: needs user input or a non-DuckDB parser
 
 Not self-describing into rows: the user supplies the interpretation at import
 (delimiter, field widths, sheet/range, flatten expression, or a schema).
 
-**DuckDB-native — just surface the options in the import dialog:**
+**DuckDB-native: just surface the options in the import dialog:**
 
 | Format | DuckDB reader | Metadata from user |
 |--------|---------------|--------------------|
@@ -72,7 +72,7 @@ Not self-describing into rows: the user supplies the interpretation at import
 | [JSON (nested)](https://www.json.org/) | `read_json` + SQL flatten | JSONPath / flatten expr |
 | Google Sheets (export) | reuses CSV / XLSX path | sheet / range |
 
-**Bespoke — not DuckDB-native, keep a small dedicated lib:**
+**Bespoke, not DuckDB-native, keep a small dedicated lib:**
 
 | Format | Client-side lib | ≈ size (gzip) | Metadata from user |
 |--------|-----------------|---------------|--------------------|
@@ -86,7 +86,7 @@ Not self-describing into rows: the user supplies the interpretation at import
   extensions load in duckdb-wasm (autoload / community) before committing those
   formats; if either is flaky in wasm, fall back to a browser-only lib
   ([SheetJS](https://sheetjs.com/) for Excel, [avsc](https://github.com/mtth/avsc)
-  for Avro). Sizes are approximate and version-dependent — confirm before adding.
+  for Avro). Sizes are approximate and version-dependent: confirm before adding.
 - **XML / Protobuf:** DuckDB has no native reader and both need a user-supplied
   schema, so they stay bespoke regardless of DuckDB.
 - **Bundle:** keep duckdb-wasm behind a dynamic `import()` so the CSV/JSON

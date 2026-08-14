@@ -1,4 +1,4 @@
-// Binds WebController to the generic top bar — the bar itself (brand lockup,
+// Binds WebController to the generic top bar: the bar itself (brand lockup,
 // file readout, action buttons) lives in @tamedtable/toolbar. Only the
 // controller wiring stays here.
 import type { ReactNode } from 'react';
@@ -21,7 +21,7 @@ const SAVE_FORMATS: { id: FormatId; label: string }[] = [
   { id: 'arrow', label: 'Arrow' },
 ];
 
-/** The Save menu's entries — shared by the desktop toolbar and the mobile
+/** The Save menu's entries: shared by the desktop toolbar and the mobile
  *  app bar so both render the identical menu. */
 export function saveMenus(controller: WebController): {
   saveDataMenu: SaveMenuItem[];
@@ -33,7 +33,7 @@ export function saveMenus(controller: WebController): {
       onClick: () => void controller.saveDataAs(f.id),
     })),
     // The recipe can be saved as a replayable .flow or translated to a Python
-    // script (model-backed — the controller guards on key / AI cells).
+    // script (model-backed: the controller guards on key / AI cells).
     saveFlowMenu: [
       { label: 'Save recipe as .flow…', onClick: () => void controller.saveFlow() },
       { label: 'Save recipe as Python…', onClick: () => void controller.savePython() },
@@ -41,7 +41,7 @@ export function saveMenus(controller: WebController): {
   };
 }
 
-/** The Open menu's Recent rows — controller recents mapped to menu items. */
+/** The Open menu's Recent rows: controller recents mapped to menu items. */
 export function recentMenuItems(controller: WebController): RecentMenuItem[] {
   return controller.recents().map((entry) => ({
     label: entry.label,

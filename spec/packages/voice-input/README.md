@@ -1,6 +1,6 @@
 # voice-input
 
-Voice request recording: the `VoicePort` interface, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt` — the instruction text that rides along with the audio.
+Voice request recording: the `VoicePort` interface, the MediaRecorder→WAV browser implementation, and `buildVoicePrompt`, the instruction text that rides along with the audio.
 
 | What | Where |
 |---|---|

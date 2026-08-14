@@ -1,12 +1,12 @@
-// RED-UI-2 — regression test (red inventory): the tutorial prefill typing
+// RED-UI-2: regression test (red inventory): the tutorial prefill typing
 // animation keeps typing into the draft after the user sends. Sending
-// mid-animation fires the truncated draft, `send()` clears the box — and the
+// mid-animation fires the truncated draft, `send()` clears the box, and the
 // still-running interval (ChatPanel.tsx:449-453; never cleared by `send()`,
 // ChatPanel.tsx:479-487) silently refills the full prefill text, priming an
 // accidental duplicate request. Spec: a non-null prefill "syncs into the
 // draft" (spec/packages/chat-panel/behavior.md:94); nothing anticipates the
-// box refilling itself after a send — and downstream a truncated tutorial
-// request has no recording, which ends the tour with "Tour ended — the
+// box refilling itself after a send, and downstream a truncated tutorial
+// request has no recording, which ends the tour with "Tour ended: the
 // guided replay went off-script." (spec/behavior.md:1650-1653).
 import { afterAll, test } from 'bun:test';
 import { strict as assert } from 'node:assert';
@@ -23,7 +23,7 @@ afterAll(unmountAll);
 
 const PREFILL = 'Keep rows where age >= 18'; // 25 chars ≈ 1s of typing at 40ms/char
 
-test('RED-UI-2: prefill typing animation keeps typing after the user sends — the cleared draft silently refills', async () => {
+test('RED-UI-2: prefill typing animation keeps typing after the user sends, the cleared draft silently refills', async () => {
   const sent: string[] = [];
   const { el } = mount(
     h(ThemeProvider, null, h(ChatPanel, {
@@ -54,6 +54,6 @@ test('RED-UI-2: prefill typing animation keeps typing after the user sends — t
   assert.equal(
     ta.value,
     '',
-    `RED-UI-2 (spec/packages/chat-panel/behavior.md:94; spec/behavior.md:1650-1653): after sending mid-animation the cleared draft must stay empty, but the prefill typing interval (ChatPanel.tsx:449-453) kept running after send() (ChatPanel.tsx:479-487 never clears typing.current.timer) and refilled the box — a truncated request already went out (${JSON.stringify(sent)}) and the refilled draft primes a duplicate`,
+    `RED-UI-2 (spec/packages/chat-panel/behavior.md:94; spec/behavior.md:1650-1653): after sending mid-animation the cleared draft must stay empty, but the prefill typing interval (ChatPanel.tsx:449-453) kept running after send() (ChatPanel.tsx:479-487 never clears typing.current.timer) and refilled the box, a truncated request already went out (${JSON.stringify(sent)}) and the refilled draft primes a duplicate`,
   );
 }, 15000);

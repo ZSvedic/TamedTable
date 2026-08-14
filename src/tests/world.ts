@@ -60,7 +60,7 @@ export class TamedTableWorld extends CucumberWorld {
   runnerOpts?: RunnerOpts;
   lastInvocation?: CapturedInvocation;
   lastRequestOutcome?: RequestOutcome;
-  /** Model calls the last captured CLI invocation attempted (#ReplCmds — a
+  /** Model calls the last captured CLI invocation attempted (#ReplCmds: a
    *  locally-handled command must make none). */
   modelCalls?: number;
 
@@ -75,7 +75,7 @@ export class TamedTableWorld extends CucumberWorld {
   ensureRunner(): Runner {
     if (this.runner) return this.runner;
     if (!this.runnerFactory) {
-      throw new Error('No runner factory bound — did a per-tag Before hook run?');
+      throw new Error('No runner factory bound: did a per-tag Before hook run?');
     }
     this.runner = this.runnerFactory();
     return this.runner;
@@ -94,7 +94,7 @@ interface RunnerOpts {
 
 /**
  * Per-scenario runner options derived from tags and env. `@cancel` scenarios
- * run with a tiny batch/chunk size so the 20-row fixture yields many chunks —
+ * run with a tiny batch/chunk size so the 20-row fixture yields many chunks:
  * otherwise it produces a single chunk and an abort has no mid-flight window to
  * land in. When `TAMEDTABLE_CASSETTE` is `record` or `replay`, the model's HTTP
  * calls go through a cassette recorder bound to the scenario's feature file.
@@ -111,7 +111,7 @@ export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
   if (mode === 'record' || mode === 'replay') {
     const feature = basename(scenario.pickle.uri, '.feature');
     opts.fetch = cassetteFetch({ mode, file: join(CASSETTE_DIR, `${feature}.json`) });
-    // A @cancel scenario needs a mid-flight window for the abort to land in —
+    // A @cancel scenario needs a mid-flight window for the abort to land in:
     // that's why it runs with tiny batches (above). Replay from disk is
     // near-instant, so the whole request can commit before the abort fires
     // (a race CI loses). Pace each replayed response like a live call so the
@@ -126,11 +126,11 @@ export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
     }
     // Pin the key in BOTH modes so record and replay resolve the same provider
     // and model. With no injected key, REPL scenarios resolve the provider from
-    // process.env — and the CLI's .env auto-load (core loadEnv walks up to the
+    // process.env, and the CLI's .env auto-load (core loadEnv walks up to the
     // repo root) can flip a record run to whichever provider tops the env
     // precedence, producing cassettes replay can never match. Replay serves
     // every call from disk, so a placeholder is enough there; record needs the
-    // real GEMINI_API_KEY — every cassette records with the Gemini defaults.
+    // real GEMINI_API_KEY: every cassette records with the Gemini defaults.
     // (cucumber.js lifts TAMEDTABLE_RPM for replay so the rate limiter adds no
     // delay.)
     opts.apiKey = process.env.GEMINI_API_KEY ?? 'cassette-replay-placeholder';
