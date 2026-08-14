@@ -17290,7 +17290,7 @@ var KEY_SETUP = [
     provider: "openrouter",
     prefix: "sk-or-…",
     steps: [
-      "Free models, no credit card.",
+      "Free and paid plans.",
       "Free models are slow and can drop rows on large batches.",
       "The key is shown once, so copy it straight away.",
       "To use free models at all, you must let them train on your prompts, in OpenRouter privacy settings."
