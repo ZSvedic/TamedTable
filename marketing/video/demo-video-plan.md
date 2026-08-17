@@ -7,7 +7,8 @@ the sound is on or off. Its one Spanish moment is visual: the "any language" bea
 types a Spanish prompt while the caption stays English. This doc owns the
 storyboard, the look, and how to render it; it does not own the message
 ([marketing-brief.md](../marketing-brief.md)) or the palette
-([brand/brand.md](../brand/brand.md)).
+([brand/brand.md](../brand/brand.md)). It also owns the short cut that ships
+beside it: [6 seconds, square, silent](#the-6-second-square-cut-add-a-category).
 
 Two rules shape everything below:
 
@@ -151,12 +152,16 @@ marketing/video/
   capture.mjs             drives Playwright -> silent-<ratio>-en.webm
   gemini-tts.mjs          Gemini TTS + mux -> hero-<ratio>-en.webm
   encode.mjs              derives the MP4/GIF deliverables from the WebMs
+  add-category.html       the 6-second square cut's scene
+  capture-add-category.mjs  drives Playwright -> demo-category-1x1.mp4 + .gif
   fonts.css               data-URI fonts for the timeline render
   voiceover.txt           the voiceover script + delivery notes
   demo-16x9.mp4, demo-9x16.mp4   committed deliverables
+  demo-category-1x1.mp4, demo-category-1x1.gif   the short cut, committed
   out/                    git-ignored renders
     hero-16x9-en.webm  hero-9x16-en.webm
     voiceover-en.wav   (optional) an external voice; muxed verbatim if present
+    add-category-frames/  one PNG per frame of the short cut
 ```
 
 Two small touches **outside** that dir are unavoidable, because the homepage is
@@ -216,6 +221,50 @@ the table width; the Spanish-prompt moment; and the Algieba voiceover.
 Room to grow: bump the frame rate for smoother pans, wire the homepage `<video>`
 (the *What ships* section below), or swap in a more expressive paid voiceover
 (ElevenLabs / Azure) in place of the Gemini read the mux step muxes.
+
+## The 6-second square cut: add a category
+
+One feature, six seconds, no sound, 1:1. The 20-second cut is a tour; this one
+answers "what does it look like when I ask for a category?" and stops. Square
+means a single file works everywhere a feed or a doc puts it, desktop or phone,
+with no second ratio to keep in sync. Source: `add-category.html`, rendered by
+`capture-add-category.mjs`.
+
+The frame never moves: a prompt chip above five support tickets, the brand
+lockup underneath. Five rows fit legibly at 1:1, so there is nothing to pan to.
+
+| Time | What happens |
+|---|---|
+| 0.0–2.1 | `label each ticket as billing, bug, or feature` types into the chip |
+| 2.1–2.5 | the run button pulses |
+| 2.5–2.9 | a `Category` column grows in, its header in the accent |
+| 3.0–4.1 | one label lands per row, 0.26s apart, each cell flashing accent |
+| 4.1–6.0 | the finished table holds |
+
+Choices worth keeping:
+
+- **Silent by design.** No voiceover, no captions. The prompt on screen is the
+  only text, so nothing has to be read against a clock.
+- **Labels carry color.** `billing` wears the accent, `bug` red, `feature`
+  green, the same pills as the [Classify tiles](../illustrations/). One accent
+  per changing cell still holds: the flash is Pale Sky.
+- **Loops on a state change.** The last frame is the finished table and the
+  first is the empty one, so a looping GIF reads as "ask again", not as a cut
+  mid-motion.
+- **Real wording.** The prompt and the labels are the ones
+  [classify.feature](../../spec/test-cases/classify.feature) proves against the
+  shipping app, shortened to fit the column.
+
+Render it with one command, from this directory:
+
+```
+node capture-add-category.mjs   # -> demo-category-1x1.mp4 + demo-category-1x1.gif
+```
+
+It screenshots one PNG per frame at `window.seek(ms)`, 30fps, at 2x and
+downscaled on encode, so the render never depends on wall-clock speed and the
+text stays crisp. The MP4 is 720x720 H.264, the GIF 480x480 at 15fps, both under
+100KB, both silent. Frames land in the git-ignored `out/add-category-frames/`.
 
 ## Definition of done
 
