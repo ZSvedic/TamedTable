@@ -1530,9 +1530,8 @@ The report lists events newest first.
 
 The web app counts feature use with cookie-less Umami analytics, and the
 whole scheme is public: the privacy page at `/privacy`
-(`marketing/web/privacy.html`) lists every event and embeds the live
-dashboard anyone can open (with a direct link for ad-blocked frames). The marketing pages load the same tracker for
-page views only.
+(`marketing/web/privacy.html`) links the public aggregate dashboard anyone
+can open. The marketing pages load the same tracker for page views only.
 
 Three rules bound what analytics may do:
 
@@ -1543,16 +1542,16 @@ Three rules bound what analytics may do:
   coarse label from a fixed list (a format id, a provider name, a tour
   name). File names, cell values, chat and voice text, and keys never
   reach an event.
-- **Stay stable.** Event names are part of the public record: the
-  `/privacy` page and the dashboards key off them, so a rename updates
-  both in the same change.
+- **Stay stable.** Event names are part of the public record: the source,
+  this spec, and the live dashboard all key off them, so a rename updates
+  them together.
 
 The app sends an event when a table or flow is opened, a typed or spoken
 request goes to the model, history steps back or forward, "Run on all
 rows" starts, data or a flow is saved, a Python export is written, a tour
 starts, or a provider key is connected. The exact names and properties are
-the table on the `/privacy` page and the `AnalyticsEvent` type in the
-code contract.
+the `AnalyticsEvent` type in the code contract, and show up aggregate in the
+public dashboard.
 
 → [code-contract.md: Analytics](code-contract.md#analytics-analytics)
 

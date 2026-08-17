@@ -4,9 +4,9 @@
 // swallows its own errors, and `track` is a no-op when the Umami script has
 // not loaded (blocked, offline, tests). Events carry fixed names and, at
 // most, coarse enum-like properties: never file names, cell values, chat
-// text, keys, or anything else user-authored. The full event list is public
-// at https://www.tamedtable.com/privacy (marketing/web/privacy.html) and
-// specced in spec/code-contract.md § Analytics.
+// text, keys, or anything else user-authored. The full event list is specced
+// in spec/code-contract.md § Analytics; the public /privacy page links the
+// live aggregate dashboard where these events show up.
 
 /** The www.tamedtable.com website ID from Umami Cloud. Public by design: it
  *  ships inside the page markup of every visitor. Not a secret. */
