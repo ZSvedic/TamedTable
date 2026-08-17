@@ -18,11 +18,10 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
-  #Analytics privacy policy page. Same stack and theme as FAQ.html: plain HTML,
-  the shared styles.css, the homepage nav/footer markup so it reads native.
-  Deliberately a two-minute read: the Analytics section links the public Umami
-  dashboard rather than reprinting the event list (that lives in the source and
-  spec/code-contract.md). Page-only rules are the few in the inline <style>.
+  #Analytics privacy policy page. GENERATED: the body between the <main> tags is
+  rendered from spec/legal/privacy.md by .github/scripts/render-md.ts during
+  build-site.sh. Edit the policy there, not here; this file is only the page
+  chrome (head, nav, footer, style). Same stack and theme as FAQ.html.
 -->
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="styles.css">
@@ -68,77 +67,34 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 
 <main>
   <div class="wrap guide">
-    <h1>Privacy Policy and Data Processing</h1>
-    <p>
-      TamedTable's privacy policy is intentionally short and simple, so you can
-      read and understand it in two minutes.
-    </p>
-    <p>
-      We don't have a server and we don't use any cookies. The TamedTable app
-      is client-side JavaScript, running in your browser. That is also why you
-      have to enter your API keys again whenever you switch browsers: your
-      settings don't leave your browser.
-    </p>
-    <p>
-      There is no separate EULA: TamedTable is source-available
-      (<a href="/FAQ#busl">BUSL</a>), so your use is governed by its
-      <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">license on GitHub</a>.
-    </p>
-    <p>That said, some third-party servers are involved:</p>
-
-    <section>
+      <h1>Privacy Policy and Data Processing</h1>
+      <p>TamedTable's privacy policy is intentionally short and simple, so you can read and understand it in two minutes.</p>
+      <p>We don't have a server and we don't use any cookies. The TamedTable app is client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers: your settings are stored locally.</p>
+      <p>There is no separate EULA: TamedTable is source-available (<a href="/FAQ#busl">BUSL</a>), so your use is governed by its <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">license on GitHub</a>.</p>
+      <p>That said, some third-party servers are involved:</p>
+      <section>
       <h2>Hosting</h2>
-      <p>
-        TamedTable is hosted on GitHub Pages. The visitor's IP address is
-        logged and stored for security purposes, the same as every other
-        server on the internet. For more information, see the
-        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a>.
-      </p>
-    </section>
-
-    <section>
+      <p>TamedTable is hosted on GitHub Pages. The visitor's IP address is logged and stored for security purposes, the same as every other server on the internet. For more information, see the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a>.</p>
+      </section>
+      <section>
       <h2>Analytics</h2>
-      <p>
-        TamedTable uses <a href="https://umami.is/" target="_blank" rel="noopener">Umami</a>,
-        a privacy-first analytics platform. It aggregates analytics without
-        cookies, surveillance, or selling your data to third parties. For more
-        information, see the
-        <a href="https://umami.is/privacy" target="_blank" rel="noopener">Umami Privacy Policy</a>.
-      </p>
-      <p>
-        To be completely transparent, our analytics dashboard is public. Open
-        it for yourself and see the aggregate metrics:
-        <a href="https://cloud.umami.is/analytics/eu/share/tv44m6vB3TJF0uA0" target="_blank" rel="noopener">TamedTable Analytics Dashboard ↗</a>
-      </p>
-      <p>
-        If, for whatever reason, you don't like GitHub or Umami, there is a
-        solution. TamedTable's source code is public on GitHub, so you can fork
-        the repo, tell your coding agent to remove any analytics, and host it
-        yourself.
-      </p>
-    </section>
-
-    <section>
+      <p>TamedTable uses <a href="https://umami.is/" target="_blank" rel="noopener">Umami</a>, a privacy-first analytics platform. It aggregates analytics without cookies, surveillance, or selling your data to third parties. For more information, see the <a href="https://umami.is/privacy" target="_blank" rel="noopener">Umami Privacy Policy</a>.</p>
+      <p>To be completely transparent, our analytics dashboard is public. Open it for yourself and see the aggregate metrics:</p>
+      <p><a href="https://cloud.umami.is/analytics/eu/share/tv44m6vB3TJF0uA0" target="_blank" rel="noopener">TamedTable Analytics Dashboard ↗</a></p>
+      <p>If, for whatever reason, you don't like GitHub or Umami, there is a solution. TamedTable's source code is public on GitHub, so you can fork the repo, tell your coding agent to remove any analytics, and host it yourself.</p>
+      </section>
+      <section>
       <h2>Optional third-party servers</h2>
-      <p>
-        TamedTable is an AI ETL, where "AI" means your chat requests are sent
-        to an LLM provider of your choice. You need to check the policy only
-        for the providers you actually call:
-      </p>
+      <p>TamedTable is an AI ETL, where "AI" means your chat requests are sent to an LLM provider of your choice. You need to check the policy only for the providers you actually call:</p>
       <ul>
-        <li>Google: <a href="https://support.google.com/gemini/answer/13594961?hl=en" target="_blank" rel="noopener">Gemini Apps Privacy Hub</a></li>
-        <li>OpenAI: <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li>Anthropic: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li>OpenRouter: <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li>Groq: <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
+      <li>Google: <a href="https://support.google.com/gemini/answer/13594961?hl=en" target="_blank" rel="noopener">Gemini Apps Privacy Hub</a></li>
+      <li>OpenAI: <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
+      <li>Anthropic: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
+      <li>OpenRouter: <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
+      <li>Groq: <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
       </ul>
-      <p>
-        If, for whatever reason, you are not comfortable with any of the listed
-        providers, there is a solution. TamedTable's source code is public on
-        GitHub, so you can fork the repo, tell your coding agent to use a local
-        or internal LLM instead, and host it yourself.
-      </p>
-    </section>
+      <p>If, for whatever reason, you are not comfortable with any of the listed providers, there is a solution. TamedTable's source code is public on GitHub, so you can fork the repo, tell your coding agent to use a local or internal LLM instead, and host it yourself.</p>
+      </section>
   </div>
 </main>
 
