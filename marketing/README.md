@@ -11,7 +11,7 @@ marketing/
   brand/                 marks, favicons, lockups, brand.md
   claude-design-app/     in-browser design canvas (scratch JSX + generated tokens.jsx)
   illustrations/         SVG feature tiles + gallery.html to preview them
-  video/                 storyboard + render plan (demo-video-plan.md) for the 20s video
+  video/                 storyboard + render plan (demo-video-plan.md): the 20s demo and the 6s square cut
   web/                   the landing page (index.html + FAQ.html + styles.css + main.js)
 ```
 

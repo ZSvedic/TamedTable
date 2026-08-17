@@ -1,0 +1,165 @@
+<!doctype html>
+<!-- TamedTable "add a category" cut: 6 seconds, square, silent. Deterministic:
+     window.seek(ms) draws the exact frame at time ms, so every render is
+     identical. One shot, no camera move: the frame holds the prompt and four
+     rows, and a Category column grows in with a label per row. Rendered by
+     capture-add-category.mjs. See demo-video-plan.md. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root{
+    --ink:#281C60; --accent:#96BED7; --grid:#DCDCDC; --linen:#F6F2EB; --white:#fff;
+    --sans:"Inter",ui-sans-serif,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --brand:"Outfit",ui-sans-serif,system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#000}
+  #stage{position:relative;width:720px;height:720px;background:var(--linen);
+         padding:26px;display:flex;flex-direction:column;justify-content:center}
+
+  #card{background:var(--white);border:1px solid var(--grid);border-radius:22px;
+        box-shadow:0 18px 46px rgba(40,28,96,.10);padding:26px;
+        display:flex;flex-direction:column;gap:26px}
+
+  #chip{background:#EFEBF7;border:1px solid #D8D0EC;border-radius:18px;
+        padding:15px 18px;display:flex;align-items:center;gap:14px}
+  #play{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--accent);
+        display:flex;align-items:center;justify-content:center}
+  #play .tri{width:0;height:0;border-left:11px solid var(--ink);
+             border-top:7px solid transparent;border-bottom:7px solid transparent;
+             margin-left:3px}
+  #play.pulse{box-shadow:0 0 0 9px rgba(150,190,215,.45)}
+  #chipTxt{font-family:var(--mono);font-size:19px;color:var(--ink);white-space:nowrap}
+  .caret{display:inline-block;width:2px;height:21px;background:var(--ink);
+         vertical-align:-4px;margin-left:2px}
+
+  table{table-layout:fixed;border-collapse:separate;border-spacing:0;width:100%;
+        border:1px solid var(--grid);border-radius:12px;overflow:hidden}
+  th{font-family:var(--sans);font-weight:600;font-size:20px;color:#fff;background:var(--ink);
+     text-align:left;padding:16px 18px;white-space:nowrap;overflow:hidden}
+  td{font-family:var(--mono);font-size:19px;color:var(--ink);padding:19px 18px;
+     border-top:1px solid var(--grid);white-space:nowrap;overflow:hidden}
+  tbody tr:nth-child(odd) td{background:#fff}
+  tbody tr:nth-child(even) td{background:var(--linen)}
+  th.cat{color:var(--accent);border-left:1px solid rgba(255,255,255,.25)}
+  td.cat{border-left:1px solid var(--grid)}
+  td.cat.flash{background:#E7F1F8!important;box-shadow:inset 0 0 0 2px var(--accent)}
+  .pill{display:inline-block;font-family:var(--mono);font-size:17px;font-weight:600;
+        border-radius:11px;padding:4px 12px;border:1px solid}
+  .pill.billing{background:#E7F1F8;border-color:var(--accent);color:var(--ink)}
+  .pill.bug{background:#FBEEF0;border-color:#E0AAB6;color:#C0556B}
+  .pill.feature{background:#E3F2E7;border-color:#9CCBAB;color:#2E8B57}
+
+  #foot{position:absolute;left:34px;right:34px;bottom:26px;
+        display:flex;align-items:center;gap:12px}
+  #mark{position:relative;flex:0 0 auto}
+  .cell{position:absolute}
+  #wordmark{font-family:var(--brand);font-weight:500;font-variant-caps:small-caps;
+            letter-spacing:.01em;color:var(--ink);font-size:26px;line-height:1;
+            margin-right:auto}
+  #url{font-family:var(--mono);font-size:16px;color:var(--ink);opacity:.6}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="card">
+    <div id="chip">
+      <div id="play"><div class="tri"></div></div>
+      <span id="chipTxt"></span>
+    </div>
+    <table>
+      <colgroup><col id="colTicket"><col id="colCat"></colgroup>
+      <thead><tr><th>Ticket</th><th class="cat"><span id="thCatTxt">Category</span></th></tr></thead>
+      <tbody>
+        <tr><td>Card was charged twice</td><td class="cat" id="c0"></td></tr>
+        <tr><td>App crashes on save</td><td class="cat" id="c1"></td></tr>
+        <tr><td>Add a dark mode option</td><td class="cat" id="c2"></td></tr>
+        <tr><td>Billed after I cancelled</td><td class="cat" id="c3"></td></tr>
+        <tr><td>Export does nothing</td><td class="cat" id="c4"></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="foot">
+    <div id="mark"></div>
+    <div id="wordmark">TamedTable</div>
+    <div id="url">tamedtable.com</div>
+  </div>
+</div>
+
+<script>
+const DUR = 6000;
+const PROMPT = 'label each ticket as billing, bug, or feature';
+const LABELS = ['billing', 'bug', 'feature', 'billing', 'bug'];
+const CAT_W = 210;                       // final width of the Category column
+const TYPE = [400, 2050];                // prompt types over this span
+const PULSE = [2100, 2500];              // the run button answers the prompt
+const COL = [2450, 2900];                // the new column grows in
+const ROWT = [2960, 3220, 3480, 3740, 4000];   // one label lands per row
+const FLASH = 460;                       // how long a fresh cell wears the accent
+
+// --- brand mark (9x5, overhanging eaves; accent at row0,col4) ---
+const INK = [[0,0],[0,1],[0,2],[0,3],[0,5],[0,6],[0,7],[0,8],[1,1],[1,7],
+  [2,1],[2,3],[2,4],[2,5],[2,7],[3,1],[3,7],[4,1],[4,3],[4,4],[4,5],[4,7]];
+const ACCENT = [0,4];
+const host = document.getElementById('mark');
+const S = 6;
+host.style.width = 9*S + 'px'; host.style.height = 5*S + 'px';
+for (const [row, col, accent] of [...INK.map(p => [...p, false]), [...ACCENT, true]]) {
+  const d = document.createElement('div');
+  d.className = 'cell';
+  d.style.left = col*S + 'px'; d.style.top = row*S + 'px';
+  d.style.width = S + 'px'; d.style.height = S + 'px';
+  d.style.background = accent ? 'var(--accent)' : 'var(--ink)';
+  host.appendChild(d);
+}
+
+for (let r = 0; r < LABELS.length; r++) {
+  document.getElementById('c' + r).innerHTML =
+    `<span class="pill ${LABELS[r]}" style="opacity:0">${LABELS[r]}</span>`;
+}
+
+const clamp01 = x => Math.max(0, Math.min(1, x));
+const fade = (t, a, b) => clamp01((t - a) / (b - a));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+
+function seek(t) {
+  t = Math.max(0, Math.min(DUR - 1, t));
+
+  // prompt types one character at a time; the caret blinks while it waits
+  const typed = Math.round(PROMPT.length * fade(t, TYPE[0], TYPE[1]));
+  const blink = t >= TYPE[0] && Math.floor(t/500) % 2 === 0 ? '<span class="caret"></span>' : '';
+  document.getElementById('chipTxt').innerHTML = PROMPT.slice(0, typed) + blink;
+  document.getElementById('play').classList
+    .toggle('pulse', t >= PULSE[0] && t < PULSE[1]);
+
+  // the Category column grows in, header first
+  const w = CAT_W * easeOut(fade(t, COL[0], COL[1]));
+  document.getElementById('colCat').style.width = w + 'px';
+  document.getElementById('colTicket').style.width = `calc(100% - ${w}px)`;
+  document.getElementById('thCatTxt').style.opacity = fade(t, COL[0] + 150, COL[1]);
+
+  // one label per row, each flashing accent as it lands. The fade rides the
+  // pill, not the cell: a transparent cell would drop its own row shading too.
+  for (let r = 0; r < LABELS.length; r++) {
+    const cell = document.getElementById('c' + r);
+    const shown = t >= ROWT[r];
+    cell.firstChild.style.opacity = fade(t, ROWT[r], ROWT[r] + 160);
+    cell.classList.toggle('flash', shown && t - ROWT[r] < FLASH);
+  }
+}
+window.seek = seek;
+window.DUR = DUR;
+
+if (new URLSearchParams(location.search).has('capture')) seek(0);
+else {                                   // preview in a browser: loop in real time
+  let start = null;
+  const loop = ts => { if (start == null) start = ts;
+    seek((ts - start) % DUR); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
