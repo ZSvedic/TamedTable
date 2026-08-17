@@ -1,6 +1,20 @@
 // TamedTable homepage behavior: mobile nav toggle + interactive feature lists.
 // Vanilla JS, no dependencies.
 
+// ---- #Analytics: Umami Cloud analytics (cookie-less page views) ----
+// One loader for every marketing page; the web app injects the same script
+// from its own #Analytics module (src/packages/web/src/analytics.ts). The
+// website ID is public by design: it ships to every visitor. What is tracked
+// is public too: /analytics documents it. A blocked or failed load changes
+// nothing else on the page.
+(function () {
+  var s = document.createElement('script');
+  s.defer = true;
+  s.src = 'https://cloud.umami.is/script.js';
+  s.setAttribute('data-website-id', '4d86471c-f8c7-42e7-9138-23cd1e8a1314');
+  document.head.appendChild(s);
+})();
+
 // ---- Mobile nav toggle ----
 (function () {
   var toggle = document.getElementById('navToggle');

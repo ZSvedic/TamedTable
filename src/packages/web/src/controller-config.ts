@@ -22,6 +22,7 @@ import { verifyKey, measureModel } from '@tamedtable/model-config/probe';
 import { pageSizeFor } from './controller.ts';
 import { userFacingMessage } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
+import { track } from './analytics.ts';
 
 export class ConfigManager {
   private readonly host: ControllerHost;
@@ -120,6 +121,8 @@ export class ConfigManager {
    *  that provider. Shared by the pasted-key path and the Puter sign-in. */
   private async connect(provider: Provider, key: string): Promise<void> {
     const { tier } = await verifyKey(provider, key, { fetch: this.host.opts.fetch });
+    // The provider name only: never the key or anything derived from it.
+    track('connect-provider', { provider });
     // Re-adding keeps the original connected time, so fixing an expired key
     // does not send the card to the bottom of the list.
     const existing = this.host.probes[provider]?.connectedAt;

@@ -1526,6 +1526,36 @@ The report lists events newest first.
 
 → [code-contract.md: Diagnostics log](code-contract.md#diagnostics-log-diagnostics)
 
+### Analytics (#Analytics)
+
+The web app counts feature use with cookie-less Umami analytics, and the
+whole scheme is public: the privacy page at `/privacy`
+(single-sourced from `spec/legal/privacy.md`) links the public aggregate
+dashboard anyone can open. The marketing pages load the same tracker for
+page views only.
+
+Three rules bound what analytics may do:
+
+- **Never break the app.** Every analytics call swallows its own errors; a
+  blocked tracker, an offline browser, or a headless test changes nothing
+  the user sees.
+- **Never carry user data.** An event is a fixed name plus, at most, one
+  coarse label from a fixed list (a format id, a provider name, a tour
+  name). File names, cell values, chat and voice text, and keys never
+  reach an event.
+- **Stay stable.** Event names are part of the public record: the source,
+  this spec, and the live dashboard all key off them, so a rename updates
+  them together.
+
+The app sends an event when a table or flow is opened, a typed or spoken
+request goes to the model, history steps back or forward, "Run on all
+rows" starts, data or a flow is saved, a Python export is written, a tour
+starts, or a provider key is connected. The exact names and properties are
+the `AnalyticsEvent` type in the code contract, and show up aggregate in the
+public dashboard.
+
+→ [code-contract.md: Analytics](code-contract.md#analytics-analytics)
+
 ## Lazy AI execution (#LazyExec)
 
 An AI step runs on the page you are looking at, not on the whole table:
@@ -1799,9 +1829,6 @@ to the end behind their pager marks. (A page's rows can shift position as they
 join the order: that is what a sorted view of a growing evaluated set means.)
 A complete sort of a not-yet-evaluated column still needs every value, which
 the gate's "Run all & sort" computes at once.
-
-The reviewed phase-2 mockup of every element above is
-[spec/mockups/lazy-ai.html](mockups/lazy-ai.html).
 
 → [code-contract.md: Lazy AI execution](code-contract.md#lazy-ai-execution-lazyexec)
 

@@ -20,6 +20,7 @@ import { checkFlowInputColumns, describeStep, isCancelled, specHasLlmCell } from
 import { missingProviderKeyMessage, numberedStepLines } from './controller-messages.ts';
 import type { ControllerHost } from './controller-context.ts';
 import { RecentsStore, type RecentEntry } from './recents.ts';
+import { track } from './analytics.ts';
 
 /** The data formats the Open picker accepts. */
 const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
@@ -138,6 +139,7 @@ export class FilesManager {
       if (picked) {
         await this.loadFromPicked(picked);
         this.recentsStore.record({ kind: 'local', label: picked.name });
+        track('open-file', { source: 'local' });
       }
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
@@ -192,6 +194,7 @@ export class FilesManager {
         nextSpec: structuredClone(this.host.engine.currentSpec()),
       });
       this.recentsStore.record({ kind: 'flow', label: picked.name });
+      track('open-flow');
       // A numbered line per step (the same labels the live progress showed),
       // then the summary: the reply mirrors a chat request's per-step reply,
       // linked to its journal entry so it tracks undo state. A replay is a
@@ -333,6 +336,7 @@ export class FilesManager {
     try {
       await this.loadFromPicked({ name, bytes });
       this.recentsStore.record({ kind: 'local', label: name });
+      track('open-file', { source: 'drop' });
     } catch (e) {
       this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
     } finally {
@@ -435,6 +439,7 @@ export class FilesManager {
     const { name, bytes, format } = await fetchTable(url, this.host.opts.fetch);
     await this.loadFromPicked({ name, bytes }, format);
     this.recentsStore.record({ kind, label: name, url });
+    track('open-file', { source: kind });
     // The record lands after loadFromPicked fired its last notify, so the menu
     // needs one more render to list it: the sample picker calls this
     // fire-and-forget and closes before the record, so it has none of its own.
@@ -451,7 +456,9 @@ export class FilesManager {
     this.host.notify();
     try {
       const flow = new TextEncoder().encode(serializeFlow(this.host.engine.currentSpec()));
-      this.reportSave(await this.host.file.pickSave('flow.flow', ['.flow'], flow));
+      if (this.reportSave(await this.host.file.pickSave('flow.flow', ['.flow'], flow))) {
+        track('save-flow');
+      }
     } catch (e) {
       this.host.pushToast('error', `Could not save flow: ${(e as Error).message}`);
     } finally {
@@ -526,7 +533,9 @@ export class FilesManager {
     this.host.dialog = 'save-flow';
     this.host.notify();
     try {
-      this.reportSave(await this.host.file.pickSave(suggested, ['.py'], script));
+      if (this.reportSave(await this.host.file.pickSave(suggested, ['.py'], script))) {
+        track('export-python');
+      }
     } catch (e) {
       this.host.pushToast('error', `Could not export to Python: ${(e as Error).message}`);
     } finally {
@@ -661,7 +670,9 @@ export class FilesManager {
       const columns = specColumns.map((c) => c.id);
       const headers = specColumns.map((c) => c.label ?? c.id);
       const content = await codec.serialize(rows, columns, headers);
-      this.reportSave(await this.host.file.pickSave(suggested, [ext], content));
+      if (this.reportSave(await this.host.file.pickSave(suggested, [ext], content))) {
+        track('save-data', { format });
+      }
     } catch (e) {
       this.host.pushToast('error', `Could not save data: ${(e as Error).message}`);
     } finally {
@@ -670,14 +681,17 @@ export class FilesManager {
     }
   }
 
-  private reportSave(outcome: SaveOutcome): void {
-    if (outcome.status === 'cancelled') return;
+  /** Toast the save outcome; true when a file was actually written (the
+   *  callers' cue to record the matching #Analytics event). */
+  private reportSave(outcome: SaveOutcome): boolean {
+    if (outcome.status === 'cancelled') return false;
     this.host.pushToast(
       'info',
       outcome.status === 'downloaded'
         ? `Downloaded ${outcome.name}.`
         : `Saved ${outcome.name}.`,
     );
+    return true;
   }
 
   /** Public file-load helper (also used by tutorial load-file steps). */

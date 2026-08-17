@@ -18,6 +18,7 @@ import { audioMediaType } from '@tamedtable/voice-input';
 import { parseTours, type TourScenario } from '@tamedtable/gherkin-tour';
 import { parseCassette, replayFetch, type Cassette, type FetchLike } from '@tamedtable/cassette';
 import type { ControllerHost } from './controller-context.ts';
+import { track } from './analytics.ts';
 import type { TutorialManifestEntry, TutorialSources } from './controller-types.ts';
 import { TUTORIAL_CATEGORIES } from './tutorial-categories.ts';
 
@@ -190,6 +191,8 @@ export class TutorialManager {
     this.host.tutorialOpen = false;
     this.prefillCurrentStep();
     this.host.notify();
+    // Tour names are fixed app content (the tutorial menu), never user data.
+    track('tutorial-play', { tour: this.selected.name });
     return true;
   }
 

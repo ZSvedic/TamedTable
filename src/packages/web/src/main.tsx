@@ -9,7 +9,12 @@ import { browserContinuousPort } from '@tamedtable/voice-input/browser-vad';
 import { App } from './App.tsx';
 import { bundledSamples } from './samples.ts';
 import { captureInstallPrompt } from './install-prompt.ts';
+import { initAnalytics } from './analytics.ts';
 import './index.css';
+
+// #Analytics: cookie-less Umami page views + custom events. Fire-and-forget;
+// a blocked or failed load changes nothing else on this page.
+initAnalytics();
 
 // Lightweight tutorial scenario index, frozen into the bundle by vite.config.
 // Everything heavy loads lazily, fetched same-origin under the deployed base.

@@ -1125,6 +1125,42 @@ after normal work is not empty. Without it the log would hold only saves,
 errors, and copies, and a "my query did the wrong thing" report would carry
 no trace of the query.
 
+### Analytics (#Analytics)
+
+One module, `src/packages/web/src/analytics.ts`, owns the Umami wiring; every
+event in the app goes through its `track`.
+
+```ts
+const UMAMI_WEBSITE_ID: string;   // the www.tamedtable.com site in Umami Cloud; public, not a secret
+const UMAMI_SCRIPT_URL: string;   // https://cloud.umami.is/script.js
+
+type AnalyticsEvent =
+  | 'open-file'        // { source: 'local' | 'url' | 'sample' | 'drop' }
+  | 'open-flow'
+  | 'chat-request'
+  | 'voice-request'
+  | 'undo' | 'redo'
+  | 'run-all'
+  | 'save-data'        // { format: FormatId }
+  | 'save-flow'
+  | 'export-python'
+  | 'tutorial-play'    // { tour: string } (a tutorial scenario name)
+  | 'connect-provider'; // { provider: Provider }
+
+type AnalyticsProps = Record<string, string | number | boolean>;
+
+function initAnalytics(doc?: Document): void; // inject the script tag once; no-op without a document
+function track(event: AnalyticsEvent, data?: AnalyticsProps): void; // silent no-op when umami is absent or throws
+```
+
+`initAnalytics` runs once at web startup (`main.tsx`); the marketing pages
+inject the same script from `marketing/web/main.js`. Both entry points and
+`track` swallow every error: analytics can never break the app. Save events
+fire only after a file is actually written (a cancelled picker sends
+nothing); open events fire after the load succeeds. The public `/privacy`
+page (single-sourced from `spec/legal/privacy.md`, rendered at build) links
+the live Umami dashboard, where these events show up aggregate.
+
 ## Lazy AI execution (#LazyExec)
 
 Types and surfaces for page-first AI execution

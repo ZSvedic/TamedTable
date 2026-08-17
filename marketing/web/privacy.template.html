@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
+     the visible URL matches the canonical (GitHub Pages has no server redirects).
+     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
+<script>
+(function(){var p=location.pathname;
+if(p.endsWith('/index.html'))p=p.slice(0,-10);
+else if(p.endsWith('.html'))p=p.slice(0,-5);
+if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
+</script>
+<link rel="canonical" href="https://www.tamedtable.com/privacy">
+<title>Privacy | TamedTable</title>
+<meta name="description" content="TamedTable's privacy policy: no server, no cookies. The third-party servers involved (GitHub Pages hosting, cookie-less Umami analytics, and your chosen LLM provider), each with its own policy.">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+
+<!--
+  #Analytics privacy policy page. GENERATED: the body between the <main> tags is
+  rendered from spec/legal/privacy.md by .github/scripts/render-md.ts during
+  build-site.sh. Edit the policy there, not here; this file is only the page
+  chrome (head, nav, footer, style). Same stack and theme as FAQ.html.
+-->
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* A simple policy on a readable column: body-size text, no section rules. */
+  .guide { max-width: 720px; padding: 56px 32px 72px; }
+  .guide h1 { font-size: 34px; font-weight: 600; color: var(--ink); }
+  /* Reset the global section padding (76px) or the gaps balloon. */
+  .guide section { padding: 0; margin-top: 34px; }
+  .guide h2 { font-size: 22px; font-weight: 600; color: var(--ink); }
+  .guide p { color: var(--ink); margin-top: 14px; }
+  .guide ul { margin-top: 12px; padding-left: 20px; }
+  .guide li { color: var(--ink); margin-top: 6px; }
+  .guide a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/" aria-label="TamedTable home">
+      <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
+        <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
+        <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--mark-accent)"></rect>
+      </svg>
+      <span class="wordmark">TamedTable</span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-links" id="navLinks">
+      <a class="link" href="/FAQ">FAQ</a>
+      <a class="link" href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-dprimary" href="https://www.tamedtable.com/app/" target="_blank" rel="noopener">Open Web App <span class="arrow">→</span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap guide">
+      <!--CONTENT-->
+  </div>
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <a class="brand" href="/" style="font-size:18px;" aria-label="TamedTable home">
+      <svg class="mark" viewBox="0 0 9 5" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="0" width="9" height="1" fill="currentColor"></rect>
+        <rect x="1" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="7" y="1" width="1" height="4" fill="currentColor"></rect>
+        <rect x="3" y="2" width="3" height="1" fill="currentColor"></rect>
+        <rect x="3" y="4" width="3" height="1" fill="currentColor"></rect>
+        <rect x="4" y="0" width="1" height="1" fill="var(--mark-accent)"></rect>
+      </svg>
+      <span class="wordmark">TamedTable</span>
+    </a>
+    <div class="foot-links">
+      <a href="/FAQ">FAQ</a>
+      <a href="/privacy">Privacy</a>
+      <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Shared nav behavior (mobile menu toggle) + the Umami loader. -->
+<script src="main.js"></script>
+</body>
+</html>
