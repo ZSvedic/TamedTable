@@ -1158,8 +1158,8 @@ inject the same script from `marketing/web/main.js`. Both entry points and
 `track` swallow every error: analytics can never break the app. Save events
 fire only after a file is actually written (a cancelled picker sends
 nothing); open events fire after the load succeeds. The event list is
-mirrored, in plain language, on the public `/analytics` page
-(`marketing/web/analytics.html`), which embeds the live Umami share
+mirrored, in plain language, on the public `/privacy` page
+(`marketing/web/privacy.html`), which embeds the live Umami share
 dashboard and links it directly for ad-blocked frames.
 
 ## Lazy AI execution (#LazyExec)

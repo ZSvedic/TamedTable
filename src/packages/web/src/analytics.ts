@@ -5,7 +5,7 @@
 // not loaded (blocked, offline, tests). Events carry fixed names and, at
 // most, coarse enum-like properties: never file names, cell values, chat
 // text, keys, or anything else user-authored. The full event list is public
-// at https://www.tamedtable.com/analytics (marketing/web/analytics.html) and
+// at https://www.tamedtable.com/privacy (marketing/web/privacy.html) and
 // specced in spec/code-contract.md § Analytics.
 
 /** The www.tamedtable.com website ID from Umami Cloud. Public by design: it

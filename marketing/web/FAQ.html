@@ -243,7 +243,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <button class="copy-link" data-target="key-safety" aria-label="Copy link to this question"><span class="ci"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 2 2 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a2 2 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 2 2 0 0 0-2.83 0l-2.5 2.5a2 2 0 0 0 0 2.83Z"></path></svg></span></button>
       </h2>
       <div class="faq-a">
-        <p>The key is saved in your browser's local storage, on your device, and requests go straight from your browser to your provider's API. There is no TamedTable server in the middle: the site is static files on GitHub Pages, it loads no ad code, and its only analytics is the cookie-less Umami script, which counts page views and feature use, never your key or your data: the <a href="/analytics">analytics page</a> lists everything it collects. The one other third-party script is Puter.js, and it is fetched only if you press <em>Sign in to Puter.js</em>, never on page load, so it is absent entirely unless you choose to use it.</p>
+        <p>The key is saved in your browser's local storage, on your device, and requests go straight from your browser to your provider's API. There is no TamedTable server in the middle: the site is static files on GitHub Pages, it loads no ad code, and its only analytics is the cookie-less Umami script, which counts page views and feature use, never your key or your data: the <a href="/privacy">privacy page</a> lists everything it collects. The one other third-party script is Puter.js, and it is fetched only if you press <em>Sign in to Puter.js</em>, never on page load, so it is absent entirely unless you choose to use it.</p>
         <p>Best practice: create a separate API key for TamedTable with a monthly spending cap in your provider's console.</p>
         <p>And because the code is public, you don't have to take our word for it. You can read the request code <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/web/src/controller-engine.ts" target="_blank" rel="noopener">on GitHub</a> or run the app from your own clone.</p>
       </div>
@@ -285,7 +285,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <p>That said, note that:</p>
         <ol class="ab-list">
           <li>When adding your provider's API key, check that provider's privacy policy and EULA.</li>
-          <li>For analytics, we use privacy-first, cookie-less <a href="https://umami.is/" target="_blank" rel="noopener">Umami</a>. Everything it tracks is public on the <a href="/analytics">analytics page</a>, live dashboard included.</li>
+          <li>For analytics, we use privacy-first, cookie-less <a href="https://umami.is/" target="_blank" rel="noopener">Umami</a>. Everything it tracks is public on the <a href="/privacy">privacy page</a>, live dashboard included.</li>
         </ol>
       </div>
     </section>
@@ -375,7 +375,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     </a>
     <div class="foot-links">
       <a href="/FAQ">FAQ</a>
-      <a href="/analytics">Analytics</a>
+      <a href="/privacy">Privacy</a>
       <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>

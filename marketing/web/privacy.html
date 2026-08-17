@@ -12,16 +12,16 @@ if(p.endsWith('/index.html'))p=p.slice(0,-10);
 else if(p.endsWith('.html'))p=p.slice(0,-5);
 if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
 </script>
-<link rel="canonical" href="https://www.tamedtable.com/analytics">
-<title>Analytics Transparency | TamedTable</title>
-<meta name="description" content="Everything TamedTable tracks, in public: cookie-less Umami analytics, the full custom-event list, and the live dashboard anyone can open.">
+<link rel="canonical" href="https://www.tamedtable.com/privacy">
+<title>Privacy | TamedTable</title>
+<meta name="description" content="TamedTable's privacy page: what the site collects, in public. Cookie-less Umami analytics, the full custom-event list, and the live dashboard anyone can open.">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 
 <!--
-  #Analytics transparency page. Same stack and theme as FAQ.html: plain HTML,
+  #Analytics privacy page. Same stack and theme as FAQ.html: plain HTML,
   the shared styles.css, the homepage nav/footer markup so it reads native.
   Everything the site's analytics collect is listed here, and the live Umami
-  dashboard is embedded once its public share URL is set below (UMAMI_SHARE_URL).
+  share dashboard is embedded (with a direct link for ad-blocked frames).
   Page-only rules live in this small inline <style>, not the shared sheet.
 -->
 <link rel="stylesheet" href="fonts/fonts.css">
@@ -91,7 +91,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 
 <main>
   <div class="wrap guide">
-    <h1>Analytics, in public</h1>
+    <h1>Privacy</h1>
     <p class="lede">
       TamedTable uses cookie-less analytics, and hides nothing about them:
       this page lists everything the site tracks, and the live dashboard below
@@ -176,7 +176,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
     </a>
     <div class="foot-links">
       <a href="/FAQ">FAQ</a>
-      <a href="/analytics">Analytics</a>
+      <a href="/privacy">Privacy</a>
       <a href="https://github.com/ZSvedic/TamedTable" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
