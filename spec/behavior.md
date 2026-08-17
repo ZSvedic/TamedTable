@@ -1530,8 +1530,9 @@ The report lists events newest first.
 
 The web app counts feature use with cookie-less Umami analytics, and the
 whole scheme is public: the privacy page at `/privacy`
-(`marketing/web/privacy.html`) links the public aggregate dashboard anyone
-can open. The marketing pages load the same tracker for page views only.
+(single-sourced from `spec/legal/privacy.md`) links the public aggregate
+dashboard anyone can open. The marketing pages load the same tracker for
+page views only.
 
 Three rules bound what analytics may do:
 
@@ -1828,9 +1829,6 @@ to the end behind their pager marks. (A page's rows can shift position as they
 join the order: that is what a sorted view of a growing evaluated set means.)
 A complete sort of a not-yet-evaluated column still needs every value, which
 the gate's "Run all & sort" computes at once.
-
-The reviewed phase-2 mockup of every element above is
-[spec/mockups/lazy-ai.html](mockups/lazy-ai.html).
 
 → [code-contract.md: Lazy AI execution](code-contract.md#lazy-ai-execution-lazyexec)
 

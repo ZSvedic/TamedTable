@@ -35,6 +35,11 @@ mkdir -p "$OUT/app"
 cp -rL marketing/web/. "$OUT/"
 cp -r src/packages/web/dist/. "$OUT/app/"
 
+# Privacy page: single-sourced from spec/legal/privacy.md, rendered into the
+# page chrome (privacy.template.html) so the policy is edited in one place.
+bun .github/scripts/render-md.ts spec/legal/privacy.md marketing/web/privacy.template.html "$OUT/privacy.html"
+rm -f "$OUT/privacy.template.html"  # the template is a build input, not a page
+
 # Standalone module demos under /demos/<name>/.
 for name in chat-panel file-io gherkin-tour model-config table-view toolbar ui-kit voice-input; do
   ( cd src && bun build "packages/$name/demo.html" \

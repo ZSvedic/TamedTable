@@ -1158,8 +1158,8 @@ inject the same script from `marketing/web/main.js`. Both entry points and
 `track` swallow every error: analytics can never break the app. Save events
 fire only after a file is actually written (a cancelled picker sends
 nothing); open events fire after the load succeeds. The public `/privacy`
-page (`marketing/web/privacy.html`) links the live Umami dashboard, where
-these events show up aggregate.
+page (single-sourced from `spec/legal/privacy.md`, rendered at build) links
+the live Umami dashboard, where these events show up aggregate.
 
 ## Lazy AI execution (#LazyExec)
 

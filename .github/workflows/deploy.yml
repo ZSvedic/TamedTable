@@ -15,8 +15,10 @@ on:
       - 'marketing/web/**'
       - 'marketing/illustrations/**'
       - 'marketing/brand/**'
+      - 'spec/legal/**'
       - '.github/workflows/deploy.yml'
       - '.github/scripts/build-site.sh'
+      - '.github/scripts/render-md.ts'
   workflow_dispatch:  # manual rebuild from the Actions tab
 # Publishes to the gh-pages branch (Pages source: "Deploy from a branch"). The
 # branch source is shared with PR previews (pr-preview.yml): prod lives at the
