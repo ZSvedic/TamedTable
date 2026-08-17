@@ -11,15 +11,11 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import type { Row } from '@tamedtable/core';
-import { revealHeader, urlHref } from '@tamedtable/table-view';
+import { cellText, revealHeader, urlHref } from '@tamedtable/table-view';
 import type { CellRef, RunProgress } from '../../controller.ts';
 import { APPBAR_OFFSET } from './layout.ts';
 
 const IDX_W = 40;
-
-function cellText(value: unknown): string {
-  return value === null || value === undefined ? '' : String(value);
-}
 
 export interface MobileTableProps {
   id?: string;

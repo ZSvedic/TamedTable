@@ -4,7 +4,7 @@
 // manager applies an entry's spec back through the engine and turns cell edits
 // and column reorders into ordinary, replayable spec patches.
 import { SpecJournal, type JournalEntry, type TimelineStep } from '@tamedtable/headless';
-import type { TablePlan } from '@tamedtable/core';
+import { parseCellEdit, type TablePlan } from '@tamedtable/core';
 import type { ControllerHost } from './controller-context.ts';
 
 export class PatchManager {
@@ -115,9 +115,19 @@ export class PatchManager {
   // ── Browser gestures → spec patches ──────────────────────────────────────
 
   /** A cell edit becomes a `mutate` keyed by row index, an ordinary,
-   *  undoable spec patch that replays against the source. */
+   *  undoable spec patch that replays against the source. #NestedCells: the
+   *  editor opens on the cell's display text, so text that parses as a JSON
+   *  list or object is stored back as one and a nested cell survives an edit;
+   *  anything else stays the string the user typed. */
   async editCell(rowIndex: number, column: string, value: string): Promise<void> {
     const before = this.host.engine.rawRows()[rowIndex]?.[column];
+    const edited = parseCellEdit(value);
+    // A parsed list or object is embedded as `JSON.parse("…")`, never as a JS
+    // literal: a literal carrying a `__proto__` key sets the value's prototype
+    // instead of writing an own key, and JSON.parse never does.
+    const literal = edited !== null && typeof edited === 'object'
+      ? `JSON.parse(${JSON.stringify(JSON.stringify(edited))})`
+      : JSON.stringify(edited);
     const id = await this.applySpecChange(`edit ${column} row ${rowIndex + 1}`, (spec) => ({
       ...spec,
       transformations: [
@@ -126,7 +136,7 @@ export class PatchManager {
           kind: 'mutate' as const,
           columns: column,
           value: {
-            js: `i === ${rowIndex} ? ${JSON.stringify(value)} : row[${JSON.stringify(column)}]`,
+            js: `i === ${rowIndex} ? ${literal} : row[${JSON.stringify(column)}]`,
           },
         },
       ],

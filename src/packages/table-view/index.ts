@@ -53,6 +53,25 @@ export function defaultColumnWidth(title: string): number {
   return Math.max(120, Math.min(240, Math.round(title.length * 8) + 48));
 }
 
+/** #NestedCells: a cell as display text, used by the grid, the inline editor's
+ *  opening text, and the copy. A list or object prints as compact JSON, so a
+ *  cell holding one reads as its data instead of `String`'s "[object Object]";
+ *  null and undefined print as nothing. A value JSON cannot write (a cycle, a
+ *  bigint inside an object) falls back to `String(value)`.
+ *
+ *  The app keeps the same rule as `cellDisplay` in `@tamedtable/table-plan`
+ *  (this package depends on no TamedTable package but ui-kit);
+ *  `src/tests/cell-display-sync.test.ts` fails when the two disagree. */
+export function cellText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'object') return String(value);
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
 /** The href for a cell that is a link, or null. Deliberately strict: only a
  *  string whose entire value parses as an http(s) URL counts, no bare-domain
  *  guessing ("justify.me" stays plain text). */

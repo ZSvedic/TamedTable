@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { space, typography } from '@tamedtable/ui-kit';
 import { useTheme, Icon, isImeComposingEvent } from '@tamedtable/ui-kit/components';
-import { defaultColumnWidth, revealHeader, urlHref, type TableRow } from './index.ts';
+import { cellText, defaultColumnWidth, revealHeader, urlHref, type TableRow } from './index.ts';
 import { Pagination } from './Pagination.tsx';
 
 export interface CellSelection {
@@ -77,10 +77,6 @@ export interface TableViewProps {
   barRight?: ReactNode;
   /** Fires after Cmd/Ctrl+C copied the selected cell's text. */
   onCopyCell?: (row: number, column: string, text: string) => void;
-}
-
-function cellText(value: unknown): string {
-  return value === null || value === undefined ? '' : String(value);
 }
 
 /** Floor for a resized column: keeps the resize handle grabbable. */
@@ -632,7 +628,7 @@ export function TableView({
                           data-tv-changed={isChanged ? '' : undefined}
                           title={
                             isChanged
-                              ? `was: ${changed === null || changed === undefined || changed === '' ? '(empty)' : String(changed)}`
+                              ? `was: ${cellText(changed) || '(empty)'}`
                               : 'Click to select · double-click to edit'
                           }
                           onClick={() => onSelectCell(absRow, col)}

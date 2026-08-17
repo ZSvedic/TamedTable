@@ -37,6 +37,7 @@ through it, no DOM involved) but delegates every calculation to this package.
   non-finite input lands on 1.
 - `pageCountFor(totalRows, pageSize)`: number of pages, always at least 1.
 - `pageSlice(rows, page, pageSize)`: the rows visible on a 1-based page.
+- `cellText(value)`: a cell as display text (see **Cell text** below).
 - `buildPageList(current, total)`: the pager's number window: up to 7 pages
   render in full; beyond that the first and last page always show, the
   current page keeps one neighbour each side, `'…'` fills the gaps, and a
@@ -130,6 +131,12 @@ the host owns every piece of state, the grid renders and reports:
   text to the clipboard and reports `onCopyCell(row, column, text)`; a live
   text selection anywhere on the page takes precedence (the browser copy is
   never hijacked).
+- **Cell text**: `cellText(value)` on the main entry is the one rule for
+  turning a cell into text, used by the grid, the editor's opening text,
+  and the copy. A list or object prints as compact JSON
+  (`[{"from":"human"}]`), null and undefined print as nothing, and
+  everything else prints as its plain string form. The grid never shows
+  `[object Object]`.
 - **URL cells**: a cell whose entire value is a valid `http(s)://` URL
   renders as a link (new tab). Nothing looser: no bare-domain guessing, a
   value that merely contains a dot stays plain text.

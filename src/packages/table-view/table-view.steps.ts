@@ -4,7 +4,7 @@
 // spec/packages/README.md); they import nothing from the app harness.
 import { Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
-import { buildPageList, clampPage, defaultColumnWidth, pageCountFor, pageSlice, urlHref } from './index.ts';
+import { buildPageList, cellText, clampPage, defaultColumnWidth, pageCountFor, pageSlice, urlHref } from './index.ts';
 
 Then(
   'pageCountFor {int} rows at size {int} is {int}',
@@ -37,6 +37,12 @@ Then(
 
 Then('defaultColumnWidth of {string} is {int}', function (title: string, expected: number) {
   assert.equal(defaultColumnWidth(title), expected);
+});
+
+// #NestedCells: the scenario writes the input as JSON so a list, an object,
+// and a scalar all reach cellText in their real types.
+Then('cellText of the JSON value {string} is {string}', function (json: string, expected: string) {
+  assert.equal(cellText(JSON.parse(json)), expected);
 });
 
 Then('urlHref of {string} is {string}', function (value: string, expected: string) {

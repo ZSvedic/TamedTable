@@ -17,6 +17,9 @@ line:
   `<name>:<lineNumber> not a JSON object: <line>`, rather than loading as a
   garbage row.
 - Each row keeps its **native JSON types**: JSONL does not stringify like CSV.
+  A cell holding a list or an object keeps it, and every text view of that
+  cell writes compact JSON
+  ([behavior.md § Nested values in a cell](../../../behavior.md#nested-values-in-a-cell-nestedcells)).
 - `columns` is the **union of keys across all rows**, in first-seen order (the
   order each key first appears, scanning rows top to bottom). A file with no
   data rows yields no columns and loads as an empty table.

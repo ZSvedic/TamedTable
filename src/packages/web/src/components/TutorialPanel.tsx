@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from 'react';
 import { TourUi } from '@tamedtable/gherkin-tour/ui';
 import type { TourCursor } from '@tamedtable/gherkin-tour';
 import { space, typography } from '@tamedtable/ui-kit';
+import { cellText } from '@tamedtable/table-view';
 import { useTheme, Icon } from '@tamedtable/ui-kit/components';
 import type { WebController } from '../controller.ts';
 import { useController } from '../hooks/useController.ts';
@@ -370,7 +371,7 @@ export function TutorialPanel({ controller }: { controller: WebController }): Re
                                     {val === null ? (
                                       <span style={{ color: t.ink4 }}>null</span>
                                     ) : (
-                                      String(val)
+                                      cellText(val)
                                     )}
                                   </td>
                                 ))}

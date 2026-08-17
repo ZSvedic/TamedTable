@@ -245,6 +245,10 @@ When('the user starts editing cell {string}', async function (this: object, cell
   await page(this).waitForSelector('[data-tv-edit]');
 });
 
+Then('the editor holds {string}', async function (this: object, expected: string) {
+  assert.equal(await page(this).inputValue('[data-tv-edit]'), expected);
+});
+
 When('the user types {int} characters into the editor', async function (this: object, n: number) {
   // A single word would never wrap; repeat a short one so the text can break.
   const text = 'lorem '.repeat(Math.ceil(n / 6)).slice(0, n);

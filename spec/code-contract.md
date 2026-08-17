@@ -793,6 +793,46 @@ DuckDB table `t` is not dropped on cancel.
 | `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. Node only: the browser is always in-memory. |
 | `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. Node only: the browser wasm build is single-threaded, so the adapter ignores the thread-count setting. |
 
+### Nested values in a cell (#NestedCells)
+
+→ [behavior.md, Nested values in a cell](behavior.md#nested-values-in-a-cell-nestedcells)
+
+`@tamedtable/table-plan` exports the pair that turns a cell into text
+and back:
+
+```ts
+function cellDisplay(v: unknown): string;       // '' for null/undefined; compact JSON for an object or array; String(v) otherwise
+function parseCellEdit(text: string): unknown;  // the parsed value when `text` is a JSON object or array; the text itself otherwise
+```
+
+`cellDisplay` is the one text rule, so a nested cell reads the same
+everywhere it is written as text:
+
+| Call site | What it writes |
+|---|---|
+| `cellText` (`@tamedtable/table-view`) | the grid cell, the inline editor's opening text, the Cmd/Ctrl+C copy, the changed-cell `was:` tooltip |
+| `MobileTable` (`web/components/mobile/`), `TutorialPanel`'s golden preview | the phone grid and the tour's expected-output table, both through the same `cellText` |
+| `stringify` (`cli/render.ts`) | a cell in the REPL viewport |
+| `compareCells` and the filter pass (`web/controller-view.ts`) | column-filter matching and sort keys |
+| `buildVoiceContext` (`web/controller-voice.ts`) | the selected cell in the voice context |
+| `renderPrompt` (`headless/engine.ts`) | an `{llm}` template's `{Column}` placeholder |
+| `csvCellString` (`file-io/codecs/csv.ts`) | a CSV cell |
+
+`table-view` keeps its own copy (`cellText`, exported from its main
+entry) because the package depends on no TamedTable package but
+`ui-kit`; `src/tests/cell-display-sync.test.ts` fails when the two
+disagree. The Parquet and Arrow codecs keep their own stringifiers:
+they answer `null` for a null cell where a display wants `''`.
+
+`parseCellEdit` runs in `controller-patch.editCell`, so the `mutate` an
+edit appends carries the parsed value: `[{"from":"human"}]` typed into
+the editor lands as an array, `12` lands as the string `"12"`, and text
+the JSON parser rejects lands as itself.
+
+A value neither function can handle (a cycle, a `bigint` inside an
+object) falls back to `String(v)` rather than throwing, the same rule
+as [§ A formatter bug never fails a request](#a-formatter-bug-never-fails-a-request).
+
 ### Web UI (#WebUI)
 
 The web app is a separate package under `src/packages/web/` (Vite +

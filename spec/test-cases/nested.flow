@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "source": "nested-input.jsonl",
+  "spec": {
+    "table": "nested-input.jsonl",
+    "columns": [
+      { "id": "conversations" },
+      { "id": "subreddit" },
+      { "id": "url" },
+      { "id": "Setup" },
+      { "id": "Punchline" }
+    ],
+    "transformations": [
+      {
+        "kind": "mutate",
+        "columns": "Setup",
+        "value": { "js": "row.conversations?.[0]?.value ?? null" }
+      },
+      {
+        "kind": "mutate",
+        "columns": "Punchline",
+        "value": { "js": "row.conversations?.[1]?.value ?? null" }
+      }
+    ]
+  }
+}

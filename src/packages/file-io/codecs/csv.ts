@@ -4,13 +4,11 @@
 // \n line endings, no BOM). Per-format quirks: spec/packages/file-io/formats/csv.md.
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
-import { cellAt, setCell, type FormatCodec, type ParsedTable, type Row } from '@tamedtable/table-plan';
+import { cellAt, cellDisplay, setCell, type FormatCodec, type ParsedTable, type Row } from '@tamedtable/table-plan';
 
-function csvCellString(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
+// #NestedCells: CSV has no nested types, so a cell holding a list or object
+// writes as the same compact JSON the grid shows it as.
+const csvCellString = cellDisplay;
 
 export const csvCodec: FormatCodec = {
   id: 'csv',

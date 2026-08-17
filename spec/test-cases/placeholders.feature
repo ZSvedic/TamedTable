@@ -13,6 +13,21 @@ Feature: LLM cell placeholders
     When the runtime renders the per-row cell prompt
     Then the rendered prompt body is "Greet hello"
 
+  # #NestedCells: a cell holding a list or object expands to its compact JSON,
+  # so an AI step over a nested column reads the data, not "[object Object]".
+  @headless @offline @regression
+  Scenario: {Column} expands a nested value to compact JSON
+    Given a single-row table with the nested column "conversations":
+      """
+      [{"from": "human", "value": "Knock knock."}, {"from": "gpt", "value": "Who is there?"}]
+      """
+    And a mutate transformation with value {llm: "Rate: {conversations}"}
+    When the runtime renders the per-row cell prompt
+    Then the rendered prompt body is:
+      """
+      Rate: [{"from":"human","value":"Knock knock."},{"from":"gpt","value":"Who is there?"}]
+      """
+
   @headless @offline
   Scenario: {Column} referencing an unknown column is an evaluation-time error
     Given a single-row table with columns "A=hello"
