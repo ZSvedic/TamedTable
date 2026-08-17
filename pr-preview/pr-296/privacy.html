@@ -30,7 +30,9 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
   /* A simple policy on a readable column: body-size text, no section rules. */
   .guide { max-width: 720px; padding: 56px 32px 72px; }
   .guide h1 { font-size: 34px; font-weight: 600; color: var(--ink); }
-  .guide h2 { font-size: 22px; font-weight: 600; color: var(--ink); margin-top: 34px; }
+  /* Reset the global section padding (76px) or the gaps balloon. */
+  .guide section { padding: 0; margin-top: 34px; }
+  .guide h2 { font-size: 22px; font-weight: 600; color: var(--ink); }
   .guide p { color: var(--ink); margin-top: 14px; }
   .guide ul { margin-top: 12px; padding-left: 20px; }
   .guide li { color: var(--ink); margin-top: 6px; }
@@ -124,7 +126,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         for the providers you actually call:
       </p>
       <ul>
-        <li>Google (Gemini): <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
+        <li>Google: <a href="https://support.google.com/gemini/answer/13594961?hl=en" target="_blank" rel="noopener">Gemini Apps Privacy Hub</a></li>
         <li>OpenAI: <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
         <li>Anthropic: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
         <li>OpenRouter: <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
