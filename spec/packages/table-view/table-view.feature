@@ -223,6 +223,16 @@ Feature: Table view package
       And defaultColumnWidth of "Subcategory or theme" is 208
       And defaultColumnWidth of "An absurdly long column title nobody should type" is 240
 
+    # #NestedCells: a cell holding a list or object prints as compact JSON.
+    # `String([{…},{…}])` would print "[object Object],[object Object]".
+    @headless
+    Scenario: A nested cell prints as compact JSON, a scalar prints as itself
+      Then cellText of the JSON value '[{"from":"human"},{"from":"gpt"}]' is '[{"from":"human"},{"from":"gpt"}]'
+      And cellText of the JSON value '{"a":1}' is '{"a":1}'
+      And cellText of the JSON value '"plain"' is "plain"
+      And cellText of the JSON value '42' is "42"
+      And cellText of the JSON value 'null' is ""
+
     @headless
     Scenario: Only strict http URLs count as links
       Then urlHref of "https://example.org/p/1" is "https://example.org/p/1"
@@ -237,6 +247,18 @@ Feature: Table view package
       When the user clicks cell "2:name"
       And the user presses the copy shortcut
       Then the demo event log shows "copy 2:name=Person 3"
+
+    # The demo's `chat` column holds a list of objects, the shape a ShareGPT
+    # .jsonl loads with.
+    @web
+    Scenario: A nested cell shows, copies, and edits as JSON text
+      Given the table-view demo page
+      Then cell "0:chat" shows '[{"q":"Q1","a":"A1"}]'
+      When the user clicks cell "0:chat"
+      And the user presses the copy shortcut
+      Then the demo event log shows 'copy 0:chat=[{"q":"Q1","a":"A1"}]'
+      When the user starts editing cell "0:chat"
+      Then the editor holds '[{"q":"Q1","a":"A1"}]'
 
     @web
     Scenario: A URL cell renders as a link and a dotted word does not

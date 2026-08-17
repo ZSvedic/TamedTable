@@ -6,6 +6,7 @@
 import { isAbsolute, join } from 'node:path';
 import {
   cellAt,
+  cellDisplay,
   loadCsv,
   loadJsonl,
   setCell,
@@ -559,8 +560,9 @@ export function renderPrompt(template: string, row: Row, targetColumns?: string[
       for (const k of Object.keys(row)) if (!exclude.has(k)) obj[k] = row[k];
       return JSON.stringify(obj);
     }
-    const v = row[col];
-    return v === null || v === undefined ? '' : String(v);
+    // #NestedCells: a cell holding a list or object reaches the model as its
+    // compact JSON, so an AI step over a nested column reads the data.
+    return cellDisplay(row[col]);
   });
 }
 

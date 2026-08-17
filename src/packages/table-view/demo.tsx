@@ -23,6 +23,9 @@ function sampleRows(): TableRow[] {
     // Every third row holds a real URL (renders as a link); the rest hold
     // dotted-but-not-URL text that must stay plain.
     site: i % 3 === 0 ? `https://example.org/p/${i + 1}` : 'justify.me',
+    // #NestedCells: a list of objects, the shape a ShareGPT .jsonl loads
+    // with. It must print as JSON, never "[object Object]".
+    chat: [{ q: `Q${i + 1}`, a: `A${i + 1}` }],
   }));
 }
 
@@ -37,7 +40,7 @@ function compare(a: unknown, b: unknown): number {
 function Demo(): ReactNode {
   const t = useTheme();
   const [rows, setRows] = useState<TableRow[]>(sampleRows);
-  const [columns, setColumns] = useState(['ID', 'name', 'age', 'city', 'site']);
+  const [columns, setColumns] = useState(['ID', 'name', 'age', 'city', 'site', 'chat']);
   const [page, setPage] = useState(1);
   const [selection, setSelection] = useState<CellSelection | null>(null);
   const [streaming, setStreaming] = useState(false);

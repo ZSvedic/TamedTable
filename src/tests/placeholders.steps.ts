@@ -38,6 +38,15 @@ Given(/^a single-row table with columns "(.+)"$/, function (this: TamedTableWorl
   c.error = undefined;
 });
 
+// #NestedCells: the value arrives as a JSON DocString, so the cell holds a
+// real list or object rather than its text.
+Given('a single-row table with the nested column {string}:', function (this: TamedTableWorld, column: string, json: string) {
+  const c = get(this);
+  c.rows = [{ [column]: JSON.parse(json) }];
+  c.rendered = [];
+  c.error = undefined;
+});
+
 Given(/^a two-row table with rows "(.+)" and "(.+)"$/, function (this: TamedTableWorld, r1: string, r2: string) {
   const c = get(this);
   c.rows = [parseColumns(r1), parseColumns(r2)];
@@ -81,6 +90,13 @@ When('the runtime evaluates the transformation against a counting fake cell mode
 });
 
 Then(/^the rendered prompt body is "(.+)"$/, function (this: TamedTableWorld, expected: string) {
+  const c = get(this);
+  assert.ok(!c.error, `unexpected error: ${c.error?.message}`);
+  assert.equal(c.rendered[0], expected);
+});
+
+// The DocString twin, for an expectation carrying quotes of its own.
+Then('the rendered prompt body is:', function (this: TamedTableWorld, expected: string) {
   const c = get(this);
   assert.ok(!c.error, `unexpected error: ${c.error?.message}`);
   assert.equal(c.rendered[0], expected);

@@ -847,6 +847,36 @@ same way an LLM chunk apply is. Cancelling a SQL transformation
 leaves the DuckDB relation `t` registered and intact: only the
 half-applied spec change reverts.
 
+### Nested values in a cell (#NestedCells)
+
+A JSONL row can carry a whole list or object in one cell: a chat
+transcript, a list of tags, a nested record. Those cells keep their
+structure all the way through, and every place the app has to write a
+cell as text it writes **compact JSON**, never `[object Object]`:
+
+- The grid shows `[{"from":"human","value":"Why?"}]`, so the reader can
+  see what the cell holds, and Cmd/Ctrl+C copies that same text. The phone
+  grid and the REPL viewport print it the same way.
+- A column filter matches against that text, and a column sort orders
+  by it.
+- An `{llm}` template's `{Column}` placeholder sends that text to the
+  model, so an AI step over a nested column works on the data. (`{*}`
+  already sent the row as JSON and does not change.)
+- Saving to a format without nested types (CSV, Parquet, Arrow) writes
+  the same JSON text. Saving to JSONL writes structure back as
+  structure, so a load-and-save round-trip returns the file it read.
+
+Editing a nested cell round-trips. Double-clicking opens the editor on
+the JSON text, and text that parses as a JSON list or object commits as
+a list or object, so the structure survives the edit. Any other text
+commits as a plain string: typing `12` still stores the string `12`,
+the same promise the CSV rules make.
+
+Reaching inside a nested value is ordinary work, not a special mode. A
+`{js}` expression indexes it (`row.conversations[0].value`), and the
+spec editor knows a column may hold one and writes that kind of
+expression when a request asks for a part of it.
+
 ### Web UI (#WebUI)
 
 The browser front-end mirrors the CLI's interaction shape:

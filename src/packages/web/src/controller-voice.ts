@@ -4,6 +4,7 @@
 // release runs the ordinary patch turn with the audio riding along as a file
 // part: one model call, no separate transcription step.
 import { basename } from 'node:path';
+import { cellDisplay } from '@tamedtable/core';
 import type { RequestAudio, RequestDebugInfo } from '@tamedtable/headless';
 import { supportsVoiceInput } from '@tamedtable/model-config';
 import {
@@ -362,7 +363,8 @@ export class VoiceManager {
       ctx.selectedCell = {
         col: this.host.selection.column,
         row: derived,
-        value: value === undefined || value === null ? '' : String(value),
+        // #NestedCells: the model hears the cell as the user sees it.
+        value: cellDisplay(value),
       };
     }
     return ctx;

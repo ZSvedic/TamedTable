@@ -69,6 +69,43 @@ export function normalizeDbCell(v: unknown): unknown {
   return v;
 }
 
+// ── Nested cell values ───────────────────────────────────────────────────────
+// #NestedCells
+// A JSONL cell can hold a whole list or object. `String(value)` writes such a
+// cell as "[object Object]", so every place that turns a cell into text goes
+// through `cellDisplay`, and the edit that comes back through `parseCellEdit`.
+// Spec: spec/behavior.md § Nested values in a cell.
+
+/** A cell as display text: a list or object as compact JSON, null and
+ *  undefined as nothing, everything else as its plain string form. A value
+ *  JSON cannot write (a cycle, a bigint inside an object) falls back to
+ *  `String(value)`: a formatter never fails a request. */
+export function cellDisplay(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'object') return String(value);
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+/** The inverse of `cellDisplay` for an edited cell: text that parses as a JSON
+ *  list or object becomes that list or object, so editing a nested cell keeps
+ *  its structure. Anything else stays the text the user typed, including a
+ *  bare number (`12` is the string "12", matching the CSV rule that every CSV
+ *  value is a string). */
+export function parseCellEdit(text: string): unknown {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return text;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    return parsed !== null && typeof parsed === 'object' ? parsed : text;
+  } catch {
+    return text;
+  }
+}
+
 // ── TablePlan schema (one schema for every plan: fresh load, patch, replay) ──
 
 const ColumnsField = z.union([z.string(), z.array(z.string())]);

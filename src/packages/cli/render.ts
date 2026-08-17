@@ -1,6 +1,6 @@
 // Table renderer for the REPL viewport, plus the sizing constants and pure
 // string helpers it shares with the session.
-import type { Row, TablePlan } from '@tamedtable/core';
+import { cellDisplay, type Row, type TablePlan } from '@tamedtable/core';
 
 export const REPL_FALLBACK_ROWS = 10;
 export const REPL_FALLBACK_COLS = 5;
@@ -18,9 +18,9 @@ export const REPL_INDENT = 1;
 
 // ── Pure formatting helpers ────────────────────────────────────────────────
 
-function stringify(v: unknown): string {
-  return v === null || v === undefined ? '' : String(v);
-}
+// #NestedCells: a cell holding a list or object prints as compact JSON, the
+// same text the browser grid shows.
+const stringify = cellDisplay;
 
 export const trunc = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
 export const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}… (+${s.length - n} chars)` : s);
