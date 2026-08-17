@@ -20,56 +20,21 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 <!--
   #Analytics privacy policy page. Same stack and theme as FAQ.html: plain HTML,
   the shared styles.css, the homepage nav/footer markup so it reads native.
-  The policy is deliberately short; the Analytics section folds in the full
-  event list and the live Umami share dashboard (embedded, with a direct link
-  for ad-blocked frames), so "what is tracked" is visible in one place.
-  Page-only rules live in this small inline <style>, not the shared sheet.
+  Deliberately a two-minute read: the Analytics section links the public Umami
+  dashboard rather than reprinting the event list (that lives in the source and
+  spec/code-contract.md). Page-only rules are the few in the inline <style>.
 -->
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="styles.css">
 <style>
-  /* Guide-only layout: a readable column on the linen ground (as FAQ.html). */
-  .guide { max-width: 760px; padding: 56px 32px 72px; }
-  .guide h1 { font-size: 38px; font-weight: 600; color: var(--ink); }
-  .guide .lede { font-size: 18px; color: var(--muted); margin-top: 14px; }
-  .guide section { padding: 0; margin-top: 34px; }
-  .guide h2 {
-    font-size: 26px; font-weight: 600; color: var(--ink);
-    padding-bottom: 10px; border-bottom: 1px solid var(--silver);
-  }
-  .guide section > p { color: var(--ink); margin-top: 14px; }
-  .guide h3 { font-size: 19px; font-weight: 600; color: var(--ink); margin-top: 26px; }
-  /* Links are accent-blue, but not the dashboard button: its own colors
-     (white on blue) must win, or the label goes blue-on-blue and vanishes. */
-  .guide a:not(.btn) { color: var(--accent); }
-
-  /* Provider list: each supported LLM provider linked to its privacy policy. */
-  .prov-list { list-style: none; margin: 14px 0 0; padding: 0; }
-  .prov-list li { color: var(--ink); padding: 8px 0; border-bottom: 1px solid var(--silver); }
-  .prov-list li:first-child { border-top: 1px solid var(--silver); }
-  .prov-list strong { font-weight: 600; }
-
-  /* Event table: monospace event names, plain-language descriptions. Code
-     spans keep the ink color: this page's blue is for links only. */
-  .ev-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 15px; }
-  .ev-table th, .ev-table td {
-    text-align: left; padding: 9px 12px; vertical-align: top;
-    border-bottom: 1px solid var(--silver); color: var(--ink);
-  }
-  .ev-table th { font-weight: 600; }
-  .ev-table code { font-family: var(--font-mono); font-size: 13.5px; color: var(--ink); font-weight: 600; }
-  .ev-scroll { overflow-x: auto; }
-
-  /* Live dashboard: the embedded share page, with a direct-link button as
-     the fallback (ad blockers often hide third-party frames). */
-  .dash-frame {
-    width: 100%; height: 640px; margin-top: 16px; display: block;
-    border: 1px solid var(--silver); border-radius: var(--radius);
-    background: var(--paper);
-  }
-  .dash-cta { margin-top: 14px; }
-  .dash-cta .btn { text-decoration: none; }
-  .dash-note { color: var(--muted); font-size: 14px; margin-top: 10px; }
+  /* A simple policy on a readable column: body-size text, no section rules. */
+  .guide { max-width: 720px; padding: 56px 32px 72px; }
+  .guide h1 { font-size: 34px; font-weight: 600; color: var(--ink); }
+  .guide h2 { font-size: 22px; font-weight: 600; color: var(--ink); margin-top: 34px; }
+  .guide p { color: var(--ink); margin-top: 14px; }
+  .guide ul { margin-top: 12px; padding-left: 20px; }
+  .guide li { color: var(--ink); margin-top: 6px; }
+  .guide a { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -102,22 +67,22 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
 <main>
   <div class="wrap guide">
     <h1>Privacy Policy and Data Processing</h1>
-    <p class="lede">
+    <p>
       TamedTable's privacy policy is intentionally short and simple, so you can
       read and understand it in two minutes.
     </p>
-    <p class="lede">
+    <p>
       We don't have a server and we don't use any cookies. The TamedTable app
       is client-side JavaScript, running in your browser. That is also why you
       have to enter your API keys again whenever you switch browsers: your
       settings don't leave your browser.
     </p>
-    <p class="lede">
+    <p>
       There is no separate EULA: TamedTable is source-available
       (<a href="/FAQ#busl">BUSL</a>), so your use is governed by its
       <a href="https://github.com/ZSvedic/TamedTable/blob/main/LICENSE" target="_blank" rel="noopener">license on GitHub</a>.
     </p>
-    <p class="lede">That said, some third-party servers are involved:</p>
+    <p>That said, some third-party servers are involved:</p>
 
     <section>
       <h2>Hosting</h2>
@@ -139,52 +104,9 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         <a href="https://umami.is/privacy" target="_blank" rel="noopener">Umami Privacy Policy</a>.
       </p>
       <p>
-        Every visit records page views only: the page path, the referrer, and
-        the coarse browser/OS/device class and country Umami derives on its
-        servers. It sets no cookies and stores no identifier that could follow
-        you across visits or sites.
-      </p>
-      <p>
-        Inside the <a href="/app/">web app</a>, a handful of named events count
-        feature use. An event is a name plus, at most, one coarse label from a
-        fixed list. Events never carry file names, file contents, table values,
-        chat or voice text, API keys, or anything else you type: there is
-        nothing more to an event than what this table says.
-      </p>
-      <div class="ev-scroll">
-      <table class="ev-table">
-        <tr><th>Event</th><th>Fires when</th><th>Properties</th></tr>
-        <tr><td><code>open-file</code></td><td>A table is opened.</td><td><code>source</code>: local, url, sample, or drop</td></tr>
-        <tr><td><code>open-flow</code></td><td>A saved flow is replayed onto the current table.</td><td>—</td></tr>
-        <tr><td><code>chat-request</code></td><td>A typed request is sent to the model.</td><td>—</td></tr>
-        <tr><td><code>voice-request</code></td><td>A spoken request is sent to the model.</td><td>—</td></tr>
-        <tr><td><code>undo</code> / <code>redo</code></td><td>History is stepped back or forward.</td><td>—</td></tr>
-        <tr><td><code>run-all</code></td><td>"Run on all rows" evaluates the pending AI cells.</td><td>—</td></tr>
-        <tr><td><code>save-data</code></td><td>The table is saved to a file.</td><td><code>format</code>: csv, jsonl, parquet, or arrow</td></tr>
-        <tr><td><code>save-flow</code></td><td>The flow is saved for later replay.</td><td>—</td></tr>
-        <tr><td><code>export-python</code></td><td>The flow is exported as a Python script.</td><td>—</td></tr>
-        <tr><td><code>tutorial-play</code></td><td>A guided tour starts.</td><td><code>tour</code>: the tour's name (fixed app content)</td></tr>
-        <tr><td><code>connect-provider</code></td><td>An API key is verified and its provider connected.</td><td><code>provider</code>: the provider's name, never the key</td></tr>
-      </table>
-      </div>
-      <p>
-        The event names and the code that sends them are open source:
-        <a href="https://github.com/ZSvedic/TamedTable/blob/main/src/packages/web/src/analytics.ts" target="_blank" rel="noopener">analytics.ts</a>
-        is the single wrapper every event goes through.
-      </p>
-
-      <h3>Live dashboard</h3>
-      <p>
-        The Umami dashboard for www.tamedtable.com is public: the same page
-        views and event counts the maintainers see, live, for anyone who opens it.
-      </p>
-      <iframe class="dash-frame" src="https://cloud.umami.is/share/tv44m6vB3TJF0uA0" loading="lazy" title="Live TamedTable analytics dashboard"></iframe>
-      <p class="dash-cta">
-        <a class="btn btn-dprimary" href="https://cloud.umami.is/share/tv44m6vB3TJF0uA0" target="_blank" rel="noopener">Open the live dashboard <span class="arrow">→</span></a>
-      </p>
-      <p class="dash-note">
-        An ad blocker may hide the embedded view above; the button opens the
-        same dashboard directly.
+        To be completely transparent, our analytics dashboard is public. Open
+        it for yourself and see the aggregate metrics:
+        <a href="https://cloud.umami.is/analytics/eu/share/tv44m6vB3TJF0uA0" target="_blank" rel="noopener">TamedTable Analytics Dashboard ↗</a>
       </p>
       <p>
         If, for whatever reason, you don't like GitHub or Umami, there is a
@@ -201,12 +123,12 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
         to an LLM provider of your choice. You need to check the policy only
         for the providers you actually call:
       </p>
-      <ul class="prov-list">
-        <li><strong>Google</strong> (Gemini): <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li><strong>OpenAI</strong>: <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li><strong>Anthropic</strong>: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li><strong>OpenRouter</strong>: <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
-        <li><strong>Groq</strong>: <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
+      <ul>
+        <li>Google (Gemini): <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
+        <li>OpenAI: <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
+        <li>Anthropic: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
+        <li>OpenRouter: <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">Privacy Policy</a></li>
+        <li>Groq: <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a></li>
       </ul>
       <p>
         If, for whatever reason, you are not comfortable with any of the listed
