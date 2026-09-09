@@ -4,7 +4,7 @@ TamedTable's privacy policy is intentionally short and simple, so you can read a
 
 We don't have a server and we don't use any cookies. The TamedTable app is client-side JavaScript, running in your browser. That is also why you have to enter your API keys again whenever you switch browsers: your settings are stored locally.
 
-There is no separate EULA: TamedTable is source-available ([BUSL](/FAQ#busl)), so your use is governed by its [license on GitHub](https://github.com/ZSvedic/TamedTable/blob/main/LICENSE).
+There is no separate EULA: TamedTable is source-available ([BUSL](https://www.tamedtable.com/FAQ#busl)), so your use is governed by its [license on GitHub](https://github.com/ZSvedic/TamedTable/blob/main/LICENSE).
 
 That said, some third-party servers are involved:
 

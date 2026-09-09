@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
-     the visible URL matches the canonical (GitHub Pages has no server redirects).
-     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
-<script>
-(function(){var p=location.pathname;
-if(p.endsWith('/index.html'))p=p.slice(0,-10);
-else if(p.endsWith('.html'))p=p.slice(0,-5);
-if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
-</script>
+<!-- #SeoIndexing: no client-side URL normaliser here, deliberately. An earlier one rewrote
+     /index.html and .html out of the address bar with history.replaceState;
+     Google's renderer counts a JS-driven URL change during load as a redirect,
+     which is why Search Console filed https://www.tamedtable.com/index.html
+     under "Page with redirect" even though GitHub Pages serves it 200. The
+     <link rel="canonical"> below is the mechanism that consolidates URL
+     variants, and Search Console confirms it works ("Alternate page with proper
+     canonical tag"). Every internal link already uses the extensionless
+     canonical path, so there was nothing left for the rewrite to tidy up. -->
 <link rel="canonical" href="https://www.tamedtable.com/privacy">
 <title>Privacy | TamedTable</title>
 <meta name="description" content="TamedTable's privacy policy: no server, no cookies. The third-party servers involved (GitHub Pages hosting, cookie-less Umami analytics, and your chosen LLM provider), each with its own policy.">
