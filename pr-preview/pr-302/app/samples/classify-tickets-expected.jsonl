@@ -1,0 +1,5 @@
+{"Id":"1","Ticket":"My card was charged twice this month","Label":"billing"}
+{"Id":"2","Ticket":"The app crashes every time I hit save","Label":"bug"}
+{"Id":"3","Ticket":"Could you add a dark mode option?","Label":"feature"}
+{"Id":"4","Ticket":"I was billed after I cancelled my plan","Label":"billing"}
+{"Id":"5","Ticket":"Export button does nothing on Safari","Label":"bug"}
