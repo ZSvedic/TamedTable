@@ -2,7 +2,7 @@
 // RED-FIO-2..6/8 bug inventory, now fixed and pinned green. Each test asserts
 // the spec-correct behavior for a hostile-but-real input the codecs previously
 // mishandled (typed Parquet, quoted-newline headers, CR round-trips, non-object
-// JSONL lines, `__proto__` columns, zero-column Parquet).
+// JSONL lines, `__proto__` columns and headers, zero-column Parquet).
 import { test } from 'bun:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
@@ -82,6 +82,22 @@ test('a __proto__ column survives JSONL serialize and CSV parse', async () => {
   const r = await csvCodec.parse(enc('__proto__,b\nx,y\n'), 't.csv');
   const cell = Object.getOwnPropertyDescriptor(r.rows[0] ?? {}, '__proto__')?.value;
   assert.equal(cell, 'x', 'a column listed in the header must carry its cell values: even __proto__');
+});
+
+test('a __proto__ header in csv-parse keyed-record mode makes an own property, not a prototype swap', async () => {
+  // GHSA/Dependabot #1: csv-parse <7.0.2 replaced a record's prototype when the
+  // header carried __proto__ in keyed-record mode. csvCodec parses in array
+  // mode so it was never on that path (see csv.ts), but the dependency is
+  // direct: pin the fixed behavior so a bump back to a vulnerable range, or a
+  // switch to `columns: true`, fails here instead of shipping.
+  const { parse } = await import('csv-parse/sync');
+  const [record] = parse('__proto__,b\nx,y\n', { columns: true }) as Record<string, unknown>[];
+  assert.ok(
+    Object.getOwnPropertyNames(record ?? {}).includes('__proto__'),
+    '__proto__ must land as an own property of the record, not replace its prototype',
+  );
+  assert.equal(Object.getPrototypeOf(record ?? {}), Object.prototype, "the record's prototype must be untouched");
+  assert.equal(({} as Record<string, unknown>).b, undefined, 'Object.prototype must not be polluted');
 });
 
 test('saving a zero-column table as Parquet fails with a clean message, not raw DuckDB internals', async () => {
