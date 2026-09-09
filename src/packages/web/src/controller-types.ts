@@ -73,6 +73,10 @@ export interface WebControllerOptions {
    *  return a cancel. Defaults to setTimeout; the Cucumber web profile injects
    *  a capture so a scenario can fire the timeout without waiting. */
   voiceSchedule?: (fn: () => Promise<void>, ms: number) => () => void;
+  /** #LoadSuggestions: ask the model for 3 to 5 requests after every load
+   *  and show them as chat chips. Off unless the host asks: the browser's
+   *  main.tsx passes true; a test scenario opts in with its own step. */
+  suggestions?: boolean;
   /** Initial config (tests inject keys; the browser leaves it for the settings panel). */
   config?: Partial<ResolvedConfig>;
   /** Environment variables used to resolve the initial config. When omitted

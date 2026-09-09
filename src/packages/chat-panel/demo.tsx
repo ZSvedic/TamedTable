@@ -50,6 +50,7 @@ function Demo(): ReactNode {
   const [messages, setMessages] = useState<ChatPanelMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [prefill, setPrefill] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [disabledHint, setDisabledHint] = useState<string | null>(null);
   const [voiceStatus, setVoiceStatus] = useState<VoiceButtonStatus>('idle');
   const [seq, setSeq] = useState(0);
@@ -71,6 +72,11 @@ function Demo(): ReactNode {
         progress={streaming ? SAMPLE_PROGRESS : null}
         requestCount={messages.filter((m) => m.role === 'user').length}
         prefill={prefill}
+        suggestions={suggestions}
+        onPickSuggestion={(text) => {
+          report(`pick ${text}`);
+          setSuggestions((list) => list.filter((s) => s !== text));
+        }}
         disabledHint={disabledHint}
         onSend={(text) => {
           report(`send ${text}`);
@@ -148,6 +154,12 @@ function Demo(): ReactNode {
           </Button>
           <Button variant="chrome" onClick={() => setPrefill('Keep rows where age >= 18')}>
             Prefill draft
+          </Button>
+          <Button
+            variant="chrome"
+            onClick={() => setSuggestions(['Normalize phone numbers', 'Drop duplicate emails', 'Sort by DOB descending'])}
+          >
+            Add suggestions
           </Button>
           <Button variant="chrome" onClick={() => setDisabledHint((v) => (v ? null : 'Replay mode: undo/redo only'))}>
             Toggle replay lock

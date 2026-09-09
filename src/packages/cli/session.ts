@@ -12,6 +12,7 @@ import {
   type PlanEdit,
   type RequestDebugInfo,
   type StepUpdate,
+  type SuggestOpts,
 } from '@tamedtable/headless';
 import { HELP_TEXT } from './help.ts';
 import {
@@ -30,10 +31,20 @@ export interface CliRunnerOptions extends HeadlessRunnerOptions {
   stderr?: NodeJS.WritableStream;
   stdin?: NodeJS.ReadableStream;
   quiet?: boolean;
+  /** #LoadSuggestions: ask the model for 3 to 5 requests after every load
+   *  and list them under the table. Off unless the host asks: the binary
+   *  entry passes it (unless TAMEDTABLE_SUGGEST=off); tests driving runCli
+   *  get none unless their scenario opts in. */
+  suggestions?: boolean;
 }
 
 export interface CliRunner {
   loadInput(path: string): Promise<void>;
+  /** The path of the loaded input: the REPL re-asks for suggestions when
+   *  a `:load` changes it (#LoadSuggestions). */
+  getLoadedPath(): string;
+  /** One model call for the after-load suggestions (#LoadSuggestions). */
+  suggest(opts?: SuggestOpts): Promise<string[]>;
   request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
   setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
@@ -347,6 +358,7 @@ class CliRunnerImpl implements CliRunner {
   currentSpec(): TablePlan { return this.headless.currentSpec(); }
   async exportAs(p: string): Promise<void> { await this.headless.exportAs(p); }
   async exportPython(): Promise<string> { return this.headless.exportPython(); }
+  async suggest(opts?: SuggestOpts): Promise<string[]> { return this.headless.suggest(opts); }
 
   // ── Colon-command internals ──────────────────────────────────────────────
 

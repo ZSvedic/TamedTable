@@ -26,7 +26,7 @@ import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
 import { KeyboardSheet, VoiceSheet, HistorySheet } from './sheets.tsx';
 import { ToursLink } from '../ToursLink.tsx';
-import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET } from './layout.ts';
+import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET, SUGGEST_STRIP_H } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
 
@@ -457,6 +457,16 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
     void controller.startVoice();
   };
 
+  // #LoadSuggestions: the chips ride in a strip above the dock (and above
+  // the Type sheet once it is up); a tap opens the composer with the text.
+  const suggestions = controller.suggestions;
+  const showSuggestions = loaded && suggestions.length > 0 && !busy && !stayed && inputMode !== 'voice' && inputMode !== 'history';
+  const pickSuggestion = (text: string): void => {
+    setDraft(text);
+    controller.pickSuggestion(text);
+    setInputMode('keyboard');
+  };
+
   const dockActions: DockAction[] = [
     {
       key: 'menu',
@@ -511,7 +521,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         minHeight: 'calc(100lvh + 1px)',
         // The app bar and the dock are fixed; the flowing content clears them.
         paddingTop: APPBAR_OFFSET,
-        paddingBottom: DOCK_OFFSET,
+        paddingBottom: showSuggestions ? `calc(${DOCK_OFFSET} + ${SUGGEST_STRIP_H}px)` : DOCK_OFFSET,
       }}
     >
       {loaded ? (
@@ -574,6 +584,45 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
           sheets stay pinned (bottomInset gates the lift), so a stray
           visual-viewport shift while scrolling can't make them jitter. */}
       <div data-mob-bottom="" style={{ position: 'fixed', bottom: bottomInset(inputMode === 'keyboard', kbInset), left: 0, right: 0, zIndex: 20 }}>
+        {showSuggestions && (
+          <div
+            data-mob-suggestions=""
+            style={{
+              height: SUGGEST_STRIP_H,
+              boxSizing: 'border-box',
+              display: 'flex',
+              alignItems: 'center',
+              gap: space.px6,
+              padding: `0 ${space.px10}px`,
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+              background: t.surface,
+              borderTop: `1px solid ${t.line}`,
+            }}
+          >
+            {suggestions.map((text) => (
+              <button
+                key={text}
+                type="button"
+                data-mob-suggestion=""
+                onClick={() => pickSuggestion(text)}
+                style={{
+                  flex: '0 0 auto',
+                  background: t.surface2,
+                  border: `1px solid ${t.line2}`,
+                  borderRadius: 999,
+                  padding: '6px 12px',
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.sm,
+                  color: t.ink2,
+                  cursor: 'pointer',
+                }}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        )}
         {inputMode === 'keyboard' ? (
           <KeyboardSheet
             t={t}

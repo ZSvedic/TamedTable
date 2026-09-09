@@ -366,6 +366,11 @@ export interface ChatPanelProps {
   requestCount: number;
   /** Non-null text syncs into the draft (tutorial prefill-chat steps). */
   prefill?: string | null;
+  /** #LoadSuggestions: chips rendered between the thread and the input row.
+   *  Clicking one puts its text in the draft and fires `onPickSuggestion`;
+   *  dropping it from the list is the host's job. */
+  suggestions?: string[];
+  onPickSuggestion?: (text: string) => void;
   /** Non-null disables the input row: the textarea and send grey out, the
    *  draft clears, this text shows as the placeholder, and the `micButton`
    *  slot is hidden: the host's "input is off, here is why" state. */
@@ -397,6 +402,8 @@ export function ChatPanel({
   progress = null,
   requestCount,
   prefill = null,
+  suggestions = [],
+  onPickSuggestion,
   disabledHint = null,
   onSend,
   onCancel,
@@ -493,6 +500,18 @@ export function ChatPanel({
   };
 
   const hasDraft = draft.trim() !== '' && !disabled;
+
+  // A chip puts its text where the user is about to type, ready to edit or
+  // send. It also stops a prefill animation still typing, exactly as send
+  // does, so the interval cannot overwrite the picked text.
+  const pickSuggestion = (text: string): void => {
+    if (streaming || disabled) return;
+    const guard = typing.current;
+    if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
+    setDraft(text);
+    inputRef.current?.focus();
+    onPickSuggestion?.(text);
+  };
 
   const sendBtn: CSSProperties = {
     height: 30,
@@ -669,6 +688,45 @@ export function ChatPanel({
           </>
         )}
       </div>
+
+      {/* suggestion chips (#LoadSuggestions): hidden with the input row */}
+      {suggestions.length > 0 && !disabled && (
+        <div
+          data-cp-suggestions=""
+          style={{
+            flex: '0 0 auto',
+            padding: `0 ${space.px10}px ${space.px8}px`,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: space.px6,
+          }}
+        >
+          {suggestions.map((text) => (
+            <button
+              key={text}
+              type="button"
+              data-cp-suggestion=""
+              onClick={() => pickSuggestion(text)}
+              disabled={streaming}
+              title="Put this request in the input"
+              style={{
+                background: t.surface,
+                border: `1px solid ${t.line2}`,
+                borderRadius: 999,
+                padding: '4px 10px',
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                lineHeight: 1.4,
+                color: streaming ? t.ink4 : t.ink2,
+                cursor: streaming ? 'default' : 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* input */}
       <div

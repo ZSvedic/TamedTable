@@ -19,6 +19,7 @@ The web app's wrapper binds `WebController`:
   progress={controller.runProgress}
   requestCount={controller.history().length}
   prefill={controller.tutorialPrefill}
+  suggestions={controller.suggestions} onPickSuggestion={(text) => controller.pickSuggestion(text)}
   onSend={(text) => controller.sendChat(text)}
   onCancel={() => controller.cancelRequest()}
   emptyState={<p>Load a table to begin…</p>}
@@ -85,6 +86,13 @@ panel just renders whatever it is passed.
   the message. It sits on the request-detail row when `debug` is present,
   or stands alone under the message text otherwise (an app error without a
   detail). Messages without `reportable` never show it.
+- Suggestion chips: a non-empty `suggestions` prop renders a wrap row of
+  pill buttons between the message list and the input row, one per
+  string. Clicking a chip puts its text into the draft, focuses the
+  textarea, and fires `onPickSuggestion(text)`; dropping the chip from
+  the list is the host's job (the app's after-load suggestions,
+  behavior.md § Suggested requests after a load). Chips are disabled
+  while streaming and hidden in the disabled state.
 - Input row: a full-width textarea over an actions row (the host's
   `micButton` slot and send, or a stop button that fires `onCancel` while
   streaming). Enter sends, Shift+Enter for a newline; send is disabled on an
@@ -102,7 +110,8 @@ Stable attributes: `data-cp-messages` (the scrolling message list),
 `data-status-dot="ok|undone"` (the StatusDot marker),
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
 `data-cp-stop`, `data-cp-running`, `data-cp-progress`,
-`data-cp-progress-toggle`, `data-cp-progress-log`, plus the app's existing
+`data-cp-progress-toggle`, `data-cp-progress-log`, `data-cp-suggestion`
+(one per chip), plus the app's existing
 `data-testid="mic-button"` / `"copy-debug"`.
 
 ## MicButton component
@@ -134,6 +143,7 @@ reply with request detail, a fill-thread button pads the list past the
 panel's height (so the scroll rules have something to scroll), a
 streaming toggle drives the Running…/stop state
 together with a sample run progress (step line, bar, live request-detail
-log), a prefill button exercises the draft sync, and the demo MicButton
-cycles recording → sending → idle. Every callback appends to the `#out` event log,
+log), a prefill button exercises the draft sync, a suggestions button
+adds three chips (clicking one fills the draft and drops the chip), and
+the demo MicButton cycles recording → sending → idle. Every callback appends to the `#out` event log,
 non-empty on load: the demo smoke test's ready signal.

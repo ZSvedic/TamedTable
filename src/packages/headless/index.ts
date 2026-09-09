@@ -320,6 +320,10 @@ export interface HeadlessRunner {
    *  Python script. Returns the script source, and streams it to
    *  `onProgress` on the way (#PyExport). */
   exportPython(opts?: ExportPythonOpts): Promise<string>;
+  /** One model call: 3 to 5 plain-English requests worth typing next for
+   *  the loaded table, from its headers and a bounded row sample. `[]`
+   *  when the reply is not a list; errors throw (#LoadSuggestions). */
+  suggest(opts?: SuggestOpts): Promise<string[]>;
   // #LazyExec: web-shell seams. adoptState swaps in a spec + derived rows
   // with no replay and no model call (provider switch keeps evaluated rows);
   // `origins` carries the adopted rows' source origins (see rowOrigins) so
@@ -405,16 +409,39 @@ function parsePromptSections(md: string): Record<string, string> {
   return sections;
 }
 
+// #LoadSuggestions
+/** @internal: exported for unit tests. Assemble the suggester's system
+ *  prompt: its own section with `{TRANSFORMATION_GRAMMAR}` replaced by the
+ *  spec editor's `### Transformation grammar` list and `{EXAMPLE_REQUESTS}` by
+ *  the spec editor's few-shot titles, one `- ` bullet each. One description
+ *  of what the engine does teaches both prompts, and `SYSTEM_PROMPT` itself
+ *  stays byte-identical (spec/code-contract.md § System prompts). */
+export function assembleSuggestPrompt(suggestSection: string, systemPrompt: string): string {
+  const grammar = systemPrompt.match(/^### Transformation grammar\s*\n([\s\S]*?)(?=^### |(?![\s\S]))/m)?.[1]?.trim();
+  if (!grammar) throw new Error('spec/prompt-app-edit.md: SYSTEM_PROMPT has no "### Transformation grammar" subsection');
+  const titles = [...systemPrompt.matchAll(/^#### "(.+)"\s*$/gm)].map((m) => `- ${m[1]}`);
+  if (titles.length === 0) throw new Error('spec/prompt-app-edit.md: SYSTEM_PROMPT has no #### "…" few-shot headers');
+  for (const placeholder of ['{TRANSFORMATION_GRAMMAR}', '{EXAMPLE_REQUESTS}']) {
+    if (!suggestSection.includes(placeholder)) {
+      throw new Error(`spec/prompt-app-edit.md: SUGGEST_PROMPT is missing the ${placeholder} placeholder`);
+    }
+  }
+  return suggestSection
+    .replace('{TRANSFORMATION_GRAMMAR}', grammar)
+    .replace('{EXAMPLE_REQUESTS}', titles.join('\n'));
+}
+
 // #LlmLayer
 function loadPrompts(): {
   SYSTEM_PROMPT: string;
   BATCH_SYSTEM_PROMPT: string;
   CELL_FORMAT_CONSTRAINT: string;
   PYTHON_EXPORT_PROMPT: string;
+  SUGGEST_PROMPT: string;
 } {
   const text = readFileSync(PROMPT_FILE, 'utf-8');
   const sections = parsePromptSections(text);
-  const required = ['SYSTEM_PROMPT', 'BATCH_SYSTEM_PROMPT', 'CELL_FORMAT_CONSTRAINT', 'PYTHON_EXPORT_PROMPT'] as const;
+  const required = ['SYSTEM_PROMPT', 'BATCH_SYSTEM_PROMPT', 'CELL_FORMAT_CONSTRAINT', 'PYTHON_EXPORT_PROMPT', 'SUGGEST_PROMPT'] as const;
   for (const name of required) {
     if (!sections[name]) {
       throw new Error(`spec/prompt-app-edit.md: missing "## ${name}" section`);
@@ -425,10 +452,11 @@ function loadPrompts(): {
     BATCH_SYSTEM_PROMPT: sections.BATCH_SYSTEM_PROMPT!,
     CELL_FORMAT_CONSTRAINT: sections.CELL_FORMAT_CONSTRAINT!,
     PYTHON_EXPORT_PROMPT: sections.PYTHON_EXPORT_PROMPT!,
+    SUGGEST_PROMPT: assembleSuggestPrompt(sections.SUGGEST_PROMPT!, sections.SYSTEM_PROMPT!),
   };
 }
 
-const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT } = loadPrompts();
+const { SYSTEM_PROMPT, BATCH_SYSTEM_PROMPT, PYTHON_EXPORT_PROMPT, SUGGEST_PROMPT } = loadPrompts();
 
 /** @internal: exported for unit tests. The JSON-Schema for the `operations`
  *  argument of apply_spec_patch: identical for every provider. `value` is a
@@ -561,7 +589,61 @@ function withLowEffort(modelId: string, base: ProviderOptions): ProviderOptions 
 function unfenceScript(text: string): string {
   const trimmed = text.trim();
   if (!trimmed.startsWith('```')) return trimmed;
-  return trimmed.replace(/^```(?:python)?\s*\n?/, '').replace(/\n?`{1,3}\s*$/, '').trim();
+  return trimmed.replace(/^```\w*\s*\n?/, '').replace(/\n?`{1,3}\s*$/, '').trim();
+}
+
+// #LoadSuggestions
+// The sample the suggester sees is bounded three ways, so the call's cost
+// never grows with the table (spec/code-contract.md § Load suggestions).
+export const SUGGEST_SAMPLE_ROWS = 20;
+export const SUGGEST_SAMPLE_COLS = 30;
+export const SUGGEST_CELL_CHARS = 60;
+
+export interface SuggestOpts { signal?: AbortSignal }
+
+function clipCell(value: unknown): unknown {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text.length > SUGGEST_CELL_CHARS ? text.slice(0, SUGGEST_CELL_CHARS) + '…' : text;
+}
+
+/** @internal: exported for unit tests. The user message of the suggestion
+ *  call: table basename, counts, column ids, and the first rows as JSON
+ *  lines, restricted to the first columns with every cell clipped. */
+export function suggestSample(table: string | undefined, columns: string[], rows: Row[]): string {
+  const cols = columns.slice(0, SUGGEST_SAMPLE_COLS);
+  const lines = rows
+    .slice(0, SUGGEST_SAMPLE_ROWS)
+    .map((r) => JSON.stringify(Object.fromEntries(cols.map((c) => [c, clipCell(r[c])]))));
+  const scope = cols.length < columns.length ? `, first ${cols.length} columns` : '';
+  return [
+    `Table: ${table ? basename(table) : 'table'}`,
+    `Rows: ${rows.length}. Columns (${columns.length}): ${columns.join(', ')}`,
+    `Sample (first ${lines.length} rows${scope}), one JSON object per line:`,
+    ...lines,
+  ].join('\n');
+}
+
+/** @internal: exported for unit tests. The suggester's reply as a list:
+ *  fence-stripped, parsed as a JSON array, strings trimmed, empties and
+ *  case-insensitive duplicates dropped, at most 5 kept. Anything else is
+ *  `[]`: a bad reply is no suggestions, never an error. */
+export function parseSuggestions(text: string): string[] {
+  let parsed: unknown;
+  try { parsed = JSON.parse(unfenceScript(text)); } catch { return []; }
+  if (!Array.isArray(parsed)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of parsed) {
+    if (typeof item !== 'string') continue;
+    const s = item.trim();
+    if (!s || seen.has(s.toLowerCase())) continue;
+    seen.add(s.toLowerCase());
+    out.push(s);
+    if (out.length === 5) break;
+  }
+  return out;
 }
 
 /** Retries for the Python export. Lower than DEFAULT_MAX_RETRIES on purpose:
@@ -1322,6 +1404,29 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const text = unfenceScript(raw);
     if (!text) throw new Error('Python export: the model returned no script.');
     return text.endsWith('\n') ? text : text + '\n';
+  }
+
+  // #LoadSuggestions
+  // One generateText call on the chat model, the least-deliberation options
+  // and the export's retry budget: a cheap read of the sample, not a patch
+  // turn, so it fires no onDebug and reports usage as `chat` (which the web
+  // cell-cost estimate ignores).
+  async suggest(opts: SuggestOpts = {}): Promise<string[]> {
+    this.requireLoaded();
+    const prompt = suggestSample(this.spec.table, this.spec.columns.map((c) => c.id), this.derivedRows);
+    const modelId = this.opts.model ?? DEFAULT_MODEL;
+    await rateLimiter.acquire(opts.signal);
+    const result = await generateText({
+      model: this.model(),
+      system: SUGGEST_PROMPT,
+      prompt,
+      ...this.samplingParams(modelId),
+      maxRetries: EXPORT_MAX_RETRIES,
+      providerOptions: withLowEffort(modelId, ANTHROPIC_EPHEMERAL),
+      abortSignal: opts.signal,
+    });
+    this.recordCall(modelId, result.usage, 'chat');
+    return parseSuggestions(result.text);
   }
 
   async setSpec(

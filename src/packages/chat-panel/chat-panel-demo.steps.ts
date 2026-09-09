@@ -184,3 +184,17 @@ When('the user clicks the recording send control', async function (this: object)
 When('the user clicks the recording cancel control', async function (this: object) {
   await page(this).click('[data-testid="mic-cancel"]');
 });
+
+// #LoadSuggestions: the chip row.
+
+When('the user clicks the suggestions button', async function (this: object) {
+  await page(this).click('button:has-text("Add suggestions")');
+});
+
+Then('{int} suggestion chips are shown', async function (this: object, n: number) {
+  await page(this).waitForFunction(`document.querySelectorAll('[data-cp-suggestion]').length === ${n}`);
+});
+
+When('the user clicks the suggestion chip {string}', async function (this: object, text: string) {
+  await page(this).click(`[data-cp-suggestion]:has-text(${JSON.stringify(text)})`);
+});

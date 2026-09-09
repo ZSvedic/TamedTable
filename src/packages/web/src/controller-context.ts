@@ -67,6 +67,11 @@ export interface ControllerHost {
   tutorialOpen: boolean;
   goldenRows: Row[] | null;
   tutorialPrefill: string | null;
+  // #LoadSuggestions
+  /** The after-load suggestions (the chat chips); [] until the answer lands. */
+  suggestions: string[];
+  /** A fresh load landed: drop the old list and ask again when allowed. */
+  refreshSuggestions(): void;
   pageNum: number;
   /** Rows per table page: re-derived from the provider on config changes. */
   pageSize: number;

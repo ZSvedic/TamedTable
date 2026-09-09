@@ -162,6 +162,13 @@ export class WebController implements ControllerHost {
   goldenRows: Row[] | null = null;
   /** Text pre-filled into the chat input by a prefill-chat step, or null. */
   tutorialPrefill: string | null = null;
+  // #LoadSuggestions
+  /** Whether a load asks the model for suggestions (opts.suggestions). */
+  suggestionsEnabled: boolean;
+  /** The after-load suggestions: the chat chips. [] until the answer lands. */
+  suggestions: string[] = [];
+  private suggestionsPending: Promise<void> | null = null;
+  private suggestionsSeq = 0;
   // #LazyExec
   /** The large-file dialog (Load shuffled / Load in original order), or null. */
   largeFileDialog: { name: string; rowCount: number } | null = null;
@@ -194,6 +201,7 @@ export class WebController implements ControllerHost {
     // One concurrency wave per page (100 with the defaults, 25 on openrouter),
     // so a streaming page fills wave by wave.
     this.pageSize = pageSizeFor(this.config.provider, opts);
+    this.suggestionsEnabled = opts.suggestions ?? false;
 
     // Built first so pushToast can record every toast from the moment the
     // controller exists.
@@ -363,6 +371,42 @@ export class WebController implements ControllerHost {
   /** Cancel the in-flight request or flow replay, if any: the chat Stop
    *  button and the mobile banner's stop icon. */
   cancelRequest(): void { this.engine.cancelActive(); }
+
+  // ── Load suggestions (#LoadSuggestions) ───────────────────────────────────
+
+  /** A fresh table landed: drop the previous list and, when the host opted
+   *  in, no tour is replaying, and the selected provider has a key, ask the
+   *  engine in the background. The answer lands in `suggestions`; a failure
+   *  or a non-list reply is simply no suggestions; a later load abandons a
+   *  still-pending answer (behavior.md § Suggested requests after a load). */
+  refreshSuggestions(): void {
+    this.suggestions = [];
+    this.suggestionsPending = null;
+    const seq = ++this.suggestionsSeq;
+    if (!this.suggestionsEnabled || this.tutorial.isReplaying() || !this.settingsMgr.activeApiKey()?.trim()) return;
+    this.suggestionsPending = this.engine
+      .suggest()
+      .then((list) => {
+        if (seq !== this.suggestionsSeq) return;
+        this.suggestions = list;
+        this.notify();
+      })
+      .catch(() => { /* no suggestions: never an error */ })
+      .finally(() => { if (seq === this.suggestionsSeq) this.suggestionsPending = null; });
+  }
+
+  /** A chip was clicked: the panel already put its text in the draft; drop
+   *  it from the list. */
+  pickSuggestion(text: string): void {
+    if (!this.suggestions.includes(text)) return;
+    this.suggestions = this.suggestions.filter((s) => s !== text);
+    this.notify();
+  }
+
+  /** Settle the in-flight suggestion call, if any (tests). */
+  async awaitSuggestions(): Promise<void> {
+    await this.suggestionsPending;
+  }
 
   // ── View accessors (never throw: safe before a file is loaded) ───────────
 
