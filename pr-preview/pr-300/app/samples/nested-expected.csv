@@ -1,0 +1,4 @@
+conversations,subreddit,url
+"[{""from"":""human"",""value"":""Knock knock.""},{""from"":""gpt"",""value"":""Who is there?""}]",oneliners,https://www.reddit.com/r/oneliners/1
+"[{""from"":""human"",""value"":""Brown and sticky?""},{""from"":""gpt"",""value"":""A stick.""}]",funny,https://www.reddit.com/r/funny/2
+"[{""from"":""human"",""value"":""Why the long face?""},{""from"":""gpt"",""value"":""Bad genetics.""}]",oneliners,https://www.reddit.com/r/oneliners/3
