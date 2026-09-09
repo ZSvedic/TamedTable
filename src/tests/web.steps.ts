@@ -567,11 +567,21 @@ Then('the sample picker is hidden', function (this: TamedTableWorld) {
   assert.equal(controller(this).sampleDialogOpen, false);
 });
 
+// The Content-Type follows the fixture's extension, the way a real server's
+// would: a page fixture served from an extension-less address is what makes
+// the text/html fallback load it as HTML (#TablePick).
+const CONTENT_TYPES: Record<string, string> = {
+  '.jsonl': 'application/jsonl',
+  '.html': 'text/html; charset=utf-8',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
+
 Given(
   'the URL {string} serves {string}',
   async function (this: TamedTableWorld, url: string, fixture: string) {
-    const body = await readFile(join(SPEC_TC_DIR, fixture), 'utf8');
-    ctxOf(this).urlFixtures.set(url, body);
+    const body = new Uint8Array(await readFile(join(SPEC_TC_DIR, fixture)));
+    const ext = fixture.slice(fixture.lastIndexOf('.')).toLowerCase();
+    ctxOf(this).urlFixtures.set(url, { body, contentType: CONTENT_TYPES[ext] ?? 'text/csv' });
   },
 );
 

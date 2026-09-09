@@ -34,7 +34,7 @@ test('typed Parquet (DATE/TIMESTAMP/DECIMAL) loads as plain scalar cells and sta
   const { rows, columns } = await parquetCodec.parse(bytes, 'typed.parquet');
   let saveError: Error | undefined;
   try {
-    await csvCodec.serialize(rows, columns);
+    await csvCodec.serialize!(rows, columns);
   } catch (e) {
     saveError = e as Error;
   }
@@ -51,10 +51,10 @@ test('a quoted newline in a CSV header is valid RFC 4180, parsed as the column l
 });
 
 test('a CSV value ending in CR survives save-then-load, and CR-bearing fields are quoted', async () => {
-  const out = dec(await csvCodec.serialize([{ a: 'x\r' }], ['a']));
+  const out = dec(await csvCodec.serialize!([{ a: 'x\r' }], ['a']));
   const back = await csvCodec.parse(enc(out), 't.csv');
   assert.equal(back.rows[0]?.a, 'x\r', `trailing \\r must survive the CSV round-trip: serialized ${JSON.stringify(out)}, reparsed ${JSON.stringify(back.rows[0])}`);
-  const quoted = dec(await csvCodec.serialize([{ a: 'x\ry' }], ['a']));
+  const quoted = dec(await csvCodec.serialize!([{ a: 'x\ry' }], ['a']));
   assert.ok(quoted.includes('"x\ry"'), `RFC 4180 TEXTDATA excludes CR, so a CR-bearing field must be double-quoted; got ${JSON.stringify(quoted)}`);
 });
 
@@ -77,7 +77,7 @@ test('JSONL non-object lines produce a clear file:line error, not a raw TypeErro
 
 test('a __proto__ column survives JSONL serialize and CSV parse', async () => {
   const parsed = await jsonlCodec.parse(enc('{"__proto__":"x","b":"y"}\n'), 't.jsonl');
-  const out = dec(await jsonlCodec.serialize(parsed.rows, parsed.columns));
+  const out = dec(await jsonlCodec.serialize!(parsed.rows, parsed.columns));
   assert.equal(out, '{"__proto__":"x","b":"y"}\n', 'serialize must emit every listed column. The __proto__ column and its value must not vanish');
   const r = await csvCodec.parse(enc('__proto__,b\nx,y\n'), 't.csv');
   const cell = Object.getOwnPropertyDescriptor(r.rows[0] ?? {}, '__proto__')?.value;
@@ -87,7 +87,7 @@ test('a __proto__ column survives JSONL serialize and CSV parse', async () => {
 test('saving a zero-column table as Parquet fails with a clean message, not raw DuckDB internals', async () => {
   let err: Error | undefined;
   try {
-    await parquetCodec.serialize([], []);
+    await parquetCodec.serialize!([], []);
   } catch (e) {
     err = e as Error;
   }

@@ -5,7 +5,7 @@ import { access, readFile } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { readJsonl, type TablePlan, type Transformation } from '@tamedtable/core';
 import { describeStep } from '@tamedtable/headless';
-import { serializeFlow } from '@tamedtable/file-io';
+import { serializeFlow, splitTableSelector } from '@tamedtable/file-io';
 import { runCli } from '@tamedtable/cli';
 import { TamedTableWorld, SPEC_TC_DIR, TEMP_DIR, fixturePath } from './world.ts';
 import { webController } from './web-file-port.ts';
@@ -26,8 +26,10 @@ Given('load {string}', async function (this: TamedTableWorld, filename: string) 
   // exactly as in the app; the scenario resolves it with an explicit step.
   // Headless/CLI keep the path-based loadInput.
   if (this.surface === 'web') {
-    const bytes = new Uint8Array(await readFile(this.inputPath));
-    await webController(this).loadFromBytes(basename(filename), bytes);
+    // #TablePick: a `#pick` rides on the name, never on the file read.
+    const { source, table } = splitTableSelector(this.inputPath);
+    const bytes = new Uint8Array(await readFile(source));
+    await webController(this).loadFromBytes(basename(source), bytes, table);
     return;
   }
   await this.ensureRunner().loadInput(this.inputPath);

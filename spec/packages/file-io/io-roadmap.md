@@ -1,7 +1,7 @@
 # TamedTable I/O Roadmap
 
-Client-side (browser, BYOK) file-format support beyond the shipped four
-(CSV, JSONL, Parquet, Arrow).
+Client-side (browser, BYOK) file-format support beyond the shipped six
+(CSV, JSONL, Parquet, Arrow, XLSX, HTML).
 Every format below is a bounded file that loads fully into the existing data
 model, no backend, no streaming model required. Backend-only / streaming-native
 formats (Arrow Flight, Kafka, Delta/Iceberg/Hudi, ORC) are excluded.
@@ -68,7 +68,8 @@ Not self-describing into rows: the user supplies the interpretation at import
 | Format | DuckDB reader | Metadata from user |
 |--------|---------------|--------------------|
 | TSV / delimited / fixed-width | `read_csv` (delim / columns options) | delimiter or field widths |
-| [Excel (.xlsx)](https://ecma-international.org/publications-and-standards/standards/ecma-376/) | `read_xlsx` (excel extension) | sheet, header row, cell range |
+| [Excel (.xlsx)](https://ecma-international.org/publications-and-standards/standards/ecma-376/) | **shipped** as a pure-JS codec (`fflate` + an OOXML reader), not DuckDB: the `excel` extension downloads at runtime, which the offline builds cannot do. Load + save, both runtimes. The sheet or Excel table is the user's pick ([formats/xlsx.md](formats/xlsx.md)). | sheet or table, via the `#` pick |
+| HTML page tables | **shipped**, load-only: `htmlparser2` over every `<table>` ([formats/html.md](formats/html.md)) | table, via the `#` pick |
 | [JSON (nested)](https://www.json.org/) | `read_json` + SQL flatten | JSONPath / flatten expr |
 | Google Sheets (export) | reuses CSV / XLSX path | sheet / range |
 
@@ -82,11 +83,11 @@ Not self-describing into rows: the user supplies the interpretation at import
 
 ### Notes
 
-- **Excel / Avro extensions under wasm:** confirm the `excel` and `avro`
-  extensions load in duckdb-wasm (autoload / community) before committing those
-  formats; if either is flaky in wasm, fall back to a browser-only lib
-  ([SheetJS](https://sheetjs.com/) for Excel, [avsc](https://github.com/mtth/avsc)
-  for Avro). Sizes are approximate and version-dependent: confirm before adding.
+- **Avro extension under wasm:** confirm the `avro` extension loads in
+  duckdb-wasm (autoload / community) before committing the format; if it is
+  flaky in wasm, fall back to a browser-only lib
+  ([avsc](https://github.com/mtth/avsc)). Excel went the pure-JS way for this
+  reason. Sizes are approximate and version-dependent: confirm before adding.
 - **XML / Protobuf:** DuckDB has no native reader and both need a user-supplied
   schema, so they stay bespoke regardless of DuckDB.
 - **Bundle:** keep duckdb-wasm behind a dynamic `import()` so the CSV/JSON

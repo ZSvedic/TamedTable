@@ -17,7 +17,9 @@
     "@tamedtable/table-plan": "workspace:*",
     "apache-arrow": "^17.0.0",
     "csv-parse": "^6.2.1",
-    "csv-stringify": "^6.7.0"
+    "csv-stringify": "^6.7.0",
+    "fflate": "^0.8.3",
+    "htmlparser2": "^12.0.0"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2"

@@ -417,7 +417,9 @@ They are handled locally without any LLM round-trip:
   `:find: missing pattern`. Not recorded in the undo journal.
 - `:load <path>` reads a table file as the new input source (file
   type inferred from extension; any registered format: `.csv`,
-  `.jsonl`, `.parquet`, `.arrow`: accepted;
+  `.jsonl`, `.parquet`, `.arrow`, `.xlsx`, `.html`: accepted; a
+  workbook or page with several tables takes a `#<n>` or `#<name>`
+  pick, see [§ Opening a workbook or a web page](#opening-a-workbook-or-a-web-page-tablepick);
   `<path>` is taken literally, a leading `@` is part of the filename,
   not a Claude-Code-style file reference). A relative path that does
   not exist is retried under `../spec/test-cases/`: a dev convenience
@@ -430,10 +432,11 @@ They are handled locally without any LLM round-trip:
   table.
 - `:save <path>` writes the current rows, dispatching on extension
   through the format-codec registry (#FormatOut): `.csv`, `.jsonl`,
-  `.parquet`, or `.arrow` (path resolved relative to the working
-  directory). Missing path prints `:save: missing path`; an unknown
-  extension prints `:save: unknown file type`; success prints a `saved`
-  confirmation.
+  `.parquet`, `.arrow`, or `.xlsx` (path resolved relative to the
+  working directory). Missing path prints `:save: missing path`; an
+  unknown extension prints `:save: unknown file type`; a load-only
+  extension (`.html`) prints `:save: cannot save as HTML: load-only
+  format`; success prints a `saved` confirmation.
 - `:save-flow <path>` writes the current spec as a replayable JSON document
   (the source path inside the flow is recorded relative to the flow file's
   own directory). Missing path prints `:save-flow: missing path`; success
@@ -469,9 +472,11 @@ spec; results stream in. The table reprints after any state or viewport
 change.
 
 State / data commands:
-  :load <path>       Load CSV/JSONL/Parquet/Arrow as new input. Resets
+  :load <path>       Load a table file (CSV, JSONL, Parquet, Arrow, XLSX,
+                     HTML; add #<n> to pick a table) as new input. Resets
                      transformations, viewport, cache.
-  :save <path>       Write current rows (CSV/JSONL/Parquet/Arrow by ext).
+  :save <path>       Write current rows (CSV/JSONL/Parquet/Arrow/XLSX by
+                     ext).
   :save-flow <path>  Write current spec as a .flow file.
   :save-py <path>    Write current flow as a standalone Python script.
   :reorder <cols>    Reorder columns (comma/space separated); sets the table
@@ -550,7 +555,7 @@ tamedtable: work tables in your terminal with natural-language requests.
 Usage:
   tamedtable <input>                 Open <input> in the interactive REPL.
                                      <input> is a table file: .csv, .jsonl,
-                                     .parquet, or .arrow.
+                                     .parquet, .arrow, .xlsx, or .html.
                                      Once inside, type :help for commands.
   tamedtable execute <flow>          Replay a saved .flow against an input.
                                      No LLM call; no API key needed.
@@ -624,10 +629,12 @@ seams rather than replacing them.
 
 `:save <path>` and `tamedtable execute --output <path>` both dispatch on
 extension, the same way `:load` already does for input. The dispatch goes
-through the format-codec registry, so `.csv`, `.jsonl`, `.parquet`, and
-`.arrow` all work: see
+through the format-codec registry, so `.csv`, `.jsonl`, `.parquet`,
+`.arrow`, and `.xlsx` all work: see
 [spec/packages/file-io/formats/](packages/file-io/formats/) for the
-per-format rules.
+per-format rules. `.html` loads but never saves: the registry marks it
+load-only, and a save to it fails with `cannot save as HTML: load-only
+format`.
 
 CSV output rules: the header row is the spec's column order (using
 `label` when set, otherwise `id`); JSON nulls and JS undefined render
@@ -641,6 +648,91 @@ Unknown output extensions print `:save: unknown file type` (REPL) or
 exit non-zero with the same line on stderr (batch). Mixed-format flows:
 JSONL in, CSV out: work because the renderer reads the committed
 spec, not the source format.
+
+### Opening a workbook or a web page (#TablePick)
+
+Two more sources open through the same dispatch as CSV, JSONL, Parquet,
+and Arrow: an Excel workbook (`.xlsx`) and an HTML page (`.html`, `.htm`,
+or any URL served as `text/html`). Both load locally or from a URL on every
+surface: `:load`, the CLI's startup argument, `execute --input`, headless
+`loadInput`, and the web app's Open local, Open URL, and drop. Legacy
+`.xls` is not read. A workbook also saves: `:save out.xlsx` and the web
+Save menu's **Save XLSX…** write one sheet, `Sheet1`, the header row first
+(column labels, as CSV writes them), each cell typed by its value: a number
+stays a number, `true`/`false` a boolean, text a string, a nested value its
+JSON. Loading a workbook reads the values the same way: a number is a
+number, a cell Excel formats as a date is ISO text (`2026-01-15`, with a
+`T09:30:00` time part when the cell has one), a formula is its cached
+result, an empty cell is null. A page is load-only. Per-format rules:
+[formats/xlsx.md](packages/file-io/formats/xlsx.md),
+[formats/html.md](packages/file-io/formats/html.md).
+
+Both sources can hold any number of tables, so opening one has a step a
+CSV never needed: **which table?** The candidates are listed without a
+model call. A load has to work offline, without a key, and give the same
+answer every time, and the sources already delimit their tables, so
+nothing is guessed:
+
+- **Workbook:** one candidate per Excel table object (a range the author
+  formatted as a table, under its Excel name) and, for a sheet with no
+  table object, the sheet's data block: from the first non-empty row to
+  the last and from the leftmost non-empty column to the rightmost, the
+  block's first row being the header. Empty sheets are skipped.
+  Candidates come in sheet order.
+- **Web page:** one candidate per `<table>` in page order, named by its
+  `<caption>`, else its `id`, else `Table <n>`. The header is the first
+  row holding `<th>` cells, else the first row; rows before the header
+  are skipped, every row after it is data.
+
+Each candidate carries its name, where it sits (`Orders!B3:E8` in a
+workbook, `table 2 of 3` on a page), its data-row count, and its column
+names. Column names are the header cells: a blank one becomes
+`column<i>` (its 1-based position) and a repeated one gets `_2`, `_3`, and
+so on. A data row longer than the header widens the table with `column<i>`
+columns; a shorter row pads with empty cells; a fully empty row is
+dropped, as a CSV's blank line is.
+
+The candidate count decides what happens:
+
+- **None:** the load fails with `<name>: no table found`.
+- **One:** it loads at once, like a CSV. A one-sheet workbook or a page
+  with one table asks nothing.
+- **Several:** the surface asks. Headless and the CLI have no dialog, so
+  the load fails with a message that lists the candidates and how to pick
+  one; the web app raises the **table picker**.
+
+A pick rides on the path or URL as a fragment: `report.xlsx#2` (the
+candidate's 1-based number) or `report.xlsx#Orders` (its name,
+case-insensitive). A URL fragment never reaches the server, so
+`https://example.com/prices#2` fetches the page and picks its second
+table. A fragment naming no candidate fails with `<name>: no table
+"<pick>"` followed by the same list. The fragment stays in the spec's
+`table`, so a saved flow replays against the same table and `execute`
+needs no extra flag. The CLI's `:load` prints the failing message the way
+it prints any load error, and `Loaded <path> (N rows, M cols)` echoes the
+path as typed, fragment included:
+
+```
+> :load report.xlsx
+error: report.xlsx holds 3 tables; add #<n> or #<name> to pick one:
+  1. Customers (Customers!A1:F21): 20 rows: ID, FirstName, LastName, DOB, Country, Phone
+  2. Orders (Orders!B3:E8): 5 rows: OrderID, Customer, Amount, Date
+  3. Notes (Notes!A1:A3): 2 rows: Quarterly report
+> :load report.xlsx#Orders
+Loaded report.xlsx#Orders (5 rows, 4 cols)
+```
+
+The web app's **table picker** is a modal titled **Which table?** with
+one line under it (`report.xlsx holds 3 tables.`) and one radio row per
+candidate: name, location, row count, and the column names, the first
+row preselected. **Load** loads the selected table and continues exactly
+as a one-table load would (a table bigger than one page still raises the
+large-file dialog next); **Cancel**, Escape, or the backdrop leaves the
+app as it was: no toast, no chat line, the previous table untouched. A
+load from the URL dialog closes that dialog first (the fetch succeeded)
+and the picker takes its place; a fragment in the typed URL skips the
+picker. The `Loaded <name>: N rows, M columns.` line names the file or
+URL as every other load does.
 
 ### `group` transformation (#Aggregate)
 
@@ -1040,7 +1132,7 @@ empty page.
 
 The empty page is also a drop target: dragging a file from the desktop
 onto it highlights the page (a tint plus a dashed border), and dropping
-loads the file exactly like **Open local…**: same four formats, same
+loads the file exactly like **Open local…**: same formats, same
 "Loaded …" message. A file whose extension isn't a supported format
 surfaces the standard "Could not open file …" error toast. With a table
 loaded the table area stays a drop target, same drag highlight, but a
@@ -1057,7 +1149,7 @@ the word "Save", a chevron; plain dropdown, no default click),
 disabled until a table is loaded. Its menu is grouped the same way:
 
 - **Data**: one **Save <format>…** entry per supported format (CSV,
-  JSONL, Parquet, Arrow). Each serializes the current rows in that
+  JSONL, Parquet, Arrow, XLSX). Each serializes the current rows in that
   format and opens the Save dialog with a matching suggested name
   (the source file's stem plus the format's extension, the source's
   own format entry suggests the original name back), so the user can
@@ -1090,7 +1182,10 @@ at once.
 
 A URL load is a plain `GET` against the entered address; the format is
 detected from the path extension first and from the `Content-Type`
-header as a fallback. Only `http://` and `https://` URLs are accepted;
+header as a fallback, so a page address with no extension loads as HTML
+when the server says `text/html`, and a `#` fragment picks the table
+([§ Opening a workbook or a web page](#opening-a-workbook-or-a-web-page-tablepick)).
+Only `http://` and `https://` URLs are accepted;
 `http://` shows a soft "unencrypted" hint but is not refused. Network
 or CORS failures, non-2xx responses, and unrecognized formats surface
 as inline errors inside the dialog, which stays open so the user can

@@ -5,7 +5,7 @@
 import * as readline from 'node:readline/promises';
 import { readFile } from 'node:fs/promises';
 import * as path from 'node:path';
-import { loadEnv, validateTablePlan, type TablePlan } from '@tamedtable/core';
+import { loadEnv, splitTableSelector, validateTablePlan, type TablePlan } from '@tamedtable/core';
 import { createHeadlessRunner } from '@tamedtable/headless';
 import { resolveConfig, keyFor } from '@tamedtable/model-config';
 import { readConfigFromEnv } from '@tamedtable/model-config/env';
@@ -159,9 +159,11 @@ async function runExecute(rest: string[], opts: CliRunnerOptions, stderr: string
 async function resolveFile(p: string): Promise<string | undefined> {
   // The spec/test-cases/ fallback is a dev convenience so feature files can
   // name a flow by bare filename; harmless for real users (path won't exist).
-  const candidates = path.isAbsolute(p) ? [p] : [p, path.join('..', 'spec', 'test-cases', p)];
+  // #TablePick: an --input's `#pick` is not part of the file name on disk.
+  const { source, table } = splitTableSelector(p);
+  const candidates = path.isAbsolute(source) ? [source] : [source, path.join('..', 'spec', 'test-cases', source)];
   for (const cand of candidates) {
-    try { await readFile(cand, 'utf8'); return cand; } catch {}
+    try { await readFile(cand); return table ? `${cand}#${table}` : cand; } catch {}
   }
   return undefined;
 }

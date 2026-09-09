@@ -170,7 +170,7 @@ export function OpenUrlDialog({ open, onSubmit, onClose }: OpenUrlDialogProps): 
                 marginBottom: space.px8,
               }}
             >
-              Paste a link to a .csv, .jsonl, .parquet, or .arrow file (
+              Paste a link to a .csv, .jsonl, .parquet, .arrow, or .xlsx file, or to a web page with a table (
               <a href="../FAQ.html#formats" target="_blank" rel="noopener" style={{ color: t.accent }}>
                 all formats ↗
               </a>

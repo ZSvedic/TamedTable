@@ -7,14 +7,18 @@ import { strict as assert } from 'node:assert';
 import { tableFromArrays, tableToIPC } from 'apache-arrow';
 import type { Row, TablePlan } from '@tamedtable/table-plan';
 import {
+  chooseTable,
   detectFormat,
   fetchTable,
   parseTable,
   sampleNameFromUrl,
   serializeFlow,
+  splitTableSelector,
+  type FetchedTable,
   type FetchLike,
   type FormatId,
   type PickedFile,
+  type TableCandidate,
 } from './index.ts';
 import { warnIfHuge } from './codecs/values.ts';
 
@@ -27,7 +31,10 @@ interface FileIoWorld {
     spec?: TablePlan;
     format?: FormatId | null;
     name?: string;
-    picked?: PickedFile;
+    picked?: FetchedTable;
+    candidates?: TableCandidate[];
+    choice?: TableCandidate;
+    split?: { source: string; table?: string };
     flow?: { version: number; source: string; spec: TablePlan };
     error?: Error;
     parsed?: { rows: Row[]; spec: TablePlan };
@@ -131,6 +138,62 @@ Then('the picked file is named {string}', function (this: FileIoWorld, expected:
 Then('the picked file text is {string}', function (this: FileIoWorld, expected: string) {
   assert.equal(new TextDecoder().decode(ctx(this).picked!.bytes), unescape(expected));
 });
+
+Then('the fetched table pick is {string}', function (this: FileIoWorld, expected: string) {
+  assert.equal(ctx(this).picked!.table, expected);
+});
+
+// ── chooseTable / splitTableSelector (#TablePick) ────────────────────────────
+
+Given(
+  'a source {string} listing the tables {string}',
+  function (this: FileIoWorld, name: string, tables: string) {
+    const names = tables.split(',').map((s) => s.trim()).filter(Boolean);
+    ctx(this).name = name;
+    ctx(this).candidates = names.map((n, i) => ({
+      index: i + 1,
+      name: n,
+      location: `${n}!A1:B2`,
+      rowCount: 1,
+      columns: ['a', 'b'],
+    }));
+  },
+);
+
+When('chooseTable runs with the pick {string}', function (this: FileIoWorld, pick: string) {
+  const c = ctx(this);
+  try {
+    c.choice = chooseTable(c.name!, c.candidates!, pick || undefined);
+  } catch (e) {
+    c.error = e as Error;
+  }
+});
+
+// An unmatched regex group arrives as null or undefined, depending on the
+// cucumber version: treat both as "not this branch". The Examples cell writes
+// an inner quote as `\"`, which Gherkin tables leave as-is.
+Then(/^the choice is (?:"(.+)"|an error "(.+)")$/, function (this: FileIoWorld, name?: string | null, error?: string | null) {
+  const c = ctx(this);
+  if (error == null) {
+    assert.equal(c.error, undefined, c.error?.message);
+    assert.equal(c.choice?.name, name);
+  } else {
+    const expected = error.replaceAll('\\"', '"');
+    assert.ok(c.error, 'expected chooseTable to fail, but it chose ' + c.choice?.name);
+    assert.ok(c.error!.message.includes(expected), `expected "${c.error!.message}" to mention "${expected}"`);
+  }
+});
+
+When('splitTableSelector is called with {string}', function (this: FileIoWorld, path: string) {
+  ctx(this).split = splitTableSelector(path);
+});
+
+Then(
+  'the split source is {string} and the pick is {string}',
+  function (this: FileIoWorld, source: string, pick: string) {
+    assert.deepEqual(ctx(this).split, pick ? { source, table: pick } : { source });
+  },
+);
 
 Then('fetchTable fails with {string}', function (this: FileIoWorld, expected: string) {
   assert.ok(ctx(this).error, 'expected fetchTable to fail, but it succeeded');

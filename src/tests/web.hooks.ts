@@ -59,13 +59,14 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
     const innerFetch = opts.fetch;
     const compositeFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-      const body = ctx.urlFixtures.get(url);
-      if (body === null) {
+      const fixture = ctx.urlFixtures.get(url);
+      if (fixture === null) {
         return Promise.resolve(new Response('Not Found', { status: 404, statusText: 'Not Found' }));
       }
-      if (body !== undefined) {
-        const ct = url.toLowerCase().endsWith('.jsonl') ? 'application/jsonl' : 'text/csv';
-        return Promise.resolve(new Response(body, { status: 200, headers: { 'content-type': ct } }));
+      if (fixture !== undefined) {
+        return Promise.resolve(
+          new Response(fixture.body as BodyInit, { status: 200, headers: { 'content-type': fixture.contentType } }),
+        );
       }
       // Everything past the fixture check is a model call: note the key it
       // carries, so a step can prove a settings edit reached the engine.

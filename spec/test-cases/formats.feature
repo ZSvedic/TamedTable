@@ -23,3 +23,4 @@ Feature: File formats
         | JSONL   | customers-input.jsonl   | roundtrip.jsonl   |
         | Parquet | customers-input.parquet | roundtrip.parquet |
         | Arrow   | customers-input.arrow   | roundtrip.arrow   |
+        | XLSX    | customers-input.xlsx    | roundtrip.xlsx    |

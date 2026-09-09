@@ -310,7 +310,7 @@ and need the matching provider key.
 
 - **Re-recording cassettes is slow.** `bun run test` replays recorded responses in seconds, but `bun run test:record` makes a live API call per scenario: minutes, mostly the `TAMEDTABLE_RPM` throttle respecting the provider's rate ceiling. Re-record only when a prompt changes.
 - **Golden-file fragility on LLM cells.** A few scenarios (e.g. `aggregate`) assert byte equality against a frozen JSONL golden. Models produce semantically-equivalent but not byte-identical outputs for ambiguous inputs (e.g. phone numbers without a country code), and a model's own minor revisions can shift the answer over time, so such tests are kept few and deliberate: tours assert robust properties instead.  Mismatches on LLM-driven cells aren't necessarily regressions, see the determinism note at the end of [spec/behavior.md → Headless](spec/behavior.md#headless).
-- **Tabular formats: CSV, JSONL, Parquet, Arrow/Feather.** All load (local, URL, or sample) and all save, the web app saves in the format you opened, the CLI's `:save <name.ext>` writes (and converts to) any of them. Other DuckDB-readable formats and `.xlsx` are not yet wired into the open/save dispatch.
+- **Tabular formats: CSV, JSONL, Parquet, Arrow/Feather, XLSX, and HTML page tables.** All load (local, URL, or sample); all but HTML save, the web app saves in the format you opened, the CLI's `:save <name.ext>` writes (and converts to) any of them. A workbook or page with several tables asks which one (`report.xlsx#Orders`, or the web app's table picker); legacy `.xls` is not read. Other DuckDB-readable formats are not yet wired into the open/save dispatch.
 
 ## License
 

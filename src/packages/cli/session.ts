@@ -2,7 +2,7 @@
 // undo journal, debug block) and the colon-command dispatch.
 import { readFile, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
-import { formatForExtension, type Row, type TablePlan, type Transformation } from '@tamedtable/core';
+import { canSerialize, formatForExtension, splitTableSelector, type Row, type TablePlan, type Transformation } from '@tamedtable/core';
 import {
   createHeadlessRunner,
   specHasLlmCell,
@@ -596,7 +596,8 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
     if (!arg) { stdout.write(':load: missing path\n'); return; }
     // Delegate to the codec registry (#FormatOut) instead of a hardcoded
     // extension list, so every registered format: .csv, .jsonl, .parquet,
-    // .arrow: loads the same way `loadInput`/`exportAs` already dispatch.
+    // .arrow, .xlsx, .html: loads the same way `loadInput`/`exportAs` already
+    // dispatch. A `#pick` on the path rides through (#TablePick).
     if (!formatForExtension(arg)) { stdout.write(':load: unknown file type\n'); return; }
     await runWithErrorRender(stdout, async () => {
       // Try the literal path first, then a spec/test-cases/ fallback so feature files can name
@@ -611,10 +612,13 @@ const COLON_COMMANDS: Record<string, ColonCommandHandler> = {
   },
 
   async ':save'(arg, runner, stdout) {
-    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.csv|.jsonl|.parquet|.arrow>\n'); return; }
+    if (!arg) { stdout.write(':save: missing path. Usage: :save <output.csv|.jsonl|.parquet|.arrow|.xlsx>\n'); return; }
     // Dispatch through the codec registry (#FormatOut): .csv, .jsonl, .parquet,
-    // and .arrow all work: exportAs already writes any of them.
-    if (!formatForExtension(arg)) { stdout.write(':save: unknown file type\n'); return; }
+    // .arrow, and .xlsx all work: exportAs already writes any of them. A
+    // load-only format (.html) is refused here, before the codec loads.
+    const format = formatForExtension(arg);
+    if (!format) { stdout.write(':save: unknown file type\n'); return; }
+    if (!canSerialize(format)) { stdout.write(`:save: cannot save as ${format.toUpperCase()}: load-only format\n`); return; }
     await runWithErrorRender(stdout, async () => {
       await runner.exportAs(arg);
       stdout.write(`saved ${runner.currentRows().length} rows to ${arg}\n`);
@@ -687,12 +691,15 @@ function parseViewportArgs(arg: string): ViewportParse {
 }
 
 async function resolveLoadPath(p: string): Promise<string | undefined> {
-  if (path.isAbsolute(p)) {
-    try { await readFile(p, 'utf8'); return p; } catch { return undefined; }
+  // #TablePick: the `#pick` is not part of the file name on disk.
+  const { source, table } = splitTableSelector(p);
+  const withPick = (resolved: string): string => (table ? `${resolved}#${table}` : resolved);
+  if (path.isAbsolute(source)) {
+    try { await readFile(source); return withPick(source); } catch { return undefined; }
   }
-  const candidates = [p, path.join('..', 'spec', 'test-cases', p)];
+  const candidates = [source, path.join('..', 'spec', 'test-cases', source)];
   for (const cand of candidates) {
-    try { await readFile(cand, 'utf8'); return cand; } catch {}
+    try { await readFile(cand); return withPick(cand); } catch {}
   }
   return undefined;
 }

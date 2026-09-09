@@ -195,9 +195,13 @@ the codec's columns; it still throws `loadCsv: <path> has no header row` /
 JSONL codec, which derives the column list from the union of keys across rows
 (insertion order from the first row each key appears in). `Runner.loadInput` dispatches on file extension: `.csv`
 to `loadCsv`, `.jsonl` to `loadJsonl`, and any other registered extension
-(`.parquet`, `.arrow`, …) through the codec registry; an extension no codec
+(`.parquet`, `.arrow`, `.xlsx`, `.html`, …) through `loadFile`, which reads
+the bytes and hands them to `file-io.parseTable`; an extension no codec
 claims throws a clear *"unknown file type"* error that the REPL surfaces
-inline. `writeJsonl`
+inline. `loadFile` first splits a table pick off the path
+(`splitTableSelector`: `report.xlsx#Orders` → source `report.xlsx`, table
+`Orders`) and keeps the full path, fragment included, as the spec's
+`table`, so a flow saved from it replays the same pick (#TablePick). `writeJsonl`
 overwrites the file; the parent directory must already exist. The recovery
 budget is 3 turns; running out throws an error carrying a `debug` field:
 a `RequestDebugInfo` (see Headless).
@@ -227,16 +231,34 @@ interface FormatCodec {
   id: string;                 // "csv", "jsonl", …
   extensions: string[];       // [".csv"]
   contentTypes: string[];     // ["csv"]
-  parse(bytes: Uint8Array, name: string): ParsedTable;   // text codecs decode internally
-  serialize(rows: Row[], columns: string[]): Uint8Array;
+  parse(bytes: Uint8Array, name: string, table?: number): ParsedTable;   // text codecs decode internally
+  serialize?(rows: Row[], columns: string[], headers?: string[]): Uint8Array;  // absent on a load-only format
+  listTables?(bytes: Uint8Array, name: string): TableCandidate[];  // multi-table formats only
   load?: () => Promise<void>; // dynamic import of a heavy parser/engine
 }
 
+// #TablePick: one table a workbook or page holds
+interface TableCandidate {
+  index: number;      // 1-based, the number a `#<n>` pick names
+  name: string;       // sheet or Excel table name; caption, id, or "Table <n>"
+  location: string;   // "Orders!B3:E8" or "table 2 of 3"
+  rowCount: number;   // data rows under the header
+  columns: string[];  // header names, blanks and duplicates already fixed
+}
+
 // file-io registry surface
-type FormatId = 'csv' | 'jsonl' | 'parquet' | 'arrow';
+type FormatId = 'csv' | 'jsonl' | 'parquet' | 'arrow' | 'xlsx' | 'html';
 function detectFormat(pathname: string, contentType: string | null): FormatId | null;
-function formatForExtension(pathname: string): FormatId | null;
+function formatForExtension(pathname: string): FormatId | null;  // tolerates a trailing #pick
+function canSerialize(id: FormatId): boolean;                   // false for html
 function loadCodec(id: FormatId): Promise<FormatCodec>;
+
+// #TablePick: picking one table out of several
+function splitTableSelector(path: string): { source: string; table?: string };
+function chooseTable(name: string, candidates: TableCandidate[], pick?: string): TableCandidate;
+class TableChoiceError extends Error { name: string; candidates: TableCandidate[] }
+function parseTable(name: string, bytes: Uint8Array, opts?: { format?: FormatId; table?: string }):
+  Promise<{ rows: Row[]; spec: TablePlan }>;
 ```
 
 `detectFormat`/`formatForExtension` read a synchronous descriptor table
@@ -244,8 +266,22 @@ function loadCodec(id: FormatId): Promise<FormatCodec>;
 parser: only on first use, so a run that never touches a format never imports
 its parser. `core`'s `loadCsv`/`loadJsonl`/`readJsonl`/`writeJsonl` delegate
 parse/serialize to the registry; `writeRows` dispatches on extension straight
-through the codec registry. Adding a format is one codec file plus one
-registry row.
+through the codec registry and refuses a codec with no `serialize`
+(`cannot save as HTML: load-only format`). Adding a format is one codec file
+plus one registry row.
+
+A codec with `listTables` holds any number of tables. `parseTable` lists
+them, then `chooseTable` settles the pick: no candidate throws `<name>: no
+table found`; one loads without a pick; several with no pick throw a
+`TableChoiceError` whose message lists them (`<name> holds N tables; add
+#<n> or #<name> to pick one:` and one indented line per candidate); a pick
+is a 1-based number or a case-insensitive name, and one matching nothing
+throws `<name>: no table "<pick>"` with the same list. `splitTableSelector`
+takes the fragment off a local path only when the part before the `#`
+carries a multi-table extension (`.xlsx`, `.html`, `.htm`), so a `#` inside
+a CSV name stays a character; `fetchTable` takes a URL's fragment whatever
+the format and returns it as `table`. Formats without `listTables` ignore
+the pick.
 
 ## Headless
 
@@ -636,10 +672,13 @@ quoting, `\n` line endings, and no BOM. Nested values
 
 `Runner.exportAs` and the REPL `:save` command dispatch on extension
 through the codec registry (`writeRows`): `.jsonl`, `.csv`, and the
-other registered formats (`.parquet`, `.arrow`) each go through their
-codec. An extension no codec claims throws the *"unknown file type"*
-error, surfaced inline by the REPL and as exit code 4 by
-`tamedtable execute`.
+other registered formats (`.parquet`, `.arrow`, `.xlsx`) each go through
+their codec. An extension no codec claims throws the *"unknown file
+type"* error, surfaced inline by the REPL and as exit code 4 by
+`tamedtable execute`; a load-only format (`.html`) throws `cannot save as
+HTML: load-only format` on the same paths, and the REPL gate prints it as
+`:save: cannot save as HTML: load-only format` without calling the
+codec.
 
 ### `group` and `join` transformations (#Aggregate #LookupJoin)
 
@@ -904,9 +943,22 @@ WebController.closeUrlDialog(): void;
 WebController.urlDialogOpen: boolean;
 WebController.loadFromUrl(url: string): Promise<void>;  // fetch + load
 
+// #TablePick: the table picker a multi-table source raises
+WebController.tablePickerDialog: { name: string; candidates: TableCandidate[] } | null;
+WebController.pickTable(index: number): Promise<void>;  // the dialog's Load: parse that candidate, continue the load
+WebController.dismissTablePicker(): void;               // Cancel: nothing loads, nothing changes
+WebController.loadFromBytes(name: string, bytes: Uint8Array, table?: string): Promise<void>;
+
 // helpers exported from the web package
 function detectFormat(pathname: string, contentType: string | null): FormatId | null;  // see § Format codecs
 ```
+
+A picked, dropped, fetched, or scripted load that parses into a
+`TableChoiceError` parks its bytes in `FilesManager` and sets
+`tablePickerDialog`; `pickTable` re-parses with the chosen index and
+rejoins the normal load path (large-file gate, `loadParsed`, the fresh
+thread). A fetched URL's fragment, or `loadFromBytes`'s `table`, is the
+pick and skips the dialog.
 
 `loadFromUrl` validates the URL shape (http/https only), `GET`s the
 body, detects the format (path extension first, `Content-Type` as
