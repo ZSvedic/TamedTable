@@ -9,6 +9,8 @@ function classify(text) {
     return { kind: "open-estimate" };
   if (/^(?:user )?declines? the estimate with "Not yet"$/.test(text))
     return { kind: "decline-estimate" };
+  if (/^(?:the )?AI suggestions are shown$/.test(text))
+    return { kind: "show-suggestions" };
   const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup)
     return { kind: "load-lookup", filename: lookup[1] };
@@ -220,6 +222,9 @@ class TourDriver {
         break;
       case "decline-estimate":
         await this.adapter.declineEstimate?.();
+        break;
+      case "show-suggestions":
+        await this.adapter.showSuggestions?.();
         break;
       case "golden-source":
       case "display":
@@ -1198,6 +1203,9 @@ function asInstruction(text) {
   if (/^declines? the estimate with "Not yet"$/.test(text)) {
     return 'The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.';
   }
+  if (/^(?:the )?AI suggestions are shown$/.test(text)) {
+    return "AI read twenty rows and suggested what to try. Click one to put it in the box, or type your own.";
+  }
   return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}…`;
 }
 
@@ -1300,6 +1308,7 @@ var adapter = {
       case "play-audio":
       case "show-golden":
       case "golden-source":
+      case "show-suggestions":
       case "load-shuffled":
       case "open-estimate":
       case "decline-estimate":

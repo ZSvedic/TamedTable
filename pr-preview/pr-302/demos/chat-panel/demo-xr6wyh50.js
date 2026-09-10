@@ -17748,7 +17748,9 @@ function ChatPanel({
   requestCount,
   prefill = null,
   suggestions = [],
+  suggestionsLoading = false,
   onPickSuggestion,
+  suggestionsId,
   disabledHint = null,
   onSend,
   onCancel,
@@ -18027,26 +18029,36 @@ function ChatPanel({
           }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
-      suggestions.length > 0 && !disabled && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+      (suggestions.length > 0 || suggestionsLoading) && !disabled && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        id: suggestionsId,
         "data-cp-suggestions": "",
         style: {
           flex: "0 0 auto",
-          padding: `0 ${space.px10}px ${space.px8}px`,
+          padding: `${space.px10}px ${space.px10}px ${space.px8}px`,
           display: "flex",
           flexWrap: "wrap",
           gap: space.px6
         },
-        children: suggestions.map((text) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
+        children: suggestions.length === 0 ? /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("span", {
+          "data-cp-suggestions-loading": "",
+          style: {
+            fontFamily: typography.ui,
+            fontSize: typography.size.sm,
+            lineHeight: 1.4,
+            color: t.ink4
+          },
+          children: "Loading AI suggestions…"
+        }, undefined, false, undefined, this) : suggestions.map((text) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("button", {
           type: "button",
           "data-cp-suggestion": "",
           onClick: () => pickSuggestion(text),
           disabled: streaming,
-          title: "Put this request in the input",
+          title: "Add this request to the input",
           style: {
             background: t.surface,
             border: `1px solid ${t.line2}`,
-            borderRadius: 999,
-            padding: "4px 10px",
+            borderRadius: space.radiusLg,
+            padding: "7px 12px",
             fontFamily: typography.ui,
             fontSize: typography.size.sm,
             lineHeight: 1.4,
@@ -18355,6 +18367,7 @@ function Demo() {
   const [streaming, setStreaming] = import_react7.useState(false);
   const [prefill, setPrefill] = import_react7.useState(null);
   const [suggestions, setSuggestions] = import_react7.useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = import_react7.useState(false);
   const [disabledHint, setDisabledHint] = import_react7.useState(null);
   const [voiceStatus, setVoiceStatus] = import_react7.useState("idle");
   const [seq, setSeq] = import_react7.useState(0);
@@ -18375,6 +18388,7 @@ function Demo() {
         requestCount: messages.filter((m) => m.role === "user").length,
         prefill,
         suggestions,
+        suggestionsLoading,
         onPickSuggestion: (text) => {
           report(`pick ${text}`);
           setSuggestions((list) => list.filter((s) => s !== text));
@@ -18462,8 +18476,19 @@ function Demo() {
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
                 variant: "chrome",
-                onClick: () => setSuggestions(["Normalize phone numbers.", "Drop duplicate emails.", "Sort by DOB descending."]),
+                onClick: () => {
+                  setSuggestionsLoading(false);
+                  setSuggestions(["Normalize phone numbers.", "Drop duplicate emails.", "Sort by DOB descending."]);
+                },
                 children: "Add suggestions"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => {
+                  setSuggestions([]);
+                  setSuggestionsLoading((v) => !v);
+                },
+                children: "Toggle suggestions loading"
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
                 variant: "chrome",
