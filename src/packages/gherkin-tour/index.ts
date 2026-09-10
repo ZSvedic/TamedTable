@@ -12,6 +12,9 @@ export type TourAction =
   | { kind: 'load-shuffled'                    }
   | { kind: 'open-estimate'                    }
   | { kind: 'decline-estimate'                 }
+  // #LoadSuggestions: stop on the after-load suggestion chips: the host waits
+  // for the answer, the spotlight lands on the chip row.
+  | { kind: 'show-suggestions'                 }
   | { kind: 'display'                          }
 
 export interface TourStep     { keyword: string; text: string; action: TourAction }
@@ -32,6 +35,7 @@ function classify(text: string): TourAction {
   if (/^(?:user )?loads? the shuffled sample$/.test(text)) return { kind: 'load-shuffled' };
   if (/^(?:user )?opens? the run-on-all estimate dialog$/.test(text)) return { kind: 'open-estimate' };
   if (/^(?:user )?declines? the estimate with "Not yet"$/.test(text)) return { kind: 'decline-estimate' };
+  if (/^(?:the )?AI suggestions are shown$/.test(text)) return { kind: 'show-suggestions' };
 
   const lookup = text.match(/^load the lookup table "(.+)" with columns/);
   if (lookup) return { kind: 'load-lookup', filename: lookup[1]! };
@@ -234,6 +238,8 @@ export interface TourAdapter {
   loadShuffled?(): Promise<void>;
   openEstimate?(): Promise<void>;
   declineEstimate?(): Promise<void>;
+  // #LoadSuggestions: wait for the after-load suggestions to land.
+  showSuggestions?(): Promise<void>;
   /** DOM id of the element a step should spotlight, or null for none. */
   elementIdFor(action: TourAction): string | null;
   /** Called once when the tour finishes: the host decides what comes next
@@ -370,6 +376,7 @@ export class TourDriver implements TourCursor {
       case 'load-shuffled': await this.adapter.loadShuffled?.();            break;
       case 'open-estimate': await this.adapter.openEstimate?.();            break;
       case 'decline-estimate': await this.adapter.declineEstimate?.();      break;
+      case 'show-suggestions': await this.adapter.showSuggestions?.();      break;
       case 'golden-source':
       case 'display': break;
     }

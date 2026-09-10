@@ -198,10 +198,35 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   // redraw is moot anyway, so write the glyph directly.
   let rlClosed = false;
   rl.on('close', () => { rlClosed = true; });
-  const prompt = () => {
-    if (rlOpts.terminal) { if (!rlClosed) rl.prompt(); }
+  const prompt = (preserveCursor = false) => {
+    if (rlOpts.terminal) { if (!rlClosed) rl.prompt(preserveCursor); }
     else stdout.write('> ');
   };
+  // #LoadSuggestions: one background call after each load. The answer prints
+  // under the table when it lands and the prompt is redrawn (preserving a
+  // half-typed line); a bare-number line waits for a pending answer. A load
+  // that starts while a call is pending abandons that call; so does exit.
+  // Picked entries keep their number (they blank out) so the list the user
+  // is reading never renumbers under them.
+  const sug: { list: string[]; pending: Promise<void> | null; ctrl: AbortController | null } = { list: [], pending: null, ctrl: null };
+  const askSuggestions = (): void => {
+    sug.ctrl?.abort();
+    sug.list = [];
+    if (!opts.suggestions) return;
+    const ctrl = new AbortController();
+    sug.ctrl = ctrl;
+    sug.pending = runner
+      .suggest({ signal: ctrl.signal })
+      .then((list) => {
+        if (ctrl.signal.aborted || list.length === 0) return;
+        sug.list = list;
+        stdout.write('Suggestions (type a number to run one):\n' + list.map((s, i) => `  ${i + 1}. ${s}\n`).join(''));
+        prompt(true);
+      })
+      .catch(() => { /* no suggestions: never an error (behavior.md § Suggested requests) */ })
+      .finally(() => { if (sug.ctrl === ctrl) sug.pending = null; });
+  };
+  askSuggestions();
   const onSigint = () => { activeRequest ? activeRequest.abort() : rl.close(); };
   // Wired twice on purpose. A terminal-mode readline holds stdin in raw mode,
   // so ^C never becomes a process SIGINT: readline sees the keypress and, with
@@ -215,11 +240,26 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
   try {
     prompt();
     for await (const line of rl) {
-      const text = line.trim();
+      let text = line.trim();
       if (!text) { prompt(); continue; }
+      // #LoadSuggestions: a bare number runs the listed suggestion.
+      if (/^\d+$/.test(text)) {
+        if (sug.pending) await sug.pending;
+        const n = Number(text);
+        const picked = sug.list[n - 1];
+        if (!picked) { stdout.write(`no suggestion ${n}\n`); prompt(); continue; }
+        sug.list[n - 1] = '';
+        stdout.write(`running suggestion ${n}: ${picked}\n`);
+        text = picked;
+      }
+      const loadedBefore = runner.getLoadedPath();
       const action = await handleColonCommand(text, runner, stdout);
       if (action === 'exit') break;
-      if (action === 'handled') { prompt(); continue; }
+      if (action === 'handled') {
+        if (runner.getLoadedPath() !== loadedBefore) askSuggestions();
+        prompt();
+        continue;
+      }
       const ctrl = new AbortController();
       activeRequest = ctrl;
       try { await runner.request(text, { signal: ctrl.signal }); }
@@ -228,6 +268,7 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
       prompt();
     }
   } finally {
+    sug.ctrl?.abort();
     rl.close();
     process.off('SIGINT', onSigint);
   }
@@ -236,7 +277,8 @@ async function runRepl(argv: string[], opts: CliRunnerOptions, stderr: string[])
 
 if (import.meta.main) {
   loadEnv();
-  const result = await runCli(process.argv.slice(2));
+  // #LoadSuggestions: the binary opts in; runCli's own default is off.
+  const result = await runCli(process.argv.slice(2), { suggestions: process.env.TAMEDTABLE_SUGGEST !== 'off' });
   if (result.stderr) process.stderr.write(result.stderr + '\n');
   process.exit(result.exitCode);
 }

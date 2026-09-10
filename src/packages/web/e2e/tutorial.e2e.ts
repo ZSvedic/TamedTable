@@ -90,25 +90,31 @@ test('the voice showcase tour replays whole, key-free', async ({ page }) => {
 // and the tour ends with no dialog left open.
 test('the Lazy AI execution tour replays whole, key-free', async ({ page }) => {
   await startTour(page, 'Clean 25,000 rows for cents');
-  // Lazy showcase: load → load-shuffled → query → open-estimate →
-  // decline-estimate = 5 stops + terminal = 6. Each stop's action fires on
-  // the Next that leaves it.
-  await expect(progress(page)).toHaveText('1 of 6');
+  // Lazy showcase: load → load-shuffled → show-suggestions → query →
+  // open-estimate → decline-estimate = 6 stops + terminal = 7. Each stop's
+  // action fires on the Next that leaves it.
+  await expect(progress(page)).toHaveText('1 of 7');
   await nextBtn(page).click(); // load → the large-file dialog appears
-  await expect(progress(page)).toHaveText('2 of 6', { timeout: 20_000 });
+  await expect(progress(page)).toHaveText('2 of 7', { timeout: 20_000 });
   await expect(page.locator('[data-tt-largefile-dialog]')).toBeVisible();
   await nextBtn(page).click(); // load-shuffled resolves it
-  await expect(progress(page)).toHaveText('3 of 6', { timeout: 20_000 });
+  await expect(progress(page)).toHaveText('3 of 7', { timeout: 20_000 });
+  // #LoadSuggestions: the load fired the suggestion call; the chips arrive
+  // from the same cassette, for a 25,000-row file, because the model reads a
+  // twenty-row sample whatever the file holds.
+  await expect(page.locator('[data-cp-suggestion]').first()).toBeVisible({ timeout: 30_000 });
+  await nextBtn(page).click(); // show-suggestions: waits for the chips
+  await expect(progress(page)).toHaveText('4 of 7', { timeout: 20_000 });
   await nextBtn(page).click(); // the AI step previews the visible page
-  await expect(progress(page)).toHaveText('4 of 6', { timeout: 60_000 });
+  await expect(progress(page)).toHaveText('5 of 7', { timeout: 60_000 });
   // The readout appears once the page has evaluated from the cassette.
   await expect(page.locator('[data-tt-readout]')).toContainText('of 25,000 rows evaluated', { timeout: 30_000 });
   await nextBtn(page).click(); // open-estimate raises the dialog
-  await expect(progress(page)).toHaveText('5 of 6', { timeout: 20_000 });
+  await expect(progress(page)).toHaveText('6 of 7', { timeout: 20_000 });
   await expect(page.locator('[data-tt-runall-dialog]')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('[data-tt-est-rows]')).toContainText('24,900');
   await nextBtn(page).click(); // decline-estimate closes it, the finale
-  await expect(progress(page)).toHaveText('6 of 6', { timeout: 20_000 });
+  await expect(progress(page)).toHaveText('7 of 7', { timeout: 20_000 });
   await expect(page.locator('[data-tt-runall-dialog]')).toBeHidden();
   await expect(page.locator('.driver-popover')).toContainText('Voilà');
 });

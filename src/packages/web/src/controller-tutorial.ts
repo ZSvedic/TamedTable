@@ -427,6 +427,10 @@ export class TutorialManager {
       // By the time this step is highlighted the previous one has opened the
       // estimate dialog: spotlight the dialog whose "Not yet" gets chosen.
       case 'decline-estimate': return 'tutorial-runall-dialog';
+      // #LoadSuggestions: the chip row itself; the load before this step
+      // started the call, so by now the chips are there (or the row is
+      // still showing its loading line, which is the same element).
+      case 'show-suggestions': return 'tutorial-suggestions';
       case 'show-golden':
       case 'golden-source':
       case 'display': return 'tutorial-table-view';
@@ -521,6 +525,12 @@ export class TutorialManager {
         // The finale's "Not yet": the dialog closes, nothing runs, no model
         // call: the parked open-estimate promise resolves as a skip.
         this.host.lazy.declineRunAll();
+        break;
+      // #LoadSuggestions: the load two steps back fired the call; wait for it
+      // so the spotlight lands on chips, not on an empty row. A miss leaves
+      // no chips and ends nothing: the call is not a scripted request.
+      case 'show-suggestions':
+        await this.host.awaitSuggestions();
         break;
       case 'prefill-chat':
         // The query is already typed into the chat box (animated in when this

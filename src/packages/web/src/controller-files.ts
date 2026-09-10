@@ -405,6 +405,8 @@ export class FilesManager {
     // #Diagnostics: a load fires no toast; log it so a report names the file
     // the user was working on.
     this.host.diagnostics.recordActivity(loaded);
+    // #LoadSuggestions: the new table gets its own chips, in the background.
+    this.host.refreshSuggestions();
   }
 
   /** Show the Open URL modal dialog. */

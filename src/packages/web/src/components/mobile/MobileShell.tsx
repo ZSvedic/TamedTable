@@ -16,6 +16,7 @@ import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
+import { appendSentence } from '@tamedtable/chat-panel/components';
 import type { WebController } from '../../controller.ts';
 import { STAY_REPLAY_HINT } from '../../controller-messages.ts';
 import { useController } from '../../hooks/useController.ts';
@@ -26,7 +27,7 @@ import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
 import { KeyboardSheet, VoiceSheet, HistorySheet } from './sheets.tsx';
 import { ToursLink } from '../ToursLink.tsx';
-import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET } from './layout.ts';
+import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET, SUGGEST_STRIP_H } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
 
@@ -457,6 +458,20 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
     void controller.startVoice();
   };
 
+  // #LoadSuggestions: the chips ride in a strip above the dock (and above
+  // the Type sheet once it is up); a tap opens the composer with the
+  // sentence appended to the draft, the same rule the desktop panel uses.
+  const suggestions = controller.suggestions;
+  const suggestionsLoading = controller.suggestionsLoading;
+  const showSuggestions =
+    loaded && (suggestions.length > 0 || suggestionsLoading) && !busy && !stayed &&
+    inputMode !== 'voice' && inputMode !== 'history';
+  const pickSuggestion = (text: string): void => {
+    setDraft((d) => appendSentence(d, text));
+    controller.pickSuggestion(text);
+    setInputMode('keyboard');
+  };
+
   const dockActions: DockAction[] = [
     {
       key: 'menu',
@@ -511,7 +526,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         minHeight: 'calc(100lvh + 1px)',
         // The app bar and the dock are fixed; the flowing content clears them.
         paddingTop: APPBAR_OFFSET,
-        paddingBottom: DOCK_OFFSET,
+        paddingBottom: showSuggestions ? `calc(${DOCK_OFFSET} + ${SUGGEST_STRIP_H}px)` : DOCK_OFFSET,
       }}
     >
       {loaded ? (
@@ -574,6 +589,55 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
           sheets stay pinned (bottomInset gates the lift), so a stray
           visual-viewport shift while scrolling can't make them jitter. */}
       <div data-mob-bottom="" style={{ position: 'fixed', bottom: bottomInset(inputMode === 'keyboard', kbInset), left: 0, right: 0, zIndex: 20 }}>
+        {showSuggestions && (
+          <div
+            id="tutorial-suggestions"
+            data-mob-suggestions=""
+            style={{
+              height: SUGGEST_STRIP_H,
+              boxSizing: 'border-box',
+              display: 'flex',
+              alignItems: 'center',
+              gap: space.px6,
+              padding: `0 ${space.px10}px`,
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+              background: t.surface,
+              borderTop: `1px solid ${t.line}`,
+            }}
+          >
+            {suggestions.length === 0 ? (
+              <span
+                data-mob-suggestions-loading=""
+                style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink4 }}
+              >
+                Loading AI suggestions…
+              </span>
+            ) : (
+              suggestions.map((text) => (
+                <button
+                  key={text}
+                  type="button"
+                  data-mob-suggestion=""
+                  onClick={() => pickSuggestion(text)}
+                  style={{
+                    flex: '0 0 auto',
+                    background: t.surface2,
+                    border: `1px solid ${t.line2}`,
+                    borderRadius: space.radiusLg,
+                    padding: '8px 12px',
+                    fontFamily: typography.ui,
+                    fontSize: typography.size.sm,
+                    color: t.ink2,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {text}
+                </button>
+              ))
+            )}
+          </div>
+        )}
         {inputMode === 'keyboard' ? (
           <KeyboardSheet
             t={t}

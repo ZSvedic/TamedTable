@@ -459,7 +459,9 @@ They are handled locally without any LLM round-trip:
 - Any other `:`-prefixed word is a typo, not a request: it prints
   `<command>: unknown command. Type :help for the command list.` and
   makes no model call. Only a line that does *not* start with `:` is sent
-  to the spec editor.
+  to the spec editor, with one exception: a bare number runs the entry
+  with that number from the suggestions list printed after a load (see
+  [Suggested requests after a load](#suggested-requests-after-a-load-loadsuggestions)).
 
 The `:help` usage screen, verbatim:
 
@@ -498,7 +500,8 @@ Inspection / session:
 
 Anything not starting with ":" is sent to the spec editor as a natural-
 language request: e.g. "normalize phone numbers", "sort by DOB desc".
-Requests are additive; use :undo to revert the last one.
+Requests are additive; use :undo to revert the last one. A bare number
+runs that entry of the Suggestions list printed after a load.
 
 Ctrl-C: cancel in-flight request, or quit when idle. Requires
 ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or
@@ -580,11 +583,21 @@ Exit-code numbers and their meanings live in
 
 ## System prompts
 
-The three LLM prompts: the *patch* prompt for the spec-editor turn, the
-*batch* prompt for multi-row cell evaluation, and the *cell format
-constraint* every `{llm:…}` cell prompt must end with: live in
-[prompt-app-edit.md](prompt-app-edit.md). That file is the source of truth;
-the runtime loads it at module init.
+The LLM prompts live in [prompt-app-edit.md](prompt-app-edit.md). That
+file is the source of truth; the runtime loads it at module init. It holds:
+
+- the *patch* prompt for the spec-editor turn;
+- the *batch* prompt for multi-row cell evaluation;
+- the *cell format constraint* every `{llm:…}` cell prompt must end with;
+- the *Python export* prompt for `:save-py`;
+- the *voice* instruction that rides along with a spoken clip;
+- the *suggest* prompt for the after-load suggestions
+  ([below](#suggested-requests-after-a-load-loadsuggestions)). It is the
+  one prompt assembled from two files' worth of text: its own section
+  plus two parts borrowed from the patch prompt, the transformation
+  grammar and the few-shot request titles, so the suggester learns what
+  the engine can do from the same text that teaches the engine. A new
+  few-shot teaches both at once; nothing is written twice.
 
 <!-- #Dedupe -->
 The patch prompt teaches the LLM the additive rule, the choice between
@@ -1958,6 +1971,83 @@ previous turn, a typed request, a mic turn: is dropped silently, never
 surfaced as an error.
 
 → [code-contract.md: Voice input](code-contract.md#voice-input)
+
+## Suggested requests after a load (#LoadSuggestions)
+
+Opening a table starts a conversation the user may not know how to
+begin: they don't know what TamedTable can do, or what is wrong with
+their data. So after a table loads, the app asks the chat model once for
+two to four requests worth typing next, and shows them where the user is
+about to type.
+
+The call is small and its cost never grows with the table. It carries the
+table's name, its row and column counts, the column names, and a sample:
+the first 20 rows, at most 30 columns, each cell cut at 60 characters.
+The model answers with a short list of plain-English requests, each a
+full sentence ending in a period, phrased the way the user would type it
+(`Normalize the DOB column.`), and each one a transformation the engine
+can carry out on this table alone (never a join, which would need a
+second file). The wording is the model's: the same table may get
+different suggestions on different days.
+
+The call runs in the background, after the table is already on screen:
+it never delays the load. While it is out, the chip row's place reads a
+quiet grey **Loading AI suggestions…**, so the space the chips will take
+is accounted for rather than appearing from nowhere. If the call fails
+for any reason (no answer, an answer that isn't a list, a network or
+model error) the line simply goes away and the user sees no suggestions;
+nothing is shown as an error and the table is untouched. It does not run
+at all when there is nothing to call with: no key for the selected
+provider, unless a tour is playing, which serves the answer from the
+tour's recording like every other call it makes.
+
+What each surface shows:
+
+- **Web, desktop.** The suggestions appear as a row of clickable chips
+  between the chat thread and the input box, as soon as the answer
+  lands. Clicking a chip **appends** its sentence to whatever is in the
+  input (plus a space), focuses the input, and removes the chip. So
+  several clicks build one request out of several sentences, and the
+  user can edit the text before pressing send as for any request; a
+  request built this way is one turn and one undo step. Chips are
+  disabled while a request runs and hidden while
+  the input is disabled (staying in a finished tour).
+
+  **The first request that commits clears the rest of them**, typed,
+  clicked, or spoken. They are there to start a conversation the user
+  didn't know how to open; once it is open they are several lines of
+  sidebar the thread wants back, and the user who ignored them has said
+  what they wanted without help. A failed or cancelled request leaves
+  them, since nothing was started. Opening another table clears them
+  too: the new table gets its own.
+- **Web, phone.** The same chips, and the same loading line, sit in a
+  strip directly above the dock. Tapping a chip opens the Type sheet with
+  the sentence appended to the draft, ready to send or to extend with
+  another tap.
+- **CLI.** When the answer lands, the REPL prints the list under the
+  table, numbered, headed `Suggestions (type a number to run one):`, and
+  shows the prompt again. Typing a bare number runs that suggestion as a
+  request: the REPL prints `running suggestion 1: <text>` and continues
+  exactly as if the text had been typed. A number typed before the list
+  has arrived waits for it. A number with no matching entry prints
+  `no suggestion <n>` and makes no model call. `TAMEDTABLE_SUGGEST=off`
+  turns the call off for scripted use.
+
+A chip is a wide target, so it is a rounded rectangle rather than a
+pill: a sentence that wraps to two lines needs corners that don't cut
+into its own text, and room to breathe inside them.
+
+Suggestions are a host feature, not an engine one: the CLI binary and
+the web app ask for them; a program that drives the engine or a runner
+directly gets none unless it asks.
+
+The **Lazy AI execution** tour stops on the chips (see
+[Tutorial mode](#tutorial-mode-tutorialmode)): the sample it opens has
+25,000 rows, and the suggestions arrive for the same cents the rest of
+that story is about, because the model reads twenty rows whatever the
+file's size.
+
+→ [code-contract.md: Load suggestions](code-contract.md#load-suggestions-loadsuggestions)
 
 ## Tutorial mode (#TutorialMode)
 

@@ -14,6 +14,7 @@ import {
   type ExportPythonOpts,
   type RequestAudio,
   type StepUpdate,
+  type SuggestOpts,
 } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { defaultModel, defaultCellModel, defaultBatchSize } from '@tamedtable/model-config';
@@ -212,6 +213,11 @@ export class EngineManager {
 
   /** Load an already-parsed table (browser open/fetch/tutorial), no path,
    *  no filesystem. The web parses through file-io and hands rows here. */
+  /** #LoadSuggestions: one model call on the current engine. */
+  suggest(opts?: SuggestOpts): Promise<string[]> {
+    return this.ensureHeadless().suggest(opts);
+  }
+
   async loadParsed(rows: Row[], spec: TablePlan): Promise<void> {
     const runner = this.ensureHeadless();
     await runner.loadParsed(rows, spec);

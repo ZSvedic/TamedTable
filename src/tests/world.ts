@@ -90,6 +90,9 @@ interface RunnerOpts {
   pageSize?: number;
   fetch?: FetchLike;
   apiKey?: string;
+  /** #LoadSuggestions: hosts opt in; the `load suggestions are on` step
+   *  flips this in place before the runner builds. */
+  suggestions?: boolean;
 }
 
 /**
