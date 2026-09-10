@@ -109,6 +109,14 @@ Feature: Chat panel package
       And 1 suggestion chips are shown
       And the chat event log shows "pick Drop duplicate emails."
 
+    # #LoadSuggestions: while the host's call is out, the chip row's place
+    # holds a quiet grey line instead of appearing from nowhere.
+    @web
+    Scenario: A pending suggestion call shows a loading line
+      Given the chat-panel demo page
+      When the user toggles the suggestions loading line
+      Then the suggestions loading line is shown
+
     @web
     Scenario: A disabled hint greys out the input row
       Given the chat-panel demo page

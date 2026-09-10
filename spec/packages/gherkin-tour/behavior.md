@@ -62,6 +62,7 @@ match by `(feature, name)`.
 | `load the shuffled sample` | `load-shuffled` |
 | `open the run-on-all estimate dialog` | `open-estimate` |
 | `decline the estimate with "Not yet"` | `decline-estimate` |
+| `AI suggestions are shown` | `show-suggestions` |
 | anything else | `display` |
 
 The three lazy-execution stops (#LazyExec) drive the Lazy AI execution tour:
@@ -80,7 +81,7 @@ Only the text matters: the keyword (`Given`/`When`/`Then`/`And`/`But`) does not.
 
 A tour reads **load → query**, so only the executable stops are kept:
 `load-file`, `load-lookup`, `prefill-chat`, `play-audio`, `load-shuffled`,
-`open-estimate`, `decline-estimate`. Dropped:
+`open-estimate`, `decline-estimate`, `show-suggestions`. Dropped:
 
 - **`display`** (verifications, narration), test machinery, not a tour stop.
 - **`golden-source`**: lifted onto the scenario's `golden` field (first wins).
@@ -127,6 +128,7 @@ there.
 | `loadShuffled?()` | a `load-shuffled` step (optional: narration when absent) |
 | `openEstimate?()` | an `open-estimate` step (optional: narration when absent) |
 | `declineEstimate?()` | a `decline-estimate` step (optional: narration when absent) |
+| `showSuggestions?()` | a `show-suggestions` step (optional: narration when absent) |
 | `showGolden(goldenFile)` | reaching the terminal stop (the lifted `golden`, or undefined) |
 | `elementIdFor(action)` | resolving a spotlight target → DOM id, or null |
 | `onFinish()` | `finish` |
@@ -185,6 +187,7 @@ package customizes, and why it differs from a plain Driver.js tour:
   | `load the shuffled sample` | `Loading the shuffled sample…` |
   | `open the run-on-all estimate dialog` | `Opening the run-on-all estimate…` |
   | `decline the estimate with "Not yet"` | `The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.` |
+  | `AI suggestions are shown` | `AI read twenty rows and suggested what to try. Click one to put it in the box, or type your own.` |
   | anything else | echoed with the first letter capitalized, `…` appended |
 
   A `query "…"` step's text is typed into the host's chat input when the step

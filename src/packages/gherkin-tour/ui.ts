@@ -466,5 +466,10 @@ function asInstruction(text: string): string {
   if (/^declines? the estimate with "Not yet"$/.test(text)) {
     return 'The "Run on all rows?" dialog estimates the time and cost of cleaning the remaining 24,900 rows. Choosing "Not yet" because it would take some time.';
   }
+  // #LoadSuggestions: the point of the stop is that the sample is twenty rows
+  // whatever the file holds, so the suggestions cost the same on 25,000.
+  if (/^(?:the )?AI suggestions are shown$/.test(text)) {
+    return 'AI read twenty rows and suggested what to try. Click one to put it in the box, or type your own.';
+  }
   return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}…`;
 }

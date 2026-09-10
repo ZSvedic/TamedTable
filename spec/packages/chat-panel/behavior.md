@@ -19,7 +19,8 @@ The web app's wrapper binds `WebController`:
   progress={controller.runProgress}
   requestCount={controller.history().length}
   prefill={controller.tutorialPrefill}
-  suggestions={controller.suggestions} onPickSuggestion={(text) => controller.pickSuggestion(text)}
+  suggestions={controller.suggestions} suggestionsLoading={controller.suggestionsLoading}
+  onPickSuggestion={(text) => controller.pickSuggestion(text)}
   onSend={(text) => controller.sendChat(text)}
   onCancel={() => controller.cancelRequest()}
   emptyState={<p>Load a table to begin…</p>}
@@ -87,8 +88,12 @@ panel just renders whatever it is passed.
   or stands alone under the message text otherwise (an app error without a
   detail). Messages without `reportable` never show it.
 - Suggestion chips: a non-empty `suggestions` prop renders a wrap row of
-  pill buttons between the message list and the input row, one per
-  string, each a sentence. Clicking a chip appends its sentence to the
+  rounded-rectangle buttons between the message list and the input row,
+  one per string, each a sentence. The corners are modest and the padding
+  generous on purpose: a sentence that wraps to two lines must not run
+  into its own rounding. A truthy `suggestionsLoading` renders, in the
+  same slot and only while `suggestions` is empty, a quiet grey
+  `Loading AI suggestions…` line (`data-cp-suggestions-loading`). Clicking a chip appends its sentence to the
   draft (`appendSentence`, exported: the trimmed draft, a space when
   that is non-empty, the sentence, a trailing space), focuses the
   textarea, and fires `onPickSuggestion(text)`; so several clicks build
@@ -114,7 +119,7 @@ Stable attributes: `data-cp-messages` (the scrolling message list),
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
 `data-cp-stop`, `data-cp-running`, `data-cp-progress`,
 `data-cp-progress-toggle`, `data-cp-progress-log`, `data-cp-suggestion`
-(one per chip), plus the app's existing
+(one per chip), `data-cp-suggestions-loading`, plus the app's existing
 `data-testid="mic-button"` / `"copy-debug"`.
 
 ## MicButton component
@@ -148,6 +153,6 @@ streaming toggle drives the Running…/stop state
 together with a sample run progress (step line, bar, live request-detail
 log), a prefill button exercises the draft sync, a suggestions button
 adds three chips (each click appends its sentence to the draft and drops
-the chip), and
+the chip) and toggles the loading line, and
 the demo MicButton cycles recording → sending → idle. Every callback appends to the `#out` event log,
 non-empty on load: the demo smoke test's ready signal.

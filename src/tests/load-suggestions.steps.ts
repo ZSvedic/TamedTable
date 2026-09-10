@@ -154,6 +154,16 @@ When('user sends the picked suggestion', async function (this: TamedTableWorld) 
   await webController(this).sendChat(picked);
 });
 
+// The Lazy AI tour's stop (spec/test-cases/showcase-lazy-ai.feature): the
+// chips arrived for a 25,000-row file, because the sample the model reads is
+// twenty rows whatever the file holds.
+Then('AI suggestions are shown', async function (this: TamedTableWorld) {
+  const c = webController(this);
+  await c.awaitSuggestions();
+  assert.ok(c.suggestions.length > 0, 'no AI suggestions arrived');
+  assert.equal(c.suggestionsLoading, false, 'the suggestion call never settled');
+});
+
 Then('no suggestion chips are shown', async function (this: TamedTableWorld) {
   const c = webController(this);
   await c.awaitSuggestions();

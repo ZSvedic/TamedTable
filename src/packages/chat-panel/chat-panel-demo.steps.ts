@@ -198,3 +198,11 @@ Then('{int} suggestion chips are shown', async function (this: object, n: number
 When('the user clicks the suggestion chip {string}', async function (this: object, text: string) {
   await page(this).click(`[data-cp-suggestion]:has-text(${JSON.stringify(text)})`);
 });
+
+When('the user toggles the suggestions loading line', async function (this: object) {
+  await page(this).click('button:has-text("Toggle suggestions loading")');
+});
+
+Then('the suggestions loading line is shown', async function (this: object) {
+  await expectText(page(this), '[data-cp-suggestions-loading]', 'Loading AI suggestions…');
+});

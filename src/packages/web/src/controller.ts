@@ -167,6 +167,8 @@ export class WebController implements ControllerHost {
   suggestionsEnabled: boolean;
   /** The after-load suggestions: the chat chips. [] until the answer lands. */
   suggestions: string[] = [];
+  /** A suggestion call is out: the chip row shows its grey loading line. */
+  suggestionsLoading = false;
   private suggestionsPending: Promise<void> | null = null;
   private suggestionsSeq = 0;
   // #LazyExec
@@ -381,18 +383,33 @@ export class WebController implements ControllerHost {
    *  still-pending answer (behavior.md § Suggested requests after a load). */
   refreshSuggestions(): void {
     this.suggestions = [];
+    this.suggestionsLoading = false;
     this.suggestionsPending = null;
     const seq = ++this.suggestionsSeq;
-    if (!this.suggestionsEnabled || this.tutorial.isReplaying() || !this.settingsMgr.activeApiKey()?.trim()) return;
+    // A playing tour serves the call from its cassette, so it needs no key;
+    // every other session needs one for the selected provider.
+    const replaying = this.tutorial.isReplaying();
+    if (!this.suggestionsEnabled) return;
+    if (!replaying && !this.settingsMgr.activeApiKey()?.trim()) return;
+    this.suggestionsLoading = true;
     this.suggestionsPending = this.engine
       .suggest()
       .then((list) => {
         if (seq !== this.suggestionsSeq) return;
         this.suggestions = list;
-        this.notify();
       })
-      .catch(() => { /* no suggestions: never an error */ })
-      .finally(() => { if (seq === this.suggestionsSeq) this.suggestionsPending = null; });
+      .catch(() => {
+        // No suggestions is never an error. On a replaying tour a miss would
+        // otherwise sit on the flag and end the NEXT scripted request as
+        // "off-script": this call is not a tour step, so it eats its own miss.
+        if (replaying) this.tutorial.consumeReplayMiss();
+      })
+      .finally(() => {
+        if (seq !== this.suggestionsSeq) return;
+        this.suggestionsPending = null;
+        this.suggestionsLoading = false;
+        this.notify();
+      });
   }
 
   /** A chip was clicked: the panel already put its text in the draft; drop

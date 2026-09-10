@@ -1834,6 +1834,7 @@ interface WebControllerOptions { suggestions?: boolean }    // default false
 class WebController {
   suggestionsEnabled: boolean;          // from opts.suggestions
   suggestions: string[];                // the chips; [] until the answer lands
+  suggestionsLoading: boolean;          // a call is out: the grey loading line
   pickSuggestion(text: string): void;   // drop it from the list
   awaitSuggestions(): Promise<void>;    // settle the in-flight call (tests)
 }
@@ -1852,17 +1853,23 @@ picked entry leaves the list; a number past the list prints
 `no suggestion <n>`. `exit` aborts a still-pending call.
 
 The web `main.tsx` passes `suggestions: true`. `commitParsed` clears
-`suggestions` and, when `suggestionsEnabled`, no tour is replaying, and
-the selected provider's key is set, starts `engine.suggest()`; the answer
-lands in `suggestions` and notifies. A load that starts while a call is
-pending discards that call's answer; a failure lands as `[]`. `ChatPanel`
-gains `suggestions?: string[]` and `onPickSuggestion?: (text: string) => void`
+`suggestions` and, when `suggestionsEnabled` and either a tour is
+replaying or the selected provider's key is set, sets
+`suggestionsLoading` and starts `engine.suggest()`; the answer lands in
+`suggestions`, clears the flag, and notifies. A load that starts while a
+call is pending discards that call's answer; a failure lands as `[]`. A
+replaying tour is served from its cassette like any other call, and a
+**miss is consumed** in the failure path (`tutorial.consumeReplayMiss()`)
+so an untaped suggestion can never end the tour: only the requests the
+tour actually scripts do that. `ChatPanel` gains `suggestions?: string[]`,
+`suggestionsLoading?: boolean` and
+`onPickSuggestion?: (text: string) => void`
 (see [spec/packages/chat-panel/behavior.md](packages/chat-panel/behavior.md));
-`MobileShell` renders the same list as a strip above the dock
-(`data-mob-suggestion`) and opens the Type sheet with the tapped sentence
-appended to the draft, the same `appendSentence(draft, text)` rule the
-panel uses: `draft.trimEnd()`, a space when that is non-empty, the
-sentence, a trailing space.
+`MobileShell` renders the same list (and the same loading line) as a strip
+above the dock (`data-mob-suggestion`, `data-mob-suggestions-loading`) and
+opens the Type sheet with the tapped sentence appended to the draft, the
+same `appendSentence(draft, text)` rule the panel uses: `draft.trimEnd()`,
+a space when that is non-empty, the sentence, a trailing space.
 
 ## Tutorial mode
 
@@ -2007,7 +2014,7 @@ voice turn and replays key-free.
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
-| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled. The large-file dialog), `tutorial-runall-btn` (open-estimate: the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate, the estimate dialog the previous step opened), or `tutorial-table-view` (show-golden / display). |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled. The large-file dialog), `tutorial-runall-btn` (open-estimate: the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate, the estimate dialog the previous step opened), `tutorial-suggestions` (show-suggestions, the chip row), or `tutorial-table-view` (show-golden / display). |
 | `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing

@@ -1,8 +1,10 @@
-# #TutorialMode #LazyExec
+# #TutorialMode #LazyExec #LoadSuggestions
 # The "Lazy AI execution" showcase tour: the homepage's top section. It loads
 # the large bundled sample and walks the page-first story: the one-click
 # large-file dialog, the shuffled sample whose Row # column keeps original
-# numbers, an AI step that fills just the visible page, the pending-page
+# numbers, the AI suggestions that arrive for the same cents on 25,000 rows as
+# on 20 (the model reads a twenty-row sample whatever the file's size), an AI
+# step that fills just the visible page, the pending-page
 # marks, and the run-on-all estimate dialog (shown, then declined with
 # "Not yet": nothing runs, no key, no cost, and the tour ends with no
 # dialog left open). Replays key-free from cassettes/showcase-lazy-ai.json.
@@ -13,10 +15,12 @@ Feature: Lazy AI execution showcase tour
     @web @tour @cat-lazy
     Scenario: Clean 25,000 rows for cents
       Given the TamedTable web app
+      And load suggestions are on
       And load "showcase-lazy-input.csv"
       Then the large-file dialog offers "Load shuffled" and "Load in original order"
       When load the shuffled sample
       Then the Row # column keeps the original row numbers
+      Then AI suggestions are shown
       When query "add a Category column: kitchen, electronics, clothing, sports, or other"
       Then no toast is shown
       And the evaluated-rows readout shows "100 of 25000 rows evaluated"

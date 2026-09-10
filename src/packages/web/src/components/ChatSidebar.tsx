@@ -62,6 +62,8 @@ export function ChatSidebar({
       requestCount={controller.history().length}
       prefill={controller.tutorialPrefill}
       suggestions={controller.suggestions}
+      suggestionsLoading={controller.suggestionsLoading}
+      suggestionsId="tutorial-suggestions"
       onPickSuggestion={(text) => controller.pickSuggestion(text)}
       // Staying in a finished tour: the cassette can't answer new requests, so
       // the input row greys out (mic hidden) with the replay hint instead.

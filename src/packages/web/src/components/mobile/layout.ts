@@ -11,6 +11,7 @@ export const APPBAR_OFFSET = `calc(${APPBAR_H}px + env(safe-area-inset-top))`;
 /** Bottom padding that keeps the last table row clear of the fixed dock. */
 export const DOCK_OFFSET = `calc(${DOCK_H}px + env(safe-area-inset-bottom))`;
 
-/** #LoadSuggestions: the chip strip above the dock, one scrolling row. The
+/** #LoadSuggestions: the chip strip above the dock, one scrolling row, tall
+ *  enough that a chip is not pinned against the table edge above it. The
  *  shell pads its content by this too while the strip shows. */
-export const SUGGEST_STRIP_H = 44;
+export const SUGGEST_STRIP_H = 54;

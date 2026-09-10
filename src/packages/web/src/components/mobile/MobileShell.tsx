@@ -462,7 +462,10 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   // the Type sheet once it is up); a tap opens the composer with the
   // sentence appended to the draft, the same rule the desktop panel uses.
   const suggestions = controller.suggestions;
-  const showSuggestions = loaded && suggestions.length > 0 && !busy && !stayed && inputMode !== 'voice' && inputMode !== 'history';
+  const suggestionsLoading = controller.suggestionsLoading;
+  const showSuggestions =
+    loaded && (suggestions.length > 0 || suggestionsLoading) && !busy && !stayed &&
+    inputMode !== 'voice' && inputMode !== 'history';
   const pickSuggestion = (text: string): void => {
     setDraft((d) => appendSentence(d, text));
     controller.pickSuggestion(text);
@@ -588,6 +591,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
       <div data-mob-bottom="" style={{ position: 'fixed', bottom: bottomInset(inputMode === 'keyboard', kbInset), left: 0, right: 0, zIndex: 20 }}>
         {showSuggestions && (
           <div
+            id="tutorial-suggestions"
             data-mob-suggestions=""
             style={{
               height: SUGGEST_STRIP_H,
@@ -602,27 +606,36 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
               borderTop: `1px solid ${t.line}`,
             }}
           >
-            {suggestions.map((text) => (
-              <button
-                key={text}
-                type="button"
-                data-mob-suggestion=""
-                onClick={() => pickSuggestion(text)}
-                style={{
-                  flex: '0 0 auto',
-                  background: t.surface2,
-                  border: `1px solid ${t.line2}`,
-                  borderRadius: 999,
-                  padding: '6px 12px',
-                  fontFamily: typography.ui,
-                  fontSize: typography.size.sm,
-                  color: t.ink2,
-                  cursor: 'pointer',
-                }}
+            {suggestions.length === 0 ? (
+              <span
+                data-mob-suggestions-loading=""
+                style={{ fontFamily: typography.ui, fontSize: typography.size.sm, color: t.ink4 }}
               >
-                {text}
-              </button>
-            ))}
+                Loading AI suggestions…
+              </span>
+            ) : (
+              suggestions.map((text) => (
+                <button
+                  key={text}
+                  type="button"
+                  data-mob-suggestion=""
+                  onClick={() => pickSuggestion(text)}
+                  style={{
+                    flex: '0 0 auto',
+                    background: t.surface2,
+                    border: `1px solid ${t.line2}`,
+                    borderRadius: space.radiusLg,
+                    padding: '8px 12px',
+                    fontFamily: typography.ui,
+                    fontSize: typography.size.sm,
+                    color: t.ink2,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {text}
+                </button>
+              ))
+            )}
           </div>
         )}
         {inputMode === 'keyboard' ? (

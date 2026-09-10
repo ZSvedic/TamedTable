@@ -1991,12 +1991,15 @@ second file). The wording is the model's: the same table may get
 different suggestions on different days.
 
 The call runs in the background, after the table is already on screen:
-it never delays the load. If it fails for any reason (no answer, an
-answer that isn't a list, a network or model error) the user simply sees
-no suggestions; nothing is shown as an error and the table is untouched.
-It also does not run when there is nothing to call with: no key for the
-selected provider in the web app, or while a tour is playing or stayed
-(a tour replays from a recording that holds no such answer).
+it never delays the load. While it is out, the chip row's place reads a
+quiet grey **Loading AI suggestions…**, so the space the chips will take
+is accounted for rather than appearing from nowhere. If the call fails
+for any reason (no answer, an answer that isn't a list, a network or
+model error) the line simply goes away and the user sees no suggestions;
+nothing is shown as an error and the table is untouched. It does not run
+at all when there is nothing to call with: no key for the selected
+provider, unless a tour is playing, which serves the answer from the
+tour's recording like every other call it makes.
 
 What each surface shows:
 
@@ -2011,9 +2014,10 @@ What each surface shows:
   the input is disabled (staying in a finished tour). The remaining
   chips stay after a request. Opening another table clears them: the new
   table gets its own.
-- **Web, phone.** The same chips sit in a strip directly above the dock.
-  Tapping one opens the Type sheet with the sentence appended to the
-  draft, ready to send or to extend with another tap.
+- **Web, phone.** The same chips, and the same loading line, sit in a
+  strip directly above the dock. Tapping a chip opens the Type sheet with
+  the sentence appended to the draft, ready to send or to extend with
+  another tap.
 - **CLI.** When the answer lands, the REPL prints the list under the
   table, numbered, headed `Suggestions (type a number to run one):`, and
   shows the prompt again. Typing a bare number runs that suggestion as a
@@ -2023,9 +2027,19 @@ What each surface shows:
   `no suggestion <n>` and makes no model call. `TAMEDTABLE_SUGGEST=off`
   turns the call off for scripted use.
 
+A chip is a wide target, so it is a rounded rectangle rather than a
+pill: a sentence that wraps to two lines needs corners that don't cut
+into its own text, and room to breathe inside them.
+
 Suggestions are a host feature, not an engine one: the CLI binary and
 the web app ask for them; a program that drives the engine or a runner
 directly gets none unless it asks.
+
+The **Lazy AI execution** tour stops on the chips (see
+[Tutorial mode](#tutorial-mode-tutorialmode)): the sample it opens has
+25,000 rows, and the suggestions arrive for the same cents the rest of
+that story is about, because the model reads twenty rows whatever the
+file's size.
 
 → [code-contract.md: Load suggestions](code-contract.md#load-suggestions-loadsuggestions)
 

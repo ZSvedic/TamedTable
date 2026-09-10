@@ -70,8 +70,12 @@ export interface ControllerHost {
   // #LoadSuggestions
   /** The after-load suggestions (the chat chips); [] until the answer lands. */
   suggestions: string[];
+  /** A suggestion call is out: the chip row shows its grey loading line. */
+  suggestionsLoading: boolean;
   /** A fresh load landed: drop the old list and ask again when allowed. */
   refreshSuggestions(): void;
+  /** Settle the in-flight suggestion call, if any (the tour's chip stop). */
+  awaitSuggestions(): Promise<void>;
   pageNum: number;
   /** Rows per table page: re-derived from the provider on config changes. */
   pageSize: number;
