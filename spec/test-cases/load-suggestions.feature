@@ -61,6 +61,9 @@ Feature: Suggested requests after a table loads
       Then one fewer suggestion chip is shown
       When user sends the picked suggestion
       Then the spec has 1 transformation
+      # The chips have done their job: the conversation is open, and the
+      # sidebar wants those lines back (behavior.md § Suggested requests).
+      And no suggestion chips are shown
 
     @web @offline
     Scenario: Without a key for the selected provider nothing is asked

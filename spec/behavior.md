@@ -2011,9 +2011,15 @@ What each surface shows:
   user can edit the text before pressing send as for any request; a
   request built this way is one turn and one undo step. Chips are
   disabled while a request runs and hidden while
-  the input is disabled (staying in a finished tour). The remaining
-  chips stay after a request. Opening another table clears them: the new
-  table gets its own.
+  the input is disabled (staying in a finished tour).
+
+  **The first request that commits clears the rest of them**, typed,
+  clicked, or spoken. They are there to start a conversation the user
+  didn't know how to open; once it is open they are several lines of
+  sidebar the thread wants back, and the user who ignored them has said
+  what they wanted without help. A failed or cancelled request leaves
+  them, since nothing was started. Opening another table clears them
+  too: the new table gets its own.
 - **Web, phone.** The same chips, and the same loading line, sit in a
   strip directly above the dock. Tapping a chip opens the Type sheet with
   the sentence appended to the draft, ready to send or to extend with

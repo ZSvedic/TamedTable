@@ -100,7 +100,9 @@ panel just renders whatever it is passed.
   one request. Dropping the chip from the list is the host's job (the
   app's after-load suggestions, behavior.md § Suggested requests after a
   load). Chips are disabled while streaming and hidden in the disabled
-  state.
+  state. The panel never drops a chip on its own: a host that clears the
+  list after the first committed request (the app does) simply passes an
+  empty array.
 - Input row: a full-width textarea over an actions row (the host's
   `micButton` slot and send, or a stop button that fires `onCancel` while
   streaming). Enter sends, Shift+Enter for a newline; send is disabled on an

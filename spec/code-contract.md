@@ -1836,6 +1836,7 @@ class WebController {
   suggestions: string[];                // the chips; [] until the answer lands
   suggestionsLoading: boolean;          // a call is out: the grey loading line
   pickSuggestion(text: string): void;   // drop it from the list
+  clearSuggestions(): void;             // drop them all (the first commit)
   awaitSuggestions(): Promise<void>;    // settle the in-flight call (tests)
 }
 ```
@@ -1857,7 +1858,12 @@ The web `main.tsx` passes `suggestions: true`. `commitParsed` clears
 replaying or the selected provider's key is set, sets
 `suggestionsLoading` and starts `engine.suggest()`; the answer lands in
 `suggestions`, clears the flag, and notifies. A load that starts while a
-call is pending discards that call's answer; a failure lands as `[]`. A
+call is pending discards that call's answer; a failure lands as `[]`.
+`clearSuggestions()` empties the list and cancels any pending answer (a
+bumped `suggestionsSeq`), and both request paths call it once a turn has
+committed: `sendChat` after `engine.request` resolves, and the voice
+path after its `lastCommitId` check, so a declined or failed turn leaves
+the chips alone. A
 replaying tour is served from its cassette like any other call, and a
 **miss is consumed** in the failure path (`tutorial.consumeReplayMiss()`)
 so an untaped suggestion can never end the tour: only the requests the

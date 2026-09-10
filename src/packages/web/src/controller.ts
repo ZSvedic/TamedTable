@@ -344,6 +344,9 @@ export class WebController implements ControllerHost {
     try {
       track('chat-request');
       await this.engine.request(trimmed);
+      // The turn committed: the chips have served their purpose. A failed or
+      // cancelled request throws past this and leaves them.
+      this.clearSuggestions();
       const debug = this.lastDebug;
       // A wrong answer is a bug even when nothing turned red: every reply to
       // a completed request carries the Report bug action.
@@ -410,6 +413,19 @@ export class WebController implements ControllerHost {
         this.suggestionsLoading = false;
         this.notify();
       });
+  }
+
+  /** Drop every chip, and abandon a still-pending answer. The first request
+   *  that commits calls this: the chips exist to open a conversation the
+   *  user didn't know how to start, and once it is open they are sidebar
+   *  the thread wants back (behavior.md § Suggested requests after a load). */
+  clearSuggestions(): void {
+    if (this.suggestions.length === 0 && !this.suggestionsLoading && this.suggestionsPending === null) return;
+    this.suggestionsSeq++;
+    this.suggestions = [];
+    this.suggestionsLoading = false;
+    this.suggestionsPending = null;
+    this.notify();
   }
 
   /** A chip was clicked: the panel already put its text in the draft; drop

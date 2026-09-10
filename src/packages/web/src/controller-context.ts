@@ -76,6 +76,8 @@ export interface ControllerHost {
   refreshSuggestions(): void;
   /** Settle the in-flight suggestion call, if any (the tour's chip stop). */
   awaitSuggestions(): Promise<void>;
+  /** Drop every chip: the first request that commits has opened the thread. */
+  clearSuggestions(): void;
   pageNum: number;
   /** Rows per table page: re-derived from the provider on config changes. */
   pageSize: number;
