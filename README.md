@@ -105,7 +105,7 @@ Optional env vars and defaults if you omit them:
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into a single LLM request. The model replies with a JSON array; on a parse failure the runner falls back to per-row calls for that batch. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests that fire concurrently. Orthogonal to batch size: total parallel rows = batch × chunk. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default: the REPL prints a per-turn debug block after every request: executed expressions on success, per-turn detail on failure (indented, dimmed, capped at 20 lines). Set to `0`, `false`, or `off` to disable. |
-| `TAMEDTABLE_SUGGEST` | `on` | After a table loads, the REPL asks the chat model once for 3 to 5 requests worth typing next and lists them under the table; typing a number runs one. Set to `off` to skip that call. |
+| `TAMEDTABLE_SUGGEST` | `on` | After a table loads, the REPL asks the chat model once for 2 to 4 requests worth typing next and lists them under the table; typing a number runs one. Set to `off` to skip that call. |
 
 ### Running behind an HTTPS proxy (sandboxes)
 

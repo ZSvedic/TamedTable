@@ -88,11 +88,14 @@ panel just renders whatever it is passed.
   detail). Messages without `reportable` never show it.
 - Suggestion chips: a non-empty `suggestions` prop renders a wrap row of
   pill buttons between the message list and the input row, one per
-  string. Clicking a chip puts its text into the draft, focuses the
-  textarea, and fires `onPickSuggestion(text)`; dropping the chip from
-  the list is the host's job (the app's after-load suggestions,
-  behavior.md § Suggested requests after a load). Chips are disabled
-  while streaming and hidden in the disabled state.
+  string, each a sentence. Clicking a chip appends its sentence to the
+  draft (`appendSentence`, exported: the trimmed draft, a space when
+  that is non-empty, the sentence, a trailing space), focuses the
+  textarea, and fires `onPickSuggestion(text)`; so several clicks build
+  one request. Dropping the chip from the list is the host's job (the
+  app's after-load suggestions, behavior.md § Suggested requests after a
+  load). Chips are disabled while streaming and hidden in the disabled
+  state.
 - Input row: a full-width textarea over an actions row (the host's
   `micButton` slot and send, or a stop button that fires `onCancel` while
   streaming). Enter sends, Shift+Enter for a newline; send is disabled on an
@@ -144,6 +147,7 @@ panel's height (so the scroll rules have something to scroll), a
 streaming toggle drives the Running…/stop state
 together with a sample run progress (step line, bar, live request-detail
 log), a prefill button exercises the draft sync, a suggestions button
-adds three chips (clicking one fills the draft and drops the chip), and
+adds three chips (each click appends its sentence to the draft and drops
+the chip), and
 the demo MicButton cycles recording → sending → idle. Every callback appends to the `#out` event log,
 non-empty on load: the demo smoke test's ready signal.

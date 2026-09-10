@@ -320,7 +320,7 @@ export interface HeadlessRunner {
    *  Python script. Returns the script source, and streams it to
    *  `onProgress` on the way (#PyExport). */
   exportPython(opts?: ExportPythonOpts): Promise<string>;
-  /** One model call: 3 to 5 plain-English requests worth typing next for
+  /** One model call: 2 to 4 plain-English sentences worth typing next for
    *  the loaded table, from its headers and a bounded row sample. `[]`
    *  when the reply is not a list; errors throw (#LoadSuggestions). */
   suggest(opts?: SuggestOpts): Promise<string[]>;
@@ -627,8 +627,9 @@ export function suggestSample(table: string | undefined, columns: string[], rows
 
 /** @internal: exported for unit tests. The suggester's reply as a list:
  *  fence-stripped, parsed as a JSON array, strings trimmed, empties and
- *  case-insensitive duplicates dropped, at most 5 kept. Anything else is
- *  `[]`: a bad reply is no suggestions, never an error. */
+ *  case-insensitive duplicates dropped, a missing final period added (each
+ *  chip is a sentence the user can chain), at most 4 kept. Anything else
+ *  is `[]`: a bad reply is no suggestions, never an error. */
 export function parseSuggestions(text: string): string[] {
   let parsed: unknown;
   try { parsed = JSON.parse(unfenceScript(text)); } catch { return []; }
@@ -637,11 +638,13 @@ export function parseSuggestions(text: string): string[] {
   const seen = new Set<string>();
   for (const item of parsed) {
     if (typeof item !== 'string') continue;
-    const s = item.trim();
-    if (!s || seen.has(s.toLowerCase())) continue;
+    const trimmed = item.trim();
+    if (!trimmed) continue;
+    const s = /[.!?]$/.test(trimmed) ? trimmed : trimmed + '.';
+    if (seen.has(s.toLowerCase())) continue;
     seen.add(s.toLowerCase());
     out.push(s);
-    if (out.length === 5) break;
+    if (out.length === 4) break;
   }
   return out;
 }

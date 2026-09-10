@@ -157,7 +157,7 @@ function Demo(): ReactNode {
           </Button>
           <Button
             variant="chrome"
-            onClick={() => setSuggestions(['Normalize phone numbers', 'Drop duplicate emails', 'Sort by DOB descending'])}
+            onClick={() => setSuggestions(['Normalize phone numbers.', 'Drop duplicate emails.', 'Sort by DOB descending.'])}
           >
             Add suggestions
           </Button>

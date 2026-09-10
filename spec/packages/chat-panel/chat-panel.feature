@@ -95,18 +95,19 @@ Feature: Chat panel package
       When the user clicks the prefill button
       Then the chat input contains "Keep rows where age >= 18"
 
-    # #LoadSuggestions: the chip row the app fills after a table loads. The
-    # click fills the draft; dropping the chip is the host's job (the demo
-    # does it in its onPickSuggestion).
+    # #LoadSuggestions: the chip row the app fills after a table loads. Each
+    # click appends its sentence, so two clicks build one request; dropping
+    # the chip is the host's job (the demo does it in its onPickSuggestion).
     @web
-    Scenario: Clicking a suggestion chip fills the draft and leaves the row
+    Scenario: Clicking suggestion chips appends their sentences to the draft
       Given the chat-panel demo page
       When the user clicks the suggestions button
       Then 3 suggestion chips are shown
-      When the user clicks the suggestion chip "Normalize phone numbers"
-      Then the chat input contains "Normalize phone numbers"
-      And 2 suggestion chips are shown
-      And the chat event log shows "pick Normalize phone numbers"
+      When the user clicks the suggestion chip "Normalize phone numbers."
+      And the user clicks the suggestion chip "Drop duplicate emails."
+      Then the chat input contains "Normalize phone numbers. Drop duplicate emails. "
+      And 1 suggestion chips are shown
+      And the chat event log shows "pick Drop duplicate emails."
 
     @web
     Scenario: A disabled hint greys out the input row

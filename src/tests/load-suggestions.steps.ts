@@ -56,6 +56,11 @@ Then('between {int} and {int} suggestions are returned', function (this: TamedTa
   );
 });
 
+Then('every suggestion is a sentence ending in a period', function (this: TamedTableWorld) {
+  const list = stateOf(this).suggestions ?? [];
+  for (const s of list) assert.ok(s.endsWith('.'), `not a sentence: ${JSON.stringify(s)}`);
+});
+
 Then(
   'no suggestion is empty, repeated, or longer than {int} characters',
   function (this: TamedTableWorld, max: number) {

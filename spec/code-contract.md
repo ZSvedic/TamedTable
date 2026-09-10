@@ -1798,7 +1798,7 @@ interface SuggestOpts { signal?: AbortSignal }
 
 interface HeadlessRunner {
   // …
-  suggest(opts?: SuggestOpts): Promise<string[]>;   // one model call, 0 to 5 strings
+  suggest(opts?: SuggestOpts): Promise<string[]>;   // one model call, 0 to 4 sentences
 }
 
 // Sample bounds: the prompt never grows with the table.
@@ -1815,8 +1815,9 @@ cell cut to `SUGGEST_CELL_CHARS`. It makes one `generateText` call with
 `SUGGEST_PROMPT` as the system message, the chat model, the
 least-deliberation options (§ [Least deliberation](#least-deliberation-loweffort)),
 and `EXPORT_MAX_RETRIES`. The reply is fence-stripped and parsed as a
-JSON array; strings are trimmed, empties and duplicates dropped, and at
-most 5 kept. A reply that is not such an array yields `[]`: the caller
+JSON array; strings are trimmed, empties and duplicates dropped, a
+missing final period added, and at most 4 kept. A reply that is not such
+an array yields `[]`: the caller
 never sees a parse error. Network and model errors throw like any other
 call; hosts swallow them. Usage reports through `onUsage` with role
 `chat`, which the web's cell-cost estimate ignores; the call is not a
@@ -1858,8 +1859,10 @@ pending discards that call's answer; a failure lands as `[]`. `ChatPanel`
 gains `suggestions?: string[]` and `onPickSuggestion?: (text: string) => void`
 (see [spec/packages/chat-panel/behavior.md](packages/chat-panel/behavior.md));
 `MobileShell` renders the same list as a strip above the dock
-(`data-mob-suggestion`) and opens the Type sheet with the tapped text as
-the draft.
+(`data-mob-suggestion`) and opens the Type sheet with the tapped sentence
+appended to the draft, the same `appendSentence(draft, text)` rule the
+panel uses: `draft.trimEnd()`, a space when that is non-empty, the
+sentence, a trailing space.
 
 ## Tutorial mode
 

@@ -1977,16 +1977,17 @@ surfaced as an error.
 Opening a table starts a conversation the user may not know how to
 begin: they don't know what TamedTable can do, or what is wrong with
 their data. So after a table loads, the app asks the chat model once for
-three to five requests worth typing next, and shows them where the user
-is about to type.
+two to four requests worth typing next, and shows them where the user is
+about to type.
 
 The call is small and its cost never grows with the table. It carries the
 table's name, its row and column counts, the column names, and a sample:
 the first 20 rows, at most 30 columns, each cell cut at 60 characters.
-The model answers with a short list of plain-English requests, each
-phrased the way the user would type it, and each one a transformation
-the engine can carry out on this table alone (never a join, which would
-need a second file). The wording is the model's: the same table may get
+The model answers with a short list of plain-English requests, each a
+full sentence ending in a period, phrased the way the user would type it
+(`Normalize the DOB column.`), and each one a transformation the engine
+can carry out on this table alone (never a join, which would need a
+second file). The wording is the model's: the same table may get
 different suggestions on different days.
 
 The call runs in the background, after the table is already on screen:
@@ -2001,15 +2002,18 @@ What each surface shows:
 
 - **Web, desktop.** The suggestions appear as a row of clickable chips
   between the chat thread and the input box, as soon as the answer
-  lands. Clicking a chip puts its text into the input, focuses it, and
-  removes the chip; the user can edit the text and presses send as for
-  any request. Chips are disabled while a request runs and hidden while
+  lands. Clicking a chip **appends** its sentence to whatever is in the
+  input (plus a space), focuses the input, and removes the chip. So
+  several clicks build one request out of several sentences, and the
+  user can edit the text before pressing send as for any request; a
+  request built this way is one turn and one undo step. Chips are
+  disabled while a request runs and hidden while
   the input is disabled (staying in a finished tour). The remaining
   chips stay after a request. Opening another table clears them: the new
   table gets its own.
 - **Web, phone.** The same chips sit in a strip directly above the dock.
-  Tapping one opens the Type sheet with the text filled in, ready to
-  send.
+  Tapping one opens the Type sheet with the sentence appended to the
+  draft, ready to send or to extend with another tap.
 - **CLI.** When the answer lands, the REPL prints the list under the
   table, numbered, headed `Suggestions (type a number to run one):`, and
   shows the prompt again. Typing a bare number runs that suggestion as a

@@ -1,5 +1,5 @@
 # #LoadSuggestions
-# After a table loads, one bounded model call proposes 3 to 5 requests the
+# After a table loads, one bounded model call proposes 2 to 4 requests the
 # engine can execute (behavior.md § Suggested requests after a load). The
 # three surfaces send a byte-identical request, so one recording serves all of
 # them. The suggestion wording is model output: every assertion below is
@@ -7,14 +7,15 @@
 # Suggestions are opt-in for a runner, so each scenario switches them on.
 Feature: Suggested requests after a table loads
 
-  Rule: One call returns three to five suggestions, and every one executes
+  Rule: One call returns two to four sentences, and every one executes
 
     @headless
     Scenario: Suggestions are grounded in the table and each one runs
       Given load suggestions are on
       And load "customers-input.csv"
       When suggestions are requested
-      Then between 3 and 5 suggestions are returned
+      Then between 2 and 4 suggestions are returned
+      And every suggestion is a sentence ending in a period
       And no suggestion is empty, repeated, or longer than 80 characters
       And at least one suggestion names a column of the table
       When every suggestion is sent as a request in turn
@@ -55,7 +56,7 @@ Feature: Suggested requests after a table loads
       And load suggestions are on
       And the provider "gemini" has API key "AIza-example-key"
       And load "customers-input.csv"
-      Then between 3 and 5 suggestion chips are shown
+      Then between 2 and 4 suggestion chips are shown
       When user picks suggestion chip 1
       Then one fewer suggestion chip is shown
       When user sends the picked suggestion

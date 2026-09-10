@@ -31,7 +31,7 @@ export interface CliRunnerOptions extends HeadlessRunnerOptions {
   stderr?: NodeJS.WritableStream;
   stdin?: NodeJS.ReadableStream;
   quiet?: boolean;
-  /** #LoadSuggestions: ask the model for 3 to 5 requests after every load
+  /** #LoadSuggestions: ask the model for 2 to 4 requests after every load
    *  and list them under the table. Off unless the host asks: the binary
    *  entry passes it (unless TAMEDTABLE_SUGGEST=off); tests driving runCli
    *  get none unless their scenario opts in. */

@@ -16,6 +16,7 @@ import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
+import { appendSentence } from '@tamedtable/chat-panel/components';
 import type { WebController } from '../../controller.ts';
 import { STAY_REPLAY_HINT } from '../../controller-messages.ts';
 import { useController } from '../../hooks/useController.ts';
@@ -458,11 +459,12 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   };
 
   // #LoadSuggestions: the chips ride in a strip above the dock (and above
-  // the Type sheet once it is up); a tap opens the composer with the text.
+  // the Type sheet once it is up); a tap opens the composer with the
+  // sentence appended to the draft, the same rule the desktop panel uses.
   const suggestions = controller.suggestions;
   const showSuggestions = loaded && suggestions.length > 0 && !busy && !stayed && inputMode !== 'voice' && inputMode !== 'history';
   const pickSuggestion = (text: string): void => {
-    setDraft(text);
+    setDraft((d) => appendSentence(d, text));
     controller.pickSuggestion(text);
     setInputMode('keyboard');
   };

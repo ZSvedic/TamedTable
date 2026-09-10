@@ -19,6 +19,15 @@ const INPUT_MAX_H = 240;
 // scroll up stops the auto-follow.
 const PIN_THRESHOLD = 40;
 
+/** #LoadSuggestions: how a picked chip lands in the draft: after whatever
+ *  is there (trimmed, plus a space when non-empty), then a trailing space so
+ *  the next chip or keystroke continues the request. Shared with the app's
+ *  mobile composer so both surfaces compose the same text. */
+export function appendSentence(draft: string, sentence: string): string {
+  const base = draft.trimEnd();
+  return (base ? base + ' ' : '') + sentence + ' ';
+}
+
 const CP_CSS =
   '@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
   ' .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }';
@@ -501,14 +510,15 @@ export function ChatPanel({
 
   const hasDraft = draft.trim() !== '' && !disabled;
 
-  // A chip puts its text where the user is about to type, ready to edit or
-  // send. It also stops a prefill animation still typing, exactly as send
-  // does, so the interval cannot overwrite the picked text.
+  // A chip appends its sentence where the user is about to type, so several
+  // clicks build one request; the draft stays editable and send is the
+  // user's. It also stops a prefill animation still typing, exactly as send
+  // does, so the interval cannot overwrite the appended text.
   const pickSuggestion = (text: string): void => {
     if (streaming || disabled) return;
     const guard = typing.current;
     if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
-    setDraft(text);
+    setDraft((d) => appendSentence(d, text));
     inputRef.current?.focus();
     onPickSuggestion?.(text);
   };

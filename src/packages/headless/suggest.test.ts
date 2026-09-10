@@ -14,16 +14,20 @@ import {
 
 describe('parseSuggestions', () => {
   it('reads a bare JSON array', () => {
-    expect(parseSuggestions('["Normalize phone numbers", "Sort by DOB"]')).toEqual(['Normalize phone numbers', 'Sort by DOB']);
+    expect(parseSuggestions('["Normalize phone numbers.", "Sort by DOB."]')).toEqual(['Normalize phone numbers.', 'Sort by DOB.']);
   });
 
   it('strips a ```json fence', () => {
-    expect(parseSuggestions('```json\n["A", "B"]\n```')).toEqual(['A', 'B']);
+    expect(parseSuggestions('```json\n["A.", "B."]\n```')).toEqual(['A.', 'B.']);
   });
 
-  it('trims, drops empties and case-insensitive duplicates, and keeps at most 5', () => {
-    const reply = JSON.stringify([' A ', '', 'a', 'B', 'C', 'D', 'E', 'F', 42, null]);
-    expect(parseSuggestions(reply)).toEqual(['A', 'B', 'C', 'D', 'E']);
+  it('trims, drops empties and case-insensitive duplicates, and keeps at most 4', () => {
+    const reply = JSON.stringify([' A. ', '', 'a.', 'B.', 'C.', 'D.', 'E.', 42, null]);
+    expect(parseSuggestions(reply)).toEqual(['A.', 'B.', 'C.', 'D.']);
+  });
+
+  it('makes each entry a sentence: a missing final period is added, other end marks kept', () => {
+    expect(parseSuggestions('["Normalize DOB", "Normalize DOB.", "Sort by DOB?"]')).toEqual(['Normalize DOB.', 'Sort by DOB?']);
   });
 
   it('yields [] for anything that is not a JSON array', () => {
