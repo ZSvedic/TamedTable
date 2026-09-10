@@ -17435,6 +17435,10 @@ var jsx_dev_runtime7 = __toESM(require_jsx_dev_runtime(), 1);
 var INPUT_MIN_H = 68;
 var INPUT_MAX_H = 240;
 var PIN_THRESHOLD = 40;
+function appendSentence(draft, sentence) {
+  const base = draft.trimEnd();
+  return (base ? base + " " : "") + sentence + " ";
+}
 var CP_CSS = "@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }" + " .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }";
 function UserBubble({ t, children }) {
   return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
@@ -17840,7 +17844,7 @@ function ChatPanel({
       clearInterval(guard.timer);
       guard.timer = null;
     }
-    setDraft(text);
+    setDraft((d) => appendSentence(d, text));
     inputRef.current?.focus();
     onPickSuggestion?.(text);
   };
@@ -18458,7 +18462,7 @@ function Demo() {
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
                 variant: "chrome",
-                onClick: () => setSuggestions(["Normalize phone numbers", "Drop duplicate emails", "Sort by DOB descending"]),
+                onClick: () => setSuggestions(["Normalize phone numbers.", "Drop duplicate emails.", "Sort by DOB descending."]),
                 children: "Add suggestions"
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
