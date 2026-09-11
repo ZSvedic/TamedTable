@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Open tables fixture</title>
+  <style>table { border: 1px solid; }</style>
+  <script>var tableCount = "<table>not a table</table>";</script>
+</head>
+<body>
+  <h1>Three tables on one page</h1>
+  <p>A caption, an id, and a bare table, so each naming rule gets a turn.</p>
+  <table>
+    <caption>Countries</caption>
+    <tr><th>Country</th><th>Capital</th><th>Population</th></tr>
+    <tr><td>France</td><td>Paris</td><td>68,000,000</td></tr>
+    <tr><td>Japan</td><td>Tokyo</td><td>125,000,000</td></tr>
+    <tr><td>Brazil</td><td>Bras&iacute;lia</td><td>216,000,000</td></tr>
+    <tr><td>Kenya</td><td>Nairobi</td><td>55,000,000</td></tr>
+  </table>
+  <table id="prices">
+    <thead>
+      <tr><th>Item</th><th>Price</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Bread &amp; butter</td><td>3.50</td></tr>
+      <tr><td>Milk</td><td>1.20</td></tr>
+      <tr><td>
+        Eggs
+        (dozen)
+      </td><td>4.00</td></tr>
+    </tbody>
+    <tfoot>
+      <tr><td>Total</td><td>8.70</td></tr>
+    </tfoot>
+  </table>
+  <table>
+    <tr><td>Name</td><td>Role</td></tr>
+    <tr><td>Ada</td><td>Engineer</td></tr>
+    <tr><td>Grace</td><td>Admiral</td></tr>
+  </table>
+</body>
+</html>
