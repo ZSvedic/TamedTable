@@ -19,6 +19,15 @@ const INPUT_MAX_H = 240;
 // scroll up stops the auto-follow.
 const PIN_THRESHOLD = 40;
 
+/** #LoadSuggestions: how a picked chip lands in the draft: after whatever
+ *  is there (trimmed, plus a space when non-empty), then a trailing space so
+ *  the next chip or keystroke continues the request. Shared with the app's
+ *  mobile composer so both surfaces compose the same text. */
+export function appendSentence(draft: string, sentence: string): string {
+  const base = draft.trimEnd();
+  return (base ? base + ' ' : '') + sentence + ' ';
+}
+
 const CP_CSS =
   '@keyframes cp-pulse-kf { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }' +
   ' .cp-pulse { animation: cp-pulse-kf 1.2s ease-in-out infinite; }';
@@ -366,6 +375,16 @@ export interface ChatPanelProps {
   requestCount: number;
   /** Non-null text syncs into the draft (tutorial prefill-chat steps). */
   prefill?: string | null;
+  /** #LoadSuggestions: chips rendered between the thread and the input row.
+   *  Clicking one puts its text in the draft and fires `onPickSuggestion`;
+   *  dropping it from the list is the host's job. */
+  suggestions?: string[];
+  /** True while the host's suggestion call is out: the row shows a quiet
+   *  grey loading line until the chips (or nothing) arrive. */
+  suggestionsLoading?: boolean;
+  onPickSuggestion?: (text: string) => void;
+  /** DOM id for the chip row (the app's tour spotlights it). */
+  suggestionsId?: string;
   /** Non-null disables the input row: the textarea and send grey out, the
    *  draft clears, this text shows as the placeholder, and the `micButton`
    *  slot is hidden: the host's "input is off, here is why" state. */
@@ -397,6 +416,10 @@ export function ChatPanel({
   progress = null,
   requestCount,
   prefill = null,
+  suggestions = [],
+  suggestionsLoading = false,
+  onPickSuggestion,
+  suggestionsId,
   disabledHint = null,
   onSend,
   onCancel,
@@ -493,6 +516,19 @@ export function ChatPanel({
   };
 
   const hasDraft = draft.trim() !== '' && !disabled;
+
+  // A chip appends its sentence where the user is about to type, so several
+  // clicks build one request; the draft stays editable and send is the
+  // user's. It also stops a prefill animation still typing, exactly as send
+  // does, so the interval cannot overwrite the appended text.
+  const pickSuggestion = (text: string): void => {
+    if (streaming || disabled) return;
+    const guard = typing.current;
+    if (guard.timer) { clearInterval(guard.timer); guard.timer = null; }
+    setDraft((d) => appendSentence(d, text));
+    inputRef.current?.focus();
+    onPickSuggestion?.(text);
+  };
 
   const sendBtn: CSSProperties = {
     height: 30,
@@ -669,6 +705,63 @@ export function ChatPanel({
           </>
         )}
       </div>
+
+      {/* suggestion chips (#LoadSuggestions): hidden with the input row. The
+          row keeps its own top padding, so the message list above never
+          touches a chip, and the corners stay modest: a sentence that wraps
+          to two lines must not run into its own rounding. */}
+      {(suggestions.length > 0 || suggestionsLoading) && !disabled && (
+        <div
+          id={suggestionsId}
+          data-cp-suggestions=""
+          style={{
+            flex: '0 0 auto',
+            padding: `${space.px10}px ${space.px10}px ${space.px8}px`,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: space.px6,
+          }}
+        >
+          {suggestions.length === 0 ? (
+            <span
+              data-cp-suggestions-loading=""
+              style={{
+                fontFamily: typography.ui,
+                fontSize: typography.size.sm,
+                lineHeight: 1.4,
+                color: t.ink4,
+              }}
+            >
+              Loading AI suggestions…
+            </span>
+          ) : (
+            suggestions.map((text) => (
+              <button
+                key={text}
+                type="button"
+                data-cp-suggestion=""
+                onClick={() => pickSuggestion(text)}
+                disabled={streaming}
+                title="Add this request to the input"
+                style={{
+                  background: t.surface,
+                  border: `1px solid ${t.line2}`,
+                  borderRadius: space.radiusLg,
+                  padding: '7px 12px',
+                  fontFamily: typography.ui,
+                  fontSize: typography.size.sm,
+                  lineHeight: 1.4,
+                  color: streaming ? t.ink4 : t.ink2,
+                  cursor: streaming ? 'default' : 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                {text}
+              </button>
+            ))
+          )}
+        </div>
+      )}
 
       {/* input */}
       <div

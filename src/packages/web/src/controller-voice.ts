@@ -191,6 +191,8 @@ export class VoiceManager {
       // success reply to post (code-contract § Voice: the label is rewritten
       // "on success" only). The placeholder bubble keeps the transcript.
       if (this.host.engine.lastCommitId === null) return;
+      // A spoken turn opens the conversation as well as a typed one.
+      this.host.clearSuggestions();
       if (heard) this.host.patch.relabelLast(heard);
       const debug = this.host.lastDebug;
       this.host.pushMessage(

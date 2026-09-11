@@ -116,6 +116,7 @@ const adapter = {
       case 'play-audio':
       case 'show-golden':
       case 'golden-source':
+      case 'show-suggestions':
       case 'load-shuffled':
       case 'open-estimate':
       case 'decline-estimate':

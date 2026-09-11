@@ -394,6 +394,7 @@ Env vars:
 | `TAMEDTABLE_BATCH_SIZE` | `20` | Rows packed into one LLM request. Set to `1` to disable batching. |
 | `TAMEDTABLE_CHUNK_SIZE` | `5` | LLM requests fired concurrently. |
 | `TAMEDTABLE_DEBUG` | `on` | On by default: the REPL prints a debug block after every request: executed expressions on success, per-turn detail on failure, a usage summary either way. Set to `0`, `false`, or `off` to disable. |
+| `TAMEDTABLE_SUGGEST` | `on` | CLI binary only: set to `off` to skip the after-load suggestion call (§ [Load suggestions](#load-suggestions-loadsuggestions)). Read by the binary entry, not by `runCli`. |
 
 Exactly one provider key is required: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
 `OPENAI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `PUTER_TOKEN`. `resolveConfig` picks the provider from whichever is set
@@ -634,11 +635,24 @@ Exit codes:
 
 [`spec/prompt-app-edit.md`](prompt-app-edit.md) is parsed at module load.
 The file is split on top-level `## ` headers; each section becomes a
-module-internal string of the same name. Four sections required:
-`SYSTEM_PROMPT`, `BATCH_SYSTEM_PROMPT`, `CELL_FORMAT_CONSTRAINT`, and
+module-internal string of the same name. Five sections required:
+`SYSTEM_PROMPT`, `BATCH_SYSTEM_PROMPT`, `CELL_FORMAT_CONSTRAINT`,
 `PYTHON_EXPORT_PROMPT` (the system message for the `:save-py` translation
-call). Any required section missing throws at
+call), and `SUGGEST_PROMPT` (the system message for the after-load
+suggestion call, § [Load suggestions](#load-suggestions-loadsuggestions)).
+Any required section missing throws at
 load time with a clear error pointing at the file.
+
+`SUGGEST_PROMPT` is the one section not used verbatim: at load the
+runtime fills two placeholders from `SYSTEM_PROMPT`, so the suggester
+and the spec editor share one description of what the engine does.
+`{TRANSFORMATION_GRAMMAR}` becomes the body of `SYSTEM_PROMPT`'s
+`### Transformation grammar` subsection, and `{EXAMPLE_REQUESTS}` becomes
+its few-shot headers (`#### "…"`, quotes stripped), one `- ` bullet per
+line in file order. A `SUGGEST_PROMPT` missing either placeholder, or a
+`SYSTEM_PROMPT` missing the subsection or the few-shots, throws at load.
+`SYSTEM_PROMPT` itself is untouched by this: its bytes, and every
+cassette keyed on them, stay as they are.
 
 The runtime uses `SYSTEM_PROMPT` as the system message on every patch-turn
 call and `BATCH_SYSTEM_PROMPT` as the system message on every multi-row
@@ -1828,6 +1842,94 @@ Text and voice requests route through the selected provider:
 [§ Web UI](#web-ui-webui)). Only tutorial replay overrides this, pinning the
 recorded provider's defaults.
 
+## Load suggestions (#LoadSuggestions)
+
+→ [behavior.md: Suggested requests after a load](behavior.md#suggested-requests-after-a-load-loadsuggestions)
+
+```ts
+interface SuggestOpts { signal?: AbortSignal }
+
+interface HeadlessRunner {
+  // …
+  suggest(opts?: SuggestOpts): Promise<string[]>;   // one model call, 0 to 4 sentences
+}
+
+// Sample bounds: the prompt never grows with the table.
+const SUGGEST_SAMPLE_ROWS = 20;
+const SUGGEST_SAMPLE_COLS = 30;
+const SUGGEST_CELL_CHARS = 60;
+```
+
+`suggest` builds one user message from the committed spec and rows: the
+table's basename, the row and column counts, the column ids, and the
+first `SUGGEST_SAMPLE_ROWS` derived rows as one JSON object per line,
+limited to the first `SUGGEST_SAMPLE_COLS` columns with every stringified
+cell cut to `SUGGEST_CELL_CHARS`. It makes one `generateText` call with
+`SUGGEST_PROMPT` as the system message, the chat model, the
+least-deliberation options (§ [Least deliberation](#least-deliberation-loweffort)),
+and `EXPORT_MAX_RETRIES`. The reply is fence-stripped and parsed as a
+JSON array; strings are trimmed, empties and duplicates dropped, a
+missing final period added, and at most 4 kept. A reply that is not such
+an array yields `[]`: the caller
+never sees a parse error. Network and model errors throw like any other
+call; hosts swallow them. Usage reports through `onUsage` with role
+`chat`, which the web's cell-cost estimate ignores; the call is not a
+`request`, so it fires no `onDebug`. The three surfaces produce
+byte-identical bodies for the same file (basename, never the path), so
+one cassette entry serves headless, CLI, and web.
+
+Hosts opt in; the engine and the runners never call it on their own:
+
+```ts
+interface CliRunnerOptions { suggestions?: boolean }        // default false
+interface WebControllerOptions { suggestions?: boolean }    // default false
+
+class WebController {
+  suggestionsEnabled: boolean;          // from opts.suggestions
+  suggestions: string[];                // the chips; [] until the answer lands
+  suggestionsLoading: boolean;          // a call is out: the grey loading line
+  pickSuggestion(text: string): void;   // drop it from the list
+  clearSuggestions(): void;             // drop them all (the first commit)
+  awaitSuggestions(): Promise<void>;    // settle the in-flight call (tests)
+}
+```
+
+The CLI binary entry (`import.meta.main`) passes
+`suggestions: process.env.TAMEDTABLE_SUGGEST !== 'off'`; `runCli` itself
+defaults to off, so a test driving it makes no call unless its scenario
+asks. `runRepl` starts the call right after the initial load and after
+every `:load`; the answer prints as
+`Suggestions (type a number to run one):` plus one `  <n>. <text>` line
+each, then the prompt again (`rl.prompt(true)` in terminal mode, a plain
+`> ` otherwise). A bare-number line awaits the pending call, prints
+`running suggestion <n>: <text>`, and runs `runner.request(text)`; the
+picked entry leaves the list; a number past the list prints
+`no suggestion <n>`. `exit` aborts a still-pending call.
+
+The web `main.tsx` passes `suggestions: true`. `commitParsed` clears
+`suggestions` and, when `suggestionsEnabled` and either a tour is
+replaying or the selected provider's key is set, sets
+`suggestionsLoading` and starts `engine.suggest()`; the answer lands in
+`suggestions`, clears the flag, and notifies. A load that starts while a
+call is pending discards that call's answer; a failure lands as `[]`.
+`clearSuggestions()` empties the list and cancels any pending answer (a
+bumped `suggestionsSeq`), and both request paths call it once a turn has
+committed: `sendChat` after `engine.request` resolves, and the voice
+path after its `lastCommitId` check, so a declined or failed turn leaves
+the chips alone. A
+replaying tour is served from its cassette like any other call, and a
+**miss is consumed** in the failure path (`tutorial.consumeReplayMiss()`)
+so an untaped suggestion can never end the tour: only the requests the
+tour actually scripts do that. `ChatPanel` gains `suggestions?: string[]`,
+`suggestionsLoading?: boolean` and
+`onPickSuggestion?: (text: string) => void`
+(see [spec/packages/chat-panel/behavior.md](packages/chat-panel/behavior.md));
+`MobileShell` renders the same list (and the same loading line) as a strip
+above the dock (`data-mob-suggestion`, `data-mob-suggestions-loading`) and
+opens the Type sheet with the tapped sentence appended to the draft, the
+same `appendSentence(draft, text)` rule the panel uses: `draft.trimEnd()`,
+a space when that is non-empty, the sentence, a trailing space.
+
 ## Tutorial mode
 
 → [behavior.md: Tutorial mode](behavior.md#tutorial-mode-tutorialmode)
@@ -1971,7 +2073,7 @@ voice turn and replays key-free.
 | `tutorialStepCount(): number` | Total steps in the active tour. |
 | `selectedTourName(): string` | Name of the currently selected tour. |
 | `currentStepDetail()` | `{ keyword, text }` of the current step, or `null`. |
-| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled. The large-file dialog), `tutorial-runall-btn` (open-estimate: the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate, the estimate dialog the previous step opened), or `tutorial-table-view` (show-golden / display). |
+| `currentStepElementId(): string \| null` | DOM id to spotlight: `tutorial-open-btn` (load), `tutorial-chat-input` (prefill-chat), `tutorial-speak` (play-audio), `tutorial-load-shuffled` (load-shuffled. The large-file dialog), `tutorial-runall-btn` (open-estimate: the dialog doesn't exist while the step is highlighted), `tutorial-runall-dialog` (decline-estimate, the estimate dialog the previous step opened), `tutorial-suggestions` (show-suggestions, the chip row), or `tutorial-table-view` (show-golden / display). |
 | `async openTutorialFromLink(feature, scenario): Promise<boolean>` | Deep link. When both args are non-empty and a tour matches by `(feature, name)`: plays from step 1 (Tutorial panel stays closed), returns `true`. A missing/empty arg or no match leaves the panel closed and returns `false`. |
 
 `main.tsx` calls `openTutorialFromLink` once at app start, passing

@@ -22,11 +22,19 @@ if (!mdPath || !tmplPath || !outPath) {
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// Escape first, then turn [text](url) into anchors. External (http/https) links
-// open in a new tab; relative links (e.g. /FAQ#busl) stay in-page.
+// Escape first, then turn [text](url) into anchors. Links that leave the site
+// open in a new tab; links to our own pages stay in-page.
+//
+// Own-site links are written absolute (https://www.tamedtable.com/FAQ#busl), not
+// root-relative, for two reasons: lychee can actually check an absolute URL,
+// where a root-relative one fails local-file resolution with "provide a root
+// dir"; and build-site.sh re-roots the origin prefix for PR previews, so a
+// preview's privacy page links to that preview's FAQ instead of prod's.
+const SITE_ORIGIN = 'https://www.tamedtable.com/';
 const inline = (s: string): string =>
   escapeHtml(s).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) => {
-    const attrs = /^https?:\/\//.test(url) ? ' target="_blank" rel="noopener"' : '';
+    const offSite = /^https?:\/\//.test(url) && !url.startsWith(SITE_ORIGIN);
+    const attrs = offSite ? ' target="_blank" rel="noopener"' : '';
     return `<a href="${url}"${attrs}>${text}</a>`;
   });
 

@@ -106,6 +106,7 @@ Before({ tags: '@web' }, function (this: TamedTableWorld, scenario: ITestCaseHoo
       batchSize: opts.batchSize,
       chunkSize: opts.chunkSize,
       pageSize: opts.pageSize,
+      suggestions: opts.suggestions,
       tutorialSources,
     });
   };

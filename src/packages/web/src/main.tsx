@@ -58,6 +58,8 @@ const controller = createWebController({
   // re-resolve by name against this build's bundled samples.
   resolveSampleUrl: (name) => bundledSamples().find((s) => s.name === name)?.url ?? null,
   tutorialSources,
+  // #LoadSuggestions: the app opts in; the controller's own default is off.
+  suggestions: true,
 });
 
 // Keep the page title in sync with activity; nothing else needed here for now.
