@@ -55,6 +55,32 @@ Feature: Open a workbook or a web page
       Then the table has 4 data rows
       And cell "Capital" of row 3 is "Brasília"
 
+  Rule: A title above the table is not the header
+
+    # A sheet that opens with a title line ("Q1 Sales Report" in A1, then a
+    # blank row) still loads the header under it, not the title and a row of
+    # ghost column2, column3 … names (behavior.md § Opening a workbook or a
+    # web page). Sheet "Summary" merges its title across the whole table.
+    @headless @cli @web
+    Scenario: A sheet with a title row loads the real header
+      Given load "sales-title-row.xlsx#Sales"
+      Then the table has 2 data rows
+      And columns exist in the spec: "Region", "Rep", "Units", "Price", "Total"
+      And cell "Rep" of row 1 is "Ada"
+      And columns are absent from the current rows: "column2", "column3"
+
+    @headless @cli
+    Scenario: A title merged across the table is skipped too
+      Given load "sales-title-row.xlsx#Summary"
+      Then the table has 2 data rows
+      And columns exist in the spec: "Region", "Total"
+
+    @headless @cli
+    Scenario: The listed range starts at the header, not the title
+      When loading "sales-title-row.xlsx" is attempted
+      Then the load fails mentioning "1. Sales (Sales!A3:E5): 2 rows: Region, Rep, Units, Price, Total"
+      And the load fails mentioning "2. Summary (Summary!A2:B4): 2 rows: Region, Total"
+
   Rule: Without a pick, several tables fail with the list; none fails plainly
 
     @headless @cli

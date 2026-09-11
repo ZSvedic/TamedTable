@@ -676,9 +676,20 @@ nothing is guessed:
 - **Workbook:** one candidate per Excel table object (a range the author
   formatted as a table, under its Excel name) and, for a sheet with no
   table object, the sheet's data block: from the first non-empty row to
-  the last and from the leftmost non-empty column to the rightmost, the
-  block's first row being the header. Empty sheets are skipped.
-  Candidates come in sheet order.
+  the last and from the leftmost non-empty column to the rightmost.
+  Empty sheets are skipped. Candidates come in sheet order.
+
+  A sheet often opens with a **title** above the table ("Q1 Sales
+  Report" in A1, then a blank line), so the block's first row is not
+  always the header. A leading row is a title, and is skipped, when it
+  fills fewer than half the cells the block's widest row fills, or when
+  it is merged across at least half the block's width. Skipping stops
+  at the first row that is neither, that row is the header, and the
+  block's range is measured again over what is left, so a title wider
+  than the table does not widen it. A sheet whose widest row fills one
+  cell is a one-column list, never a title and a table, so it keeps its
+  first row as the header. An Excel table object always keeps its own
+  first row: the author already said where the table starts.
 - **Web page:** one candidate per `<table>` in page order, named by its
   `<caption>`, else its `id`, else `Table <n>`. The header is the first
   row holding `<th>` cells, else the first row; rows before the header

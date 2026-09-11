@@ -83,6 +83,9 @@ interface Sheet {
   cells: Map<number, Map<number, unknown>>;
   /** Excel table objects on the sheet: name + A1 range. */
   tables: Array<{ name: string; ref: string }>;
+  /** Merged ranges, 1-based. A title line above a table is usually merged
+   *  across it, which is how a two-column table's title is recognised. */
+  merges: Array<{ r1: number; c1: number; r2: number; c2: number }>;
 }
 
 interface Workbook { sheets: Sheet[] }
@@ -202,6 +205,7 @@ function readWorkbook(bytes: Uint8Array, name: string): Workbook {
     const sheetXml = target ? part(target) : undefined;
     if (!target || !sheetXml) continue;
     const cells = new Map<number, Map<number, unknown>>();
+    const merges: Sheet['merges'] = [];
     let row = 0;
     let col = 0;
     let cell: { col: number; row: number; type: string; style: number } | null = null;
@@ -224,6 +228,13 @@ function readWorkbook(bytes: Uint8Array, name: string): Workbook {
           cell = { col: pos.col, row: pos.row, type: a['t'] ?? 'n', style: Number(a['s'] ?? -1) };
           v = null;
           inlineText = null;
+        } else if (tag === 'mergeCell') {
+          const [from, to] = (a['ref'] ?? '').split(':');
+          if (from && to) {
+            const m1 = parseRef(from);
+            const m2 = parseRef(to);
+            merges.push({ r1: m1.row, c1: m1.col, r2: m2.row, c2: m2.col });
+          }
         } else if (tag === 'v') { inValue = true; v = ''; }
         else if (tag === 'is') inlineText = '';
         else if (tag === 't' && inlineText !== null) inInlineT = true;
@@ -255,7 +266,7 @@ function readWorkbook(bytes: Uint8Array, name: string): Workbook {
         },
       });
     }
-    sheets.push({ name: ref.name, cells, tables });
+    sheets.push({ name: ref.name, cells, tables, merges });
   }
   return { sheets };
 }
@@ -263,6 +274,34 @@ function readWorkbook(bytes: Uint8Array, name: string): Workbook {
 // ── Candidates ───────────────────────────────────────────────────────────────
 
 interface Block { sheet: Sheet; name: string; r1: number; c1: number; r2: number; c2: number }
+
+const isEmpty = (v: unknown): boolean => v === null || v === undefined || v === '';
+
+/** Where the header sits in a sheet block: leading **title** rows are not
+ *  headers. A row is a title when it fills fewer than half the cells the
+ *  widest row fills (a one-cell heading, a blank spacer), or when a merge
+ *  covers it across at least half the block's width. Skipping stops at the
+ *  first row that is neither. A block whose widest row fills a single cell is
+ *  a one-column list, so it keeps its first row. Spec:
+ *  spec/packages/file-io/formats/xlsx.md. */
+function headerRowOf(sheet: Sheet, r1: number, c1: number, r2: number, c2: number): number {
+  const width = c2 - c1 + 1;
+  const filled = (r: number): number => {
+    const line = sheet.cells.get(r);
+    if (!line) return 0;
+    let n = 0;
+    for (let c = c1; c <= c2; c++) if (!isEmpty(line.get(c))) n++;
+    return n;
+  };
+  let widest = 0;
+  for (let r = r1; r <= r2; r++) widest = Math.max(widest, filled(r));
+  if (widest <= 1) return r1;
+  const mergedAcross = (r: number): boolean =>
+    sheet.merges.some((m) => m.r1 <= r && r <= m.r2 && (m.c2 - m.c1 + 1) * 2 >= width);
+  let header = r1;
+  while (header < r2 && (filled(header) * 2 < widest || mergedAcross(header))) header++;
+  return header;
+}
 
 /** Every table the workbook holds, in sheet order: each Excel table object,
  *  or, on a sheet with none, the sheet's data block. Empty sheets list nothing. */
@@ -285,6 +324,21 @@ function blocks(wb: Workbook): Block[] {
       for (const c of line.keys()) { c1 = Math.min(c1, c); c2 = Math.max(c2, c); }
     }
     if (r2 === 0) continue;
+    // A title above the table is not the header, and a title wider than the
+    // table must not widen it: re-measure the columns after skipping.
+    const header = headerRowOf(sheet, r1, c1, r2, c2);
+    if (header > r1) {
+      let nc1 = Infinity, nc2 = 0;
+      for (let r = header; r <= r2; r++) {
+        const line = sheet.cells.get(r);
+        if (!line) continue;
+        for (const [c, v] of line) {
+          if (isEmpty(v)) continue;
+          nc1 = Math.min(nc1, c); nc2 = Math.max(nc2, c);
+        }
+      }
+      if (nc2 > 0) { r1 = header; c1 = nc1; c2 = nc2; }
+    }
     out.push({ sheet, name: sheet.name, r1, c1, r2, c2 });
   }
   return out;

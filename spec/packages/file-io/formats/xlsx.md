@@ -15,8 +15,13 @@ shape, the registry, detection, the table pick): [../behavior.md](../behavior.md
   located `Sheet!A1:D21`, its header the range's first row.
 - A sheet without table objects yields its data block: from the first
   non-empty row to the last, from the leftmost non-empty column to the
-  rightmost, the first row of the block being the header. The candidate takes
-  the sheet's name.
+  rightmost. The candidate takes the sheet's name. Leading **title** rows are
+  skipped: a row that fills fewer than half the cells of the block's widest
+  row, or that is merged across at least half the block's width, is a title,
+  not a header. The first row that is neither is the header, and the range is
+  measured again over the rows that remain (so `Sales!A1:E5` with a title in
+  A1 lists as `Sales!A3:E5`). A block whose widest row fills a single cell is
+  a one-column list and keeps its first row.
 - A sheet with no cells yields nothing.
 
 ## Parse

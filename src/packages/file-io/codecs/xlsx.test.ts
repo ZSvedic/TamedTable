@@ -31,6 +31,22 @@ describe('xlsx codec', () => {
     expect(table).toMatchObject({ index: 1, name: 'Sheet1', rowCount: 0, columns: ['a', 'b'] });
   });
 
+  // The title rule must not eat a real header: this one leaves two columns
+  // unnamed, so it fills 3 of 5 cells, and the rows under it fill 5.
+  test('a header with blank cells is not mistaken for a title', async () => {
+    const rows = [
+      { a: '1', b: '2', c: '3', d: '4', e: '5' },
+      { a: '6', b: '7', c: '8', d: '9', e: '10' },
+    ];
+    const bytes = await xlsxCodec.serialize!(rows, ['a', 'b', 'c', 'd', 'e'], ['a', '', '', 'd', 'e']);
+    const [table] = await xlsxCodec.listTables!(bytes, 'sparse-header.xlsx');
+    expect(table).toMatchObject({
+      rowCount: 2,
+      columns: ['a', 'column2', 'column3', 'd', 'e'],
+      location: 'Sheet1!A1:E3',
+    });
+  });
+
   test('bytes that are not a workbook fail by name', () => {
     expect(() => xlsxCodec.listTables!(new TextEncoder().encode('nope'), 'x.xlsx')).toThrow(
       'x.xlsx: not an .xlsx workbook',
