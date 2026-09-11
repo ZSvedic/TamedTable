@@ -599,6 +599,8 @@ export class WebController implements ControllerHost {
   openSampleDialog(): void { this.files.openSampleDialog(); }
   closeSampleDialog(): void { this.files.closeSampleDialog(); }
   loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> { return this.files.loadFromUrl(url, kind); }
+  /** The sample picker's click: never throws, a failure becomes a toast. */
+  loadSample(url: string): Promise<void> { return this.files.loadSample(url); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
   savePython(): Promise<void> { return this.files.savePython(); }
   saveData(): Promise<void> { return this.files.saveData(); }

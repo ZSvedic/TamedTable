@@ -90,6 +90,14 @@ export function missingLookups(spec: TablePlan, staged: ReadonlySet<string>): Mi
   return missing;
 }
 
+/** "Could not open <name>: <reason>". Codec and fetch errors often already
+ *  start with the file's own name (`people.html: no table found`): drop that
+ *  prefix so the toast names it once. */
+export function openFailureText(name: string, error: Error): string {
+  const message = error.message.startsWith(`${name}: `) ? error.message.slice(name.length + 2) : error.message;
+  return `Could not open ${name}: ${message}`;
+}
+
 export class FilesManager {
   private readonly host: ControllerHost;
   private readonly recentsStore = new RecentsStore();
@@ -478,6 +486,20 @@ export class FilesManager {
   closeSampleDialog(): void {
     this.host.sampleDialogOpen = false;
     this.host.notify();
+  }
+
+  /** The sample picker's click. The pick closes the picker before the load
+   *  finishes, so there is no dialog left to show a failure inline: unlike
+   *  `loadFromUrl`, this never throws, and reports as an error toast instead
+   *  (spec/behavior.md § Web UI). */
+  async loadSample(url: string): Promise<void> {
+    try {
+      await this.loadFromUrl(url, 'sample');
+    } catch (e) {
+      const name = url.split('/').pop() || url;
+      this.host.pushToast('error', openFailureText(name, e as Error));
+      this.host.notify();
+    }
   }
 
   /** Fetch a CSV or JSONL from `url` and render it like a local-file open.

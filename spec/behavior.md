@@ -1016,6 +1016,12 @@ grouped under small headers:
 - **Data**: **Open sample…** (raises the sample picker; clicking a
   sample loads it straight away), **Open local…** (the native file
   picker), and **Open URL…** (the URL dialog).
+  A sample that cannot be loaded (a page holding no table, a file the
+  deployment no longer serves) reports `Could not open <name>: <reason>`
+  as an error toast, the same wording a failed Recent entry uses. The
+  click closes the picker before the load finishes, so there is no
+  dialog left to show the error inline, and a pick that quietly did
+  nothing would read as a broken app.
 - **Recipe**: **Open .flow & run on current data…** (below), greyed
   until a table is loaded.
 

@@ -562,6 +562,16 @@ Feature: Web front-end
       When user closes the sample picker
       Then the sample picker is hidden
 
+    # The pick closes the picker before the load finishes, so a failure has no
+    # dialog left to land in: it becomes a toast (behavior.md § Web UI).
+    @web
+    Scenario: A sample that cannot be loaded says so
+      Given the TamedTable web app
+      And the URL "https://example.com/open-tables-none.html" serves "open-tables-none.html"
+      When user picks the sample "https://example.com/open-tables-none.html"
+      Then a toast shows "Could not open open-tables-none.html: no table found"
+      And no table is loaded
+
   Rule: A URL is a first-class load source
 
     @web

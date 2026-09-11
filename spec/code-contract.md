@@ -941,7 +941,8 @@ WebController.openCsv(): Promise<void>;          // native file picker → load
 WebController.openUrlDialog(): void;             // show Open URL dialog
 WebController.closeUrlDialog(): void;
 WebController.urlDialogOpen: boolean;
-WebController.loadFromUrl(url: string): Promise<void>;  // fetch + load
+WebController.loadFromUrl(url: string): Promise<void>;  // fetch + load, throws (the URL dialog shows it inline)
+WebController.loadSample(url: string): Promise<void>;   // the picker's click: never throws, failures become an error toast
 
 // #TablePick: the table picker a multi-table source raises
 WebController.tablePickerDialog: { name: string; candidates: TableCandidate[] } | null;

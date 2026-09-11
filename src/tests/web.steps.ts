@@ -348,6 +348,11 @@ When(
   },
 );
 
+// The picker's own click path: loadSample never throws, it toasts.
+When('user picks the sample {string}', async function (this: TamedTableWorld, url: string) {
+  await controller(this).loadSample(url);
+});
+
 Given('the URL {string} stops serving', function (this: TamedTableWorld, url: string) {
   // null makes the composite fetch answer this URL with HTTP 404.
   ctxOf(this).urlFixtures.set(url, null);
