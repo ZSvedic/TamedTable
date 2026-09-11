@@ -128,10 +128,14 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
   try {
     response = await fetchImpl(parsed.toString(), { redirect: 'follow' });
   } catch (e) {
-    // A network/CORS failure surfaces as a TypeError with no useful
-    // detail in the browser. Rewrite to something the user can act on.
+    // A network/CORS failure surfaces as a TypeError with no useful detail in
+    // the browser. A browser may only read another site's address when that
+    // site allows it, and most do not, so this is the usual ending for a page
+    // address: name the move that always works instead of leaving the user to
+    // guess at a fix that is not theirs to make.
     throw new Error(
-      `Couldn’t fetch ${parsed.hostname}: network error or CORS blocked. (${(e as Error).message})`,
+      `Couldn’t fetch ${parsed.hostname}: the site blocked this browser (CORS) or the address is unreachable. ` +
+        `Save the page and open the file instead. (${(e as Error).message})`,
     );
   }
   if (!response.ok) {

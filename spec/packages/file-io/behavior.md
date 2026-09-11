@@ -164,7 +164,11 @@ host can show as-is, in this order:
 1. Blank input → `Enter a URL.`
 2. Unparseable → `That doesn’t look like a valid URL.`
 3. Protocol not http/https → `Only http:// and https:// URLs are supported.`
-4. Network/CORS failure → `Couldn’t fetch <host>: network error or CORS blocked. (<detail>)`
+4. Network/CORS failure → `Couldn’t fetch <host>: the site blocked this browser (CORS) or the address is unreachable. Save the page and open the file instead. (<detail>)`
+   A browser may only read another site's address when that site allows it,
+   and most do not, so this is the common ending for a page address. The
+   message names the move that always works rather than leaving the user to
+   guess at a fix that is not theirs to make.
 5. Non-OK response → `Fetch failed: HTTP <status> <statusText>`
 6. Format undetectable (path + Content-Type) → `Could not detect format. URL must end in .csv, .jsonl, .parquet, .arrow, .xlsx, or .html.`
 

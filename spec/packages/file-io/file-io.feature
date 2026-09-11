@@ -81,7 +81,8 @@ Feature: File IO package
     Scenario: A network failure is rewritten to an actionable message
       Given a stub fetch that fails with "Failed to fetch"
       When fetchTable is called with "https://x.test/people.csv"
-      Then fetchTable fails mentioning "network error or CORS blocked"
+      Then fetchTable fails mentioning "the site blocked this browser (CORS)"
+      And fetchTable fails mentioning "Save the page and open the file instead."
 
     @headless
     Scenario: An HTTP error reports the status

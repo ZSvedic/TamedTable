@@ -174,7 +174,8 @@ export function OpenUrlDialog({ open, onSubmit, onClose }: OpenUrlDialogProps): 
               <a href="../FAQ.html#formats" target="_blank" rel="noopener" style={{ color: t.accent }}>
                 all formats ↗
               </a>
-              ). The remote server must allow cross-origin requests.
+              ). The remote server must allow cross-origin requests, which many
+              sites do not: save the page and open the file instead.
             </div>
             <input
               ref={inputRef}
