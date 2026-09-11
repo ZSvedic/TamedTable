@@ -11,6 +11,7 @@ import { OpenSampleDialog } from './components/OpenSampleDialog.tsx';
 import { Toasts } from './components/Toasts.tsx';
 import { ErrorDialog } from './components/ErrorDialog.tsx';
 import { ReplaceDialog } from './components/ReplaceDialog.tsx';
+import { TablePickerDialog } from './components/TablePickerDialog.tsx';
 import { LookupDialog } from './components/LookupDialog.tsx';
 import { LargeFileDialog, RunAllDialog, SaveGateDialog } from './components/LazyDialogs.tsx';
 import { TutorialPanel } from './components/TutorialPanel.tsx';
@@ -120,6 +121,7 @@ function AppShell({ controller }: { controller: WebController }): ReactNode {
       <RunAllDialog controller={controller} />
       <SaveGateDialog controller={controller} />
       <ReplaceDialog controller={controller} />
+      <TablePickerDialog controller={controller} />
       <LookupDialog controller={controller} />
       <ErrorDialog controller={controller} />
       <Toasts controller={controller} />

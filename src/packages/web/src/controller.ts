@@ -18,7 +18,7 @@ import { DEFAULT_BATCH_SIZE, DEFAULT_CHUNK_SIZE } from '@tamedtable/headless';
 import type { ChunkUpdate, RequestAudio, RequestDebugInfo, TimelineStep } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, defaultBatchSize, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
-import { detectFormat, type FilePort, type FormatId } from '@tamedtable/file-io';
+import { detectFormat, type FilePort, type FormatId, type TableCandidate } from '@tamedtable/file-io';
 import { clampPage, pageCountFor, pageSlice } from '@tamedtable/table-view';
 import { readStoredConfig, readStoredProbes, type ProviderProbe } from '@tamedtable/model-config/storage';
 import { describeError, userFacingMessage, summarizeDebug, missingTextKeyMessage } from './controller-messages.ts';
@@ -182,6 +182,9 @@ export class WebController implements ControllerHost {
   // #FileIO
   /** The replace-table confirmation a drop with a table loaded raises. */
   replaceDialog: { name: string } | null = null;
+  // #TablePick
+  /** The table picker a workbook or page with several tables raises. */
+  tablePickerDialog: { name: string; candidates: TableCandidate[] } | null = null;
   // #LookupJoin
   /** The lookup file a waiting join needs, or null. The run is paused on it. */
   lookupDialog: { name: string } | null = null;
@@ -664,19 +667,26 @@ export class WebController implements ControllerHost {
   confirmReplaceDrop(): Promise<void> { return this.files.confirmReplaceDrop(); }
   /** Dismiss the replace-table dialog: the current table stays. */
   dismissReplaceDrop(): void { this.files.dismissReplaceDrop(); }
+  /** The table picker's Load: load candidate `index` of the parked source. */
+  pickTable(index: number): Promise<void> { return this.files.pickTable(index); }
+  /** Dismiss the table picker: nothing loads, the current table stays. */
+  dismissTablePicker(): void { this.files.dismissTablePicker(); }
   openUrlDialog(): void { this.files.openUrlDialog(); }
   closeUrlDialog(): void { this.files.closeUrlDialog(); }
   openSampleDialog(): void { this.files.openSampleDialog(); }
   closeSampleDialog(): void { this.files.closeSampleDialog(); }
   loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> { return this.files.loadFromUrl(url, kind); }
+  /** The sample picker's click: never throws, a failure becomes a toast. */
+  loadSample(url: string): Promise<void> { return this.files.loadSample(url); }
   saveFlow(): Promise<void> { return this.files.saveFlow(); }
   savePython(): Promise<void> { return this.files.savePython(); }
   saveData(): Promise<void> { return this.files.saveData(); }
   saveDataAs(format: FormatId): Promise<void> { return this.files.saveDataAs(format); }
   /** Public file-load helper (also used by tutorial load-file steps). */
   loadFromText(name: string, text: string): Promise<void> { return this.files.loadFromText(name, text); }
-  /** Byte-level sibling: the @web test profile's `load "<file>"` seam. */
-  loadFromBytes(name: string, bytes: Uint8Array): Promise<void> { return this.files.loadFromBytes(name, bytes); }
+  /** Byte-level sibling: the @web test profile's `load "<file>"` seam;
+   *  `table` is a pick for a multi-table source (#TablePick). */
+  loadFromBytes(name: string, bytes: Uint8Array, table?: string): Promise<void> { return this.files.loadFromBytes(name, bytes, table); }
 
   // ── Voice input (→ voice) ──────────────────────────────────────────────────
 

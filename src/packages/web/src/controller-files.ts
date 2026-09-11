@@ -11,9 +11,12 @@ import {
   parseFlow,
   parseTable,
   serializeFlow,
+  TableChoiceError,
   type FormatId,
+  type ParseTableOptions,
   type PickedFile,
   type SaveOutcome,
+  type TableCandidate,
 } from '@tamedtable/file-io';
 import type { Row, TablePlan, Transformation } from '@tamedtable/core';
 import { checkFlowInputColumns, describeStep, isCancelled, specHasLlmCell } from '@tamedtable/headless';
@@ -23,7 +26,7 @@ import { RecentsStore, type RecentEntry } from './recents.ts';
 import { track } from './analytics.ts';
 
 /** The data formats the Open picker accepts. */
-const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow'];
+const OPEN_EXTENSIONS = ['.csv', '.jsonl', '.parquet', '.arrow', '.xlsx', '.html', '.htm'];
 
 // #SaveGate: browsers open a file picker only from a live user gesture, so a
 // save whose work outlives the starting click cannot reach its own picker. Both
@@ -85,6 +88,14 @@ export function missingLookups(spec: TablePlan, staged: ReadonlySet<string>): Mi
     missing.push({ index, name: t.with });
   });
   return missing;
+}
+
+/** "Could not open <name>: <reason>". Codec and fetch errors often already
+ *  start with the file's own name (`people.html: no table found`): drop that
+ *  prefix so the toast names it once. */
+export function openFailureText(name: string, error: Error): string {
+  const message = error.message.startsWith(`${name}: `) ? error.message.slice(name.length + 2) : error.message;
+  return `Could not open ${name}: ${message}`;
 }
 
 export class FilesManager {
@@ -348,7 +359,10 @@ export class FilesManager {
   // dialog awaits its one-click choice.
   private pendingLargeFile: { name: string; rows: Row[]; spec: TablePlan } | null = null;
 
-  private async loadFromPicked(picked: PickedFile, format?: FormatId): Promise<void> {
+  // #TablePick: the source parked while the table picker awaits its pick.
+  private pendingPick: { picked: PickedFile; format?: FormatId } | null = null;
+
+  private async loadFromPicked(picked: PickedFile, opts: ParseTableOptions = {}): Promise<void> {
     // Opening a file is one of the two exits from a stayed tour (behavior.md
     // § Staying in the tour): leave replay mode first, so the new table gets
     // a live engine instead of the tour's cassette. Every open path: picker,
@@ -358,8 +372,51 @@ export class FilesManager {
     if (this.host.tutorial.isTutorialStayed()) this.host.tutorial.cancelTutorial();
     // Parse the raw bytes through the file-io codec registry and load the rows
     // directly, no filesystem, no path round-trip. `format`, when set, is a
-    // fetch's Content-Type fallback for an extension-less URL.
-    const { rows, spec } = await parseTable(picked.name, picked.bytes, format);
+    // fetch's Content-Type fallback for an extension-less URL; `table` a
+    // pick (a URL fragment, a scripted load) for a multi-table source.
+    let parsed: { rows: Row[]; spec: TablePlan };
+    try {
+      parsed = await parseTable(picked.name, picked.bytes, opts);
+    } catch (e) {
+      // #TablePick: several tables and no pick: park the bytes and ask. The
+      // load resumes from pickTable (or ends quietly at dismissTablePicker).
+      if (!(e instanceof TableChoiceError)) throw e;
+      this.pendingPick = { picked, ...(opts.format ? { format: opts.format } : {}) };
+      this.host.tablePickerDialog = { name: picked.name, candidates: e.candidates };
+      this.host.notify();
+      return;
+    }
+    await this.loadParsedTable(picked.name, parsed);
+  }
+
+  /** The table picker's Load: parse the chosen candidate of the parked source
+   *  and continue exactly as a one-table load would. */
+  async pickTable(index: number): Promise<void> {
+    const pending = this.pendingPick;
+    if (!pending) return;
+    this.dismissTablePicker();
+    try {
+      const parsed = await parseTable(pending.picked.name, pending.picked.bytes, {
+        ...(pending.format ? { format: pending.format } : {}),
+        table: String(index),
+      });
+      await this.loadParsedTable(pending.picked.name, parsed);
+    } catch (e) {
+      this.host.pushToast('error', `Could not open file: ${(e as Error).message}`);
+    } finally {
+      this.host.notify();
+    }
+  }
+
+  /** Cancel the table picker: nothing loads, whatever was open stays. */
+  dismissTablePicker(): void {
+    this.pendingPick = null;
+    this.host.tablePickerDialog = null;
+    this.host.notify();
+  }
+
+  private async loadParsedTable(name: string, { rows, spec }: { rows: Row[]; spec: TablePlan }): Promise<void> {
+    const picked = { name };
     // #LazyExec: a file bigger than one page raises the large-file dialog:
     // one click on "Load shuffled" (the primary default) or "Load in
     // original order". A one-page file loads exactly as today.
@@ -433,13 +490,27 @@ export class FilesManager {
     this.host.notify();
   }
 
+  /** The sample picker's click. The pick closes the picker before the load
+   *  finishes, so there is no dialog left to show a failure inline: unlike
+   *  `loadFromUrl`, this never throws, and reports as an error toast instead
+   *  (spec/behavior.md § Web UI). */
+  async loadSample(url: string): Promise<void> {
+    try {
+      await this.loadFromUrl(url, 'sample');
+    } catch (e) {
+      const name = url.split('/').pop() || url;
+      this.host.pushToast('error', openFailureText(name, e as Error));
+      this.host.notify();
+    }
+  }
+
   /** Fetch a CSV or JSONL from `url` and render it like a local-file open.
    *  Throws on any failure so the dialog can keep itself open with an
    *  inline error; success closes the dialog at the caller. `kind` labels
    *  the Recent entry: the sample picker passes 'sample'. */
   async loadFromUrl(url: string, kind: 'url' | 'sample' = 'url'): Promise<void> {
-    const { name, bytes, format } = await fetchTable(url, this.host.opts.fetch);
-    await this.loadFromPicked({ name, bytes }, format);
+    const { name, bytes, format, table } = await fetchTable(url, this.host.opts.fetch);
+    await this.loadFromPicked({ name, bytes }, { format, ...(table ? { table } : {}) });
     this.recentsStore.record({ kind, label: name, url });
     track('open-file', { source: kind });
     // The record lands after loadFromPicked fired its last notify, so the menu
@@ -671,7 +742,8 @@ export class FilesManager {
       const specColumns = this.host.engine.currentSpec().columns;
       const columns = specColumns.map((c) => c.id);
       const headers = specColumns.map((c) => c.label ?? c.id);
-      const content = await codec.serialize(rows, columns, headers);
+      // Every Save-menu format serializes (html never appears there).
+      const content = await codec.serialize!(rows, columns, headers);
       if (this.reportSave(await this.host.file.pickSave(suggested, [ext], content))) {
         track('save-data', { format });
       }
@@ -703,8 +775,9 @@ export class FilesManager {
 
   /** Byte-level sibling of loadFromText: the seam the @web test profile's
    *  `load "<file>"` step uses, so every scripted load takes the same
-   *  loadFromPicked path (and large-file gate) a picked or dropped file does. */
-  async loadFromBytes(name: string, bytes: Uint8Array): Promise<void> {
-    await this.loadFromPicked({ name, bytes });
+   *  loadFromPicked path (and large-file gate) a picked or dropped file does.
+   *  `table` is the pick for a multi-table source (#TablePick). */
+  async loadFromBytes(name: string, bytes: Uint8Array, table?: string): Promise<void> {
+    await this.loadFromPicked({ name, bytes }, table ? { table } : {});
   }
 }

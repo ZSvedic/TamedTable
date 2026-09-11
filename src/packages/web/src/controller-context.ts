@@ -11,7 +11,7 @@ import type { RequestDebugInfo } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import type { Provider, ResolvedConfig } from '@tamedtable/model-config';
 import type { ProviderProbe } from '@tamedtable/model-config/storage';
-import type { FilePort } from '@tamedtable/file-io';
+import type { FilePort, TableCandidate } from '@tamedtable/file-io';
 import type { EngineManager } from './controller-engine.ts';
 import type { PatchManager } from './controller-patch.ts';
 import type { FilesManager, SaveGateState } from './controller-files.ts';
@@ -93,6 +93,10 @@ export interface ControllerHost {
   /** The replace-table confirmation a drop with a table loaded raises, or
    *  null. Names the dropped file; the bytes wait in FilesManager. */
   replaceDialog: { name: string } | null;
+  // #TablePick
+  /** The table picker a workbook or page with several tables raises, or
+   *  null. Names the source; the bytes wait in FilesManager. */
+  tablePickerDialog: { name: string; candidates: TableCandidate[] } | null;
   /** Column the grid should scroll into view (a new seq re-triggers), or null. */
   reveal: { column: string; seq: number } | null;
   // #LookupJoin

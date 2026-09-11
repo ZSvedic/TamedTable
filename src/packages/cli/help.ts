@@ -6,7 +6,7 @@ export const CLI_USAGE_TEXT = `tamedtable: work tables in your terminal with nat
 Usage:
   tamedtable <input>                 Open <input> in the interactive REPL.
                                      <input> is a table file: .csv, .jsonl,
-                                     .parquet, or .arrow.
+                                     .parquet, .arrow, .xlsx, or .html.
                                      Once inside, type :help for commands.
   tamedtable execute <flow>          Replay a saved .flow against an input.
                                      No LLM call; no API key needed.
@@ -26,9 +26,11 @@ spec; results stream in. The table reprints after any state or viewport
 change.
 
 State / data commands:
-  :load <path>       Load CSV/JSONL/Parquet/Arrow as new input. Resets
+  :load <path>       Load a table file (CSV, JSONL, Parquet, Arrow, XLSX,
+                     HTML; add #<n> to pick a table) as new input. Resets
                      transformations, viewport, cache.
-  :save <path>       Write current rows (CSV/JSONL/Parquet/Arrow by ext).
+  :save <path>       Write current rows (CSV/JSONL/Parquet/Arrow/XLSX by
+                     ext).
   :save-flow <path>  Write current spec as a .flow file.
   :save-py <path>    Write current flow as a standalone Python script.
   :reorder <cols>    Reorder columns (comma/space separated); sets the table

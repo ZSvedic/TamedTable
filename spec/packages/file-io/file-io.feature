@@ -23,8 +23,23 @@ Feature: File IO package
 
     @headless
     Scenario: No extension and no useful Content-Type means no format
-      When detectFormat is called with path "/download" and content type "text/html"
+      When detectFormat is called with path "/download" and content type "application/octet-stream"
       Then no format is detected
+
+    @headless
+    Scenario: A .xlsx path is detected as xlsx
+      When detectFormat is called with path "/q1/report.xlsx" and no content type
+      Then the detected format is "xlsx"
+
+    @headless
+    Scenario: A page address with no extension served as text/html is html
+      When detectFormat is called with path "/wiki/List_of_countries" and content type "text/html; charset=utf-8"
+      Then the detected format is "html"
+
+    @headless
+    Scenario: A pick fragment does not hide the extension
+      When detectFormat is called with path "report.xlsx#Orders" and no content type
+      Then the detected format is "xlsx"
 
   Rule: File names derive from the URL's last path segment
 
@@ -66,7 +81,8 @@ Feature: File IO package
     Scenario: A network failure is rewritten to an actionable message
       Given a stub fetch that fails with "Failed to fetch"
       When fetchTable is called with "https://x.test/people.csv"
-      Then fetchTable fails mentioning "network error or CORS blocked"
+      Then fetchTable fails mentioning "the site blocked this browser (CORS)"
+      And fetchTable fails mentioning "Save the page and open the file instead."
 
     @headless
     Scenario: An HTTP error reports the status
@@ -76,9 +92,49 @@ Feature: File IO package
 
     @headless
     Scenario: An undetectable format is refused
-      Given a stub fetch serving "https://x.test/page" with body "<html>" and content type "text/html"
-      When fetchTable is called with "https://x.test/page"
-      Then fetchTable fails with "Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow."
+      Given a stub fetch serving "https://x.test/blob" with body "xyz" and content type "application/octet-stream"
+      When fetchTable is called with "https://x.test/blob"
+      Then fetchTable fails with "Could not detect format. URL must end in .csv, .jsonl, .parquet, .arrow, .xlsx, or .html."
+
+    @headless
+    Scenario: A URL fragment is returned as the table pick, never sent
+      Given a stub fetch serving "https://x.test/prices" with body "<table><tr><th>a</th></tr></table>" and content type "text/html"
+      When fetchTable is called with "https://x.test/prices#2"
+      Then the picked file is named "prices"
+      And the fetched table pick is "2"
+
+  Rule: A pick settles which of several tables loads
+
+    # #TablePick: the one chooser every surface goes through. Candidates are
+    # "Customers, Orders, Notes"; the outcome is the picked name or an error.
+    @headless
+    Scenario Outline: <case>
+      Given a source "report.xlsx" listing the tables "<tables>"
+      When chooseTable runs with the pick "<pick>"
+      Then the choice is <outcome>
+
+      Examples:
+        | case                                | tables                   | pick     | outcome                                                                  |
+        | One table needs no pick             | Orders                   |          | "Orders"                                                                 |
+        | One table ignores a matching pick   | Orders                   | 1        | "Orders"                                                                 |
+        | Several tables without a pick fail  | Customers, Orders, Notes |          | an error "report.xlsx holds 3 tables; add #<n> or #<name> to pick one:" |
+        | A number picks by position          | Customers, Orders, Notes | 3        | "Notes"                                                                  |
+        | A name picks case-insensitively     | Customers, Orders, Notes | orders   | "Orders"                                                                 |
+        | A number out of range fails         | Customers, Orders, Notes | 4        | an error "report.xlsx: no table \"4\""                                   |
+        | An unknown name fails               | Customers, Orders, Notes | Invoices | an error "report.xlsx: no table \"Invoices\""                            |
+        | No table at all fails               |                          |          | an error "report.xlsx: no table found"                                   |
+
+    @headless
+    Scenario Outline: splitTableSelector takes the fragment only off a multi-table path
+      When splitTableSelector is called with "<path>"
+      Then the split source is "<source>" and the pick is "<pick>"
+
+      Examples:
+        | path                    | source              | pick   |
+        | data/report.xlsx#Orders | data/report.xlsx    | Orders |
+        | page.htm#2              | page.htm            | 2      |
+        | report.xlsx             | report.xlsx         |        |
+        | notes#1.csv             | notes#1.csv         |        |
 
   Rule: Text codecs survive messy input and say what broke
 

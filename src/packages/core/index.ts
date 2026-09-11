@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
-import { formatForExtension, loadCodec } from '@tamedtable/file-io';
+import { canSerialize, formatForExtension, loadCodec, parseTable, splitTableSelector } from '@tamedtable/file-io';
 
 // #TablePlanSchema
 // The TablePlan model now lives in @tamedtable/table-plan (zero-dependency base
@@ -12,7 +12,7 @@ export * from '@tamedtable/table-plan';
 
 // #FormatOut: re-exported so REPL/CLI callers can gate on the codec registry
 // (`:load`/`:save` extension checks) without a direct file-io dependency.
-export { formatForExtension, loadCodec, type FormatId } from '@tamedtable/file-io';
+export { canSerialize, formatForExtension, loadCodec, splitTableSelector, type FormatId } from '@tamedtable/file-io';
 
 async function readBytes(label: string, path: string): Promise<Uint8Array> {
   try {
@@ -45,22 +45,20 @@ export async function loadCsv(path: string): Promise<{ spec: TablePlan; rows: Ro
 }
 
 // #IoFormats
-/** Generic load for any registered format (Parquet, Arrow, …): pick the codec
- *  by extension, parse the bytes, and build a fresh-load TablePlan. CSV/JSONL
- *  keep their own loaders above (CSV adds header/duplicate-column checks); this
- *  is the dispatch target for every other format. */
+/** Generic load for any registered format (Parquet, Arrow, XLSX, HTML, …):
+ *  read the bytes and hand them to file-io's `parseTable`, which picks the
+ *  codec by extension and, for a multi-table source, settles which table
+ *  loads (#TablePick). A `#pick` on the path (`report.xlsx#Orders`) is split
+ *  off before the read and kept in the spec's `table`, so a flow saved from
+ *  it replays the same pick. CSV/JSONL keep their own loaders above; this is
+ *  the dispatch target for every other format. */
 export async function loadFile(path: string): Promise<{ spec: TablePlan; rows: Row[]; sourcePath: string }> {
-  const id = formatForExtension(path);
-  if (!id) throw new Error(`load: unknown file type: ${path}`);
-  const bytes = await readBytes('load', path);
-  const codec = await loadCodec(id);
-  const { rows, columns } = await codec.parse(bytes, path);
-  const spec: TablePlan = validateTablePlan({
-    table: path,
-    columns: columns.map((id) => ({ id })),
-    transformations: [],
-  });
-  return { spec, rows, sourcePath: path };
+  const { source, table } = splitTableSelector(path);
+  if (!formatForExtension(source)) throw new Error(`load: unknown file type: ${path}`);
+  const bytes = await readBytes('load', source);
+  const parsed = await parseTable(source, bytes, { table });
+  const spec: TablePlan = validateTablePlan({ ...parsed.spec, table: path });
+  return { spec, rows: parsed.rows, sourcePath: path };
 }
 
 export async function readJsonl(path: string): Promise<Row[]> {
@@ -124,7 +122,7 @@ function findEnvFile(startDir: string): string | undefined {
 
 export async function writeJsonl(path: string, rows: Row[], columnOrder?: string[]): Promise<void> {
   const codec = await loadCodec('jsonl');
-  const body = await codec.serialize(rows, columnOrder as string[]);
+  const body = await codec.serialize!(rows, columnOrder as string[]);
   try {
     await writeFile(path, body);
   } catch (e) {
@@ -144,8 +142,9 @@ export async function writeRows(
 ): Promise<void> {
   const id = formatForExtension(filePath);
   if (!id) throw new Error(`unknown file type: ${filePath}`);
+  if (!canSerialize(id)) throw new Error(`cannot save as ${id.toUpperCase()}: load-only format`);
   const codec = await loadCodec(id);
-  const body = await codec.serialize(rows, columnOrder, headers);
+  const body = await codec.serialize!(rows, columnOrder, headers);
   try {
     await writeFile(filePath, body);
   } catch (e) {

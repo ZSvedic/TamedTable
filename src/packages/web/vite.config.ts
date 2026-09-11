@@ -54,7 +54,7 @@ const showcaseSamplesList = showcaseSamples(
 // tutorial inputs + goldens), the tutorial feature files, and the recorded
 // cassettes. Each is copied into dist/ at build and served from its source dir
 // by a dev middleware: same pattern, three directories.
-const SAMPLE_EXTS = ['.csv', '.jsonl', '.parquet', '.arrow'];
+const SAMPLE_EXTS = ['.csv', '.jsonl', '.parquet', '.arrow', '.xlsx', '.html'];
 const servedSampleFiles = readdirSync(specTcDir)
   .filter((name) => SAMPLE_EXTS.some((ext) => name.endsWith(ext)))
   .sort();
@@ -75,6 +75,8 @@ function contentTypeFor(name: string): string {
   if (name.endsWith('.m4a')) return 'audio/mp4';
   if (name.endsWith('.parquet')) return 'application/vnd.apache.parquet';
   if (name.endsWith('.arrow') || name.endsWith('.feather')) return 'application/vnd.apache.arrow.file';
+  if (name.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (name.endsWith('.html')) return 'text/html; charset=utf-8';
   return 'text/plain; charset=utf-8';  // .feature
 }
 

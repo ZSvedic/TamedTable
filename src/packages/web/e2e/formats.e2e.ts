@@ -10,6 +10,7 @@ const BASE = 'http://localhost:5173/TamedTable/app';
 for (const { label, file } of [
   { label: 'Parquet', file: 'customers-input.parquet' },
   { label: 'Arrow', file: 'customers-input.arrow' },
+  { label: 'XLSX', file: 'customers-input.xlsx' },
 ]) {
   test(`${label} loads in the browser and renders the table`, async ({ page }) => {
     await page.goto('/TamedTable/app/');

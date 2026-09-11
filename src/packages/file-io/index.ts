@@ -6,28 +6,44 @@
 
 import { validateTablePlan, type Row, type TablePlan } from '@tamedtable/table-plan';
 import { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
+import { chooseTable } from './codecs/tables.ts';
 
 // The codec registry: format detection, lazy codec loading, and the
 // FormatCodec interface. `core` and the web app reach every format through it.
-export { detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
-export type { FormatCodec, ParsedTable } from '@tamedtable/table-plan';
+export { canSerialize, detectFormat, formatForExtension, loadCodec, type FormatId } from './codecs/registry.ts';
+export type { FormatCodec, ParsedTable, TableCandidate } from '@tamedtable/table-plan';
+// #TablePick: picking one table out of the several a workbook or page holds.
+export { chooseTable, splitTableSelector, TableChoiceError, MULTI_TABLE_EXTENSIONS } from './codecs/tables.ts';
+
+/** How `parseTable` reads the bytes: `format` when the caller pre-detected
+ *  one (a fetch that fell back to the Content-Type header for an
+ *  extension-less URL), `table` the pick for a multi-table source (#TablePick). */
+export interface ParseTableOptions {
+  format?: FormatId;
+  table?: string;
+}
 
 /** Parse a picked/fetched file's content into rows plus a fresh-load TablePlan,
- *  with no filesystem: the format is `format` when the caller pre-detected one
- *  (a fetch that fell back to the Content-Type header for an extension-less
- *  URL), otherwise chosen from `name`'s extension; the codec parses the content,
- *  and the plan carries `name` as its table and the codec's columns. This is the
- *  browser's path-free counterpart to core's `loadCsv`: the web hands the
- *  result straight to `Runner.loadParsed`. */
+ *  with no filesystem: the format is `opts.format` when given, otherwise chosen
+ *  from `name`'s extension; the codec parses the content, and the plan carries
+ *  `name` as its table and the codec's columns. A multi-table format lists its
+ *  tables first and `chooseTable` settles which one loads (none, one, several,
+ *  or the pick in `opts.table`): a `TableChoiceError` is the caller's cue to
+ *  ask. This is the browser's path-free counterpart to core's `loadCsv`: the
+ *  web hands the result straight to `Runner.loadParsed`. */
 export async function parseTable(
   name: string,
   bytes: Uint8Array,
-  format?: FormatId,
+  opts: ParseTableOptions = {},
 ): Promise<{ rows: Row[]; spec: TablePlan }> {
-  const id = format ?? formatForExtension(name);
+  const id = opts.format ?? formatForExtension(name);
   if (!id) throw new Error(`unknown file type: ${name}`);
   const codec = await loadCodec(id);
-  const { rows, columns } = await codec.parse(bytes, name);
+  let table: number | undefined;
+  if (codec.listTables) {
+    table = chooseTable(name, await codec.listTables(bytes, name), opts.table, codec.noTableHint).index;
+  }
+  const { rows, columns } = await codec.parse(bytes, name, table);
   if (id === 'csv') {
     if (columns.length === 0) throw new Error(`${name} has no header row`);
     const seen = new Set<string>();
@@ -85,8 +101,9 @@ export function sampleNameFromUrl(url: URL, format: FormatId): string {
 }
 
 /** A fetched table: a picked file plus the format detection saw, the URL
- *  path's extension, or the response Content-Type when the path has none. */
-export type FetchedTable = PickedFile & { format: FormatId };
+ *  path's extension, or the response Content-Type when the path has none,
+ *  and the URL's `#fragment`, when it had one, as the table pick (#TablePick). */
+export type FetchedTable = PickedFile & { format: FormatId; table?: string };
 
 /** Fetch a CSV or JSONL table from `url` and return it as a picked file.
  *  Throws on any failure with a message the host can show as-is, so a
@@ -103,15 +120,22 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     throw new Error('Only http:// and https:// URLs are supported.');
   }
+  // The fragment never reaches the server; it is the user's table pick.
+  const table = parsed.hash ? decodeURIComponent(parsed.hash.slice(1)) : undefined;
+  parsed.hash = '';
 
   let response: Response;
   try {
     response = await fetchImpl(parsed.toString(), { redirect: 'follow' });
   } catch (e) {
-    // A network/CORS failure surfaces as a TypeError with no useful
-    // detail in the browser. Rewrite to something the user can act on.
+    // A network/CORS failure surfaces as a TypeError with no useful detail in
+    // the browser. A browser may only read another site's address when that
+    // site allows it, and most do not, so this is the usual ending for a page
+    // address: name the move that always works instead of leaving the user to
+    // guess at a fix that is not theirs to make.
     throw new Error(
-      `Couldn’t fetch ${parsed.hostname}: network error or CORS blocked. (${(e as Error).message})`,
+      `Couldn’t fetch ${parsed.hostname}: the site blocked this browser (CORS) or the address is unreachable. ` +
+        `Save the page and open the file instead. (${(e as Error).message})`,
     );
   }
   if (!response.ok) {
@@ -121,11 +145,11 @@ export async function fetchTable(url: string, fetchImpl: FetchLike = fetch): Pro
   const contentType = response.headers.get('content-type');
   const format = detectFormat(parsed.pathname, contentType);
   if (!format) {
-    throw new Error('Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow.');
+    throw new Error('Could not detect format. URL must end in .csv, .jsonl, .parquet, .arrow, .xlsx, or .html.');
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());
-  return { name: sampleNameFromUrl(parsed, format), bytes, format };
+  return { name: sampleNameFromUrl(parsed, format), bytes, format, ...(table ? { table } : {}) };
 }
 
 /** Serialize a spec into the .flow file format: pretty-printed JSON

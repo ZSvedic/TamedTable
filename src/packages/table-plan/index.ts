@@ -261,15 +261,37 @@ export interface FormatCodec {
   contentTypes: string[];
   /** Parse a file's raw bytes into rows + columns. Text codecs decode the
    *  bytes internally; binary formats (Phase 1) read them directly. `name` is
-   *  the source file name, used only for error context. */
-  parse(bytes: Uint8Array, name: string): ParsedTable | Promise<ParsedTable>;
+   *  the source file name, used only for error context. `table` is the
+   *  1-based candidate a multi-table format reads (#TablePick); single-table
+   *  formats ignore it. */
+  parse(bytes: Uint8Array, name: string, table?: number): ParsedTable | Promise<ParsedTable>;
   /** Serialize rows to the format's raw bytes, emitting `columns` in order.
    *  Cells are always looked up by `columns` (the spec's column ids). `headers`,
    *  when given, overrides the *display* names written for those columns:
-   *  the CSV codec uses it for the header row (column `label` when set, id
-   *  otherwise); formats whose keys must round-trip (JSONL keys, Parquet/Arrow
-   *  schema names) ignore it and keep the ids. Defaults to `columns`. */
-  serialize(rows: Row[], columns: string[], headers?: string[]): Uint8Array | Promise<Uint8Array>;
+   *  the CSV and XLSX codecs use it for the header row (column `label` when
+   *  set, id otherwise); formats whose keys must round-trip (JSONL keys,
+   *  Parquet/Arrow schema names) ignore it and keep the ids. Defaults to
+   *  `columns`. Absent on a load-only format (HTML). */
+  serialize?(rows: Row[], columns: string[], headers?: string[]): Uint8Array | Promise<Uint8Array>;
+  /** #TablePick: the tables a source holds, for formats that can hold several
+   *  (a workbook's sheets, a page's <table>s). Absent on single-table formats. */
+  listTables?(bytes: Uint8Array, name: string): TableCandidate[] | Promise<TableCandidate[]>;
+  /** One sentence appended to "no table found", saying why a source of this
+   *  kind can hold none. Absent where the bare message says enough. */
+  noTableHint?: string;
   /** Optional one-time load of a heavy parser/engine before first `parse`. */
   load?: () => Promise<void>;
+}
+
+// #TablePick
+/** One table a multi-table source holds. `index` is 1-based: the number a
+ *  `#<n>` pick names. Spec: spec/packages/file-io/behavior.md § Tables inside
+ *  a source. */
+export interface TableCandidate {
+  index: number;
+  name: string;
+  /** Where it sits: "Orders!B3:E8" in a workbook, "table 2 of 3" on a page. */
+  location: string;
+  rowCount: number;
+  columns: string[];
 }

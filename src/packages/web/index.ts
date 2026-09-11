@@ -20,7 +20,7 @@ export type {
   DiagEvent,
 } from './src/controller.ts';
 export type { RecentEntry, RecentKind } from './src/recents.ts';
-export type { FilePort, PickedFile, SaveOutcome, FetchLike } from '@tamedtable/file-io';
+export type { FilePort, PickedFile, SaveOutcome, FetchLike, TableCandidate } from '@tamedtable/file-io';
 export { buildVoicePrompt } from '@tamedtable/voice-input';
 export type {
   VoiceContext,

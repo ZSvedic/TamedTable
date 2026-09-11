@@ -16,6 +16,8 @@ Per-format quirks live in their own pages, one per codec:
 - [formats/jsonl.md](formats/jsonl.md): JSONL / NDJSON (one object per line)
 - [formats/parquet.md](formats/parquet.md): Parquet (DuckDB reader/writer)
 - [formats/arrow.md](formats/arrow.md): Arrow / Feather (apache-arrow IPC)
+- [formats/xlsx.md](formats/xlsx.md): Excel workbook (zip + OOXML, pure JS)
+- [formats/html.md](formats/html.md): HTML page tables (load-only)
 
 ## Worked example
 
@@ -47,8 +49,9 @@ a load-on-demand registry:
 interface ParsedTable { rows; columns }            // columns: string[]
 interface FormatCodec {
   id; extensions; contentTypes                      // synchronous descriptor
-  parse(bytes, name) → ParsedTable | Promise<…>     // text codecs decode synchronously
-  serialize(rows, columns) → Uint8Array | Promise<…> // async for DuckDB/Arrow codecs
+  parse(bytes, name, table?) → ParsedTable | Promise<…>  // text codecs decode synchronously
+  serialize?(rows, columns, headers?) → Uint8Array | Promise<…> // absent on a load-only format
+  listTables?(bytes, name) → TableCandidate[]       // formats that hold several tables
   load?() → Promise<void>                           // dynamic import of a heavy engine
 }
 ```
@@ -65,11 +68,48 @@ exposes:
   the synchronous descriptor table (id + extensions + content types).
 - `loadCodec(id)`: dynamic-`import()` the codec, pulling its parser only on
   first use, so a run never bundles a format it doesn't touch.
-- `parseTable(name, bytes)`: detect from `name`, parse the bytes, and build a
-  fresh-load `TablePlan` (the browser's path-free counterpart to `core.loadCsv`).
+- `canSerialize(id)`: whether the format saves; `html` does not.
+- `parseTable(name, bytes, { format?, table? })`: detect from `name` (or take
+  `format`), parse the bytes, and build a fresh-load `TablePlan` (the
+  browser's path-free counterpart to `core.loadCsv`). `table` is the pick
+  for a multi-table format, below.
 
 A new format is one codec file plus one registry row; `detectFormat` is a lookup
 over the registry, not a hand-written `if` ladder.
+
+## Tables inside a source
+
+A workbook or an HTML page holds any number of tables, so its codec adds
+`listTables(bytes, name)`, one `TableCandidate` per table:
+
+```
+{ index: 2, name: "Orders", location: "Orders!B3:E8", rowCount: 5,
+  columns: ["OrderID", "Customer", "Amount", "Date"] }
+```
+
+`index` is 1-based and is what a `#<n>` pick names. `parseTable` lists the
+candidates, then `chooseTable(name, candidates, pick?)` settles which one
+`codec.parse(bytes, name, index)` reads:
+
+- no candidate → throws `<name>: no table found`
+- one candidate → it, pick or not
+- several, no pick → throws `TableChoiceError`, whose message the host can
+  show as-is: `<name> holds N tables; add #<n> or #<name> to pick one:`
+  then one line per candidate,
+  `  2. Orders (Orders!B3:E8): 5 rows: OrderID, Customer, Amount, Date`
+- a pick → the candidate with that number, or the one whose name matches
+  case-insensitively; nothing matching throws `<name>: no table "<pick>"`
+  followed by the same list
+
+`splitTableSelector(path)` takes the pick off a local path
+(`report.xlsx#Orders` → `{ source: "report.xlsx", table: "Orders" }`), but
+only when the part before the `#` ends in a multi-table extension, so a `#`
+inside a CSV name stays a character. `formatForExtension` tolerates the
+fragment the same way. For a URL the fragment is the pick whatever the
+format: browsers never send it, and `fetchTable` returns it as `table`.
+What the app does with a `TableChoiceError` is the host's call: the web
+app raises its table picker, the CLI prints the message
+(spec/behavior.md § Opening a workbook or a web page).
 
 ## FilePort
 
@@ -100,12 +140,14 @@ surfaces instead of looking like a cancel.
 ## Format detection
 
 `detectFormat(pathname, contentType)` returns a `FormatId`: `"csv"`,
-`"jsonl"`, `"parquet"`, or `"arrow"`, or `null`. The path extension wins:
-`.csv` → csv; `.jsonl` or `.ndjson` → jsonl; `.parquet` or `.pq` → parquet;
-`.arrow`, `.feather`, or `.arrows` → arrow. Only
-when the path has no table extension does the Content-Type header decide
-(any value containing one of the registry's content-type tokens, e.g. `csv`,
-`ndjson`, `parquet`, `feather`). Neither match → `null`.
+`"jsonl"`, `"parquet"`, `"arrow"`, `"xlsx"`, or `"html"`, or `null`. The
+path extension wins: `.csv` → csv; `.jsonl` or `.ndjson` → jsonl;
+`.parquet` or `.pq` → parquet; `.arrow`, `.feather`, or `.arrows` → arrow;
+`.xlsx` → xlsx; `.html` or `.htm` → html. Only when the path has no table
+extension does the Content-Type header decide (any value containing one of
+the registry's content-type tokens, e.g. `csv`, `ndjson`, `parquet`,
+`feather`, `spreadsheetml`, `html`), which is how a page address with no
+extension loads as HTML. Neither match → `null`.
 
 `sampleNameFromUrl(url, format)` names the download: the URL's last path
 segment, or `download.<format>` when the path has none.
@@ -113,17 +155,22 @@ segment, or `download.<format>` when the path has none.
 ## fetchTable
 
 `fetchTable(url, fetch?)` validates, fetches, and returns a `PickedFile`
-(name + bytes) plus the detected `format`. The optional second argument
-replaces global `fetch` (tests, proxies). Every
-failure throws an `Error` whose message the host can show as-is, in this
-order:
+(name + bytes) plus the detected `format` and, when the URL carried a
+`#fragment`, that fragment as `table`: the pick for a multi-table source
+(the fragment is never sent). The optional second argument replaces global
+`fetch` (tests, proxies). Every failure throws an `Error` whose message the
+host can show as-is, in this order:
 
 1. Blank input → `Enter a URL.`
 2. Unparseable → `That doesn’t look like a valid URL.`
 3. Protocol not http/https → `Only http:// and https:// URLs are supported.`
-4. Network/CORS failure → `Couldn’t fetch <host>: network error or CORS blocked. (<detail>)`
+4. Network/CORS failure → `Couldn’t fetch <host>: the site blocked this browser (CORS) or the address is unreachable. Save the page and open the file instead. (<detail>)`
+   A browser may only read another site's address when that site allows it,
+   and most do not, so this is the common ending for a page address. The
+   message names the move that always works rather than leaving the user to
+   guess at a fix that is not theirs to make.
 5. Non-OK response → `Fetch failed: HTTP <status> <statusText>`
-6. Format undetectable (path + Content-Type) → `Could not detect format. URL must end in .csv, .jsonl, .parquet, or .arrow.`
+6. Format undetectable (path + Content-Type) → `Could not detect format. URL must end in .csv, .jsonl, .parquet, .arrow, .xlsx, or .html.`
 
 ## Flow serialization
 

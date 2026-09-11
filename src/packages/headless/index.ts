@@ -1324,7 +1324,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     let result: { spec: TablePlan; rows: Row[]; sourcePath: string };
     if (ext === '.csv') result = await loadCsv(path);
     else if (ext === '.jsonl') result = await loadJsonl(path);
-    else result = await loadFile(path); // parquet, arrow, … — registry dispatch
+    else result = await loadFile(path); // parquet, arrow, xlsx#pick, html, … — registry dispatch
 
     await this.commitSource(result.rows, result.spec, result.sourcePath);
   }

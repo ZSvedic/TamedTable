@@ -6,12 +6,14 @@
 import type { FormatCodec } from '@tamedtable/table-plan';
 
 /** The format ids the registry currently serves. */
-export type FormatId = 'csv' | 'jsonl' | 'parquet' | 'arrow';
+export type FormatId = 'csv' | 'jsonl' | 'parquet' | 'arrow' | 'xlsx' | 'html';
 
 interface CodecDescriptor {
   id: FormatId;
   extensions: string[];
   contentTypes: string[];
+  /** False for a load-only format (its codec has no `serialize`). */
+  save: boolean;
   load: () => Promise<FormatCodec>;
 }
 
@@ -20,12 +22,14 @@ const DESCRIPTORS: CodecDescriptor[] = [
     id: 'csv',
     extensions: ['.csv'],
     contentTypes: ['csv'],
+    save: true,
     load: () => import('./csv.ts').then((m) => m.csvCodec),
   },
   {
     id: 'jsonl',
     extensions: ['.jsonl', '.ndjson'],
     contentTypes: ['jsonl', 'ndjson'],
+    save: true,
     load: () => import('./jsonl.ts').then((m) => m.jsonlCodec),
   },
   {
@@ -34,6 +38,7 @@ const DESCRIPTORS: CodecDescriptor[] = [
     id: 'parquet',
     extensions: ['.parquet', '.pq'],
     contentTypes: ['parquet'],
+    save: true,
     load: () => import('./parquet.ts').then((m) => m.parquetCodec),
   },
   {
@@ -41,17 +46,49 @@ const DESCRIPTORS: CodecDescriptor[] = [
     id: 'arrow',
     extensions: ['.arrow', '.feather', '.arrows'],
     contentTypes: ['arrow', 'feather', 'vnd.apache.arrow'],
+    save: true,
     load: () => import('./arrow.ts').then((m) => m.arrowCodec),
+  },
+  {
+    // #TablePick: an Excel workbook, pure JS (fflate + an OOXML reader);
+    // every sheet or Excel table object is a candidate table.
+    id: 'xlsx',
+    extensions: ['.xlsx'],
+    contentTypes: ['spreadsheetml'],
+    save: true,
+    load: () => import('./xlsx.ts').then((m) => m.xlsxCodec),
+  },
+  {
+    // #TablePick: the <table>s on a web page, load-only. A page address
+    // rarely carries the extension: the text/html Content-Type detects it.
+    id: 'html',
+    extensions: ['.html', '.htm'],
+    contentTypes: ['html'],
+    save: false,
+    load: () => import('./html.ts').then((m) => m.htmlCodec),
   },
 ];
 
-/** The format id a file path's extension claims, or null if none does. */
+/** The format id a file path's extension claims, or null if none does. A
+ *  trailing `#pick` (#TablePick: `report.xlsx#Orders`) does not hide the
+ *  extension: the part before the last `#` is tried when the whole fails. */
 export function formatForExtension(pathname: string): FormatId | null {
-  const lower = pathname.toLowerCase();
-  for (const d of DESCRIPTORS) {
-    if (d.extensions.some((ext) => lower.endsWith(ext))) return d.id;
-  }
-  return null;
+  const byExtension = (p: string): FormatId | null => {
+    const lower = p.toLowerCase();
+    for (const d of DESCRIPTORS) {
+      if (d.extensions.some((ext) => lower.endsWith(ext))) return d.id;
+    }
+    return null;
+  };
+  const whole = byExtension(pathname);
+  if (whole) return whole;
+  const hash = pathname.lastIndexOf('#');
+  return hash > 0 ? byExtension(pathname.slice(0, hash)) : null;
+}
+
+/** Whether the format saves as well as loads (html does not). */
+export function canSerialize(id: FormatId): boolean {
+  return DESCRIPTORS.find((d) => d.id === id)?.save ?? false;
 }
 
 /** Detect the format from a URL path and (optionally) a Content-Type header.

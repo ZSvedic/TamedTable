@@ -34,10 +34,10 @@ export interface WebScenarioCtx {
   filePort?: WebTestFilePort;
   /** An in-flight dialog action (openCsv / saveFlow / saveData) awaiting a step. */
   pending?: Promise<unknown>;
-  /** URL → CSV/JSONL body, served by the per-scenario fetch stub when a
-   *  URL-load step targets it; null marks a URL that stopped serving (404).
-   *  Anthropic API calls still flow through the cassette recorder above. */
-  readonly urlFixtures: Map<string, string | null>;
+  /** URL → fixture body + Content-Type, served by the per-scenario fetch
+   *  stub when a URL-load step targets it; null marks a URL that stopped
+   *  serving (404). Model calls still flow through the cassette recorder. */
+  readonly urlFixtures: Map<string, { body: Uint8Array; contentType: string } | null>;
   /** Sample name → the running deployment's address, backing the injected
    *  `resolveSampleUrl`: the recents re-resolve seam. */
   readonly sampleUrls: Map<string, string>;
@@ -101,11 +101,14 @@ export class WebTestFilePort implements FilePort {
   saveCalled = false;
   lastSaveSuggestedName: string | undefined;
   readonly saved = new Map<string, string>();
+  /** The raw bytes of each save, for binary formats (#TablePick: XLSX). */
+  readonly savedBytes = new Map<string, Uint8Array>();
   readonly outcomes: SaveOutcome[] = [];
 
   private openResolve: ((f: PickedFile | null) => void) | undefined;
   private saveResolve: ((o: SaveOutcome) => void) | undefined;
   private saveContent = '';
+  private saveBytes: Uint8Array = new Uint8Array(0);
 
   private static decode(content: Uint8Array): string {
     return new TextDecoder().decode(content);
@@ -127,6 +130,7 @@ export class WebTestFilePort implements FilePort {
     this.lastSaveSuggestedName = suggestedName;
     // The seam carries bytes; decode to text so saved-content assertions stay simple.
     this.saveContent = WebTestFilePort.decode(content);
+    this.saveBytes = content;
     return new Promise((resolve) => {
       this.saveResolve = resolve;
     });
@@ -143,6 +147,7 @@ export class WebTestFilePort implements FilePort {
   async resolveSave(name: string): Promise<void> {
     await this.waitFor(() => this.saveResolve !== undefined);
     this.saved.set(name, this.saveContent);
+    this.savedBytes.set(name, this.saveBytes);
     const outcome: SaveOutcome = {
       status: this.hasFileSystemAccess ? 'saved' : 'downloaded',
       name,

@@ -19,6 +19,7 @@ const SAVE_FORMATS: { id: FormatId; label: string }[] = [
   { id: 'jsonl', label: 'JSONL' },
   { id: 'parquet', label: 'Parquet' },
   { id: 'arrow', label: 'Arrow' },
+  { id: 'xlsx', label: 'XLSX' },
 ];
 
 /** The Save menu's entries: shared by the desktop toolbar and the mobile
