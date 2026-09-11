@@ -718,10 +718,15 @@ dropped, as a CSV's blank line is.
 
 The candidate count decides what happens:
 
-- **None:** the load fails with `<name>: no table found`. A page adds why
-  it might have none: only a real `<table>` counts, so a grid drawn with
-  `<div>`s, one an in-page script writes after the page loads, or a file
-  that is plain text under an `.htm` name has nothing to read.
+- **None:** the load fails with `<name>: no table found`. A page adds the
+  reason its reader can act on: a page that draws its table while it loads
+  saves without one, so the fix is to save it again as a complete web page.
+  The wording says that in the user's terms, naming the browser's own menu
+  entry rather than the markup: *"If your browser shows a table on this
+  page, it is drawn while the page loads, so a saved copy has none: use
+  Save as and pick "Webpage, Complete", which keeps the page as you see
+  it."* The same line covers a file that is really plain text under an
+  `.html` name, because the browser shows it no table either.
 - **One:** it loads at once, like a CSV. A one-sheet workbook or a page
   with one table asks nothing.
 - **Several:** the surface asks. Headless and the CLI have no dialog, so

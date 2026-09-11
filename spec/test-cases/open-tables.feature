@@ -105,13 +105,13 @@ Feature: Open a workbook or a web page
       And the load fails mentioning "2. prices (table 2 of 3): 4 rows: Item, Price"
       And the load fails mentioning "3. Table 3 (table 3 of 3): 2 rows: Name, Role"
 
-    # Only a real <table> counts, and the message says so: the pages people
-    # try are often a <div> grid or a table a script writes after load.
+    # The pages people try usually do show a table, drawn as the page loads,
+    # so the message names the browser's own way out rather than the markup.
     @headless @cli
-    Scenario: A page without a table says what does not count as one
+    Scenario: A page without a table says how to save one that has it
       When loading "open-tables-none.html" is attempted
       Then the load fails mentioning "open-tables-none.html: no table found"
-      And the load fails mentioning "Only a real <table> counts"
+      And the load fails mentioning "use Save as and pick \"Webpage, Complete\""
 
   Rule: The REPL's :load and :save follow the same rules
 

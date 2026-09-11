@@ -98,11 +98,14 @@ export const htmlCodec: FormatCodec = {
   extensions: ['.html', '.htm'],
   contentTypes: ['html'],
 
-  // Why a page can hold no table at all, in the words of what people try.
+  // Why a page can hold no table, in the reader's terms rather than in
+  // markup: a saved page is what the server sent, so a table the page drew
+  // itself is not in it. Naming the browser's own menu entry is the whole
+  // point of the message. Spec: spec/packages/file-io/formats/html.md.
   noTableHint:
-    'Only a real <table> counts, so a grid drawn with <div>s, a table an ' +
-    'in-page script writes after the page loads, or a plain-text file under ' +
-    'an .htm name has nothing to read.',
+    'If your browser shows a table on this page, it is drawn while the page ' +
+    'loads, so a saved copy has none: use Save as and pick "Webpage, ' +
+    'Complete", which keeps the page as you see it.',
 
   listTables(bytes: Uint8Array): TableCandidate[] {
     return candidates(new TextDecoder().decode(bytes)).candidates;
