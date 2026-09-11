@@ -5,11 +5,13 @@ on:
     paths:
       # Rebuild when the web bundle, the marketing homepage, or its shared
       # assets change. Doc-only / process-only commits should not redeploy.
-      - 'src/packages/web/**'
-      - 'src/packages/core/**'
-      - 'src/packages/headless/**'
-      - 'src/packages/model-config/**'
-      - 'src/packages/gherkin-tour/**'
+      # Every package, not a hand-picked few: the web app imports eleven of
+      # them, and a list naming five went stale the moment a fix landed in one
+      # of the other six (file-io's "no table found" wording, which sat on main
+      # undeployed). A package the bundle does not import costs an occasional
+      # spare build here; a package missing from the list costs a silently
+      # stale site, which is the worse of the two.
+      - 'src/packages/**'
       - 'src/package.json'
       - 'src/bun.lock'
       - 'marketing/web/**'
