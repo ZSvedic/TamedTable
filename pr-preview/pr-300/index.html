@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="robots" content="noindex, nofollow">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Canonical-URL normaliser: drop /index.html and .html from the address bar so
-     the visible URL matches the canonical (GitHub Pages has no server redirects).
-     Plain HTML, no build step, so this partial is duplicated in each page's head. -->
-<script>
-(function(){var p=location.pathname;
-if(p.endsWith('/index.html'))p=p.slice(0,-10);
-else if(p.endsWith('.html'))p=p.slice(0,-5);
-if(p!==location.pathname)history.replaceState(null,'',p+location.search+location.hash);})();
-</script>
+<!-- #SeoIndexing: no client-side URL normaliser here, deliberately. An earlier one rewrote
+     /index.html and .html out of the address bar with history.replaceState;
+     Google's renderer counts a JS-driven URL change during load as a redirect,
+     which is why Search Console filed https://www.tamedtable.com/pr-preview/pr-300/index.html
+     under "Page with redirect" even though GitHub Pages serves it 200. The
+     <link rel="canonical"> below is the mechanism that consolidates URL
+     variants, and Search Console confirms it works ("Alternate page with proper
+     canonical tag"). Every internal link already uses the extensionless
+     canonical path, so there was nothing left for the rewrite to tidy up. -->
 <link rel="canonical" href="https://www.tamedtable.com/pr-preview/pr-300/">
 <title>TamedTable | AI ETL in Natural Language</title>
 <meta name="description" content="TamedTable is an AI ETL and data preparation tool: load tabular data, describe what you want, and watch it transform. No formulas, no code. Source-available, runs on your own API key.">
@@ -195,6 +196,7 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <p>Preview for cents, run for real when you're sure. AI steps fill the page you are looking at; the rest waits until you ask.</p>
           <div class="feat-list">
             <button class="feat-item active" id="open-large-file" data-ill="illustrations/LazyAI-shuffle.svg" data-url="https://www.tamedtable.com/pr-preview/pr-300/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">open a 25,000-row file</span><span class="fnote">Starts as a shuffled sample; saving keeps the original order</span></button>
+            <button class="feat-item" id="ai-suggestions" data-ill="illustrations/LazyAI-suggestions.svg" data-url="https://www.tamedtable.com/pr-preview/pr-300/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">AI suggests what to try</span><span class="fnote">One call on a 20-row sample, whatever the file's size</span></button>
             <button class="feat-item" id="pending-pages" data-ill="illustrations/LazyAI-pending-pages.svg" data-url="https://www.tamedtable.com/pr-preview/pr-300/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">"add a Category column"</span><span class="fnote">Fills the rows on screen right away; the pager marks what's pending</span></button>
             <button class="feat-item" id="run-all-rows" data-ill="illustrations/LazyAI-estimate-dialog.svg" data-url="https://www.tamedtable.com/pr-preview/pr-300/app/" data-feature="showcase-lazy-ai.feature" data-scenario="Clean 25,000 rows for cents" data-label="Show me →"><span class="fcmd">Run on all rows</span><span class="fnote">Rows, cost, and time shown before you commit; finished rows are kept</span></button>
           </div>
@@ -370,8 +372,8 @@ if(p!==location.pathname)history.replaceState(null,'',p+location.search+location
           <h2><a class="sec-link" href="#load-save-reuse">Load, save &amp; reuse</a></h2>
           <p>Your work is yours to keep. Load from anywhere, save the data or the recipe, undo anything.</p>
           <div class="feat-list">
-            <button class="feat-item active" id="load" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow, Excel, or a web page's table</span></button>
-            <button class="feat-item" id="save" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV, JSONL, Parquet, Arrow, or Excel</span></button>
+            <button class="feat-item active" id="load" data-ill="illustrations/LoadSaveReuse-load.svg"><span class="fcmd">a file or a URL</span><span class="fnote">Loads CSV, JSONL, Parquet, Arrow, .XLSX, or a web page's table</span></button>
+            <button class="feat-item" id="save" data-ill="illustrations/LoadSaveReuse-save-csv.svg"><span class="fcmd">:save clean.csv</span><span class="fnote">Save data to CSV, JSONL, Parquet, Arrow, or .XLSX</span></button>
             <button class="feat-item" id="save-flow" data-ill="illustrations/LoadSaveReuse-save-flow.svg"><span class="fcmd">:save-flow tidy.flow</span><span class="fnote">Save transformations as a TamedTable script</span></button>
             <button class="feat-item" id="save-py" data-ill="illustrations/LoadSaveReuse-save-py.svg"><span class="fcmd">:save-py tidy.py</span><span class="fnote">Save transformations as a Python script</span></button>
             <button class="feat-item" id="undo-redo" data-ill="illustrations/LoadSaveReuse-undo-redo.svg"><span class="fcmd">:undo / :redo</span><span class="fnote">Undo/redo any change</span></button>

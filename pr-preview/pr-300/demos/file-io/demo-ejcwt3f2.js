@@ -14754,7 +14754,7 @@ var init_table_plan = __esm(() => {
   }).strict();
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/api/CsvError.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/api/CsvError.js
 var CsvError;
 var init_CsvError = __esm(() => {
   CsvError = class CsvError extends Error {
@@ -14776,13 +14776,13 @@ var init_CsvError = __esm(() => {
   };
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/utils/is_object.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/utils/is_object.js
 var is_object = function(obj) {
   return typeof obj === "object" && obj !== null && !Array.isArray(obj);
 };
 var init_is_object = () => {};
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/api/normalize_columns_array.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/api/normalize_columns_array.js
 var normalize_columns_array = function(columns) {
   const normalizedColumns = [];
   for (let i = 0, l = columns.length;i < l; i++) {
@@ -14815,7 +14815,7 @@ var init_normalize_columns_array = __esm(() => {
   init_is_object();
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/utils/ResizeableBuffer.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/utils/ResizeableBuffer.js
 class ResizeableBuffer {
   constructor(size = 100) {
     this.size = size;
@@ -14865,7 +14865,7 @@ class ResizeableBuffer {
   }
   toString(encoding) {
     if (encoding) {
-      return this.buf.slice(0, this.length).toString(encoding);
+      return this.buf.toString(encoding, 0, this.length);
     } else {
       return Uint8Array.prototype.slice.call(this.buf.slice(0, this.length));
     }
@@ -14882,13 +14882,52 @@ var init_ResizeableBuffer = __esm(() => {
   ResizeableBuffer_default = ResizeableBuffer;
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/api/init_state.js
-var np = 12, cr = 13, nl = 10, space = 32, tab = 9, init_state = function(options) {
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/api/init_state.js
+var init_state = function(options) {
+  const timchars = [
+    32,
+    9,
+    10,
+    13,
+    12,
+    11,
+    160,
+    5760,
+    8192,
+    8193,
+    8194,
+    8195,
+    8196,
+    8197,
+    8198,
+    8199,
+    8200,
+    8201,
+    8202,
+    8232,
+    8233,
+    8239,
+    8287,
+    12288,
+    65279
+  ].reduce((acc, codepoint) => {
+    const encoded = Buffer.from(String.fromCharCode(codepoint), options.encoding);
+    if (codepoint !== 63 && encoded.length === 1 && encoded[0] === 63) {
+      return acc;
+    }
+    acc.push(encoded);
+    return acc;
+  }, []);
+  const timcharFirstBytes = new Uint8Array(256);
+  for (const t of timchars)
+    timcharFirstBytes[t[0]] = 1;
   return {
     bomSkipped: false,
     bufBytesStart: 0,
     castField: options.cast_function,
     commenting: false,
+    delimiterBufPrevious: undefined,
+    delimiterDiscovered: false,
     error: undefined,
     enabled: options.from_line === 1,
     escaping: false,
@@ -14896,7 +14935,7 @@ var np = 12, cr = 13, nl = 10, space = 32, tab = 9, init_state = function(option
     expectedRecordLength: Array.isArray(options.columns) ? options.columns.length : undefined,
     field: new ResizeableBuffer_default(20),
     firstLineToHeaders: options.cast_first_line_to_header,
-    needMoreDataSize: Math.max(options.comment !== null ? options.comment.length : 0, ...options.delimiter.map((delimiter) => delimiter.length), options.quote !== null ? options.quote.length : 0),
+    needMoreDataSize: Math.max(options.comment !== null ? options.comment.length : 0, ...options.delimiter ? options.delimiter.map((delimiter) => delimiter.length) : [], options.delimiter_auto ? 1 : 0, options.quote !== null ? options.quote.length : 0, ...timchars.map((t) => t.length)),
     previousBuf: undefined,
     quoting: false,
     stop: false,
@@ -14911,20 +14950,15 @@ var np = 12, cr = 13, nl = 10, space = 32, tab = 9, init_state = function(option
     ],
     wasQuoting: false,
     wasRowDelimiter: false,
-    timchars: [
-      Buffer.from(Buffer.from([cr], "utf8").toString(), options.encoding),
-      Buffer.from(Buffer.from([nl], "utf8").toString(), options.encoding),
-      Buffer.from(Buffer.from([np], "utf8").toString(), options.encoding),
-      Buffer.from(Buffer.from([space], "utf8").toString(), options.encoding),
-      Buffer.from(Buffer.from([tab], "utf8").toString(), options.encoding)
-    ]
+    timchars,
+    timcharFirstBytes
   };
 };
 var init_init_state = __esm(() => {
   init_ResizeableBuffer();
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/utils/underscore.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/utils/underscore.js
 var underscore = function(str) {
   return str.replace(/([A-Z])/g, function(_, match) {
     return "_" + match.toLowerCase();
@@ -14932,7 +14966,7 @@ var underscore = function(str) {
 };
 var init_underscore = () => {};
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/api/normalize_options.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/api/normalize_options.js
 var normalize_options = function(opts) {
   const options = {};
   for (const opt in opts) {
@@ -15039,20 +15073,67 @@ var normalize_options = function(opts) {
       `got ${JSON.stringify(options.comment_no_infix)}`
     ], options);
   }
-  const delimiter_json = JSON.stringify(options.delimiter);
-  if (!Array.isArray(options.delimiter))
-    options.delimiter = [options.delimiter];
-  if (options.delimiter.length === 0) {
-    throw new CsvError("CSV_INVALID_OPTION_DELIMITER", [
-      "Invalid option delimiter:",
-      "delimiter must be a non empty string or buffer or array of string|buffer,",
-      `got ${delimiter_json}`
+  if (options.delimiter_auto === undefined || options.delimiter_auto === null || options.delimiter_auto === false) {
+    options.delimiter_auto = false;
+  } else if (options.delimiter_auto === true) {
+    options.delimiter_auto = {};
+  } else if (!is_object(options.delimiter_auto)) {
+    throw new CsvError("CSV_INVALID_OPTION_DELIMITER_AUTO", [
+      "Invalid option delimiter_auto:",
+      "delimiter_auto must be a boolean or a configuration object,",
+      `got ${JSON.stringify(options.delimiter_auto)}`
     ], options);
   }
-  options.delimiter = options.delimiter.map(function(delimiter) {
-    if (delimiter === undefined || delimiter === null || delimiter === false) {
-      return Buffer.from(",", options.encoding);
+  if (options.delimiter_auto) {
+    if (options.delimiter_auto.preferred === undefined)
+      options.delimiter_auto.preferred = {
+        [44]: 1.8,
+        [9]: 1.8,
+        [59]: 1.6,
+        [32]: 1.6,
+        [58]: 1.5,
+        [46]: 1.4,
+        [47]: 1.4
+      };
+    else if (!is_object(options.delimiter_auto.preferred)) {
+      throw new CsvError("CSV_INVALID_OPTION_DELIMITER_AUTO", [
+        "Invalid option delimiter_auto:",
+        "preferred must be an object,",
+        `got ${JSON.stringify(options.delimiter_auto.preferred)}`
+      ], options);
     }
+    if (options.delimiter_auto.score === undefined)
+      options.delimiter_auto.score = (info, options2) => {
+        return (info.total - info.std) * (options2.preferred[info.char_code] || 1);
+      };
+    else if (typeof options.delimiter_auto.score !== "function") {
+      throw new CsvError("CSV_INVALID_OPTION_DELIMITER_AUTO", [
+        "Invalid option delimiter_auto:",
+        "score must be a function,",
+        `got ${JSON.stringify(options.delimiter_auto.score)}`
+      ], options);
+    }
+    if (options.delimiter_auto.size === undefined)
+      options.delimiter_auto.size = 2048;
+    else if (typeof options.delimiter_auto.size !== "number") {
+      throw new CsvError("CSV_INVALID_OPTION_DELIMITER_AUTO", [
+        "Invalid option delimiter_auto:",
+        "size must be a number,",
+        `got ${JSON.stringify(options.delimiter_auto.size)}`
+      ], options);
+    }
+  }
+  const delimiter_json = JSON.stringify(options.delimiter);
+  if (options.delimiter_auto !== false) {
+    options.delimiter = [];
+  }
+  if (!Array.isArray(options.delimiter)) {
+    if (options.delimiter === undefined || options.delimiter === null || options.delimiter === false) {
+      options.delimiter = Buffer.from(",", options.encoding);
+    }
+    options.delimiter = [options.delimiter];
+  }
+  options.delimiter = options.delimiter.map(function(delimiter) {
     if (typeof delimiter === "string") {
       delimiter = Buffer.from(delimiter, options.encoding);
     }
@@ -15326,12 +15407,63 @@ var init_normalize_options = __esm(() => {
   init_normalize_columns_array();
   init_CsvError();
   init_underscore();
+  init_is_object();
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/api/index.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/utils/delimiter_discover.js
+var delimiter_discover = function(records, options) {
+  if (!options) {
+    ({ delimiter_auto: options } = normalize_options({ delimiter_auto: true }));
+  }
+  if (typeof records === "string") {
+    records = Buffer.from(records);
+  }
+  if (Buffer.isBuffer(records)) {
+    records = ((data) => {
+      const records2 = [];
+      const parser = transform2({ delimiter: [] });
+      const push = (record2) => records2.push(record2);
+      const close = () => {};
+      const error51 = parser.parse(data, true, push, close);
+      if (error51 !== undefined)
+        throw error51;
+      return records2;
+    })(records);
+  }
+  const info = Array(127).fill().map(() => ({ lines: [] }));
+  records.map(([record2], line) => {
+    for (let i = 0, l = record2.length;i < l; i++) {
+      const code = record2.charCodeAt(i);
+      if (info[code].lines[line] === undefined)
+        info[code].lines[line] = 0;
+      info[code].lines[line]++;
+    }
+  });
+  info.map((info2, i) => {
+    info2.char_code = i;
+    info2.std = std(info2.lines);
+    info2.total = info2.lines.reduce((acc, val) => acc + val, 0);
+    info2.preferred = !!options.preferred[i];
+    info2.score = options.score(info2, options);
+  });
+  const result = info.reduce((acc, info2) => acc.score > info2.score ? acc : info2, {});
+  return String.fromCharCode(result.char_code);
+}, std = function(array2) {
+  const n = array2.length;
+  if (n === 0)
+    return 0;
+  const mean = array2.reduce((a, b) => a + b) / n;
+  return Math.sqrt(array2.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n);
+};
+var init_delimiter_discover = __esm(() => {
+  init_normalize_options();
+  init_api2();
+});
+
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/api/index.js
 var isRecordEmpty = function(record2) {
   return record2.every((field) => field == null || field.toString && field.toString().trim() === "");
-}, cr2 = 13, nl2 = 10, boms, transform2 = function(original_options = {}) {
+}, cr = 13, nl = 10, boms, transform2 = function(original_options = {}) {
   const info = {
     bytes: 0,
     bytes_records: 0,
@@ -15361,6 +15493,7 @@ var isRecordEmpty = function(record2) {
       const {
         bom,
         comment_no_infix,
+        delimiter_auto,
         encoding,
         from_line,
         ltrim,
@@ -15373,7 +15506,36 @@ var isRecordEmpty = function(record2) {
         to_line
       } = this.options;
       let { comment, escape, quote, record_delimiter } = this.options;
-      const { bomSkipped, previousBuf, rawBuffer, escapeIsQuote } = this.state;
+      const {
+        bomSkipped,
+        delimiterDiscovered,
+        delimiterBufPrevious,
+        rawBuffer,
+        escapeIsQuote
+      } = this.state;
+      if (!delimiterDiscovered && delimiter_auto) {
+        let delimiterBuf;
+        if (delimiterBufPrevious === undefined) {
+          delimiterBuf = nextBuf;
+        } else if (delimiterBufPrevious !== undefined && nextBuf === undefined) {
+          delimiterBuf = delimiterBufPrevious;
+        } else {
+          delimiterBuf = Buffer.concat([delimiterBufPrevious, nextBuf]);
+        }
+        nextBuf = undefined;
+        if (end || delimiterBuf.length > delimiter_auto.size) {
+          this.options.delimiter = [
+            Buffer.from(delimiter_discover(delimiterBuf, this.options.delimiter_auto))
+          ];
+          this.state.previousBuf = delimiterBuf;
+          this.state.delimiterBufPrevious = undefined;
+          this.state.delimiterDiscovered = true;
+        } else {
+          this.state.delimiterBufPrevious = delimiterBuf;
+          return;
+        }
+      }
+      const { previousBuf } = this.state;
       let buf;
       if (previousBuf === undefined) {
         if (nextBuf === undefined) {
@@ -15440,7 +15602,7 @@ var isRecordEmpty = function(record2) {
         if (raw === true) {
           rawBuffer.append(chr);
         }
-        if ((chr === cr2 || chr === nl2) && this.state.wasRowDelimiter === false) {
+        if ((chr === cr || chr === nl) && this.state.wasRowDelimiter === false) {
           this.state.wasRowDelimiter = true;
         }
         if (this.state.escaping === true) {
@@ -15696,14 +15858,19 @@ var isRecordEmpty = function(record2) {
           for (let i = 0, l = record2.length;i < l; i++) {
             if (columns[i] === undefined || columns[i].disabled)
               continue;
-            if (group_columns_by_name === true && obj[columns[i].name] !== undefined) {
+            if (group_columns_by_name === true && Object.hasOwn(obj, columns[i].name)) {
               if (Array.isArray(obj[columns[i].name])) {
                 obj[columns[i].name] = obj[columns[i].name].concat(record2[i]);
               } else {
                 obj[columns[i].name] = [obj[columns[i].name], record2[i]];
               }
             } else {
-              obj[columns[i].name] = record2[i];
+              Object.defineProperty(obj, columns[i].name, {
+                value: record2[i],
+                enumerable: true,
+                writable: true,
+                configurable: true
+              });
             }
           }
           if (raw === true || info2 === true) {
@@ -15829,25 +15996,6 @@ var isRecordEmpty = function(record2) {
       }
       return [undefined, field];
     },
-    __isCharTrimable: function(buf, pos) {
-      const isTrim = (buf2, pos2) => {
-        const { timchars } = this.state;
-        loop1:
-          for (let i = 0;i < timchars.length; i++) {
-            const timchar = timchars[i];
-            for (let j = 0;j < timchar.length; j++) {
-              if (timchar[j] !== buf2[pos2 + j])
-                continue loop1;
-            }
-            return timchar.length;
-          }
-        return 0;
-      };
-      return isTrim(buf, pos);
-    },
-    __isFloat: function(value) {
-      return value - parseFloat(value) + 1 >= 0;
-    },
     __compareBytes: function(sourceBuf, targetBuf, targetPos, firstByte) {
       if (sourceBuf[0] !== firstByte)
         return 0;
@@ -15857,6 +16005,22 @@ var isRecordEmpty = function(record2) {
           return 0;
       }
       return sourceLength;
+    },
+    __isCharTrimable: function(buf, pos) {
+      const { timchars, timcharFirstBytes } = this.state;
+      const first = buf[pos];
+      if (first === undefined || timcharFirstBytes[first] === 0)
+        return 0;
+      loop1:
+        for (let i = 0;i < timchars.length; i++) {
+          const timchar = timchars[i];
+          for (let j = 0;j < timchar.length; j++) {
+            if (timchar[j] !== buf[pos + j])
+              continue loop1;
+          }
+          return timchar.length;
+        }
+      return 0;
     },
     __isDelimiter: function(buf, pos, chr) {
       const { delimiter, ignore_last_delimiters } = this.options;
@@ -15878,6 +16042,36 @@ var isRecordEmpty = function(record2) {
         }
       return 0;
     },
+    __isEscape: function(buf, pos, chr) {
+      const { escape } = this.options;
+      if (escape === null)
+        return false;
+      const l = escape.length;
+      if (escape[0] === chr) {
+        for (let i = 0;i < l; i++) {
+          if (escape[i] !== buf[pos + i]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return false;
+    },
+    __isFloat: function(value) {
+      return value - parseFloat(value) + 1 >= 0;
+    },
+    __isQuote: function(buf, pos) {
+      const { quote } = this.options;
+      if (quote === null)
+        return false;
+      const l = quote.length;
+      for (let i = 0;i < l; i++) {
+        if (quote[i] !== buf[pos + i]) {
+          return false;
+        }
+      }
+      return true;
+    },
     __isRecordDelimiter: function(chr, buf, pos) {
       const { record_delimiter } = this.options;
       const recordDelimiterLength = record_delimiter.length;
@@ -15896,33 +16090,6 @@ var isRecordEmpty = function(record2) {
           return rd.length;
         }
       return 0;
-    },
-    __isEscape: function(buf, pos, chr) {
-      const { escape } = this.options;
-      if (escape === null)
-        return false;
-      const l = escape.length;
-      if (escape[0] === chr) {
-        for (let i = 0;i < l; i++) {
-          if (escape[i] !== buf[pos + i]) {
-            return false;
-          }
-        }
-        return true;
-      }
-      return false;
-    },
-    __isQuote: function(buf, pos) {
-      const { quote } = this.options;
-      if (quote === null)
-        return false;
-      const l = quote.length;
-      for (let i = 0;i < l; i++) {
-        if (quote[i] !== buf[pos + i]) {
-          return false;
-        }
-      }
-      return true;
     },
     __autoDiscoverRecordDelimiter: function(buf, pos) {
       const { encoding } = this.options;
@@ -15999,18 +16166,19 @@ var init_api2 = __esm(() => {
   init_init_state();
   init_normalize_options();
   init_CsvError();
+  init_delimiter_discover();
   boms = {
     utf8: Buffer.from([239, 187, 191]),
     utf16le: Buffer.from([255, 254])
   };
 });
 
-// node_modules/.bun/csv-parse@6.2.1/node_modules/csv-parse/lib/sync.js
+// node_modules/.bun/csv-parse@7.0.2/node_modules/csv-parse/lib/sync.js
 var parse5 = function(data, opts = {}) {
   if (typeof data === "string") {
     data = Buffer.from(data);
   }
-  const records = opts && opts.objname ? {} : [];
+  const records = opts && opts.objname ? Object.create(null) : [];
   const parser = transform2(opts);
   const push = (record2) => {
     if (parser.options.objname === undefined)
@@ -16027,6 +16195,7 @@ var parse5 = function(data, opts = {}) {
 };
 var init_sync = __esm(() => {
   init_api2();
+  init_normalize_options();
 });
 
 // node_modules/.bun/csv-stringify@6.7.0/node_modules/csv-stringify/lib/utils/get.js
@@ -29384,14 +29553,14 @@ var u8, u16, i32, fleb, fdeb, clim, freb = function(eb, start) {
           var ml = Math.min(258, rem);
           while (dif <= maxd && --ch_1 && imod != pimod) {
             if (dat[i2 + l] == dat[i2 + l - dif]) {
-              var nl3 = 0;
-              for (;nl3 < ml && dat[i2 + nl3] == dat[i2 + nl3 - dif]; ++nl3)
+              var nl2 = 0;
+              for (;nl2 < ml && dat[i2 + nl2] == dat[i2 + nl2 - dif]; ++nl2)
                 ;
-              if (nl3 > l) {
-                l = nl3, d = dif;
-                if (nl3 > maxn)
+              if (nl2 > l) {
+                l = nl2, d = dif;
+                if (nl2 > maxn)
                   break;
-                var mmd = Math.min(dif, nl3 - 2);
+                var mmd = Math.min(dif, nl2 - 2);
                 var md = 0;
                 for (var j = 0;j < mmd; ++j) {
                   var ti = i2 - dif + j & 32767;
@@ -29446,10 +29615,10 @@ var u8, u16, i32, fleb, fdeb, clim, freb = function(eb, start) {
   var c = -1;
   return {
     p: function(d) {
-      var cr3 = c;
+      var cr2 = c;
       for (var i2 = 0;i2 < d.length; ++i2)
-        cr3 = crct[cr3 & 255 ^ d[i2]] ^ cr3 >>> 8;
-      c = cr3;
+        cr2 = crct[cr2 & 255 ^ d[i2]] ^ cr2 >>> 8;
+      c = cr2;
     },
     d: function() {
       return ~c;
@@ -31603,6 +31772,7 @@ function readWorkbook(bytes, name) {
     if (!target || !sheetXml)
       continue;
     const cells = new Map;
+    const merges = [];
     let row = 0;
     let col = 0;
     let cell = null;
@@ -31631,6 +31801,13 @@ function readWorkbook(bytes, name) {
           cell = { col: pos.col, row: pos.row, type: a["t"] ?? "n", style: Number(a["s"] ?? -1) };
           v = null;
           inlineText = null;
+        } else if (tag === "mergeCell") {
+          const [from, to] = (a["ref"] ?? "").split(":");
+          if (from && to) {
+            const m1 = parseRef(from);
+            const m2 = parseRef(to);
+            merges.push({ r1: m1.row, c1: m1.col, r2: m2.row, c2: m2.col });
+          }
         } else if (tag === "v") {
           inValue = true;
           v = "";
@@ -31672,9 +31849,32 @@ function readWorkbook(bytes, name) {
         }
       });
     }
-    sheets.push({ name: ref.name, cells, tables });
+    sheets.push({ name: ref.name, cells, tables, merges });
   }
   return { sheets };
+}
+function headerRowOf(sheet, r1, c1, r2, c2) {
+  const width = c2 - c1 + 1;
+  const filled = (r) => {
+    const line = sheet.cells.get(r);
+    if (!line)
+      return 0;
+    let n = 0;
+    for (let c = c1;c <= c2; c++)
+      if (!isEmpty(line.get(c)))
+        n++;
+    return n;
+  };
+  let widest = 0;
+  for (let r = r1;r <= r2; r++)
+    widest = Math.max(widest, filled(r));
+  if (widest <= 1)
+    return r1;
+  const mergedAcross = (r) => sheet.merges.some((m) => m.r1 <= r && r <= m.r2 && (m.c2 - m.c1 + 1) * 2 >= width);
+  let header = r1;
+  while (header < r2 && (filled(header) * 2 < widest || mergedAcross(header)))
+    header++;
+  return header;
 }
 function blocks(wb) {
   const out = [];
@@ -31701,6 +31901,26 @@ function blocks(wb) {
     }
     if (r2 === 0)
       continue;
+    const header = headerRowOf(sheet, r1, c1, r2, c2);
+    if (header > r1) {
+      let nc1 = Infinity, nc2 = 0;
+      for (let r = header;r <= r2; r++) {
+        const line = sheet.cells.get(r);
+        if (!line)
+          continue;
+        for (const [c, v] of line) {
+          if (isEmpty(v))
+            continue;
+          nc1 = Math.min(nc1, c);
+          nc2 = Math.max(nc2, c);
+        }
+      }
+      if (nc2 > 0) {
+        r1 = header;
+        c1 = nc1;
+        c2 = nc2;
+      }
+    }
     out.push({ sheet, name: sheet.name, r1, c1, r2, c2 });
   }
   return out;
@@ -31749,7 +31969,7 @@ function sheetXml(rows, columns, headers) {
   const last = `${colLetters(Math.max(1, columns.length))}${rows.length + 1}`;
   return `${XML_HEAD}<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` + `<dimension ref="A1:${last}"/><sheetData>${lines.join("")}</sheetData></worksheet>`;
 }
-var unescapeExcel = (s) => s.replace(/_x([0-9A-Fa-f]{4})_/g, (_, hex3) => String.fromCharCode(parseInt(hex3, 16))), BUILTIN_DATE_IDS, xmlEscape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, (ch) => `_x${ch.charCodeAt(0).toString(16).padStart(4, "0").toUpperCase()}_`), XML_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', STATIC_PARTS, xlsxCodec;
+var unescapeExcel = (s) => s.replace(/_x([0-9A-Fa-f]{4})_/g, (_, hex3) => String.fromCharCode(parseInt(hex3, 16))), BUILTIN_DATE_IDS, isEmpty = (v) => v === null || v === undefined || v === "", xmlEscape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, (ch) => `_x${ch.charCodeAt(0).toString(16).padStart(4, "0").toUpperCase()}_`), XML_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', STATIC_PARTS, xlsxCodec;
 var init_xlsx = __esm(() => {
   init_browser();
   init_dist3();
@@ -32011,7 +32231,7 @@ async function fetchTable(url2, fetchImpl = fetch) {
   try {
     response = await fetchImpl(parsed.toString(), { redirect: "follow" });
   } catch (e) {
-    throw new Error(`Couldn’t fetch ${parsed.hostname}: network error or CORS blocked. (${e.message})`);
+    throw new Error(`Couldn’t fetch ${parsed.hostname}: the site blocked this browser (CORS) or the address is unreachable. ` + `Save the page and open the file instead. (${e.message})`);
   }
   if (!response.ok) {
     throw new Error(`Fetch failed: HTTP ${response.status} ${response.statusText}`);
