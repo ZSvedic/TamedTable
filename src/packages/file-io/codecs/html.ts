@@ -98,6 +98,12 @@ export const htmlCodec: FormatCodec = {
   extensions: ['.html', '.htm'],
   contentTypes: ['html'],
 
+  // Why a page can hold no table at all, in the words of what people try.
+  noTableHint:
+    'Only a real <table> counts, so a grid drawn with <div>s, a table an ' +
+    'in-page script writes after the page loads, or a plain-text file under ' +
+    'an .htm name has nothing to read.',
+
   listTables(bytes: Uint8Array): TableCandidate[] {
     return candidates(new TextDecoder().decode(bytes)).candidates;
   },

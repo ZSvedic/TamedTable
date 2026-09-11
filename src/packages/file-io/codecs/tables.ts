@@ -37,9 +37,17 @@ function listLines(candidates: TableCandidate[]): string {
 }
 
 /** Settle which candidate loads: none fails, one needs no pick, several need
- *  one (a 1-based number or a case-insensitive name). */
-export function chooseTable(name: string, candidates: TableCandidate[], pick?: string): TableCandidate {
-  if (candidates.length === 0) throw new Error(`${name}: no table found`);
+ *  one (a 1-based number or a case-insensitive name). `noneHint` is the
+ *  format's sentence on why a source of its kind can hold no table. */
+export function chooseTable(
+  name: string,
+  candidates: TableCandidate[],
+  pick?: string,
+  noneHint?: string,
+): TableCandidate {
+  if (candidates.length === 0) {
+    throw new Error(`${name}: no table found${noneHint ? `. ${noneHint}` : ''}`);
+  }
   if (candidates.length === 1) return candidates[0]!;
   if (pick === undefined || pick === '') throw new TableChoiceError(name, candidates);
   const wanted = pick.trim();

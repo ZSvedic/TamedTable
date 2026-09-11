@@ -14,8 +14,8 @@ web page).
 
 ## Tables in a page
 
-`listTables(bytes, name)` decodes the bytes as UTF-8 and lists every
-`<table>` in document order, nested ones included, each on its own:
+`listTables(bytes, name)` lists every `<table>` in document order, nested
+ones included, each on its own:
 
 - name: the `<caption>` text, else the `id` attribute, else `Table <n>`
 - location: `table <n> of <N>`
@@ -25,7 +25,12 @@ web page).
   dropped
 
 A page with no `<table>` lists nothing, and the load fails with `<name>: no
-table found`.
+table found`, followed by the codec's `noTableHint`: only a real `<table>`
+counts, so a `<div>` grid, a table an in-page script writes after load, and a
+plain-text file under an `.htm` name all have nothing to read. (Saving such a
+page from the browser does not help: what the browser saves is the markup, and
+`Save as > Webpage, complete` writes each frame as its own file, so a table
+inside a frame is in that file, not the one you open.)
 
 ## Parse
 

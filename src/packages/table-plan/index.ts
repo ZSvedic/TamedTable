@@ -276,6 +276,9 @@ export interface FormatCodec {
   /** #TablePick: the tables a source holds, for formats that can hold several
    *  (a workbook's sheets, a page's <table>s). Absent on single-table formats. */
   listTables?(bytes: Uint8Array, name: string): TableCandidate[] | Promise<TableCandidate[]>;
+  /** One sentence appended to "no table found", saying why a source of this
+   *  kind can hold none. Absent where the bare message says enough. */
+  noTableHint?: string;
   /** Optional one-time load of a heavy parser/engine before first `parse`. */
   load?: () => Promise<void>;
 }

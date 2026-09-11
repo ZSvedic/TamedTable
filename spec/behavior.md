@@ -718,7 +718,10 @@ dropped, as a CSV's blank line is.
 
 The candidate count decides what happens:
 
-- **None:** the load fails with `<name>: no table found`.
+- **None:** the load fails with `<name>: no table found`. A page adds why
+  it might have none: only a real `<table>` counts, so a grid drawn with
+  `<div>`s, one an in-page script writes after the page loads, or a file
+  that is plain text under an `.htm` name has nothing to read.
 - **One:** it loads at once, like a CSV. A one-sheet workbook or a page
   with one table asks nothing.
 - **Several:** the surface asks. Headless and the CLI have no dialog, so

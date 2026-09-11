@@ -41,7 +41,7 @@ export async function parseTable(
   const codec = await loadCodec(id);
   let table: number | undefined;
   if (codec.listTables) {
-    table = chooseTable(name, await codec.listTables(bytes, name), opts.table).index;
+    table = chooseTable(name, await codec.listTables(bytes, name), opts.table, codec.noTableHint).index;
   }
   const { rows, columns } = await codec.parse(bytes, name, table);
   if (id === 'csv') {
