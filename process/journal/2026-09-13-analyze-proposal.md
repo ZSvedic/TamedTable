@@ -267,3 +267,21 @@ Rough size: about 1,500 lines of diff plus the re-recorded cassettes.
 - "Apply as a step" on an answer's result table (turn the query into a
   `group` or `filter` transformation).
 - `{js}` queries for nested cells, per-row AI analysis at scale, charts.
+
+## Decisions taken (2026-09-13)
+
+- A: the boundary rule as written above.
+- B: the optional one-sentence `summary` on patches is in.
+- C: the suggester proposes exactly one question, always last in its list,
+  so a "run suggestion 1" still commits a step.
+- D: full cassette re-record.
+- E: the last answer carries into the next request.
+- F: on the phone, an answer shows in a strip above the dock, where the
+  suggestion chips sit: the text plus at most three rows of the result
+  table, dismissable. Same slot, no new sheet.
+- G: names as proposed.
+- I: flow replay and Python export are untouched; answers never enter the
+  spec.
+- J: a homepage section **Understand first**, third, after Clean up, with
+  its own showcase tour (`showcase-analyze.feature`) over
+  `showcase-exact-input.csv`: four questions, no step.
