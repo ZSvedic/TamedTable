@@ -35,5 +35,5 @@
     </g>
     <rect x="18" y="100" width="324" height="102" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
-  <text x="18" y="220" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10" fill="#6A6280">max(CASE WHEN Quarter='Q4' …) / max(CASE WHEN Quarter='Q1' …)</text>
+  <text x="18" y="220" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10" fill="#6A6280">Q4 revenue / Q1 revenue per Customer, ORDER BY growth DESC</text>
 </svg>
