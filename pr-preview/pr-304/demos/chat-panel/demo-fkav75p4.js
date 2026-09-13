@@ -17424,6 +17424,9 @@ function StatusDot({
   return state === "undone" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
     "data-status-dot": "undone",
     style: { ...base, border: `1.5px solid ${t.ink3}`, boxSizing: "content-box" }
+  }, undefined, false, undefined, this) : state === "answer" ? /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
+    "data-status-dot": "answer",
+    style: { ...base, background: t.accent }
   }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime6.jsxDEV("span", {
     "data-status-dot": "ok",
     style: { ...base, background: t.ok }
@@ -17473,6 +17476,7 @@ function debugDetailText(debug) {
       `turn ${i + 1}: ${turn.outcome}`,
       JSON.stringify(turn.ops, null, 2)
     ]),
+    ...(debug.expressions ?? []).filter((e) => e.label === "query").map((e) => `query: ${e.body}`),
     ...debug.cellSamples.length > 0 ? [
       "",
       "── cell samples (up to 3 per column) ──",
@@ -17480,6 +17484,52 @@ function debugDetailText(debug) {
     ] : []
   ].join(`
 `);
+}
+var ANSWER_TABLE_ROWS = 20;
+function answerCellText(v) {
+  if (v === null || v === undefined)
+    return "";
+  return typeof v === "object" ? JSON.stringify(v) : String(v);
+}
+function AnswerTableView({ t, table }) {
+  const shown = table.rows.slice(0, ANSWER_TABLE_ROWS);
+  const more = table.totalRows - shown.length;
+  const cell = { padding: "2px 12px 2px 0", borderBottom: `1px solid ${t.line}`, textAlign: "left" };
+  return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+    "data-cp-answer-table": "",
+    style: { marginTop: space.px8, overflowX: "auto", fontFamily: typography.mono, fontSize: typography.size.xs, color: t.ink2 },
+    children: [
+      /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("table", {
+        style: { borderCollapse: "collapse", whiteSpace: "nowrap" },
+        children: [
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("thead", {
+            children: /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
+              children: table.columns.map((c) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("th", {
+                style: { ...cell, fontWeight: 600, color: t.ink3 },
+                children: c
+              }, c, false, undefined, this))
+            }, undefined, false, undefined, this)
+          }, undefined, false, undefined, this),
+          /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tbody", {
+            children: shown.map((r, i) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("tr", {
+              children: r.map((v, j) => /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("td", {
+                style: cell,
+                children: answerCellText(v)
+              }, j, false, undefined, this))
+            }, i, false, undefined, this))
+          }, undefined, false, undefined, this)
+        ]
+      }, undefined, true, undefined, this),
+      more > 0 && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+        style: { marginTop: space.px4, color: t.ink3, fontFamily: typography.ui },
+        children: [
+          "… ",
+          more,
+          " more rows"
+        ]
+      }, undefined, true, undefined, this)
+    ]
+  }, undefined, true, undefined, this);
 }
 function chipStyle(t) {
   return {
@@ -17533,13 +17583,22 @@ function AssistantMessage({
               name: "err"
             }, undefined, false, undefined, this)
           }, undefined, false, undefined, this) : /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(StatusDot, {
-            state: message.undone ? "undone" : "ok",
+            state: message.undone ? "undone" : message.answer ? "answer" : "ok",
             style: { marginTop: message.undone ? 5 : 6 }
           }, undefined, false, undefined, this),
           /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
-            style: { flex: 1, whiteSpace: "pre-wrap", wordBreak: "break-word" },
-            children: body
-          }, undefined, false, undefined, this)
+            style: { flex: 1, minWidth: 0 },
+            children: [
+              /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
+                style: { whiteSpace: "pre-wrap", wordBreak: "break-word" },
+                children: body
+              }, undefined, false, undefined, this),
+              message.answer?.table && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(AnswerTableView, {
+                t,
+                table: message.answer.table
+              }, undefined, false, undefined, this)
+            ]
+          }, undefined, true, undefined, this)
         ]
       }, undefined, true, undefined, this),
       (message.debug || showReport) && /* @__PURE__ */ jsx_dev_runtime7.jsxDEV(jsx_dev_runtime7.Fragment, {
@@ -18455,6 +18514,16 @@ function Demo() {
                 onClick: () => append({ role: "assistant", text: `Undone steps:
 1. filter (js)`, undone: true }),
                 children: "Add undone reply"
+              }, undefined, false, undefined, this),
+              /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
+                variant: "chrome",
+                onClick: () => append({
+                  role: "assistant",
+                  text: "USA has the most customers: 3 of 20.",
+                  reportable: true,
+                  answer: { table: { columns: ["Country", "customers"], rows: [["USA", 3], ["Canada", 2], ["Australia", 2]], totalRows: 5 } }
+                }),
+                children: "Add answer reply"
               }, undefined, false, undefined, this),
               /* @__PURE__ */ jsx_dev_runtime10.jsxDEV(Button, {
                 variant: "chrome",
