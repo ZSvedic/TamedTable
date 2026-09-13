@@ -36,6 +36,7 @@ test('Tours button opens the panel with scenario names', async ({ page }) => {
   // One showcase tour per homepage section (Load/save has none).
   await expect(p.getByRole('option', { name: 'Clean 25,000 rows for cents' })).toBeAttached();
   await expect(p.getByRole('option', { name: 'Clean up a messy customer list' })).toBeAttached();
+  await expect(p.getByRole('option', { name: 'Analyze a sales sheet before touching it' })).toBeAttached();
   await expect(p.getByRole('option', { name: 'Enrich a purchase ledger' })).toBeAttached();
   await expect(p.getByRole('option', { name: 'Classify a support inbox' })).toBeAttached();
   await expect(p.getByRole('option', { name: 'Audit an order sheet' })).toBeAttached();
@@ -181,4 +182,26 @@ test('Escape key cancels the tour', async ({ page }) => {
   await expect(page.locator('.driver-popover')).toBeHidden();
   // The tour owned the engine, so cancelling returns to the empty state.
   await expect(page.getByText('What table can I tame?')).toBeVisible();
+});
+
+// #Analyze: the Analyze tour: four questions over the sales sheet, every
+// answer computed by duckdb-wasm in the browser and replayed key-free from
+// the cassette. This is also the proof that the query result's bytes match
+// between the Node engine that recorded the tape and the wasm engine that
+// replays it: a mismatch would end the tour off-script.
+test('the Analyze tour replays whole, key-free', async ({ page }) => {
+  await startTour(page, 'Analyze a sales sheet before touching it');
+  // Analyze showcase: load → 4 questions → terminal = 6 stops. Each stop's
+  // question fires on the Next that leaves it; the first question also
+  // fetches and instantiates the wasm, hence the generous timeout.
+  await expect(progress(page)).toHaveText('1 of 6');
+  for (let n = 2; n <= 6; n++) {
+    await nextBtn(page).click();
+    await expect(progress(page)).toHaveText(`${n} of 6`, { timeout: 90_000 });
+  }
+  await expect(page.locator('.driver-popover')).toContainText('Voilà');
+  // Four answers, each with the table it came from, and nothing to undo.
+  await expect(page.locator('[data-cp-message="assistant"]:has([data-status-dot="answer"])')).toHaveCount(4);
+  await expect(page.locator('[data-cp-answer-table]').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Undo/ })).toBeDisabled();
 });

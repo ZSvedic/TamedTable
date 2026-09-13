@@ -32,6 +32,7 @@ const tutorialFeatureNames = [
   'clean-up.feature', 'enrich.feature', 'classify.feature',
   'language-ai.feature', 'loadsave.feature',
   'showcase-lazy-ai.feature', 'lazy-exec.feature',
+  'showcase-analyze.feature', 'analyze.feature',
 ];
 
 const tutorialManifest = tutorialFeatureNames.flatMap((feature) => {

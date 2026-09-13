@@ -9,31 +9,31 @@
   <circle cx="25" cy="77" r="3.5" fill="#96BED7"/>
   <text x="36" y="81" font-size="13" fill="#281C60">Alpen Kaffee: +51% from Q1 to Q4.</text>
   <g>
-    <clipPath id="card"><rect x="18" y="100" width="324" height="102" rx="6"/></clipPath>
+    <clipPath id="card"><rect x="18" y="100" width="324" height="108" rx="6"/></clipPath>
     <path d="M18 106 q0 -6 6 -6 h312 q6 0 6 6 v24 h-324 Z" fill="#281C60"/>
     <text x="32" y="119" font-size="12" font-weight="600" fill="#FFFFFF">Customer</text>
     <text x="172" y="119" font-size="12" font-weight="600" fill="#FFFFFF">Q1</text>
     <text x="236" y="119" font-size="12" font-weight="600" fill="#FFFFFF">Q4</text>
     <text x="296" y="119" font-size="12" font-weight="600" fill="#96BED7">growth</text>
     <g clip-path="url(#card)">
-      <rect x="18" y="124" width="324" height="26" fill="#E7F1F8"/>
-      <rect x="18" y="124" width="4" height="26" fill="#96BED7"/>
+      <rect x="18" y="130" width="324" height="26" fill="#E7F1F8"/>
+      <rect x="18" y="130" width="4" height="26" fill="#96BED7"/>
     </g>
     <g font-size="12" fill="#281C60">
-      <text x="32" y="141" font-weight="600">Alpen Kaffee</text>
-      <text x="172" y="141" font-family="JetBrains Mono, ui-monospace, monospace">12,000</text>
-      <text x="236" y="141" font-family="JetBrains Mono, ui-monospace, monospace">18,100</text>
-      <text x="296" y="141" font-family="JetBrains Mono, ui-monospace, monospace" font-weight="700">+51%</text>
-      <text x="32" y="167">Madrid Solar</text>
-      <text x="172" y="167" font-family="JetBrains Mono, ui-monospace, monospace">9,800</text>
-      <text x="236" y="167" font-family="JetBrains Mono, ui-monospace, monospace">13,400</text>
-      <text x="296" y="167" font-family="JetBrains Mono, ui-monospace, monospace">+37%</text>
-      <text x="32" y="193">Sakura Foods</text>
-      <text x="172" y="193" font-family="JetBrains Mono, ui-monospace, monospace">8,700</text>
-      <text x="236" y="193" font-family="JetBrains Mono, ui-monospace, monospace">10,800</text>
-      <text x="296" y="193" font-family="JetBrains Mono, ui-monospace, monospace">+24%</text>
+      <text x="32" y="147" font-weight="600">Alpen Kaffee</text>
+      <text x="172" y="147" font-family="JetBrains Mono, ui-monospace, monospace">12,000</text>
+      <text x="236" y="147" font-family="JetBrains Mono, ui-monospace, monospace">18,100</text>
+      <text x="296" y="147" font-family="JetBrains Mono, ui-monospace, monospace" font-weight="700">+51%</text>
+      <text x="32" y="173">Madrid Solar</text>
+      <text x="172" y="173" font-family="JetBrains Mono, ui-monospace, monospace">9,800</text>
+      <text x="236" y="173" font-family="JetBrains Mono, ui-monospace, monospace">13,400</text>
+      <text x="296" y="173" font-family="JetBrains Mono, ui-monospace, monospace">+37%</text>
+      <text x="32" y="199">Sakura Foods</text>
+      <text x="172" y="199" font-family="JetBrains Mono, ui-monospace, monospace">8,700</text>
+      <text x="236" y="199" font-family="JetBrains Mono, ui-monospace, monospace">10,800</text>
+      <text x="296" y="199" font-family="JetBrains Mono, ui-monospace, monospace">+24%</text>
     </g>
-    <rect x="18" y="100" width="324" height="102" rx="6" fill="none" stroke="#DCDCDC"/>
+    <rect x="18" y="100" width="324" height="108" rx="6" fill="none" stroke="#DCDCDC"/>
   </g>
   <text x="18" y="220" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10" fill="#6A6280">Q4 revenue / Q1 revenue per Customer, ranked</text>
 </svg>
