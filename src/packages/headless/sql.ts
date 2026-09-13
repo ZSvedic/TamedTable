@@ -198,7 +198,16 @@ export class SqlSession {
     try {
       await this.registerRelation('t', rows);
       const conn = await this.duck();
-      const reader = await this.runInterruptibleSql(() => conn.runAndReadAll(sql), signal);
+      // The result's bytes go back to the model, so they key the next model
+      // call's cassette fingerprint: a parallel aggregate returns tied rows in
+      // a different order run to run, so the read runs single-threaded (the
+      // browser's wasm build always is) and the threads are restored after.
+      const threads = Number(process.env.TAMEDTABLE_DUCKDB_THREADS ?? '4') || 4;
+      const reader = await this.runInterruptibleSql(async () => {
+        await conn.run('SET threads = 1');
+        try { return await conn.runAndReadAll(sql); }
+        finally { try { await conn.run(`SET threads = ${threads}`); } catch { /* a cancelled query: the next read sets it again */ } }
+      }, signal);
       const objects = reader.getRowObjects() as Record<string, unknown>[];
       const named = (reader as { columnNames?: () => string[] }).columnNames?.();
       const columns = named ?? (objects[0] ? Object.keys(objects[0]) : []);

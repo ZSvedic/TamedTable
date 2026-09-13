@@ -882,7 +882,7 @@ const ANSWER_STRIP_ROWS = 3;       // rows the phone's answer strip shows
 // What a request settles as.
 type RequestResult =
   | { kind: 'patch'; summary?: string }
-  | { kind: 'answer'; text: string; table?: AnswerTable };   // table: the last successful query's rows
+  | { kind: 'answer'; text: string; table?: AnswerTable };   // table: the query result with the most rows (later on a tie)
 interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
 
 // SqlSession (headless/sql.ts): a read over the current rows. Registers `t`
@@ -890,6 +890,12 @@ interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number 
 // SELECT / WITH statement, runs it through the interruptible path (Stop
 // calls conn.interrupt() like a {sql} step), returns every row: the tool
 // layer applies the ANSWER_SAMPLE_* bounds and counts `pendingRows`.
+// The result's bytes go back to the model, so they key the next model
+// call's cassette fingerprint and must not vary run to run or between the
+// Node and wasm engines: the read runs with `threads = 1` (restored
+// after), the tool layer sorts a result whose query has no ORDER BY
+// canonically (by each column's text in turn), and the prompt asks for a
+// tie-breaker on every ORDER BY.
 query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: unknown[][] }>;
 
 // Progress: each query fires onStep with kind 'query', label 'query (sql)',
@@ -902,8 +908,8 @@ The request loop: a `query_table` call runs the read, records a
 `queried` turn (`ops: []`, `outcome: 'queried'`, `sentBack` the error
 when `ok` is false), and hands the bounded result back to the model; a
 `reply` call records an `answered` turn, sets `RequestDebugInfo.answer`,
-fires `onDebug`, and resolves `{ kind: 'answer' }` with the last
-successful query's table; an `apply_spec_patch` call takes the existing
+fires `onDebug`, and resolves `{ kind: 'answer' }` with the table of the
+query that returned the most rows (the later one on a tie); an `apply_spec_patch` call takes the existing
 path (validate, guards, replay, commit) and resolves `{ kind: 'patch' }`
 with its `summary`. The patch recovery budget is unchanged and separate:
 a rejected patch re-enters the loop with the same error prompt as today.

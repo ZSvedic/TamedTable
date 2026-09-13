@@ -60,8 +60,9 @@ the reply says so.
 The user gets:
 
 - the answer, one to three sentences;
-- the result table of the last query (up to 20 rows shown, `… N more rows`
-  after them), so the calculation is visible, as issue #299 asks;
+- the result table the answer rests on (the query with the most rows; up
+  to 20 rows shown, `… N more rows` after them), so the calculation is
+  visible, as issue #299 asks;
 - the request detail: each SQL query that ran, model calls, tokens, time.
 
 ### Nothing changes, so nothing to undo
@@ -133,7 +134,7 @@ One request is a short tool loop, at most 4 model steps, three tools:
 |---|---|---|---|
 | `apply_spec_patch` | `operations[]`, `summary?`, `transcript?` | unchanged: patch, validate, replay, commit | yes |
 | `query_table` | `sql` | `SELECT` over `t` in DuckDB; the bounded result (or the SQL error) goes back to the model | no |
-| `reply` | `text`, `transcript?` | the answer shown to the user, with the last query's table | yes |
+| `reply` | `text`, `transcript?` | the answer shown to the user, with the richest query's table | yes |
 
 `toolChoice` becomes `required`; the loop stops on the first
 `apply_spec_patch` or `reply`, or at step 4, which fails the request cleanly

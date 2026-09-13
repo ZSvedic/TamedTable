@@ -65,19 +65,10 @@ Then('no transformation was added', function (this: TamedTableWorld) {
   assert.equal(now.length, specBefore.transformations.length, `expected no new transformation, spec has ${JSON.stringify(now)}`);
 });
 
+// The summary rides on the request result on every surface; the web reply's
+// first line is summarizeDebug's job (controller-messages.test.ts).
 Then('the reply carries a one-sentence summary', function (this: TamedTableWorld) {
-  let summary: string | undefined;
-  if (this.surface === 'web') {
-    // The web shows it as the reply's first line, above "Executed steps:".
-    const replies = (webController(this).messages as AnswerMessage[]).filter((m) => m.role === 'assistant');
-    const last = replies[replies.length - 1];
-    assert.ok(last, 'no assistant reply');
-    const lines = last.text.split('\n');
-    assert.equal(lines[1], 'Executed steps:', `expected the summary above "Executed steps:", got:\n${last.text}`);
-    summary = lines[0];
-  } else {
-    summary = (lastResult(this) as { summary?: string }).summary;
-  }
+  const summary = (lastResult(this) as { summary?: string }).summary;
   assert.ok(summary && summary.trim().length > 0, 'the reply carries no summary');
   assert.ok(summary.length <= 200, `summary is not one sentence: ${JSON.stringify(summary)}`);
   assert.ok(/[.!]$/.test(summary.trim()), `summary does not end a sentence: ${JSON.stringify(summary)}`);

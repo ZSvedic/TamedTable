@@ -168,9 +168,11 @@ export type RequestResult =
   | { kind: 'patch'; summary?: string }
   | { kind: 'answer'; text: string; table?: AnswerTable };
 
-/** The last successful query's result, as a host shows it: at most
- *  ANSWER_SAMPLE_ROWS rows and ANSWER_SAMPLE_COLS columns of real values,
- *  plus the true row count so a host can say "… N more rows". */
+/** The query result an answer rests on, as a host shows it: of the queries
+ *  the turn ran, the one that returned the most rows (the later one on a
+ *  tie: a closing sanity total never hides the grouped rows before it), at
+ *  most ANSWER_SAMPLE_ROWS rows and ANSWER_SAMPLE_COLS columns of real
+ *  values, plus the true row count so a host can say "… N more rows". */
 export interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
 
 /** What the query tool hands back to the model: the bounded, clipped result
@@ -592,6 +594,20 @@ export function boundQueryResult(
   };
 }
 
+/** @internal: exported for unit tests. Rows in a fixed order: by each
+ *  column's text in turn (nulls first), for a result no ORDER BY ordered. */
+export function canonicalRowOrder(columns: string[], rows: Row[]): Row[] {
+  const key = (v: unknown): string => (v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  return [...rows].sort((a, b) => {
+    for (const c of columns) {
+      const ka = key(a[c]);
+      const kb = key(b[c]);
+      if (ka !== kb) return ka < kb ? -1 : 1;
+    }
+    return 0;
+  });
+}
+
 /** @internal: exported for unit tests. The rows a query reads: pending and
  *  failed cell sentinels (#LazyExec) become NULL, and the count of rows that
  *  carried one is reported so the model can say the answer is partial. */
@@ -624,7 +640,8 @@ interface TurnContext {
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;
   queries: number;
-  lastTable?: AnswerTable;
+  /** The richest result so far: most rows, the later one on a tie. */
+  bestTable?: AnswerTable;
   onStep?: (u: StepUpdate) => void;
 }
 
@@ -1689,7 +1706,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           turns.push({ ops: [], outcome: 'answered' });
           this.lastAnswer = llmTurn.text.slice(0, ANSWER_CONTEXT_CHARS);
           reportDebug(this.buildDebugInfo(text, turns, ctx.expressions, Date.now() - startedAt, [], { answer: llmTurn.text }));
-          return { kind: 'answer', text: llmTurn.text, table: ctx.lastTable };
+          return { kind: 'answer', text: llmTurn.text, table: ctx.bestTable };
         }
         const ops = llmTurn.ops;
         const turn: RequestDebugTurn = { ops, outcome: '' };
@@ -1911,8 +1928,13 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     const { rows, pendingRows } = blankSentinelRows(this.derivedRows);
     try {
       const out = await this.sql.query(rows, body, signal);
+      // A query with no ORDER BY has no order to preserve, and the engine's
+      // is not stable across builds; sort such a result canonically so the
+      // bytes the model sees (and the cassette keys on) are the same
+      // everywhere. An ordered query keeps its order.
+      if (!/\border\s+by\b/i.test(body)) out.rows = canonicalRowOrder(out.columns, out.rows);
       const bounded = boundQueryResult(out.columns, out.rows, pendingRows);
-      ctx.lastTable = bounded.forHost;
+      if (!ctx.bestTable || bounded.forHost.totalRows >= ctx.bestTable.totalRows) ctx.bestTable = bounded.forHost;
       return bounded.forModel;
     } catch (e) {
       if (isCancelled(e) || signal?.aborted) return { ok: false, error: 'cancelled' };

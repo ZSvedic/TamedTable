@@ -1030,8 +1030,10 @@ requirement) is taken as having replied.
 The user gets three things:
 
 - the answer, one to three sentences;
-- the result table of the last query, up to 20 rows, then `… N more
-  rows`, so the calculation is visible;
+- the result table the answer rests on: of the queries the model ran, the
+  one that returned the most rows (the later one on a tie, so a closing
+  sanity total never hides the grouped rows before it), up to 20 rows,
+  then `… N more rows`, so the calculation is visible;
 - the request detail: each SQL query that ran, the model calls, tokens,
   and elapsed time.
 
