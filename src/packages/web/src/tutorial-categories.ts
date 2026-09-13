@@ -12,7 +12,7 @@ export interface TutorialCategory {
 export const TUTORIAL_CATEGORIES: readonly TutorialCategory[] = [
   { tag: '@cat-lazy', title: 'Lazy AI execution' },
   { tag: '@cat-cleanup', title: 'Clean up' },
-  { tag: '@cat-analyze', title: 'Understand first' },
+  { tag: '@cat-analyze', title: 'Analyze' },
   { tag: '@cat-enrich', title: 'Enrich & extract' },
   { tag: '@cat-classify', title: 'Classify' },
   { tag: '@cat-validate', title: 'Validate' },

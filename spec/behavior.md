@@ -2318,7 +2318,7 @@ fingerprint-mismatch error, never a silent hang.
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
 into the nine marketing feature categories**, Lazy AI execution, Clean up,
-Understand first, Enrich & extract, Classify, Validate, Process language, Be
+Analyze, Enrich & extract, Classify, Validate, Process language, Be
 exact, and Load, save & reuse: numbered 01–09, in the same order as the homepage sections. A
 scenario's group comes from its `@cat-…` tag (e.g. `@cat-cleanup`); empty
 categories are omitted.

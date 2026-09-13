@@ -282,6 +282,8 @@ Rough size: about 1,500 lines of diff plus the re-recorded cassettes.
 - G: names as proposed.
 - I: flow replay and Python export are untouched; answers never enter the
   spec.
-- J: a homepage section **Understand first**, third, after Clean up, with
-  its own showcase tour (`showcase-analyze.feature`) over
-  `showcase-exact-input.csv`: four questions, no step.
+- J: a homepage section **Analyze**, third, after Clean up, with its own
+  showcase tour (`showcase-analyze.feature`) over `showcase-exact-input.csv`:
+  four questions, no step: the top-3 revenue share, the fastest-growing
+  customer, the customer at risk, the duplicate rows. Trivial counts and
+  maxima were dropped: a spreadsheet answers those already.

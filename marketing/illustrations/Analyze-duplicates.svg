@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
-  <!-- TamedTable feature illustration: Understand first, "Are there any duplicate rows?",
+  <!-- TamedTable feature illustration: Analyze, "Are there any duplicate rows?",
        a yes/no answered with the rows that repeat; removing them is the next request's step -->
   <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
   <rect x="18" y="18" width="324" height="36" rx="18" fill="#EFEBF7" stroke="#D8D0EC"/>

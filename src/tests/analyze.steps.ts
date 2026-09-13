@@ -1,5 +1,5 @@
 // #Analyze
-// Steps for spec/test-cases/analyze.feature and the Understand-first
+// Steps for spec/test-cases/analyze.feature and the Analyze
 // showcase tour: questions about the data answered without changing the
 // table (behavior.md § Questions about the data). Assertions are structural
 // or grounded in the fixture, never on the model's wording: a recording
