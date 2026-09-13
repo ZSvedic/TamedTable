@@ -135,8 +135,8 @@ interface Runner {
   // therefore checks every new join against its staged names *before* the
   // replay starts and asks the user for the file (#LookupJoin), so the
   // fallback is never reached there.
-  registerLookup(name: string, rows: Row[]): void;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<void>;
+  registerLookup(name: string, rows: Row[]): void;  // Settles as a patch or an answer: see § Questions about the data (#Analyze).
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void }): Promise<RequestResult>;
   // Replace the spec and replay it against the source. `opts` serves a long
   // replay (the web's flow-open #OpenFlow): `onStep` fires as each
   // transformation starts, `onChunk` streams AI-cell results, and aborting
@@ -331,11 +331,12 @@ interface RequestDebugInfo {
   turns: RequestDebugTurn[];
   expressions: Array<{ label: string; body: string }>;   // success path: primary expr per appended transformation
   steps: string[];             // success path: describeStep label per appended transformation
-  cellSamples: CellSample[];   // per-column LLM replies for {llm} mutate transformations
-  modelCalls: Array<{ model: string; calls: number }>;   // distinct models, first-call order
+  cellSamples: CellSample[];   // per-column LLM replies for {llm} mutate transformations  modelCalls: Array<{ model: string; calls: number }>;   // distinct models, first-call order
   inputTokens: number;
   outputTokens: number;
   elapsedMs: number;
+  answer?: string;             // the reply text when the request settled as an answer (#Analyze)
+  summary?: string;            // the patch call's one-sentence summary, when the model gave one
 }
 ```
 
@@ -369,7 +370,9 @@ appended transformation (the web chat's one-line-per-step reply);
 `cellSamples` captures up to 3 per-row LLM before→after
 pairs for each column that uses a `{llm}` mutate transformation (empty
 array when no such transformations ran); `turns` carries the failure
-detail; `modelCalls`, `inputTokens`, `outputTokens`, and `elapsedMs`
+detail (an answered request's turns read `queried` per query and
+`answered` for the reply, and `expressions` then carries one
+`{ label: 'query', body: <sql> }` per query, § [Questions about the data](#questions-about-the-data-analyze)); `modelCalls`, `inputTokens`, `outputTokens`, and `elapsedMs`
 are filled either way. A
 model id shaped `claude-<family>-<major>-<minor>` renders in the debug
 block as `<Family> <major>.<minor>` (so `claude-sonnet-4-6` →
@@ -654,9 +657,10 @@ line in file order. A `SUGGEST_PROMPT` missing either placeholder, or a
 `SYSTEM_PROMPT` itself is untouched by this: its bytes, and every
 cassette keyed on them, stay as they are.
 
-The runtime uses `SYSTEM_PROMPT` as the system message on every patch-turn
-call and `BATCH_SYSTEM_PROMPT` as the system message on every multi-row
-cell evaluation. `CELL_FORMAT_CONSTRAINT` is loaded so spec-driven tools
+The runtime uses `SYSTEM_PROMPT` as the system message on every chat
+turn (the tool loop that patches or answers, § [Questions about the
+data](#questions-about-the-data-analyze)) and `BATCH_SYSTEM_PROMPT` as the
+system message on every multi-row cell evaluation. `CELL_FORMAT_CONSTRAINT` is loaded so spec-driven tools
 (WoZ, future validators) can reference it; it already appears verbatim as
 a substring inside `SYSTEM_PROMPT`'s few-shots.
 
@@ -845,6 +849,100 @@ DuckDB table `t` is not dropped on cancel.
 |---|---|---|
 | `TAMEDTABLE_DUCKDB_PATH` | `:memory:` | Path for the DuckDB database; default keeps state in process memory. Node only: the browser is always in-memory. |
 | `TAMEDTABLE_DUCKDB_THREADS` | `4` | `SET threads = N` issued at init. Node only: the browser wasm build is single-threaded, so the adapter ignores the thread-count setting. |
+
+### Questions about the data (#Analyze)
+
+→ [behavior.md: Questions about the data](behavior.md#questions-about-the-data-analyze)
+
+A chat turn is one `generateText` call with three tools and a stop rule,
+where it used to be one forced patch call:
+
+```ts
+// The turn's tools. `toolChoice: 'required'`; the loop stops on the first
+// apply_spec_patch or reply, or after ANSWER_STEPS model steps:
+//   stopWhen: [stepCountIs(ANSWER_STEPS), hasToolCall('apply_spec_patch'), hasToolCall('reply')]
+// apply_spec_patch: { operations: Op[]; summary?: string; transcript?: string }
+//   summary: one plain sentence saying what the step does (shown, never stored)
+// query_table:      { sql: string } → QueryToolResult   (has `execute`: the result feeds the next step)
+// reply:            { text: string; transcript?: string }
+// `transcript` appears on the two closing tools only when audio is attached.
+
+type QueryToolResult =
+  | { ok: true; columns: string[]; rows: unknown[][]; totalRows: number; truncated: boolean; pendingRows: number }
+  | { ok: false; error: string };   // a DuckDB error, or "only SELECT/WITH statements are accepted"
+
+const ANSWER_STEPS = 4;            // model steps per request: queries plus the closing patch or reply
+const ANSWER_SAMPLE_ROWS = 50;     // rows of a query result the model sees
+const ANSWER_SAMPLE_COLS = 30;
+const ANSWER_CELL_CHARS = 120;     // per cell, stringified, then cut with an ellipsis
+const ANSWER_CONTEXT_CHARS = 500;  // of the last answer's text carried into the next request
+const ANSWER_TABLE_ROWS = 20;      // rows a web reply shows under the answer; the CLI shows one viewport page
+const ANSWER_STRIP_ROWS = 3;       // rows the phone's answer strip shows
+
+// What a request settles as.
+type RequestResult =
+  | { kind: 'patch'; summary?: string }
+  | { kind: 'answer'; text: string; table?: AnswerTable };   // table: the last successful query's rows
+interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
+
+// SqlSession (headless/sql.ts): a read over the current rows. Registers `t`
+// with pending and failed cell sentinels as NULL, refuses anything but a
+// SELECT / WITH statement, runs it through the interruptible path (Stop
+// calls conn.interrupt() like a {sql} step), returns every row: the tool
+// layer applies the ANSWER_SAMPLE_* bounds and counts `pendingRows`.
+query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: unknown[][] }>;
+
+// Progress: each query fires onStep with kind 'query', label 'query (sql)',
+// rows = the rows entering it, expressions [{ label: 'sql', body }], and
+// index/total counting queries so far. The web feed shows "Querying the
+// table…"; the CLI prints `query <n>: <sql>`.
+```
+
+The request loop: a `query_table` call runs the read, records a
+`queried` turn (`ops: []`, `outcome: 'queried'`, `sentBack` the error
+when `ok` is false), and hands the bounded result back to the model; a
+`reply` call records an `answered` turn, sets `RequestDebugInfo.answer`,
+fires `onDebug`, and resolves `{ kind: 'answer' }` with the last
+successful query's table; an `apply_spec_patch` call takes the existing
+path (validate, guards, replay, commit) and resolves `{ kind: 'patch' }`
+with its `summary`. The patch recovery budget is unchanged and separate:
+a rejected patch re-enters the loop with the same error prompt as today.
+Running out of `ANSWER_STEPS` without a closing tool throws
+`Runner: answer budget exhausted` (web: `Couldn't answer that after 4
+attempts. Try asking in a different way.`, reportable); nothing changes.
+A turn whose result has no tool call and non-empty text is taken as a
+`reply` with that text. An empty `reply` is rejected back to the model
+like an empty patch.
+
+The prior answer: the runner keeps `lastAnswer` (the reply text cut to
+`ANSWER_CONTEXT_CHARS`); `buildPrompt` appends
+`\n\nYour previous answer: <text>` to the user message while it is set.
+A `reply` replaces it, a committed patch clears it, and every load
+clears it. The prompt bytes are otherwise unchanged, so a request with
+no prior answer fingerprints exactly as before.
+
+Hosts:
+
+```ts
+// CLI (session.ts): request() returns the RequestResult; on an answer it
+// prints the text, renderTable(table) over one viewport page, and the
+// debug block; no journal entry, no viewport reset, no table reprint. On a
+// patch it prints `summary` before the debug block when present.
+
+// Web
+class WebController {
+  // Answered question: pushMessage('assistant', text, debug, true /* reportable */)
+  // with `answer: { table }` and NO historyId; clears the suggestion chips;
+  // tracks 'chat-answer'. A patch reply with a summary reads
+  // `<summary>\nExecuted steps:\n1. …`.
+  answerStrip: { text: string; table?: AnswerTable } | null;   // phone slot above the dock
+  dismissAnswer(): void;
+}
+// MobileShell: `data-mob-answer` (the strip), `data-mob-answer-dismiss`.
+```
+
+The chat panel renders the answer message (marker, text, table): see
+[spec/packages/chat-panel/behavior.md](packages/chat-panel/behavior.md).
 
 ### Nested values in a cell (#NestedCells)
 
@@ -1137,7 +1235,10 @@ displayMessages(): ChatMessage[];      // messages with undo state applied:
 
 `ChatMessage` gains `historyId?: number` (the journal entry a committed
 reply reports, stamped by `sendChat` / the flow replay / a voice turn) and
-`undone?: boolean` (set only on the copies `displayMessages` returns).
+`undone?: boolean` (set only on the copies `displayMessages` returns), and,
+for a reply that answered a question, `answer?: { table?: AnswerTable }`
+(§ [Questions about the data](#questions-about-the-data-analyze)); such a
+reply carries no `historyId`, so it never reads as undone.
 `PatchManager` snapshots the engine's changed-cell marks per entry id at
 record time; undo, redo, and `jumpTo` restore the landing entry's marks
 into the engine and refresh `revealTarget()` with that entry's first
@@ -1243,8 +1344,8 @@ const UMAMI_SCRIPT_URL: string;   // https://cloud.umami.is/script.js
 
 type AnalyticsEvent =
   | 'open-file'        // { source: 'local' | 'url' | 'sample' | 'drop' }
-  | 'open-flow'
-  | 'chat-request'
+  | 'open-flow'  | 'chat-request'
+  | 'chat-answer'      // a request settled as an answer (#Analyze)
   | 'voice-request'
   | 'undo' | 'redo'
   | 'run-all'
@@ -1731,7 +1832,9 @@ attaches it as a file part on the patch-turn model call. The request flows
 through the engine's normal `fetch` hook, so the cassette recorder covers it
 with no extra wiring. The user bubble and the undo-history label for a voice
 turn start as the placeholder `🎙 Voice request` and are replaced by
-`🎙 <transcript>` when the model returns one.
+`🎙 <transcript>` when the model returns one. With audio attached the
+`reply` tool gains the same optional `transcript` argument the patch
+tool has, so a spoken question swaps its bubble the same way.
 
 `VoicePort` is the recording surface. The browser implementation
 (`browserVoicePort(): VoicePort | null`) wraps `MediaRecorder` and returns
@@ -1869,7 +1972,9 @@ cell cut to `SUGGEST_CELL_CHARS`. It makes one `generateText` call with
 least-deliberation options (§ [Least deliberation](#least-deliberation-loweffort)),
 and `EXPORT_MAX_RETRIES`. The reply is fence-stripped and parsed as a
 JSON array; strings are trimmed, empties and duplicates dropped, a
-missing final period added, and at most 4 kept. A reply that is not such
+missing final period added (a sentence already ending in `?` or `!` is
+kept as is: the last suggestion is a question, § [Questions about the
+data](#questions-about-the-data-analyze)), and at most 4 kept. A reply that is not such
 an array yields `[]`: the caller
 never sees a parse error. Network and model errors throw like any other
 call; hosts swallow them. Usage reports through `onUsage` with role

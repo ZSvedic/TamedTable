@@ -30,7 +30,9 @@ export type RunnerKind = 'headless' | 'cli' | 'web';
 
 export interface Runner {
   loadInput(path: string): Promise<void>;
-  request(text: string): Promise<void>;
+  /** Settles as a patch or an answer (#Analyze): the RequestResult, or
+   *  void from a surface that has not been taught to return one yet. */
+  request(text: string): Promise<unknown>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -45,6 +47,9 @@ export interface CapturedInvocation {
 export interface RequestOutcome {
   ok: boolean;
   error?: Error;
+  /** What the request settled as (#Analyze): the RequestResult the runner
+   *  returned, `{ kind: 'patch' | 'answer', … }`. */
+  result?: unknown;
   specBefore: TablePlan;
   specAfter?: TablePlan;
 }

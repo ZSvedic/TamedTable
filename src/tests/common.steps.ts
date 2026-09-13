@@ -76,8 +76,8 @@ When('query {string}', async function (this: TamedTableWorld, text: string) {
     specBefore = structuredClone(runner.currentSpec());
   }
   try {
-    await runner.request(text);
-    this.lastRequestOutcome = { ok: true, specBefore, specAfter: runner.currentSpec() };
+    const result = await runner.request(text);
+    this.lastRequestOutcome = { ok: true, specBefore, specAfter: runner.currentSpec(), result };
   } catch (e) {
     this.lastRequestOutcome = { ok: false, error: e as Error, specBefore, specAfter: runner.currentSpec() };
   }
