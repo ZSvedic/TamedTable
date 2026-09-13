@@ -893,9 +893,13 @@ interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number 
 // The result's bytes go back to the model, so they key the next model
 // call's cassette fingerprint and must not vary run to run or between the
 // Node and wasm engines: the read runs with `threads = 1` (restored
-// after), the tool layer sorts a result whose query has no ORDER BY
-// canonically (by each column's text in turn), and the prompt asks for a
-// tie-breaker on every ORDER BY.
+// after); every result column outside the plain types (integers, FLOAT,
+// DOUBLE, BOOLEAN, VARCHAR) is cast to VARCHAR inside the query (a
+// DESCRIBE first, then `SELECT … CAST(col AS VARCHAR) … FROM (<sql>) q`),
+// so lists, structs, dates, timestamps, and decimals arrive as DuckDB's own
+// text in both engines; the tool layer sorts a result whose query has no
+// ORDER BY canonically (by each column's text in turn); and the prompt asks
+// for a tie-breaker on every ORDER BY.
 query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: unknown[][] }>;
 
 // Progress: each query fires onStep with kind 'query', label 'query (sql)',
