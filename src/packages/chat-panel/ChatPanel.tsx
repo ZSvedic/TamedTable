@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { space, typography, TYPING_MS_PER_CHAR, type Theme } from '@tamedtable/ui-kit';
 import { useTheme, Icon, isImeComposingEvent } from '@tamedtable/ui-kit/components';
-import type { ChatPanelMessage, ChatRequestDetail, ChatRunProgress } from './index.ts';
+import type { AnswerTable, ChatPanelMessage, ChatRequestDetail, ChatRunProgress } from './index.ts';
 import { StatusDot } from './StatusDot.tsx';
 
 // Input growth bounds: three lines minimum, ten maximum (~24px line-height);
@@ -70,6 +70,8 @@ function debugDetailText(debug: ChatRequestDetail): string {
       `turn ${i + 1}: ${turn.outcome}`,
       JSON.stringify(turn.ops, null, 2),
     ]),
+    // #Analyze: the SQL behind an answered question.
+    ...(debug.expressions ?? []).filter((e) => e.label === 'query').map((e) => `query: ${e.body}`),
     ...(debug.cellSamples.length > 0 ? [
       '',
       '── cell samples (up to 3 per column) ──',
@@ -78,6 +80,43 @@ function debugDetailText(debug: ChatRequestDetail): string {
       ),
     ] : []),
   ].join('\n');
+}
+
+// #Analyze: rows a reply shows under an answer before "… N more rows".
+const ANSWER_TABLE_ROWS = 20;
+
+function answerCellText(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  return typeof v === 'object' ? JSON.stringify(v) : String(v);
+}
+
+/** The small result table an answer was computed from: a compact monospace
+ *  grid under the text, scrolling sideways inside the message when wider
+ *  than the sidebar. */
+function AnswerTableView({ t, table }: { t: Theme; table: AnswerTable }): ReactNode {
+  const shown = table.rows.slice(0, ANSWER_TABLE_ROWS);
+  const more = table.totalRows - shown.length;
+  const cell: CSSProperties = { padding: '2px 12px 2px 0', borderBottom: `1px solid ${t.line}`, textAlign: 'left' };
+  return (
+    <div
+      data-cp-answer-table=""
+      style={{ marginTop: space.px8, overflowX: 'auto', fontFamily: typography.mono, fontSize: typography.size.xs, color: t.ink2 }}
+    >
+      <table style={{ borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
+        <thead>
+          <tr>{table.columns.map((c) => <th key={c} style={{ ...cell, fontWeight: 600, color: t.ink3 }}>{c}</th>)}</tr>
+        </thead>
+        <tbody>
+          {shown.map((r, i) => (
+            <tr key={i}>{r.map((v, j) => <td key={j} style={cell}>{answerCellText(v)}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+      {more > 0 && (
+        <div style={{ marginTop: space.px4, color: t.ink3, fontFamily: typography.ui }}>… {more} more rows</div>
+      )}
+    </div>
+  );
 }
 
 /** Quiet chip: a subtle bordered pill that separates the copy and Report bug
@@ -141,11 +180,14 @@ function AssistantMessage({
           // Solid ok dot for an applied step; hollow circle when the reply's
           // step is undone: the table no longer shows what it reports.
           <StatusDot
-            state={message.undone ? 'undone' : 'ok'}
+            state={message.undone ? 'undone' : message.answer ? 'answer' : 'ok'}
             style={{ marginTop: message.undone ? 5 : 6 }}
           />
         )}
-        <div style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{body}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{body}</div>
+          {message.answer?.table && <AnswerTableView t={t} table={message.answer.table} />}
+        </div>
       </div>
 
       {(message.debug || showReport) && (

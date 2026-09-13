@@ -32,7 +32,7 @@ The web app's wrapper binds `WebController`:
 ## Message types (main entry, React-free)
 
 `ChatPanelMessage` is `{ id, role: "user" | "assistant", text, debug?,
-reportable?, undone?, answer?, table? }`. `debug`, when present, is a `ChatRequestDetail`: a
+reportable?, undone?, answer? }`. `debug`, when present, is a `ChatRequestDetail`: a
 structural subset of the engine's `RequestDebugInfo` (request text, model
 calls, token counts, elapsed time, per-turn ops, cell samples), so the app's
 debug objects fit without a headless dependency. `reportable: true` marks a
@@ -41,11 +41,13 @@ guidance error) is the host's job; the panel only renders the action.
 `undone: true` marks an assistant reply whose step the host has undone:
 the panel renders it with a hollow circle instead of the solid ok dot (the
 heading swap to `Undone steps:` is the host's job; the panel renders text
-as given). `answer: true` marks a reply that answered a question rather
-than changing the table (#Analyze): it renders with the answer marker, and
-`table`, when present, is `{ columns: string[], rows: unknown[][],
+as given). `answer` marks a reply that answered a question rather than
+changing the table (#Analyze): it renders with the answer marker, and
+`answer.table`, when present, is `{ columns: string[], rows: unknown[][],
 totalRows }`, the small result table the answer was computed from,
-rendered under the text.
+rendered under the text. `debug.expressions`, when present, lists the
+request's expressions; the detail prints one `query:` line per `query`
+label.
 
 `ChatRunProgress` is the live progress the host feeds while a run
 streams: `{ step, totalSteps, label, rowsDone, rowsTotal, log }`,
@@ -83,7 +85,7 @@ panel just renders whatever it is passed.
   a collapsed "request detail" toggle that expands a read-only log box
   streaming `progress.log`, pinned to its newest line. The block
   unmounts when streaming ends, so the next run starts collapsed.
-- Answer table: an `answer` message with a `table` renders it under the
+- Answer table: an `answer` message with a table renders it under the
   text as a compact monospace grid (`data-cp-answer-table`): a header row
   of `columns`, then at most 20 rows, then a quiet `… N more rows` line
   when `totalRows` exceeds what is shown. Cells render as text (nested

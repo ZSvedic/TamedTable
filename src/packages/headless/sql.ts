@@ -186,6 +186,32 @@ export class SqlSession {
     }
   }
 
+  // #Analyze
+  /** A read over the current rows for the query tool: only a SELECT or WITH
+   *  statement, run as written (no wrapping) through the interruptible path,
+   *  every row and column returned; the caller bounds the result. The rows
+   *  arrive with pending/failed sentinels already blanked to null. */
+  async query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: Row[] }> {
+    if (!/^\s*(select|with)\b/i.test(sql)) {
+      throw new Error('only SELECT or WITH statements are accepted: the query tool reads the table, it never changes it');
+    }
+    try {
+      await this.registerRelation('t', rows);
+      const conn = await this.duck();
+      const reader = await this.runInterruptibleSql(() => conn.runAndReadAll(sql), signal);
+      const objects = reader.getRowObjects() as Record<string, unknown>[];
+      const named = (reader as { columnNames?: () => string[] }).columnNames?.();
+      const columns = named ?? (objects[0] ? Object.keys(objects[0]) : []);
+      return {
+        columns,
+        rows: objects.map((r) => Object.fromEntries(columns.map((c) => [c, normalizeSqlValue(r[c])]))),
+      };
+    } catch (e) {
+      if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
+      throw new Error(`SQL query failed: ${(e as Error).message}`);
+    }
+  }
+
   async applyMutateSql(
     rows: Row[],
     t: Extract<Transformation, { kind: 'mutate' }> & { value: { sql: string } },

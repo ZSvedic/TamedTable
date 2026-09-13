@@ -22,6 +22,7 @@ function fakeRunner(fetchImpl: ((i: string | URL | Request, init?: RequestInit) 
         await fetchImpl('https://api.example/v1/x', { body: JSON.stringify({ model: cellModel }) });
       }
       rows = rows.map((r) => ({ ...r, Music: /music|take five/i.test(String(r.title)) }));
+      return { kind: 'patch' as const };
     },
     currentRows: () => rows,
     currentSpec: () => ({ table: 't', columns: [], transformations: [] }) as TablePlan,
@@ -114,6 +115,7 @@ function flakyRunner(failFirst: { n: number }): HeadlessRunner {
     async loadInput() {},
     async request() {
       if (failFirst.n > 0) { failFirst.n -= 1; throw new Error('LLM did not call apply_spec_patch; returned text: {'); }
+      return { kind: 'patch' as const };
     },
     currentRows: () => [{ videoId: 'a', title: 't', Music: true }],
     currentSpec: () => ({ table: 't', columns: [], transformations: [] }) as TablePlan,

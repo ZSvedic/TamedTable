@@ -55,8 +55,9 @@ Inspection / session:
   :help              Show this usage screen.
   :exit              Quit (also: bare "exit").
 
-Anything not starting with ":" is sent to the spec editor as a natural-
-language request: e.g. "normalize phone numbers", "sort by DOB desc".
+Anything not starting with ":" is sent to the model: a request edits the
+table, e.g. "normalize phone numbers", "sort by DOB desc"; a question is
+answered and changes nothing, e.g. "which country has the most customers?".
 Requests are additive; use :undo to revert the last one. A bare number
 runs that entry of the Suggestions list printed after a load.
 

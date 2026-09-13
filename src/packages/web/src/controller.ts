@@ -15,7 +15,7 @@
 // one object; each method's contract is documented on the manager it calls.
 
 import { DEFAULT_BATCH_SIZE, DEFAULT_CHUNK_SIZE } from '@tamedtable/headless';
-import type { ChunkUpdate, RequestAudio, RequestDebugInfo, TimelineStep } from '@tamedtable/headless';
+import type { ChunkUpdate, RequestAudio, RequestDebugInfo, RequestResult, TimelineStep } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import { resolveConfig, defaultBatchSize, type Provider, type ResolvedConfig } from '@tamedtable/model-config';
 import { detectFormat, type FilePort, type FormatId, type TableCandidate } from '@tamedtable/file-io';
@@ -45,6 +45,7 @@ import type {
   VoiceStatus,
   WebControllerOptions,
   WebSettings,
+  AnswerStrip,
 } from './controller-types.ts';
 import { track } from './analytics.ts';
 
@@ -167,6 +168,8 @@ export class WebController implements ControllerHost {
   suggestionsEnabled: boolean;
   /** The after-load suggestions: the chat chips. [] until the answer lands. */
   suggestions: string[] = [];
+  /** #Analyze: the last answer, for the phone's strip above the dock. */
+  answerStrip: AnswerStrip | null = null;
   /** A suggestion call is out: the chip row shows its grey loading line. */
   suggestionsLoading = false;
   private suggestionsPending: Promise<void> | null = null;
@@ -261,8 +264,8 @@ export class WebController implements ControllerHost {
     this.notify();
   }
 
-  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number {
-    this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug, reportable, historyId }];
+  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number, answer?: ChatMessage['answer']): number {
+    this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug, reportable, historyId, ...(answer ? { answer } : {}) }];
     this.notify();
     return this.messageSeq;
   }
@@ -274,7 +277,8 @@ export class WebController implements ControllerHost {
   displayMessages(): ChatMessage[] {
     return this.messages.map((m) => {
       if (m.historyId === undefined || this.patch.isApplied(m.historyId)) return m;
-      return { ...m, text: m.text.replace(/^Executed steps:/, 'Undone steps:'), undone: true };
+      // The heading may sit under a one-line summary (#Analyze).
+      return { ...m, text: m.text.replace(/(^|\n)Executed steps:/, '$1Undone steps:'), undone: true };
     });
   }
 
@@ -283,6 +287,15 @@ export class WebController implements ControllerHost {
    *  table they never touched: the conversation goes with the journal. */
   clearMessages(): void {
     this.messages = [];
+    this.answerStrip = null;
+    this.notify();
+  }
+
+  // #Analyze
+  /** Close the phone's answer strip; the thread keeps the reply. */
+  dismissAnswer(): void {
+    if (this.answerStrip === null) return;
+    this.answerStrip = null;
     this.notify();
   }
 
@@ -309,7 +322,7 @@ export class WebController implements ControllerHost {
   request(
     text: string,
     opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; label?: string; onTranscript?: (text: string) => void },
-  ): Promise<void> {
+  ): Promise<RequestResult> {
     return this.engine.request(text, opts);
   }
 
@@ -346,11 +359,21 @@ export class WebController implements ControllerHost {
     }
     try {
       track('chat-request');
-      await this.engine.request(trimmed);
-      // The turn committed: the chips have served their purpose. A failed or
+      this.answerStrip = null;
+      const result = await this.engine.request(trimmed);
+      // The turn settled: the chips have served their purpose. A failed or
       // cancelled request throws past this and leaves them.
       this.clearSuggestions();
       const debug = this.lastDebug;
+      // #Analyze: an answered question changes nothing: no history entry
+      // behind the reply, the answer marker, the table it came from.
+      if (result.kind === 'answer') {
+        track('chat-answer');
+        this.pushMessage('assistant', result.text, debug, true, undefined, { table: result.table });
+        this.answerStrip = { text: result.text, table: result.table };
+        this.diagnostics.recordActivity(result.text);
+        return;
+      }
       // A wrong answer is a bug even when nothing turned red: every reply to
       // a completed request carries the Report bug action.
       const reply = debug ? summarizeDebug(debug) : 'Done.';
