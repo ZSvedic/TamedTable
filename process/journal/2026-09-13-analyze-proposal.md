@@ -288,3 +288,32 @@ Rough size: about 1,500 lines of diff plus the re-recorded cassettes.
   four questions, no step: the top-3 revenue share, the fastest-growing
   customer, the customer at risk, the duplicate rows. Trivial counts and
   maxima were dropped: a spreadsheet answers those already.
+
+## Step 4 notes (implementation and recording)
+
+- The suite is green offline: 477 unit tests, 348 headless, 155 CLI, and
+  387 web scenarios, every tape re-recorded under the new chat turn.
+- The query result's bytes go back to the model, so they key the next
+  cassette entry. DuckDB's parallel aggregation returned tied rows in a
+  different order run to run, which made a replay miss. A query-tool read
+  now runs single-threaded, a result whose query has no `ORDER BY` is
+  sorted canonically, and the prompt asks for a tie-breaker on every
+  `ORDER BY`.
+- The answer's table is the query result with the most rows (the later one
+  on a tie), so a closing sanity total never hides the grouped rows.
+- Two goldens drifted under fresh recordings. The model rewrote "men,
+  women" to "man, woman" twice in a row: fixed at the cause with the
+  prompt rule *Use the user's labels*, spliced into the tapes with
+  `cassettes:rekey`, and the classify tour recorded fresh. The review
+  summaries changed wording: `language-summarize-expected.jsonl` carries
+  the new sentences, a golden change to review.
+- `bun run test:record` hung in the web profile on `tutorial.feature`
+  (record mode only; it replays fine). The web tapes were recorded one
+  feature at a time with a cap per feature. Worth a look before the next
+  full re-record.
+- `performance.json` is outside `test:record`; the offline benchmark needs
+  `bun run bench:record` before it replays again.
+- The step budget (4 model steps) was hit exactly by the tour's growth
+  question (three queries and the reply). It worked, but the headroom is
+  thin; raising `ANSWER_STEPS` needs no re-record, only the prompt's
+  "at most 3" would.
