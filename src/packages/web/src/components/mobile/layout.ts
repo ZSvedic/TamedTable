@@ -16,8 +16,7 @@ export const DOCK_OFFSET = `calc(${DOCK_H}px + env(safe-area-inset-bottom))`;
  *  shell pads its content by this too while the strip shows. */
 export const SUGGEST_STRIP_H = 54;
 
-/** #Analyze: the answer strip above the dock: the reply text and at most
- *  ANSWER_STRIP_ROWS rows of its result table, scrolling inside past this
- *  height. The shell pads its content by this while the strip shows. */
+/** #Analyze: the answer strip above the dock: the reply text and its whole
+ *  result table, scrolling inside past this height. The shell pads its
+ *  content by this while the strip shows. */
 export const ANSWER_STRIP_H = 168;
-export const ANSWER_STRIP_ROWS = 3;

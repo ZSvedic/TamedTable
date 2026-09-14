@@ -27,7 +27,7 @@ import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
 import { KeyboardSheet, VoiceSheet, HistorySheet } from './sheets.tsx';
 import { ToursLink } from '../ToursLink.tsx';
-import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET, SUGGEST_STRIP_H, ANSWER_STRIP_H, ANSWER_STRIP_ROWS } from './layout.ts';
+import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET, SUGGEST_STRIP_H, ANSWER_STRIP_H } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
 
@@ -607,7 +607,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
               background: t.surface,
               borderTop: `1px solid ${t.line}`,
               fontFamily: typography.ui,
-              fontSize: typography.size.sm,
+              fontSize: typography.size.base,
               color: t.ink2,
             }}
           >
@@ -624,19 +624,19 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
               </button>
             </div>
             {answer.table && answer.table.columns.length > 0 && (
-              <div style={{ overflowX: 'auto', marginTop: space.px6, fontFamily: typography.mono, fontSize: typography.size.xs }}>
+              <div style={{ overflowX: 'auto', marginTop: space.px6, fontFamily: typography.mono, fontSize: typography.size.base }}>
                 <table style={{ borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
                   <thead>
                     <tr>{answer.table.columns.map((c) => <th key={c} style={{ textAlign: 'left', padding: '1px 8px 1px 0', color: t.ink3, fontWeight: 600 }}>{c}</th>)}</tr>
                   </thead>
                   <tbody>
-                    {answer.table.rows.slice(0, ANSWER_STRIP_ROWS).map((r, i) => (
+                    {answer.table.rows.map((r, i) => (
                       <tr key={i}>{r.map((v, j) => <td key={j} style={{ padding: '1px 8px 1px 0' }}>{v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)}</td>)}</tr>
                     ))}
                   </tbody>
                 </table>
-                {answer.table.totalRows > ANSWER_STRIP_ROWS && (
-                  <div style={{ color: t.ink3, fontFamily: typography.ui }}>… {answer.table.totalRows - ANSWER_STRIP_ROWS} more rows</div>
+                {answer.table.totalRows > answer.table.rows.length && (
+                  <div style={{ color: t.ink3, fontFamily: typography.ui }}>… {answer.table.totalRows - answer.table.rows.length} more rows</div>
                 )}
               </div>
             )}

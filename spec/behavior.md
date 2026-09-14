@@ -1712,8 +1712,10 @@ or the engine changes.
     step one at a time. It reads the same journal the desktop Undo/Redo
     buttons walk, shown whole.
 - An answered question shows in an **answer strip** directly above the
-  dock, the slot the suggestion chips use: the answer text, up to three
-  rows of its result table (then `… N more rows`), and a dismiss button.
+  dock, the slot the suggestion chips use: the answer text, every result
+  row the model saw (then `… N more rows` past that sample), and a dismiss
+  button, all in the typing box's font size. The strip has a fixed height
+  and scrolls inside it.
   The next request replaces it; a new load clears it
   ([§ Questions about the data](#questions-about-the-data-analyze)).
 - The settings panel, the URL dialog, the sample picker, and the Tours

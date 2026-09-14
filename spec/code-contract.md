@@ -877,7 +877,6 @@ const ANSWER_SAMPLE_COLS = 30;
 const ANSWER_CELL_CHARS = 120;     // per cell, stringified, then cut with an ellipsis
 const ANSWER_CONTEXT_CHARS = 500;  // of the last answer's text carried into the next request
 const ANSWER_TABLE_ROWS = 20;      // rows a web reply shows under the answer; the CLI shows one viewport page
-const ANSWER_STRIP_ROWS = 3;       // rows the phone's answer strip shows
 
 // What a request settles as.
 type RequestResult =
