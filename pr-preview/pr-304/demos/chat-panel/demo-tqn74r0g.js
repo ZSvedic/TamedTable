@@ -17491,13 +17491,18 @@ function answerCellText(v) {
     return "";
   return typeof v === "object" ? JSON.stringify(v) : String(v);
 }
-function AnswerTableView({ t, table }) {
-  const shown = table.rows.slice(0, ANSWER_TABLE_ROWS);
+function AnswerTableView({
+  t,
+  table,
+  maxRows = ANSWER_TABLE_ROWS,
+  fontSize = typography.size.xs
+}) {
+  const shown = maxRows === "all" ? table.rows : table.rows.slice(0, maxRows);
   const more = table.totalRows - shown.length;
   const cell = { padding: "2px 12px 2px 0", borderBottom: `1px solid ${t.line}`, textAlign: "left" };
   return /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("div", {
     "data-cp-answer-table": "",
-    style: { marginTop: space.px8, overflowX: "auto", fontFamily: typography.mono, fontSize: typography.size.xs, color: t.ink2 },
+    style: { marginTop: space.px8, overflowX: "auto", fontFamily: typography.mono, fontSize, color: t.ink2 },
     children: [
       /* @__PURE__ */ jsx_dev_runtime7.jsxDEV("table", {
         style: { borderCollapse: "collapse", whiteSpace: "nowrap" },
