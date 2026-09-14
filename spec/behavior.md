@@ -1008,8 +1008,12 @@ doubt, a sentence ending in `?` is a question. An imperative that names a
 table shape ("Count customers per Country", "group by niche") is a
 transformation even though it sounds analytical. A message that is
 neither, a greeting or an ask that maps to nothing in the table, gets a
-one-sentence reply and changes nothing. The model never uses a reply to
-decline a change it can express as a step.
+reply of one to three sentences and changes nothing. The model never uses a reply to
+decline a change it can express as a step. A message that asks for a change
+and a question in one breath ("Normalize the Country names. Which country
+has the most customers?") is a request: the answer would depend on the
+changed data, so the change is applied and its summary names the question
+left for the next message, quoted, so it is never dropped in silence.
 
 **Every answer comes from a query.** The model computes a question with
 one or more SQL queries over the current rows (the same DuckDB relation

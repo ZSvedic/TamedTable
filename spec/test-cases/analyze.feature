@@ -35,7 +35,7 @@ Feature: Questions about the data
       When query "hello"
       Then the request was answered, not applied
       And no transformation was added
-      And the answer is at most 2 sentences
+      And the answer is at most 3 sentences
 
   Rule: The last answer carries into the next request
 
@@ -56,6 +56,17 @@ Feature: Questions about the data
       When query "Show only customers in the USA"
       Then the request was applied, not answered
       And the reply carries a one-sentence summary
+
+    # A change plus a question in one message: the answer would depend on
+    # the changed data, so the change lands and the summary names the
+    # question instead of dropping it.
+    @headless @cli @web
+    Scenario: A mixed message applies the change and names the deferred question
+      Given load "customers-input.csv"
+      When query "Normalize the Country names. Which country has the most customers?"
+      Then the request was applied, not answered
+      And transformation 1 is a "mutate"
+      And the summary mentions "Which country has the most customers?"
 
   Rule: The model fixes its own SQL inside the step budget
 

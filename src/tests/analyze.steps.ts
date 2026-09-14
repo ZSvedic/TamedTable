@@ -74,6 +74,11 @@ Then('the reply carries a one-sentence summary', function (this: TamedTableWorld
   assert.ok(/[.!]$/.test(summary.trim()), `summary does not end a sentence: ${JSON.stringify(summary)}`);
 });
 
+Then('the summary mentions {string}', function (this: TamedTableWorld, needle: string) {
+  const summary = (lastResult(this) as { summary?: string }).summary ?? '';
+  assert.ok(summary.includes(needle), `summary ${JSON.stringify(summary)} does not mention ${JSON.stringify(needle)}`);
+});
+
 // ── The answer ─────────────────────────────────────────────────────────────
 
 Then('the answer mentions {string}', function (this: TamedTableWorld, needle: string) {

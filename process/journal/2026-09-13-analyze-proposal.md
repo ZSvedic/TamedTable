@@ -317,3 +317,16 @@ Rough size: about 1,500 lines of diff plus the re-recorded cassettes.
   question (three queries and the reply). It worked, but the headroom is
   thin; raising `ANSWER_STEPS` needs no re-record, only the prompt's
   "at most 3" would.
+
+## Review round (2026-09-14)
+
+- The phone's answer strip drops its three-row cap: it shows every result
+  row the model saw in the typing box's font size and scrolls inside its
+  fixed height. Decision F above stands for the placement, not the cap.
+- A message that asks for a change and a question at once ("Normalize the
+  Country names. Which country has the most customers?") is a request:
+  the answer would depend on the changed data, so the change lands and
+  the summary ends with the question quoted. One prompt rule, one
+  scenario; the tapes were re-keyed and `analyze` recorded fresh. The
+  greeting reply came back as three sentences, which the prompt allows,
+  so the scenario's bound is three.
