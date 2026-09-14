@@ -274,7 +274,7 @@ class CliRunnerImpl implements CliRunner {
   private flushDebug(): void {
     const info = this.pendingDebug;
     this.pendingDebug = undefined;
-    if (info && !this.quiet) writeDebugBlock(info, this.stdout);
+    if (info) writeDebugBlock(info, this.stdout);
   }
 
   // #Analyze
@@ -394,7 +394,6 @@ class CliRunnerImpl implements CliRunner {
     // reset, no table reprint.
     if (result.kind === 'answer') {
       if (!this.quiet) this.printAnswer(result);
-      else this.pendingDebug = undefined;
       return result;
     }
     const newSpec = structuredClone(this.headless.currentSpec());
@@ -405,8 +404,6 @@ class CliRunnerImpl implements CliRunner {
       if (result.summary) this.stdout.write(`${result.summary}\n`);
       this.flushDebug();
       this.printTable();
-    } else {
-      this.pendingDebug = undefined;
     }
     return result;
   }

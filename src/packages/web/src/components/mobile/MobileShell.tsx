@@ -16,7 +16,7 @@ import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
-import { appendSentence } from '@tamedtable/chat-panel/components';
+import { AnswerTableView, appendSentence } from '@tamedtable/chat-panel/components';
 import type { WebController } from '../../controller.ts';
 import { STAY_REPLAY_HINT } from '../../controller-messages.ts';
 import { useController } from '../../hooks/useController.ts';
@@ -624,21 +624,7 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
               </button>
             </div>
             {answer.table && answer.table.columns.length > 0 && (
-              <div style={{ overflowX: 'auto', marginTop: space.px6, fontFamily: typography.mono, fontSize: typography.size.base }}>
-                <table style={{ borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
-                  <thead>
-                    <tr>{answer.table.columns.map((c) => <th key={c} style={{ textAlign: 'left', padding: '1px 8px 1px 0', color: t.ink3, fontWeight: 600 }}>{c}</th>)}</tr>
-                  </thead>
-                  <tbody>
-                    {answer.table.rows.map((r, i) => (
-                      <tr key={i}>{r.map((v, j) => <td key={j} style={{ padding: '1px 8px 1px 0' }}>{v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)}</td>)}</tr>
-                    ))}
-                  </tbody>
-                </table>
-                {answer.table.totalRows > answer.table.rows.length && (
-                  <div style={{ color: t.ink3, fontFamily: typography.ui }}>… {answer.table.totalRows - answer.table.rows.length} more rows</div>
-                )}
-              </div>
+              <AnswerTableView t={t} table={answer.table} maxRows="all" fontSize={typography.size.base} />
             )}
           </div>
         )}

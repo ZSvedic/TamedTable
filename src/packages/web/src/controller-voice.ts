@@ -189,10 +189,7 @@ export class VoiceManager {
       // #Analyze: a spoken question is answered like a typed one: the reply
       // carries the transcript (already swapped in above) and no entry.
       if (result.kind === 'answer') {
-        this.host.clearSuggestions();
-        track('chat-answer');
-        this.host.pushMessage('assistant', result.text, this.host.lastDebug, true, undefined, { table: result.table });
-        this.host.answerStrip = { text: result.text, table: result.table };
+        this.host.settleAnswer(result);
         return;
       }
       // A declined confirmation (the run-all estimate, a lookup) dropped the

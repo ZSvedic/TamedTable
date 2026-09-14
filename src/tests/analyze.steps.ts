@@ -10,16 +10,9 @@
 // self-correction path is deterministic where a live model would not be.
 import { Given, Then } from '@cucumber/cucumber';
 import { strict as assert } from 'node:assert';
+import type { AnswerTable, RequestResult } from '@tamedtable/headless';
 import { TamedTableWorld } from './world.ts';
 import { webController } from './web-file-port.ts';
-
-/** The shape `Runner.request` settles with (spec/code-contract.md § Questions
- *  about the data), typed here so these steps import nothing that does not
- *  exist yet. */
-interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
-type RequestResult =
-  | { kind: 'patch'; summary?: string }
-  | { kind: 'answer'; text: string; table?: AnswerTable };
 
 interface AnswerMessage {
   role: string;
@@ -32,12 +25,8 @@ function lastResult(world: TamedTableWorld): RequestResult {
   const outcome = world.lastRequestOutcome;
   assert.ok(outcome, 'no request was made');
   assert.ok(outcome.ok, `the request failed: ${outcome.error?.message}`);
-  const result = outcome.result as RequestResult | undefined;
-  assert.ok(
-    result && typeof result === 'object' && 'kind' in result,
-    `the request settled with no RequestResult (got ${JSON.stringify(result)}): the runner does not report answers yet`,
-  );
-  return result;
+  assert.ok(outcome.result, 'the request settled with no RequestResult');
+  return outcome.result;
 }
 
 function lastAnswer(world: TamedTableWorld): Extract<RequestResult, { kind: 'answer' }> {

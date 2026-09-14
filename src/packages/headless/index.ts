@@ -155,8 +155,6 @@ export interface RequestDebugInfo {
   inputTokens: number;
   outputTokens: number;
   elapsedMs: number;
-  /** #Analyze: the reply text when the request settled as an answer. */
-  answer?: string;
   /** #Analyze: the patch call's one-sentence summary, when the model gave one. */
   summary?: string;
 }
@@ -614,16 +612,14 @@ export function canonicalRowOrder(columns: string[], rows: Row[]): Row[] {
 export function blankSentinelRows(rows: Row[]): { rows: Row[]; pendingRows: number } {
   let pendingRows = 0;
   const out = rows.map((r) => {
-    let touched = false;
     let copy: Row | undefined;
     for (const [k, v] of Object.entries(r)) {
       if (isPendingCell(v) || isFailedCell(v)) {
         copy ??= { ...r };
         copy[k] = null;
-        touched = true;
       }
     }
-    if (touched) pendingRows++;
+    if (copy) pendingRows++;
     return copy ?? r;
   });
   return { rows: pendingRows ? out : rows, pendingRows };
@@ -846,7 +842,8 @@ export function stripQueryMetadata(spec: TablePlan): TablePlan {
 /** @internal: exported for unit tests. The user message of a chat turn.
  *  `prior` is the last answer's text (#Analyze), appended so a follow-up
  *  like "keep only customers from that country" resolves; without one the
- *  bytes are exactly what they were, so recorded cassettes keep matching. */
+ *  message is the plain request, so its cassette fingerprint has no answer
+ *  in it. */
 export function buildPrompt(text: string, spec: TablePlan, errPrefix?: string, prior?: string): string {
   // The LLM edits transformations/columns/view-ops, never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
@@ -1338,7 +1335,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     expressions: Array<{ label: string; body: string }>,
     elapsedMs: number,
     steps: string[] = [],
-    extra: { answer?: string; summary?: string } = {},
+    extra: { summary?: string } = {},
   ): RequestDebugInfo {
     const order: string[] = [];
     const counts = new Map<string, number>();
@@ -1360,7 +1357,6 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       inputTokens,
       outputTokens,
       elapsedMs,
-      ...(extra.answer !== undefined ? { answer: extra.answer } : {}),
       ...(extra.summary !== undefined ? { summary: extra.summary } : {}),
     };
   }
@@ -1705,7 +1701,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           }
           turns.push({ ops: [], outcome: 'answered' });
           this.lastAnswer = llmTurn.text.slice(0, ANSWER_CONTEXT_CHARS);
-          reportDebug(this.buildDebugInfo(text, turns, ctx.expressions, Date.now() - startedAt, [], { answer: llmTurn.text }));
+          reportDebug(this.buildDebugInfo(text, turns, ctx.expressions, Date.now() - startedAt));
           return { kind: 'answer', text: llmTurn.text, table: ctx.bestTable };
         }
         const ops = llmTurn.ops;
@@ -1829,14 +1825,16 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     audio: RequestAudio | undefined,
     ctx: TurnContext,
   ): Promise<LlmTurn> {
-    let patch: { ops: unknown[]; summary?: string; transcript?: string } | undefined;
+    type PatchInput = { operations: unknown[]; summary?: string; transcript?: string };
+    const toPatch = (input: PatchInput) => ({ ops: input.operations, summary: input.summary?.trim() || undefined, transcript: input.transcript });
+    let patch: ReturnType<typeof toPatch> | undefined;
     let reply: { text: string; transcript?: string } | undefined;
     const withTranscript = Boolean(audio);
     const applySpecPatch = tool({
       description: 'Change the table: apply RFC 6902 JSON Patch operations to the current spec. Ends the turn.',
       inputSchema: patchInputSchema(withTranscript),
-      execute: async ({ operations, summary, transcript: heard }: { operations: unknown[]; summary?: string; transcript?: string }) => {
-        patch = { ops: operations, summary: summary?.trim() || undefined, transcript: heard };
+      execute: async (input: PatchInput) => {
+        patch = toPatch(input);
         return { ok: true };
       },
     });
@@ -1892,11 +1890,11 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     for (const step of steps) this.recordCall(modelId, step.usage, 'chat');
     abortIf(signal);
     // A tool call the SDK reported but did not execute (a provider quirk):
-    // read it off the last step directly, as before.
+    // read it off the last step directly.
     const direct = (name: string) => result.toolCalls?.find((c) => c.toolName === name)?.input as Record<string, unknown> | undefined;
     if (!patch) {
-      const input = direct('apply_spec_patch') as { operations?: unknown[]; summary?: string; transcript?: string } | undefined;
-      if (input?.operations) patch = { ops: input.operations, summary: input.summary?.trim() || undefined, transcript: input.transcript };
+      const input = direct('apply_spec_patch') as Partial<PatchInput> | undefined;
+      if (input?.operations) patch = toPatch({ ...input, operations: input.operations });
     }
     if (patch) return { kind: 'patch', ops: decodeOpValues(patch.ops), summary: patch.summary, transcript: patch.transcript?.trim() || undefined };
     if (!reply) {

@@ -1,7 +1,7 @@
 // User-facing message formatters: turn engine errors and debug info into
 // strings the chat and toasts can display.
 
-import type { RequestDebugInfo } from '@tamedtable/headless';
+import { ANSWER_BUDGET_EXHAUSTED, type RequestDebugInfo } from '@tamedtable/headless';
 
 /** The human provider name shown in toasts, keyed off the resolved provider. */
 export function providerLabel(provider?: string): string {
@@ -57,7 +57,7 @@ export function describeError(error: unknown, provider?: string): { message: str
   if (message.startsWith('Runner: recovery budget exhausted'))
     return { message: "Couldn't apply that change after 3 attempts. Try rephrasing or breaking it into smaller steps.", reportable: true };
   // #Analyze: a question the model kept querying without ever replying.
-  if (message.startsWith('Runner: answer budget exhausted'))
+  if (message.startsWith(ANSWER_BUDGET_EXHAUSTED))
     return { message: "Couldn't answer that after 4 attempts. Try asking in a different way.", reportable: true };
   if (message === 'Runner: cancelled') return { message: 'Request cancelled.', reportable: false };
   if (message === 'Runner: a request is already in progress.')

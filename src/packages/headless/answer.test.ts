@@ -4,7 +4,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
   ANSWER_CELL_CHARS,
-  ANSWER_CONTEXT_CHARS,
   ANSWER_SAMPLE_COLS,
   ANSWER_SAMPLE_ROWS,
   blankSentinelRows,
@@ -68,14 +67,11 @@ describe('canonicalRowOrder', () => {
 
 describe('buildPrompt', () => {
   const spec = { table: '/tmp/x/customers.csv', columns: [{ id: 'A' }], transformations: [] };
-  it('is byte-identical to before without a prior answer', () => {
+  it('is the plain request without a prior answer', () => {
     expect(buildPrompt('hello', spec)).toBe('Current spec:\n' + JSON.stringify({ ...spec, table: 'customers.csv' }, null, 2) + '\n\nUser request: hello');
   });
   it('appends the prior answer after the request, on the error prompt too', () => {
     expect(buildPrompt('keep those', spec, undefined, 'USA leads.')).toMatch(/User request: keep those\n\nYour previous answer: USA leads\.$/);
     expect(buildPrompt('keep those', spec, 'Your previous patch failed: x', 'USA leads.')).toMatch(/Original user request: keep those\n\nYour previous answer: USA leads\.\n\nEmit a corrected patch\./);
-  });
-  it('a carried answer is bounded by the runner', () => {
-    expect(ANSWER_CONTEXT_CHARS).toBe(500);
   });
 });

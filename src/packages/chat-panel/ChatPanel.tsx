@@ -91,16 +91,22 @@ function answerCellText(v: unknown): string {
 }
 
 /** The small result table an answer was computed from: a compact monospace
- *  grid under the text, scrolling sideways inside the message when wider
- *  than the sidebar. */
-function AnswerTableView({ t, table }: { t: Theme; table: AnswerTable }): ReactNode {
-  const shown = table.rows.slice(0, ANSWER_TABLE_ROWS);
+ *  grid under the text, scrolling sideways inside its box when wider. A
+ *  reply shows ANSWER_TABLE_ROWS rows; the phone's answer strip asks for
+ *  'all' the rows it has, in its own `fontSize`. */
+export function AnswerTableView({
+  t,
+  table,
+  maxRows = ANSWER_TABLE_ROWS,
+  fontSize = typography.size.xs,
+}: { t: Theme; table: AnswerTable; maxRows?: number | 'all'; fontSize?: number }): ReactNode {
+  const shown = maxRows === 'all' ? table.rows : table.rows.slice(0, maxRows);
   const more = table.totalRows - shown.length;
   const cell: CSSProperties = { padding: '2px 12px 2px 0', borderBottom: `1px solid ${t.line}`, textAlign: 'left' };
   return (
     <div
       data-cp-answer-table=""
-      style={{ marginTop: space.px8, overflowX: 'auto', fontFamily: typography.mono, fontSize: typography.size.xs, color: t.ink2 }}
+      style={{ marginTop: space.px8, overflowX: 'auto', fontFamily: typography.mono, fontSize, color: t.ink2 }}
     >
       <table style={{ borderCollapse: 'collapse', whiteSpace: 'nowrap' }}>
         <thead>

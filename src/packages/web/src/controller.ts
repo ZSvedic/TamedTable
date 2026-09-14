@@ -34,6 +34,7 @@ import { DiagnosticsManager, type DiagEvent } from './controller-diagnostics.ts'
 import { LazyManager, type RunAllDialogState, type RunAllReason, type RunEstimate } from './controller-lazy.ts';
 import { ViewManager, type ViewSort } from './controller-view.ts';
 import type {
+  AnswerStrip,
   CellRef,
   ChatMessage,
   ContinuousStatus,
@@ -45,7 +46,6 @@ import type {
   VoiceStatus,
   WebControllerOptions,
   WebSettings,
-  AnswerStrip,
 } from './controller-types.ts';
 import { track } from './analytics.ts';
 
@@ -264,6 +264,14 @@ export class WebController implements ControllerHost {
     this.notify();
   }
 
+  // #Analyze
+  settleAnswer(result: Extract<RequestResult, { kind: 'answer' }>): void {
+    this.clearSuggestions();
+    track('chat-answer');
+    this.pushMessage('assistant', result.text, this.lastDebug, true, undefined, { table: result.table });
+    this.answerStrip = { text: result.text, table: result.table };
+  }
+
   pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number, answer?: ChatMessage['answer']): number {
     this.messages = [...this.messages, { id: ++this.messageSeq, role, text, debug, reportable, historyId, ...(answer ? { answer } : {}) }];
     this.notify();
@@ -361,19 +369,15 @@ export class WebController implements ControllerHost {
       track('chat-request');
       this.answerStrip = null;
       const result = await this.engine.request(trimmed);
+      if (result.kind === 'answer') {
+        this.settleAnswer(result);
+        this.diagnostics.recordActivity(result.text);
+        return;
+      }
       // The turn settled: the chips have served their purpose. A failed or
       // cancelled request throws past this and leaves them.
       this.clearSuggestions();
       const debug = this.lastDebug;
-      // #Analyze: an answered question changes nothing: no history entry
-      // behind the reply, the answer marker, the table it came from.
-      if (result.kind === 'answer') {
-        track('chat-answer');
-        this.pushMessage('assistant', result.text, debug, true, undefined, { table: result.table });
-        this.answerStrip = { text: result.text, table: result.table };
-        this.diagnostics.recordActivity(result.text);
-        return;
-      }
       // A wrong answer is a bug even when nothing turned red: every reply to
       // a completed request carries the Report bug action.
       const reply = debug ? summarizeDebug(debug) : 'Done.';

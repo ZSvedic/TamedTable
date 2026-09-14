@@ -335,7 +335,6 @@ interface RequestDebugInfo {
   inputTokens: number;
   outputTokens: number;
   elapsedMs: number;
-  answer?: string;             // the reply text when the request settled as an answer (#Analyze)
   summary?: string;            // the patch call's one-sentence summary, when the model gave one
 }
 ```
@@ -854,8 +853,7 @@ DuckDB table `t` is not dropped on cancel.
 
 → [behavior.md: Questions about the data](behavior.md#questions-about-the-data-analyze)
 
-A chat turn is one `generateText` call with three tools and a stop rule,
-where it used to be one forced patch call:
+A chat turn is one `generateText` call with three tools and a stop rule:
 
 ```ts
 // The turn's tools. `toolChoice: 'required'`; the loop stops on the first
@@ -884,8 +882,9 @@ type RequestResult =
   | { kind: 'answer'; text: string; table?: AnswerTable };   // table: the query result with the most rows (later on a tie)
 interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
 
-// SqlSession (headless/sql.ts): a read over the current rows. Registers `t`
-// with pending and failed cell sentinels as NULL, refuses anything but a
+// SqlSession (headless/sql.ts): a read over the current rows, which arrive
+// with pending and failed cell sentinels already blanked to NULL (the tool
+// layer's blankSentinelRows). Registers them as `t`, refuses anything but a
 // SELECT / WITH statement, runs it through the interruptible path (Stop
 // calls conn.interrupt() like a {sql} step), returns every row: the tool
 // layer applies the ANSWER_SAMPLE_* bounds and counts `pendingRows`.
@@ -899,7 +898,7 @@ interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number 
 // text in both engines; the tool layer sorts a result whose query has no
 // ORDER BY canonically (by each column's text in turn); and the prompt asks
 // for a tie-breaker on every ORDER BY.
-query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: unknown[][] }>;
+query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: Row[] }>;
 
 // Progress: each query fires onStep with kind 'query', label 'query (sql)',
 // rows = the rows entering it, expressions [{ label: 'sql', body }], and
@@ -914,8 +913,8 @@ when `ok` is false), and hands the bounded result back to the model; a
 fires `onDebug`, and resolves `{ kind: 'answer' }` with the table of the
 query that returned the most rows (the later one on a tie); an `apply_spec_patch` call takes the existing
 path (validate, guards, replay, commit) and resolves `{ kind: 'patch' }`
-with its `summary`. The patch recovery budget is unchanged and separate:
-a rejected patch re-enters the loop with the same error prompt as today.
+with its `summary`. The patch recovery budget is separate: a rejected patch
+re-enters the loop with the error prompt.
 Running out of `ANSWER_STEPS` without a closing tool throws
 `Runner: answer budget exhausted` (web: `Couldn't answer that after 4
 attempts. Try asking in a different way.`, reportable); nothing changes.
@@ -927,8 +926,8 @@ The prior answer: the runner keeps `lastAnswer` (the reply text cut to
 `ANSWER_CONTEXT_CHARS`); `buildPrompt` appends
 `\n\nYour previous answer: <text>` to the user message while it is set.
 A `reply` replaces it, a committed patch clears it, and every load
-clears it. The prompt bytes are otherwise unchanged, so a request with
-no prior answer fingerprints exactly as before.
+clears it. Without one the message is the plain request, so a request
+with no prior answer keys its cassette entry on the request alone.
 
 Hosts:
 

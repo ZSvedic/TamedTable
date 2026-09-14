@@ -98,11 +98,11 @@ When('every suggestion is sent as a request in turn', async function (this: Tame
   for (const text of list) {
     const before = runner.currentSpec().transformations.length;
     try {
-      const result = (await runner.request(text)) as { kind?: string } | undefined;
+      const result = await runner.request(text);
       outcomes.push({
         text,
         added: runner.currentSpec().transformations.length - before,
-        answered: result?.kind === 'answer',
+        answered: result.kind === 'answer',
         error: null,
       });
     } catch (e) {
