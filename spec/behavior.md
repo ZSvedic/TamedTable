@@ -1719,7 +1719,9 @@ or the engine changes.
   dock, the slot the suggestion chips use: the answer text, every result
   row the model saw (then `… N more rows` past that sample), and a dismiss
   button, all in the typing box's font size. The strip has a fixed height
-  and scrolls inside it.
+  and scrolls inside it. A change that came with a one-sentence summary
+  shows the summary in the same strip, since the phone has no reply
+  bubble to carry it.
   The next request replaces it; a new load clears it
   ([§ Questions about the data](#questions-about-the-data-analyze)).
 - The settings panel, the URL dialog, the sample picker, and the Tours

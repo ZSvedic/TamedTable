@@ -136,6 +136,12 @@ Then('the answer message shows a result table with the column {string}', functio
   assert.ok(last.answer.table.columns.includes(column), `no column ${JSON.stringify(column)} in ${JSON.stringify(last.answer.table.columns)}`);
 });
 
+Then('the phone strip shows {string}', function (this: TamedTableWorld, needle: string) {
+  const strip = webController(this).answerStrip;
+  assert.ok(strip, 'the phone strip is empty');
+  assert.ok(strip.text.includes(needle), `the phone strip reads ${JSON.stringify(strip.text)}, not ${JSON.stringify(needle)}`);
+});
+
 Then('the answer message lists its query in the request detail', function (this: TamedTableWorld) {
   const answers = answerMessages(this);
   const last = answers[answers.length - 1];

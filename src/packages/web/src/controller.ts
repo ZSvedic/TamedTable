@@ -384,6 +384,8 @@ export class WebController implements ControllerHost {
       // Link the reply to the journal entry it reports, so its heading and
       // marker track the entry's undo state (see displayMessages).
       this.pushMessage('assistant', reply, debug, true, this.engine.lastCommitId ?? undefined);
+      // #Analyze: the phone has no reply bubble, so the summary rides its strip.
+      if (result.summary) this.answerStrip = { text: result.summary };
       // #Diagnostics: a completed request fires no toast, so log it explicitly
       // (with the request in recentMessages): else a report copied after a
       // query would have no trace of it.

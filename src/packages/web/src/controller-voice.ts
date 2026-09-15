@@ -209,6 +209,7 @@ export class VoiceManager {
         true,
         this.host.engine.lastCommitId ?? undefined,
       );
+      if (result.summary) this.host.answerStrip = { text: result.summary };
     } catch (e) {
       // A cassette replay miss during a tour ends it cleanly: same safety
       // net as sendChat, never the raw fingerprint-mismatch error.

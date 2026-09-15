@@ -943,7 +943,7 @@ class WebController {
   // with `answer: { table }` and NO historyId; clears the suggestion chips;
   // tracks 'chat-answer'. A patch reply with a summary reads
   // `<summary>\nExecuted steps:\n1. …`.
-  answerStrip: { text: string; table?: AnswerTable } | null;   // phone slot above the dock
+  answerStrip: { text: string; table?: AnswerTable } | null;   // phone slot above the dock: the answer, or a patch's summary
   dismissAnswer(): void;
 }
 // MobileShell: `data-mob-answer` (the strip), `data-mob-answer-dismiss`.
