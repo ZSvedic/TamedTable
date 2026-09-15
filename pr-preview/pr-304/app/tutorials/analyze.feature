@@ -132,6 +132,16 @@ Feature: Questions about the data
       Then the chat shows an answer mentioning "USA"
       And no suggestion chips are shown
 
+    # The phone has no reply bubble: a change's summary rides the answer
+    # strip instead.
+    @web
+    Scenario: The phone strip carries the summary of a change
+      Given the TamedTable web app
+      And the provider "gemini" has API key "AIza-example-key"
+      And load "customers-input.csv"
+      When user sends the chat message "Normalize the Country names. Which country has the most customers?"
+      Then the phone strip shows "Which country has the most customers?"
+
   Rule: An answer never spends AI calls on pending rows
 
     # paginate-input.csv holds 246 rows; page 1 evaluates 100 of them. The
