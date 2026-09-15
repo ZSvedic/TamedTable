@@ -15,6 +15,10 @@
  *  BIGINT columns left as `bigint` (the engine's normalizeSqlValue coerces). */
 export interface DuckDBReader {
   getRowObjects(): Record<string, unknown>[];
+  /** Column names in result order, so an empty result still names its
+   *  columns (#Analyze: the answer table). node-api has it; the wasm
+   *  adapter reads them off the Arrow schema. */
+  columnNames?(): string[];
 }
 
 /** The connection surface the engine uses (`@duckdb/node-api`'s `DuckDBConnection`). */

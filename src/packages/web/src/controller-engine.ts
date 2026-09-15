@@ -13,6 +13,7 @@ import {
   type HeadlessRunner,
   type ExportPythonOpts,
   type RequestAudio,
+  type RequestResult,
   type StepUpdate,
   type SuggestOpts,
 } from '@tamedtable/headless';
@@ -443,7 +444,7 @@ export class EngineManager {
   async request(
     text: string,
     opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; audio?: RequestAudio; label?: string; onTranscript?: (text: string) => void },
-  ): Promise<void> {
+  ): Promise<RequestResult> {
     if (!this.host.loaded) throw new Error('Runner: no input loaded; call loadInput first.');
     const runner = this.ensureHeadless();
     const prevSpec = structuredClone(runner.currentSpec());
@@ -483,8 +484,10 @@ export class EngineManager {
       feed.onChunk(u);
     };
 
+    // A declined patch settles as a patch that changed nothing.
+    let result: RequestResult = { kind: 'patch' };
     try {
-      await runner.request(text, {
+      result = await runner.request(text, {
         signal,
         onChunk,
         onStep: feed.onStep,
@@ -503,19 +506,22 @@ export class EngineManager {
           (await this.host.files.ensureLookups(next)) &&
           (await this.host.lazy.confirmPatch(next, prev)),
       });
-      // #LazyExec: mark the cells this request filled on its preview page
-      // (before the journal snapshots them): structurally written columns
-      // included, and point the grid at the start of the changed block (the
-      // reveal scroll).
-      this.recordFilled(beforeRows, true,
-        newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
-      this.refreshReveal();
-      this.pruneViewToSpec();
-      this.lastCommitId = this.host.patch.record({
-        label: opts?.label ?? text,
-        prevSpec,
-        nextSpec: structuredClone(runner.currentSpec()),
-      });
+      // #Analyze: an answer touched nothing: no marks, no reveal, no entry.
+      if (result.kind === 'patch') {
+        // #LazyExec: mark the cells this request filled on its preview page
+        // (before the journal snapshots them): structurally written columns
+        // included, and point the grid at the start of the changed block (the
+        // reveal scroll).
+        this.recordFilled(beforeRows, true,
+          newlyWrittenColumns(prevSpec, runner.currentSpec(), beforeRows, runner.currentRows()));
+        this.refreshReveal();
+        this.pruneViewToSpec();
+        this.lastCommitId = this.host.patch.record({
+          label: opts?.label ?? text,
+          prevSpec,
+          nextSpec: structuredClone(runner.currentSpec()),
+        });
+      }
     } catch (e) {
       // A declined dependency confirmation drops the patch silently: no
       // spec change, no history entry, no error surface.
@@ -536,6 +542,7 @@ export class EngineManager {
       }
       this.host.notify();
     }
+    return result;
   }
 
   /** Cancel the in-flight request, if any. */
@@ -561,9 +568,17 @@ export class EngineManager {
       onStep: (u) => {
         run.step = u.index + 1;
         run.totalSteps = u.total;
-        run.label = u.label;
         run.rowsTotal = u.rows;
         run.rowsDone = 0;
+        // #Analyze: a question's query narrates as a query, with its SQL in
+        // the log (behavior.md § Questions about the data).
+        if (u.kind === 'query') {
+          run.label = 'Querying the table…';
+          appendLog(`query ${u.index + 1}: ${flowLogExpr(u.expressions[0]?.body ?? '')}`);
+          this.host.notify();
+          return;
+        }
+        run.label = u.label;
         appendLog(`step ${u.index + 1}/${u.total}: ${u.label} · ${u.rows} rows`);
         // The exact code behind the label: the detail box shows what the
         // step runs, not just its name.

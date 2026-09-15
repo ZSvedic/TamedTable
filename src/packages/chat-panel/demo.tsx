@@ -136,6 +136,20 @@ function Demo(): ReactNode {
           <Button variant="chrome" onClick={() => append({ role: 'assistant', text: 'Undone steps:\n1. filter (js)', undone: true })}>
             Add undone reply
           </Button>
+          {/* #Analyze: a reply that answered a question, with the table it came from. */}
+          <Button
+            variant="chrome"
+            onClick={() =>
+              append({
+                role: 'assistant',
+                text: 'USA has the most customers: 3 of 20.',
+                reportable: true,
+                answer: { table: { columns: ['Country', 'customers'], rows: [['USA', 3], ['Canada', 2], ['Australia', 2]], totalRows: 5 } },
+              })
+            }
+          >
+            Add answer reply
+          </Button>
           {/* Pads the list past the panel's height so the scroll rules have
               something to scroll. */}
           <Button

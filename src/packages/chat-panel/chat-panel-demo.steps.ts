@@ -206,3 +206,22 @@ When('the user toggles the suggestions loading line', async function (this: obje
 Then('the suggestions loading line is shown', async function (this: object) {
   await expectText(page(this), '[data-cp-suggestions-loading]', 'Loading AI suggestions…');
 });
+
+// ── #Analyze: an answer reply with its result table ─────────────────────────
+
+When('the user adds an answer reply', async function (this: object) {
+  await page(this).click('button:has-text("Add answer reply")');
+});
+
+Then('an answer reply shows {string}', async function (this: object, expected: string) {
+  // The answer marker and the text live in the same assistant message row.
+  await expectText(page(this), '[data-cp-message="assistant"]:has([data-status-dot="answer"])', expected);
+});
+
+Then('the answer table shows the column {string}', async function (this: object, column: string) {
+  await expectText(page(this), '[data-cp-answer-table] th', column);
+});
+
+Then('the answer table shows {string}', async function (this: object, expected: string) {
+  await expectText(page(this), '[data-cp-answer-table]', expected);
+});

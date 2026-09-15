@@ -1,4 +1,4 @@
-TamedTable is an AI ETL tool driven by natural language. Load a CSV, type *"normalize phone numbers"* or say *"drop duplicate emails,"* and the LLM writes a JSON spec that changes the data. Think of TamedTable as an [LLM harness](https://martinfowler.com/articles/harness-engineering.html) for data [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load).
+TamedTable is an AI ETL tool driven by natural language. Load a CSV, type *"normalize phone numbers"* or say *"drop duplicate emails,"* and the LLM writes a JSON spec that changes the data. Ask *"which country has the most customers?"* and it answers from the data, in a sentence and a small result table, without changing the table. Think of TamedTable as an [LLM harness](https://martinfowler.com/articles/harness-engineering.html) for data [ETL](https://en.wikipedia.org/wiki/Extract,_transform,_load).
 
 ## Links
 - Website: [www.TamedTable.com](https://www.TamedTable.com) shows major features.
@@ -127,7 +127,7 @@ nothing either.
 
 ## Run the CLI
 
-Interactive REPL: load a CSV, then type natural-language requests. REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:reorder <cols>` sets the column order for the table view and saved files, `:exit` (or bare `exit`) leaves.  
+Interactive REPL: load a CSV, then type natural-language requests, or questions about the data (answered without changing the table). REPL commands use a `:` prefix (`/` is intercepted by Claude Code and other CLI agents): `:help` lists commands, `:undo` reverts the last patch, `:save <out.jsonl>` writes current rows to disk, `:save-flow <out.flow>` saves the current spec for later replay, `:save-py <out.py>` exports the flow as a standalone Python script, `:reorder <cols>` sets the column order for the table view and saved files, `:exit` (or bare `exit`) leaves.  
 
 ```
 bun src/packages/cli/index.ts spec/test-cases/customers-input.csv

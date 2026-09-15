@@ -58,7 +58,7 @@ class WasmConnection implements DuckDBConnection {
     const rows = table
       .toArray()
       .map((r) => (r as { toJSON(): Record<string, unknown> }).toJSON());
-    return { getRowObjects: () => rows };
+    return { getRowObjects: () => rows, columnNames: () => table.schema.fields.map((f) => f.name) };
   }
 
   interrupt(): void {

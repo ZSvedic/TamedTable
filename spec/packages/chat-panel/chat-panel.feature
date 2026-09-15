@@ -43,6 +43,16 @@ Feature: Chat panel package
       When the user adds an undone reply
       Then an undone assistant reply shows "Undone steps:"
 
+    # #Analyze: a reply that answered a question, with the small table it
+    # was computed from (spec/packages/chat-panel/behavior.md § Message list).
+    @web
+    Scenario: An answer reply renders its result table
+      Given the chat-panel demo page
+      When the user adds an answer reply
+      Then an answer reply shows "USA has the most customers"
+      And the answer table shows the column "Country"
+      And the answer table shows "… 2 more rows"
+
     @web
     Scenario: Request detail expands and shows the turns
       Given the chat-panel demo page

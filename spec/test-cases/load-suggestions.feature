@@ -1,13 +1,14 @@
 # #LoadSuggestions
 # After a table loads, one bounded model call proposes 2 to 4 requests the
-# engine can execute (behavior.md § Suggested requests after a load). The
+# engine can execute, the last one a question it answers without changing the
+# table (behavior.md § Suggested requests after a load). The
 # three surfaces send a byte-identical request, so one recording serves all of
 # them. The suggestion wording is model output: every assertion below is
 # structural (count, shape, grounding, executability), never a wording golden.
 # Suggestions are opt-in for a runner, so each scenario switches them on.
 Feature: Suggested requests after a table loads
 
-  Rule: One call returns two to four sentences, and every one executes
+  Rule: One call returns two to four sentences, and every one runs
 
     @headless
     Scenario: Suggestions are grounded in the table and each one runs
@@ -15,11 +16,12 @@ Feature: Suggested requests after a table loads
       And load "customers-input.csv"
       When suggestions are requested
       Then between 2 and 4 suggestions are returned
-      And every suggestion is a sentence ending in a period
+      And every suggestion ends in a period or a question mark
+      And the last suggestion is a question and the others are not
       And no suggestion is empty, repeated, or longer than 80 characters
       And at least one suggestion names a column of the table
       When every suggestion is sent as a request in turn
-      Then every suggestion committed at least one transformation
+      Then every suggestion ran: committed a transformation or returned an answer
 
   Rule: The CLI lists the suggestions after the table and runs one by its number
 

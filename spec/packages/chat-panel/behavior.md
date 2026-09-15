@@ -32,7 +32,7 @@ The web app's wrapper binds `WebController`:
 ## Message types (main entry, React-free)
 
 `ChatPanelMessage` is `{ id, role: "user" | "assistant", text, debug?,
-reportable?, undone? }`. `debug`, when present, is a `ChatRequestDetail`: a
+reportable?, undone?, answer? }`. `debug`, when present, is a `ChatRequestDetail`: a
 structural subset of the engine's `RequestDebugInfo` (request text, model
 calls, token counts, elapsed time, per-turn ops, cell samples), so the app's
 debug objects fit without a headless dependency. `reportable: true` marks a
@@ -41,7 +41,13 @@ guidance error) is the host's job; the panel only renders the action.
 `undone: true` marks an assistant reply whose step the host has undone:
 the panel renders it with a hollow circle instead of the solid ok dot (the
 heading swap to `Undone steps:` is the host's job; the panel renders text
-as given).
+as given). `answer` marks a reply that answered a question rather than
+changing the table (#Analyze): it renders with the answer marker, and
+`answer.table`, when present, is `{ columns: string[], rows: unknown[][],
+totalRows }`, the small result table the answer was computed from,
+rendered under the text. `debug.expressions`, when present, lists the
+request's expressions; the detail prints one `query:` line per `query`
+label.
 
 `ChatRunProgress` is the live progress the host feeds while a run
 streams: `{ step, totalSteps, label, rowsDone, rowsTotal, log }`,
@@ -56,8 +62,9 @@ panel just renders whatever it is passed.
   "· running" while streaming), and a `?` popover listing `helpLines`.
 - Message list: user messages as accent bubbles; assistant messages with a
   `StatusDot`: a solid ok dot, or a hollow circle when the message is
-  `undone`, or an error icon and error tint when the text starts with
-  `Error:` (the prefix is stripped for display). `StatusDot` is exported
+  `undone`, or a solid accent dot when the message is an `answer`, or an
+  error icon and error tint when the text starts with `Error:` (the prefix
+  is stripped for display). `StatusDot` is exported
   from the components entry so a host shows the same applied/undone visual
   language wherever step state appears (the app's mobile History sheet uses
   it), instead of inventing a second icon logic. With no messages, the
@@ -78,6 +85,12 @@ panel just renders whatever it is passed.
   a collapsed "request detail" toggle that expands a read-only log box
   streaming `progress.log`, pinned to its newest line. The block
   unmounts when streaming ends, so the next run starts collapsed.
+- Answer table: an `answer` message with a table renders it under the
+  text as a compact monospace grid (`data-cp-answer-table`): a header row
+  of `columns`, then at most 20 rows, then a quiet `… N more rows` line
+  when `totalRows` exceeds what is shown. Cells render as text (nested
+  values as compact JSON, null as an empty cell); the grid scrolls
+  sideways inside the message when wider than the sidebar.
 - Request detail: an assistant message with `debug` gets a collapsed
   "request detail" toggle and a copy button; expanded, it shows the request,
   model/token/elapsed summary, per-turn ops, and cell samples, the same
@@ -117,7 +130,8 @@ panel just renders whatever it is passed.
 
 Stable attributes: `data-cp-messages` (the scrolling message list),
 `data-cp-message="user|assistant"`, `data-cp-error`,
-`data-status-dot="ok|undone"` (the StatusDot marker),
+`data-status-dot="ok|undone|answer"` (the StatusDot marker),
+`data-cp-answer-table`,
 `data-cp-detail-toggle`, `data-cp-detail`, `data-cp-report`, `data-cp-send`,
 `data-cp-stop`, `data-cp-running`, `data-cp-progress`,
 `data-cp-progress-toggle`, `data-cp-progress-log`, `data-cp-suggestion`
@@ -148,8 +162,8 @@ animations ship inside the component.
 The demo (`demo.html` + `demo.tsx`, deployed under `/demos/chat-panel/`)
 mounts ChatPanel over plain React state: sending appends the user message
 and an echoed assistant reply, buttons inject an error reply (guidance: no
-Report bug), an app-error reply (`reportable`, no detail), and a reportable
-reply with request detail, a fill-thread button pads the list past the
+Report bug), an app-error reply (`reportable`, no detail), a reportable
+reply with request detail, an answer reply with a three-row result table, a fill-thread button pads the list past the
 panel's height (so the scroll rules have something to scroll), a
 streaming toggle drives the Running…/stop state
 together with a sample run progress (step line, bar, live request-detail

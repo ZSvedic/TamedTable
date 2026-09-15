@@ -1,4 +1,4 @@
-import { generateText, streamText, tool, stepCountIs, jsonSchema } from 'ai';
+import { generateText, streamText, tool, stepCountIs, hasToolCall, jsonSchema } from 'ai';
 import type { JSONValue } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
@@ -155,7 +155,36 @@ export interface RequestDebugInfo {
   inputTokens: number;
   outputTokens: number;
   elapsedMs: number;
+  /** #Analyze: the patch call's one-sentence summary, when the model gave one. */
+  summary?: string;
 }
+
+// #Analyze
+/** What a request settled as (spec/code-contract.md § Questions about the
+ *  data): a patch that changed the table, or an answer that left it alone. */
+export type RequestResult =
+  | { kind: 'patch'; summary?: string }
+  | { kind: 'answer'; text: string; table?: AnswerTable };
+
+/** The query result an answer rests on, as a host shows it: of the queries
+ *  the turn ran, the one that returned the most rows (the later one on a
+ *  tie: a closing sanity total never hides the grouped rows before it), at
+ *  most ANSWER_SAMPLE_ROWS rows and ANSWER_SAMPLE_COLS columns of real
+ *  values, plus the true row count so a host can say "… N more rows". */
+export interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
+
+/** What the query tool hands back to the model: the bounded, clipped result
+ *  or the error to fix. */
+export type QueryToolResult =
+  | { ok: true; columns: string[]; rows: unknown[][]; totalRows: number; truncated: boolean; pendingRows: number }
+  | { ok: false; error: string };
+
+export const ANSWER_STEPS = 4;
+export const ANSWER_SAMPLE_ROWS = 50;
+export const ANSWER_SAMPLE_COLS = 30;
+export const ANSWER_CELL_CHARS = 120;
+export const ANSWER_CONTEXT_CHARS = 500;
+export const ANSWER_BUDGET_EXHAUSTED = 'Runner: answer budget exhausted';
 
 export type PlanEdit =
   | { kind: 'add-column'; id: string }
@@ -302,7 +331,9 @@ export interface HeadlessRunner {
    *  the browser (no filesystem); an unregistered name falls back to reading
    *  the file by path as before. */
   registerLookup(name: string, rows: Row[]): void;
-  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void; confirmSpec?: (next: TablePlan, prev: TablePlan) => Promise<boolean>; } & LazyEvalOpts): Promise<void>;
+  /** One chat turn: the model either patches the table or answers a
+   *  question about it (#Analyze); the result says which. */
+  request(text: string, options?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; audio?: RequestAudio; onTranscript?: (text: string) => void; confirmSpec?: (next: TablePlan, prev: TablePlan) => Promise<boolean>; } & LazyEvalOpts): Promise<RequestResult>;
   /** Replace the spec, replaying its transformations onto the loaded source
    *  rows. Accepts the same streaming/abort options a request carries plus
    *  `onStep`, which fires as each transformation starts, so a replayed
@@ -488,23 +519,126 @@ export function patchOperationsProperty() {
 // The `transcript` argument is used only when the request carries spoken audio
 // (web voice input): it returns a verbatim transcript of the clip in the same
 // call, surfaced to the UI via onTranscript.
+const TRANSCRIPT_PROPERTY = {
+  transcript: {
+    type: 'string',
+    description: "Verbatim transcript of the user's spoken request in the attached audio clip.",
+  },
+};
+
 function patchInputSchema(withTranscript: boolean) {
-  return jsonSchema<{ operations: unknown[]; transcript?: string }>({
+  return jsonSchema<{ operations: unknown[]; summary?: string; transcript?: string }>({
     type: 'object',
     properties: {
-      ...(withTranscript
-        ? {
-            transcript: {
-              type: 'string',
-              description: "Verbatim transcript of the user's spoken request in the attached audio clip.",
-            },
-          }
-        : {}),
+      ...(withTranscript ? TRANSCRIPT_PROPERTY : {}),
       operations: patchOperationsProperty(),
+      // #Analyze: the one-sentence explanation the hosts show above the step
+      // list (behavior.md § Questions about the data, "Summary of a change").
+      summary: {
+        type: 'string',
+        description: 'One plain sentence saying what the step does and how it meets the request, e.g. "Kept the rows whose Country is in Europe." No numbers you have not computed.',
+      },
     },
     required: ['operations'],
     additionalProperties: false,
   });
+}
+
+// #Analyze: the reply tool closes a turn without touching the table.
+function replyInputSchema(withTranscript: boolean) {
+  return jsonSchema<{ text: string; transcript?: string }>({
+    type: 'object',
+    properties: {
+      ...(withTranscript ? TRANSCRIPT_PROPERTY : {}),
+      text: {
+        type: 'string',
+        description: 'The reply shown to the user: one to three plain sentences. For a question, every number comes from a query_table result.',
+      },
+    },
+    required: ['text'],
+    additionalProperties: false,
+  });
+}
+
+// #Analyze: what the model sees of a query result, and what a host gets.
+function clipAnswerCell(value: unknown): unknown {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  return text.length > ANSWER_CELL_CHARS ? text.slice(0, ANSWER_CELL_CHARS) + '…' : text;
+}
+
+/** @internal: exported for unit tests. Bound a query result two ways: the
+ *  model's view (rows and columns capped, cells clipped) and the host's
+ *  table (same caps, real values), both carrying the true row count. */
+export function boundQueryResult(
+  columns: string[],
+  rows: Row[],
+  pendingRows: number,
+): { forModel: Extract<QueryToolResult, { ok: true }>; forHost: AnswerTable } {
+  const cols = columns.slice(0, ANSWER_SAMPLE_COLS);
+  const kept = rows.slice(0, ANSWER_SAMPLE_ROWS);
+  const truncated = rows.length > kept.length || columns.length > cols.length;
+  return {
+    forModel: {
+      ok: true,
+      columns: cols,
+      rows: kept.map((r) => cols.map((c) => clipAnswerCell(r[c]))),
+      totalRows: rows.length,
+      truncated,
+      pendingRows,
+    },
+    forHost: { columns: cols, rows: kept.map((r) => cols.map((c) => r[c] ?? null)), totalRows: rows.length },
+  };
+}
+
+/** @internal: exported for unit tests. Rows in a fixed order: by each
+ *  column's text in turn (nulls first), for a result no ORDER BY ordered. */
+export function canonicalRowOrder(columns: string[], rows: Row[]): Row[] {
+  const key = (v: unknown): string => (v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  return [...rows].sort((a, b) => {
+    for (const c of columns) {
+      const ka = key(a[c]);
+      const kb = key(b[c]);
+      if (ka !== kb) return ka < kb ? -1 : 1;
+    }
+    return 0;
+  });
+}
+
+/** @internal: exported for unit tests. The rows a query reads: pending and
+ *  failed cell sentinels (#LazyExec) become NULL, and the count of rows that
+ *  carried one is reported so the model can say the answer is partial. */
+export function blankSentinelRows(rows: Row[]): { rows: Row[]; pendingRows: number } {
+  let pendingRows = 0;
+  const out = rows.map((r) => {
+    let copy: Row | undefined;
+    for (const [k, v] of Object.entries(r)) {
+      if (isPendingCell(v) || isFailedCell(v)) {
+        copy ??= { ...r };
+        copy[k] = null;
+      }
+    }
+    if (copy) pendingRows++;
+    return copy ?? r;
+  });
+  return { rows: pendingRows ? out : rows, pendingRows };
+}
+
+/** What one chat turn settled as, before the runner acts on it. */
+type LlmTurn =
+  | { kind: 'patch'; ops: unknown[]; summary?: string; transcript?: string }
+  | { kind: 'reply'; text: string; transcript?: string };
+
+/** The per-turn scratch the query tool writes into: the debug turns and
+ *  query expressions, the last successful result, and the step callback. */
+interface TurnContext {
+  turns: RequestDebugTurn[];
+  expressions: Array<{ label: string; body: string }>;
+  queries: number;
+  /** The richest result so far: most rows, the later one on a tie. */
+  bestTable?: AnswerTable;
+  onStep?: (u: StepUpdate) => void;
 }
 
 // JSON's only legal escape sequences: \" \\ \/ \b \f \n \r \t \uXXXX. The model
@@ -705,7 +839,12 @@ export function stripQueryMetadata(spec: TablePlan): TablePlan {
   };
 }
 
-function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string {
+/** @internal: exported for unit tests. The user message of a chat turn.
+ *  `prior` is the last answer's text (#Analyze), appended so a follow-up
+ *  like "keep only customers from that country" resolves; without one the
+ *  message is the plain request, so its cassette fingerprint has no answer
+ *  in it. */
+export function buildPrompt(text: string, spec: TablePlan, errPrefix?: string, prior?: string): string {
   // The LLM edits transformations/columns/view-ops, never `table`. A long
   // absolute source path is prompt noise that derails the patch turn, so the
   // model only ever sees the basename. Query provenance is stripped the same
@@ -713,8 +852,9 @@ function buildPrompt(text: string, spec: TablePlan, errPrefix?: string): string 
   spec = stripQueryMetadata(spec);
   const llmSpec = spec.table ? { ...spec, table: basename(spec.table) } : spec;
   const specJson = JSON.stringify(llmSpec, null, 2);
-  if (!errPrefix) return `Current spec:\n${specJson}\n\nUser request: ${text}`;
-  return `${errPrefix}\n\nCurrent spec:\n${specJson}\n\nOriginal user request: ${text}\n\nEmit a corrected patch.\n\n${RECOVERY_GUIDANCE}`;
+  const priorText = prior ? `\n\nYour previous answer: ${prior}` : '';
+  if (!errPrefix) return `Current spec:\n${specJson}\n\nUser request: ${text}${priorText}`;
+  return `${errPrefix}\n\nCurrent spec:\n${specJson}\n\nOriginal user request: ${text}${priorText}\n\nEmit a corrected patch.\n\n${RECOVERY_GUIDANCE}`;
 }
 
 type PatchAttempt = { kind: 'ok'; spec: TablePlan } | { kind: 'err'; message: string };
@@ -1160,6 +1300,9 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   private busy = false;
   // The DuckDB session behind every {sql} expression: see sql.ts.
   private sql = new SqlSession();
+  // #Analyze: the last answer's text (clipped), carried into the next
+  // request's prompt; a committed patch or a new load clears it.
+  private lastAnswer: string | undefined;
 
   constructor(opts: HeadlessRunnerOptions = {}) {
     this.opts = opts;
@@ -1191,7 +1334,8 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     turns: RequestDebugTurn[],
     expressions: Array<{ label: string; body: string }>,
     elapsedMs: number,
-    steps: string[] = []
+    steps: string[] = [],
+    extra: { summary?: string } = {},
   ): RequestDebugInfo {
     const order: string[] = [];
     const counts = new Map<string, number>();
@@ -1213,6 +1357,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       inputTokens,
       outputTokens,
       elapsedMs,
+      ...(extra.summary !== undefined ? { summary: extra.summary } : {}),
     };
   }
 
@@ -1349,6 +1494,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     this.derivedOrigins = rows.map((_, i) => i);
     this.cellResultCache.clear();
     this.joinRightTables.clear();
+    this.lastAnswer = undefined;
     // Reset the DuckDB relation so SQL transformations see the new source.
     await this.sql.resetTable();
     this.loaded = true;
@@ -1496,7 +1642,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
   async request(
     text: string,
     callOpts: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void; onPlanEdits?: (items: PlanEdit[]) => void; audio?: RequestAudio; onTranscript?: (text: string) => void; confirmSpec?: (next: TablePlan, prev: TablePlan) => Promise<boolean> } & LazyEvalOpts = {}
-  ): Promise<void> {
+  ): Promise<RequestResult> {
     this.requireLoaded();
     if (this.busy || this.sql.hasLingeringSql()) throw new Error('Runner: a request is already in progress.');
     this.busy = true;
@@ -1525,24 +1671,40 @@ class HeadlessRunnerImpl implements HeadlessRunner {
       // The provenance text stamped on committed transformations: the request
       // text, or, for a spoken request, the transcript once it arrives.
       let queryText = text;
-      let prompt = buildPrompt(text, this.spec);
+      const prior = this.lastAnswer;
+      let prompt = buildPrompt(text, this.spec, undefined, prior);
       for (let i = 0; i < budget; i++) {
         abortIf(signal);
         // #CancelOp: the model call is most of a request's wall-clock, so it
         // is where a Stop usually lands. Translate here too, or the SDK's raw
         // AbortError escapes and the host reads a cancel as a crash.
-        let llmTurn: { ops: unknown[]; transcript?: string };
+        const ctx: TurnContext = { turns, expressions: [], queries: 0, onStep: callOpts.onStep };
+        let llmTurn: LlmTurn;
         try {
-          llmTurn = await this.callLlm(prompt, signal, callOpts.audio);
+          llmTurn = await this.callLlm(prompt, signal, callOpts.audio, ctx);
         } catch (e) {
           throw asCancelled(e, signal);
         }
-        const ops = llmTurn.ops;
         if (llmTurn.transcript && !transcriptSent) {
           transcriptSent = true;
           queryText = llmTurn.transcript;
           callOpts.onTranscript?.(llmTurn.transcript);
         }
+        // #Analyze: a reply ends the request without touching the table.
+        if (llmTurn.kind === 'reply') {
+          if (!llmTurn.text) {
+            const message = 'You called reply with empty text. Answer the user in plain words, or change the table with apply_spec_patch.';
+            turns.push({ ops: [], outcome: 'rejected', sentBack: message });
+            lastError = message;
+            prompt = buildPrompt(text, this.spec, message, prior);
+            continue;
+          }
+          turns.push({ ops: [], outcome: 'answered' });
+          this.lastAnswer = llmTurn.text.slice(0, ANSWER_CONTEXT_CHARS);
+          reportDebug(this.buildDebugInfo(text, turns, ctx.expressions, Date.now() - startedAt));
+          return { kind: 'answer', text: llmTurn.text, table: ctx.bestTable };
+        }
+        const ops = llmTurn.ops;
         const turn: RequestDebugTurn = { ops, outcome: '' };
         turns.push(turn);
 
@@ -1551,7 +1713,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           turn.outcome = 'rejected';
           turn.sentBack = tried.message;
           lastError = tried.message;
-          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${tried.message}`);
+          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${tried.message}`, prior);
           continue;
         }
 
@@ -1566,7 +1728,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           turn.outcome = 'rejected';
           turn.sentBack = orderError;
           lastError = orderError;
-          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${orderError}`);
+          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${orderError}`, prior);
           continue;
         }
 
@@ -1579,7 +1741,7 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           turn.outcome = 'rejected';
           turn.sentBack = ghostError;
           lastError = ghostError;
-          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${ghostError}`);
+          prompt = buildPrompt(text, this.spec, `Your previous patch failed: ${ghostError}`, prior);
           continue;
         }
 
@@ -1620,18 +1782,20 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           this.derivedOrigins = this.lastReplayOrigins;
           this.pruneJoinRightTables();
           turn.outcome = 'committed';
+          // #Analyze: a committed change drops the carried answer.
+          this.lastAnswer = undefined;
           const added = diffPlans(specBefore, this.spec)
             .filter((p): p is Extract<PlanEdit, { kind: 'add-transformation' }> => p.kind === 'add-transformation');
-          const expressions = added.flatMap((p) => transformationExpressions(p.transformation));
+          const expressions = [...ctx.expressions, ...added.flatMap((p) => transformationExpressions(p.transformation))];
           const steps = added.map((p) => describeStep(p.transformation));
-          reportDebug(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt, steps));
-          return;
+          reportDebug(this.buildDebugInfo(text, turns, expressions, Date.now() - startedAt, steps, { summary: llmTurn.summary }));
+          return { kind: 'patch', summary: llmTurn.summary };
         } catch (e) {
           if (signal?.aborted || isCancelled(e)) throw new Error(CANCELLED);
           lastError = (e as Error).message;
           turn.outcome = `evaluation failed: ${lastError}`;
           turn.sentBack = `evaluation error: ${lastError}`;
-          prompt = buildPrompt(text, this.spec, `Your previous patch applied but evaluation failed: ${lastError}`);
+          prompt = buildPrompt(text, this.spec, `Your previous patch applied but evaluation failed: ${lastError}`, prior);
         }
       }
       const info = this.buildDebugInfo(text, turns, [], Date.now() - startedAt);
@@ -1650,20 +1814,45 @@ class HeadlessRunnerImpl implements HeadlessRunner {
     }
   }
 
-  // #LlmLayer
+  // #LlmLayer #Analyze
+  /** One chat turn: a short tool loop (at most ANSWER_STEPS model steps).
+   *  The model may query the table a few times, then either patches or
+   *  replies; either closes the turn. A provider that ignores the tool
+   *  requirement and answers with bare text is taken as a reply. */
   private async callLlm(
     prompt: string,
-    signal?: AbortSignal,
-    audio?: RequestAudio,
-  ): Promise<{ ops: unknown[]; transcript?: string }> {
-    let captured: unknown[] | undefined;
-    let transcript: string | undefined;
+    signal: AbortSignal | undefined,
+    audio: RequestAudio | undefined,
+    ctx: TurnContext,
+  ): Promise<LlmTurn> {
+    type PatchInput = { operations: unknown[]; summary?: string; transcript?: string };
+    const toPatch = (input: PatchInput) => ({ ops: input.operations, summary: input.summary?.trim() || undefined, transcript: input.transcript });
+    let patch: ReturnType<typeof toPatch> | undefined;
+    let reply: { text: string; transcript?: string } | undefined;
+    const withTranscript = Boolean(audio);
     const applySpecPatch = tool({
-      description: 'Apply RFC 6902 JSON Patch operations to the current spec.',
-      inputSchema: patchInputSchema(Boolean(audio)),
-      execute: async ({ operations, transcript: heard }: { operations: unknown[]; transcript?: string }) => {
-        captured = operations;
-        transcript = heard;
+      description: 'Change the table: apply RFC 6902 JSON Patch operations to the current spec. Ends the turn.',
+      inputSchema: patchInputSchema(withTranscript),
+      execute: async (input: PatchInput) => {
+        patch = toPatch(input);
+        return { ok: true };
+      },
+    });
+    const queryTable = tool({
+      description: 'Answer a question about the data: run a read-only DuckDB SELECT (or WITH) over the relation t, the current rows, every column VARCHAR. Returns at most 50 rows and 30 columns plus the true row count, or the SQL error to fix. Then call reply.',
+      inputSchema: jsonSchema<{ sql: string }>({
+        type: 'object',
+        properties: { sql: { type: 'string', description: 'A DuckDB SELECT or WITH statement over the relation t.' } },
+        required: ['sql'],
+        additionalProperties: false,
+      }),
+      execute: async ({ sql }: { sql: string }) => this.runQueryTool(sql, signal, ctx),
+    });
+    const replyTool = tool({
+      description: 'Reply to the user in plain words, one to three sentences: the answer to a question (computed with query_table first), or a short reply when the message asks for no change and no fact. Ends the turn without touching the table.',
+      inputSchema: replyInputSchema(withTranscript),
+      execute: async ({ text, transcript: heard }: { text: string; transcript?: string }) => {
+        reply = { text: (text ?? '').trim(), transcript: heard };
         return { ok: true };
       },
     });
@@ -1681,29 +1870,76 @@ class HeadlessRunnerImpl implements HeadlessRunner {
           }],
         }
       : { prompt };
+    const modelId = this.opts.model ?? DEFAULT_MODEL;
     const result = await generateText({
       model: this.model(),
       system: SYSTEM_PROMPT,
       ...userContent,
-      tools: { apply_spec_patch: applySpecPatch },
-      toolChoice: { type: 'tool', toolName: 'apply_spec_patch' },
-      stopWhen: stepCountIs(1),
+      tools: { apply_spec_patch: applySpecPatch, query_table: queryTable, reply: replyTool },
+      toolChoice: 'required',
+      stopWhen: [stepCountIs(ANSWER_STEPS), hasToolCall('apply_spec_patch'), hasToolCall('reply')],
       abortSignal: signal,
-      ...this.samplingParams(this.opts.model ?? DEFAULT_MODEL),
+      ...this.samplingParams(modelId),
       maxRetries: this.opts.maxRetries ?? DEFAULT_MAX_RETRIES,
       providerOptions: ANTHROPIC_EPHEMERAL,
     });
-    this.recordCall(this.opts.model ?? DEFAULT_MODEL, result.usage, 'chat');
-    if (!captured) {
-      const direct = result.toolCalls?.find((c) => c.toolName === 'apply_spec_patch');
-      const input = direct?.input as { operations?: unknown[]; transcript?: string } | undefined;
-      if (input?.operations) {
-        captured = input.operations;
-        transcript = input.transcript;
-      }
+    // One call per model step, each with its own usage, so the debug summary
+    // counts the queries a question took.
+    const steps = result.steps ?? [];
+    if (steps.length === 0) this.recordCall(modelId, result.usage, 'chat');
+    for (const step of steps) this.recordCall(modelId, step.usage, 'chat');
+    abortIf(signal);
+    // A tool call the SDK reported but did not execute (a provider quirk):
+    // read it off the last step directly.
+    const direct = (name: string) => result.toolCalls?.find((c) => c.toolName === name)?.input as Record<string, unknown> | undefined;
+    if (!patch) {
+      const input = direct('apply_spec_patch') as Partial<PatchInput> | undefined;
+      if (input?.operations) patch = toPatch({ ...input, operations: input.operations });
     }
-    if (!captured) throw new Error(`LLM did not call apply_spec_patch; returned text: ${result.text?.slice(0, 200) ?? '<empty>'}`);
-    return { ops: decodeOpValues(captured), transcript: transcript?.trim() || undefined };
+    if (patch) return { kind: 'patch', ops: decodeOpValues(patch.ops), summary: patch.summary, transcript: patch.transcript?.trim() || undefined };
+    if (!reply) {
+      const input = direct('reply') as { text?: string; transcript?: string } | undefined;
+      if (input && typeof input.text === 'string') reply = { text: input.text.trim(), transcript: input.transcript };
+    }
+    if (reply) return { kind: 'reply', text: reply.text, transcript: reply.transcript?.trim() || undefined };
+    const text = result.text?.trim();
+    if (text) return { kind: 'reply', text };
+    if (ctx.queries > 0) throw new Error(ANSWER_BUDGET_EXHAUSTED);
+    throw new Error('LLM did not call a tool and returned no text');
+  }
+
+  // #Analyze
+  /** The query tool's body: a read over the current rows, bounded for the
+   *  model, kept (with real values) for the host; a failure goes back to the
+   *  model as text so it can fix the SQL inside the same turn. */
+  private async runQueryTool(sql: string, signal: AbortSignal | undefined, ctx: TurnContext): Promise<QueryToolResult> {
+    ctx.queries++;
+    const body = sql.trim();
+    const turn: RequestDebugTurn = { ops: [], outcome: 'queried' };
+    ctx.turns.push(turn);
+    ctx.expressions.push({ label: 'query', body });
+    ctx.onStep?.({
+      index: ctx.queries - 1, total: ctx.queries, kind: 'query', label: 'query (sql)',
+      rows: this.derivedRows.length, expressions: [{ label: 'sql', body }],
+    });
+    if (signal?.aborted) return { ok: false, error: 'cancelled' };
+    const { rows, pendingRows } = blankSentinelRows(this.derivedRows);
+    try {
+      const out = await this.sql.query(rows, body, signal);
+      // A query with no ORDER BY has no order to preserve, and the engine's
+      // is not stable across builds; sort such a result canonically so the
+      // bytes the model sees (and the cassette keys on) are the same
+      // everywhere. An ordered query keeps its order.
+      if (!/\border\s+by\b/i.test(body)) out.rows = canonicalRowOrder(out.columns, out.rows);
+      const bounded = boundQueryResult(out.columns, out.rows, pendingRows);
+      if (!ctx.bestTable || bounded.forHost.totalRows >= ctx.bestTable.totalRows) ctx.bestTable = bounded.forHost;
+      return bounded.forModel;
+    } catch (e) {
+      if (isCancelled(e) || signal?.aborted) return { ok: false, error: 'cancelled' };
+      const message = (e as Error).message;
+      turn.sentBack = message;
+      return { ok: false, error: message };
+    }
   }
 
   private async replay(
