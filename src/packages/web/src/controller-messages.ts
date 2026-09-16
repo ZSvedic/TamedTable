@@ -1,7 +1,7 @@
 // User-facing message formatters: turn engine errors and debug info into
 // strings the chat and toasts can display.
 
-import type { RequestDebugInfo } from '@tamedtable/headless';
+import { ANSWER_BUDGET_EXHAUSTED, type RequestDebugInfo } from '@tamedtable/headless';
 
 /** The human provider name shown in toasts, keyed off the resolved provider. */
 export function providerLabel(provider?: string): string {
@@ -56,6 +56,9 @@ export function describeError(error: unknown, provider?: string): { message: str
   // an app error worth reporting, not user misuse.
   if (message.startsWith('Runner: recovery budget exhausted'))
     return { message: "Couldn't apply that change after 3 attempts. Try rephrasing or breaking it into smaller steps.", reportable: true };
+  // #Analyze: a question the model kept querying without ever replying.
+  if (message.startsWith(ANSWER_BUDGET_EXHAUSTED))
+    return { message: "Couldn't answer that after 4 attempts. Try asking in a different way.", reportable: true };
   if (message === 'Runner: cancelled') return { message: 'Request cancelled.', reportable: false };
   if (message === 'Runner: a request is already in progress.')
     return { message: 'A request is already running.', reportable: false };
@@ -127,6 +130,8 @@ export function numberedStepLines(steps: string[]): string[] {
  *  a numbered line per appended step: the human step labels, not the
  *  generated code (that lives in the request detail panel). */
 export function summarizeDebug(info: RequestDebugInfo): string {
-  if (info.steps.length === 0) return 'Done.';
-  return ['Executed steps:', ...numberedStepLines(info.steps)].join('\n');
+  // #Analyze: the model's one-sentence summary leads, above the heading.
+  const lead = info.summary ? [info.summary] : [];
+  if (info.steps.length === 0) return [...lead, 'Done.'].join('\n');
+  return [...lead, 'Executed steps:', ...numberedStepLines(info.steps)].join('\n');
 }

@@ -14,6 +14,11 @@ import { CANCELLED, abortIf, isCancelled } from './engine.ts';
 // `lingeringSql` blocks the next request until it settles.
 const SQL_CANCEL_GIVE_UP_MS = 1500;
 
+// #Analyze
+/** Result column types the query tool passes through as JS values; every
+ *  other type is cast to VARCHAR inside the query (see plainTextQuery). */
+const PLAIN_SQL_TYPES = /^(TINYINT|SMALLINT|INTEGER|BIGINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|DOUBLE|BOOLEAN|VARCHAR)$/i;
+
 // DuckDB returns BIGINT columns as JS bigints and DATE/TIMESTAMP/DECIMAL columns
 // (e.g. from try_cast/try_strptime) as wrapper objects. Downstream consumers
 // (JSON.stringify in writeJsonl, the cell-update onChunk listener, test
@@ -184,6 +189,59 @@ export class SqlSession {
       if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
       throw new Error(`SQL evaluation failed: ${(e as Error).message}`);
     }
+  }
+
+  // #Analyze
+  /** A read over the current rows for the query tool: only a SELECT or WITH
+   *  statement, run as written (no wrapping) through the interruptible path,
+   *  every row and column returned; the caller bounds the result. The rows
+   *  arrive with pending/failed sentinels already blanked to null. */
+  async query(rows: Row[], sql: string, signal?: AbortSignal): Promise<{ columns: string[]; rows: Row[] }> {
+    if (!/^\s*(select|with)\b/i.test(sql)) {
+      throw new Error('only SELECT or WITH statements are accepted: the query tool reads the table, it never changes it');
+    }
+    try {
+      await this.registerRelation('t', rows);
+      const conn = await this.duck();
+      // The result's bytes go back to the model, so they key the next model
+      // call's cassette fingerprint: a parallel aggregate returns tied rows in
+      // a different order run to run, so the read runs single-threaded (the
+      // browser's wasm build always is) and the threads are restored after.
+      const threads = Number(process.env.TAMEDTABLE_DUCKDB_THREADS ?? '4') || 4;
+      const reader = await this.runInterruptibleSql(async () => {
+        await conn.run('SET threads = 1');
+        try { return await conn.runAndReadAll(await this.plainTextQuery(conn, sql)); }
+        finally { try { await conn.run(`SET threads = ${threads}`); } catch { /* a cancelled query: the next read sets it again */ } }
+      }, signal);
+      const objects = reader.getRowObjects() as Record<string, unknown>[];
+      const named = (reader as { columnNames?: () => string[] }).columnNames?.();
+      const columns = named ?? (objects[0] ? Object.keys(objects[0]) : []);
+      return {
+        columns,
+        rows: objects.map((r) => Object.fromEntries(columns.map((c) => [c, normalizeSqlValue(r[c])]))),
+      };
+    } catch (e) {
+      if (isCancelled(e) || signal?.aborted) throw new Error(CANCELLED);
+      throw new Error(`SQL query failed: ${(e as Error).message}`);
+    }
+  }
+
+  /** The query with every column outside the plain types cast to VARCHAR, so
+   *  DuckDB itself formats lists, structs, dates, timestamps, decimals, and
+   *  the rest: the Node engine would otherwise stringify its value wrappers
+   *  (`['Q1', 'Q2']`) while the wasm engine hands over Arrow values, and the
+   *  result's bytes must match between the two (they key the next model
+   *  call's cassette entry). Integers, doubles, booleans, and text come
+   *  back as themselves in both engines. */
+  private async plainTextQuery(conn: DuckDBConnection, sql: string): Promise<string> {
+    const inner = sql.trim().replace(/;\s*$/, '');
+    const described = await conn.runAndReadAll(`DESCRIBE ${inner}`);
+    const columns = described.getRowObjects() as Array<{ column_name: string; column_type: string }>;
+    const quoteId = (c: string) => `"${c.replace(/"/g, '""')}"`;
+    const select = columns.map(({ column_name: c, column_type: t }) =>
+      PLAIN_SQL_TYPES.test(t) ? quoteId(c) : `CAST(${quoteId(c)} AS VARCHAR) AS ${quoteId(c)}`,
+    );
+    return `SELECT ${select.join(', ')} FROM (${inner}) AS q`;
   }
 
   async applyMutateSql(

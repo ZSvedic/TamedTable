@@ -15,3 +15,8 @@ export const DOCK_OFFSET = `calc(${DOCK_H}px + env(safe-area-inset-bottom))`;
  *  enough that a chip is not pinned against the table edge above it. The
  *  shell pads its content by this too while the strip shows. */
 export const SUGGEST_STRIP_H = 54;
+
+/** #Analyze: the answer strip above the dock: the reply text and its whole
+ *  result table, scrolling inside past this height. The shell pads its
+ *  content by this while the strip shows. */
+export const ANSWER_STRIP_H = 168;

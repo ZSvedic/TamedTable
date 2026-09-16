@@ -13,6 +13,12 @@ Patch (RFC 6902) for array ops, a JSON Merge Patch (RFC 7396) for shallow
 edits: that the runtime applies, validates, and replays against the
 immutable source rows.
 
+A request is one of two things. A *change* to the table produces a patch,
+as below. A *question* about the table produces an answer and no patch: the
+model computes it with SQL over the current rows and replies in plain words
+([§ Questions about the data](#questions-about-the-data-analyze)). The spec, the history, and saved flows only ever
+hold changes.
+
 The spec describes the *data*: the source table, the visible columns, and an
 ordered list of *transformations* that mutate rows. How the result is
 *viewed* (page size, pagination) is UI state the spec never carries; each
@@ -153,6 +159,14 @@ mistakes and feeds them back through the recovery loop:
   request that keeps failing this way exhausts the recovery budget and
   fails loudly: the table is never replaced by an empty one.
 
+The patch tool is one of three tools the model holds on a turn. The other
+two, the *query tool* and the *reply tool*, serve questions and are
+described in [§ Questions about the data](#questions-about-the-data-analyze). A turn is a short loop: the model may query the
+table a few times, then it either patches or replies, and either one ends
+the request. The patch call also carries an optional one-sentence
+*summary* of what the step does, in plain words; the hosts show it above
+the step list.
+
 <!-- #LLMCells -->
 LLM-backed transformations evaluate a prompt template per row. The runtime:
 
@@ -193,7 +207,8 @@ expression and the human step label of each transformation a successful
 request appended, the model calls made, the input and output token
 totals, and the elapsed time. The CLI renders this into its debug
 block, and the web chat's reply lines come from the step labels; other
-callers may ignore it.
+callers may ignore it. For an answered question the summary lists each
+query's SQL and the answer text instead of step labels.
 
 <!-- #CancelOp -->
 Cancellation is a four-step sequence:
@@ -261,7 +276,9 @@ request, `:load`, `:undo`, `:redo`, `:show`, `:reorder`, and `:find` when
 a match is found. REPL commands that don't change either (`:help`, `:save`,
 `:save-flow`, `:save-py`, `:history`, `:schema`, `:exit`, and `:find`
 with no match) print only their own output. A failed request prints the
-error and does not reprint the table.
+error and does not reprint the table. An answered question prints its
+answer and result table and leaves the main table where it was
+([§ Questions about the data](#questions-about-the-data-analyze)).
 
 After every natural-language request the REPL prints a compact debug
 block, on by default and disableable. It is indented, dimmed, every
@@ -278,7 +295,8 @@ transformation it appended: the predicate of a filter or validate, the
 value of a mutate, and so on: shown exactly as it will be evaluated.
 Secondary fields, such as a validate `message`, are not shown. A failed
 request's block instead lists the patch attempt of each recovery turn
-and the error fed back into the next.
+and the error fed back into the next. An answered question's block lists
+one `query:` line per SQL query the model ran.
 
 Either way the block's last line summarises the request: the model
 calls it made: each distinct model as `<name> ×<count>`, always in
@@ -503,8 +521,9 @@ Inspection / session:
   :help              Show this usage screen.
   :exit              Quit (also: bare "exit").
 
-Anything not starting with ":" is sent to the spec editor as a natural-
-language request: e.g. "normalize phone numbers", "sort by DOB desc".
+Anything not starting with ":" is sent to the model: a request edits the
+table, e.g. "normalize phone numbers", "sort by DOB desc"; a question is
+answered and changes nothing, e.g. "which country has the most customers?".
 Requests are additive; use :undo to revert the last one. A bare number
 runs that entry of the Suggestions list printed after a load.
 
@@ -609,8 +628,10 @@ The patch prompt teaches the LLM the additive rule, the choice between
 `{js}` (structural rules) and `{llm}` (semantic understanding), the
 patchable paths (`/transformations/-` for append; `/columns` for add/remove/
 reorder, with a two-op pattern for "add column X with computed value Y"),
-the transformation grammar, the three expression shapes, and a few-shot
-per common task. The few-shots also carry the hard-won ordering and shape
+the transformation grammar, the three expression shapes, the rule that
+tells a question from a request with the query and reply tools that serve
+it ([§ Questions about the data](#questions-about-the-data-analyze)), and a few-shot per common task and per common
+question. The few-shots also carry the hard-won ordering and shape
 rules: a computing mutate before the validate that reads it, with the
 computed yes/no column kept out of the displayed columns, so a semantic
 check surfaces only its named `<into>` flag pair: a fresh `into` per
@@ -970,6 +991,111 @@ arrives, the post-query apply phase is interrupted between rows the
 same way an LLM chunk apply is. Cancelling a SQL transformation
 leaves the DuckDB relation `t` registered and intact: only the
 half-applied spec change reverts.
+
+### Questions about the data (#Analyze)
+
+A request that names a change becomes a step; a question gets an answer,
+and the table stays as it is. "Filter to customers in Europe" adds a
+filter. "Which country has the most customers?" replies with a sentence,
+shows the small table it was computed from, and adds nothing: no step, no
+history entry, nothing in a saved flow. The user explores first, then
+tames.
+
+**Telling the two apart.** A request names a change to the table: add,
+drop, filter, sort, normalize, count per country, pivot. A question wants a
+fact or a judgment: which, how many, what share, is there, does…? When in
+doubt, a sentence ending in `?` is a question. An imperative that names a
+table shape ("Count customers per Country", "group by niche") is a
+transformation even though it sounds analytical. A message that is
+neither, a greeting or an ask that maps to nothing in the table, gets a
+reply of one to three sentences and changes nothing. The model never uses a reply to
+decline a change it can express as a step. A message that asks for a change
+and a question in one breath ("Normalize the Country names. Which country
+has the most customers?") is a request: the answer would depend on the
+changed data, so the change is applied and its summary names the question
+left for the next message, quoted, so it is never dropped in silence.
+
+**Every answer comes from a query.** The model computes a question with
+one or more SQL queries over the current rows (the same DuckDB relation
+`t` a `{sql}` step reads, every column text), then writes the answer in
+plain words from the results. Every number in the answer comes from a
+query result. What the model sees of each result is bounded: at most 50
+rows, 30 columns, 120 characters per cell, plus the true row count, so a
+question costs the same on 20 rows as on a million. A semantic question
+("what themes appear in the reviews?") is answered from such a bounded
+sample, and the reply says so. Only a read (`SELECT`, `WITH`) is
+accepted. A query that fails (a typo, a bad cast) goes back to the model
+as the error text and it retries; a request has a budget of four model
+steps, and one that runs out fails with `Couldn't answer that after 4
+attempts` and changes nothing. A model that answers with bare text
+instead of calling a tool (some free gateways ignore the tool
+requirement) is taken as having replied.
+
+The user gets three things:
+
+- the answer, one to three sentences;
+- the result table the answer rests on: of the queries the model ran, the
+  one that returned the most rows (the later one on a tie, so a closing
+  sanity total never hides the grouped rows before it), up to 20 rows,
+  then `… N more rows`, so the calculation is visible;
+- the request detail: each SQL query that ran, the model calls, tokens,
+  and elapsed time.
+
+**Nothing to undo.** An answer leaves the spec, the history, saved flows,
+the Python export, and the changed-cell marks untouched. `:undo` after a
+question undoes the previous step, as before. Cancelling (Stop, Ctrl-C)
+aborts the model call or the running query and leaves nothing behind.
+
+**The last answer carries into the next request.** Each request is still
+a fresh turn with no chat history, with one bounded exception: the most
+recent answer's text, at most 500 characters, rides along on the next
+request, so "Which country has the most customers?" followed by "Keep
+only customers from that country" works. The next answer replaces it, a
+request that commits a step drops it, and a new load clears it.
+
+**Rows still pending** (web, [Lazy AI execution](#lazy-ai-execution-lazyexec)):
+a question never spends AI cell calls. It computes over the rows as they
+stand: pending or failed cells enter the query as empty (NULL), the
+result tells the model how many rows that touched, and the reply says so
+when the question read such a column. Run on all rows first for a
+complete answer. The estimate dialog and the dependency gate never appear
+for a question.
+
+**Summary of a change.** The other half of the same change: a request
+that does change the table may come back with a one-sentence summary of
+what the step does ("Kept the rows whose Country is in Europe."). The web
+reply shows it above `Executed steps:`, the CLI prints it before the
+debug block. It explains; it is never stored.
+
+What each surface shows:
+
+- **CLI.** While a query runs the REPL prints `query 1: <sql>` (clipped
+  to one line), the way `step 1/2:` narrates a step. Then it prints the
+  answer, the result table in the usual ASCII form (one viewport page of
+  rows, `...{N} more rows.` after it), and the `[debug]` block with one
+  `query:` line per SQL query and the usual model, token, and time
+  summary. The main table is not reprinted, the viewport does not move,
+  and `:history` lists nothing new.
+- **Web, desktop.** The reply is an assistant message with a distinct
+  *answer* marker (the solid ok dot means "applied", so an answer never
+  wears it), the answer text, the result table underneath, and the
+  request-detail toggle with the queries. There is no `Executed steps:`
+  heading, and the reply can never turn into `Undone steps:`, since no
+  history entry backs it. The suggestion chips clear after an answered
+  question as they do after a committed one: the conversation is open.
+  While the question runs, the live progress line reads `Querying the
+  table…` and the log carries each SQL.
+- **Web, phone.** The phone has no chat thread, so the answer shows in
+  the answer strip above the dock (see [Narrow viewport](#narrow-viewport-mobile)).
+- **Voice.** A spoken question works the same: the reply carries the
+  transcript, the bubble swaps to it, the answer follows.
+- **Suggestions after a load.** The last suggested sentence is a question
+  ([§ Suggested requests after a load](#suggested-requests-after-a-load-loadsuggestions)),
+  so people discover that asking works.
+- **Analytics.** One event, `chat-answer`, when a request settles as an
+  answer; it carries no user data, like every event.
+
+→ [code-contract.md: Questions about the data](code-contract.md#questions-about-the-data-analyze)
 
 ### Nested values in a cell (#NestedCells)
 
@@ -1457,7 +1583,10 @@ same human step labels the live progress uses (`1. mutate EventGroup
 lines, with overflow rendered as `… and N more`. A request that
 appended no step (say, one that only removed a transformation) replies
 `Done.`. A flow replay's reply takes the same shape, with
-`Ran <flow>: N rows, M columns.` as its closing line. The generated
+`Ran <flow>: N rows, M columns.` as its closing line. When the model
+supplied a one-sentence summary of the change, it is the bubble's first
+line, above the heading. An answered question's reply is a different kind
+of message: see [§ Questions about the data](#questions-about-the-data-analyze). The generated
 expressions, model, token, and elapsed-time stats are not shown in the
 bubble; they appear only in the expandable detail panel.
 
@@ -1486,8 +1615,8 @@ no request detail to expand, but a replayed recipe can still land a
 wrong table and that is worth reporting. The **request** section shows the
 user's original text and one summary line: model name(s), call count,
 total token count, and elapsed seconds. The **response** section lists
-each turn with its outcome label (`committed`, `rejected`, or an
-evaluation error) followed by the RFC 6902 patch ops JSON for that
+each turn with its outcome label (`committed`, `rejected`, `queried`,
+`answered`, or an evaluation error) followed by the RFC 6902 patch ops JSON for that
 turn. The **cell samples** section: shown only when at least one
 `{llm}` mutate transformation ran: lists up to 3 before→after pairs
 per column, formatted as `column: "before" → "after"`.
@@ -1586,6 +1715,15 @@ or the engine changes.
     time per step. Tapping a step jumps straight to it; **Undo** / **Redo**
     step one at a time. It reads the same journal the desktop Undo/Redo
     buttons walk, shown whole.
+- An answered question shows in an **answer strip** directly above the
+  dock, the slot the suggestion chips use: the answer text, every result
+  row the model saw (then `… N more rows` past that sample), and a dismiss
+  button, all in the typing box's font size. The strip has a fixed height
+  and scrolls inside it. A change that came with a one-sentence summary
+  shows the summary in the same strip, since the phone has no reply
+  bubble to carry it.
+  The next request replaces it; a new load clears it
+  ([§ Questions about the data](#questions-about-the-data-analyze)).
 - The settings panel, the URL dialog, the sample picker, and the Tours
   panel open as full-width sheets rather than centered desktop cards.
 - The **grid upgrades render the same on the phone**: cells the current
@@ -1886,7 +2024,8 @@ by it, reference it in a `{js}`/`{sql}` expression, group or pivot on it:
 needs every row evaluated first, so it raises the same run-all confirmation
 before it applies. Declining leaves the step out entirely: not in the spec,
 not in the table, not in history. Chat requests that only add or transform
-other columns never trigger it. The rule looks at what a patch *adds by
+other columns never trigger it. A question never triggers it either: it
+computes over the rows as they stand ([§ Questions about the data](#questions-about-the-data-analyze)). The rule looks at what a patch *adds by
 content*, never at list positions: a patch that replaces or removes steps
 gates exactly like an append, so pending rows survive any patch shape.
 
@@ -2005,7 +2144,8 @@ context, and the spec-editing instructions go to the selected model in the
 patch directly. There is no transcription step and no extra round trip, so a
 voice request costs exactly as many model calls as a typed one. That single
 call returns two things: the spec patch and a verbatim transcript of the
-spoken request.
+spoken request. A spoken question is answered the same way: the reply
+carries the transcript instead of a patch.
 
 A microphone button sits in the chat sidebar, next to the send control. It is
 shown whenever the selected model accepts voice input (the catalogue's
@@ -2103,11 +2243,13 @@ about to type.
 The call is small and its cost never grows with the table. It carries the
 table's name, its row and column counts, the column names, and a sample:
 the first 20 rows, at most 30 columns, each cell cut at 60 characters.
-The model answers with a short list of plain-English requests, each a
-full sentence ending in a period, phrased the way the user would type it
-(`Normalize the DOB column.`), and each one a transformation the engine
-can carry out on this table alone (never a join, which would need a
-second file). The wording is the model's: the same table may get
+The model answers with a short list of plain-English sentences, phrased
+the way the user would type them (`Normalize the DOB column.`): the last
+one a question about the data, ending in `?`, which TamedTable answers
+without changing the table ([§ Questions about the data](#questions-about-the-data-analyze)), and the
+others transformations the engine can carry out on this table alone
+(never a join, which would need a second file), each ending in a period.
+The question comes last so that running "suggestion 1" still adds a step. The wording is the model's: the same table may get
 different suggestions on different days.
 
 The call runs in the background, after the table is already on screen:
@@ -2185,9 +2327,9 @@ fingerprint-mismatch error, never a silent hang.
 
 A **Tours** button in the toolbar opens the Tours panel. The panel shows
 the `@tour`-tagged scenarios drawn from the bundled feature files, **grouped
-into the eight marketing feature categories**, Lazy AI execution, Clean up,
-Enrich & extract, Classify, Validate, Process language, Be exact, and Load,
-save & reuse: numbered 01–08, in the same order as the homepage sections. A
+into the nine marketing feature categories**, Lazy AI execution, Clean up,
+Analyze, Enrich & extract, Classify, Validate, Process language, Be
+exact, and Load, save & reuse: numbered 01–09, in the same order as the homepage sections. A
 scenario's group comes from its `@cat-…` tag (e.g. `@cat-cleanup`); empty
 categories are omitted.
 Each category holds **one showcase tour**: a single story that loads one

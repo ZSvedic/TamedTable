@@ -27,6 +27,7 @@ describe('showcase samples', () => {
     expect(derived).toEqual([
       { title: 'Lazy AI execution', file: 'showcase-lazy-input.csv' },
       { title: 'Clean up', file: 'customers-input.csv' },
+      { title: 'Analyze', file: 'showcase-exact-input.csv' },
       { title: 'Enrich & extract', file: 'showcase-enrich-input.csv' },
       { title: 'Classify', file: 'showcase-classify-input.csv' },
       { title: 'Validate', file: 'showcase-validate-input.csv' },

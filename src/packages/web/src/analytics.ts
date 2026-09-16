@@ -20,6 +20,7 @@ export type AnalyticsEvent =
   | 'open-file' // { source: 'local' | 'url' | 'sample' | 'drop' }
   | 'open-flow'
   | 'chat-request'
+  | 'chat-answer' // a request settled as an answer (#Analyze)
   | 'voice-request'
   | 'undo'
   | 'redo'

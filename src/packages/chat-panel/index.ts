@@ -13,7 +13,14 @@ export interface ChatRequestDetail {
   elapsedMs: number;
   turns: Array<{ outcome: string; ops: unknown }>;
   cellSamples: Array<{ column: string; samples: Array<{ in: unknown; out: unknown }> }>;
+  /** The expressions behind the request: a `query` label per SQL query an
+   *  answered question ran (#Analyze); the detail lists those. */
+  expressions?: Array<{ label: string; body: string }>;
 }
+
+/** #Analyze: the small result table an answer was computed from: the rows
+ *  shown (at most a few dozen) and the true row count behind them. */
+export interface AnswerTable { columns: string[]; rows: unknown[][]; totalRows: number }
 
 /** One chat message. Assistant text starting with `Error:` renders in error
  *  style with the prefix stripped. `reportable: true` marks a message the user
@@ -28,6 +35,9 @@ export interface ChatPanelMessage {
   debug?: ChatRequestDetail;
   reportable?: boolean;
   undone?: boolean;
+  /** #Analyze: a reply that answered a question rather than changing the
+   *  table: the answer marker, and the result table under the text. */
+  answer?: { table?: AnswerTable };
 }
 
 /** Live progress of the streaming run, the host owns and mutates the state

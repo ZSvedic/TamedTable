@@ -6,6 +6,7 @@ import {
 } from '@cucumber/cucumber';
 import { join, basename } from 'node:path';
 import type { Row, TablePlan } from '@tamedtable/core';
+import type { RequestResult } from '@tamedtable/headless';
 import { cassetteFetch, type FetchLike } from './cassette.ts';
 
 // Path anchors, resolved from this file's location so they hold regardless of cwd.
@@ -30,7 +31,8 @@ export type RunnerKind = 'headless' | 'cli' | 'web';
 
 export interface Runner {
   loadInput(path: string): Promise<void>;
-  request(text: string): Promise<void>;
+  /** Settles as a patch or an answer (#Analyze). */
+  request(text: string): Promise<RequestResult>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
   exportAs(path: string): Promise<void>;
@@ -45,6 +47,8 @@ export interface CapturedInvocation {
 export interface RequestOutcome {
   ok: boolean;
   error?: Error;
+  /** What the request settled as (#Analyze). */
+  result?: RequestResult;
   specBefore: TablePlan;
   specAfter?: TablePlan;
 }

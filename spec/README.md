@@ -31,6 +31,8 @@ App-behavior step defs live in `src/tests/` and share the app harness (`world.ts
 
 Edits by the AI to `*-expected.jsonl` golden files are spec changes: review them, don't treat them as routine fixture churn.
 
+A golden column holding generated prose (a summary, a translation) is the one exception: its wording changes every time the cassette is recorded again, so no scenario compares it. `compare with the expected output, ignoring "<column>"` checks the rest of the row exactly, and a shape step (`every "<column>" is one line of N to M characters`, `every "<column>" is plain ASCII`) covers the prose. The sentences stay in the golden as a readable sample of what the model produced.
+
 ## Regression scenarios
 
 A scenario written to lock a fixed bug is a behavior specification like any other, so it lives **with the behavior it describes** (in `test-cases/` (or a package spec), in the feature file for that capability, never in a separate `bug-cases/` tree. A `bug-cases/` split would duplicate the taxonomy, scatter one behavior's spec across two homes, and rot the moment "bug" and "feature" blur. Provenance is metadata, not structure: tag the scenario `@regression` (alongside its execution tags like `@headless`/`@web`) and reference the issue/PR in a comment above it. The tag is filterable (`--tags @regression`) as the count grows; the layout stays organized by capability. A bug that fits no existing feature gets its own capability feature) e.g. [test-cases/model-resilience.feature](test-cases/model-resilience.feature) collects the runner's tolerance of imperfect model output.

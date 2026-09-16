@@ -16,7 +16,7 @@ import { space, typography, type Theme } from '@tamedtable/ui-kit';
 import { Icon } from '@tamedtable/ui-kit/components';
 import { useTheme, useThemeControls } from '@tamedtable/ui-kit/components';
 import { Lockup } from '@tamedtable/toolbar/components';
-import { appendSentence } from '@tamedtable/chat-panel/components';
+import { AnswerTableView, appendSentence } from '@tamedtable/chat-panel/components';
 import type { WebController } from '../../controller.ts';
 import { STAY_REPLAY_HINT } from '../../controller-messages.ts';
 import { useController } from '../../hooks/useController.ts';
@@ -27,7 +27,7 @@ import { MobileTable } from './MobileTable.tsx';
 import { MenuDrawer } from './MenuDrawer.tsx';
 import { KeyboardSheet, VoiceSheet, HistorySheet } from './sheets.tsx';
 import { ToursLink } from '../ToursLink.tsx';
-import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET, SUGGEST_STRIP_H } from './layout.ts';
+import { APPBAR_H, APPBAR_OFFSET, DOCK_OFFSET, SUGGEST_STRIP_H, ANSWER_STRIP_H } from './layout.ts';
 
 type InputMode = 'none' | 'keyboard' | 'voice' | 'history';
 
@@ -466,6 +466,11 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
   const showSuggestions =
     loaded && (suggestions.length > 0 || suggestionsLoading) && !busy && !stayed &&
     inputMode !== 'voice' && inputMode !== 'history';
+  // #Analyze: the last answer rides in the same slot above the dock; the
+  // chips are cleared once a question is answered, so the two never compete.
+  const answer = controller.answerStrip;
+  const showAnswer =
+    loaded && answer !== null && !busy && inputMode !== 'voice' && inputMode !== 'history';
   const pickSuggestion = (text: string): void => {
     setDraft((d) => appendSentence(d, text));
     controller.pickSuggestion(text);
@@ -526,7 +531,9 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
         minHeight: 'calc(100lvh + 1px)',
         // The app bar and the dock are fixed; the flowing content clears them.
         paddingTop: APPBAR_OFFSET,
-        paddingBottom: showSuggestions ? `calc(${DOCK_OFFSET} + ${SUGGEST_STRIP_H}px)` : DOCK_OFFSET,
+        paddingBottom: showAnswer
+          ? `calc(${DOCK_OFFSET} + ${ANSWER_STRIP_H}px)`
+          : showSuggestions ? `calc(${DOCK_OFFSET} + ${SUGGEST_STRIP_H}px)` : DOCK_OFFSET,
       }}
     >
       {loaded ? (
@@ -589,6 +596,38 @@ export function MobileShell({ controller }: { controller: WebController }): Reac
           sheets stay pinned (bottomInset gates the lift), so a stray
           visual-viewport shift while scrolling can't make them jitter. */}
       <div data-mob-bottom="" style={{ position: 'fixed', bottom: bottomInset(inputMode === 'keyboard', kbInset), left: 0, right: 0, zIndex: 20 }}>
+        {showAnswer && answer && (
+          <div
+            data-mob-answer=""
+            style={{
+              maxHeight: ANSWER_STRIP_H,
+              overflowY: 'auto',
+              boxSizing: 'border-box',
+              padding: `${space.px8}px ${space.px10}px`,
+              background: t.surface,
+              borderTop: `1px solid ${t.line}`,
+              fontFamily: typography.ui,
+              fontSize: typography.size.base,
+              color: t.ink2,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: space.px8 }}>
+              <div style={{ flex: 1, whiteSpace: 'pre-wrap' }}>{answer.text}</div>
+              <button
+                type="button"
+                data-mob-answer-dismiss=""
+                onClick={() => controller.dismissAnswer()}
+                title="Dismiss"
+                style={{ border: 'none', background: 'transparent', color: t.ink3, cursor: 'pointer', padding: 0, fontSize: 18, lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+            {answer.table && answer.table.columns.length > 0 && (
+              <AnswerTableView t={t} table={answer.table} maxRows="all" fontSize={typography.size.base} />
+            )}
+          </div>
+        )}
         {showSuggestions && (
           <div
             id="tutorial-suggestions"

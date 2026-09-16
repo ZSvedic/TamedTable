@@ -14,8 +14,9 @@ interface SuggestionState {
   suggestions?: string[];
   picked?: string;
   shown?: number;
-  /** Per suggestion: the error a request threw, or null when it committed. */
-  outcomes?: Array<{ text: string; added: number; error: string | null }>;
+  /** Per suggestion: the error a request threw, or null when it settled;
+   *  `added` counts committed transformations, `answered` marks a reply. */
+  outcomes?: Array<{ text: string; added: number; answered: boolean; error: string | null }>;
 }
 
 const states = new WeakMap<object, SuggestionState>();
@@ -56,9 +57,19 @@ Then('between {int} and {int} suggestions are returned', function (this: TamedTa
   );
 });
 
-Then('every suggestion is a sentence ending in a period', function (this: TamedTableWorld) {
+Then('every suggestion ends in a period or a question mark', function (this: TamedTableWorld) {
   const list = stateOf(this).suggestions ?? [];
-  for (const s of list) assert.ok(s.endsWith('.'), `not a sentence: ${JSON.stringify(s)}`);
+  for (const s of list) assert.ok(/[.?]$/.test(s), `not a sentence: ${JSON.stringify(s)}`);
+});
+
+// #Analyze: the last suggestion is a question TamedTable answers without
+// changing the table; it comes last so "run suggestion 1" still adds a step.
+Then('the last suggestion is a question and the others are not', function (this: TamedTableWorld) {
+  const list = stateOf(this).suggestions ?? [];
+  assert.ok(list.length > 0, 'no suggestions');
+  const last = list[list.length - 1]!;
+  assert.ok(last.endsWith('?'), `the last suggestion is not a question: ${JSON.stringify(last)}`);
+  for (const s of list.slice(0, -1)) assert.ok(!s.endsWith('?'), `a question before the last: ${JSON.stringify(s)}`);
 });
 
 Then(
@@ -87,23 +98,32 @@ When('every suggestion is sent as a request in turn', async function (this: Tame
   for (const text of list) {
     const before = runner.currentSpec().transformations.length;
     try {
-      await runner.request(text);
-      outcomes.push({ text, added: runner.currentSpec().transformations.length - before, error: null });
+      const result = await runner.request(text);
+      outcomes.push({
+        text,
+        added: runner.currentSpec().transformations.length - before,
+        answered: result.kind === 'answer',
+        error: null,
+      });
     } catch (e) {
-      outcomes.push({ text, added: 0, error: (e as Error).message });
+      outcomes.push({ text, added: 0, answered: false, error: (e as Error).message });
     }
   }
   stateOf(this).outcomes = outcomes;
 });
 
-Then('every suggestion committed at least one transformation', function (this: TamedTableWorld) {
+Then('every suggestion ran: committed a transformation or returned an answer', function (this: TamedTableWorld) {
   const outcomes = stateOf(this).outcomes;
   assert.ok(outcomes && outcomes.length > 0, 'no suggestion was sent');
-  const bad = outcomes.filter((o) => o.error !== null || o.added < 1);
+  // A transformation must add a step; a question (ends in `?`) must be
+  // answered, and never add one (#Analyze).
+  const bad = outcomes.filter((o) =>
+    o.error !== null || (o.text.endsWith('?') ? !o.answered || o.added > 0 : o.added < 1),
+  );
   assert.equal(
     bad.length,
     0,
-    `suggestions that did not execute:\n${bad.map((o) => `  ${JSON.stringify(o.text)}: ${o.error ?? 'added no transformation'}`).join('\n')}`,
+    `suggestions that did not run as expected:\n${bad.map((o) => `  ${JSON.stringify(o.text)}: ${o.error ?? (o.text.endsWith('?') ? 'was not answered' : 'added no transformation')}`).join('\n')}`,
   );
 });
 

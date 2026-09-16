@@ -3,7 +3,7 @@
 // focused on the class itself. The class re-exports these so existing
 // imports through ./controller.ts keep working.
 
-import type { RequestDebugInfo } from '@tamedtable/headless';
+import type { AnswerTable, RequestDebugInfo } from '@tamedtable/headless';
 import type { FetchLike, FilePort } from '@tamedtable/file-io';
 import type { VoicePort, ContinuousVoicePort } from '@tamedtable/voice-input';
 import type { Provider, ResolvedConfig } from '@tamedtable/model-config';
@@ -118,7 +118,14 @@ export interface ChatMessage {
    *  is undone: the panel renders a hollow marker and the heading reads
    *  `Undone steps:`. Never set on the stored messages. */
   undone?: boolean;
+  /** #Analyze: set on a reply that answered a question: the answer marker
+   *  and, when a query ran, the result table under the text. Such a reply
+   *  carries no historyId, so it never reads as undone. */
+  answer?: { table?: AnswerTable };
 }
+
+/** #Analyze: the last answer, for the phone's strip above the dock. */
+export interface AnswerStrip { text: string; table?: AnswerTable }
 
 /** @deprecated Use ResolvedConfig from @tamedtable/model-config instead. */
 export type WebSettings = ResolvedConfig;

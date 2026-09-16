@@ -1,5 +1,5 @@
 // #TutorialMode
-// The eight marketing feature categories, in homepage order, the single
+// The nine marketing feature categories, in homepage order, the single
 // definition of the Tutorial panel's group titles and their `@cat-…` tags.
 // A unit test (src/tests/tutorial-categories.test.ts) asserts these titles and
 // order match the homepage section headings in marketing/web/index.html, so the
@@ -12,6 +12,7 @@ export interface TutorialCategory {
 export const TUTORIAL_CATEGORIES: readonly TutorialCategory[] = [
   { tag: '@cat-lazy', title: 'Lazy AI execution' },
   { tag: '@cat-cleanup', title: 'Clean up' },
+  { tag: '@cat-analyze', title: 'Analyze' },
   { tag: '@cat-enrich', title: 'Enrich & extract' },
   { tag: '@cat-classify', title: 'Classify' },
   { tag: '@cat-validate', title: 'Validate' },

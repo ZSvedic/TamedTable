@@ -7,7 +7,7 @@
 // private infra for one responsibility, and reaches shared state and its
 // siblings through this `ControllerHost` interface, so no manager imports
 // the WebController class, and the public surface stays on one object.
-import type { RequestDebugInfo } from '@tamedtable/headless';
+import type { RequestDebugInfo, RequestResult } from '@tamedtable/headless';
 import type { Row, TablePlan } from '@tamedtable/core';
 import type { Provider, ResolvedConfig } from '@tamedtable/model-config';
 import type { ProviderProbe } from '@tamedtable/model-config/storage';
@@ -22,6 +22,7 @@ import type { DiagnosticsManager } from './controller-diagnostics.ts';
 import type { LazyManager, RunAllDialogState } from './controller-lazy.ts';
 import type { ViewManager } from './controller-view.ts';
 import type {
+  AnswerStrip,
   CellRef,
   ChatMessage,
   ContinuousStatus,
@@ -78,6 +79,13 @@ export interface ControllerHost {
   awaitSuggestions(): Promise<void>;
   /** Drop every chip: the first request that commits has opened the thread. */
   clearSuggestions(): void;
+  // #Analyze
+  /** The last answer, shown in the phone's strip above the dock, or null. */
+  answerStrip: AnswerStrip | null;
+  /** An answered question, typed or spoken: the chips have served, the
+   *  reply carries the answer marker and the table it came from, the phone
+   *  strip shows it; no history entry. */
+  settleAnswer(result: Extract<RequestResult, { kind: 'answer' }>): void;
   pageNum: number;
   /** Rows per table page: re-derived from the provider on config changes. */
   pageSize: number;
@@ -109,7 +117,7 @@ export interface ControllerHost {
   /** Point the grid at a column (the reveal scroll), or clear the target. */
   setReveal(column: string | null): void;
   pushToast(kind: 'info' | 'error', message: string, action?: string): void;
-  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number): number;
+  pushMessage(role: ChatMessage['role'], text: string, debug?: RequestDebugInfo, reportable?: boolean, historyId?: number, answer?: ChatMessage['answer']): number;
   updateMessage(id: number, text: string): void;
   /** Drop the whole thread: a new table starts a new conversation. */
   clearMessages(): void;

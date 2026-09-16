@@ -65,6 +65,10 @@ no signup**. The rows below follow each tour's step order.
 | Clean up | *"make the country names consistent"* | Folds *USA / U.S. / United States* into one |
 | Clean up | *"fix the capitalization of names"* | Handles *McDonald*, *van der Berg* |
 | Clean up | *"clean up the birth dates"* | Knows *03/04* is March in the US, April in the EU |
+| Analyze | *"What share of total revenue do the top 3 customers make?"* | A cumulative share, computed by SQL, explained in one sentence |
+| Analyze | *"Which customer is growing fastest?"* | Q1 against Q4 per customer, ranked: one sentence back |
+| Analyze | *"Which customers might we be losing?"* | Spots the customer whose orders stopped: a judgment, with the numbers |
+| Analyze | *"Are there any duplicate rows?"* | Answers first; *"remove the duplicate rows"* then becomes a step |
 | Enrich & extract | *"split the address into Street, City, and Zip"* | Structures whatever mess they typed |
 | Enrich & extract | *"fill the country from the city column"* | Knows *Osaka → Japan* |
 | Enrich & extract | *"add the industry for each company"* | Inferred from company names |

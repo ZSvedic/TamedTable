@@ -11,6 +11,7 @@ import {
   type HeadlessRunnerOptions,
   type PlanEdit,
   type RequestDebugInfo,
+  type RequestResult,
   type StepUpdate,
   type SuggestOpts,
 } from '@tamedtable/headless';
@@ -45,7 +46,9 @@ export interface CliRunner {
   getLoadedPath(): string;
   /** One model call for the after-load suggestions (#LoadSuggestions). */
   suggest(opts?: SuggestOpts): Promise<string[]>;
-  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void>;
+  /** One chat turn: a patch that changed the table, or an answer that left
+   *  it alone (#Analyze); the printing runner renders each its own way. */
+  request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<RequestResult>;
   setSpec(spec: TablePlan): Promise<void>;
   currentRows(): Row[];
   currentSpec(): TablePlan;
@@ -135,7 +138,9 @@ function formatDebugSummary(info: RequestDebugInfo): string {
  *  committed shows its executed expressions; one that never committed shows
  *  the recovery turns. The last line is always the usage summary. */
 export function formatDebugBlock(info: RequestDebugInfo): string[] {
-  const succeeded = info.turns.some((t) => t.outcome === 'committed');
+  // A committed patch shows its expressions; an answered question its
+  // `query:` lines (#Analyze); a request that did neither shows its turns.
+  const succeeded = info.turns.some((t) => t.outcome === 'committed' || t.outcome === 'answered');
   const lines: string[] = [];
   if (succeeded) {
     for (const e of info.expressions) lines.push(`${e.label}: ${clip(e.body, 200)}`);
@@ -199,6 +204,9 @@ class CliRunnerImpl implements CliRunner {
   private stepRowsTotal = 0;
   private rowsDone = 0;
   private progressLineOpen = false;
+  // The success-path debug block, held until request() has printed what
+  // comes before it: the answer and its table, or a patch's summary line.
+  private pendingDebug: RequestDebugInfo | undefined;
 
   constructor(opts: CliRunnerOptions) {
     this.stdout = opts.stdout ?? process.stdout;
@@ -218,6 +226,12 @@ class CliRunnerImpl implements CliRunner {
     this.closeProgressLine();
     this.stepRowsTotal = u.rows;
     this.rowsDone = 0;
+    // #Analyze: a query narrates as `query 1: <sql>`, the way a step does.
+    if (u.kind === 'query') {
+      const sql = u.expressions[0]?.body ?? '';
+      this.stdout.write(`query ${u.index + 1}: ${trunc(sql.replace(/\s+/g, ' '), 160)}\n`);
+      return;
+    }
     this.stdout.write(`step ${u.index + 1}/${u.total}: ${u.label} · ${u.rows} rows\n`);
   }
 
@@ -250,9 +264,33 @@ class CliRunnerImpl implements CliRunner {
     // onDebug fires on success and failure: either way the in-place counter
     // line must end before the next block starts.
     this.closeProgressLine();
-    // The success-path block prints here, before the table reprint. A failed
-    // request renders via renderError instead, so its error line comes first.
-    if (info.turns.some((t) => t.outcome === 'committed')) writeDebugBlock(info, this.stdout);
+    // The success-path block is held for request() to print after the
+    // summary line or the answer (behavior.md § CLI). A failed request
+    // renders via renderError instead, so its error line comes first.
+    if (info.turns.some((t) => t.outcome === 'committed' || t.outcome === 'answered')) this.pendingDebug = info;
+  }
+
+  /** Print the held success-path debug block, if any, and drop it. */
+  private flushDebug(): void {
+    const info = this.pendingDebug;
+    this.pendingDebug = undefined;
+    if (info) writeDebugBlock(info, this.stdout);
+  }
+
+  // #Analyze
+  /** An answered question: the text, the result table it came from (one
+   *  viewport page of rows), then the debug block. The main table is not
+   *  reprinted and the viewport does not move. */
+  private printAnswer(result: Extract<RequestResult, { kind: 'answer' }>): void {
+    this.stdout.write(`${result.text}\n`);
+    const table = result.table;
+    if (table && table.columns.length > 0) {
+      const spec: TablePlan = { columns: table.columns.map((id) => ({ id })), transformations: [] };
+      const rows: Row[] = table.rows.map((r) => Object.fromEntries(table.columns.map((c, i) => [c, r[i]])));
+      this.stdout.write(renderTable(spec, rows, 0, 0, undefined, this.effectiveRows(), this.effectiveCols()) + '\n');
+      if (table.totalRows > rows.length) this.stdout.write(`(${table.totalRows} rows in all)\n`);
+    }
+    this.flushDebug();
   }
 
   private autoRows(): number {
@@ -338,19 +376,36 @@ class CliRunnerImpl implements CliRunner {
     if (!this.quiet) this.printTable();
   }
 
-  async request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<void> {
+  async request(text: string, opts?: { signal?: AbortSignal; onChunk?: (u: ChunkUpdate) => void; onStep?: (u: StepUpdate) => void }): Promise<RequestResult> {
     const prevSpec = structuredClone(this.headless.currentSpec());
+    let result: RequestResult;
     try {
-      await this.headless.request(text, { ...opts, onStep: opts?.onStep ?? ((u) => this.printStep(u)) });
+      result = await this.headless.request(text, { ...opts, onStep: opts?.onStep ?? ((u) => this.printStep(u)) });
+    } catch (e) {
+      // A failed request prints through renderError; never let its held
+      // block leak into the next request.
+      this.pendingDebug = undefined;
+      throw e;
     } finally {
       // A cancelled or failed request must not leave the counter line open.
       this.closeProgressLine();
+    }
+    // #Analyze: an answer changes nothing: no journal entry, no viewport
+    // reset, no table reprint.
+    if (result.kind === 'answer') {
+      if (!this.quiet) this.printAnswer(result);
+      return result;
     }
     const newSpec = structuredClone(this.headless.currentSpec());
     this.journal.push({ request: text, prevSpec, newSpec, status: 'committed' });
     this.redoStack = [];
     this.resetViewport();
-    if (!this.quiet) this.printTable();
+    if (!this.quiet) {
+      if (result.summary) this.stdout.write(`${result.summary}\n`);
+      this.flushDebug();
+      this.printTable();
+    }
+    return result;
   }
 
   async setSpec(spec: TablePlan): Promise<void> { await this.headless.setSpec(spec); }

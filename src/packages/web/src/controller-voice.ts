@@ -176,7 +176,8 @@ export class VoiceManager {
     let heard: string | undefined;
     try {
       track('voice-request');
-      await this.host.engine.request(buildVoicePrompt(this.buildVoiceContext()), {
+      this.host.answerStrip = null;
+      const result = await this.host.engine.request(buildVoicePrompt(this.buildVoiceContext()), {
         signal,
         audio,
         label: VOICE_REQUEST_LABEL,
@@ -185,6 +186,12 @@ export class VoiceManager {
           this.host.updateMessage(bubbleId, heard);
         },
       });
+      // #Analyze: a spoken question is answered like a typed one: the reply
+      // carries the transcript (already swapped in above) and no entry.
+      if (result.kind === 'answer') {
+        this.host.settleAnswer(result);
+        return;
+      }
       // A declined confirmation (the run-all estimate, a lookup) dropped the
       // patch: nothing committed, so there is no history entry to relabel.
       // Relabelling would rewrite the previous, unrelated entry, and no
@@ -202,6 +209,7 @@ export class VoiceManager {
         true,
         this.host.engine.lastCommitId ?? undefined,
       );
+      if (result.summary) this.host.answerStrip = { text: result.summary };
     } catch (e) {
       // A cassette replay miss during a tour ends it cleanly: same safety
       // net as sendChat, never the raw fingerprint-mismatch error.
