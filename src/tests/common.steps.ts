@@ -110,6 +110,47 @@ Then('compare with the expected output', async function (this: TamedTableWorld) 
   assert.deepEqual(actual, golden);
 });
 
+// #LanguageAI: a column of generated prose (a summary, a translation) has no
+// stable wording: the same request, recorded again, comes back reworded. Such
+// a column is asserted by shape below, never by byte equality, and the golden
+// keeps its recorded sample as documentation that nothing compares.
+Then('compare with the expected output, ignoring {string}', async function (this: TamedTableWorld, column: string) {
+  const golden = await readJsonl(this.goldenPath!);
+  const actual = this.ensureRunner().currentRows();
+  const drop = (rows: Array<Record<string, unknown>>) =>
+    rows.map(({ [column]: _prose, ...rest }) => rest);
+  assert.deepEqual(drop(actual), drop(golden));
+});
+
+/** The rows' values in one column, asserted present on every row. */
+function columnValues(world: TamedTableWorld, column: string): string[] {
+  const rows = world.ensureRunner().currentRows();
+  assert.ok(rows.length > 0, 'the table is empty');
+  return rows.map((row, i) => {
+    const value = (row as Record<string, unknown>)[column];
+    assert.equal(typeof value, 'string', `row ${i + 1} has no ${column} text (got ${JSON.stringify(value)})`);
+    return value as string;
+  });
+}
+
+Then('every {string} is one line of {int} to {int} characters', function (this: TamedTableWorld, column: string, min: number, max: number) {
+  for (const [i, text] of columnValues(this, column).entries()) {
+    const where = `row ${i + 1}'s ${column}`;
+    assert.ok(!/[\n\r]/.test(text), `${where} is not one line: ${JSON.stringify(text)}`);
+    assert.ok(text.length >= min && text.length <= max, `${where} is ${text.length} characters, outside ${min}-${max}: ${JSON.stringify(text)}`);
+  }
+});
+
+Then('every {string} is plain ASCII', function (this: TamedTableWorld, column: string) {
+  for (const [i, text] of columnValues(this, column).entries()) {
+    // The sources are French, German, Japanese, Spanish and Italian: accents
+    // and kana survive only where the text was left untranslated.
+    // eslint-disable-next-line no-control-regex
+    const stray = text.match(/[^\x20-\x7E]/);
+    assert.equal(stray, null, `row ${i + 1}'s ${column} still carries ${JSON.stringify(stray?.[0])}: ${JSON.stringify(text)}`);
+  }
+});
+
 Then('{string} matches the expected output', async function (this: TamedTableWorld, filename: string) {
   // CSV goldens compare as text (RFC 4180 ordering matters); JSONL goldens compare row-by-row.
   if (this.goldenPath!.endsWith('.csv')) {
