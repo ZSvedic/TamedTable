@@ -330,3 +330,23 @@ Rough size: about 1,500 lines of diff plus the re-recorded cassettes.
   scenario; the tapes were re-keyed and `analyze` recorded fresh. The
   greeting reply came back as three sentences, which the prompt allows,
   so the scenario's bound is three.
+
+## Golden files and generated prose (2026-09-15)
+
+Re-recording the tapes rewrote all five sentences in
+`language-summarize-expected.jsonl`, which raised the question of what such
+a golden is for. Under replay the text is byte-identical every run, so the
+golden catches nothing in CI; it only forces an edit on the day the tape is
+recorded again. Measured on those five rows: the summaries run 0.95 to 1.44
+times the length of their review, so a "much shorter than the source" band
+would fail, and the wording overlap between the old and new sentences was
+0.40 to 0.78, so a similarity threshold would have to sit at 0.40 to absorb
+the drift.
+
+So the two prose scenarios now compare the rest of the row exactly and
+assert the prose column's shape: one line inside a generous length band,
+plus plain ASCII for the translation, which is what proves the French,
+German, Japanese, Spanish and Italian sources were translated at all. The
+sentences stay in the goldens as a readable sample that nothing asserts.
+Per-row keyword tables and a judge model were both considered and dropped
+as more machinery than the problem is worth.
