@@ -6,8 +6,13 @@
 // from its own #Analytics module (src/packages/web/src/analytics.ts). The
 // website ID is public by design: it ships to every visitor. What is tracked
 // is public too: /analytics documents it. A blocked or failed load changes
-// nothing else on the page.
+// nothing else on the page. Production only: PR previews at
+// /pr-preview/pr-<N>/ and local dev serve these same files, and only we and
+// the coding agents open those, so their visits would drown the real numbers.
+// Mirrors isTrackedLocation() in the web app's #Analytics module.
 (function () {
+  if (location.hostname !== 'www.tamedtable.com') return;
+  if (location.pathname.indexOf('/pr-preview/') === 0) return;
   var s = document.createElement('script');
   s.defer = true;
   s.src = 'https://cloud.umami.is/script.js';
