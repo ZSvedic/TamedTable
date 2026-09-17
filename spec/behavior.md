@@ -1847,6 +1847,10 @@ Three rules bound what analytics may do:
 - **Stay stable.** Event names are part of the public record: the source,
   this spec, and the live dashboard all key off them, so a rename updates
   them together.
+- **Count the real site only.** The tracker loads on `www.tamedtable.com`
+  and nowhere else: not on PR previews under `/pr-preview/pr-<N>/`, not on
+  a local dev server. Those pages are ours and the coding agents', and
+  their visits would drown the numbers the dashboard is for.
 
 The app sends an event when a table or flow is opened, a typed or spoken
 request goes to the model, history steps back or forward, "Run on all

@@ -1349,6 +1349,10 @@ event in the app goes through its `track`.
 ```ts
 const UMAMI_WEBSITE_ID: string;   // the www.tamedtable.com site in Umami Cloud; public, not a secret
 const UMAMI_SCRIPT_URL: string;   // https://cloud.umami.is/script.js
+const ANALYTICS_HOSTNAME: string;    // www.tamedtable.com: the only host that counts
+const PREVIEW_PATH_PREFIX: string;   // /pr-preview/: same host, so the path tells previews apart
+
+function isTrackedLocation(loc?: Location): boolean; // true on production, false on previews and dev
 
 type AnalyticsEvent =
   | 'open-file'        // { source: 'local' | 'url' | 'sample' | 'drop' }
@@ -1365,12 +1369,14 @@ type AnalyticsEvent =
 
 type AnalyticsProps = Record<string, string | number | boolean>;
 
-function initAnalytics(doc?: Document): void; // inject the script tag once; no-op without a document
+function initAnalytics(doc?: Document, loc?: Location): void; // inject the script tag once; no-op without a document or off production
 function track(event: AnalyticsEvent, data?: AnalyticsProps): void; // silent no-op when umami is absent or throws
 ```
 
 `initAnalytics` runs once at web startup (`main.tsx`); the marketing pages
-inject the same script from `marketing/web/main.js`. Both entry points and
+inject the same script from `marketing/web/main.js`, behind its own copy of
+the same production-only check. Both stay silent on PR previews and local dev
+builds, so no dashboard filter is needed to keep our own browsing out. Both entry points and
 `track` swallow every error: analytics can never break the app. Save events
 fire only after a file is actually written (a cancelled picker sends
 nothing); open events fire after the load succeeds. The public `/privacy`
