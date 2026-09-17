@@ -14,6 +14,25 @@ export const UMAMI_WEBSITE_ID = '4d86471c-f8c7-42e7-9138-23cd1e8a1314';
 
 export const UMAMI_SCRIPT_URL = 'https://cloud.umami.is/script.js';
 
+/** The one host whose visits count. */
+export const ANALYTICS_HOSTNAME = 'www.tamedtable.com';
+
+/** PR previews live at `https://www.tamedtable.com/pr-preview/pr-<N>/`: same
+ *  host as production, so the path is what tells them apart. */
+export const PREVIEW_PATH_PREFIX = '/pr-preview/';
+
+/** True only on the production site. PR previews and local dev builds run the
+ *  same bundle, and the only people who open them are us and the coding
+ *  agents, so their visits would drown the real numbers. Keeping them out
+ *  here beats filtering them out in the dashboard: the hits never happen. */
+export function isTrackedLocation(
+  loc: Location | undefined = globalThis.location,
+): boolean {
+  return (
+    !!loc && loc.hostname === ANALYTICS_HOSTNAME && !loc.pathname.startsWith(PREVIEW_PATH_PREFIX)
+  );
+}
+
 /** Every custom event the app may send. Names are stable: dashboards and the
  *  public analytics page key off them, so rename only with both updated. */
 export type AnalyticsEvent =
@@ -39,10 +58,15 @@ export type AnalyticsProps = Record<string, string | number | boolean>;
 type UmamiGlobal = { track?: (event: string, data?: AnalyticsProps) => void };
 
 /** Inject the Umami script tag. Call once at startup; does nothing when the
- *  website ID is empty or `document` is absent (tests, SSR). */
-export function initAnalytics(doc: Document | undefined = globalThis.document): void {
+ *  website ID is empty, `document` is absent (tests, SSR), or the page is not
+ *  the production site (`isTrackedLocation`). */
+export function initAnalytics(
+  doc: Document | undefined = globalThis.document,
+  loc: Location | undefined = globalThis.location,
+): void {
   try {
-    if (!UMAMI_WEBSITE_ID || !doc || doc.querySelector('script[data-website-id]')) return;
+    if (!UMAMI_WEBSITE_ID || !doc || !isTrackedLocation(loc)) return;
+    if (doc.querySelector('script[data-website-id]')) return;
     const s = doc.createElement('script');
     s.defer = true;
     s.src = UMAMI_SCRIPT_URL;
