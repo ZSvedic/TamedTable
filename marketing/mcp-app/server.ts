@@ -18,7 +18,7 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import * as table from "./table.js";
+import { Table } from "./table.js";
 
 const DIST_DIR = import.meta.filename.endsWith(".ts")
   ? path.join(import.meta.dirname, "dist")
@@ -34,9 +34,9 @@ const tableOutput = z.object({
   source: z.string(),
 });
 
-function tableResult(note: string): CallToolResult {
-  const t = table.getTable();
-  const preview = table.toCsv(t).split("\n").slice(0, 6).join("\n");
+function tableResult(table: Table, note: string): CallToolResult {
+  const t = table.get();
+  const preview = table.toCsv().split("\n").slice(0, 6).join("\n");
   return {
     // Text content is the fallback for hosts that cannot render the UI, and
     // what the model reads to answer questions about the table.
@@ -54,8 +54,14 @@ function errorResult(e: unknown): CallToolResult {
   return { isError: true, content: [{ type: "text", text: `Error: ${String(e)}` }] };
 }
 
-export function createServer(): McpServer {
+/**
+ * One server, one table. `localFiles` is on for stdio, where the server runs on
+ * the user's own machine, and off for the public deployment, where reading and
+ * writing the host's disk would be somebody else's disk.
+ */
+export function createServer({ localFiles }: { localFiles: boolean }): McpServer {
   const server = new McpServer({ name: "TinyTable MCP App", version: "0.1.0" });
+  const table = new Table();
 
   const withUi = { ui: { resourceUri: RESOURCE_URI } };
   /** Hidden from the model: the App calls these itself. */
@@ -71,7 +77,7 @@ export function createServer(): McpServer {
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async () => tableResult("Showing the current table."),
+    async () => tableResult(table, "Showing the current table."),
   );
 
   // The chat-driven edit path. The user types "sort by country" in the parent
@@ -124,7 +130,7 @@ export function createServer(): McpServer {
             table.filterRows(need(column, "column"), need(value, "value"));
             break;
         }
-        return tableResult(`Applied ${op}.`);
+        return tableResult(table, `Applied ${op}.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -154,10 +160,16 @@ export function createServer(): McpServer {
           if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
           csv = await response.text();
         } else {
+          if (!localFiles) {
+            throw new Error(
+              "This server reads local files only when it runs on your own machine. " +
+                "Give it an http(s) URL instead.",
+            );
+          }
           csv = await fs.readFile(path.resolve(source), "utf-8");
         }
-        table.replaceTable(csv, source);
-        return tableResult(`Loaded ${source}.`);
+        table.replace(csv, source);
+        return tableResult(table, `Loaded ${source}.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -176,6 +188,11 @@ export function createServer(): McpServer {
     },
     async ({ path: target }) => {
       try {
+        if (!localFiles) {
+          throw new Error(
+            "This server writes local files only when it runs on your own machine.",
+          );
+        }
         const resolved = path.resolve(target);
         const csv = table.toCsv();
         await fs.writeFile(resolved, csv, "utf-8");
@@ -200,7 +217,7 @@ export function createServer(): McpServer {
       outputSchema: tableOutput,
       _meta: appOnly,
     },
-    async () => tableResult("Current table."),
+    async () => tableResult(table, "Current table."),
   );
 
   registerAppTool(
@@ -217,8 +234,8 @@ export function createServer(): McpServer {
     },
     async ({ csv, source }) => {
       try {
-        table.replaceTable(csv, source);
-        return tableResult(`Loaded ${source} from the view.`);
+        table.replace(csv, source);
+        return tableResult(table, `Loaded ${source} from the view.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -238,7 +255,7 @@ export function createServer(): McpServer {
     async ({ row, column, value }) => {
       try {
         table.setCell(row, column, value);
-        return tableResult("Cell updated from the view.");
+        return tableResult(table, "Cell updated from the view.");
       } catch (e) {
         return errorResult(e);
       }

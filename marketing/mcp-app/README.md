@@ -6,12 +6,13 @@ Nothing here feeds TamedTable's app. It lives under `marketing/` as a standalone
 
 ![The app running in the reference host](tinytable.png)
 
-## Run it
+## Run it on your own machine
 
 ```bash
 cd marketing/mcp-app
 bun install
 bun run start          # builds the view, serves MCP on http://localhost:3001/mcp
+                       # local runs set TINYTABLE_LOCAL_FILES=1, so file tools work
 ```
 
 To drive it from a host you can click, use the reference host that ships with the SDK:
@@ -22,32 +23,49 @@ cd /tmp/ext-apps/examples/basic-host && bun install && bun run build && bun serv
 # open http://localhost:8080, pick "show-table", press Call Tool
 ```
 
-To run it in Claude Desktop instead, build once and register the stdio transport:
+## Install into Claude Desktop
 
-```bash
-bun run build
-```
+Claude Desktop launches the server itself over stdio, so it needs a path and nothing else. Settings, Developer, Edit Config:
 
 ```json
 {
   "mcpServers": {
     "tinytable": {
       "command": "bun",
-      "args": ["/absolute/path/to/marketing/mcp-app/main.ts", "--stdio"]
+      "args": ["run", "--cwd", "/absolute/path/to/marketing/mcp-app", "start:stdio"]
     }
   }
 }
 ```
 
-Then ask Claude *"show the table"*, and follow up with *"sort it by country"* or *"open ~/data.csv"*.
+`start:stdio` rebuilds the view before serving, so there is no separate build step. Restart Claude Desktop, then ask it to *"show the table"*.
+
+Over stdio the server runs on your machine, so `open-table` and `save-table` read and write your disk.
+
+## Install into claude.ai
+
+claude.ai runs in Anthropic's cloud and cannot reach your laptop, so it needs the server at a public https URL. Build the image and put it on any container host:
+
+```bash
+docker build -t tinytable marketing/mcp-app
+docker run -p 8080:8080 tinytable
+```
+
+Then in claude.ai: Settings, Connectors, Add custom connector, and paste `https://your-host/mcp`.
+
+Two things change once the server is public:
+
+- Each MCP session gets its own table, so one visitor never sees another's data.
+- `open-table` and `save-table` refuse local paths, because the disk belongs to the host, not the user. http(s) URLs still work. Set `TINYTABLE_LOCAL_FILES=1` to switch them back on.
 
 ## What is where
 
 | File | Holds |
 |---|---|
 | `server.ts` | The seven tools and the one `ui://` resource |
-| `table.ts` | The table itself: in-memory state, CSV parse and write, the edit ops |
+| `table.ts` | The table itself: one instance per MCP session, CSV parse and write, the edit ops |
 | `main.ts` | Transports: Streamable HTTP on :3001, or `--stdio` |
+| `Dockerfile` | The image a container host runs for the claude.ai path |
 | `mcp-app.html`, `src/mcp-app.ts`, `src/app.css` | The view, bundled to one file by `vite-plugin-singlefile` |
 
 ## The tools

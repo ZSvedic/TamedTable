@@ -6,11 +6,11 @@
   "description": "Learning prototype: a minimal MCP App (SEP-1865) that shows an editable table in the chat UI.",
   "scripts": {
     "build": "INPUT=mcp-app.html vite build",
-    "serve": "bun main.ts",
+    "serve": "TINYTABLE_LOCAL_FILES=1 bun main.ts",
     "serve:stdio": "bun main.ts --stdio",
     "start": "bun run build && bun run serve",
     "start:stdio": "bun run build 1>&2 && bun run serve:stdio",
-    "dev": "NODE_ENV=development concurrently \"INPUT=mcp-app.html vite build --watch\" \"bun --watch main.ts\""
+    "dev": "NODE_ENV=development concurrently \"INPUT=mcp-app.html vite build --watch\" \"TINYTABLE_LOCAL_FILES=1 bun --watch main.ts\""
   },
   "dependencies": {
     "@modelcontextprotocol/client": "2.0.0",

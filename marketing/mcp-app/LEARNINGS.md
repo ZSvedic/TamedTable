@@ -40,6 +40,17 @@ The one-line summary: the view is a sandboxed iframe with no origin of its own, 
 
 **Write a text fallback that is worth reading.** Every tool returns a CSV preview in `content`, and that is what the model reads to answer "which country has the most rows?". Hosts that cannot render the UI get a usable answer, and so does the model when it can.
 
+## Getting it into claude.ai
+
+Claude Desktop and claude.ai want two different things from the same server. Desktop launches it over stdio on your own machine, so a file path in a JSON config is the whole install. claude.ai runs in Anthropic's cloud and can only reach a public https URL, so the same code has to be deployed somewhere that runs a process.
+
+That rules out this repo's own PR preview, which is GitHub Pages: static files, no process, nothing to POST to. A static host can serve the view's HTML, but the view is not the app. The app is the tool calls.
+
+Going public also changed the code twice, and both changes were obvious in hindsight:
+
+- **The table had to stop being a module-level variable.** On one laptop, one global table is correct. On a public URL it means every visitor edits the same rows. It is now one `Table` per MCP session, which also meant switching the HTTP transport from stateless to stateful.
+- **The local-file tools had to be switched off.** `open-table` and `save-table` read and write the machine the server runs on. On your laptop that is the point. On a public host that is somebody else's disk, so they refuse a path unless `TINYTABLE_LOCAL_FILES=1` says the machine is yours. Opening an http(s) URL is unaffected.
+
 ## Not verified here
 
 I drove the SDK's reference host, not Claude Desktop, because this container has no Claude Desktop to run. The sandbox flags the reference host uses (`allow-scripts allow-same-origin allow-forms`) are the spec's minimum, so a host that grants more could let the download and the in-iframe fetch through. The `README.md` has the stdio config to point Claude Desktop at it.
