@@ -66,7 +66,6 @@ On Render's free plan the service sleeps after 15 idle minutes and takes about h
 
 ### What changes on a public server
 
-- Each MCP session gets its own table, so one visitor never sees another's data.
 - `open-table` and `save-table` refuse local paths, because the disk belongs to the host, not to you. http(s) URLs still work. Set `TINYTABLE_LOCAL_FILES=1` to switch them back on.
 
 ### Or run the image yourself
@@ -80,22 +79,23 @@ docker run -p 8080:8080 tinytable
 
 | File | Holds |
 |---|---|
-| `server.ts` | The seven tools and the one `ui://` resource |
-| `table.ts` | The table itself: one instance per MCP session, CSV parse and write, the edit ops |
+| `server.ts` | The four tools and the one `ui://` resource |
+| `table.ts` | CSV parse and write, and the edit ops. Pure functions, no state |
 | `main.ts` | Transports: Streamable HTTP on :3001, or `--stdio` |
 | `Dockerfile` | The image a container host runs for the claude.ai path |
 | `mcp-app.html`, `src/mcp-app.ts`, `src/app.css` | The view, bundled to one file by `vite-plugin-singlefile` |
 
 ## The tools
 
-Four are visible to the model, three are marked `visibility: ["app"]` and only the view can call them.
+Four tools, all visible to the model, all carrying the same `resourceUri` so any of them paints the view.
 
-| Tool | Who calls it | Does |
-|---|---|---|
-| `show-table` | model | Paints the current table |
-| `edit-table` | model | `set-cell`, `add-row`, `delete-row`, `rename-column`, `sort`, `filter` |
-| `open-table` | model, view | Reads a CSV from a local path or an http(s) URL |
-| `save-table` | model, view | Writes the CSV to a local path |
-| `get-table` | view only | The poll that catches chat-driven edits |
-| `load-csv` | view only | Takes CSV text the view already holds |
-| `set-cell` | view only | One cell, edited in the grid |
+| Tool | Does |
+|---|---|
+| `show-table` | Displays a CSV, or the built-in sample |
+| `edit-table` | `set-cell`, `add-row`, `delete-row`, `rename-column`, `sort`, `filter` |
+| `open-table` | Reads a CSV from a local path or an http(s) URL |
+| `save-table` | Writes a CSV to a local path |
+
+The server keeps no table between calls. Each tool takes the current CSV and returns the new one, and the table itself lives in the view. [LEARNINGS.md](LEARNINGS.md) has the failure that forced this.
+
+Edits made in the grid never reach the server. They are applied locally and pushed to the model with `updateModelContext`, so the next thing typed in the chat works from what is on screen.

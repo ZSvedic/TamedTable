@@ -1,8 +1,12 @@
 /**
- * @file The App half: renders the table, edits cells, and probes the four
+ * @file The App half: renders the table, edits it in place, and probes the
  * things the iframe sandbox may or may not allow (file picker, download,
- * cross-origin fetch, opening a link). Every probe has a server-side
- * fallback next to it, so the UI stays useful either way.
+ * cross-origin fetch, opening a link). Every probe has a server-side fallback
+ * next to it, so the UI stays useful either way.
+ *
+ * The table lives here, not on the server. An edit made in the grid is applied
+ * locally and then pushed to the model with `updateModelContext`, so the next
+ * thing typed in the chat works from what is on screen.
  */
 import {
   App,
@@ -14,12 +18,12 @@ import {
 import type { CallToolResult } from "@modelcontextprotocol/client";
 import "./app.css";
 
-type TableData = { columns: string[]; rows: string[][]; version: number; source: string };
+type TableData = { columns: string[]; rows: string[][]; source: string; csv: string };
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const gridEl = el<HTMLDivElement>("grid");
 const sourceEl = el<HTMLSpanElement>("source");
-const versionEl = el<HTMLSpanElement>("version");
+const sizeEl = el<HTMLSpanElement>("size");
 const logEl = el<HTMLPreElement>("log");
 const pathEl = el<HTMLInputElement>("path");
 const urlEl = el<HTMLInputElement>("url");
@@ -33,15 +37,32 @@ function log(message: string): void {
   void app.sendLog({ level: "info", data: message });
 }
 
+function toCsv(t: Pick<TableData, "columns" | "rows">): string {
+  return [t.columns.join(","), ...t.rows.map((r) => r.join(","))].join("\n") + "\n";
+}
+
 function readTable(result: CallToolResult): TableData | null {
   const data = result.structuredContent as TableData | undefined;
   return data && Array.isArray(data.columns) ? data : null;
 }
 
+/** Applies a local change, repaints, and tells the model what is on screen now. */
+async function update(next: Pick<TableData, "columns" | "rows" | "source">): Promise<void> {
+  render({ ...next, csv: toCsv(next) });
+  await app.updateModelContext({
+    content: [
+      {
+        type: "text",
+        text: `---\nsource: ${next.source}\nrows: ${next.rows.length}\n---\n\nThe user edited the table in the view. It now holds:\n\n${toCsv(next)}\nPass this CSV to edit-table for the next change.`,
+      },
+    ],
+  });
+}
+
 function render(data: TableData): void {
   current = data;
   sourceEl.textContent = data.source;
-  versionEl.textContent = `v${data.version}`;
+  sizeEl.textContent = `${data.rows.length} rows`;
 
   const table = document.createElement("table");
   const head = table.createTHead().insertRow();
@@ -56,14 +77,12 @@ function render(data: TableData): void {
     row.forEach((cell, colIndex) => {
       const input = document.createElement("input");
       input.value = cell;
-      // An in-view edit goes back through an app-only tool, so the server
-      // stays the single source of truth for both the view and the model.
       input.addEventListener("change", () => {
-        void call("set-cell", {
-          row: rowIndex,
-          column: data.columns[colIndex],
-          value: input.value,
-        });
+        const rows = data.rows.map((r, i) =>
+          i === rowIndex ? r.map((c, j) => (j === colIndex ? input.value : c)) : r,
+        );
+        void update({ columns: data.columns, rows, source: data.source });
+        log(`Set row ${rowIndex}, ${data.columns[colIndex]}. The chat has the new table.`);
       });
       tr.insertCell().appendChild(input);
     });
@@ -78,9 +97,8 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<v
     const result = await app.callServerTool({ name, arguments: args });
     const data = readTable(result);
     if (data) render(data);
-    if (result.isError) {
-      log(`${name} failed: ${JSON.stringify(result.content)}`);
-    }
+    const text = result.content?.[0];
+    if (result.isError && text?.type === "text") log(text.text);
   } catch (e) {
     log(`${name} threw: ${String(e)}`);
   }
@@ -89,9 +107,8 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<v
 // --- Probes: the sandbox-dependent half of the experiment --------------------
 
 el("pick-file").addEventListener("click", () => {
-  // A hidden <input type="file"> needs the sandbox to allow the picker and to
-  // treat the click as user-activated. If nothing opens, the fallback is the
-  // "Open (server)" button, which reads the path in the server process.
+  // A hidden <input type="file"> needs the sandbox to allow the picker. If
+  // nothing opens, the fallback is "Open (server)".
   log("Opening the native file picker…");
   fileEl.click();
 });
@@ -102,19 +119,24 @@ fileEl.addEventListener("change", async () => {
     log("File picker returned nothing.");
     return;
   }
-  // The bytes exist only inside the iframe, so hand them to the server as
-  // text through an app-only tool.
-  const csv = await file.text();
-  log(`Picker gave ${file.name} (${csv.length} bytes); sending it to the server.`);
-  await call("load-csv", { csv, source: file.name });
+  // The bytes exist only inside the iframe, so parse them here and hand the
+  // result to the model. Nothing has to reach the server at all.
+  const text = await file.text();
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.length > 0);
+  const columns = lines[0]!.split(",").map((c) => c.trim());
+  const rows = lines.slice(1).map((l) => {
+    const cells = l.split(",").map((c) => c.trim());
+    return columns.map((_, i) => cells[i] ?? "");
+  });
+  log(`Picker gave ${file.name}: ${rows.length} rows.`);
+  await update({ columns, rows, source: file.name });
 });
 
 el("download").addEventListener("click", () => {
   // Blob download needs `allow-downloads` on the iframe sandbox.
   try {
     if (!current) return;
-    const csv = [current.columns.join(","), ...current.rows.map((r) => r.join(","))].join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const url = URL.createObjectURL(new Blob([current.csv], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
     a.download = "table.csv";
@@ -132,9 +154,8 @@ el("open-link").addEventListener("click", async () => {
   // Second try at getting a file out: hand the host a data: URL and let it
   // open it. Hosts are free to refuse non-http(s) schemes.
   if (!current) return;
-  const csv = [current.columns.join(","), ...current.rows.map((r) => r.join(","))].join("\n");
   const { isError } = await app.openLink({
-    url: `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`,
+    url: `data:text/csv;charset=utf-8,${encodeURIComponent(current.csv)}`,
   });
   log(`openLink with a data: URL was ${isError ? "refused" : "accepted"} by the host.`);
 });
@@ -151,26 +172,26 @@ el("fetch-url").addEventListener("click", async () => {
   }
 });
 
-// --- Server-side paths: these are the ones that work -------------------------
+// --- Server-side paths -------------------------------------------------------
 
-el("refresh").addEventListener("click", () => void call("get-table"));
-el("add-row").addEventListener("click", () => void call("edit-table", { op: "add-row", values: [] }));
+el("add-row").addEventListener("click", () => {
+  if (!current) return;
+  void update({
+    columns: current.columns,
+    rows: [...current.rows, current.columns.map(() => "")],
+    source: current.source,
+  });
+});
+
 el("open-path").addEventListener("click", () => void call("open-table", { source: pathEl.value }));
-el("save-path").addEventListener("click", () => void call("save-table", { path: pathEl.value }));
 el("open-url").addEventListener("click", () => void call("open-table", { source: urlEl.value }));
+el("save-path").addEventListener("click", () => {
+  if (!current) return;
+  void call("save-table", { csv: current.csv, path: pathEl.value });
+});
 
 el("ask-chat").addEventListener("click", async () => {
   if (!current) return;
-  // Hand the model the current state, then a short prompt. The model answers
-  // by calling edit-table, and the poll below picks the change up.
-  await app.updateModelContext({
-    content: [
-      {
-        type: "text",
-        text: `---\nsource: ${current.source}\nversion: ${current.version}\n---\n\nThe user is looking at this table:\n\n${[current.columns.join(","), ...current.rows.map((r) => r.join(","))].join("\n")}`,
-      },
-    ],
-  });
   const { isError } = await app.sendMessage({
     role: "user",
     content: [{ type: "text", text: "Tidy this table up with edit-table." }],
@@ -189,27 +210,18 @@ function applyHostContext(ctx: McpUiHostContext): void {
   }
 }
 
-const app = new App({ name: "TinyTable", version: "0.1.0" });
+const app = new App({ name: "TinyTable", version: "0.2.0" });
 
+// The only way the view learns what to show. Every table tool carries this
+// resource, so a chat-driven edit paints a fresh view with the new rows.
 app.ontoolresult = (result) => {
   const data = readTable(result);
   if (data) render(data);
 };
 app.onhostcontextchanged = applyHostContext;
 app.onerror = (e) => log(`App error: ${String(e)}`);
-app.onteardown = async () => {
-  clearInterval(poll);
-  return {};
-};
-
-// A chat-driven edit runs in a *different* turn than this view, and nothing
-// pushes it here, so poll for the version counter instead.
-let poll: ReturnType<typeof setInterval>;
+app.onteardown = async () => ({});
 
 await app.connect();
 const ctx = app.getHostContext();
 if (ctx) applyHostContext(ctx);
-await call("get-table");
-poll = setInterval(() => {
-  if (document.visibilityState === "visible") void call("get-table");
-}, 2000);

@@ -1,9 +1,9 @@
 /**
- * @file The MCP server half of the prototype: six tools and one UI resource.
+ * @file The MCP server half: four tools and one UI resource.
  *
- * The App is the pair (tool, resource): every tool that should paint the table
- * in the chat carries `_meta.ui.resourceUri` pointing at the single HTML
- * resource registered at the bottom.
+ * The server holds no table. Every tool takes the current CSV and returns a new
+ * one, because the model's tool calls and the view's tool calls do not
+ * necessarily share a session. See LEARNINGS.md.
  */
 import {
   registerAppResource,
@@ -18,7 +18,7 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { Table } from "./table.js";
+import * as table from "./table.js";
 
 const DIST_DIR = import.meta.filename.endsWith(".ts")
   ? path.join(import.meta.dirname, "dist")
@@ -26,27 +26,28 @@ const DIST_DIR = import.meta.filename.endsWith(".ts")
 
 const RESOURCE_URI = "ui://tinytable/table.html";
 
-/** Every tool answers with the same shape, so the App has one code path. */
+/** Every tool answers with the same shape, so the view has one code path. */
 const tableOutput = z.object({
   columns: z.array(z.string()),
   rows: z.array(z.array(z.string())),
-  version: z.number(),
   source: z.string(),
+  csv: z.string(),
 });
 
-function tableResult(table: Table, note: string): CallToolResult {
-  const t = table.get();
-  const preview = table.toCsv().split("\n").slice(0, 6).join("\n");
+const csvArg = z
+  .string()
+  .describe(
+    "The table to work on, as CSV with a header row. Copy it from the `csv` " +
+      "field of the previous result. Omit it only for the built-in sample.",
+  );
+
+function tableResult(t: table.TableData, note: string): CallToolResult {
+  const csv = table.toCsv(t);
   return {
-    // Text content is the fallback for hosts that cannot render the UI, and
-    // what the model reads to answer questions about the table.
-    content: [{ type: "text", text: `${note}\n\n${preview}` }],
-    structuredContent: {
-      columns: t.columns,
-      rows: t.rows,
-      version: t.version,
-      source: t.source,
-    },
+    // The model reads this, and passes the CSV straight back on the next edit,
+    // so it has to be the whole table rather than a preview.
+    content: [{ type: "text", text: `${note}\n\n${csv}` }],
+    structuredContent: { columns: t.columns, rows: t.rows, source: t.source, csv },
   };
 }
 
@@ -55,44 +56,56 @@ function errorResult(e: unknown): CallToolResult {
   return { isError: true, content: [{ type: "text", text: `Error: ${message}` }] };
 }
 
+function read(csv: string | undefined, source: string | undefined): table.TableData {
+  return table.parseCsv(csv ?? table.SAMPLE_CSV, source ?? (csv ? "chat" : "sample"));
+}
+
 /**
- * One server, one table. `localFiles` is on for stdio, where the server runs on
+ * One server, no state. `localFiles` is on for stdio, where the server runs on
  * the user's own machine, and off for the public deployment, where reading and
  * writing the host's disk would be somebody else's disk.
  */
 export function createServer({ localFiles }: { localFiles: boolean }): McpServer {
-  const server = new McpServer({ name: "TinyTable MCP App", version: "0.1.0" });
-  const table = new Table();
+  const server = new McpServer({ name: "TinyTable MCP App", version: "0.2.0" });
 
   const withUi = { ui: { resourceUri: RESOURCE_URI } };
-  /** Hidden from the model: the App calls these itself. */
-  const appOnly = { ui: { resourceUri: RESOURCE_URI, visibility: ["app"] as const } };
 
   registerAppTool(
     server,
     "show-table",
     {
       title: "Show table",
-      description: "Display the current table in an interactive view.",
-      inputSchema: z.object({}),
+      description:
+        "Display a table in an interactive view. Pass the CSV you already have; " +
+        "with no CSV it shows the built-in sample.",
+      inputSchema: z.object({
+        csv: csvArg.optional(),
+        source: z.string().optional().describe("A label for where the table came from."),
+      }),
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async () => tableResult(table, "Showing the current table."),
+    async ({ csv, source }) => {
+      try {
+        return tableResult(read(csv, source), "Showing the table.");
+      } catch (e) {
+        return errorResult(e);
+      }
+    },
   );
 
-  // The chat-driven edit path. The user types "sort by country" in the parent
-  // chat, the model picks an op, the server mutates, the open App polls and
-  // repaints.
   registerAppTool(
     server,
     "edit-table",
     {
       title: "Edit table",
       description:
-        "Change the table: set a cell, add or delete a row, rename a column, sort, or filter. " +
-        "Row numbers are zero-based and refer to the rows as currently displayed.",
+        "Change a table and show the result: set a cell, add or delete a row, " +
+        "rename a column, sort, or filter. Always pass the current CSV. Row " +
+        "numbers are zero-based and refer to the rows as displayed.",
       inputSchema: z.object({
+        csv: csvArg.optional(),
+        source: z.string().optional().describe("A label for where the table came from."),
         op: z.enum(["set-cell", "add-row", "delete-row", "rename-column", "sort", "filter"]),
         row: z.number().optional().describe("Zero-based row index for set-cell and delete-row."),
         column: z.string().optional().describe("Column name for set-cell, sort, and filter."),
@@ -104,49 +117,50 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async (args) => {
+    async ({ csv, source, op, row, column, value, values, to, direction }) => {
       try {
-        const { op, row, column, value, values, to, direction } = args;
+        const before = read(csv, source);
         const need = <T>(v: T | undefined, what: string): T => {
           if (v === undefined) throw new Error(`"${op}" needs ${what}.`);
           return v;
         };
+        let after: table.TableData;
         switch (op) {
           case "set-cell":
-            table.setCell(need(row, "row"), need(column, "column"), need(value, "value"));
+            after = table.setCell(before, need(row, "row"), need(column, "column"), need(value, "value"));
             break;
           case "add-row":
-            table.addRow(need(values, "values"));
+            after = table.addRow(before, need(values, "values"));
             break;
           case "delete-row":
-            table.deleteRow(need(row, "row"));
+            after = table.deleteRow(before, need(row, "row"));
             break;
           case "rename-column":
-            table.renameColumn(need(column, "column"), need(to, "to"));
+            after = table.renameColumn(before, need(column, "column"), need(to, "to"));
             break;
           case "sort":
-            table.sortByColumn(need(column, "column"), direction ?? "asc");
+            after = table.sortByColumn(before, need(column, "column"), direction ?? "asc");
             break;
           case "filter":
-            table.filterRows(need(column, "column"), need(value, "value"));
+            after = table.filterRows(before, need(column, "column"), need(value, "value"));
             break;
         }
-        return tableResult(table, `Applied ${op}.`);
+        return tableResult(after, `Applied ${op}.`);
       } catch (e) {
         return errorResult(e);
       }
     },
   );
 
-  // One tool for both file sources. The fetch and the disk read both happen in
-  // the server process, which is why they work at all: see LEARNINGS.md.
+  // The fetch and the disk read both happen in the server process, which is why
+  // they work at all: see LEARNINGS.md.
   registerAppTool(
     server,
     "open-table",
     {
       title: "Open table",
       description:
-        "Load a CSV into the table, either from a local file path or from an http(s) URL.",
+        "Load a CSV into the view, either from a local file path or from an http(s) URL.",
       inputSchema: z.object({
         source: z.string().describe("A local file path, or an http(s) URL to a CSV file."),
       }),
@@ -169,8 +183,7 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
           }
           csv = await fs.readFile(path.resolve(source), "utf-8");
         }
-        table.replace(csv, source);
-        return tableResult(table, `Loaded ${source}.`);
+        return tableResult(table.parseCsv(csv, source), `Loaded ${source}.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -182,81 +195,24 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
     "save-table",
     {
       title: "Save table",
-      description: "Write the current table to a local CSV file.",
-      inputSchema: z.object({ path: z.string().describe("Local file path to write.") }),
-      outputSchema: z.object({ savedTo: z.string(), bytes: z.number() }),
+      description: "Write a CSV to a local file.",
+      inputSchema: z.object({
+        csv: csvArg,
+        path: z.string().describe("Local file path to write."),
+      }),
+      outputSchema: tableOutput,
       _meta: withUi,
     },
-    async ({ path: target }) => {
+    async ({ csv, path: target }) => {
       try {
         if (!localFiles) {
-          throw new Error(
-            "This server writes local files only when it runs on your own machine.",
-          );
+          throw new Error("This server writes local files only when it runs on your own machine.");
         }
         const resolved = path.resolve(target);
-        const csv = table.toCsv();
         await fs.writeFile(resolved, csv, "utf-8");
-        return {
-          content: [{ type: "text", text: `Saved ${csv.length} bytes to ${resolved}.` }],
-          structuredContent: { savedTo: resolved, bytes: csv.length },
-        };
-      } catch (e) {
-        return errorResult(e);
-      }
-    },
-  );
-
-  // App-only tools. The model never sees these; only the iframe calls them.
-  registerAppTool(
-    server,
-    "get-table",
-    {
-      title: "Get table",
-      description: "Return the current table. Used by the view to poll for changes.",
-      inputSchema: z.object({}),
-      outputSchema: tableOutput,
-      _meta: appOnly,
-    },
-    async () => tableResult(table, "Current table."),
-  );
-
-  registerAppTool(
-    server,
-    "load-csv",
-    {
-      title: "Load CSV text",
-      description:
-        "Replace the table with CSV text. Used when the view already holds the bytes, " +
-        "for example after the in-iframe file picker.",
-      inputSchema: z.object({ csv: z.string(), source: z.string() }),
-      outputSchema: tableOutput,
-      _meta: appOnly,
-    },
-    async ({ csv, source }) => {
-      try {
-        table.replace(csv, source);
-        return tableResult(table, `Loaded ${source} from the view.`);
-      } catch (e) {
-        return errorResult(e);
-      }
-    },
-  );
-
-  registerAppTool(
-    server,
-    "set-cell",
-    {
-      title: "Set cell",
-      description: "Set one cell, from an edit made directly in the view.",
-      inputSchema: z.object({ row: z.number(), column: z.string(), value: z.string() }),
-      outputSchema: tableOutput,
-      _meta: appOnly,
-    },
-    async ({ row, column, value }) => {
-      try {
-        table.setCell(row, column, value);
-        return tableResult(table, "Cell updated from the view.");
+        // Echo the table back so the view the host paints after a save shows
+        // what was saved, rather than an empty grid.
+        return tableResult(table.parseCsv(csv, resolved), `Saved ${csv.length} bytes to ${resolved}.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -270,9 +226,7 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
     { mimeType: RESOURCE_MIME_TYPE },
     async (): Promise<ReadResourceResult> => {
       const html = await fs.readFile(path.join(DIST_DIR, "mcp-app.html"), "utf-8");
-      return {
-        contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: html }],
-      };
+      return { contents: [{ uri: RESOURCE_URI, mimeType: RESOURCE_MIME_TYPE, text: html }] };
     },
   );
 

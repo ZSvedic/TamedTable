@@ -1,20 +1,19 @@
 /**
- * @file The prototype's whole "database": one table, held in memory.
+ * @file CSV in, CSV out. No state.
  *
- * One instance per MCP session, so two people on the same public server never
- * see each other's data.
+ * Every function takes the table it should work on and returns a new one. The
+ * table itself lives in the view, and travels to the server inside tool
+ * arguments. See LEARNINGS.md for why it cannot live here.
  */
 
 export type TableData = {
   columns: string[];
   rows: string[][];
-  /** Bumped on every mutation. The App polls it to notice chat-driven edits. */
-  version: number;
   /** Where the table came from, for display. */
   source: string;
 };
 
-const SAMPLE_CSV = `name,country,phone
+export const SAMPLE_CSV = `name,country,phone
 Ada Lovelace,UK,+44 20 7946 0958
 Grace Hopper,USA,(202) 555-0172
 Alan Turing,UK,020 7946 1234
@@ -22,96 +21,59 @@ Hedy Lamarr,Austria,+43 1 2345678
 `;
 
 /** Minimal CSV: no quoted commas, no embedded newlines. Enough for a spike. */
-export function parseCsv(text: string): { columns: string[]; rows: string[][] } {
+export function parseCsv(text: string, source: string): TableData {
   const lines = text.trim().split(/\r?\n/).filter((l) => l.length > 0);
-  if (lines.length === 0) return { columns: [], rows: [] };
+  if (lines.length === 0) throw new Error("The CSV is empty.");
   const columns = lines[0]!.split(",").map((c) => c.trim());
   const rows = lines.slice(1).map((line) => {
     const cells = line.split(",").map((c) => c.trim());
     // Pad or trim so every row matches the header width.
     return columns.map((_, i) => cells[i] ?? "");
   });
-  return { columns, rows };
+  return { columns, rows, source };
 }
 
-export class Table {
-  private data: TableData;
+export function toCsv(t: TableData): string {
+  return [t.columns.join(","), ...t.rows.map((r) => r.join(","))].join("\n") + "\n";
+}
 
-  constructor() {
-    this.data = { ...parseCsv(SAMPLE_CSV), version: 1, source: "sample" };
-  }
+function columnIndex(t: TableData, name: string): number {
+  const i = t.columns.findIndex((c) => c.toLowerCase() === name.toLowerCase());
+  if (i === -1) throw new Error(`No column named "${name}". Have: ${t.columns.join(", ")}`);
+  return i;
+}
 
-  get(): TableData {
-    return this.data;
-  }
+export function setCell(t: TableData, row: number, column: string, value: string): TableData {
+  if (row < 0 || row >= t.rows.length) throw new Error(`Row ${row} is out of range.`);
+  const col = columnIndex(t, column);
+  return {
+    ...t,
+    rows: t.rows.map((r, i) => (i === row ? r.map((c, j) => (j === col ? value : c)) : r)),
+  };
+}
 
-  toCsv(): string {
-    const { columns, rows } = this.data;
-    return [columns.join(","), ...rows.map((r) => r.join(","))].join("\n") + "\n";
-  }
+export function addRow(t: TableData, values: string[]): TableData {
+  return { ...t, rows: [...t.rows, t.columns.map((_, i) => values[i] ?? "")] };
+}
 
-  private mutate(next: Omit<TableData, "version">): TableData {
-    this.data = { ...next, version: this.data.version + 1 };
-    return this.data;
-  }
+export function deleteRow(t: TableData, row: number): TableData {
+  if (row < 0 || row >= t.rows.length) throw new Error(`Row ${row} is out of range.`);
+  return { ...t, rows: t.rows.filter((_, i) => i !== row) };
+}
 
-  private columnIndex(name: string): number {
-    const i = this.data.columns.findIndex((c) => c.toLowerCase() === name.toLowerCase());
-    if (i === -1) {
-      throw new Error(`No column named "${name}". Have: ${this.data.columns.join(", ")}`);
-    }
-    return i;
-  }
+export function sortByColumn(t: TableData, column: string, direction: "asc" | "desc"): TableData {
+  const col = columnIndex(t, column);
+  const sign = direction === "desc" ? -1 : 1;
+  return { ...t, rows: [...t.rows].sort((a, b) => sign * a[col]!.localeCompare(b[col]!)) };
+}
 
-  replace(csv: string, source: string): TableData {
-    const { columns, rows } = parseCsv(csv);
-    if (columns.length === 0) throw new Error("No columns found in the input.");
-    return this.mutate({ columns, rows, source });
-  }
+export function filterRows(t: TableData, column: string, contains: string): TableData {
+  const col = columnIndex(t, column);
+  const needle = contains.toLowerCase();
+  return { ...t, rows: t.rows.filter((r) => r[col]!.toLowerCase().includes(needle)) };
+}
 
-  setCell(row: number, column: string, value: string): TableData {
-    const { columns, rows } = this.data;
-    if (row < 0 || row >= rows.length) throw new Error(`Row ${row} is out of range.`);
-    const col = this.columnIndex(column);
-    return this.mutate({
-      columns,
-      rows: rows.map((r, i) => (i === row ? r.map((c, j) => (j === col ? value : c)) : r)),
-      source: this.data.source,
-    });
-  }
-
-  addRow(values: string[]): TableData {
-    const { columns, rows, source } = this.data;
-    return this.mutate({ columns, rows: [...rows, columns.map((_, i) => values[i] ?? "")], source });
-  }
-
-  deleteRow(row: number): TableData {
-    const { columns, rows, source } = this.data;
-    if (row < 0 || row >= rows.length) throw new Error(`Row ${row} is out of range.`);
-    return this.mutate({ columns, rows: rows.filter((_, i) => i !== row), source });
-  }
-
-  sortByColumn(column: string, direction: "asc" | "desc"): TableData {
-    const { columns, rows, source } = this.data;
-    const col = this.columnIndex(column);
-    const sign = direction === "desc" ? -1 : 1;
-    return this.mutate({
-      columns,
-      rows: [...rows].sort((a, b) => sign * a[col]!.localeCompare(b[col]!)),
-      source,
-    });
-  }
-
-  filterRows(column: string, contains: string): TableData {
-    const { columns, rows, source } = this.data;
-    const col = this.columnIndex(column);
-    const needle = contains.toLowerCase();
-    return this.mutate({ columns, rows: rows.filter((r) => r[col]!.toLowerCase().includes(needle)), source });
-  }
-
-  renameColumn(from: string, to: string): TableData {
-    const { columns, rows, source } = this.data;
-    const col = this.columnIndex(from);
-    return this.mutate({ columns: columns.map((c, i) => (i === col ? to : c)), rows, source });
-  }
+export function renameColumn(t: TableData, from: string, to: string): TableData {
+  const col = columnIndex(t, from);
+  return { ...t, columns: t.columns.map((c, i) => (i === col ? to : c)) };
 }
