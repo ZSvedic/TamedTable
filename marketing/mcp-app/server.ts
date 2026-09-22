@@ -51,7 +51,8 @@ function tableResult(table: Table, note: string): CallToolResult {
 }
 
 function errorResult(e: unknown): CallToolResult {
-  return { isError: true, content: [{ type: "text", text: `Error: ${String(e)}` }] };
+  const message = e instanceof Error ? e.message : String(e);
+  return { isError: true, content: [{ type: "text", text: `Error: ${message}` }] };
 }
 
 /**
