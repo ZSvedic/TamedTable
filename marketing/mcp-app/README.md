@@ -44,19 +44,35 @@ Over stdio the server runs on your machine, so `open-table` and `save-table` rea
 
 ## Install into claude.ai
 
-claude.ai runs in Anthropic's cloud and cannot reach your laptop, so it needs the server at a public https URL. Build the image and put it on any container host:
+claude.ai runs in Anthropic's cloud and cannot reach your laptop, so the server has to sit at a public https URL. The `Dockerfile` is the whole deployment: any container host will take it.
+
+### Put it on Render
+
+1. Sign in at [render.com](https://render.com) with GitHub.
+2. **New**, **Web Service**, pick the `TamedTable` repo.
+3. Set **Root Directory** to `marketing/mcp-app`. Render sees the `Dockerfile` and switches **Language** to Docker by itself.
+4. Leave the rest alone and **Deploy**. The first build takes a few minutes.
+5. Open the URL it gives you. `Connect an MCP client to /mcp` means it is up.
+
+### Point Claude at it
+
+In claude.ai: **Settings**, **Connectors**, **Add custom connector**, and paste `https://your-service.onrender.com/mcp`.
+
+Then ask *"show the table"*.
+
+On Render's free plan the service sleeps after 15 idle minutes and takes about half a minute to wake, so the first message after a pause may time out. Ask again.
+
+### What changes on a public server
+
+- Each MCP session gets its own table, so one visitor never sees another's data.
+- `open-table` and `save-table` refuse local paths, because the disk belongs to the host, not to you. http(s) URLs still work. Set `TINYTABLE_LOCAL_FILES=1` to switch them back on.
+
+### Or run the image yourself
 
 ```bash
 docker build -t tinytable marketing/mcp-app
 docker run -p 8080:8080 tinytable
 ```
-
-Then in claude.ai: Settings, Connectors, Add custom connector, and paste `https://your-host/mcp`.
-
-Two things change once the server is public:
-
-- Each MCP session gets its own table, so one visitor never sees another's data.
-- `open-table` and `save-table` refuse local paths, because the disk belongs to the host, not the user. http(s) URLs still work. Set `TINYTABLE_LOCAL_FILES=1` to switch them back on.
 
 ## What is where
 
