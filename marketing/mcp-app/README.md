@@ -44,9 +44,11 @@ Over stdio the server runs on your machine, so `open-table` and `save-table` rea
 
 ## Install into claude.ai
 
+It is already running at **https://tamedtable.onrender.com/mcp**. Paste that into claude.ai under **Settings**, **Connectors**, **Add custom connector**, and skip to [what changes on a public server](#what-changes-on-a-public-server).
+
 claude.ai runs in Anthropic's cloud and cannot reach your laptop, so the server has to sit at a public https URL. The `Dockerfile` is the whole deployment: any container host will take it.
 
-### Put it on Render
+### Deploy your own copy to Render
 
 1. Sign in at [render.com](https://render.com) with GitHub.
 2. **New**, **Web Service**, pick the `TamedTable` repo.
