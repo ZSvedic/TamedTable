@@ -2,14 +2,14 @@
 
 A learning prototype of the [MCP Apps extension](https://github.com/modelcontextprotocol/ext-apps) (SEP-1865, spec version `2026-01-26`). It shows a CSV table inside the chat, lets you edit cells in place, opens and saves files locally and over http(s), and lets you change the data by typing a request in the parent chat.
 
-Nothing here feeds TamedTable's app. It lives under `process/` because it is a spike: run it by hand, read [LEARNINGS.md](LEARNINGS.md), throw it away.
+Nothing here feeds TamedTable's app. It lives under `marketing/` as a standalone demo: run it by hand, read [LEARNINGS.md](LEARNINGS.md).
 
 ![The app running in the reference host](tinytable.png)
 
 ## Run it
 
 ```bash
-cd process/prototypes/mcp-app
+cd marketing/mcp-app
 bun install
 bun run start          # builds the view, serves MCP on http://localhost:3001/mcp
 ```
@@ -33,7 +33,7 @@ bun run build
   "mcpServers": {
     "tinytable": {
       "command": "bun",
-      "args": ["/absolute/path/to/process/prototypes/mcp-app/main.ts", "--stdio"]
+      "args": ["/absolute/path/to/marketing/mcp-app/main.ts", "--stdio"]
     }
   }
 }

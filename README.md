@@ -52,11 +52,11 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 │   ├── icons/               UI icon glyphs, one 16×16 SVG per name. Source of ui-kit's generated icons.ts.
 │   ├── claude-design-app/   Claude Design canvas (scratch JSX + generated tokens.jsx).
 │   ├── illustrations/       SVG feature tiles + gallery.
+│   ├── mcp-app/             TinyTable: the MCP Apps prototype. Own deps, own LEARNINGS.md.
 │   └── web/                 The landing page that ships to the site root.
 ├── process/                 How the project is built; never deployed.
 │   ├── journal/             Historic status reports.
 │   ├── prompts/             Reusable session starters: see AGENTS.md.
-│   ├── prototypes/          Throwaway spikes, each with its own deps and LEARNINGS.md.
 │   └── repo-tracking/       Commit-size script + chart generator.
 ├── spec/                    The contract: human-authored / human-blessed.
 │   ├── README.md            Spec index + test-fixture naming.
