@@ -56,6 +56,7 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 ├── process/                 How the project is built; never deployed.
 │   ├── journal/             Historic status reports.
 │   ├── prompts/             Reusable session starters: see AGENTS.md.
+│   ├── prototypes/          Throwaway spikes, each with its own deps and LEARNINGS.md.
 │   └── repo-tracking/       Commit-size script + chart generator.
 ├── spec/                    The contract: human-authored / human-blessed.
 │   ├── README.md            Spec index + test-fixture naming.

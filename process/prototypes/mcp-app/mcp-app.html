@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>TinyTable</title>
+</head>
+<body>
+  <main class="main">
+    <header class="bar">
+      <strong>TinyTable</strong>
+      <span id="source" class="muted">sample</span>
+      <span id="version" class="muted">v1</span>
+      <button id="refresh">Refresh</button>
+    </header>
+
+    <div id="grid" class="grid">Loading…</div>
+
+    <section class="bar">
+      <button id="add-row">Add row</button>
+      <button id="ask-chat">Ask chat to tidy it</button>
+    </section>
+
+    <section class="bar">
+      <label for="path">File path</label>
+      <input id="path" type="text" value="table.csv" size="18">
+      <button id="open-path">Open (server)</button>
+      <button id="save-path">Save (server)</button>
+      <button id="pick-file">Pick file…</button>
+      <button id="download">Download…</button>
+      <button id="open-link">Save via link…</button>
+      <input id="file" type="file" accept=".csv,text/csv" hidden>
+    </section>
+
+    <section class="bar">
+      <label for="url">CSV URL</label>
+      <input id="url" type="url" value="https://raw.githubusercontent.com/plotly/datasets/master/2010_alcohol_consumption_by_country.csv" size="30">
+      <button id="open-url">Open (server)</button>
+      <button id="fetch-url">Fetch here…</button>
+    </section>
+
+    <pre id="log" class="log"></pre>
+  </main>
+  <script type="module" src="/src/mcp-app.ts"></script>
+</body>
+</html>
