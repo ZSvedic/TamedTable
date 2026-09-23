@@ -35,6 +35,7 @@ const pathEl = el<HTMLInputElement>("path");
 const urlEl = el<HTMLInputElement>("url");
 const fileEl = el<HTMLInputElement>("file");
 const mainEl = document.querySelector(".main") as HTMLElement;
+const fullscreenEl = el<HTMLButtonElement>("fullscreen");
 
 let current: TableData | null = null;
 
@@ -330,18 +331,53 @@ el("ask-chat").addEventListener("click", async () => {
   log(`Chat message ${isError ? "rejected" : "accepted"}.`);
 });
 
+// --- Display mode ------------------------------------------------------------
+
+/**
+ * Shows the button only when the host offers fullscreen, and makes its label
+ * and the layout follow the mode the host says we are in. The host has the last
+ * word: it can refuse a request, or leave fullscreen on its own (Esc, its own
+ * close button), and both arrive here as a context change.
+ */
+function applyDisplayMode(ctx: McpUiHostContext): void {
+  if (ctx.availableDisplayModes) {
+    fullscreenEl.hidden = !ctx.availableDisplayModes.includes("fullscreen");
+  }
+  if (ctx.displayMode) {
+    const full = ctx.displayMode === "fullscreen";
+    mainEl.classList.toggle("fullscreen", full);
+    fullscreenEl.textContent = full ? "Exit fullscreen" : "Fullscreen";
+  }
+}
+
+fullscreenEl.addEventListener("click", async () => {
+  const ctx = app.getHostContext();
+  const next = ctx?.displayMode === "fullscreen" ? "inline" : "fullscreen";
+  try {
+    const { mode } = await app.requestDisplayMode({ mode: next });
+    applyDisplayMode({ displayMode: mode });
+    log(`Asked for ${next}, the host gave ${mode}.`);
+  } catch (e) {
+    log(`Display mode ${next} failed: ${String(e)}`);
+  }
+});
+
 // --- Lifecycle ---------------------------------------------------------------
 
 function applyHostContext(ctx: McpUiHostContext): void {
   if (ctx.theme) applyDocumentTheme(ctx.theme);
   if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
   if (ctx.styles?.css?.fonts) applyHostFonts(ctx.styles.css.fonts);
+  applyDisplayMode(ctx);
   if (ctx.safeAreaInsets) {
     mainEl.style.padding = `${ctx.safeAreaInsets.top}px ${ctx.safeAreaInsets.right}px ${ctx.safeAreaInsets.bottom}px ${ctx.safeAreaInsets.left}px`;
   }
 }
 
-const app = new App({ name: "TinyTable", version: "0.2.0" });
+const app = new App(
+  { name: "TinyTable", version: "0.3.0" },
+  { availableDisplayModes: ["inline", "fullscreen"] },
+);
 
 // The only way the view learns what to show. Every table tool carries this
 // resource, so a chat-driven edit paints a fresh view with the new rows.
@@ -355,4 +391,7 @@ app.onteardown = async () => ({});
 
 await app.connect();
 const ctx = app.getHostContext();
-if (ctx) applyHostContext(ctx);
+if (ctx) {
+  applyHostContext(ctx);
+  log(`Host display mode ${ctx.displayMode ?? "unknown"}, offers ${ctx.availableDisplayModes?.join(", ") ?? "nothing"}.`);
+}

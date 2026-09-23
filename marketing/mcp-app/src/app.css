@@ -34,7 +34,16 @@ button, input[type="text"], input[type="url"] {
 button { cursor: pointer; }
 button:hover { border-color: var(--color-text-primary); }
 
-.grid { overflow-x: auto; }
+/* Inline, the grid scrolls inside a box so a long table does not stretch the
+   chat. Fullscreen, the page is the window, so the grid takes what is left. */
+.grid { overflow: auto; max-height: 24em; }
+
+.push { margin-left: auto; }
+
+.main.fullscreen { height: 100vh; box-sizing: border-box; }
+.main.fullscreen .grid { flex: 1; min-height: 0; max-height: none; }
+
+th { position: sticky; top: 0; background: var(--color-background-primary); }
 
 table { border-collapse: collapse; width: 100%; font-size: 0.9em; }
 
