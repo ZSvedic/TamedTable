@@ -73,6 +73,8 @@ ChatGPT has no equivalent. The honest "Add to ChatGPT" button copies the server 
 
 **`openLink` with a `data:` URL.** My second attempt at getting a file out. The host accepted the `ui/open-link` request, then the browser refused to navigate a top-level `data:` URL, so nothing reached the disk. Worth knowing that an accepted `openLink` is not a successful one.
 
+*Corrected on 23 September 2026:* that was the reference host. Claude refuses a `data:` link outright, and ChatGPT accepts it and then gets nothing either. See [the cross-client table](#what-each-client-allows).
+
 **Pushing an update into an open view.** There is no server-to-view notification in the extension. It matters less than it sounds: a chat-driven edit is a tool call, and a tool call paints its own view.
 
 ## Getting a file out anyway
@@ -117,8 +119,61 @@ Going public also forced the local-file tools off. `open-table` and `save-table`
 
 Tables are keyed by a random id rather than by user, so visitors are separated by not being able to guess each other's ids. That is fine for a prototype and would not be fine for anything real.
 
+## Fullscreen
+
+Both clients offer fullscreen and grant it when the view asks. The view declares `availableDisplayModes: ["inline", "fullscreen"]` when it connects, shows a Fullscreen button only when the host lists `fullscreen`, and asks with `requestDisplayMode`. The button's label and the layout follow `displayMode` in the host context, not the button's own idea of the mode, because the host can leave fullscreen by itself.
+
+What each host said and did, from the view's log:
+
+- **Claude:** `Host display mode inline, offers inline, fullscreen.` then `Asked for fullscreen, the host gave fullscreen.`
+- **ChatGPT:** `Host display mode inline, offers inline, fullscreen, pip.` then the same grant, and `Asked for inline, the host gave inline.` on the way back. ChatGPT also offers `pip` (picture in picture), which I did not try.
+
+In both, the host's own close button (the X in the header it draws) sent a context change and the button went back to "Fullscreen" with no extra code. That is the reason to follow the context rather than the click.
+
+Both hosts wrap the fullscreen view in their own frame: a header with a name and an X on top, and the chat box floating over the bottom. Claude's header shows the connector's name (`tamedtable.onrender`), ChatGPT's the app's (`TinyTable`), and ChatGPT's chat box reads "Ask TinyTable". In ChatGPT that chat box covers the last lines of the view, so anything pinned to the bottom of a fullscreen view needs room left under it.
+
+## What each client allows
+
+Tried on 23 September 2026, in Chrome on a Mac, against the deployed server: claude.ai (Sonnet 5) and chatgpt.com in developer mode. Each cell quotes the view's own log line or says what I checked outside the browser. Android and iOS were out of reach, so they are not here.
+
+Both hosts put the view in an iframe with the same sandbox, `allow-scripts allow-same-origin allow-forms`, read from the page's DOM. So the reference host's flags were the real ones, and the sandbox findings above hold in both clients. The `allow` attribute differs: Claude sets `fullscreen *`, ChatGPT sets `local-network-access *; microphone *; midi *`. Neither grants `clipboard-write`.
+
+| Capability | Claude | ChatGPT | Who decides |
+|---|---|---|---|
+| Fullscreen | Granted, and back. | Granted, and back. Also offers `pip`. | The host. |
+| In-iframe fetch ("Fetch here…") | `In-iframe fetch blocked: TypeError: Failed to fetch.` | CSP off: `In-iframe fetch succeeded: 200, 2613 bytes. Loading it.`, and the grid showed 191 rows. CSP on: `In-iframe fetch blocked: TypeError: Failed to fetch.` | The host's CSP. The same view in the same sandbox flips with ChatGPT's "Enforce CSP" toggle. |
+| Blob download ("Download… (blocked)") | `Download click dispatched.` Nothing new in `~/Downloads`. | Same. | The sandbox: no `allow-downloads` in either. |
+| `openLink` to a `data:` URL | `openLink with a data: URL was refused by the host.` | `openLink with a data: URL was accepted by the host.` ChatGPT then showed an "External site" dialog with the whole URL. Pressing its Open link opened no tab and saved no file. | Claude: the host says no. ChatGPT: the host says yes and Chrome refuses a top-level `data:` page. |
+| `openLink` to an https URL ("Save file") | Claude showed an "Open external link" dialog with the download URL. Its Open link button stayed disabled the whole time, because the tab was never the visible one (`document.visibilityState` was `hidden`). The view's `openLink` call never returned, before or after I closed the dialog. | ChatGPT answered at once (`Opened https://tamedtable.onrender.com/download/….csv; your browser should save it.`), then showed an "External site" dialog. I pressed Open link. No file appeared in `~/Downloads`, though the same URL answers `200`, `text/csv`, `attachment` to curl. | Both hosts put a confirmation in front of the link. Whether a file lands is unconfirmed in both: see [Needs a human](#needs-a-human). |
+| Native file picker ("Pick file…") | Not tried. | Not tried. | See [Needs a human](#needs-a-human). |
+| Clipboard ("Copy CSV") | `Copied with the fallback path.` `pbpaste` gave back the exact five lines of the sample. | Same, and the same five lines. | The iframe's `allow` attribute. `navigator.clipboard.writeText` needs `clipboard-write`, which neither host grants, so both fall through to `execCommand("copy")`, which a keypress still allows. |
+| A grid edit survives a chat edit | `Set row 0, name.` (Ada Lovelace to Ada King), then "sort by country" in the chat. Claude called `edit-table` with `op: sort` and the view's `tableId`. Result: Hedy Lamarr, Ada King, Alan Turing, Grace Hopper. | Same edit, same request, same result. | The design: one copy per `tableId`. Both models passed the id back. |
+
+Three things in that table I did not expect:
+
+- **An accepted `openLink` tells the view nothing.** ChatGPT says yes before the user has answered its dialog. Claude says nothing until the user answers, and with the dialog dismissed it never answered. A view cannot tell from `openLink` whether anything opened, in either client.
+- **Claude refuses what ChatGPT forwards.** For a `data:` link the two hosts made opposite calls, and ended in the same place.
+- **The clipboard works for a reason that looks like luck.** Only the deprecated `execCommand` path copies. If a browser drops it, or a host starts blocking it, copying breaks in both clients at once.
+
+## Two more bugs the real clients found
+
+**A host can replay an old result.** Turning on ChatGPT's "Enforce CSP" reloaded the view, and the view painted the first `show-table` result it had ever been given: the 4-row sample, although it had just loaded 191 rows under the same `tableId`. The server had the right table the whole time. The view now asks `show-table` for its id after painting any tool result, and repaints if the server's copy differs. After a reload, Claude's first view logged `The host replayed an older result. Showing the server's copy.` and showed the sorted, edited table.
+
+**That fix had a race of its own, and Claude showed it at once.** The check ran right after a deploy, which had restarted the server and emptied it. Every view on the page loaded together, each got "No table with id", and each sent its own rows back through the shared recovery path. The newest view happened to write last. Nothing made sure it would, and the oldest view's rows are the 4-row sample. The check now reads without recovery, so a view only writes when the user does something in it.
+
+## How the testing was driven
+
+The Claude in Chrome extension cannot click inside the app's iframe in either client. Its clicks land on the host page instead: text I typed after clicking a grid cell went into Claude's own chat box. The keyboard does reach the iframe. Focusing the iframe element and pressing Tab lands on the view's first control, and Enter presses a button. Every in-view action above was done that way, which also means every one of them ran with the user activation a keypress gives.
+
+The screenshots stayed inside the browser tool; I could not save them as files (macOS refused `screencapture`, and the extension keeps its images). So the evidence here is the view's log lines, the page DOM, `pbpaste`, `~/Downloads` and curl.
+
+## Needs a human
+
+- **Pick file…** in both clients. The picker is a native dialog that would open over the Chrome window, and I could only see that window, not click in it. The reference host showed the picker opening.
+- **Save file in Claude.** Bring the Claude tab to the front, press Save file, then Open link, and check that `table.csv` downloads.
+- **Save file in ChatGPT.** Press Open link and check where the file goes; it did not land in `~/Downloads`.
+- **Android and iOS**, for fullscreen above all: other people report blank fullscreen views on Android.
+
 ## Not verified here
 
-The sandbox findings come from the SDK's reference host, whose flags (`allow-scripts allow-same-origin allow-forms`) are the spec's minimum. A host that grants more could let the download and the in-iframe fetch through.
-
-The session finding comes from Claude itself, on the deployed server.
+The session finding comes from Claude itself, on the deployed server. The sandbox findings now come from both clients as well as the reference host.
