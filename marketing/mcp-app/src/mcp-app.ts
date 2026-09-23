@@ -247,12 +247,16 @@ el("copy").addEventListener("click", async () => {
     log(`Copied ${current.rows.length} rows to the clipboard.`);
   } catch {
     // Older path, still allowed inside a sandboxed iframe on a user gesture.
+    // Selecting the textarea moves focus to it, and removing it drops focus on
+    // the body. Hand it back, or a keyboard user lands at the top of the view.
+    const back = document.activeElement as HTMLElement | null;
     const area = document.createElement("textarea");
     area.value = current.csv;
     document.body.appendChild(area);
     area.select();
     const ok = document.execCommand("copy");
     area.remove();
+    back?.focus();
     log(ok ? "Copied with the fallback path." : "The clipboard is blocked too.");
   }
 });
