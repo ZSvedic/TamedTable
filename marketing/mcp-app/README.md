@@ -42,6 +42,20 @@ Claude Desktop launches the server itself over stdio, so it needs a path and not
 
 Over stdio the server runs on your machine, so `open-table` and `save-table` read and write your disk.
 
+## Install from the server's own page
+
+The deployed server serves `install.html` at its root: an **Add to Claude** button that deep-links into the add-connector dialog with the fields filled in, and an **Add to ChatGPT** button that copies the URL and lists ChatGPT's manual steps. Open <https://tamedtable.onrender.com/> and pick one.
+
+The sections below are the same thing by hand.
+
+## Install into ChatGPT
+
+ChatGPT speaks the same MCP Apps standard, so the server needs no changes.
+
+1. Settings → **Security and login** → turn on **Developer mode**.
+2. Settings → **Plugins** (this is what ChatGPT now calls Connectors) → **+** → **Create plugin**. The button is hidden until Developer mode is on.
+3. Name it, paste `https://tamedtable.onrender.com/mcp`, set **Authentication** to **No Auth**, tick the risk box, **Create**.
+
 ## Install into claude.ai
 
 It is already running at **https://tamedtable.onrender.com/mcp**. Paste that into claude.ai under **Settings**, **Connectors**, **Add custom connector**, and skip to [what changes on a public server](#what-changes-on-a-public-server).
@@ -85,7 +99,8 @@ docker run -p 8080:8080 tinytable
 | `table.ts` | CSV parse and write, and the edit ops. Pure functions |
 | `store.ts` | The tables the server holds, keyed by id |
 | `main.ts` | Transports: stateless Streamable HTTP on :3001, or `--stdio`, plus the download endpoint |
-| `Dockerfile` | The image a container host runs for the claude.ai path |
+| `install.html` | The landing page with the two install buttons, served at `/` |
+| `Dockerfile` | The image a container host runs for the hosted path |
 | `mcp-app.html`, `src/mcp-app.ts`, `src/app.css` | The view, bundled to one file by `vite-plugin-singlefile` |
 
 ## The tools

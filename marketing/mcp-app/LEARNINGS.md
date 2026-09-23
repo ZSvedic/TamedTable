@@ -40,6 +40,29 @@ Three lessons, and the last one is the expensive one:
 
 A fourth thing fell out of the third. Once the tables were keyed by id, the HTTP transport had no reason to hand out session ids, and holding them was actively harmful: a free-tier host sleeps, the process restarts, and every client still sending an old session id gets `400 Server not initialized`. The transport is now stateless, a fresh server per request, and the id in the arguments carries the continuity. A restart now costs one lost table rather than a dead connector, and the view notices: when the server says it has never heard of an id, the view hands its rows back under that id and retries.
 
+## The same server in ChatGPT
+
+It worked with no code changes at all. OpenAI's own docs say ChatGPT "implements the open MCP Apps standard," and they mean it: same `_meta.ui.resourceUri`, same `text/html;profile=mcp-app`, same view, same `tableId` round trip. One server, two clients, one build.
+
+Four things worth knowing before trying it:
+
+- **Connectors is called Plugins.** ChatGPT renamed the page in July 2026, and the Developer mode toggle moved to **Security and login**. Guides written before then send you to a page that no longer exists. The **+** button on Plugins is not rendered at all until Developer mode is on.
+- **Authentication defaults to OAuth.** A server with no auth has to be set to **No Auth** by hand, or the dialog fails discovering OAuth settings that were never there.
+- **ChatGPT labels the view `CSP off`.** Developer-mode apps run without the production Content Security Policy, and there is a separate toggle, "Enforce CSP in developer mode", to put it back. Claude gives no such choice. The same view can therefore reach the network in one client and not the other, which is a host policy, not a property of the sandbox.
+- **`_meta.ui.csp` and `_meta.ui.domain` are required to submit an app**, and ChatGPT says so on the app's page as soon as you connect. They are optional for development, so this prototype ships without them, but anything headed for the ChatGPT directory needs both.
+
+## Putting an install button on a web page
+
+Claude takes a prefilled deep link, so "Add to Claude" is a real one-click button:
+
+```
+https://claude.ai/settings/connectors?modal=add-custom-connector&mcpName=<name>&mcpServerUrl=<url>
+```
+
+It opens the add-connector dialog with both fields filled; the user only confirms. The parameter names are community-documented rather than official, and Claude has moved the connectors path before, so treat it as something to re-check, not as an API.
+
+ChatGPT has no equivalent. The honest "Add to ChatGPT" button copies the server URL, opens ChatGPT's settings, and lists the three manual steps. This prototype's own landing page (`install.html`, served at `/`) does exactly that, so the deployed server is its own install page.
+
 ## What was blocked
 
 **Fetching a URL from inside the iframe.** `Refused to connect ... violates the following Content Security Policy directive: "connect-src"`. The host serves the view under a CSP built from `_meta.ui.csp.connectDomains` on the resource, and I declared none. Declaring them would have fixed this one URL, but only for origins I name at build time and only where the far end sends CORS headers. **Workaround:** `open-table` does the fetch server-side. It handles any URL and needs no CSP entry.

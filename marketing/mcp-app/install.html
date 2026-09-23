@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>Add TinyTable</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --fg: light-dark(#1f2937, #f3f4f6);
+    --dim: light-dark(#6b7280, #9ca3af);
+    --bg: light-dark(#ffffff, #1a1a1a);
+    --line: light-dark(#d1d5db, #3f3f46);
+  }
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    font: 16px/1.55 ui-sans-serif, system-ui, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  main { max-width: 34rem; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1rem; margin: 2rem 0 .5rem; }
+  p { margin: .5rem 0; }
+  .dim { color: var(--dim); }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .9em;
+    background: light-dark(#f3f4f6, #27272a);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; margin: 1rem 0; }
+  a.btn, button.btn {
+    font: inherit;
+    padding: .55rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  a.btn:hover, button.btn:hover { border-color: var(--fg); }
+  ol { padding-left: 1.2rem; }
+  li { margin: .35rem 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TinyTable</h1>
+  <p class="dim">A tiny MCP App: shows a CSV table in the chat, and lets you edit it by typing.</p>
+
+  <h2>Add to Claude</h2>
+  <p>One click. The link opens Claude's add-connector dialog with the name and URL already filled in.</p>
+  <div class="row">
+    <a class="btn" id="claude" href="#">Add to Claude</a>
+  </div>
+
+  <h2>Add to ChatGPT</h2>
+  <p>ChatGPT has no prefill link, so this copies the URL and opens the right settings page.</p>
+  <div class="row">
+    <button class="btn" id="copy">Copy server URL</button>
+    <a class="btn" href="https://chatgpt.com/#settings" target="_blank" rel="noopener">Open ChatGPT settings</a>
+  </div>
+  <ol class="dim">
+    <li><strong>Security and login</strong> → turn on <strong>Developer mode</strong>.</li>
+    <li><strong>Plugins</strong> → <strong>+</strong> → <strong>Create plugin</strong>.</li>
+    <li>Paste the URL, set <strong>Authentication</strong> to <strong>No Auth</strong>, tick the box, <strong>Create</strong>.</li>
+  </ol>
+
+  <h2>Server URL</h2>
+  <p><code id="url">…</code></p>
+  <p class="dim">Then ask: <em>"show the table"</em>, then <em>"sort by country"</em>.</p>
+</main>
+<script>
+  const url = new URL("/mcp", location.href).href;
+  document.getElementById("url").textContent = url;
+  document.getElementById("claude").href =
+    "https://claude.ai/settings/connectors?modal=add-custom-connector" +
+    "&mcpName=" + encodeURIComponent("TinyTable") +
+    "&mcpServerUrl=" + encodeURIComponent(url);
+  document.getElementById("copy").addEventListener("click", async (e) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      e.target.textContent = "Copied";
+      setTimeout(() => { e.target.textContent = "Copy server URL"; }, 1500);
+    } catch {
+      e.target.textContent = url;
+    }
+  });
+</script>
+</body>
+</html>

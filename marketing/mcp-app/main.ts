@@ -15,6 +15,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { createMcpExpressApp } from "@modelcontextprotocol/express";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import cors from "cors";
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { Request, Response } from "express";
 import { createServer } from "./server.js";
 import * as store from "./store.js";
@@ -28,8 +30,14 @@ async function startHttp(): Promise<void> {
   // Claude connects from Anthropic's cloud, so any origin has to be allowed.
   app.use(cors());
 
-  app.get("/", (_req: Request, res: Response) => {
-    res.type("text/plain").send("TinyTable MCP server. Connect an MCP client to /mcp.\n");
+  // A landing page with the two install buttons. Claude takes a prefilled
+  // deep link; ChatGPT has no equivalent, so the page copies the URL instead.
+  app.get("/", async (_req: Request, res: Response) => {
+    try {
+      res.type("text/html").send(await fs.readFile(path.join(import.meta.dirname, "install.html"), "utf-8"));
+    } catch {
+      res.type("text/plain").send("TinyTable MCP server. Connect an MCP client to /mcp.\n");
+    }
   });
 
   // The way a file gets out of the sandbox: not from the iframe, but from an
