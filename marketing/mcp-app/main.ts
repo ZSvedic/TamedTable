@@ -5,55 +5,58 @@
  * table, and the local-file tools switched on because the machine is yours.
  *
  * `bun main.ts` serves Streamable HTTP on :3001 for the reference host and for
- * a public deployment. There it keeps one table per MCP session, and the
- * local-file tools stay off unless TINYTABLE_LOCAL_FILES=1 says otherwise.
+ * a public deployment. The HTTP side is stateless: a fresh server and
+ * transport per request, no session ids. Continuity comes from the table id
+ * in the arguments, so a host that reconnects, or a free-tier host that
+ * restarts the process, never meets a session it cannot resume. Local-file
+ * tools stay off unless TINYTABLE_LOCAL_FILES=1 says otherwise.
  */
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { createMcpExpressApp } from "@modelcontextprotocol/express";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
-import type { McpServer } from "@modelcontextprotocol/server";
 import cors from "cors";
 import type { Request, Response } from "express";
-import { randomUUID } from "node:crypto";
 import { createServer } from "./server.js";
-
-type Session = { server: McpServer; transport: NodeStreamableHTTPServerTransport };
+import * as store from "./store.js";
+import { toCsv } from "./table.js";
 
 async function startHttp(): Promise<void> {
   const port = parseInt(process.env.PORT ?? "3001", 10);
   const localFiles = process.env.TINYTABLE_LOCAL_FILES === "1";
-  const sessions = new Map<string, Session>();
 
   const app = createMcpExpressApp({ host: "0.0.0.0" });
-  // Claude connects from Anthropic's cloud, so any origin has to be allowed,
-  // and the session header has to survive the preflight.
-  app.use(cors({ exposedHeaders: ["mcp-session-id"], allowedHeaders: ["*"] }));
+  // Claude connects from Anthropic's cloud, so any origin has to be allowed.
+  app.use(cors());
 
   app.get("/", (_req: Request, res: Response) => {
     res.type("text/plain").send("TinyTable MCP server. Connect an MCP client to /mcp.\n");
   });
 
+  // The way a file gets out of the sandbox: not from the iframe, but from an
+  // ordinary link the host opens in the user's own browser. The attachment
+  // header is what turns opening into saving.
+  app.get("/download/:id.csv", (req: Request, res: Response) => {
+    const id = req.params.id;
+    const table = store.get(Array.isArray(id) ? id[0]! : id!);
+    if (!table) {
+      res.status(404).type("text/plain").send("No table with that id.\n");
+      return;
+    }
+    res.type("text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="table.csv"');
+    res.send(toCsv(table));
+  });
+
   app.all("/mcp", async (req: Request, res: Response) => {
+    const server = createServer({ localFiles });
+    const transport = new NodeStreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on("close", () => {
+      transport.close().catch(() => {});
+      server.close().catch(() => {});
+    });
     try {
-      const id = req.headers["mcp-session-id"];
-      const existing = typeof id === "string" ? sessions.get(id) : undefined;
-
-      if (existing) {
-        await existing.transport.handleRequest(req, res, req.body);
-        return;
-      }
-
-      const server = createServer({ localFiles });
-      const transport = new NodeStreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-      });
-      transport.onclose = () => {
-        if (transport.sessionId) sessions.delete(transport.sessionId);
-        server.close().catch(() => {});
-      };
       await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
-      if (transport.sessionId) sessions.set(transport.sessionId, { server, transport });
     } catch (error) {
       console.error("MCP error:", error);
       if (!res.headersSent) {

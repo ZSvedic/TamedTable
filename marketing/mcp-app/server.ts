@@ -261,6 +261,31 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
     },
   );
 
+  // App-only: turns a table id into a link the host can open. The view cannot
+  // build this itself, because it does not know the server's public URL.
+  registerAppTool(
+    server,
+    "download-link",
+    {
+      title: "Download link",
+      description: "Return an https link that saves the table as a CSV file.",
+      inputSchema: z.object({ tableId: z.string() }),
+      outputSchema: z.object({ url: z.string() }),
+      _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["app"] as const } },
+    },
+    async ({ tableId }) => {
+      try {
+        if (!store.get(tableId)) throw new Error(`No table with id ${tableId}.`);
+        const base = (process.env.TINYTABLE_PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3001}`)
+          .replace(/\/$/, "");
+        const url = `${base}/download/${tableId}.csv`;
+        return { content: [{ type: "text", text: url }], structuredContent: { url } };
+      } catch (e) {
+        return errorResult(e);
+      }
+    },
+  );
+
   // App-only: the view writes its own edits back under the same id, so the
   // next thing typed in the chat works from what is on screen.
   registerAppTool(

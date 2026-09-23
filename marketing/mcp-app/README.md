@@ -62,7 +62,9 @@ In claude.ai: **Settings**, **Connectors**, **Add custom connector**, and paste 
 
 Then ask *"show the table"*.
 
-On Render's free plan the service sleeps after 15 idle minutes and takes about half a minute to wake, so the first message after a pause may time out. Ask again.
+Set `TINYTABLE_PUBLIC_URL` to the service's URL, so the **Save file** button builds a link that points at it rather than at localhost.
+
+On Render's free plan the service sleeps after 15 idle minutes and takes about half a minute to wake, so the first message after a pause may time out. Ask again. A sleep also loses the tables the server was holding; the view hands its rows back automatically when that happens.
 
 ### What changes on a public server
 
@@ -82,7 +84,7 @@ docker run -p 8080:8080 tinytable
 | `server.ts` | The five tools and the one `ui://` resource |
 | `table.ts` | CSV parse and write, and the edit ops. Pure functions |
 | `store.ts` | The tables the server holds, keyed by id |
-| `main.ts` | Transports: Streamable HTTP on :3001, or `--stdio` |
+| `main.ts` | Transports: stateless Streamable HTTP on :3001, or `--stdio`, plus the download endpoint |
 | `Dockerfile` | The image a container host runs for the claude.ai path |
 | `mcp-app.html`, `src/mcp-app.ts`, `src/app.css` | The view, bundled to one file by `vite-plugin-singlefile` |
 
@@ -97,5 +99,8 @@ Four tools the model can call, all carrying the same `resourceUri` so any of the
 | `open-table` | model, view | Reads a CSV from a local path or an http(s) URL |
 | `save-table` | model, view | Writes the table to a local CSV file |
 | `put-table` | view only | Stores an edit made in the grid |
+| `download-link` | view only | Returns an https link that saves the table as a file |
+
+`GET /download/<tableId>.csv` serves the table as a file, which is how the view gets one past the iframe sandbox.
 
 Every result carries a `tableId`, and the server holds the rows under that id. The model passes the id back rather than the rows, and the view writes its grid edits under the same id, so there is one copy and the last writer wins. [LEARNINGS.md](LEARNINGS.md) has the two designs that came before this one and how each failed.

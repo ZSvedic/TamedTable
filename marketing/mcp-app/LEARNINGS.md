@@ -38,15 +38,27 @@ Three lessons, and the last one is the expensive one:
 - **Session state is a guess about how the host connects.** Key shared state by something that travels in the arguments instead.
 - **The reference host is not the host.** It is one connection, one session, one tab, and it hid both wrong assumptions completely. Anything that matters has to be tried in the real client before it counts as working.
 
+A fourth thing fell out of the third. Once the tables were keyed by id, the HTTP transport had no reason to hand out session ids, and holding them was actively harmful: a free-tier host sleeps, the process restarts, and every client still sending an old session id gets `400 Server not initialized`. The transport is now stateless, a fresh server per request, and the id in the arguments carries the continuity. A restart now costs one lost table rather than a dead connector, and the view notices: when the server says it has never heard of an id, the view hands its rows back under that id and retries.
+
 ## What was blocked
 
 **Fetching a URL from inside the iframe.** `Refused to connect ... violates the following Content Security Policy directive: "connect-src"`. The host serves the view under a CSP built from `_meta.ui.csp.connectDomains` on the resource, and I declared none. Declaring them would have fixed this one URL, but only for origins I name at build time and only where the far end sends CORS headers. **Workaround:** `open-table` does the fetch server-side. It handles any URL and needs no CSP entry.
 
-**Saving a file from the iframe.** The blob-plus-`<a download>` trick fires no download: the sandbox has no `allow-downloads`. I checked this was the sandbox and not the headless browser by running the same four lines on an ordinary page in the same browser, where the download fired. **Workaround:** `save-table` writes the file in the server process, which is the user's machine anyway under stdio.
+**Saving a file from the iframe.** The blob-plus-`<a download>` trick fires no download: the sandbox has no `allow-downloads`. I checked this was the sandbox and not the headless browser by running the same four lines on an ordinary page in the same browser, where the download fired. **Workarounds:** two, both in the section below.
 
 **`openLink` with a `data:` URL.** My second attempt at getting a file out. The host accepted the `ui/open-link` request, then the browser refused to navigate a top-level `data:` URL, so nothing reached the disk. Worth knowing that an accepted `openLink` is not a successful one.
 
 **Pushing an update into an open view.** There is no server-to-view notification in the extension. It matters less than it sounds: a chat-driven edit is a tool call, and a tool call paints its own view.
+
+## Getting a file out anyway
+
+The download block reads like a showstopper for anything that edits data. It is not, once you stop trying to make the iframe produce the file.
+
+**A link the host opens.** The server holds the table already, so it also serves it: `GET /download/<tableId>.csv`, with `Content-Disposition: attachment`. The view asks an app-only tool for that URL and passes it to `openLink`. The host opens an ordinary https link in the user's own browser, outside the sandbox, and the attachment header turns opening into saving. Verified end to end: the host accepted the link, and the endpoint answers `200`, `text/csv`, with the attachment header set.
+
+This is the difference that matters. `openLink` with a `data:` URL is refused by the browser; `openLink` with an https URL is just a link.
+
+**The clipboard.** `navigator.clipboard.writeText` inside the sandbox, with the old `execCommand("copy")` as a fallback. One of the two works: I read the clipboard back after clicking and it held the CSV. It needs no server, no host cooperation and no permission prompt, only a user gesture, so it is the cheapest escape hatch there is and worth having even when a download link exists.
 
 ## What I would do differently
 

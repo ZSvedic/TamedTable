@@ -107,14 +107,28 @@ function render(data: TableData): void {
   gridEl.replaceChildren(table);
 }
 
-/** Calls a server tool and repaints if the answer carries a table. */
-async function call(name: string, args: Record<string, unknown> = {}): Promise<void> {
+/**
+ * Calls a server tool and repaints if the answer carries a table.
+ *
+ * A free-tier host puts the process to sleep, and the tables it was holding go
+ * with it. The view still has the rows, so when the server says it has never
+ * heard of this id, hand them back under the same id and try once more.
+ */
+async function call(name: string, args: Record<string, unknown> = {}, retry = true): Promise<void> {
   try {
     const result = await app.callServerTool({ name, arguments: args });
     const data = readTable(result);
     if (data) render(data);
     const text = result.content?.[0];
-    if (result.isError && text?.type === "text") log(text.text);
+    if (result.isError && text?.type === "text") {
+      if (retry && current && name !== "put-table" && /No table with id/.test(text.text)) {
+        log("The server restarted and lost the table. Sending it back.");
+        await call("put-table", { tableId: current.tableId, csv: current.csv, source: current.source }, false);
+        await call(name, args, false);
+        return;
+      }
+      log(text.text);
+    }
   } catch (e) {
     log(`${name} threw: ${String(e)}`);
   }
@@ -146,6 +160,45 @@ fileEl.addEventListener("change", async () => {
   });
   log(`Picker gave ${file.name}: ${rows.length} rows.`);
   await update({ columns, rows, source: file.name });
+});
+
+// --- Getting a file out, the two ways that work ------------------------------
+
+el("save-link").addEventListener("click", async () => {
+  if (!current) return;
+  // The iframe cannot hand over a file, but the host can open a link, and a
+  // link whose response carries Content-Disposition: attachment is a save.
+  try {
+    const result = await app.callServerTool({
+      name: "download-link",
+      arguments: { tableId: current.tableId },
+    });
+    const { url } = (result.structuredContent as { url?: string }) ?? {};
+    if (!url) throw new Error("No link came back.");
+    const { isError } = await app.openLink({ url });
+    log(isError ? `The host refused ${url}` : `Opened ${url}; your browser should save it.`);
+  } catch (e) {
+    log(`Save file failed: ${String(e)}`);
+  }
+});
+
+el("copy").addEventListener("click", async () => {
+  if (!current) return;
+  // No server, no host, no permissions to ask for: the clipboard is the one
+  // way out of the sandbox that needs nothing but a user gesture.
+  try {
+    await navigator.clipboard.writeText(current.csv);
+    log(`Copied ${current.rows.length} rows to the clipboard.`);
+  } catch {
+    // Older path, still allowed inside a sandboxed iframe on a user gesture.
+    const area = document.createElement("textarea");
+    area.value = current.csv;
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    log(ok ? "Copied with the fallback path." : "The clipboard is blocked too.");
+  }
 });
 
 el("download").addEventListener("click", () => {
