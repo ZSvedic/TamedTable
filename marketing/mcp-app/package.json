@@ -10,7 +10,8 @@
     "serve:stdio": "bun main.ts --stdio",
     "start": "bun run build && bun run serve",
     "start:stdio": "bun run build 1>&2 && bun run serve:stdio",
-    "dev": "NODE_ENV=development concurrently \"INPUT=mcp-app.html vite build --watch\" \"TINYTABLE_LOCAL_FILES=1 bun --watch main.ts\""
+    "dev": "NODE_ENV=development concurrently \"INPUT=mcp-app.html vite build --watch\" \"TINYTABLE_LOCAL_FILES=1 bun --watch main.ts\"",
+    "test": "bun test"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "2.0.0",
@@ -23,6 +24,7 @@
     "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.4.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",

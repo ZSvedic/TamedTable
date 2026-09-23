@@ -70,6 +70,31 @@ function tableResult(id: string, t: table.TableData, note: string): CallToolResu
   };
 }
 
+/**
+ * Refuses URLs that point back at the machine the server runs on.
+ *
+ * The hosted server fetches whatever it is told to, on behalf of anyone who
+ * has connected it, so an address like `169.254.169.254` would turn it into a
+ * window onto its own host. This blocks the obvious shapes by name; a server
+ * holding anything worth stealing would resolve the host and check the address
+ * it actually connects to.
+ */
+function assertPublicUrl(raw: string): void {
+  const host = new URL(raw).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const blocked =
+    host === "localhost" ||
+    host === "::1" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".internal") ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^169\.254\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^(fc|fd|fe80)/.test(host);
+  if (blocked) throw new Error(`Refusing to fetch a private address: ${host}`);
+}
+
 function errorResult(e: unknown): CallToolResult {
   const message = e instanceof Error ? e.message : String(e);
   return { isError: true, content: [{ type: "text", text: `Error: ${message}` }] };
@@ -82,7 +107,9 @@ function load(
   source: string | undefined,
 ): { id: string; t: table.TableData } {
   if (tableId) {
-    const held = store.get(tableId);
+    // Fresh CSV wins: a caller that sends both is replacing the table, not
+    // asking for the one already held.
+    const held = csv ? undefined : store.get(tableId);
     if (held) return { id: tableId, t: held };
     if (!csv) {
       throw new Error(
@@ -210,6 +237,7 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
       try {
         let csv: string;
         if (/^https?:\/\//i.test(source)) {
+          assertPublicUrl(source);
           const response = await fetch(source);
           if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
           csv = await response.text();

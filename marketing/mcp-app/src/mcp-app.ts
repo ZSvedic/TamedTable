@@ -68,11 +68,23 @@ function readTable(result: CallToolResult): TableData | null {
  * the same table id. The write is what the chat will read; the repaint is only
  * so the grid does not wait for a round trip.
  */
-async function update(next: Pick<TableData, "columns" | "rows" | "source">): Promise<void> {
+async function update(
+  next: Pick<TableData, "columns" | "rows" | "source">,
+  repaint = false,
+): Promise<void> {
   if (!current) return;
   const csv = toCsv(next);
   const tableId = current.tableId;
-  render({ ...next, tableId, csv });
+  // A cell edit must not repaint: the grid already shows what the user typed,
+  // and rebuilding it would destroy the input they have just tabbed into. A
+  // whole new table has nothing on screen to preserve, so it does.
+  if (repaint) {
+    render({ ...next, tableId, csv });
+  } else {
+    current = { ...next, tableId, csv };
+    sourceEl.textContent = next.source;
+    sizeEl.textContent = `${next.rows.length} rows`;
+  }
   await call("put-table", { tableId, csv, source: next.source }, true);
   // Belt and braces: the id in the model's context, never the rows.
   await app.updateModelContext({
@@ -105,11 +117,16 @@ function render(data: TableData): void {
       const input = document.createElement("input");
       input.value = cell;
       input.addEventListener("change", () => {
-        const rows = data.rows.map((r, i) =>
+        // Read `current`, not the `data` this row was rendered from. An edit no
+        // longer repaints the grid, so the closure's copy goes stale the moment
+        // a second cell is touched, and edits would overwrite each other.
+        const live = current;
+        if (!live) return;
+        const rows = live.rows.map((r, i) =>
           i === rowIndex ? r.map((c, j) => (j === colIndex ? input.value : c)) : r,
         );
-        void update({ columns: data.columns, rows, source: data.source });
-        log(`Set row ${rowIndex}, ${data.columns[colIndex]}. The chat has the new table.`);
+        void update({ columns: live.columns, rows, source: live.source });
+        log(`Set row ${rowIndex}, ${live.columns[colIndex]}. The chat has the new table.`);
       });
       tr.insertCell().appendChild(input);
     });
@@ -197,9 +214,11 @@ fileEl.addEventListener("change", async () => {
   // The bytes exist only inside the iframe, so parse them here and hand the
   // result to the model. Nothing has to reach the server at all.
   const text = await file.text();
+  // Clear it, or picking the same file twice fires no second change event.
+  fileEl.value = "";
   const { columns, rows } = parseCsv(text);
   log(`Picker gave ${file.name}: ${rows.length} rows.`);
-  await update({ columns, rows, source: file.name });
+  await update({ columns, rows, source: file.name }, true);
 });
 
 // --- Getting a file out, the two ways that work ------------------------------
@@ -274,7 +293,7 @@ el("fetch-url").addEventListener("click", async () => {
     const response = await fetch(urlEl.value);
     const text = await response.text();
     log(`In-iframe fetch succeeded: ${response.status}, ${text.length} bytes. Loading it.`);
-    await update({ ...parseCsv(text), source: urlEl.value });
+    await update({ ...parseCsv(text), source: urlEl.value }, true);
   } catch (e) {
     log(`In-iframe fetch blocked: ${String(e)}. Use "Open (server)" instead.`);
   }
@@ -284,11 +303,15 @@ el("fetch-url").addEventListener("click", async () => {
 
 el("add-row").addEventListener("click", () => {
   if (!current) return;
-  void update({
-    columns: current.columns,
-    rows: [...current.rows, current.columns.map(() => "")],
-    source: current.source,
-  });
+  // A new row needs a repaint; there is no focused cell to lose.
+  void update(
+    {
+      columns: current.columns,
+      rows: [...current.rows, current.columns.map(() => "")],
+      source: current.source,
+    },
+    true,
+  );
 });
 
 el("open-path").addEventListener("click", () => void call("open-table", { source: pathEl.value }));

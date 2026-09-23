@@ -26,8 +26,13 @@ async function startHttp(): Promise<void> {
   const port = parseInt(process.env.PORT ?? "3001", 10);
   const localFiles = process.env.TINYTABLE_LOCAL_FILES === "1";
 
-  const app = createMcpExpressApp({ host: "0.0.0.0" });
-  // Claude connects from Anthropic's cloud, so any origin has to be allowed.
+  // A hosted server has to accept connections from anywhere, and holds no
+  // local files. A server with the local-file tools on is the opposite: it can
+  // read and write this machine's disk, so it listens on loopback only. Binding
+  // both at once would let any page the user visits drive it.
+  const host = localFiles ? "127.0.0.1" : "0.0.0.0";
+  const app = createMcpExpressApp({ host });
+  // Claude and ChatGPT connect from their own cloud, so any origin is allowed.
   app.use(cors());
 
   // A landing page with the two install buttons. Claude takes a prefilled
@@ -77,12 +82,13 @@ async function startHttp(): Promise<void> {
     }
   });
 
-  const httpServer = app.listen(port, (err) => {
-    if (err) {
-      console.error("Failed to start server:", err);
-      process.exit(1);
-    }
-    console.log(`TinyTable MCP server on http://localhost:${port}/mcp (localFiles=${localFiles})`);
+  const httpServer = app.listen(port, host, () => {
+    console.log(`TinyTable MCP server on http://${host}:${port}/mcp (localFiles=${localFiles})`);
+  });
+  // listen() reports a port clash through the error event, not a callback.
+  httpServer.on("error", (err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
   });
 
   const shutdown = () => httpServer.close(() => process.exit(0));
