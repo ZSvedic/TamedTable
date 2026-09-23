@@ -5,6 +5,12 @@
 # Requests), failing the run. Throttle github.com so those requests are serialised
 # and spaced out instead of hammered in parallel.
 
+# The MCP App prototype's demo server (marketing/mcp-app) runs on Render's free
+# plan, which parks the instance after 15 idle minutes and answers slowly, or
+# not at all, on the first request. That is expected for a demo and should not
+# fail the link check.
+exclude = ["^https://tamedtable\\.onrender\\.com"]
+
 [hosts."github.com"]
 concurrency = 4
 request_interval = "200ms"
