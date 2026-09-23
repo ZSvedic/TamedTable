@@ -43,6 +43,17 @@ function log(message: string): void {
   void app.sendLog({ level: "info", data: message });
 }
 
+function parseCsv(text: string): { columns: string[]; rows: string[][] } {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.length > 0);
+  if (lines.length === 0) throw new Error("The CSV is empty.");
+  const columns = lines[0]!.split(",").map((c) => c.trim());
+  const rows = lines.slice(1).map((l) => {
+    const cells = l.split(",").map((c) => c.trim());
+    return columns.map((_, i) => cells[i] ?? "");
+  });
+  return { columns, rows };
+}
+
 function toCsv(t: Pick<TableData, "columns" | "rows">): string {
   return [t.columns.join(","), ...t.rows.map((r) => r.join(","))].join("\n") + "\n";
 }
@@ -62,7 +73,7 @@ async function update(next: Pick<TableData, "columns" | "rows" | "source">): Pro
   const csv = toCsv(next);
   const tableId = current.tableId;
   render({ ...next, tableId, csv });
-  await call("put-table", { tableId, csv, source: next.source });
+  await call("put-table", { tableId, csv, source: next.source }, true);
   // Belt and braces: the id in the model's context, never the rows.
   await app.updateModelContext({
     content: [
@@ -108,30 +119,64 @@ function render(data: TableData): void {
 }
 
 /**
- * Calls a server tool and repaints if the answer carries a table.
+ * Calls a server tool, recovering when the server has forgotten the table.
  *
- * A free-tier host puts the process to sleep, and the tables it was holding go
- * with it. The view still has the rows, so when the server says it has never
- * heard of this id, hand them back under the same id and try once more.
+ * Two host differences show up here. Claude returns a failed tool call as a
+ * result with `isError`; ChatGPT throws it. And a free-tier host puts the
+ * process to sleep, so the tables it was holding go with it. The view still
+ * has the rows, so on either kind of "no table with that id", hand them back
+ * under the same id and try once more.
+ *
+ * Everything that talks to the server goes through here, so no button has to
+ * remember that a table can go missing.
  */
-async function call(name: string, args: Record<string, unknown> = {}, retry = true): Promise<void> {
+async function callTool(
+  name: string,
+  args: Record<string, unknown> = {},
+  retry = true,
+): Promise<CallToolResult | null> {
+  const lost = (message: string) => /No table with id/.test(message);
+
+  const resend = async (): Promise<CallToolResult | null> => {
+    if (!retry || !current || name === "put-table") return null;
+    log("The server no longer has this table. Sending it back.");
+    await callTool(
+      "put-table",
+      { tableId: current.tableId, csv: current.csv, source: current.source },
+      false,
+    );
+    return callTool(name, args, false);
+  };
+
   try {
     const result = await app.callServerTool({ name, arguments: args });
-    const data = readTable(result);
-    if (data) render(data);
     const text = result.content?.[0];
     if (result.isError && text?.type === "text") {
-      if (retry && current && name !== "put-table" && /No table with id/.test(text.text)) {
-        log("The server restarted and lost the table. Sending it back.");
-        await call("put-table", { tableId: current.tableId, csv: current.csv, source: current.source }, false);
-        await call(name, args, false);
-        return;
-      }
+      if (lost(text.text)) return (await resend()) ?? null;
       log(text.text);
+      return null;
     }
+    return result;
   } catch (e) {
-    log(`${name} threw: ${String(e)}`);
+    const message = String(e);
+    if (lost(message)) return (await resend()) ?? null;
+    log(`${name} failed: ${message}`);
+    return null;
   }
+}
+
+/**
+ * Calls a tool and repaints from its answer.
+ *
+ * `silent` skips the repaint. A `put-table` answer is an echo of what is
+ * already on screen, and rebuilding the grid for it steals focus from
+ * whichever cell the user has moved to.
+ */
+async function call(name: string, args: Record<string, unknown> = {}, silent = false): Promise<void> {
+  const result = await callTool(name, args);
+  if (!result || silent) return;
+  const data = readTable(result);
+  if (data) render(data);
 }
 
 // --- Probes: the sandbox-dependent half of the experiment --------------------
@@ -152,12 +197,7 @@ fileEl.addEventListener("change", async () => {
   // The bytes exist only inside the iframe, so parse them here and hand the
   // result to the model. Nothing has to reach the server at all.
   const text = await file.text();
-  const lines = text.trim().split(/\r?\n/).filter((l) => l.length > 0);
-  const columns = lines[0]!.split(",").map((c) => c.trim());
-  const rows = lines.slice(1).map((l) => {
-    const cells = l.split(",").map((c) => c.trim());
-    return columns.map((_, i) => cells[i] ?? "");
-  });
+  const { columns, rows } = parseCsv(text);
   log(`Picker gave ${file.name}: ${rows.length} rows.`);
   await update({ columns, rows, source: file.name });
 });
@@ -168,18 +208,14 @@ el("save-link").addEventListener("click", async () => {
   if (!current) return;
   // The iframe cannot hand over a file, but the host can open a link, and a
   // link whose response carries Content-Disposition: attachment is a save.
-  try {
-    const result = await app.callServerTool({
-      name: "download-link",
-      arguments: { tableId: current.tableId },
-    });
-    const { url } = (result.structuredContent as { url?: string }) ?? {};
-    if (!url) throw new Error("No link came back.");
-    const { isError } = await app.openLink({ url });
-    log(isError ? `The host refused ${url}` : `Opened ${url}; your browser should save it.`);
-  } catch (e) {
-    log(`Save file failed: ${String(e)}`);
+  const result = await callTool("download-link", { tableId: current.tableId });
+  const { url } = (result?.structuredContent as { url?: string }) ?? {};
+  if (!url) {
+    log("Save file failed: no link came back.");
+    return;
   }
+  const { isError } = await app.openLink({ url });
+  log(isError ? `The host refused ${url}` : `Opened ${url}; your browser should save it.`);
 });
 
 el("copy").addEventListener("click", async () => {
@@ -231,11 +267,14 @@ el("open-link").addEventListener("click", async () => {
 
 el("fetch-url").addEventListener("click", async () => {
   // A bare fetch from the iframe needs the origin in the resource's
-  // `_meta.ui.csp.connectDomains` *and* CORS on the far end. This resource
-  // declares no CSP domains, so this probe is expected to fail.
+  // `_meta.ui.csp.connectDomains` *and* CORS on the far end. Claude blocks it.
+  // ChatGPT in developer mode does not, so on success actually load the table
+  // rather than just reporting the byte count.
   try {
     const response = await fetch(urlEl.value);
-    log(`In-iframe fetch succeeded: ${response.status}, ${(await response.text()).length} bytes.`);
+    const text = await response.text();
+    log(`In-iframe fetch succeeded: ${response.status}, ${text.length} bytes. Loading it.`);
+    await update({ ...parseCsv(text), source: urlEl.value });
   } catch (e) {
     log(`In-iframe fetch blocked: ${String(e)}. Use "Open (server)" instead.`);
   }

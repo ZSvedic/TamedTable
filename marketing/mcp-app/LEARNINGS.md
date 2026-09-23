@@ -48,7 +48,9 @@ Four things worth knowing before trying it:
 
 - **Connectors is called Plugins.** ChatGPT renamed the page in July 2026, and the Developer mode toggle moved to **Security and login**. Guides written before then send you to a page that no longer exists. The **+** button on Plugins is not rendered at all until Developer mode is on.
 - **Authentication defaults to OAuth.** A server with no auth has to be set to **No Auth** by hand, or the dialog fails discovering OAuth settings that were never there.
-- **ChatGPT labels the view `CSP off`.** Developer-mode apps run without the production Content Security Policy, and there is a separate toggle, "Enforce CSP in developer mode", to put it back. Claude gives no such choice. The same view can therefore reach the network in one client and not the other, which is a host policy, not a property of the sandbox.
+- **ChatGPT labels the view `CSP off`.** Developer-mode apps run without the production Content Security Policy, and there is a separate toggle, "Enforce CSP in developer mode", to put it back. Claude gives no such choice, and the difference is visible: the in-iframe fetch that Claude refuses returns `200, 2613 bytes` in ChatGPT. Same view, same sandbox, opposite answers. The CSP block is host policy.
+- **A relaxed CSP is not a relaxed sandbox.** With `CSP off`, the download button still does nothing in ChatGPT. CSP governs what the page may talk to; the sandbox attribute governs what it may do. Only one of them was loosened.
+- **ChatGPT throws failed tool calls, Claude returns them.** A tool answering with `isError` reaches the view as a result in Claude and as a thrown `ProtocolError` in ChatGPT. Code that only inspects `result.isError` silently misses half the failures. Mine did, and the recovery path it guarded never ran until I handled both.
 - **`_meta.ui.csp` and `_meta.ui.domain` are required to submit an app**, and ChatGPT says so on the app's page as soon as you connect. They are optional for development, so this prototype ships without them, but anything headed for the ChatGPT directory needs both.
 
 ## Putting an install button on a web page
@@ -83,11 +85,21 @@ This is the difference that matters. `openLink` with a `data:` URL is refused by
 
 **The clipboard.** `navigator.clipboard.writeText` inside the sandbox, with the old `execCommand("copy")` as a fallback. One of the two works: I read the clipboard back after clicking and it held the CSV. It needs no server, no host cooperation and no permission prompt, only a user gesture, so it is the cheapest escape hatch there is and worth having even when a download link exists.
 
+## Two bugs the second client found
+
+Neither showed up in Claude, and both were mine rather than the host's.
+
+**A probe that only reported.** The in-iframe fetch button was written when the answer was always "blocked", so it logged the byte count and threw the bytes away. The first time a host allowed the fetch, it printed `succeeded: 200, 2613 bytes` and loaded nothing. A probe whose success path does nothing is a probe that lies the day it starts working.
+
+**One recovery path, and a button that walked around it.** Every server call went through a wrapper that re-sends the table when the server has forgotten it, except the Save file button, which called the tool directly because it needed the result back. It was the one button that failed after a redeploy. The wrapper now returns the result, so there is one door and no reason for anything to take another.
+
 ## What I would do differently
 
 **Start from the transport, not the UI.** I wrote the table state, then the tools, then the view, and the view turned out to need almost nothing: it is a `<table>` and a handful of `callServerTool` calls. Half a day of iframe worry bought me one file picker.
 
 **Give every tool the same output shape from the start.** All six table tools return the same `structuredContent`, so the view has one `render()` and one `call()` helper. I added `save-table` with a different shape and immediately had to special-case it.
+
+**Make every server call go through one function.** Two of the three bugs in the paragraphs above are the same bug: something bypassed the shared path. The wrapper should return the tool result from the start, so no caller ever has a reason to skip it.
 
 **Show where the data came from, on screen.** The view prints its source and row count in the header. That one line is what made the session bug visible in a screenshot: the label said `sample` when the chat had just sorted 191 rows.
 
