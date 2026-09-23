@@ -397,9 +397,13 @@ app.ontoolresult = (result) => {
  * setting changes and replays the tool result it first painted, which can be
  * several edits behind the table the server holds under the same id. Ask the
  * server for its copy and show that if it differs.
+ *
+ * Read only: no retry, so no re-send. After a restart the server has nothing,
+ * and every view on the page loads at once; if each handed back its own rows,
+ * the oldest view could win and overwrite the newest edit.
  */
 async function refresh(tableId: string): Promise<void> {
-  const result = await callTool("show-table", { tableId });
+  const result = await callTool("show-table", { tableId }, false);
   const data = result && readTable(result);
   if (!data || data.tableId !== current?.tableId || data.csv === current.csv) return;
   render(data);
