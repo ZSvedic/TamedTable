@@ -234,8 +234,13 @@ el("save-link").addEventListener("click", async () => {
     log("Save file failed: no link came back.");
     return;
   }
-  const { isError } = await app.openLink({ url });
-  log(isError ? `The host refused ${url}` : `Opened ${url}; your browser should save it.`);
+  // Both hosts put a confirmation in front of the link, and the answer says
+  // little: ChatGPT accepts before the user has confirmed, and Claude may never
+  // answer at all. So log the request now and the host's answer if it comes.
+  log(`Asked the host to open ${url}.`);
+  void app.openLink({ url }).then(({ isError }) =>
+    log(isError ? "The host refused the link." : "The host accepted the link."),
+  );
 });
 
 el("copy").addEventListener("click", async () => {
