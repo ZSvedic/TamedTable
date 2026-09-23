@@ -387,8 +387,24 @@ const app = new App(
 // resource, so a chat-driven edit paints a fresh view with the new rows.
 app.ontoolresult = (result) => {
   const data = readTable(result);
-  if (data) render(data);
+  if (!data) return;
+  render(data);
+  void refresh(data.tableId);
 };
+
+/**
+ * A host can hand the view an old result. ChatGPT reloads the view when a
+ * setting changes and replays the tool result it first painted, which can be
+ * several edits behind the table the server holds under the same id. Ask the
+ * server for its copy and show that if it differs.
+ */
+async function refresh(tableId: string): Promise<void> {
+  const result = await callTool("show-table", { tableId });
+  const data = result && readTable(result);
+  if (!data || data.tableId !== current?.tableId || data.csv === current.csv) return;
+  render(data);
+  log("The host replayed an older result. Showing the server's copy.");
+}
 app.onhostcontextchanged = applyHostContext;
 app.onerror = (e) => log(`App error: ${String(e)}`);
 app.onteardown = async () => ({});
