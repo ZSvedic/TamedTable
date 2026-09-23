@@ -4,9 +4,9 @@
  * cross-origin fetch, opening a link). Every probe has a server-side fallback
  * next to it, so the UI stays useful either way.
  *
- * The table lives here, not on the server. An edit made in the grid is applied
- * locally and then pushed to the model with `updateModelContext`, so the next
- * thing typed in the chat works from what is on screen.
+ * The server holds the table under an id, and the view knows that id. An edit
+ * made in the grid is painted at once and written back under the same id, so
+ * the next thing typed in the chat works from what is on screen.
  */
 import {
   App,
@@ -18,7 +18,13 @@ import {
 import type { CallToolResult } from "@modelcontextprotocol/client";
 import "./app.css";
 
-type TableData = { columns: string[]; rows: string[][]; source: string; csv: string };
+type TableData = {
+  tableId: string;
+  columns: string[];
+  rows: string[][];
+  source: string;
+  csv: string;
+};
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const gridEl = el<HTMLDivElement>("grid");
@@ -46,14 +52,23 @@ function readTable(result: CallToolResult): TableData | null {
   return data && Array.isArray(data.columns) ? data : null;
 }
 
-/** Applies a local change, repaints, and tells the model what is on screen now. */
+/**
+ * Paints a local change straight away, then writes it back to the server under
+ * the same table id. The write is what the chat will read; the repaint is only
+ * so the grid does not wait for a round trip.
+ */
 async function update(next: Pick<TableData, "columns" | "rows" | "source">): Promise<void> {
-  render({ ...next, csv: toCsv(next) });
+  if (!current) return;
+  const csv = toCsv(next);
+  const tableId = current.tableId;
+  render({ ...next, tableId, csv });
+  await call("put-table", { tableId, csv, source: next.source });
+  // Belt and braces: the id in the model's context, never the rows.
   await app.updateModelContext({
     content: [
       {
         type: "text",
-        text: `---\nsource: ${next.source}\nrows: ${next.rows.length}\n---\n\nThe user edited the table in the view. It now holds:\n\n${toCsv(next)}\nPass this CSV to edit-table for the next change.`,
+        text: `The user edited the table in the view. It is table ${tableId}, now ${next.rows.length} rows. Pass that tableId to edit-table; do not rebuild the table from an earlier result.`,
       },
     ],
   });
@@ -63,6 +78,7 @@ function render(data: TableData): void {
   current = data;
   sourceEl.textContent = data.source;
   sizeEl.textContent = `${data.rows.length} rows`;
+  sourceEl.title = `tableId ${data.tableId}`;
 
   const table = document.createElement("table");
   const head = table.createTHead().insertRow();
@@ -187,7 +203,7 @@ el("open-path").addEventListener("click", () => void call("open-table", { source
 el("open-url").addEventListener("click", () => void call("open-table", { source: urlEl.value }));
 el("save-path").addEventListener("click", () => {
   if (!current) return;
-  void call("save-table", { csv: current.csv, path: pathEl.value });
+  void call("save-table", { tableId: current.tableId, path: pathEl.value });
 });
 
 el("ask-chat").addEventListener("click", async () => {

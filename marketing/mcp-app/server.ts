@@ -1,9 +1,9 @@
 /**
  * @file The MCP server half: four tools and one UI resource.
  *
- * The server holds no table. Every tool takes the current CSV and returns a new
- * one, because the model's tool calls and the view's tool calls do not
- * necessarily share a session. See LEARNINGS.md.
+ * The server holds tables by id, never by session, because the model's tool
+ * calls and the view's tool calls do not necessarily share a session. Both
+ * sides pass the id, so both reach the same table. See LEARNINGS.md.
  */
 import {
   registerAppResource,
@@ -18,6 +18,7 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import * as store from "./store.js";
 import * as table from "./table.js";
 
 const DIST_DIR = import.meta.filename.endsWith(".ts")
@@ -28,26 +29,44 @@ const RESOURCE_URI = "ui://tinytable/table.html";
 
 /** Every tool answers with the same shape, so the view has one code path. */
 const tableOutput = z.object({
+  tableId: z.string(),
   columns: z.array(z.string()),
   rows: z.array(z.array(z.string())),
   source: z.string(),
   csv: z.string(),
 });
 
-const csvArg = z
+const tableIdArg = z
   .string()
   .describe(
-    "The table to work on, as CSV with a header row. Copy it from the `csv` " +
-      "field of the previous result. Omit it only for the built-in sample.",
+    "The id of the table to work on, from the previous result's `tableId`. " +
+      "Always pass it. The server holds the current rows under that id, " +
+      "including edits the user made in the view, so it is never stale.",
   );
 
-function tableResult(t: table.TableData, note: string): CallToolResult {
+const csvArg = z
+  .string()
+  .describe("A whole table as CSV with a header row, used when there is no tableId yet.");
+
+const PREVIEW_ROWS = 20;
+
+function tableResult(id: string, t: table.TableData, note: string): CallToolResult {
   const csv = table.toCsv(t);
+  const lines = csv.split("\n");
+  // A preview, not the table. The model works from `tableId`; handing it the
+  // whole CSV invites it to rebuild the table from a copy that has gone stale.
+  const preview =
+    lines.length > PREVIEW_ROWS + 2
+      ? `${lines.slice(0, PREVIEW_ROWS + 1).join("\n")}\n… ${t.rows.length - PREVIEW_ROWS} more rows`
+      : csv;
   return {
-    // The model reads this, and passes the CSV straight back on the next edit,
-    // so it has to be the whole table rather than a preview.
-    content: [{ type: "text", text: `${note}\n\n${csv}` }],
-    structuredContent: { columns: t.columns, rows: t.rows, source: t.source, csv },
+    content: [
+      {
+        type: "text",
+        text: `${note}\n\ntableId: ${id}\n${t.rows.length} rows, ${t.columns.length} columns.\n\n${preview}`,
+      },
+    ],
+    structuredContent: { tableId: id, columns: t.columns, rows: t.rows, source: t.source, csv },
   };
 }
 
@@ -56,8 +75,24 @@ function errorResult(e: unknown): CallToolResult {
   return { isError: true, content: [{ type: "text", text: `Error: ${message}` }] };
 }
 
-function read(csv: string | undefined, source: string | undefined): table.TableData {
-  return table.parseCsv(csv ?? table.SAMPLE_CSV, source ?? (csv ? "chat" : "sample"));
+/** Finds the table a tool call is about, or starts a new one. */
+function load(
+  tableId: string | undefined,
+  csv: string | undefined,
+  source: string | undefined,
+): { id: string; t: table.TableData } {
+  if (tableId) {
+    const held = store.get(tableId);
+    if (held) return { id: tableId, t: held };
+    if (!csv) {
+      throw new Error(
+        `No table with id ${tableId}. The server restarts lose held tables; ` +
+          "call show-table to start a new one.",
+      );
+    }
+  }
+  const t = table.parseCsv(csv ?? table.SAMPLE_CSV, source ?? (csv ? "chat" : "built-in sample"));
+  return { id: tableId ? store.put(tableId, t) : store.create(t), t };
 }
 
 /**
@@ -79,15 +114,17 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
         "Display a table in an interactive view. Pass the CSV you already have; " +
         "with no CSV it shows the built-in sample.",
       inputSchema: z.object({
+        tableId: tableIdArg.optional(),
         csv: csvArg.optional(),
         source: z.string().optional().describe("A label for where the table came from."),
       }),
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async ({ csv, source }) => {
+    async ({ tableId, csv, source }) => {
       try {
-        return tableResult(read(csv, source), "Showing the table.");
+        const { id, t } = load(tableId, csv, source);
+        return tableResult(id, t, "Showing the table.");
       } catch (e) {
         return errorResult(e);
       }
@@ -104,6 +141,7 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
         "rename a column, sort, or filter. Always pass the current CSV. Row " +
         "numbers are zero-based and refer to the rows as displayed.",
       inputSchema: z.object({
+        tableId: tableIdArg.optional(),
         csv: csvArg.optional(),
         source: z.string().optional().describe("A label for where the table came from."),
         op: z.enum(["set-cell", "add-row", "delete-row", "rename-column", "sort", "filter"]),
@@ -117,9 +155,9 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async ({ csv, source, op, row, column, value, values, to, direction }) => {
+    async ({ tableId, csv, source, op, row, column, value, values, to, direction }) => {
       try {
-        const before = read(csv, source);
+        const { id, t: before } = load(tableId, csv, source);
         const need = <T>(v: T | undefined, what: string): T => {
           if (v === undefined) throw new Error(`"${op}" needs ${what}.`);
           return v;
@@ -145,7 +183,8 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
             after = table.filterRows(before, need(column, "column"), need(value, "value"));
             break;
         }
-        return tableResult(after, `Applied ${op}.`);
+        store.put(id, after);
+        return tableResult(id, after, `Applied ${op}.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -183,7 +222,8 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
           }
           csv = await fs.readFile(path.resolve(source), "utf-8");
         }
-        return tableResult(table.parseCsv(csv, source), `Loaded ${source}.`);
+        const t = table.parseCsv(csv, source);
+        return tableResult(store.create(t), t, `Loaded ${source}.`);
       } catch (e) {
         return errorResult(e);
       }
@@ -197,22 +237,51 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
       title: "Save table",
       description: "Write a CSV to a local file.",
       inputSchema: z.object({
-        csv: csvArg,
+        tableId: tableIdArg,
         path: z.string().describe("Local file path to write."),
       }),
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async ({ csv, path: target }) => {
+    async ({ tableId, path: target }) => {
       try {
         if (!localFiles) {
           throw new Error("This server writes local files only when it runs on your own machine.");
         }
+        const { id, t } = load(tableId, undefined, undefined);
+        const csv = table.toCsv(t);
         const resolved = path.resolve(target);
         await fs.writeFile(resolved, csv, "utf-8");
         // Echo the table back so the view the host paints after a save shows
         // what was saved, rather than an empty grid.
-        return tableResult(table.parseCsv(csv, resolved), `Saved ${csv.length} bytes to ${resolved}.`);
+        return tableResult(id, t, `Saved ${csv.length} bytes to ${resolved}.`);
+      } catch (e) {
+        return errorResult(e);
+      }
+    },
+  );
+
+  // App-only: the view writes its own edits back under the same id, so the
+  // next thing typed in the chat works from what is on screen.
+  registerAppTool(
+    server,
+    "put-table",
+    {
+      title: "Store table",
+      description: "Replace the rows held under a table id with the ones the view now shows.",
+      inputSchema: z.object({
+        tableId: z.string(),
+        csv: csvArg,
+        source: z.string().optional(),
+      }),
+      outputSchema: tableOutput,
+      _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["app"] as const } },
+    },
+    async ({ tableId, csv, source }) => {
+      try {
+        const t = table.parseCsv(csv, source ?? "edited in the view");
+        store.put(tableId, t);
+        return tableResult(tableId, t, "Stored the view's edits.");
       } catch (e) {
         return errorResult(e);
       }

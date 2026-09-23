@@ -79,23 +79,23 @@ docker run -p 8080:8080 tinytable
 
 | File | Holds |
 |---|---|
-| `server.ts` | The four tools and the one `ui://` resource |
-| `table.ts` | CSV parse and write, and the edit ops. Pure functions, no state |
+| `server.ts` | The five tools and the one `ui://` resource |
+| `table.ts` | CSV parse and write, and the edit ops. Pure functions |
+| `store.ts` | The tables the server holds, keyed by id |
 | `main.ts` | Transports: Streamable HTTP on :3001, or `--stdio` |
 | `Dockerfile` | The image a container host runs for the claude.ai path |
 | `mcp-app.html`, `src/mcp-app.ts`, `src/app.css` | The view, bundled to one file by `vite-plugin-singlefile` |
 
 ## The tools
 
-Four tools, all visible to the model, all carrying the same `resourceUri` so any of them paints the view.
+Four tools the model can call, all carrying the same `resourceUri` so any of them paints the view, plus one the view alone can call.
 
-| Tool | Does |
-|---|---|
-| `show-table` | Displays a CSV, or the built-in sample |
-| `edit-table` | `set-cell`, `add-row`, `delete-row`, `rename-column`, `sort`, `filter` |
-| `open-table` | Reads a CSV from a local path or an http(s) URL |
-| `save-table` | Writes a CSV to a local path |
+| Tool | Who calls it | Does |
+|---|---|---|
+| `show-table` | model, view | Displays a table, or the built-in sample |
+| `edit-table` | model, view | `set-cell`, `add-row`, `delete-row`, `rename-column`, `sort`, `filter` |
+| `open-table` | model, view | Reads a CSV from a local path or an http(s) URL |
+| `save-table` | model, view | Writes the table to a local CSV file |
+| `put-table` | view only | Stores an edit made in the grid |
 
-The server keeps no table between calls. Each tool takes the current CSV and returns the new one, and the table itself lives in the view. [LEARNINGS.md](LEARNINGS.md) has the failure that forced this.
-
-Edits made in the grid never reach the server. They are applied locally and pushed to the model with `updateModelContext`, so the next thing typed in the chat works from what is on screen.
+Every result carries a `tableId`, and the server holds the rows under that id. The model passes the id back rather than the rows, and the view writes its grid edits under the same id, so there is one copy and the last writer wins. [LEARNINGS.md](LEARNINGS.md) has the two designs that came before this one and how each failed.

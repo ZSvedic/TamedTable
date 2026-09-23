@@ -2,13 +2,13 @@
 
 Built against the MCP Apps extension, spec version `2026-01-26`, SDK `@modelcontextprotocol/ext-apps@2.0.0`. Everything below was run, not guessed: the numbers come from driving the SDK's reference host in headless Chromium and from calling the server over HTTP.
 
-Two one-line summaries. The view is a sandboxed iframe with no origin of its own, so anything that touches the outside world goes through a tool call to the server. And the server should keep nothing between tool calls, because you do not control how the host connects.
+Two one-line summaries. The view is a sandboxed iframe with no origin of its own, so anything that touches the outside world goes through a tool call to the server. And the model should be given a handle to the data, never a copy of it, because you control neither how the host connects nor which copy the model reaches for.
 
 ## What worked
 
 **The tool-plus-resource pairing.** An MCP App is one tool with `_meta.ui.resourceUri` and one resource serving a single bundled HTML file. Any tool that carries the same `resourceUri` repaints the same view, so `show-table`, `edit-table` and `open-table` all land in one place. Registering the tool is the whole integration: no host-side config, no manifest.
 
-**App-only tools.** `_meta.ui.visibility: ["app"]` hides a tool from the model but leaves it callable from the view. The reference host listed exactly the tools the model should see. I ended up not needing it, for the reason in the next section, but the mechanism works.
+**App-only tools.** `_meta.ui.visibility: ["app"]` hides a tool from the model but leaves it callable from the view. The reference host listed exactly the four tools the model should see and kept `put-table` out of them. That is what lets a grid edit reach the server without teaching the model a tool it should never call.
 
 **Editing from the parent chat.** This turned out to be nearly free, and not for the reason I expected. Every table tool carries the same `resourceUri`, so when the model calls `edit-table`, the host paints a fresh view with the new rows. The view does not have to be told anything; it just gets `ontoolresult` and renders.
 
@@ -24,14 +24,19 @@ My first design kept the table in the server process. The model called `edit-tab
 
 In Claude it failed on the first try. The chat said "Sorted by country, A to Z." and the view underneath showed the original unsorted sample. The view's `get-table` was landing somewhere the model's `edit-table` had never touched, so the poll painted an untouched table over a correct result.
 
-The fix was to stop keeping state on the server at all. Every tool now takes the current CSV as an argument and returns the new one, and the table itself lives in the view. An edit typed in the chat works because the model passes back the CSV it read from the last result. An edit made in the grid is applied locally and pushed to the model with `updateModelContext`. Nothing depends on two calls reaching the same process, let alone the same session.
+My first fix went too far the other way: the server kept nothing, every tool took the current CSV as an argument, and the table lived in the view. Chat edits worked again, because the model passed back the CSV it had read from the last tool result.
 
-I verified the new version by giving it the worst case a host can: a brand-new MCP session for every single call. Show, sort, delete, add, open a URL and save all still chain correctly.
+That lasted until someone added a row in the view. The next chat edit wiped it. The model had two copies to choose from, the CSV in the last tool result and the newer one the view had sent with `updateModelContext`, and it used the older one. The spec explains why it is allowed to: a view's context update *overwrites* the previous one and the host **MAY** defer delivering it until the next user message, so nothing puts it after the stale tool result.
 
-Two lessons, and the second is the expensive one:
+The fix that held is a third design. The server keeps tables in a map **keyed by id, never by session**. Every result carries a `tableId`; the model passes that id back, and the view writes its own edits under the same id through an app-only `put-table`. Whoever wrote last wins, because there is only one copy. The model never handles rows at all, only a short opaque string, and the tool results carry a 20-row preview rather than the table.
 
-- **A stateless tool is the portable one.** State held between tool calls is a guess about how the host connects, and hosts differ.
-- **The reference host is not the host.** It is one connection, one session, one tab, and it hid the wrong assumption completely. Anything that matters has to be tried in the real client before it counts as working.
+I verified it by giving the server the worst case a host can: a brand-new MCP session for every single call. Add a row in the view, then delete a row from the chat passing only the id, and the added row survives.
+
+Three lessons, and the last one is the expensive one:
+
+- **Give the model a handle, not the data.** A copy of the data in the model's context is a copy that will go stale, and the model cannot tell which copy is newest. An id cannot go stale.
+- **Session state is a guess about how the host connects.** Key shared state by something that travels in the arguments instead.
+- **The reference host is not the host.** It is one connection, one session, one tab, and it hid both wrong assumptions completely. Anything that matters has to be tried in the real client before it counts as working.
 
 ## What was blocked
 
@@ -63,7 +68,7 @@ That rules out this repo's own PR preview, which is GitHub Pages: static files, 
 
 Going public also forced the local-file tools off. `open-table` and `save-table` read and write the machine the server runs on. On your laptop that is the point. On a public host that is somebody else's disk, so they refuse a path unless `TINYTABLE_LOCAL_FILES=1` says the machine is yours. Opening an http(s) URL is unaffected.
 
-The multi-tenancy problem solved itself: a server with no state has nothing for one visitor to leak to another.
+Tables are keyed by a random id rather than by user, so visitors are separated by not being able to guess each other's ids. That is fine for a prototype and would not be fine for anything real.
 
 ## Not verified here
 
