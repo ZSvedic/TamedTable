@@ -41,6 +41,8 @@ Reusable session starters in `process/prompts/`:
 | [prompt-hunt-browser.md](process/prompts/prompt-hunt-browser.md) | BROWSER HUNTER: drive the built app in Playwright as a user, find bugs, land them as red tests. Never fixes. |
 | [prompt-illustrate.md](process/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
 | [prompt-implement.md](process/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
+| [prompt-mcp-app-autopilot.md](process/prompts/prompt-mcp-app-autopilot.md) | Drive the MCP App prototype in a real browser, unattended: build, test in both clients, record findings. |
+| [prompt-mcp-app-survey.md](process/prompts/prompt-mcp-app-survey.md) | Survey MCP Apps that have a verified GUI and are genuinely free to try. |
 | [prompt-meeting.md](process/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
 | [prompt-scribe.md](process/prompts/prompt-scribe.md) | SCRIBE: spec-only editor, never touches `src/`. Paired with WoZ. |
 | [prompt-woz.md](process/prompts/prompt-woz.md) | WoZ: interactive behavior simulator driven by `spec/behavior.md`. |
