@@ -59,6 +59,7 @@ td input {
   border: none;
   border-radius: 0;
   width: 100%;
+  box-sizing: border-box;
   padding: 4px 6px;
   background: transparent;
 }
