@@ -31,8 +31,7 @@ const gridEl = el<HTMLDivElement>("grid");
 const sourceEl = el<HTMLSpanElement>("source");
 const sizeEl = el<HTMLSpanElement>("size");
 const logEl = el<HTMLPreElement>("log");
-const pathEl = el<HTMLInputElement>("path");
-const urlEl = el<HTMLInputElement>("url");
+const sourceInputEl = el<HTMLInputElement>("source-input");
 const fileEl = el<HTMLInputElement>("file");
 const mainEl = document.querySelector(".main") as HTMLElement;
 const fullscreenEl = el<HTMLButtonElement>("fullscreen");
@@ -197,119 +196,7 @@ async function call(name: string, args: Record<string, unknown> = {}, silent = f
   if (data) render(data);
 }
 
-// --- Probes: the sandbox-dependent half of the experiment --------------------
-
-el("pick-file").addEventListener("click", () => {
-  // A hidden <input type="file"> needs the sandbox to allow the picker. If
-  // nothing opens, the fallback is "Open (server)".
-  log("Opening the native file picker…");
-  fileEl.click();
-});
-
-fileEl.addEventListener("change", async () => {
-  const file = fileEl.files?.[0];
-  if (!file) {
-    log("File picker returned nothing.");
-    return;
-  }
-  // The bytes exist only inside the iframe, so parse them here and hand the
-  // result to the model. Nothing has to reach the server at all.
-  const text = await file.text();
-  // Clear it, or picking the same file twice fires no second change event.
-  fileEl.value = "";
-  const { columns, rows } = parseCsv(text);
-  log(`Picker gave ${file.name}: ${rows.length} rows.`);
-  await update({ columns, rows, source: file.name }, true);
-});
-
-// --- Getting a file out, the two ways that work ------------------------------
-
-el("save-link").addEventListener("click", async () => {
-  if (!current) return;
-  // The iframe cannot hand over a file, but the host can open a link, and a
-  // link whose response carries Content-Disposition: attachment is a save.
-  const result = await callTool("download-link", { tableId: current.tableId });
-  const { url } = (result?.structuredContent as { url?: string }) ?? {};
-  if (!url) {
-    log("Save file failed: no link came back.");
-    return;
-  }
-  // Both hosts put a confirmation in front of the link, and the answer says
-  // little: ChatGPT accepts before the user has confirmed, and Claude may never
-  // answer at all. So log the request now and the host's answer if it comes.
-  log(`Asked the host to open ${url}.`);
-  void app.openLink({ url }).then(({ isError }) =>
-    log(isError ? "The host refused the link." : "The host accepted the link."),
-  );
-});
-
-el("copy").addEventListener("click", async () => {
-  if (!current) return;
-  // No server, no host, no permissions to ask for: the clipboard is the one
-  // way out of the sandbox that needs nothing but a user gesture.
-  try {
-    await navigator.clipboard.writeText(current.csv);
-    log(`Copied ${current.rows.length} rows to the clipboard.`);
-  } catch {
-    // Older path, still allowed inside a sandboxed iframe on a user gesture.
-    // Selecting the textarea moves focus to it, and removing it drops focus on
-    // the body. Hand it back, or a keyboard user lands at the top of the view.
-    const back = document.activeElement as HTMLElement | null;
-    const area = document.createElement("textarea");
-    area.value = current.csv;
-    document.body.appendChild(area);
-    area.select();
-    const ok = document.execCommand("copy");
-    area.remove();
-    back?.focus();
-    log(ok ? "Copied with the fallback path." : "The clipboard is blocked too.");
-  }
-});
-
-el("download").addEventListener("click", () => {
-  // Blob download needs `allow-downloads` on the iframe sandbox.
-  try {
-    if (!current) return;
-    const url = URL.createObjectURL(new Blob([current.csv], { type: "text/csv" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "table.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    log("Download click dispatched. If no file appeared, the sandbox blocked it.");
-  } catch (e) {
-    log(`Download blocked: ${String(e)}`);
-  }
-});
-
-el("open-link").addEventListener("click", async () => {
-  // Second try at getting a file out: hand the host a data: URL and let it
-  // open it. Hosts are free to refuse non-http(s) schemes.
-  if (!current) return;
-  const { isError } = await app.openLink({
-    url: `data:text/csv;charset=utf-8,${encodeURIComponent(current.csv)}`,
-  });
-  log(`openLink with a data: URL was ${isError ? "refused" : "accepted"} by the host.`);
-});
-
-el("fetch-url").addEventListener("click", async () => {
-  // A bare fetch from the iframe needs the origin in the resource's
-  // `_meta.ui.csp.connectDomains` *and* CORS on the far end. Claude blocks it.
-  // ChatGPT in developer mode does not, so on success actually load the table
-  // rather than just reporting the byte count.
-  try {
-    const response = await fetch(urlEl.value);
-    const text = await response.text();
-    log(`In-iframe fetch succeeded: ${response.status}, ${text.length} bytes. Loading it.`);
-    await update({ ...parseCsv(text), source: urlEl.value }, true);
-  } catch (e) {
-    log(`In-iframe fetch blocked: ${String(e)}. Use "Open (server)" instead.`);
-  }
-});
-
-// --- Server-side paths -------------------------------------------------------
+// --- Edit ---------------------------------------------------------------------
 
 el("add-row").addEventListener("click", () => {
   if (!current) return;
@@ -324,11 +211,136 @@ el("add-row").addEventListener("click", () => {
   );
 });
 
-el("open-path").addEventListener("click", () => void call("open-table", { source: pathEl.value }));
-el("open-url").addEventListener("click", () => void call("open-table", { source: urlEl.value }));
+// --- Load a CSV: the ways that work in every host -----------------------------
+
+// The server fetches the URL or reads the path. It runs outside the browser, so
+// no host CSP or sandbox applies.
+el("open").addEventListener("click", () => void call("open-table", { source: sourceInputEl.value }));
+
+el("pick-file").addEventListener("click", () => {
+  log("Opening the file picker…");
+  fileEl.click();
+});
+
+fileEl.addEventListener("change", async () => {
+  const file = fileEl.files?.[0];
+  if (!file) {
+    log("The file picker returned nothing.");
+    return;
+  }
+  // The bytes exist only inside the iframe, so parse them here and write the
+  // rows to the server under the current id.
+  const text = await file.text();
+  // Clear it, or picking the same file twice fires no second change event.
+  fileEl.value = "";
+  const { columns, rows } = parseCsv(text);
+  log(`Picked ${file.name}: ${rows.length} rows.`);
+  await update({ columns, rows, source: file.name }, true);
+});
+
+// --- Save a CSV: the ways that work in every host -----------------------------
+
+el("copy").addEventListener("click", async () => {
+  if (!current) return;
+  // No server, no host, no permissions to ask for: the clipboard is the one
+  // way out of the sandbox that needs nothing but a user gesture.
+  try {
+    await navigator.clipboard.writeText(current.csv);
+    log(`Copied ${current.rows.length} rows to the clipboard.`);
+  } catch {
+    // Neither Claude nor ChatGPT grants clipboard-write to the iframe, so the
+    // modern call fails and this older one does the copy.
+    // Selecting the textarea moves focus to it, and removing it drops focus on
+    // the body. Hand it back, or a keyboard user lands at the top of the view.
+    const back = document.activeElement as HTMLElement | null;
+    const area = document.createElement("textarea");
+    area.value = current.csv;
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    back?.focus();
+    log(
+      ok
+        ? `Copied ${current.rows.length} rows (the host blocks the clipboard API, so the older copy command did it).`
+        : "Copy failed: the host blocks both clipboard paths.",
+    );
+  }
+});
+
+el("save-link").addEventListener("click", async () => {
+  if (!current) return;
+  // The iframe cannot hand over a file, but the host can open a link, and a
+  // link whose response carries Content-Disposition: attachment is a save.
+  const result = await callTool("download-link", { tableId: current.tableId });
+  const { url } = (result?.structuredContent as { url?: string }) ?? {};
+  if (!url) {
+    log("Save file failed: the server sent no link.");
+    return;
+  }
+  // Both hosts put a confirmation in front of the link, and the answer says
+  // little: ChatGPT accepts before the user has confirmed, and Claude may never
+  // answer at all. So log the request now and the host's answer if it comes.
+  log(`Asked the chat app to open ${url}. Confirm in its dialog.`);
+  void app.openLink({ url }).then(({ isError }) =>
+    log(isError ? "The chat app refused the link." : "The chat app passed the link on."),
+  );
+});
+
 el("save-path").addEventListener("click", () => {
   if (!current) return;
-  void call("save-table", { tableId: current.tableId, path: pathEl.value });
+  void call("save-table", { tableId: current.tableId, path: sourceInputEl.value });
+});
+
+// --- Sandbox tests: each is meant to fail somewhere ---------------------------
+
+el("fetch-here").addEventListener("click", async () => {
+  // A fetch from the iframe needs the origin in the host's CSP (built from
+  // `_meta.ui.csp.connectDomains`, which this app leaves empty) and CORS on the
+  // far end. Claude always enforces the CSP; ChatGPT lets developer-mode apps
+  // run without it. On success, load the rows rather than just count bytes.
+  const url = sourceInputEl.value;
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    log(`Fetch in page worked: ${response.status}, ${text.length} bytes. The host's CSP let it through.`);
+    await update({ ...parseCsv(text), source: url }, true);
+  } catch (e) {
+    log(`Fetch in page blocked by the host's CSP (${String(e)}). "Open" does the same through the server.`);
+  }
+});
+
+el("download").addEventListener("click", () => {
+  // Blob download needs `allow-downloads` on the iframe sandbox. When it is
+  // missing the browser drops the click silently, so the page cannot tell.
+  try {
+    if (!current) return;
+    const url = URL.createObjectURL(new Blob([current.csv], { type: "text/csv" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "table.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    log("Blob download clicked. No file means the iframe sandbox dropped it (no allow-downloads); the page cannot tell.");
+  } catch (e) {
+    log(`Blob download failed: ${String(e)}`);
+  }
+});
+
+el("data-link").addEventListener("click", async () => {
+  // Hand the host a data: URL that holds the whole file. Hosts are free to
+  // refuse schemes other than http(s).
+  if (!current) return;
+  const { isError } = await app.openLink({
+    url: `data:text/csv;charset=utf-8,${encodeURIComponent(current.csv)}`,
+  });
+  log(
+    isError
+      ? "data: link refused by the chat app."
+      : "data: link passed on by the chat app. Confirm in its dialog.",
+  );
 });
 
 el("ask-chat").addEventListener("click", async () => {

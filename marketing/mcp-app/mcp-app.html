@@ -12,36 +12,67 @@
       <strong>TinyTable</strong>
       <span id="source" class="muted">sample</span>
       <span id="size" class="muted">0 rows</span>
-      <button id="fullscreen" class="push" hidden>Fullscreen</button>
+      <button id="fullscreen" class="push" hidden title="Ask the chat app to show the table in the whole window.">Fullscreen</button>
     </header>
 
     <div id="grid" class="grid">Loading…</div>
 
     <section class="bar">
-      <button id="add-row">Add row</button>
-      <button id="ask-chat">Ask chat to tidy it</button>
+      <button id="add-row" title="Adds an empty row. The server keeps it, so the chat sees it too.">Add row</button>
+      <button id="ask-chat" title="Sends a message to the chat, which then edits the table with its tools.">Ask chat to tidy it</button>
     </section>
 
-    <section class="bar">
-      <label for="path">File path</label>
-      <input id="path" type="text" value="table.csv" size="18">
-      <button id="open-path">Open (server)</button>
-      <button id="save-path">Save (server)</button>
-      <button id="pick-file">Pick file…</button>
-      <button id="save-link">Save file</button>
-      <button id="copy">Copy CSV</button>
-      <button id="download">Download… (blocked)</button>
-      <button id="open-link">Save via data: URL (blocked)</button>
-      <input id="file" type="file" accept=".csv,text/csv" hidden>
+    <section class="group">
+      <h2>Load a CSV</h2>
+      <div class="bar">
+        <label for="source-input">Source</label>
+        <input id="source-input" type="text" class="wide"
+          value="https://raw.githubusercontent.com/plotly/datasets/master/2010_alcohol_consumption_by_country.csv"
+          title="An https:// link, or a file path when TinyTable runs on your own machine.">
+      </div>
+      <div class="row">
+        <button id="open" title="The server downloads the Source. It runs outside the browser, so no chat app can block it.">Open</button>
+        <span class="note">The server fetches the Source. Works in both.</span>
+      </div>
+      <div class="row">
+        <button id="pick-file" title="Opens your computer's file picker. The file never leaves the browser until the view sends its rows to the server.">Pick file…</button>
+        <span class="note">A file from your own disk, through the browser's picker.</span>
+      </div>
     </section>
 
-    <section class="bar">
-      <label for="url">CSV URL</label>
-      <input id="url" type="url" value="https://raw.githubusercontent.com/plotly/datasets/master/2010_alcohol_consumption_by_country.csv" size="30">
-      <button id="open-url">Open (server)</button>
-      <button id="fetch-url">Fetch here…</button>
+    <section class="group">
+      <h2>Save a CSV</h2>
+      <div class="row">
+        <button id="copy" title="Copies the table as CSV text. Needs nothing but your click.">Copy CSV</button>
+        <span class="note">To the clipboard. Works in both.</span>
+      </div>
+      <div class="row">
+        <button id="save-link" title="The server makes a download link and the chat app opens it in your browser. The chat app asks you to confirm first.">Save file</button>
+        <span class="note">The chat app opens a download link. You confirm it.</span>
+      </div>
+      <div class="row">
+        <button id="save-path" title="Writes the table to the file path in Source, on the machine the server runs on. The public server refuses.">Save to path</button>
+        <span class="note">Writes to the Source path on the server. Local runs only.</span>
+      </div>
     </section>
 
+    <section class="group probes">
+      <h2>Sandbox tests <span class="muted">(meant to fail somewhere)</span></h2>
+      <div class="row">
+        <button id="fetch-here" title="The view's own page downloads the Source. The chat app's content security policy (CSP) decides which sites the page may reach.">Fetch in page</button>
+        <span class="note">Claude ✗ · ChatGPT ✓ only with CSP off. Decided by the chat app's CSP.</span>
+      </div>
+      <div class="row">
+        <button id="download" title="The page builds the file and clicks a download link itself. The iframe sandbox has no allow-downloads, so the browser drops it silently.">Blob download</button>
+        <span class="note">Claude ✗ · ChatGPT ✗. Decided by the iframe sandbox.</span>
+      </div>
+      <div class="row">
+        <button id="data-link" title="Asks the chat app to open a data: link that holds the whole file.">data: link</button>
+        <span class="note">Claude ✗ refuses · ChatGPT ✓ with CSP off. Decided by the chat app.</span>
+      </div>
+    </section>
+
+    <input id="file" type="file" accept=".csv,text/csv" hidden>
     <pre id="log" class="log"></pre>
   </main>
   <script type="module" src="/src/mcp-app.ts"></script>

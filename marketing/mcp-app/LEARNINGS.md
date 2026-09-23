@@ -141,9 +141,9 @@ Both hosts put the view in an iframe with the same sandbox, `allow-scripts allow
 | Capability | Claude | ChatGPT | Who decides |
 |---|---|---|---|
 | Fullscreen | Granted, and back. | Granted, and back. Also offers `pip`. | The host. |
-| In-iframe fetch ("Fetch here…") | `In-iframe fetch blocked: TypeError: Failed to fetch.` | CSP off: `In-iframe fetch succeeded: 200, 2613 bytes. Loading it.`, and the grid showed 191 rows. CSP on: `In-iframe fetch blocked: TypeError: Failed to fetch.` | The host's CSP. The same view in the same sandbox flips with ChatGPT's "Enforce CSP" toggle. |
-| Blob download ("Download… (blocked)") | `Download click dispatched.` Nothing new in `~/Downloads`. | Same. | The sandbox: no `allow-downloads` in either. |
-| `openLink` to a `data:` URL | `openLink with a data: URL was refused by the host.` | `openLink with a data: URL was accepted by the host.` ChatGPT then showed an "External site" dialog with the whole URL. Pressing its Open link opened no tab and saved no file. | Claude: the host says no. ChatGPT: the host says yes and Chrome refuses a top-level `data:` page. |
+| In-iframe fetch ("Fetch in page", was "Fetch here…") | `In-iframe fetch blocked: TypeError: Failed to fetch.` | CSP off: `In-iframe fetch succeeded: 200, 2613 bytes. Loading it.`, and the grid showed 191 rows. CSP on: `In-iframe fetch blocked: TypeError: Failed to fetch.` | The host's CSP. The same view in the same sandbox flips with ChatGPT's "Enforce CSP" toggle. |
+| Blob download ("Blob download", was "Download… (blocked)") | `Download click dispatched.` Nothing new in `~/Downloads`. | Same. | The sandbox: no `allow-downloads` in either. |
+| `openLink` to a `data:` URL ("data: link", was "Save via data: URL") | `openLink with a data: URL was refused by the host.` | `openLink with a data: URL was accepted by the host.` ChatGPT then showed an "External site" dialog with the whole URL. When I pressed its Open link from a background tab, I saw no tab and no file. From a tab in front, with the CSP off, the link opened: a person pressing the same button saw it work. | Claude: the host says no. ChatGPT: the host passes it on, and it works. |
 | `openLink` to an https URL ("Save file") | Claude showed an "Open external link" dialog with the download URL. Its Open link button stayed disabled the whole time, because the tab was never the visible one (`document.visibilityState` was `hidden`). The view's `openLink` call never returned, before or after I closed the dialog. | ChatGPT answered at once (`Opened https://tamedtable.onrender.com/download/….csv; your browser should save it.`), then showed an "External site" dialog. I pressed Open link. No file appeared in `~/Downloads`, though the same URL answers `200`, `text/csv`, `attachment` to curl. | Both hosts put a confirmation in front of the link. Whether a file lands is unconfirmed in both: see [Needs a human](#needs-a-human). |
 | Native file picker ("Pick file…") | Not tried. | Not tried. | See [Needs a human](#needs-a-human). |
 | Clipboard ("Copy CSV") | `Copied with the fallback path.` `pbpaste` gave back the exact five lines of the sample. | Same, and the same five lines. | The iframe's `allow` attribute. `navigator.clipboard.writeText` needs `clipboard-write`, which neither host grants, so both fall through to `execCommand("copy")`, which a keypress still allows. |
@@ -152,7 +152,9 @@ Both hosts put the view in an iframe with the same sandbox, `allow-scripts allow
 Three things in that table I did not expect:
 
 - **An accepted `openLink` tells the view nothing.** ChatGPT says yes before the user has answered its dialog. Claude says nothing until the user answers, and with the dialog dismissed it never answered. A view cannot tell from `openLink` whether anything opened, in either client.
-- **Claude refuses what ChatGPT forwards.** For a `data:` link the two hosts made opposite calls, and ended in the same place.
+- **Claude refuses what ChatGPT forwards.** For a `data:` link the two hosts made opposite calls. In ChatGPT the link opens, so a `data:` link is a way out of the sandbox there that needs no server.
+
+*Corrected the same day:* I first wrote that Chrome refuses the `data:` page ChatGPT opens. That came from a test in a background tab, where I could not see a new tab appear. A person testing with the tab in front saw the link open.
 - **The clipboard works for a reason that looks like luck.** Only the deprecated `execCommand` path copies. If a browser drops it, or a host starts blocking it, copying breaks in both clients at once.
 
 ## Two more bugs the real clients found

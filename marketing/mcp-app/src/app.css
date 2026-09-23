@@ -75,3 +75,23 @@ td input:focus { outline: 2px solid var(--color-text-primary); outline-offset: -
   margin: 0;
   color: var(--color-text-secondary);
 }
+
+/* Grouped controls: what works everywhere first, the sandbox tests last. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--color-border-primary);
+  padding-top: 8px;
+}
+
+.group h2 { font-size: 0.8em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0; }
+
+.row { display: flex; gap: 8px; align-items: baseline; }
+.row button { flex: none; min-width: 8.5em; text-align: left; }
+
+.note { color: var(--color-text-secondary); font-size: 0.85em; }
+
+.wide { flex: 1; min-width: 12em; }
+
+.probes button { border-style: dashed; }
