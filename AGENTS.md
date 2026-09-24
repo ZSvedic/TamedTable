@@ -41,7 +41,7 @@ Reusable session starters in `process/prompts/`:
 | [prompt-hunt-browser.md](process/prompts/prompt-hunt-browser.md) | BROWSER HUNTER: drive the built app in Playwright as a user, find bugs, land them as red tests. Never fixes. |
 | [prompt-illustrate.md](process/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
 | [prompt-implement.md](process/prompts/prompt-implement.md) | TDD implementation: read spec + Gherkin + step defs, implement until green. |
-| [prompt-mcp-app-autopilot.md](process/prompts/prompt-mcp-app-autopilot.md) | Drive the MCP App prototype in a real browser, unattended: build, test in both clients, record findings. |
+| [prompt-mcp-app-autopilot.md](process/prompts/prompt-mcp-app-autopilot.md) | Drive the frozen TinyTable MCP App prototype in a real browser, unattended: build, test in both clients, record findings. |
 | [prompt-mcp-app-survey.md](process/prompts/prompt-mcp-app-survey.md) | Survey MCP Apps that have a verified GUI and are genuinely free to try. |
 | [prompt-meeting.md](process/prompts/prompt-meeting.md) | Time-boxed agenda meeting; records decisions in the meeting doc. |
 | [prompt-scribe.md](process/prompts/prompt-scribe.md) | SCRIBE: spec-only editor, never touches `src/`. Paired with WoZ. |
@@ -55,6 +55,7 @@ The repo is organized by **lifecycle**, not by file type: see the tree in [READM
 - **`.feature` files live in `spec/`; app step defs in `src/tests/`, package step defs in the package**: the same spec/implementation split as `spec/behavior.md` + `spec/code-contract.md` ↔ `src/packages/`. Step defs read fixtures from `spec/test-cases/` by plain file path (data reads, unlike imports, cross directories freely).
 - **`src/` root files are permanent** (`package.json`, `bun.lock`, `bunfig.toml`, `tsconfig.json`, `cucumber.js`) (not regenerable from `spec/`, not deletable. Only `src/`'s *subdirs* (`packages/`, `tests/`) are regenerable. `bun.lock` *is* the spec of the dependency tree) versions are never duplicated into `spec/`; when a specific pin is load-bearing, `spec/code-contract.md` records *that* it is pinned and why, not the number.
 - **`cassettes/` (root) is recorded data, never code**: the LLM responses the test suite replays, one JSON per feature. Machine-recorded, so not `spec/`; not regenerable from spec (re-recording needs a live API key, costs money, and fresh outputs can stop matching committed goldens), so not `src/` either. Refresh deliberately with `bun run test:record`; never delete casually.
+- **`process/prototypes/` holds frozen spikes**: each keeps its own `package.json` and lock, outside the `src/` workspace, so it can't drift into the product's dependency tree. A prototype that becomes product is rebuilt under `src/packages/`, as TinyTable became `mcp-server`.
 - **`benchmarks/` (root) is data + outputs, never importing code**: the model & batch-size benchmark's pricing table, ground truth, sweep results, and generated charts. Its runner is a workspace package (`src/packages/bench`, `@tamedtable/bench`) because it imports the engine and so must live under `src/` (the module-resolution rule above); the runner reads `benchmarks/` by plain path, the same way step defs read `spec/` fixtures. Keeping the data at the root: like `process/` and `marketing/`. Keeps `src/` a clean deployable unit.
 
 Stack:

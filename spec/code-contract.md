@@ -663,6 +663,11 @@ system message on every multi-row cell evaluation. `CELL_FORMAT_CONSTRAINT` is l
 (WoZ, future validators) can reference it; it already appears verbatim as
 a substring inside `SYSTEM_PROMPT`'s few-shots.
 
+A sixth section, `MCP_INSTRUCTIONS`, is not read by the headless runtime:
+`@tamedtable/mcp-server` reads it for the server instructions it hands a chat
+app, filling its `{PLANNER_KNOWLEDGE}` placeholder from `SYSTEM_PROMPT`
+([packages/mcp-server/behavior.md](packages/mcp-server/behavior.md#server-instructions)).
+
 Editing `prompt-app-edit.md` is the way to tune any of these. `src/` does
 not contain the prompt text directly.
 

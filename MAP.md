@@ -24,6 +24,7 @@ Each row tracks one user-facing feature: where it ships (Headless, CLI, Web) and
 | LLM output resilience | [#LlmLayer](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LlmLayer&type=code) | ✓ | ✓ | ✓ | [model-resilience.feature](spec/test-cases/model-resilience.feature) |
 | Performance benchmark | [#BenchPerf](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BenchPerf&type=code) | ✓ | - | - | [performance.feature](spec/test-cases/performance.feature) |
 | Model & batch-size sweep | [#BenchSweep](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BenchSweep&type=code) | - | - | - | [benchmarks/README.md](benchmarks/README.md) (dev tool: `@tamedtable/bench`) |
+| MCP experiment E1: chat model writes recipe steps | [#BenchE1](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23BenchE1&type=code) | - | - | - | [benchmarks/mcp-e1/README.md](benchmarks/mcp-e1/README.md) (dev tool: `@tamedtable/bench/e1`, runs the suite's scenarios) |
 | Lookup join | [#LookupJoin](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23LookupJoin&type=code) | ✓ | ✓ | ✓ | [join.feature](spec/test-cases/join.feature) + [web.feature](spec/test-cases/web.feature) (the browser's lookup-file dialog) |
 | Nested cell values | [#NestedCells](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23NestedCells&type=code) | ✓ | ✓ | ✓ | [nested.feature](spec/test-cases/nested.feature) |
 | Open a workbook or web page (table pick) | [#TablePick](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23TablePick&type=code) | ✓ | ✓ | ✓ | [open-tables.feature](spec/test-cases/open-tables.feature) + [formats.feature](spec/test-cases/formats.feature) (XLSX round trip) |
@@ -66,7 +67,7 @@ Each row is a self-contained library package; most have their own spec under `sp
 
 ## App code areas
 
-Each row is a logical area of the app implementation (core, headless, CLI, web). The ID links to every file that references it.
+Each row is a logical area of the app implementation (core, headless, CLI, web, MCP server). The ID links to every file that references it.
 
 | Area | ID | Description |
 |---|---|---|
@@ -78,6 +79,7 @@ Each row is a logical area of the app implementation (core, headless, CLI, web).
 | Error handling | [#ErrHandle](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23ErrHandle&type=code) | Error types, user-facing messages, exit codes |
 | Step execution | [#StepExec](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23StepExec&type=code) | Per-step runner: resolve, execute, validate result |
 | Web shell | [#WebShell](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23WebShell&type=code) | The framework-agnostic `WebController` composition shell: composes the headless Runner with the domain managers (engine, patch, files, voice, config, tutorial); no DOM (`src/packages/web/src/controller.ts`) |
+| MCP server | [#McpServer](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23McpServer&type=code) | TamedTable MCP, the fourth app: the tool contract (`tools.ts`) and the server instructions assembled from `spec/prompt-app-edit.md` (`instructions.ts`) (`src/packages/mcp-server/`, spec at `spec/packages/mcp-server/`) |
 | Mobile shell | [#MobileShell](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23MobileShell&type=code) | The phone-width (≤768px) presentation: app bar with page pager, frozen-header/index table, five-action dock (Menu · Undo · History · Type · Speak), Type/Speak/History sheets, and a left menu drawer. Same controller as desktop: only the chrome differs (`src/packages/web/src/components/mobile/`, `useIsMobile.ts`); the History sheet reads the journal's `timeline()`/`jumpTo()` |
 | Analytics | [#Analytics](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23Analytics&type=code) | Cookie-less Umami analytics: the web wrapper (`analytics.ts`), the marketing-page loader, and the public `/privacy` page |
 | SEO and indexing | [#SeoIndexing](https://github.com/search?q=repo%3AZSvedic%2FTamedTable%20%23SeoIndexing&type=code) | What search engines are told about the site: the pages' `<link rel="canonical">` and the deliberate absence of a JS URL rewriter, plus the `sitemap.xml`/`robots.txt` the prod build emits and the `noindex` it stamps on PR previews (`.github/scripts/build-site.sh`, `marketing/web/*.html`) |

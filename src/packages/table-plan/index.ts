@@ -124,7 +124,7 @@ const JsonLikeFileExtRe = /\.(csv|jsonl)$/i;
 // every one. The engine ignores both; the model never sees them.
 const QueryMeta = { query: z.string().optional(), name: z.string().optional() };
 
-const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
+export const TransformationUnionSchema: z.ZodTypeAny = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('filter'), pred: ExprSchema, ...QueryMeta }).strict(),
   z.object({ kind: z.literal('mutate'), columns: ColumnsField, value: ExprSchema, ...QueryMeta }).strict(),
   z.object({ kind: z.literal('select'), columns: z.array(z.string()), ...QueryMeta }).strict(),
@@ -207,7 +207,7 @@ export type Transformation =
   | ({ kind: 'pivot'; index: string[]; on: string; values: string; agg?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'first' } & WithQuery)
   | ({ kind: 'unpivot'; id: string[]; measures: string[]; names_to?: string; values_to?: string } & WithQuery);
 
-const ColumnSchema = z.object({
+export const ColumnSchema = z.object({
   id: z.string(),
   label: z.string().optional(),
   format: z.string().optional(),

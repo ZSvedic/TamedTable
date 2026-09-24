@@ -1,6 +1,6 @@
 # TinyTable: what is left
 
-Ordered. Everything here is known and deliberate, not forgotten. The prototype works; these are the gaps between a spike and something you would ship.
+The prototype is frozen (see [README.md](README.md)), so nothing below will be done here; the list stays as a record. Ordered. Everything here is known and deliberate, not forgotten. The prototype works; these are the gaps between a spike and something you would ship.
 
 ## Done
 

@@ -8,7 +8,8 @@ process.env.TAMEDTABLE_CASSETTE ??= 'replay';
 
 // Replay serves every model call from a cassette on disk, no network, so
 // lift the request-rate cap that exists only to respect the live API ceiling.
-if (process.env.TAMEDTABLE_CASSETTE === 'replay') {
+// E1 replays too; its stand-in model's calls never pass the runner's limiter.
+if (process.env.TAMEDTABLE_CASSETTE === 'replay' || process.env.TAMEDTABLE_CASSETTE === 'e1') {
   process.env.TAMEDTABLE_RPM = String(Number.MAX_SAFE_INTEGER);
 }
 
@@ -110,3 +111,15 @@ export const perf = {
   tags: process.env.TAMEDTABLE_BENCH_ALL ? '@perf' : '@perf and not @needs-recording',
   worldParameters: { surface: 'headless' },
 };
+
+// #BenchE1: MCP experiment E1 (`bun run bench:e1`). The suite's scenarios, with
+// a stand-in chat model writing every change instead of the recorded planner;
+// TAMEDTABLE_CASSETTE=e1 routes the model calls (tests/e1.hooks.ts). Three
+// profiles so each scenario runs once, on the first surface it is tagged for:
+// web, then headless, then cli.
+const e1Tags = (own, before) =>
+  [own, ...before.map((t) => `not ${t}`), 'not @needs-recording', 'not @red'].join(' and ');
+
+export const e1Web = { ...common, tags: e1Tags('@web', []), worldParameters: { surface: 'web' } };
+export const e1Headless = { ...common, tags: e1Tags('@headless', ['@web']), worldParameters: { surface: 'headless' } };
+export const e1Cli = { ...common, tags: e1Tags('@cli', ['@web', '@headless']), worldParameters: { surface: 'cli' } };

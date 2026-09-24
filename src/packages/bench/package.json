@@ -6,11 +6,17 @@
   "main": "index.ts",
   "types": "index.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./e1": "./e1/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.0",
+    "@tamedtable/cassette": "workspace:*",
     "@tamedtable/core": "workspace:*",
     "@tamedtable/headless": "workspace:*",
-    "@tamedtable/model-config": "workspace:*"
+    "@tamedtable/mcp-server": "workspace:*",
+    "@tamedtable/model-config": "workspace:*",
+    "@tamedtable/table-plan": "workspace:*",
+    "ai": "^6.0.174"
   }
 }

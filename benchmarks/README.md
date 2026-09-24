@@ -46,6 +46,7 @@ affect accuracy, so the sweep pins it and varies the cell model and batch size.
 | `ground-truth/music-labels.jsonl` | The gold `Music` verdict per `videoId`. |
 | `charts/*.svg` | Generated charts. |
 | `charts/explorer.html` | The same data with filters and sorting, in one file. |
+| `mcp-e1/` | A separate experiment: can a chat app's model write TamedTable's recipe steps? Method and results in [mcp-e1/README.md](mcp-e1/README.md). |
 
 `models.jsonl`, one JSON object per line:
 

@@ -1,0 +1,15 @@
+{
+  "name": "@tamedtable/mcp-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@tamedtable/table-plan": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

@@ -41,6 +41,7 @@ This repository is organized by *lifecycle*:
 ```
 TamedTable/                  Root: README.md, MAP.md (feature+code navigation), LICENSE, .gitignore, etc.
 ├── benchmarks/              Model & batch-size benchmark data + outputs (no code, runner is @tamedtable/bench).
+│   ├── mcp-e1/              MCP experiment E1: can a chat app's model write recipe steps? Method, runs, report.
 │   ├── models.jsonl         The benchmark's model pricing/specs (the app's catalogue is model-config's models.json).
 │   ├── ground-truth/        Labelled subset the sweep scores against (music-sample.csv + music-labels.jsonl).
 │   ├── results/             sweeps.csv: every config ever run, one row each.
@@ -52,11 +53,11 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 │   ├── icons/               UI icon glyphs, one 16×16 SVG per name. Source of ui-kit's generated icons.ts.
 │   ├── claude-design-app/   Claude Design canvas (scratch JSX + generated tokens.jsx).
 │   ├── illustrations/       SVG feature tiles + gallery.
-│   ├── mcp-app/             TinyTable: the MCP Apps prototype. Own deps, own LEARNINGS.md.
 │   └── web/                 The landing page that ships to the site root.
 ├── process/                 How the project is built; never deployed.
 │   ├── journal/             Historic status reports.
 │   ├── prompts/             Reusable session starters: see AGENTS.md.
+│   ├── prototypes/          Frozen spikes. tinytable-mcp/: TinyTable, the MCP Apps prototype. Own deps, own LEARNINGS.md.
 │   └── repo-tracking/       Commit-size script + chart generator.
 ├── spec/                    The contract: human-authored / human-blessed.
 │   ├── README.md            Spec index + test-fixture naming.
@@ -71,7 +72,7 @@ TamedTable/                  Root: README.md, MAP.md (feature+code navigation), 
 ├── src/                     The implementation. Self-contained, deployable unit.
 │   ├── package.json, …      Build config; run every bun command from here.
 │   ├── node_modules/        Git-ignored.
-│   ├── packages/            App (core/headless/cli/web) + library packages. Regenerable from spec/.
+│   ├── packages/            App (core/headless/cli/web/mcp-server) + library packages. Regenerable from spec/.
 │   └── tests/               App step definitions. Regenerable from Gherkin.
 └── temp/                    Scratch: test outputs, charts, logs. Gitignored.
 ```
