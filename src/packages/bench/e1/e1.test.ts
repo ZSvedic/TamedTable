@@ -87,6 +87,19 @@ describe('e1Fetch', () => {
     expect(session.turns[0]!.attempts.map((a) => [a.after, a.error])).toEqual([['first', 'evaluation failed'], ['engine', undefined]]);
   });
 
+  test('a model that stops after an engine refusal leaves the request failed', async () => {
+    const chat = new FakeChat([{ plan: { ops: SORT } }, { text: 'The check failed, so nothing changed.' }]);
+    const session = newSession(chat);
+    const f = e1Fetch({ chat, replay: async () => { throw new Error('miss'); }, live: async () => { throw new Error('no live'); } }, session);
+    await f(url, init(geminiBody(buildPrompt('sort', spec))));
+    const again = await f(url, init(geminiBody(buildPrompt('sort', spec, 'Your previous patch failed: validation failed'))));
+    expect(recordedCall(await again.text())!.name).toBe('apply_spec_patch');
+    expect(session.turns[0]!.outcome).toBe('stopped');
+    const third = await f(url, init(geminiBody(buildPrompt('sort', spec, 'Your previous patch failed: validation failed'))));
+    expect(recordedCall(await third.text())!.name).toBe('apply_spec_patch');
+    expect(session.turns[0]!.attempts).toHaveLength(2);
+  });
+
   test('a question the planner answered on tape replays untouched', async () => {
     const chat = new FakeChat([]);
     const session = newSession(chat);

@@ -18,11 +18,26 @@ const CASSETTE_DIR = join(REPO_ROOT, 'cassettes');
 const RUNS_DIR = join(REPO_ROOT, 'benchmarks', 'mcp-e1', 'runs');
 const sessions = new Map<string, E1Session>();
 
+/** The live API for calls the cassette misses. Web scenarios configure a
+ *  made-up key, which replay never sends anywhere; a live call needs the real
+ *  one, so Gemini calls carry GEMINI_API_KEY. */
+function liveFetch(): FetchLike {
+  const curl = curlFetch();
+  return (input, init) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const key = process.env.GEMINI_API_KEY;
+    if (!key || !url.includes('generativelanguage.googleapis.com')) return curl(input, init);
+    const headers = Object.fromEntries(new Headers(init?.headers).entries());
+    headers['x-goog-api-key'] = key;
+    return curl(input, { ...init, headers });
+  };
+}
+
 /** The fetch an E1 scenario's runner uses. */
 export function e1RunnerFetch(scenario: ITestCaseHookParameter): FetchLike {
   const { cfg, maxAttempts } = e1Env();
   const feature = basename(scenario.pickle.uri, '.feature');
-  const live = curlFetch();
+  const live = liveFetch();
   const chat = new CandidateChat({ ...cfg, fetch: live as typeof globalThis.fetch });
   const session = newSession(chat);
   sessions.set(scenario.pickle.id, session);

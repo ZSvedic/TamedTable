@@ -41,8 +41,10 @@ export interface TurnLog {
   reference?: unknown[];
   attempts: Attempt[];
   /** committed: a plan reached the engine and nothing sent it back.
-   *  no-plan: the model answered in words. gave-up: every attempt refused. */
-  outcome: 'committed' | 'no-plan' | 'gave-up';
+   *  stopped: the engine refused the plan and the model told the user
+   *  instead of retrying. no-plan: the model answered in words.
+   *  gave-up: every attempt refused. */
+  outcome: 'committed' | 'stopped' | 'no-plan' | 'gave-up';
 }
 
 export interface E1Session {
@@ -92,6 +94,14 @@ export function e1Fetch(opts: E1FetchOptions, session: E1Session): FetchLike {
       const a: Attempt = { after: why, text: s.text || undefined, inputTokens: s.inputTokens, outputTokens: s.outputTokens, ms: s.ms };
       turn.attempts.push(a);
       if (!s.plan) {
+        const refused = why === 'engine' ? turn.attempts.at(-2)?.ops : undefined;
+        if (refused) {
+          // MCP leaves the table unchanged and the model tells the user why.
+          // Headless shows that as a failed request, so hand the runner the
+          // refused plan again: the engine refuses it again, as the user saw.
+          turn.outcome = 'stopped';
+          return patchAnswer(refused, undefined);
+        }
         turn.outcome = 'no-plan';
         return replyAnswer(s.text);
       }
@@ -121,6 +131,12 @@ export function e1Fetch(opts: E1FetchOptions, session: E1Session): FetchLike {
       if (turn.kind === 'recovery') {
         // The runner ran the committed plan and the engine refused it.
         const last = session.turns.at(-1);
+        if (last?.outcome === 'stopped') {
+          // The model already stopped; keep the runner's refusal going until
+          // its own recovery budget ends the request.
+          const refused = [...last.attempts].reverse().find((a) => a.ops)?.ops ?? [];
+          return patchAnswer(refused, undefined);
+        }
         if (!last || last.outcome !== 'committed') throw new Error('E1: recovery turn with no committed plan before it');
         last.attempts.at(-1)!.error = turn.error;
         chat.rejected(turn.error);
