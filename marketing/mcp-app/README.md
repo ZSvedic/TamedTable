@@ -56,7 +56,7 @@ ChatGPT speaks the same MCP Apps standard, so the server needs no changes.
 2. Settings → **Plugins** (this is what ChatGPT now calls Connectors) → **+** → **Create plugin**. The button is hidden until Developer mode is on.
 3. Name it, paste `https://tamedtable.onrender.com/mcp`, set **Authentication** to **No Auth**, tick the risk box, **Create**.
 
-ChatGPT keeps a copy of the view. After you deploy a change to it, open the plugin in Settings, Plugins and press **Refresh**, or new chats keep showing the old one.
+ChatGPT keeps a copy of the view and the tools. After you deploy a change to either, open the plugin in Settings, Plugins and press **Refresh**, or new chats keep the old one. Claude does the same with tools: use **Refresh tools list** in the connector's ⋯ menu, then reload any open claude.ai tab.
 
 ## Install into claude.ai
 
