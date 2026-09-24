@@ -407,7 +407,28 @@ app.ontoolresult = (result) => {
   if (!data) return;
   render(data);
   void refresh(data.tableId);
+  void openFullscreen();
 };
+
+/**
+ * A table wants the whole window, so ask for it once, when the first table
+ * arrives. The host may say no without a click behind the request; the button
+ * is still there either way.
+ */
+let startedFullscreen = false;
+async function openFullscreen(): Promise<void> {
+  if (startedFullscreen) return;
+  startedFullscreen = true;
+  const ctx = app.getHostContext();
+  if (ctx?.displayMode !== "inline" || !ctx.availableDisplayModes?.includes("fullscreen")) return;
+  try {
+    const { mode } = await app.requestDisplayMode({ mode: "fullscreen" });
+    applyDisplayMode({ displayMode: mode });
+    log(`Opened in ${mode} at start.`);
+  } catch (e) {
+    log(`The host kept the view inline at start: ${String(e)}`);
+  }
+}
 
 /**
  * A host can hand the view an old result. ChatGPT reloads the view when a
