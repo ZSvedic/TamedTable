@@ -40,8 +40,13 @@ button:hover { border-color: var(--color-text-primary); }
 
 .push { margin-left: auto; }
 
-.main.fullscreen { height: 100vh; box-sizing: border-box; }
-.main.fullscreen .grid { flex: 1; min-height: 0; max-height: none; }
+/* Fullscreen: the grid gets at least half the window and grows into whatever
+   the controls leave; in a short window the controls scroll instead of
+   squeezing the grid. Both hosts float their chat box over the bottom, so the
+   last thing on the page is room for it. */
+.main.fullscreen { height: 100vh; box-sizing: border-box; overflow-y: auto; }
+.main.fullscreen .grid { flex: 1 0 50vh; max-height: none; }
+.main.fullscreen::after { content: ""; flex: none; height: 96px; }
 
 th { position: sticky; top: 0; background: var(--color-background-primary); }
 
