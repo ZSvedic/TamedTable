@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+  <!-- TamedTable feature illustration: Lazy AI. Opening a table asks the model once
+       what to try next. The sample it reads is twenty rows whatever the file holds,
+       so the suggestions cost the same on 25,000 rows as on 20.
+       Text sizes leave slack: inside an <img> the SVG renders with fallback fonts,
+       which run wider than Inter. -->
+  <rect x="2" y="2" width="356" height="226" rx="16" fill="#FFFFFF" stroke="#DCDCDC"/>
+
+  <!-- the loaded table, dimmed: the 25,000 rows the suggestions did NOT have to read -->
+  <g opacity="0.35">
+    <path d="M18 24 q0 -6 6 -6 h312 q6 0 6 6 v18 h-324 Z" fill="#281C60"/>
+    <text x="32" y="37" font-size="11" font-weight="600" fill="#FFFFFF">product</text>
+    <text x="182" y="37" font-size="11" font-weight="600" fill="#FFFFFF">brand</text>
+    <text x="272" y="37" font-size="11" font-weight="600" fill="#FFFFFF">price</text>
+    <g font-size="11" fill="#281C60">
+      <rect x="18" y="42" width="324" height="20" fill="#FFFFFF"/>
+      <text x="32" y="56">Travel Espresso Kit</text>
+      <text x="182" y="56">Halden</text>
+      <text x="272" y="56" font-family="JetBrains Mono, ui-monospace, monospace">64.90</text>
+      <rect x="18" y="62" width="324" height="20" fill="#F6F2EB"/>
+      <text x="32" y="76">Wool Scarf XL</text>
+      <text x="182" y="76">Norvik</text>
+      <text x="272" y="76" font-family="JetBrains Mono, ui-monospace, monospace">29.50</text>
+    </g>
+    <rect x="18" y="18" width="324" height="64" rx="6" fill="none" stroke="#DCDCDC"/>
+  </g>
+
+  <!-- what the call actually cost: twenty rows, not twenty-five thousand -->
+  <g>
+    <rect x="18" y="92" width="152" height="20" rx="10" fill="#E7F1F8" stroke="#96BED7"/>
+    <text x="30" y="106" font-family="JetBrains Mono, ui-monospace, monospace" font-size="10" fill="#281C60">20 of 25,000 rows read</text>
+    <text x="182" y="106" font-size="10.5" font-weight="600" fill="#6A6280">AI suggestions</text>
+  </g>
+
+  <!-- the chips: rounded rectangles, roomy enough for a whole sentence -->
+  <g font-size="11">
+    <rect x="18" y="120" width="176" height="26" rx="10" fill="#281C60"/>
+    <text x="32" y="137" fill="#FFFFFF">Sort by Price descending.</text>
+    <!-- the pointer: one click puts a sentence in the box -->
+    <g transform="translate(196 132)" fill="#281C60" stroke="#FFFFFF" stroke-width="1.2" stroke-linejoin="round">
+      <path d="M0 0 L0 14 L3.6 10.6 L6 16 L9 14.6 L6.6 9.4 L11.4 9.2 Z"/>
+    </g>
+    <rect x="18" y="150" width="190" height="26" rx="10" fill="#FFFFFF" stroke="#B8B0C8"/>
+    <text x="32" y="167" fill="#281C60">Count products per Country.</text>
+    <rect x="216" y="150" width="126" height="26" rx="10" fill="#FFFFFF" stroke="#B8B0C8"/>
+    <text x="230" y="167" fill="#281C60">Average Price.</text>
+  </g>
+
+  <!-- the chat box the sentence lands in -->
+  <g>
+    <rect x="18" y="186" width="324" height="30" rx="8" fill="#FFFFFF" stroke="#96BED7"/>
+    <text x="32" y="205" font-family="JetBrains Mono, ui-monospace, monospace" font-size="11" fill="#281C60">Sort by Price descending.</text>
+    <rect x="316" y="192" width="18" height="18" rx="9" fill="#281C60"/>
+    <path d="M321.5 201 L325 204.5 L330 197.5" fill="none" stroke="#96BED7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
