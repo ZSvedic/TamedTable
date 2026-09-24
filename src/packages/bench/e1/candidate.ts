@@ -123,7 +123,9 @@ export class CandidateChat {
     let inputTokens = 0;
     let outputTokens = 0;
     for (let hop = 0; hop < 4; hop++) {
-      const res = await generateText({ model: this.model, system: this.system, messages: this.messages, tools: this.tools, maxRetries: 3 });
+      // A plan is a few hundred tokens. The cap keeps a provider that reserves
+      // credit for the maximum output (OpenRouter) from refusing the call.
+      const res = await generateText({ model: this.model, system: this.system, messages: this.messages, tools: this.tools, maxRetries: 3, maxOutputTokens: 8000 });
       inputTokens += res.usage.inputTokens ?? 0;
       outputTokens += res.usage.outputTokens ?? 0;
       this.messages.push(...res.response.messages);
