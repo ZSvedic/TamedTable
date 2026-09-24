@@ -2,7 +2,9 @@
 // #BenchE1
 // `bun run bench:e1:report [run…]`: read benchmarks/mcp-e1/runs/*.jsonl (or the
 // named runs), write benchmarks/mcp-e1/report.md, print the summary table.
-// Offline. A re-run of a scenario appends a new record; the last one counts.
+// Offline. A re-run of a scenario appends a new record; the last one counts,
+// except that a re-run E1 could not run (a harness error, such as a provider
+// out of credit) never hides an earlier record that ran.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,7 +21,10 @@ for (const f of files) {
   for (const line of readFileSync(join(RUNS_DIR, f), 'utf8').split('\n')) {
     if (!line.trim()) continue;
     const r = JSON.parse(line) as E1Record;
-    latest.set(`${r.run}\u0000${r.feature}\u0000${r.scenario}`, r);
+    const key = `${r.run}\u0000${r.feature}\u0000${r.scenario}`;
+    const before = latest.get(key);
+    if (before && before.errors.length === 0 && r.errors.length > 0) continue;
+    latest.set(key, r);
   }
 }
 if (latest.size === 0) {

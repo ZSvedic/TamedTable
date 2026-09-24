@@ -116,10 +116,13 @@ const pct = (n: number, d: number) => (d === 0 ? '-' : `${Math.round((100 * n) /
  *  plan the model wrote next to the plan the recorded planner wrote. */
 export function reportMarkdown(records: E1Record[]): string {
   const lines: string[] = [];
+  // Percentages leave harness errors out: a scenario E1 could not run says
+  // nothing about the model.
   lines.push('| Run | Model | Instructions | Graded | Correct | Silently wrong | Plan shape | Visible failure | Harness error | Invalid plans | Retried turns | Live-cell scenarios | Prompt chars | Tokens in / out |');
   lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
   for (const s of summarize(records)) {
-    lines.push(`| ${s.run} | ${s.model} | ${s.variant} | ${s.graded} | ${s.correct} (${pct(s.correct, s.graded)}) | ${s.silentlyWrong} (${pct(s.silentlyWrong, s.graded)}) | ${s.planShape} | ${s.visibleFailure} | ${s.harnessError} | ${s.invalidPlans} of ${s.turns} turns | ${s.retriedTurns} | ${s.liveScenarios} | ${s.promptChars} | ${s.inputTokens} / ${s.outputTokens} |`);
+    const ran = s.graded - s.harnessError;
+    lines.push(`| ${s.run} | ${s.model} | ${s.variant} | ${s.graded} | ${s.correct} (${pct(s.correct, ran)}) | ${s.silentlyWrong} (${pct(s.silentlyWrong, ran)}) | ${s.planShape} | ${s.visibleFailure} | ${s.harnessError} | ${s.invalidPlans} of ${s.turns} turns | ${s.retriedTurns} | ${s.liveScenarios} | ${s.promptChars} | ${s.inputTokens} / ${s.outputTokens} |`);
   }
   const failures = records.filter((r) => !['correct', 'not-graded'].includes(verdict(r)));
   if (failures.length) {
