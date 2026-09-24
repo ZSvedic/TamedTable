@@ -116,7 +116,7 @@ export function e1Fetch(opts: E1FetchOptions, session: E1Session): FetchLike {
     const turn = parsePlannerRequest(requestBody(init));
     if (!turn) return replayOrLive(input, init);
     try {
-      if (turn.kind === 'followup') return await replayOrLive(input, init);
+      if (turn.kind === 'followup' || turn.kind === 'voice') return await replayOrLive(input, init);
 
       if (turn.kind === 'recovery') {
         // The runner ran the committed plan and the engine refused it.

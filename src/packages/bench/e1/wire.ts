@@ -14,10 +14,13 @@ export type PlannerTurn =
   | { kind: 'fresh'; spec: TablePlan; request: string; prior?: string }
   | { kind: 'recovery'; spec: TablePlan; request: string; error: string }
   /** A later step of a question's query_table loop: carries tool history. */
-  | { kind: 'followup' };
+  | { kind: 'followup' }
+  /** A spoken request: the audio rides along as a file part, and a chat app
+   *  transcribes before any tool call, so E1 leaves these to the recording. */
+  | { kind: 'voice' };
 
 interface GeminiBody {
-  contents?: Array<{ role?: string; parts?: Array<{ text?: string }> }>;
+  contents?: Array<{ role?: string; parts?: Array<{ text?: string; inlineData?: unknown }> }>;
   systemInstruction?: { parts?: Array<{ text?: string }> };
 }
 
@@ -29,6 +32,7 @@ export function parsePlannerRequest(body: string): PlannerTurn | undefined {
   if (!system.startsWith(PLANNER_MARK)) return undefined;
   const contents = json.contents ?? [];
   if (contents.length !== 1) return { kind: 'followup' };
+  if (contents[0]!.parts?.some((p) => p.inlineData)) return { kind: 'voice' };
   const text = contents[0]!.parts?.map((p) => p.text ?? '').join('') ?? '';
   return parseUserText(text);
 }

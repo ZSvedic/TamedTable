@@ -20,7 +20,7 @@ scenario steps "Then …" grade the result
 
 - **What the stand-in sees.** A short host system prompt, then TamedTable's server instructions, then the conversation. The table is shown as a `show_table` tool result carrying the recipe, the same view headless gives its planner: columns and steps, no rows. The conversation continues across the requests of one scenario, like a chat.
 - **Engine refusals.** A plan that passes the schema can still fail when it runs (a validate reading a missing column, a failed threshold). The runner sends it back as it always does; E1 hands that error to the stand-in as apply_plan's answer, and the retry counts as an attempt.
-- **Everything else replays.** Questions stay the recorded planner's (E1 grades changes only). Cell calls replay from the cassette; when a new plan asks the cell model something the cassette never recorded, the call goes live on the Gemini cell model and the scenario is marked as having live calls.
+- **Everything else replays.** Questions and spoken requests stay the recorded planner's (E1 grades typed changes only: a chat app transcribes speech before any tool call). Cell calls replay from the cassette; when a new plan asks the cell model something the cassette never recorded, the call goes live on the Gemini cell model and the scenario is marked as having live calls.
 - **Each scenario runs once**, on the first surface it is tagged for: web, then headless, then CLI.
 
 ## The two conditions

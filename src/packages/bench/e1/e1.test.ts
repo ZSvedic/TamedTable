@@ -29,6 +29,8 @@ describe('wire', () => {
   test('only patch turns are planner requests; a tool history is a follow-up', () => {
     expect(parsePlannerRequest(JSON.stringify({ contents: [], systemInstruction: { parts: [{ text: 'Classify rows' }] } }))).toBeUndefined();
     expect(parsePlannerRequest(geminiBody(buildPrompt('x', spec), [{ role: 'model', parts: [] }]))).toEqual({ kind: 'followup' });
+    const voice = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: buildPrompt('x', spec) }, { inlineData: { mimeType: 'audio/wav', data: 'AA' } }] }], systemInstruction: { parts: [{ text: SYSTEM }] } });
+    expect(parsePlannerRequest(voice)).toEqual({ kind: 'voice' });
   });
 
   test('a patch answer JSON-encodes values the way apply_spec_patch expects', async () => {
