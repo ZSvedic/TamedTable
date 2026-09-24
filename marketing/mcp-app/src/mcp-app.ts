@@ -368,7 +368,30 @@ function applyDisplayMode(ctx: McpUiHostContext): void {
     const full = ctx.displayMode === "fullscreen";
     mainEl.classList.toggle("fullscreen", full);
     fullscreenEl.textContent = full ? "Exit fullscreen" : "Fullscreen";
+    watch(full);
   }
+}
+
+/**
+ * A fullscreen view does not hear about chat edits. ChatGPT draws each edit's
+ * result as a new view in the chat behind it, and in voice mode the table on
+ * screen stays the one that was there, so the rows go stale until the user
+ * closes fullscreen or voice. While fullscreen, re-read the table by id every
+ * few seconds. Read only, and skipped while a cell has focus, so it never
+ * overwrites what the user is typing.
+ */
+const WATCH_MS = 3000;
+let watcher: ReturnType<typeof setInterval> | undefined;
+function watch(on: boolean): void {
+  if (!on) {
+    clearInterval(watcher);
+    watcher = undefined;
+    return;
+  }
+  watcher ??= setInterval(() => {
+    if (!current || gridEl.contains(document.activeElement)) return;
+    void refresh(current.tableId);
+  }, WATCH_MS);
 }
 
 fullscreenEl.addEventListener("click", async () => {
@@ -431,10 +454,10 @@ async function openFullscreen(): Promise<void> {
 }
 
 /**
- * A host can hand the view an old result. ChatGPT reloads the view when a
- * setting changes and replays the tool result it first painted, which can be
- * several edits behind the table the server holds under the same id. Ask the
- * server for its copy and show that if it differs.
+ * The server's copy can be newer than what the view shows. ChatGPT reloads
+ * the view when a setting changes and replays the first tool result it painted,
+ * and a fullscreen view misses chat edits (see `watch`). Ask the server for its
+ * copy and show that if it differs.
  *
  * Read only: no retry, so no re-send. After a restart the server has nothing,
  * and every view on the page loads at once; if each handed back its own rows,
@@ -445,7 +468,7 @@ async function refresh(tableId: string): Promise<void> {
   const data = result && readTable(result);
   if (!data || data.tableId !== current?.tableId || data.csv === current.csv) return;
   render(data);
-  log("The host replayed an older result. Showing the server's copy.");
+  log("The table changed on the server. Showing the new version.");
 }
 app.onhostcontextchanged = applyHostContext;
 app.onerror = (e) => log(`App error: ${String(e)}`);
