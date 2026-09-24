@@ -6,12 +6,14 @@ Ordered. Everything here is known and deliberate, not forgotten. The prototype w
 
 - ~~**Fullscreen.**~~ A button that asks for fullscreen and back, and follows the host's own close button. Works in Claude and ChatGPT web; see [LEARNINGS.md](LEARNINGS.md#fullscreen).
 - ~~**Try the clients against each other.**~~ The table is in [LEARNINGS.md](LEARNINGS.md#what-each-client-allows). Three cells are still open: see item 2.
+- ~~**Leave room for the host's chat box in fullscreen.**~~ The fullscreen page ends with 96px of space, and the grid keeps at least half the window.
+- ~~**Batch edits.**~~ `edit-table` takes a list of edits, so one request is one call and one redraw.
 - ~~**Stop trusting `openLink`'s answer.**~~ Save file now logs that it asked, then the host's answer if one arrives, and waits on nothing.
 
 ## Next
 
 1. **A deploy strands every table the chat is using.** Each deploy restarts the server with an empty store. The view hands its rows back only when the user does something in it, so until then the model's next call fails. Both clients showed it on 23 September 2026: asked to `show-table` with the old id, ChatGPT said the table "no longer exists" and Claude offered to start over from the sample. Keeping the store on disk does not help on Render's free plan, whose disk is wiped on deploy. The cheapest fix is for the view to hand its rows back once on load when the server has lost them, but only from the newest view on the page, or an old view overwrites a newer edit (see "Two more bugs" in LEARNINGS.md).
-2. **Leave room for the host's chat box in fullscreen.** Both hosts float their chat box over the bottom of a fullscreen view, and in ChatGPT it covers the last log lines. Log `safeAreaInsets` and `containerDimensions` from both hosts first, to see whether either reports the chat box; if not, pad the bottom in fullscreen.
+2. **A fullscreen view goes stale in ChatGPT.** The view now asks for fullscreen when its first table arrives. In ChatGPT, a chat edit then draws a new view in the chat behind the fullscreen one, and the fullscreen view keeps the old rows, greyed out. Claude showed the edited table. Fix: while fullscreen, re-read the table by id every few seconds, or stop opening fullscreen at start in ChatGPT.
 3. **Finish the three open cells of the table.** Pick file in both clients, and whether Save file actually lands a file in each. All three need a person at the keyboard; the steps are under "Needs a human" in LEARNINGS.md.
 4. **Declare `_meta.ui.csp` and `_meta.ui.domain`.** ChatGPT requires both to submit an app, and says so on the app's page. Declaring a CSP would also make the in-iframe fetch behave the same in both clients, at the cost of the probe that currently shows the difference. Keep a probe that points somewhere undeclared.
 5. **Try ChatGPT's `pip` display mode.** ChatGPT lists it next to fullscreen. The button could offer it when the host does.
