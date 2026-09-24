@@ -164,54 +164,56 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
     {
       title: "Edit table",
       description:
-        "Change a table and show the result: set a cell, add or delete a row, " +
-        "rename a column, sort, or filter. Always pass the current CSV. Row " +
-        "numbers are zero-based and refer to the rows as displayed.",
+        "Change a table and show the result. Pass every change the request needs " +
+        "in one call, as a list of edits: set a cell, add or delete a row, rename " +
+        "a column, sort, or filter. Each call redraws the table for the user, so " +
+        "one call with ten edits beats ten calls. Edits run in order and all or " +
+        "nothing. Row numbers are zero-based and refer to the rows as the previous " +
+        "edit left them.",
       inputSchema: z.object({
         tableId: tableIdArg.optional(),
         csv: csvArg.optional(),
         source: z.string().optional().describe("A label for where the table came from."),
-        op: z.enum(["set-cell", "add-row", "delete-row", "rename-column", "sort", "filter"]),
-        row: z.number().optional().describe("Zero-based row index for set-cell and delete-row."),
-        column: z.string().optional().describe("Column name for set-cell, sort, and filter."),
-        value: z.string().optional().describe("New value for set-cell, or the substring for filter."),
-        values: z.array(z.string()).optional().describe("Cell values, in column order, for add-row."),
-        to: z.string().optional().describe("New column name for rename-column."),
-        direction: z.enum(["asc", "desc"]).optional().describe("Sort direction; defaults to asc."),
+        edits: z
+          .array(
+            z.discriminatedUnion("op", [
+              z.object({
+                op: z.literal("set-cell"),
+                row: z.number().describe("Zero-based row index."),
+                column: z.string(),
+                value: z.string(),
+              }),
+              z.object({
+                op: z.literal("add-row"),
+                values: z.array(z.string()).describe("Cell values, in column order."),
+              }),
+              z.object({ op: z.literal("delete-row"), row: z.number().describe("Zero-based row index.") }),
+              z.object({ op: z.literal("rename-column"), column: z.string(), to: z.string() }),
+              z.object({
+                op: z.literal("sort"),
+                column: z.string(),
+                direction: z.enum(["asc", "desc"]).optional().describe("Defaults to asc."),
+              }),
+              z.object({
+                op: z.literal("filter"),
+                column: z.string(),
+                value: z.string().describe("Keep rows whose cell contains this, ignoring case."),
+              }),
+            ]),
+          )
+          .min(1)
+          .describe("The changes, applied in order."),
       }),
       outputSchema: tableOutput,
       _meta: withUi,
     },
-    async ({ tableId, csv, source, op, row, column, value, values, to, direction }) => {
+    async ({ tableId, csv, source, edits }) => {
       try {
         const { id, t: before } = load(tableId, csv, source);
-        const need = <T>(v: T | undefined, what: string): T => {
-          if (v === undefined) throw new Error(`"${op}" needs ${what}.`);
-          return v;
-        };
-        let after: table.TableData;
-        switch (op) {
-          case "set-cell":
-            after = table.setCell(before, need(row, "row"), need(column, "column"), need(value, "value"));
-            break;
-          case "add-row":
-            after = table.addRow(before, need(values, "values"));
-            break;
-          case "delete-row":
-            after = table.deleteRow(before, need(row, "row"));
-            break;
-          case "rename-column":
-            after = table.renameColumn(before, need(column, "column"), need(to, "to"));
-            break;
-          case "sort":
-            after = table.sortByColumn(before, need(column, "column"), direction ?? "asc");
-            break;
-          case "filter":
-            after = table.filterRows(before, need(column, "column"), need(value, "value"));
-            break;
-        }
+        const after = table.applyEdits(before, edits);
         store.put(id, after);
-        return tableResult(id, after, `Applied ${op}.`);
+        const ops = edits.map((e) => e.op).join(", ");
+        return tableResult(id, after, `Applied ${edits.length} edit${edits.length === 1 ? "" : "s"}: ${ops}.`);
       } catch (e) {
         return errorResult(e);
       }

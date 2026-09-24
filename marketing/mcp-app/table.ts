@@ -113,3 +113,43 @@ export function renameColumn(t: TableData, from: string, to: string): TableData 
   const col = columnIndex(t, from);
   return { ...t, columns: t.columns.map((c, i) => (i === col ? to : c)) };
 }
+
+export type Edit =
+  | { op: "set-cell"; row: number; column: string; value: string }
+  | { op: "add-row"; values: string[] }
+  | { op: "delete-row"; row: number }
+  | { op: "rename-column"; column: string; to: string }
+  | { op: "sort"; column: string; direction?: "asc" | "desc" }
+  | { op: "filter"; column: string; value: string };
+
+export function applyEdit(t: TableData, e: Edit): TableData {
+  switch (e.op) {
+    case "set-cell":
+      return setCell(t, e.row, e.column, e.value);
+    case "add-row":
+      return addRow(t, e.values);
+    case "delete-row":
+      return deleteRow(t, e.row);
+    case "rename-column":
+      return renameColumn(t, e.column, e.to);
+    case "sort":
+      return sortByColumn(t, e.column, e.direction ?? "asc");
+    case "filter":
+      return filterRows(t, e.column, e.value);
+  }
+}
+
+/**
+ * Applies edits in order, all or nothing: one bad edit throws and the table is
+ * untouched. Each edit sees the rows as the previous one left them, so a row
+ * number after a delete or a sort means the row where it is now.
+ */
+export function applyEdits(t: TableData, edits: Edit[]): TableData {
+  return edits.reduce((acc, e, i) => {
+    try {
+      return applyEdit(acc, e);
+    } catch (err) {
+      throw new Error(`Edit ${i + 1} (${e.op}): ${(err as Error).message} No edits were applied.`);
+    }
+  }, t);
+}

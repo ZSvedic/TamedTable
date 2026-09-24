@@ -112,7 +112,7 @@ Four tools the model can call, all carrying the same `resourceUri` so any of the
 | Tool | Who calls it | Does |
 |---|---|---|
 | `show-table` | model, view | Displays a table, or the built-in sample |
-| `edit-table` | model, view | `set-cell`, `add-row`, `delete-row`, `rename-column`, `sort`, `filter` |
+| `edit-table` | model | A list of edits in one call, applied in order, all or nothing: `set-cell`, `add-row`, `delete-row`, `rename-column`, `sort`, `filter` |
 | `open-table` | model, view | Reads a CSV from a local path or an http(s) URL |
 | `save-table` | model, view | Writes the table to a local CSV file |
 | `put-table` | view only | Stores an edit made in the grid |
