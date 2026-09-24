@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { applyEdits, parseCsv, toCsv, splitCsvLine } from "./table.js";
+import { applyEdits, toEdit, parseCsv, toCsv, splitCsvLine } from "./table.js";
 
 test("a comma inside quotes survives the round trip", () => {
   const csv = 'name,phone\nGrace Hopper,"(202) 555-0172, ext 4"\n';
@@ -41,4 +41,8 @@ test("applyEdits changes nothing when one edit is bad", () => {
     ]),
   ).toThrow(/Edit 2 \(set-cell\).*No edits were applied/);
   expect(t.rows).toEqual([["Ada"]]);
+});
+
+test("toEdit names the missing field", () => {
+  expect(() => toEdit({ op: "set-cell", row: 0, column: "name" })).toThrow('"set-cell" needs value.');
 });

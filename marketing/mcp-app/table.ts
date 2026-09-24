@@ -122,6 +122,39 @@ export type Edit =
   | { op: "sort"; column: string; direction?: "asc" | "desc" }
   | { op: "filter"; column: string; value: string };
 
+/** The flat shape the tool takes: `op` plus whichever fields that op needs. */
+export type EditArgs = {
+  op: Edit["op"];
+  row?: number;
+  column?: string;
+  value?: string;
+  values?: string[];
+  to?: string;
+  direction?: "asc" | "desc";
+};
+
+/** Checks that an edit carries the fields its op needs, and narrows it. */
+export function toEdit(a: EditArgs): Edit {
+  const need = <T>(v: T | undefined, what: string): T => {
+    if (v === undefined) throw new Error(`"${a.op}" needs ${what}.`);
+    return v;
+  };
+  switch (a.op) {
+    case "set-cell":
+      return { op: a.op, row: need(a.row, "row"), column: need(a.column, "column"), value: need(a.value, "value") };
+    case "add-row":
+      return { op: a.op, values: need(a.values, "values") };
+    case "delete-row":
+      return { op: a.op, row: need(a.row, "row") };
+    case "rename-column":
+      return { op: a.op, column: need(a.column, "column"), to: need(a.to, "to") };
+    case "sort":
+      return { op: a.op, column: need(a.column, "column"), direction: a.direction };
+    case "filter":
+      return { op: a.op, column: need(a.column, "column"), value: need(a.value, "value") };
+  }
+}
+
 export function applyEdit(t: TableData, e: Edit): TableData {
   switch (e.op) {
     case "set-cell":

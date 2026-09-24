@@ -174,34 +174,27 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
         tableId: tableIdArg.optional(),
         csv: csvArg.optional(),
         source: z.string().optional().describe("A label for where the table came from."),
+        // One flat shape per edit rather than a union of six. Claude's tool client
+        // sent a union-typed list as a JSON string and the call failed four times;
+        // a flat object is the shape every client handles. The string is still
+        // accepted, in case a client sends one anyway.
         edits: z
-          .array(
-            z.discriminatedUnion("op", [
-              z.object({
-                op: z.literal("set-cell"),
-                row: z.number().describe("Zero-based row index."),
-                column: z.string(),
-                value: z.string(),
-              }),
-              z.object({
-                op: z.literal("add-row"),
-                values: z.array(z.string()).describe("Cell values, in column order."),
-              }),
-              z.object({ op: z.literal("delete-row"), row: z.number().describe("Zero-based row index.") }),
-              z.object({ op: z.literal("rename-column"), column: z.string(), to: z.string() }),
-              z.object({
-                op: z.literal("sort"),
-                column: z.string(),
-                direction: z.enum(["asc", "desc"]).optional().describe("Defaults to asc."),
-              }),
-              z.object({
-                op: z.literal("filter"),
-                column: z.string(),
-                value: z.string().describe("Keep rows whose cell contains this, ignoring case."),
-              }),
-            ]),
+          .preprocess(
+            (v) => (typeof v === "string" ? JSON.parse(v) : v),
+            z
+              .array(
+                z.object({
+                  op: z.enum(["set-cell", "add-row", "delete-row", "rename-column", "sort", "filter"]),
+                  row: z.number().optional().describe("Zero-based row index, for set-cell and delete-row."),
+                  column: z.string().optional().describe("Column name, for set-cell, rename-column, sort, filter."),
+                  value: z.string().optional().describe("New value for set-cell, or the text filter keeps."),
+                  values: z.array(z.string()).optional().describe("Cell values in column order, for add-row."),
+                  to: z.string().optional().describe("New name, for rename-column."),
+                  direction: z.enum(["asc", "desc"]).optional().describe("For sort; defaults to asc."),
+                }),
+              )
+              .min(1),
           )
-          .min(1)
           .describe("The changes, applied in order."),
       }),
       outputSchema: tableOutput,
@@ -210,7 +203,7 @@ export function createServer({ localFiles }: { localFiles: boolean }): McpServer
     async ({ tableId, csv, source, edits }) => {
       try {
         const { id, t: before } = load(tableId, csv, source);
-        const after = table.applyEdits(before, edits);
+        const after = table.applyEdits(before, edits.map(table.toEdit));
         store.put(id, after);
         const ops = edits.map((e) => e.op).join(", ");
         return tableResult(id, after, `Applied ${edits.length} edit${edits.length === 1 ? "" : "s"}: ${ops}.`);
