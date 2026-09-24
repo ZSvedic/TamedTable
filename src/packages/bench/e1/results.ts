@@ -24,9 +24,18 @@ export interface E1Record {
 
 export type Verdict = 'correct' | 'silently-wrong' | 'plan-shape' | 'visible-failure' | 'harness-error' | 'not-graded';
 
-/** A Then step that checks the plan's shape (how many steps, which kinds)
- *  rather than the data: a different valid plan fails it with the right rows. */
-const PLAN_SHAPE_STEP = /\bspec\b|\btransformations?\b/i;
+/** Then steps that check the plan's shape (how many steps, which kinds)
+ *  rather than the data: a different valid plan fails them with the right
+ *  rows. Checks that nothing changed ("no transformation was added", "the
+ *  spec is unchanged") are about behavior, so they stay out. */
+const PLAN_SHAPE_STEPS = [
+  /\bspec (has|contains)\b/,
+  /^transformation \d+ is a\b/,
+  /\bhas \d+ transformations?\b/,
+  /\bcontains an? \S+ transformation\b/,
+  /\ban? \S+ transformation is added\b/,
+  /^every transformation the request added\b/,
+];
 
 /** How one scenario counts. A failed scenario whose every turn committed a
  *  plan nobody refused is the case that matters most: the model wrote a valid
@@ -39,7 +48,7 @@ export function verdict(r: Pick<E1Record, 'status' | 'turns' | 'errors' | 'faile
   if (r.errors.length > 0) return 'harness-error';
   if (r.status === 'PASSED') return 'correct';
   if (r.turns.some((t) => t.outcome !== 'committed')) return 'visible-failure';
-  if (r.failedStep && PLAN_SHAPE_STEP.test(r.failedStep)) return 'plan-shape';
+  if (r.failedStep && PLAN_SHAPE_STEPS.some((re) => re.test(r.failedStep!))) return 'plan-shape';
   return 'silently-wrong';
 }
 

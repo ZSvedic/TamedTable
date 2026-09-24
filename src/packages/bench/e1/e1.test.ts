@@ -112,6 +112,9 @@ describe('verdict', () => {
     expect(verdict(r({ turns: [turn('committed'), turn('gave-up')] }))).toBe('visible-failure');
     expect(verdict(r({ failedStep: 'the spec has 2 transformations' }))).toBe('plan-shape');
     expect(verdict(r({ failedStep: 'compare with the expected output' }))).toBe('silently-wrong');
+    expect(verdict(r({ failedStep: 'the spec is unchanged from before the request' }))).toBe('silently-wrong');
+    expect(verdict(r({ failedStep: 'no transformation was added' }))).toBe('silently-wrong');
+    expect(verdict(r({ failedStep: 'transformation 2 is a "filter"' }))).toBe('plan-shape');
     expect(verdict(r({ errors: ['boom'] }))).toBe('harness-error');
   });
 });
