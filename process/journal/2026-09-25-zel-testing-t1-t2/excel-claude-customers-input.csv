@@ -1,0 +1,21 @@
+﻿ID,FirstName,LastName,DOB,Country,Phone,Phone (E.164)
+I001,John,D. Doe,1/1/90,United States,(200) 555-1234,+12005551234
+I002,Jane,Smith,5/15/85,Canada,+1 555-5678,+15555678
+I003,Bob,McDonald,"Sep 30th, 1978",United Kingdom,0044-555-8765,+445558765
+I004,Alice,Williams,1992_12_10,Australia,+61.559.4321.2,+6155943212
+I005,Tom,Brown,25th of March 1980,United States,+1 (100)555-6789,+11005556789
+I006,Emily,Davis,7/20/95,Canada,555-4321,+15554321
+I007,Michael,Miller,11/30/88,United Kingdom,+44 555 1234,+445551234
+I008,Sarah,van der Berg,1990.02.14,Australia,+61 555 9876,+615559876
+I009,David,O'Neil,3/4/83,United States,(300) 555-4321,+13005554321
+I010,Laura,Taylor,NA,Bahamas,+1 242 555-6789,+12425556789
+I011,Chris,Anderson,8/19/87,Bahamas,+1 242 555-1234,+12425551234
+I012,Boris,Babić,3/10/85,Croatia,+385 555 4321,+3855554321
+I013,Anna,Müller,'10. Oktober 1990',Germany,+49 555 6789,+495556789
+I014,Carlos,García,12/1/82,Spain,+34 555 1234,+345551234
+I015,Maria,Rossi,03.04.1993.,Germany,030 72344321,+493072344321
+I016,Ahmed,Khan,,United Kingdom,+44 555 4321,+445554321
+I017,张,三,1/1/90,China,+86 555 1234,+865551234
+I018,李,四,5/15/85,China,138 5555 6789,+8613855556789
+I019,山田,太郎,-,Japan,+81 555 1234,+815551234
+I020,فلا,الفلاني,1/1/90,Saudi Arabia,+966 555 1234,+9665551234
