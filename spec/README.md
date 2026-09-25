@@ -15,7 +15,7 @@ The human-authored contract for TamedTable: what the system does, the types it e
 | [test-cases/](test-cases/) | Gherkin features + fixtures, named as below |
 | [user-data/](user-data/README.md) | Real user-contributed files: minimal repro fixtures the `@regression` scenarios in `test-cases/` replay, plus the `-original` full files kept for manual testing |
 
-The structural rule: library packages (self-contained, demo-able) get per-package specs under [packages/](packages/README.md); app surfaces (`cli`, `headless`, `web`) share [behavior.md](behavior.md) + [test-cases/](test-cases/) because one scenario must prove all three surfaces.
+The structural rule: library packages (self-contained, demo-able) get per-package specs under [packages/](packages/README.md); app surfaces (`cli`, `headless`, `web`) share [behavior.md](behavior.md) + [test-cases/](test-cases/) because one scenario must prove all three surfaces. The MCP server is the exception: see [packages/mcp-server/](packages/mcp-server/README.md).
 
 ## Test-case fixtures and naming
 

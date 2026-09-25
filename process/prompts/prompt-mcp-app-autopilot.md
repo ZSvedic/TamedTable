@@ -6,11 +6,11 @@ You are running in the Claude desktop app on a Mac, with control of a Chrome win
 
 ## The thing you are working on
 
-`marketing/mcp-app/` in the TamedTable repository: TinyTable, a prototype MCP App (the MCP Apps extension, SEP-1865). Read these first, in this order:
+`process/prototypes/tinytable-mcp/` in the TamedTable repository: TinyTable, a prototype MCP App (the MCP Apps extension, SEP-1865). Read these first, in this order:
 
-1. `marketing/mcp-app/README.md`: what it is and how to run it.
-2. `marketing/mcp-app/LEARNINGS.md`: what is already known. Do not rediscover it.
-3. `marketing/mcp-app/TODO.md`: what is left. Item 1, fullscreen, is your main build task.
+1. `process/prototypes/tinytable-mcp/README.md`: what it is and how to run it.
+2. `process/prototypes/tinytable-mcp/LEARNINGS.md`: what is already known. Do not rediscover it.
+3. `process/prototypes/tinytable-mcp/TODO.md`: what is left. Item 1, fullscreen, is your main build task.
 
 It is deployed at `https://tamedtable.onrender.com/mcp` and both browser tabs already have it connected. Render's free plan sleeps after 15 idle minutes, so the first call after a pause may time out; call it again rather than concluding it is broken.
 
@@ -31,12 +31,12 @@ It is deployed at `https://tamedtable.onrender.com/mcp` and both browser tabs al
 
 Put the result in LEARNINGS.md as a table with a row per capability and a column per client. Where the two differ, say which side made the decision: the sandbox attribute, the host's CSP, or the model.
 
-**4. Fix what you find.** Bugs you can fix inside `marketing/mcp-app/` are yours to fix. Keep changes small, run `bun test` and `bunx tsc --noEmit` in that directory before pushing, and push each fix separately with a message that says what you observed and what you changed.
+**4. Fix what you find.** Bugs you can fix inside `process/prototypes/tinytable-mcp/` are yours to fix. Keep changes small, run `bun test` and `bunx tsc --noEmit` in that directory before pushing, and push each fix separately with a message that says what you observed and what you changed.
 
 ## Rules
 
 - **Evidence or it did not happen.** Every claim in LEARNINGS.md needs a screenshot or a copied log line behind it. The view prints a timestamped log at the bottom; use it. Save screenshots under `temp/` (gitignored) and reference what they showed in the text.
-- **Change nothing outside `marketing/mcp-app/`**, except LEARNINGS.md and TODO.md which live there anyway. The rest of the repository is a real product and is not part of this experiment.
+- **Change nothing outside `process/prototypes/tinytable-mcp/`**, except LEARNINGS.md and TODO.md which live there anyway. The rest of the repository is a real product and is not part of this experiment.
 - **Do not merge anything, do not open a pull request, do not touch Render's settings.** Push to the working branch only.
 - **The existing LEARNINGS.md is the record of what was already tried.** Add to it, correct it where you prove it wrong, and say plainly when you do. Do not rewrite what is still true.
 - Write the way `spec/writing-style.md` asks: plain words, active voice, no em dashes, no inflated vocabulary.

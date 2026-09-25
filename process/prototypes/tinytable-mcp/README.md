@@ -2,14 +2,16 @@
 
 A learning prototype of the [MCP Apps extension](https://github.com/modelcontextprotocol/ext-apps) (SEP-1865, spec version `2026-01-26`). It shows a CSV table inside the chat, lets you edit cells in place, opens and saves files locally and over http(s), and lets you change the data by typing a request in the parent chat.
 
-Nothing here feeds TamedTable's app. It lives under `marketing/` as a standalone demo: run it by hand, read [LEARNINGS.md](LEARNINGS.md).
+Nothing here feeds TamedTable's app. It lives under `process/prototypes/` as a standalone demo: run it by hand, read [LEARNINGS.md](LEARNINGS.md).
+
+**Frozen.** TinyTable is no longer developed. What it taught feeds TamedTable MCP, the product described in [mcp-product-plan.md](../../journal/2026-09-24-mcp-app/mcp-product-plan.md), which is built in `src/packages/mcp-server/`. Fix it only to keep the demo server running.
 
 ![The app running in the reference host](tinytable.png)
 
 ## Run it on your own machine
 
 ```bash
-cd marketing/mcp-app
+cd process/prototypes/tinytable-mcp
 bun install
 bun run start          # builds the view, serves MCP on http://localhost:3001/mcp
                        # local runs set TINYTABLE_LOCAL_FILES=1, so file tools work
@@ -32,7 +34,7 @@ Claude Desktop launches the server itself over stdio, so it needs a path and not
   "mcpServers": {
     "tinytable": {
       "command": "bun",
-      "args": ["run", "--cwd", "/absolute/path/to/marketing/mcp-app", "start:stdio"]
+      "args": ["run", "--cwd", "/absolute/path/to/process/prototypes/tinytable-mcp", "start:stdio"]
     }
   }
 }
@@ -68,7 +70,7 @@ claude.ai runs in Anthropic's cloud and cannot reach your laptop, so the server 
 
 1. Sign in at [render.com](https://render.com) with GitHub.
 2. **New**, **Web Service**, pick the `TamedTable` repo.
-3. Set **Root Directory** to `marketing/mcp-app`. Render sees the `Dockerfile` and switches **Language** to Docker by itself.
+3. Set **Root Directory** to `process/prototypes/tinytable-mcp`. Render sees the `Dockerfile` and switches **Language** to Docker by itself.
 4. Leave the rest alone and **Deploy**. The first build takes a few minutes.
 5. Open the URL it gives you. `Connect an MCP client to /mcp` means it is up.
 
@@ -89,7 +91,7 @@ On Render's free plan the service sleeps after 15 idle minutes and takes about h
 ### Or run the image yourself
 
 ```bash
-docker build -t tinytable marketing/mcp-app
+docker build -t tinytable process/prototypes/tinytable-mcp
 docker run -p 8080:8080 tinytable
 ```
 

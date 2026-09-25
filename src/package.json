@@ -27,6 +27,8 @@
     "bench:sweep": "bun run packages/bench/cli.ts sweep",
     "bench:chart": "bun run packages/bench/cli.ts chart",
     "bench:report": "bun run packages/bench/cli.ts report",
+    "bench:e1": "TAMEDTABLE_CASSETTE=e1 bun --bun cucumber-js --profile e1Web ; TAMEDTABLE_CASSETTE=e1 bun --bun cucumber-js --profile e1Headless ; TAMEDTABLE_CASSETTE=e1 bun --bun cucumber-js --profile e1Cli",
+    "bench:e1:report": "bun run packages/bench/e1/cli.ts",
     "sync:tokens": "bun run packages/ui-kit/sync-tokens.ts",
     "sync:icons": "bun run packages/ui-kit/sync-icons.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p packages/web/tsconfig.json"
@@ -42,6 +44,7 @@
     "@tamedtable/file-io": "workspace:*",
     "@tamedtable/gherkin-tour": "workspace:*",
     "@tamedtable/headless": "workspace:*",
+    "@tamedtable/mcp-server": "workspace:*",
     "@tamedtable/model-config": "workspace:*",
     "@tamedtable/table-view": "workspace:*",
     "@tamedtable/ui-kit": "workspace:*",

@@ -8,6 +8,7 @@ import { join, basename } from 'node:path';
 import type { Row, TablePlan } from '@tamedtable/core';
 import type { RequestResult } from '@tamedtable/headless';
 import { cassetteFetch, type FetchLike } from './cassette.ts';
+import { e1RunnerFetch } from './e1.hooks.ts';
 
 // Path anchors, resolved from this file's location so they hold regardless of cwd.
 // This file lives at src/tests/world.ts.
@@ -115,6 +116,11 @@ export function runnerOptsFor(scenario: ITestCaseHookParameter): RunnerOpts {
   const opts: RunnerOpts = tags.includes('@cancel') ? { batchSize: 2, chunkSize: 1, pageSize: 100 } : {};
 
   const mode = process.env.TAMEDTABLE_CASSETTE;
+  // #BenchE1: a stand-in chat model writes every change; see e1.hooks.ts.
+  if (mode === 'e1') {
+    opts.fetch = e1RunnerFetch(scenario);
+    opts.apiKey = process.env.GEMINI_API_KEY ?? 'cassette-replay-placeholder';
+  }
   if (mode === 'record' || mode === 'replay') {
     const feature = basename(scenario.pickle.uri, '.feature');
     opts.fetch = cassetteFetch({ mode, file: join(CASSETTE_DIR, `${feature}.json`) });
