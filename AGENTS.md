@@ -37,6 +37,7 @@ Reusable session starters in `process/prompts/`:
 | Prompt | Use for |
 |---|---|
 | [prompt-cleanup.md](process/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
+| [prompt-host-testing-autopilot.md](process/prompts/prompt-host-testing-autopilot.md) | Finish the E0 host tests unattended: act as the user in ChatGPT, Claude and their Excel add-ins, score the results with scripts. |
 | [prompt-hunt-audit.md](process/prompts/prompt-hunt-audit.md) | BOUNTY HUNTER: read all spec and code, find bugs, land them as red tests. Never fixes. |
 | [prompt-hunt-browser.md](process/prompts/prompt-hunt-browser.md) | BROWSER HUNTER: drive the built app in Playwright as a user, find bugs, land them as red tests. Never fixes. |
 | [prompt-illustrate.md](process/prompts/prompt-illustrate.md) | Create on-brand SVG marketing illustrations for a list of features. |
