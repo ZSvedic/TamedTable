@@ -32,4 +32,4 @@ Each exported CSV compared cell by cell with `spec/test-cases/cleanup-expected.c
 
 ## Next
 
-Run the rest with a desktop agent, using [prompt-host-testing-autopilot.md](../../prompts/prompt-host-testing-autopilot.md), in Zel's format: one folder per task with screenshots, exported files and a markdown file that links to them. Add Excel + ChatGPT and Excel + Claude as hosts for T3, T5, T6 and T7. Skip T10 (phone): a desktop agent cannot run it.
+Zel's decision: the Excel add-ins are now the only competitors tested. If they cover every promise in the plan, TamedTable MCP is dropped. A desktop agent runs [prompt-host-testing-autopilot.md](../../prompts/prompt-host-testing-autopilot.md), which checks each promise in both add-ins and writes a coverage table in Zel's folder format. The phone (T10) and licence questions stay with Zel, because a desktop agent cannot answer them.
