@@ -37,6 +37,7 @@ Reusable session starters in `process/prompts/`:
 | Prompt | Use for |
 |---|---|
 | [prompt-cleanup.md](process/prompts/prompt-cleanup.md) | Audit every tracked file for consistency and simplicity; write a status table. |
+| [prompt-excel-private-llm-research.md](process/prompts/prompt-excel-private-llm-research.md) | Research, no code: survey agentic Excel add-ins that run on private or EU-hosted models (OpenAI, Anthropic, Microsoft, third parties) and weigh the opportunity. |
 | [prompt-host-testing-autopilot.md](process/prompts/prompt-host-testing-autopilot.md) | Check unattended whether the ChatGPT and Claude Excel add-ins already cover every TamedTable MCP promise; score with scripts, write a coverage table. |
 | [prompt-hunt-audit.md](process/prompts/prompt-hunt-audit.md) | BOUNTY HUNTER: read all spec and code, find bugs, land them as red tests. Never fixes. |
 | [prompt-hunt-browser.md](process/prompts/prompt-hunt-browser.md) | BROWSER HUNTER: drive the built app in Playwright as a user, find bugs, land them as red tests. Never fixes. |
