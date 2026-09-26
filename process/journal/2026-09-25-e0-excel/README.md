@@ -2,7 +2,9 @@
 
 A desktop agent ran [prompt-host-testing-autopilot.md](../../prompts/prompt-host-testing-autopilot.md) on 2026-09-25 against the promises in [mcp-product-plan.md](../2026-09-24-mcp-app/mcp-product-plan.md#what-the-first-release-does).
 
-**Answer: no. Neither add-in covers every promise, so the rule "drop the MCP app if both cover everything" does not fire.** Claude for Excel comes close: it covers undo, questions and loading from a URL, and it judged every row at 93.1%. The gaps both add-ins share are no marks on changed cells and no recipe that runs outside Excel.
+**Decision: Zel dropped the MCP app on 2026-09-26; see [the decision and its reasons](../2026-09-26-drop-mcp-app.md).**
+
+**Coverage: neither add-in covers every promise, so the strict rule "drop the MCP app if both cover everything" did not fire on its own.** Claude for Excel comes close: it covers undo, questions and loading from a URL, and it judged every row at 93.1%. The gaps both add-ins share are no marks on changed cells and no recipe that runs outside Excel.
 
 ## Coverage
 
@@ -14,7 +16,7 @@ A desktop agent ran [prompt-host-testing-autopilot.md](../../prompts/prompt-host
 | **Change by judgment** on every row | not covered: used title and channel signals, 63.8%; "judge every row yourself" changed 11 rows, 65.5% ([C1](c1-judgment/README.md)) | partly: judged all 1,821 rows itself, 93.1%, under the 95% bar; no row count while working ([C1](c1-judgment/README.md)) |
 | **Ask**: find problems, answer without changing the table | partly: 5 of 6 anomalies (missed bill.gates@); wrote an unrequested summary into the sheet when asked a question ([C5](c5-ask/README.md)) | covered: 6 of 6 anomalies, both answers read-only ([C5](c5-ask/README.md)) |
 | **See**: live grid, manual edits, changed-cell marks | partly: live Excel grid and hand edits survive, but no marks on changed cells ([C2](c2-rules/README.md), [C3](c3-undo/README.md)) | partly: same; a new column keeps the old phone beside the new one, but nothing is marked ([C2](c2-rules/README.md)) |
-| **Undo** from the chat or the grid | partly: panel Undo works; "undo the country change" was reported done but never reached the sheet; Cmd+Z left rows scrambled ([C3](c3-undo/README.md)) | covered: undid a middle step from the chat, rebuilt an older state exactly, Cmd+Z undoes one change per press; no Undo button, no stored versions ([C3](c3-undo/README.md)) |
+| **Undo** from the chat or the grid | partly: panel Undo works when its bar appears (not after every change); "undo the country change" was reported done but never reached the sheet; Cmd+Z left rows scrambled ([C3](c3-undo/README.md)) | covered: undid a middle step from the chat, rebuilt an older state exactly, Cmd+Z undoes one change per press; no Undo button, no stored versions ([C3](c3-undo/README.md)) |
 | **Take away** the result as CSV or XLSX | covered by Excel: File > Save As; the add-in says it can't attach a file ([C1](c1-judgment/README.md)) | covered by Excel: same; the add-in says it can't make a file ([C1](c1-judgment/README.md)) |
 | **Take away** a recipe that replays elsewhere | partly: reapplied the cleanup without inventing phones; script is an Excel Office Script, 119/120 cells match ([C4](c4-recipe/README.md)) | partly: reapplied without inventing phones; VBA macro reproduced the result exactly; `/skillify` saves a reusable skill; nothing runs outside Excel ([C4](c4-recipe/README.md)) |
 | Big file, 25,000 rows (T8, a Web promise) | covered: all rows categorised in about 1.5 minutes ([C8](c8-big/README.md)) | covered: all rows categorised in about 2 minutes, via a type-to-category lookup ([C8](c8-big/README.md)) |
@@ -28,6 +30,7 @@ A desktop agent ran [prompt-host-testing-autopilot.md](../../prompts/prompt-host
 - **Hosts:** Excel for Mac with the ChatGPT side panel (GPT-5.6 Terra) and the Claude side panel (Opus 5.5), side by side. Every check used a fresh workbook and a fresh chat, except C3 and C4, which continue C2's workbook as the prompt asks.
 - **Loading:** each fixture became an `.xlsx` with every cell stored as Text, built with a short openpyxl script instead of clicking through Data > From Text/CSV. The effect is the same: no date is rewritten. The one exception is C4's extra sheet, pasted from such a workbook into a Text-formatted sheet.
 - **Exports:** File > Save As > CSV UTF-8, after every step that changed data. That format saves only the active sheet.
+- **Files kept:** screenshots and markdown only. On 2026-09-26 the exported CSVs and the scoring and replay scripts (`score_cleanup.py`, `run_office_script.ts`, the hosts' Office Script and VBA macro) were removed to keep the folder small. The committed ones stay in git history at commit `1071c6b`; the two replay outputs in C4 were never committed, because `.gitignore` skips `*-output.*` files.
 - **Acting as the user:** prompts sent word for word, questions answered "Use your best judgment.", edit-permission prompts answered "Allow once". The only follow-up was T7's "judge every row yourself", sent to ChatGPT only, because Claude had already judged each row.
 - **Memory:** switched off before the first check and back on at the end; see [c0-memory](c0-memory/README.md). It did not cover Claude's saved skills: Claude's first cleanup answer began "The normalize-contacts skill matches this request", the skill Zel saved in the earlier T2 run.
 - **Timing:** read from the clock between sending a prompt and the final answer, so each is rough.

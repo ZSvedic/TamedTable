@@ -5,13 +5,13 @@ A fresh all-text workbook of `showcase-lazy-input.csv` (25,000 products) and a f
 ## Excel + ChatGPT (GPT-5.6 Terra)
 
 - **About 1.5 minutes, all 25,000 rows.** "I found a 25,000-row product list. Next I'm mapping product names to the five requested categories". It hit "Excel's per-write limit" and wrote in three chunks, then "spot-checking the start, middle, and end". Fixed values, not formulas. [Answer](chatgpt-answer.png).
-- **Counts:** kitchen 6,878, electronics 6,271, sports 5,616, clothing 4,376, other 1,859. 25,000 rows, no blanks, no duplicate ids. [CSV](chatgpt-category.csv).
+- **Counts:** kitchen 6,878, electronics 6,271, sports 5,616, clothing 4,376, other 1,859. 25,000 rows, no blanks, no duplicate ids.
 - **CSV:** "I can't attach a downloadable CSV file in this session".
 
 ## Excel + Claude (Opus 5.5)
 
 - **About 2 minutes including the permission prompt, all 25,000 rows.** "There are only 40 product types, with words like 'Slim' or 'XL' added to their names. I listed each type and its category on a new Category Map tab. Column F finds the type in each product name and pulls in the category." It asked for edit permission (Allow once). [Answer, top](claude-answer-top.png), [answer, end](claude-answer.png), [permission](claude-permission.png).
-- **Counts:** kitchen 6,878, clothing 6,245, electronics 4,400, sports 3,747, other 3,730. 25,000 rows, no blanks, no duplicate ids. It named its borderline calls: "I put footwear under clothing, not sports ... Desk lamp and monitor stand went to other." [CSV](claude-category.csv).
+- **Counts:** kitchen 6,878, clothing 6,245, electronics 4,400, sports 3,747, other 3,730. 25,000 rows, no blanks, no duplicate ids. It named its borderline calls: "I put footwear under clothing, not sports ... Desk lamp and monitor stand went to other."
 - **CSV:** "I couldn't make the CSV file itself ... CSV saves only the active sheet, so the lookup tab won't be included."
 
 ## Comparison
