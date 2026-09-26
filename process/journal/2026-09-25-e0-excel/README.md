@@ -37,7 +37,7 @@ A desktop agent ran [prompt-host-testing-autopilot.md](../../prompts/prompt-host
 
 ## Needs a human
 
-- **Claude's `/skillify` draft is waiting.** It proposes an update to Zel's `normalize-contacts` skill; Apply or Dismiss it in the Claude panel of the `claude-same-cleanup` workbook. The run did not apply it.
+- **Claude's `/skillify` draft:** it proposed an update to Zel's `normalize-contacts` skill. The run did not apply it; Zel dismissed it on 2026-09-26.
 - **Claude's C2 score had help.** Zel's saved `normalize-contacts` skill shaped the phone and country steps. To test Claude as a truly new user, turn that skill off and rerun C2.
-- **Excel is still open** with the test workbooks (all copies in a scratch folder, none of Zel's files). Close them without saving.
+- **Test workbooks:** all were scratch copies, none of Zel's files; closed and deleted on 2026-09-26.
 - The phone (T10) and licence questions stay with Zel, as [analysis.md](../2026-09-25-zel-testing-t1-t2/analysis.md#next) says.
